@@ -282,6 +282,39 @@ decoration.**
    Claude plugin (the skills + hook), self-hosted (its own graph).
 6. **Move first, then genericize** — `KG_REPO_ROOT` means the oracle survives the move.
 7. **DojoStack is rewired last**, so nothing breaks meanwhile.
+8. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
+   Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots on
+   the dedicated `e2e-evidence` branch addressed by URL, never on the working branch and never inside
+   the graph JSON (REQ-KG-05). Three reasons, in order of weight:
+
+   - **A cloud SSoT would contradict the central claim.** The thesis is that the graph is a *pure
+     function of the tree* — that is why the fingerprint works, why `check` can gate, and why REQ-KG-01
+     means anything. The moment truth lives in a database nobody rebuilds from source, it can drift, and
+     we would have shipped a drift-detection tool with an undetectable drift surface at its centre. Same
+     category of error as `|| echo`.
+   - **Privacy is the adoption gate, not a nicety.** Screenshots of a CRE platform contain rent rolls,
+     tenant names, deal terms. "Install a plugin, nothing leaves your repo" survives a security review;
+     "ship your screenshots to our S3" does not. **Git-native is the reason a security-conscious
+     enterprise can adopt this at all** — a feature, not a limitation we settled for.
+   - **There are zero users.** Building storage infrastructure before anyone uses the thing is the
+     classic mistake. The repo works today.
+
+   **Do not build a storage abstraction** (YAGNI — there is no second implementation to abstract over),
+   but **do not couple to git either**, so a cloud adapter stays possible. `shotsUpload.ts` already gets
+   this right by injecting `FsLike`/`GhLike`.
+
+9. **Video is not in the core; it is a monetization candidate.** Playwright videos run ~1–5 MB each —
+   gigabytes across a suite, and git would break. But **flow-approval (§6) does not need video and is
+   worse with it**: `pacedStep` + `.step-shots` already produce a step-by-step screenshot storyboard, and
+   **two screenshots diff — two videos do not.** The diff *is* the product ("before → after — intended?"),
+   so step-shots are the mechanism, not a compromise. Video may earn its place in a paid tier (sharing a
+   run with a stakeholder), which is a **business question, deferred with the cloud** — see §10.10.
+
+10. **The cloud is a monetization question, not an architecture one.** If a team ever wants shared review
+    threads, comment history across people, or cross-project dashboards, that is a product *on top* of
+    the git-native core — not a replacement for it. Deciding it now, with no users, would be answering a
+    question nobody has asked yet. Revisit when a paying customer asks; the answer is worthless before
+    then.
 
 **Rewritten 2026-07-17**, hours after the first draft, because the scope narrowed to (3)+(4), the staff
 prompt was identified as the gold, design drift was cut, greenfield was reframed from a tab to an issue
