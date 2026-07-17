@@ -192,6 +192,8 @@ Two things this reframes:
   competing. Inline = "this changed while you were working, approve?". Bench = "you have twenty minutes,
   clear the queue."
 
+## 7. Requirement zero
+
 > **REQ-0** — *Given any repo root supplied as configuration, the tool builds a byte-identical graph to
 > the one DojoStack's in-tree copy produces — knowing nothing about DojoStack.*
 
