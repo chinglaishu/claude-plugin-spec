@@ -102,6 +102,25 @@ Two things make this work, and both are easy to get wrong:
   you approved it — before → after — intended?"* Five seconds, no reading, and an unintended behaviour
   change **is** the bug. That is the decision inbox for phase (4).
 
+**The approval must be a click, not a clipboard — and as of 2026 it can be.** Three documents inherited
+from the original tool assert the opposite, and all three are now **obsolete**:
+
+| source | claim | status |
+|---|---|---|
+| PRD §8 | "a browser page cannot drive the terminal, so it never applies code edits itself" | **false** |
+| greenfield note §3 | "❌ No write-back dispatch bridge. The cockpit emits a `/kg` command" | **false** |
+| DIRECTION.md | "How does a human action in the UI trigger a Claude action (dispatch bridge)? — undecided" | **answered** |
+
+[**MCP Apps**](https://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/) (2026-01-26, the first
+official MCP extension, "ready for production"): a tool declares a UI resource, the host renders it in a
+sandboxed iframe, and the UI calls `app.callServerTool()` to invoke a tool directly plus
+`app.updateModelContext()` to tell the model what the user chose. The clipboard handoff was a workaround
+for a platform limitation that no longer exists — dated design, not a decision.
+
+**This is what makes flow-approval buildable at all.** "Approve" becomes a real, recorded tool call that
+*ratifies a requirement*, not a copied string a human re-types. Without it, §6 is a nice idea with no
+mechanism.
+
 ## 7. Requirement zero
 
 > **REQ-0** — *Given any repo root supplied as configuration, the tool builds a byte-identical graph to
@@ -213,7 +232,17 @@ project. Phase 5 is hygiene, not value.
 
 ## 12. Open questions
 
-0. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
+0. **MCP Apps: verify Claude Code support before committing to it.** The direction is MCP Apps for the
+   decision inbox (§6) — it is the official extension, production-ready, and `app.callServerTool()` is
+   exactly the dispatch bridge flow-approval needs. **But the official announcement lists Claude web +
+   desktop, Goose, VS Code Insiders and ChatGPT, and does NOT mention Claude Code.** One secondary source
+   claims Claude Code support; that is unverified. This is load-bearing: a dev tool whose cockpit only
+   renders outside the dev surface is a different product. Note the CEO may legitimately live in Claude
+   Desktop while staff lives in Claude Code — in which case the gap is acceptable and should be a stated
+   choice, not a discovery. **Verify before phase 4.** Fallback if unsupported: the `sendPrompt()` widget
+   pattern, demonstrated working in Claude Code on 2026-07-17 — weaker (it routes through the model
+   rather than straight to a tool) but sufficient for a dispatch.
+1. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
    "byte-identical to DojoStack's copy", which is exactly right as a *migration* acceptance criterion and
    unshippable as a permanent one: the test needs a private CRE codebase, so it cannot run in this repo's
    CI and cannot survive public distribution (§12.4). A generic tool whose requirement-zero cannot be
