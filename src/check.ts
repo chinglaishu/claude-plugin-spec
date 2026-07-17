@@ -1,9 +1,11 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { buildGraph } from "./discover";
 import { renderViewer } from "./viewer";
+import { TEMPLATE_PATH } from "./toolDir";
 import { pinnedGateDecision, readSources, toSources, SOURCES_FILE } from "./sources";
+import { loadConfig } from "./config";
 import type { Graph, Issue } from "./types";
 
 /**
@@ -101,10 +103,13 @@ export function lowerBaseline(baseline: Baseline, counts: Record<string, number>
 // Run as a script only when invoked directly (not when imported by tests)
 const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const repoRoot = process.env.KG_REPO_ROOT ?? join(__dirname, "..", "..", "..");
-  const committedPath = join(__dirname, "..", "knowledge-graph.json");
-  const baselinePath = join(__dirname, "..", "knowledge-graph.baseline.json");
+  // The project is the CWD (KG_REPO_ROOT overrides) and its artifacts live where IT says — not
+  // beside the tool. See artifacts.ts's TOOL_DIR for the other half of that split (§10.9).
+  const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
+  const config = await loadConfig(repoRoot);
+  const outDir = join(repoRoot, config.artifactDir);
+  const committedPath = join(outDir, "knowledge-graph.json");
+  const baselinePath = join(outDir, "knowledge-graph.baseline.json");
   const updateBaseline = process.argv.includes("--update-baseline");
 
   // REQ-KG-GATE-02. `--pinned` is the CI posture: assert the siblings sit exactly at the commits the
@@ -112,20 +117,20 @@ if (isMain) {
   // question this process can actually answer. Locally the default stays as it was — the dev's three
   // repos are coherent, and that is the fast inner loop.
   if (process.argv.includes("--pinned")) {
-    const lockfileText = await readFile(join(__dirname, "..", SOURCES_FILE), "utf8").catch(() => null);
-    const decision = pinnedGateDecision(lockfileText, toSources(await readSources(repoRoot)));
+    const lockfileText = await readFile(join(outDir, SOURCES_FILE), "utf8").catch(() => null);
+    const decision = pinnedGateDecision(lockfileText, toSources(await readSources(repoRoot, config.repos)), config.repos);
     for (const m of decision.messages) (decision.ok ? console.log : console.error)(m);
     if (!decision.ok) process.exit(1);
   }
 
   const committed = JSON.parse(await readFile(committedPath, "utf8"));
-  const fresh = await buildGraph(repoRoot, committed.generatedAt); // reuse timestamp so only content diffs matter
+  const fresh = await buildGraph(repoRoot, committed.generatedAt, config); // reuse timestamp so only content diffs matter
   if (!graphsMatch(committed, fresh)) {
     console.error("kg: knowledge-graph.json is STALE — run `npm run build` and commit.");
     process.exit(1);
   }
-  const template = await readFile(join(__dirname, "..", "viewer.template.html"), "utf8");
-  const committedViewer = await readFile(join(__dirname, "..", "viewer.html"), "utf8");
+  const template = await readFile(TEMPLATE_PATH, "utf8");
+  const committedViewer = await readFile(join(outDir, "viewer.html"), "utf8");
   if (!viewerMatches(committedViewer, renderViewer(fresh, template))) {
     console.error("kg: viewer.html is STALE — run `npm run build` and commit.");
     process.exit(1);

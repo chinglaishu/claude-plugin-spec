@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { buildGraph } from "./discover";
 import { writeArtifacts } from "./artifacts";
 import { computeDelta, formatDelta } from "./delta";
 import { countIssuesByKind, ratchetFailures, type Baseline } from "./check";
 import { stampSources } from "./sources";
+import { loadConfig } from "./config";
 import type { Graph } from "./types";
 
 /** Hours between `iso` and now, or null when the timestamp is missing. */
@@ -16,23 +17,24 @@ export function ageHours(iso: string | undefined | null, now: Date): number | nu
 
 const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const repoRoot = process.env.KG_REPO_ROOT ?? join(__dirname, "..", "..", "..");
-  const outDir = join(__dirname, "..");
+  const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
+  const config = await loadConfig(repoRoot);
+  const outDir = join(repoRoot, config.artifactDir);
   const quiet = process.argv.includes("--quiet");
 
   const committed: Graph | null = await readFile(join(outDir, "knowledge-graph.json"), "utf8")
     .then((s) => JSON.parse(s) as Graph).catch(() => null);
-  const fresh = await buildGraph(repoRoot, new Date().toISOString());
+  const fresh = await buildGraph(repoRoot, new Date().toISOString(), config);
   const delta = computeDelta(committed, fresh);
   const deltaLines = formatDelta(delta);
   await writeArtifacts(fresh, outDir, { delta, deltaLines });
   // sync writes the graph too, so it must stamp the pins alongside it — a graph whose lockfile
   // says it came from different inputs is a drift source of exactly the kind this file exists to
   // report (REQ-KG-GATE-01).
-  const pins = await stampSources(repoRoot, outDir);
+  const pins = await stampSources(repoRoot, outDir, config.repos);
   console.log(`kg sync: ${fresh.nodes.length} nodes, ${fresh.edges.length} edges, ${fresh.issues.length} issues — artifacts written`);
-  console.log(`kg sync: pinned backend@${pins.backend.slice(0, 9)} frontend@${pins.frontend.slice(0, 9)}`);
+  const at = Object.entries(pins).map(([name, sha]) => `${name}@${sha.slice(0, 9)}`).join(" ");
+  console.log(at ? `kg sync: pinned ${at}` : "kg sync: single-repo project — no sibling sources to pin");
 
   // Ratchet in REPORT mode: same math as check, but informational — never blocks.
   const baseline: Baseline = JSON.parse(await readFile(join(outDir, "knowledge-graph.baseline.json"), "utf8").catch(() => "{}"));

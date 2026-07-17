@@ -1,11 +1,6 @@
 import { basename } from "node:path";
-import { nsId } from "./repo";
+import { nsId, stripRepoPrefix, type Repos } from "./config";
 import type { GraphNode, ParseResult, TestKind } from "./types";
-
-/** repo-relative path without the `dojostack_frontend/` | `dojostack_backend/` prefix. */
-function relOf(path: string): string {
-  return path.replace(/\\/g, "/").replace(/^dojostack_(frontend|backend)\//, "");
-}
 
 function firstMatch(re: RegExp, s: string): string {
   const m = s.match(re);
@@ -81,11 +76,13 @@ export function unitKind(path: string): TestKind {
  * `test_*.py`) into a `test` node with `kind: unit-fe | unit-be`. Tag edges to
  * features are derived from the file path against the feature registry globs.
  */
-export function parseUnitTest(input: { path: string; content: string }): ParseResult {
+export function parseUnitTest(input: { path: string; content: string }, repos: Repos): ParseResult {
   const kind = unitKind(input.path);
   const py = kind === "unit-be";
   const node: GraphNode = {
-    id: nsId(input.path, relOf(input.path)),
+    // The bare id is the path relative to the test's OWN repo, so two repos can each hold a
+    // `src/index.test.ts` without colliding once `nsId` namespaces them.
+    id: nsId(input.path, stripRepoPrefix(input.path, repos), repos),
     type: "test",
     kind,
     title: basename(input.path.replace(/\\/g, "/")),

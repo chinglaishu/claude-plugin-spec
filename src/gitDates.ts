@@ -1,9 +1,9 @@
 // gitDates.ts — derive file created/updated dates from git history for file-backed knowledge nodes.
 //
-// The workspace root is the `main` git repo; `dojostack_backend/` and `dojostack_frontend/` are
-// SEPARATE nested repos. So dating is grouped by owning repo (repoOf) and each group is dated
-// against that repo's root, with the repo prefix stripped so git sees repo-relative pathspecs.
-// Results are remapped back to the original input paths.
+// A workspace's nested repos are SEPARATE git checkouts, so dating is grouped by owning repo (repoOf)
+// and each group is dated against that repo's own root, with the repo prefix stripped so git sees
+// repo-relative pathspecs. Results are remapped back to the original input paths. A single-repo
+// project is the degenerate case: one group, dated against the workspace root.
 //
 // Pathspecs are passed on argv (`git log ... -- <path...>`): the older stdin form
 // (`--pathspec-from-file=- --pathspec-file-nul`) is NOT supported by `git log` on git 2.32, where
@@ -14,13 +14,7 @@
 // tolerated per repo — that group simply contributes nothing and the build proceeds.
 import { spawn } from "node:child_process";
 import { join } from "node:path";
-import { repoOf } from "./repo";
-
-type Repo = "main" | "backend" | "frontend";
-
-/** How each repo maps to a subdirectory of the workspace root and to the path prefix it owns. */
-const REPO_SUBDIR: Record<Repo, string> = { main: "", backend: "dojostack_backend", frontend: "dojostack_frontend" };
-const REPO_PREFIX: Record<Repo, string> = { main: "", backend: "dojostack_backend/", frontend: "dojostack_frontend/" };
+import { repoOf, prefixOf, subdirOf, type Repos } from "./config";
 
 /** Repo-relative pathspecs per `git log` invocation. Bounds argv length on large repos (Windows). */
 const CHUNK_SIZE = 256;
@@ -116,19 +110,21 @@ async function defaultGitRunner(cwd: string, relPaths: string[]): Promise<string
 export async function docDates(
   repoRoot: string,
   paths: string[],
+  repos: Repos,
   runner: GitRunner = defaultGitRunner,
 ): Promise<Map<string, { created?: string; updated?: string }>> {
   const out = new Map<string, { created?: string; updated?: string }>();
 
-  const groups = new Map<Repo, string[]>();
+  const groups = new Map<string, string[]>();
   for (const p of paths) {
-    const repo = repoOf(p);
+    const repo = repoOf(p, repos);
     (groups.get(repo) ?? groups.set(repo, []).get(repo)!).push(p);
   }
 
   for (const [repo, groupPaths] of groups) {
-    const prefix = REPO_PREFIX[repo];
-    const cwd = REPO_SUBDIR[repo] ? join(repoRoot, REPO_SUBDIR[repo]) : repoRoot;
+    const prefix = prefixOf(repo, repos);
+    const subdir = subdirOf(repo, repos);
+    const cwd = subdir ? join(repoRoot, subdir) : repoRoot;
     const relPaths = groupPaths.map((p) => p.slice(prefix.length));
 
     let stdout: string | null;

@@ -1,7 +1,7 @@
 // src/recordRun.ts — auto-update the Knowledge & Test Graph from ANY Playwright run.
 //
-// Given a Playwright JSON report file it (a) records per-case results into
-// dojostack_frontend/e2e/kg-test-results.json (reusing parsePlaywrightJson + resultsFile's
+// Given a Playwright JSON report file it (a) records per-case results into the configured
+// <e2eDir>/kg-test-results.json (reusing parsePlaywrightJson + resultsFile's
 // merge/commit-stamp, exactly as syncResults does), (b) harvests each test's `screenshot: "on"`
 // attachment into e2e/.step-shots/<caseId>/<caseId>-result.png (EXACT per-test mapping from the
 // report attachments — never fuzzy dir-name matching), then (c) rebuilds the viewer artifacts, and
@@ -83,18 +83,23 @@ const isMain = (() => {
 
 if (isMain) {
   const { readFile, writeFile, mkdir, copyFile } = await import("node:fs/promises");
-  const { dirname, join } = await import("node:path");
-  const { fileURLToPath } = await import("node:url");
+  const { join } = await import("node:path");
   const { spawn } = await import("node:child_process");
   const { parsePlaywrightJson } = await import("./parsePlaywrightReport");
   const { mergeResults, normalizeResults } = await import("./resultsFile");
 
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const toolDir = join(__dirname, "..");
-  const repoRoot = process.env.KG_REPO_ROOT ?? join(toolDir, "..", "..");
-  const frontendDir = join(repoRoot, "dojostack_frontend");
-  const resultsPath = join(frontendDir, "e2e", "kg-test-results.json");
-  const shotsRoot = join(frontendDir, "e2e", ".step-shots");
+  const { loadConfig, e2ePath, repoOf, subdirOf } = await import("./config");
+  const { TOOL_DIR } = await import("./toolDir");
+
+  const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
+  const config = await loadConfig(repoRoot);
+  const outDir = join(repoRoot, config.artifactDir);
+  const resultsPath = join(repoRoot, e2ePath(config, "kg-test-results.json"));
+  const shotsRoot = join(repoRoot, e2ePath(config, ".step-shots"));
+  // Stamp the commit of the repo that OWNS the e2e suite — the code whose behaviour these results
+  // describe. Previously hardcoded to the frontend, which is the same repo in a workspace laid out
+  // like DojoStack's and the wrong one in general.
+  const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
 
   const reportArg = process.argv[2];
   const upload = process.argv.includes("--upload");
@@ -110,14 +115,19 @@ if (isMain) {
     process.exit(0);
   }
 
+  // Tool scripts are spawned from TOOL_DIR, so KG_REPO_ROOT must be passed explicitly: without it the
+  // child would resolve the project from its OWN cwd and measure the tool instead of the project.
   const run = (cmd: string, args: string[], cwd: string) =>
     new Promise<number>((resolve) => {
-      const p = spawn(cmd, args, { cwd, shell: true, env: { ...process.env, FORCE_COLOR: "0" }, stdio: "inherit" });
+      const p = spawn(cmd, args, {
+        cwd, shell: true, stdio: "inherit",
+        env: { ...process.env, FORCE_COLOR: "0", KG_REPO_ROOT: repoRoot },
+      });
       p.on("close", (code) => resolve(code ?? -1));
       p.on("error", () => resolve(-1));
     });
 
-  const graph = JSON.parse(await readFile(join(toolDir, "knowledge-graph.json"), "utf8")) as Graph;
+  const graph = JSON.parse(await readFile(join(outDir, "knowledge-graph.json"), "utf8")) as Graph;
   const refs = caseTitleMap(graph);
   const titles = new Map([...refs.entries()].map(([t, v]) => [t, v.caseId]));
 
@@ -125,7 +135,7 @@ if (isMain) {
   const parsed = parsePlaywrightJson(reportJson, titles);
   const now = new Date().toISOString();
   const commit = await new Promise<string>((resolve) => {
-    const p = spawn("git", ["rev-parse", "--short", "HEAD"], { cwd: frontendDir, shell: true });
+    const p = spawn("git", ["rev-parse", "--short", "HEAD"], { cwd: e2eRepoDir, shell: true });
     let o = ""; p.stdout?.on("data", (d) => (o += d)); p.on("close", () => resolve(o.trim() || "unknown"));
   });
   const incoming: ResultsFileV2 = {
@@ -156,12 +166,12 @@ if (isMain) {
 
   // (d) optional evidence upload (network/slow — opt in only).
   if (upload) {
-    const code = await run("npx", ["tsx", "src/shotsUpload.ts"], toolDir);
+    const code = await run("npx", ["tsx", "src/shotsUpload.ts"], TOOL_DIR);
     if (code !== 0) console.warn(`kg record:run — ⚠ evidence upload failed (exit ${code}); results + local shots still recorded`);
   }
 
   // (c) rebuild artifacts so the local viewer reflects this run immediately.
-  const buildCode = await run("npx", ["tsx", "src/sync.ts"], toolDir);
+  const buildCode = await run("npx", ["tsx", "src/sync.ts"], TOOL_DIR);
   if (buildCode !== 0) console.warn(`kg record:run — ⚠ artifact rebuild exited ${buildCode}; results + shots were still recorded`);
   process.exit(0);
 }

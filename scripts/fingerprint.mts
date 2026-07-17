@@ -8,22 +8,33 @@
 // changes. So each phase: capture from an UNMODIFIED tree, refactor without touching indexed content,
 // assert unchanged. Never compare against a hash written down on another day.
 //
-//   npx tsx scripts/fingerprint.mts /path/to/some/repo
+//   npx tsx scripts/fingerprint.mts <repo-root> [config.json]
 //
 // Normalization mirrors check.ts's normalizeForCompare exactly (blank generatedAt and per-node git
 // created/updated; keep reviewedAt) — so this measures precisely what graphsMatch() compares.
+//
+// The config defaults to the DojoStack fixture beside this script, because the target tree does not
+// carry a kg.config.json until phase 5 rewires it — and phase 2 must not touch the tree it measures.
 import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildGraph } from "../src/discover";
+import { parseConfig } from "../src/config";
 
 const root = process.argv[2] ?? process.env.KG_REPO_ROOT;
 if (!root) {
-  console.error("usage: npx tsx scripts/fingerprint.mts <repo-root>");
+  console.error("usage: npx tsx scripts/fingerprint.mts <repo-root> [config.json]");
   process.exit(2);
 }
 
+const here = dirname(fileURLToPath(import.meta.url));
+const configPath = process.argv[3] ?? join(here, "dojostack.kg.config.json");
+const config = parseConfig(await readFile(configPath, "utf8"));
+
 const FIXED = "2000-01-01T00:00:00.000Z"; // pin the clock so only content differs
 
-const g: any = await buildGraph(root, FIXED);
+const g: any = await buildGraph(root, FIXED, config);
 
 const normalized = {
   ...g,
@@ -39,6 +50,7 @@ const normalized = {
 
 const json = JSON.stringify(normalized);
 console.log(`root   : ${root}`);
+console.log(`config : ${configPath}`);
 console.log(`nodes  : ${g.nodes.length}`);
 console.log(`edges  : ${g.edges.length}`);
 console.log(`issues : ${g.issues.length}`);

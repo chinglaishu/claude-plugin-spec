@@ -1,9 +1,9 @@
 // sources.ts — the pin lockfile for the cross-repo graph build.
 //
-// WHY THIS EXISTS. The committed graph is a derived artifact of THREE repos (`main` plus the nested
-// `dojostack_backend`/`dojostack_frontend`), and it is irreducibly cross-repo — hundreds of edges
-// cross a repo boundary, so a partial checkout severs them and fabricates uncovered/broken-link
-// issues. But the three repos sit on independent branches and the graph pinned NO source commits, so
+// WHY THIS EXISTS. In a multi-repo workspace the committed graph is a derived artifact of EVERY repo,
+// and it is irreducibly cross-repo — hundreds of edges cross a repo boundary, so a partial checkout
+// severs them and fabricates uncovered/broken-link issues. But the repos sit on independent branches
+// and the graph pinned NO source commits, so
 // "does the committed graph match a rebuild from source?" had no answer any CI job could compute:
 // checking out the siblings at their default branch yields a different graph. That is why the gate
 // shipped as `npm run check || echo` (report-only) and why nothing has enforced it since.
@@ -19,15 +19,18 @@
 import { spawn } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { siblingsOf, subdirOf, type Repos } from "./config";
 
-/** The sibling commits a graph was built from. `main`'s own sha is the PR's — CI already has it. */
-export type Sources = { backend: string; frontend: string };
+/** The sibling commits a graph was built from, keyed by repo name. The ROOT repo's own sha is the
+ *  PR's — CI already has it — so it is never pinned here. A single-repo project pins nothing, which
+ *  is not a defect: it simply has no sibling that could drift. */
+export type Sources = Record<string, string>;
 
 /** One sibling's observed state: its HEAD, and whether CI could actually fetch that commit. */
 export type SourcePin = { sha: string; onOrigin: boolean };
 
 /** What `readSources` observed. FACTS, not a verdict — see the policy split on `readSources`. */
-export type SourcesInfo = Record<keyof Sources, SourcePin>;
+export type SourcesInfo = Record<string, SourcePin>;
 
 /**
  * Injectable git runner: run `git` in `cwd` with `args` and return stdout, or `null` if git failed /
@@ -36,11 +39,9 @@ export type SourcesInfo = Record<keyof Sources, SourcePin>;
  */
 export type GitCmd = (cwd: string, args: string[]) => Promise<string | null>;
 
-/** Sibling repo name -> its subdirectory of the workspace root. Iteration order is the report order. */
-const SIBLINGS: Record<keyof Sources, string> = {
-  backend: "dojostack_backend",
-  frontend: "dojostack_frontend",
-};
+/** The repos this lockfile pins: every non-root repo, in config order — which is the report order and
+ *  the serialized key order. Config owns this; sources.ts used to keep its own copy (§10.9). */
+const siblingNames = (repos: Repos): string[] => siblingsOf(repos).map((r) => r.name);
 
 const SHA_RE = /^[0-9a-f]{40}$/;
 
@@ -106,10 +107,10 @@ function runGit(cwd: string, args: string[]): Promise<string | null> {
  *
  * Throws ONLY when a sha cannot be read at all — that is a broken workspace, not a policy call.
  */
-export async function readSources(repoRoot: string, git: GitCmd = runGit): Promise<SourcesInfo> {
-  const out = {} as SourcesInfo;
-  for (const name of Object.keys(SIBLINGS) as (keyof Sources)[]) {
-    const cwd = join(repoRoot, SIBLINGS[name]);
+export async function readSources(repoRoot: string, repos: Repos, git: GitCmd = runGit): Promise<SourcesInfo> {
+  const out: SourcesInfo = {};
+  for (const name of siblingNames(repos)) {
+    const cwd = join(repoRoot, subdirOf(name, repos));
     const sha = parseSha(await git(cwd, ["rev-parse", "HEAD"]));
     if (!sha) throw new Error(`kg: cannot read ${name} HEAD in ${cwd} — is it a git checkout?`);
     out[name] = { sha, onOrigin: isOnOrigin(await git(cwd, ["branch", "-r", "--contains", sha])) };
@@ -119,7 +120,7 @@ export async function readSources(repoRoot: string, git: GitCmd = runGit): Promi
 
 /** PURE. Strip observations down to the shas the lockfile stores. */
 export function toSources(info: SourcesInfo): Sources {
-  return { backend: info.backend.sha, frontend: info.frontend.sha };
+  return Object.fromEntries(Object.entries(info).map(([name, pin]) => [name, pin.sha]));
 }
 
 /**
@@ -129,7 +130,7 @@ export function toSources(info: SourcesInfo): Sources {
  */
 export function unfetchablePins(info: SourcesInfo): string[] {
   const bad: string[] = [];
-  for (const name of Object.keys(SIBLINGS) as (keyof Sources)[])
+  for (const name of Object.keys(info))
     if (!info[name].onOrigin)
       bad.push(
         `${name} HEAD ${short(info[name].sha)} is not on origin, so CI could never fetch it — ` +
@@ -142,13 +143,13 @@ export function unfetchablePins(info: SourcesInfo): string[] {
 export const SOURCES_FILE = "knowledge-graph.sources.json";
 
 /**
- * PURE. Serialize the lockfile. Key order is fixed by SIBLINGS (not by the caller's object literal)
- * and the file ends in a newline, because it is committed: an unstable serialization would produce a
+ * PURE. Serialize the lockfile. Key order is fixed by CONFIG (not by the caller's object literal) and
+ * the file ends in a newline, because it is committed: an unstable serialization would produce a
  * phantom diff on every rebuild and teach people to ignore the file.
  */
-export function serializeSources(s: Sources): string {
-  const ordered = {} as Sources;
-  for (const name of Object.keys(SIBLINGS) as (keyof Sources)[]) ordered[name] = s[name];
+export function serializeSources(s: Sources, repos: Repos): string {
+  const ordered: Sources = {};
+  for (const name of siblingNames(repos)) ordered[name] = s[name];
   return JSON.stringify(ordered, null, 2) + "\n";
 }
 
@@ -158,7 +159,7 @@ export function serializeSources(s: Sources): string {
  * and pass. "Unusable" and "missing" collapse to the same answer on purpose — both mean the caller
  * must refuse rather than guess.
  */
-export function parsePinned(json: string): Sources | null {
+export function parsePinned(json: string, repos: Repos): Sources | null {
   let raw: unknown;
   try {
     raw = JSON.parse(json);
@@ -166,8 +167,8 @@ export function parsePinned(json: string): Sources | null {
     return null;
   }
   if (!raw || typeof raw !== "object") return null;
-  const out = {} as Sources;
-  for (const name of Object.keys(SIBLINGS) as (keyof Sources)[]) {
+  const out: Sources = {};
+  for (const name of siblingNames(repos)) {
     const sha = parseSha((raw as Record<string, unknown>)[name] as string | null);
     if (!sha) return null;
     out[name] = sha;
@@ -189,8 +190,16 @@ export function parsePinned(json: string): Sources | null {
  * A missing and a malformed lockfile give the same verdict on purpose: both mean "no pin I can
  * trust", and guessing at half a pin would let a rebuild be compared against a fiction and pass.
  */
-export function pinnedGateDecision(lockfileText: string | null, actual: Sources): { ok: boolean; messages: string[] } {
-  const pinned = lockfileText === null ? null : parsePinned(lockfileText);
+export function pinnedGateDecision(
+  lockfileText: string | null,
+  actual: Sources,
+  repos: Repos,
+): { ok: boolean; messages: string[] } {
+  // A single-repo project has no sibling that could drift, so there is nothing a lockfile could
+  // assert. Demanding one would fail the gate on a project that is correct by construction.
+  if (siblingNames(repos).length === 0)
+    return { ok: true, messages: ["kg: single-repo project — no sibling sources to pin ✓"] };
+  const pinned = lockfileText === null ? null : parsePinned(lockfileText, repos);
   if (!pinned)
     return {
       ok: false,
@@ -199,7 +208,7 @@ export function pinnedGateDecision(lockfileText: string | null, actual: Sources)
         `    Run \`npm run build\` and commit ${SOURCES_FILE} alongside the graph.`,
       ],
     };
-  const drift = sourcesMatch(pinned, actual);
+  const drift = sourcesMatch(pinned, actual, repos);
   if (drift.length)
     return {
       ok: false,
@@ -209,7 +218,8 @@ export function pinnedGateDecision(lockfileText: string | null, actual: Sources)
         `    Check out the pinned commits, or run \`npm run build\` to re-pin and commit the result.`,
       ],
     };
-  return { ok: true, messages: [`kg: sources match the pins ✓ (backend@${short(pinned.backend)} frontend@${short(pinned.frontend)})`] };
+  const at = siblingNames(repos).map((n) => `${n}@${short(pinned[n])}`).join(" ");
+  return { ok: true, messages: [`kg: sources match the pins ✓ (${at})`] };
 }
 
 /**
@@ -221,11 +231,11 @@ export function pinnedGateDecision(lockfileText: string | null, actual: Sources)
  * inputs produced them — which would be an unfortunate thing to build into the fix for drift.
  * Warns and proceeds: the block lives in `check` (REQ-KG-GATE-04), per §7's split.
  */
-export async function stampSources(repoRoot: string, outDir: string, git: GitCmd = runGit): Promise<Sources> {
-  const info = await readSources(repoRoot, git);
+export async function stampSources(repoRoot: string, outDir: string, repos: Repos, git: GitCmd = runGit): Promise<Sources> {
+  const info = await readSources(repoRoot, repos, git);
   for (const w of unfetchablePins(info)) console.warn(`kg: ⚠ ${w}`);
   const pins = toSources(info);
-  await writeFile(join(outDir, SOURCES_FILE), serializeSources(pins));
+  await writeFile(join(outDir, SOURCES_FILE), serializeSources(pins, repos));
   return pins;
 }
 
@@ -234,9 +244,9 @@ export async function stampSources(repoRoot: string, outDir: string, git: GitCmd
  * lockfile and a rebuild is reproducible. Reports EVERY drifted repo, not just the first — one
  * message listing both beats two sequential CI runs.
  */
-export function sourcesMatch(pinned: Sources, actual: Sources): string[] {
+export function sourcesMatch(pinned: Sources, actual: Sources, repos: Repos): string[] {
   const drift: string[] = [];
-  for (const name of Object.keys(SIBLINGS) as (keyof Sources)[])
+  for (const name of siblingNames(repos))
     if (pinned[name] !== actual[name])
       drift.push(`${name}: pinned ${short(pinned[name])}, checkout ${short(actual[name])}`);
   return drift;

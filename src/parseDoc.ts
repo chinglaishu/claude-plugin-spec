@@ -1,7 +1,7 @@
 import matter from "gray-matter";
 import { basename } from "node:path";
 import { slugify } from "./ids";
-import { nsId } from "./repo";
+import { nsId, type Repos } from "./config";
 import type { DocSection, GraphEdge, GraphNode, ParseResult } from "./types";
 
 const WIKILINK = /\[\[([^\]]+)\]\]/g;
@@ -71,14 +71,14 @@ function parseSections(body: string): DocSection[] {
   return sections;
 }
 
-export function parseDoc(input: { path: string; content: string }): ParseResult {
+export function parseDoc(input: { path: string; content: string }, repos: Repos): ParseResult {
   const { data, content } = matter(input.content);
   // `slug` wins over `id`: the backend corpus carries a catalog `id:` (SD-nn) plus a human `slug:`,
   // and every cross-doc `related:` reference targets the slug. Keying off `id:` left those docs
   // unreachable at `backend:SD-nn`. Docs whose `id:` is already slug-like carry no `slug:` and are
   // unaffected by the fallback.
   const bare = String(data.slug ?? data.id ?? slugify(basename(input.path).replace(/\.md$/i, "")));
-  const id = nsId(input.path, bare);
+  const id = nsId(input.path, bare, repos);
   const source = input.path;
 
   const node: GraphNode = {

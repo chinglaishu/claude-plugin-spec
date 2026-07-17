@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import { nsId } from "./repo";
+import { nsId, type Repos } from "./config";
 import type { GraphEdge, GraphNode, ParseResult, TestStep } from "./types";
 
 interface RawStep { action: string; expected: string; screenshot?: string }
@@ -12,7 +12,7 @@ interface RawCase {
   kind?: "flow" | "feature";
 }
 
-export function parseCases(input: { path: string; content: string }): ParseResult {
+export function parseCases(input: { path: string; content: string }, repos: Repos): ParseResult {
   const cases = (parse(input.content) ?? []) as RawCase[];
   const source = input.path;
   const nodes: GraphNode[] = [];
@@ -20,7 +20,7 @@ export function parseCases(input: { path: string; content: string }): ParseResul
 
   for (const c of cases) {
     if (!c?.id) continue;
-    const id = nsId(input.path, String(c.id));
+    const id = nsId(input.path, String(c.id), repos);
     const steps: TestStep[] | undefined = Array.isArray(c.steps) && c.steps.length
       ? c.steps.map((s) => ({
           action: String(s.action ?? ""),

@@ -1,0 +1,27 @@
+{
+  "_comment": [
+    "The migration oracle's fixture: DojoStack's topology, paths and runners expressed as config.",
+    "This is the file DojoStack itself will own as kg.config.json at its own root in phase 5 (the",
+    "rewire). It lives HERE, in scripts/, and not in src/, because the tool must know nothing about",
+    "DojoStack (REQ-0) while the harness that measures the port necessarily does.",
+    "Every value restates what src/ hardcoded before phase 2 — so the graph it produces must be",
+    "byte-identical. That is the whole point: if the fingerprint moves, the refactor is wrong."
+  ],
+  "repos": [
+    { "name": "main", "subdir": "" },
+    { "name": "backend", "subdir": "dojostack_backend" },
+    { "name": "frontend", "subdir": "dojostack_frontend" }
+  ],
+  "e2eDir": "dojostack_frontend/e2e",
+  "artifactDir": "tools/knowledge-graph",
+  "unitTestGlobs": [
+    "dojostack_frontend/src/**/*.test.ts",
+    "dojostack_frontend/src/**/*.test.tsx",
+    "dojostack_backend/tests/**/test_*.py",
+    "dojostack_backend/tests/**/*_test.py",
+    "tools/knowledge-graph/src/**/*.test.ts"
+  ],
+  "shotsDir": "../.dojostack-e2e-shots",
+  "evidenceRepo": "dojostack-app/dojostack_frontend",
+  "runners": { "backend": "backend", "frontend": "frontend" }
+}

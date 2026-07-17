@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import { nsId } from "./repo";
+import { nsId, type Repos } from "./config";
 import type { GraphEdge, GraphNode, ParseResult } from "./types";
 
 interface RawReq {
@@ -32,7 +32,7 @@ function autoReqId(fid: string, i: number): string {
  * slugs that prove it) is carried on the node as `provenBy` and resolved in the viewer.
  * Tag edges (test → feature) are DERIVED later from globs / case `features:` — not here.
  */
-export function parseFeatures(input: { path: string; content: string }): ParseResult {
+export function parseFeatures(input: { path: string; content: string }, repos: Repos): ParseResult {
   // A registry is a YAML list; tolerate an empty/null doc or a mis-authored
   // mapping/scalar root (which would otherwise throw on `for...of`) so one bad
   // file can't abort the whole graph build.
@@ -42,7 +42,7 @@ export function parseFeatures(input: { path: string; content: string }): ParseRe
   const edges: GraphEdge[] = [];
   for (const f of feats) {
     if (!f?.id) continue;
-    const fid = nsId(input.path, String(f.id));
+    const fid = nsId(input.path, String(f.id), repos);
     nodes.push({
       id: fid,
       type: "feature",

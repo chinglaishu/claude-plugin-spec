@@ -18,6 +18,8 @@ import { buildRunArgs } from "./runSchedule";
 import { parseCaseResult } from "./parsePlaywrightReport";
 import { runArtifactUrl } from "./serveArtifacts";
 import { readDecisions, applyDecision, serializeDecisions, decisionsFor, type DecisionStatus } from "./conflictDecisions";
+import { loadConfig, e2ePath, artifactPath, subdirOf, repoOf, stripRepoPrefix } from "./config";
+import { TOOL_DIR } from "./toolDir";
 import type { Graph, GraphNode } from "./types";
 
 // Under vitest this module is imported ONLY for its exported route handlers
@@ -26,14 +28,28 @@ import type { Graph, GraphNode } from "./types";
 // `kg serve` may already own both, and tests must never contend with it.
 const UNDER_TEST = process.env.VITEST !== undefined;
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const toolDir = join(__dirname, "..");
+const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
+const config = await loadConfig(repoRoot);
+// Where the PROJECT's artifacts live — told, not assumed. Before phase 2 this was `join(__dirname,
+// "..")`: the tool reading the graph out of its own package, which is only ever right when the tool
+// was copied in-tree. That assumption is the second coupling class (§10.9) and it surfaced as three
+// serve tests that could not even import this module.
+const outDir = join(repoRoot, config.artifactDir);
 // The canonical graph file every run path rewrites when it rebuilds — the source
 // of truth for both /api/graph (served fresh) and the /api/live watch trigger.
-const GRAPH_PATH = join(toolDir, "knowledge-graph.json");
-const repoRoot = process.env.KG_REPO_ROOT ?? join(toolDir, "..", "..");
-const frontendDir = join(repoRoot, "dojostack_frontend");
-const backendDir = join(repoRoot, "dojostack_backend");
+const GRAPH_PATH = join(outDir, "knowledge-graph.json");
+// Where each server runs. `null` (a project with no such server) leaves orchestration to skip it.
+const runnerDir = (name: string | null): string | null =>
+  name === null ? null : join(repoRoot, subdirOf(name, config.repos));
+const frontendDir = runnerDir(config.runners.frontend);
+const backendDir = runnerDir(config.runners.backend);
+// Playwright runs from the repo that OWNS the e2e suite — that repo's package.json holds the
+// Playwright dep and its config. This used to be `frontendDir`, which is the same directory in a
+// workspace shaped like DojoStack's and merely a coincidence in general: what a Playwright run needs
+// is the suite's own repo, not whichever repo happens to serve the UI.
+const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
+// The e2e dir as Playwright sees it — relative to ITS cwd, not the workspace.
+const e2eRel = stripRepoPrefix(config.e2eDir, config.repos);
 const FE_PORT = Number(process.env.E2E_FE_PORT ?? 4000);
 const BE_PORT = Number(process.env.E2E_BE_PORT ?? 9000);
 const FE_URL = `http://127.0.0.1:${FE_PORT}`;
@@ -47,12 +63,11 @@ const STEP_PAUSE_MS = process.env.KG_STEP_PAUSE ?? "1500";
 // intermittently flaky) self-heals instead of showing a red run. Tune/disable
 // with KG_RETRIES.
 const RUN_RETRIES = process.env.KG_RETRIES ?? "1";
-const SHOTS_DIR =
-  process.env.E2E_SHOTS_DIR ?? join(repoRoot, "..", ".dojostack-e2e-shots");
+const SHOTS_DIR = process.env.E2E_SHOTS_DIR ?? join(repoRoot, config.shotsDir);
 // Fallback shots root when nothing has been written to SHOTS_DIR yet (e.g. a
 // dev never set E2E_SHOTS_DIR and Playwright's own default landed shots under
-// the frontend repo instead). Contract 2 (§2): probe both roots.
-const SHOTS_DIR_FALLBACK = join(frontendDir, "e2e", ".step-shots");
+// the e2e suite instead). Contract 2 (§2): probe both roots.
+const SHOTS_DIR_FALLBACK = join(repoRoot, e2ePath(config, ".step-shots"));
 // Per-run failure-screenshot temp roots (Feature 2a). Each /api/run mints a fresh dir under the
 // OS temp so parallel headless batch runs (F1) never clobber each other's JSON report or shots.
 // Served read-only via /run-artifacts/<runId>/<file>; NEVER committed. runId -> dir map lets the
@@ -98,7 +113,7 @@ async function loadRunnable(): Promise<{
   playwrightTitles: Map<string, string>;
 }> {
   const graph = JSON.parse(
-    await readFile(join(toolDir, "knowledge-graph.json"), "utf8")
+    await readFile(GRAPH_PATH, "utf8")
   ) as Graph;
   const allowedSpecs = new Map<string, string>();
   const playwrightTitles = new Map<string, string>();
@@ -111,8 +126,14 @@ async function loadRunnable(): Promise<{
   return { allowedSpecs, playwrightTitles };
 }
 
-// Boot copy — used only for the health probe count and the startup log.
-const { allowedSpecs } = await loadRunnable();
+// Boot copy — the health-probe count and the startup log only; /api/run always reloads fresh.
+//
+// TOLERATES A MISSING GRAPH, deliberately. A project that has not run `kg build` yet has no graph,
+// which is a normal state and not a reason for the server to die on import with a raw ENOENT. This
+// read only ever appeared safe because it resolved to `join(__dirname, "..")` — the tool reading a
+// graph out of its own package, true solely for an in-tree copy (§10.9). Pointing it at the
+// project's configured artifact dir is the real fix; surviving its absence is the other half.
+const allowedSpecs = (await loadRunnable().catch(() => null))?.allowedSpecs ?? new Map<string, string>();
 
 function sanitizeSpec(spec: string, n: GraphNode): string {
   // Accept only bare `.spec.ts` filenames, no path separators — prevents traversal via spec field.
@@ -252,7 +273,9 @@ async function ensureServers(): Promise<void> {
     });
   };
 
-  if (!beUp) {
+  // A project that declares no such runner has nothing for us to start — that server is either
+  // absent by design (a frontend-only project) or already someone else's to run.
+  if (!beUp && backendDir) {
     const py = resolveBackendVenvPython(repoRoot, backendDir, process.platform, existsSync, join);
     const be = spawn(py, ["-m", "uvicorn", "main:app", "--reload", "--host", "127.0.0.1", "--port", String(BE_PORT)], {
       cwd: backendDir,
@@ -260,7 +283,7 @@ async function ensureServers(): Promise<void> {
     });
     managed.push(be); pipeLog(be, "backend"); wireFailFast(be, "backend");
   }
-  if (!feUp) {
+  if (!feUp && frontendDir) {
     const fe = spawnShim("npm", ["run", "dev", "--", "--port", String(FE_PORT)], {
       cwd: frontendDir,
       env: { ...process.env, NEXT_PUBLIC_API_URL: `${BE_URL}/api/v1/`, NEXT_PUBLIC_E2E_BYPASS_PROJECTION_SAVE_BLOCKER: "1" },
@@ -293,7 +316,8 @@ async function ensureServers(): Promise<void> {
 async function ensureBrowserServer(): Promise<void> {
   if (!weOwnTheLock) return; // another instance manages the persistent browser
   await new Promise<void>((resolve) => {
-    const p = spawnNpx(["tsx", "e2e/_helpers/browserServer.mts"], { cwd: frontendDir, env: process.env });
+    const helper = e2eRel ? `${e2eRel}/_helpers/browserServer.mts` : "_helpers/browserServer.mts";
+    const p = spawnNpx(["tsx", helper], { cwd: e2eRepoDir, env: process.env });
     browserProc = p;
     let done = false;
     const finish = () => { if (!done) { done = true; resolve(); } };
@@ -438,7 +462,7 @@ function notFound(res: NotFoundRes, cors: Record<string, string>): void {
   res.writeHead(404, cors).end("not found");
 }
 
-const FEATURES_DIR = join(frontendDir, "e2e", "features");
+const FEATURES_DIR = join(repoRoot, e2ePath(config, "features"));
 // Extensions the /src/ route may serve — source/spec/doc text formats only.
 const SRC_EXTENSIONS = new Set([".ts", ".tsx", ".py", ".md", ".yaml", ".yml", ".json", ".sql"]);
 
@@ -471,18 +495,24 @@ export async function serveRegistry(
   }
 }
 
-// GET /src/<repo-relative-path> — path is repo-relative from the WORKSPACE
-// layout the graph uses: `dojostack_frontend/...` / `dojostack_backend/...`
-// resolve inside those nested repos, anything else resolves inside the main
-// repo. Guards, in order: decode once; no backslashes; no empty / dot-prefixed
-// (`.env`, `.git`, `.`, `..`) / drive-letter (`:`) segments; extension
-// allowlist; isWithinRoot against the CHOSEN repo root. `roots` is injectable
-// for tests only.
+// GET /src/<workspace-relative-path> — the path is exactly what the graph stores,
+// i.e. relative to the WORKSPACE root, so a nested repo is just a leading subdir
+// and needs no special case. Guards, in order: decode once; no backslashes; no
+// empty / dot-prefixed (`.env`, `.git`, `.`, `..`) / drive-letter (`:`) segments;
+// extension allowlist; isWithinRoot against the workspace root. `root` is
+// injectable for tests only.
+//
+// This used to switch on `segments[0] === "dojostack_frontend"` and resolve inside
+// a per-repo root — the topology's fourth shadow copy (§10.9). It was always an
+// identity: a nested repo's root IS `join(repoRoot, subdir)`, so stripping the
+// subdir only to re-join it lands on the same absolute path. The narrower
+// isWithinRoot it implied was never load-bearing either — the dot-segment filter
+// above rejects `..` before any root is chosen.
 export async function serveSrc(
   pathname: string,
   res: import("node:http").ServerResponse,
   cors: Record<string, string>,
-  roots: { main: string; frontend: string; backend: string } = { main: repoRoot, frontend: frontendDir, backend: backendDir }
+  root: string = repoRoot
 ): Promise<void> {
   let rel: string;
   try {
@@ -501,14 +531,8 @@ export async function serveSrc(
   const dot = file.lastIndexOf(".");
   const ext = dot > 0 ? file.slice(dot).toLowerCase() : "";
   if (!SRC_EXTENSIONS.has(ext)) return notFound(res, cors);
-  let root: string;
-  let sub: string[];
-  if (segments[0] === "dojostack_frontend") { root = roots.frontend; sub = segments.slice(1); }
-  else if (segments[0] === "dojostack_backend") { root = roots.backend; sub = segments.slice(1); }
-  else { root = roots.main; sub = segments; }
-  if (sub.length === 0) return notFound(res, cors);
   const nroot = normalize(root);
-  const abs = normalize(join(nroot, ...sub));
+  const abs = normalize(join(nroot, ...segments));
   if (!isWithinRoot(nroot, abs) || abs === nroot) return notFound(res, cors);
   try {
     const content = await readFile(abs, "utf8");
@@ -643,7 +667,7 @@ const server = createServer(async (req, res) => {
     send("start", {
       caseId,
       spec,
-      cwd: frontendDir,
+      cwd: e2eRepoDir,
       playwrightTitle: title ?? null,
       stepPauseMs: Number(STEP_PAUSE_MS),
       shotsDir: SHOTS_DIR,
@@ -700,7 +724,7 @@ const server = createServer(async (req, res) => {
     // below redirects that report to this run's own temp file.
     const runArgs = [...runArgsBase, "--reporter=json"];
     const proc = spawnNpx(runArgs, {
-      cwd: frontendDir,
+      cwd: e2eRepoDir,
       env: {
         ...process.env,
         FORCE_COLOR: "0",
@@ -782,7 +806,7 @@ const server = createServer(async (req, res) => {
 
     // Resolve the feature from the current graph — the path comes from OUR generated
     // graph, never the client, so there is no path-traversal surface.
-    const graph = JSON.parse(await readFile(join(toolDir, "knowledge-graph.json"), "utf8")) as Graph;
+    const graph = JSON.parse(await readFile(GRAPH_PATH, "utf8")) as Graph;
     const node = graph.nodes.find((n) => n.id === featureId && n.type === "feature");
     if (!node || !node.path) return res.writeHead(404, cors).end("unknown feature");
     const abs = normalize(join(repoRoot, node.path));
@@ -799,7 +823,7 @@ const server = createServer(async (req, res) => {
 
     // Rebuild via the canonical build so json/viewer/report/baseline stay consistent
     // (and the freshness gate keeps passing). Respond only once the rebuild exits 0.
-    const build = spawnNpx(["tsx", "src/build.ts"], { cwd: toolDir, env: { ...process.env, FORCE_COLOR: "0" } });
+    const build = spawnNpx(["tsx", "src/build.ts"], { cwd: TOOL_DIR, env: { ...process.env, FORCE_COLOR: "0", KG_REPO_ROOT: repoRoot } });
     let buildErr = "";
     build.stderr?.on("data", (d: Buffer) => (buildErr += d.toString()));
     build.on("close", (code) => {
@@ -813,9 +837,9 @@ const server = createServer(async (req, res) => {
   // Conflict triage decisions (dismiss / resolve). A runtime overlay in conflicts/decisions.json —
   // NOT folded into the deterministic graph (so `check` stays byte-honest), so no rebuild is needed.
   // Serve-mode only; the static viewer.html shows findings read-only without a server.
-  const decisionsPath = join(toolDir, "conflicts", "decisions.json");
+  const decisionsPath = join(repoRoot, artifactPath(config, "conflicts", "decisions.json"));
   if (req.method === "GET" && url.pathname === "/api/conflict-decisions") {
-    const graph = JSON.parse(await readFile(join(toolDir, "knowledge-graph.json"), "utf8").catch(() => "{}")) as Graph;
+    const graph = JSON.parse(await readFile(GRAPH_PATH, "utf8").catch(() => "{}")) as Graph;
     const decisions = readDecisions(await readFile(decisionsPath, "utf8").catch(() => null));
     // Effective status per CURRENT finding (open by default; decisions for gone findings pruned).
     return res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store", ...cors })
@@ -846,9 +870,9 @@ const server = createServer(async (req, res) => {
 
   // Static files: viewer.html + knowledge-graph.json (and viewer.html at / for convenience).
   const rawPath = url.pathname === "/" ? "/viewer.html" : url.pathname;
-  // Normalize + reject any path that escapes toolDir.
-  const abs = normalize(join(toolDir, rawPath));
-  if (!isWithinRoot(toolDir, abs)) return res.writeHead(400).end("bad path");
+  // Normalize + reject any path that escapes the artifact dir.
+  const abs = normalize(join(outDir, rawPath));
+  if (!isWithinRoot(outDir, abs)) return res.writeHead(400).end("bad path");
   try {
     const content = await readFile(abs);
     const type = abs.endsWith(".json") ? "application/json" : abs.endsWith(".html") ? "text/html; charset=utf-8" : "application/octet-stream";

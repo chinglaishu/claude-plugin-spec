@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import { nsId } from "./repo";
+import { nsId, type Repos } from "./config";
 import type { CacheKind, GraphEdge, GraphNode, ParseResult } from "./types";
 
 interface RawCache {
@@ -23,14 +23,14 @@ const STATUSES = new Set(["covered", "stale", "ttl", "untested"]);
  * real invalidation sites — the graph derives the surface, so it can't drift from the code.
  * Tolerates a non-list root so one malformed file can't abort the whole build.
  */
-export function parseCache(input: { path: string; content: string }): ParseResult {
+export function parseCache(input: { path: string; content: string }, repos: Repos): ParseResult {
   const parsed = parse(input.content);
   const entries: RawCache[] = Array.isArray(parsed) ? parsed : [];
   const nodes: GraphNode[] = [];
   const edges: GraphEdge[] = [];
   for (const c of entries) {
     if (!c?.id) continue;
-    const id = nsId(input.path, String(c.id));
+    const id = nsId(input.path, String(c.id), repos);
     const kind = c.kind && KINDS.has(String(c.kind) as CacheKind) ? (String(c.kind) as CacheKind) : undefined;
     nodes.push({
       id,

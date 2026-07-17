@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { renderViewer } from "./viewer";
 import { renderDigest } from "./digest";
+import { TEMPLATE_PATH } from "./toolDir";
 import type { Delta } from "./delta";
 import type { Graph } from "./types";
 
@@ -24,7 +25,7 @@ export function report(g: Graph, deltaLines?: string[]): string {
 export async function writeArtifacts(graph: Graph, outDir: string, opts: { delta?: Delta | null; deltaLines?: string[] } = {}): Promise<void> {
   await writeFile(join(outDir, "knowledge-graph.json"), JSON.stringify(graph, null, 2) + "\n");
   await writeFile(join(outDir, "report.md"), report(graph, opts.deltaLines));
-  const template = await readFile(join(outDir, "viewer.template.html"), "utf8");
+  const template = await readFile(TEMPLATE_PATH, "utf8");
   await writeFile(join(outDir, "viewer.html"), renderViewer(graph, template, opts.delta));
   const digestDir = join(outDir, "digest");
   await mkdir(digestDir, { recursive: true });
