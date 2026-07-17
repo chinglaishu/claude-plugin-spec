@@ -193,8 +193,35 @@ prompt was identified as the gold, design drift was cut, greenfield was reframed
 kind, and flows were recognised as the CEO's language for UI. Recorded rather than silently replaced —
 per the rule that docs get corrected in place, with the reason attached.
 
-## 11. Open questions
+## 11. Phases
 
+| # | What | Done when |
+|---|---|---|
+| **1** | Port `src`/tests/PRD/viewer; npm deps | fingerprint vs `dojostack_main` matches |
+| **2** | Genericize onto `kg.config.json` (topology → paths → runners) | REQ-0 green; fingerprint still matches |
+| **3** | Self-host: own config, own graph, own gate | its `REQ-KG-*` live in its own graph (= the single-repo proof, §8) |
+| **4** | The **staff prompt** — skill + `UserPromptSubmit` hook; plugin manifest + marketplace | installable, and staff consults the SSoT before it writes a line |
+| **5** | Rewire DojoStack: delete `tools/knowledge-graph/`, consume the npm dep | DojoStack's graph is purely DojoStack |
+
+DojoStack keeps its **artifacts** (graph, viewer, baseline, lockfile), its **config** and its **workflow**
+— those are its data, not the tool. `tools/knowledge-graph/` keeps working untouched until phase 5, so
+nothing breaks while this is built.
+
+**Phase 4 is where the value lands** (§5): the platform is inert until staff is made to consult it. If
+time runs out, ship 1–4 and leave DojoStack on its in-tree copy — the tool still works for the next
+project. Phase 5 is hygiene, not value.
+
+## 12. Open questions
+
+0. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
+   "byte-identical to DojoStack's copy", which is exactly right as a *migration* acceptance criterion and
+   unshippable as a permanent one: the test needs a private CRE codebase, so it cannot run in this repo's
+   CI and cannot survive public distribution (§12.4). A generic tool whose requirement-zero cannot be
+   verified by anyone who installs it is not generic. Likely answer: REQ-0 is a **migration requirement**
+   that retires once green, and its permanent successor is a **committed fixture repo** (a tiny synthetic
+   project, one-repo and multi-repo variants) whose graph is asserted — which is also the cheapest honest
+   proof that "reusable" is real (§8). Resolve during phase 2, before REQ-0 goes green and the question
+   stops being asked.
 1. **Will `governs:` be adopted?** Nine docs of 272 declare it today. Decision 10.3 is dead without it —
    detection would report "everything is ungoverned", which is true, useless, and instantly ignored. **The
    real question is whether declaring which code a spec governs is a habit worth keeping.** Resolve before
