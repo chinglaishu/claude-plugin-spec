@@ -169,7 +169,7 @@ Locked decision: this section both cites a requirement and states a locked decis
 describe("parseDoc — requirement provenBy (covers:)", () => {
   it("carries requirements[].covers as provenBy on the requirement node", () => {
     const md = `---
-id: kg-tool
+id: claude-plugin-spec
 title: Knowledge Graph Tool
 requirements:
   - id: REQ-KG-01
@@ -184,7 +184,7 @@ body`;
 
   it("defaults provenBy to an empty array when covers is omitted (matches parseFeatures' default)", () => {
     const md = `---
-id: kg-tool
+id: claude-plugin-spec
 requirements:
   - id: REQ-KG-02
     text: Some requirement with no covers list.

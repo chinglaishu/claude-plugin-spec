@@ -1,4 +1,4 @@
-# kg-tool — Founding Design
+# claude-plugin-spec — Founding Design
 
 - **Date:** 2026-07-17 (rewritten same day — see §10)
 - **Status:** Founding design note. The project's first artifact and its north star.
@@ -216,7 +216,7 @@ The port and the genericization are guarded **separately**: port as-is → hash 
 (proving only that the *move* was clean, which is all it needs to prove); then genericize → REQ-0 goes
 green **and** the hash still matches.
 
-**Self-hosting is the single-repo proof.** `kg-tool` is a one-repo project; DojoStack is the three-repo
+**Self-hosting is the single-repo proof.** `claude-plugin-spec` is a one-repo project; DojoStack is the three-repo
 case. The tool cannot govern itself while it still believes the world contains `dojostack_backend/`. The
 dogfood is the test, not a gesture.
 
@@ -381,8 +381,25 @@ project. Phase 5 is hygiene, not value.
 3. **Build flow-approval (§6)?** The most differentiated idea here and entirely undesigned. Overlaps
    Percy/Chromatic on approve-the-diff; the novelty is that approval **ratifies a requirement** rather
    than blessing a screenshot.
-4. **The name.** `kg-tool` is a working title and becomes the plugin id, the npm package and the
-   marketplace entry. Cheap now, painful after anyone installs it.
+4. **The name — `claude-plugin-spec` is an explicit placeholder.** *(Set 2026-07-17 so the repo could
+   exist; the CEO will rename later. It replaced `claude-mcp-debugger`, which was worse: the tool is
+   neither a debugger nor an MCP thing — MCP Apps is one delivery surface for one half of it.)*
+
+   Two known problems, recorded so the rename does not get forgotten:
+   - **It misparses.** `claude-plugin-spec` reads most naturally as *"the specification **for** Claude
+     plugins"* — a different product. Harmless while private and single-reader; misleading to the first
+     outsider.
+   - **`claude-` is Anthropic's trademark.** Harmless on a private repo; a real problem in a marketplace
+     or on npm.
+
+   **The rename stays cheap only while the repo is private, unpushed anywhere public, and unpublished.**
+   That is the deadline — once it is a plugin id someone typed or a package someone installed, it is
+   permanent. Shortlists already rejected, kept so the next attempt does not restart: `plumb` / `trueup` /
+   `keel` / `specanchor` (descriptive); `cairn` / `fathom` / `quoin` / `kestrel` / `vellum`; and at 4–5
+   letters **`canon`** (the code already calls the winning side the *canonical position* —
+   `fixPlanFor(finding, canonicalPositionId)`), `datum` (the fixed reference every measurement is taken
+   from), `writ`, `moor`. Every short English word is taken on npm, but a scope (`@fumia/…`) frees all of
+   them — **npm is not a constraint on the choice.**
 5. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
    examples need scrubbing.
 6. **Config file name/location** in a consuming project.

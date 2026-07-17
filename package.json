@@ -1,5 +1,5 @@
 {
-  "name": "knowledge-graph",
+  "name": "claude-plugin-spec",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,17 @@
     "serve:watch": "tsx watch src/serve.ts",
     "shots:upload": "tsx src/shotsUpload.ts"
   },
-  "dependencies": { "fast-glob": "^3.3.2", "gray-matter": "^4.0.3", "micromatch": "^4.0.8", "yaml": "^2.5.0" },
-  "devDependencies": { "tsx": "^4.19.0", "vitest": "^2.1.0", "typescript": "^5.6.0", "@types/node": "^22.0.0", "@types/micromatch": "^4.0.9" }
+  "dependencies": {
+    "fast-glob": "^3.3.2",
+    "gray-matter": "^4.0.3",
+    "micromatch": "^4.0.8",
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "vitest": "^2.1.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0",
+    "@types/micromatch": "^4.0.9"
+  }
 }

@@ -38,7 +38,7 @@ export const UNIT_GLOBS = [
   "dojostack_backend/tests/**/test_*.py", "dojostack_backend/tests/**/*_test.py",
   // The KG tool's own Vitest files — registered so the tool's PRD (KNOWLEDGE_GRAPH_TOOL.md) can
   // honestly `provenBy` real test-node slugs instead of fabricated edges (see the "kg" feature
-  // registry entry in dojostack_frontend/e2e/features/kg-tool.features.yaml, whose `paths` this
+  // registry entry in dojostack_frontend/e2e/features/claude-plugin-spec.features.yaml, whose `paths` this
   // glob feeds into via matchingFeatures()).
   "tools/knowledge-graph/src/**/*.test.ts",
 ];
