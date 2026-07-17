@@ -9,16 +9,24 @@ import { parsePlaywrightJson } from "./parsePlaywrightReport";
 import { mergeResults, normalizeResults, type ResultsFileV2 } from "./resultsFile";
 import { applyResults } from "./parseResults";
 import { renderViewer } from "./viewer";
+import { repoDirNames } from "./config";
+import { CONFIG } from "./topology.fixture";
 
 const NOW = "2026-07-06T09:00:00.000Z";
 const COMMIT = "9f8e7d6";
+
+// The workspace this fabricated report was supposedly produced in. Derived through the real
+// repoDirNames() rather than hand-listed, because that is exactly what syncResults.ts passes — and an
+// integration pin that skips the derivation stops pinning the composition it claims to.
+const WORKSPACE = "/Users/ching/workspace/ws_root";
+const REPO_DIRS = repoDirNames(CONFIG, WORKSPACE);
 
 const playwrightReport = JSON.stringify({
   suites: [{ title: "underwrite.spec.ts", specs: [
     {
       title: "UW-8 reverse yield", ok: false,
       tests: [{ results: [
-        { status: "failed", errors: [{ message: "\u001b[31mError: expect(locator).toBeVisible() failed\u001b[39m\n\nLocator: getByTestId('npi-yield-trend')\n    at C:\\Users\\ching\\workspace\\dojostack\\dojostack_frontend\\e2e\\underwrite.spec.ts:88:3" }] },
+        { status: "failed", errors: [{ message: "\u001b[31mError: expect(locator).toBeVisible() failed\u001b[39m\n\nLocator: getByTestId('npi-yield-trend')\n    at C:\\Users\\ching\\workspace\\ws_root\\svc_frontend\\e2e\\underwrite.spec.ts:88:3" }] },
         { status: "failed", errors: [{ message: "retry error — must not win" }] },
       ] }],
     },
@@ -34,7 +42,7 @@ const existingFile = JSON.stringify({
 
 describe("last-run pipeline (fabricated report → node → viewer data)", () => {
   const titles = new Map([["UW-8 reverse yield", "uw-8"], ["UW-9 auto landing", "uw-9"]]);
-  const parsed = parsePlaywrightJson(playwrightReport, titles);
+  const parsed = parsePlaywrightJson(playwrightReport, titles, REPO_DIRS);
   // Same shape syncResults.ts builds: per-entry `at` + per-entry `commit`.
   const incoming: ResultsFileV2 = {
     generatedAt: NOW, commit: COMMIT,

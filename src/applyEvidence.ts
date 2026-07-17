@@ -1,6 +1,6 @@
 import type { Graph } from "./types";
 
-/** Contract 3 shape (dojostack_frontend/e2e/kg-evidence-index.json). */
+/** Contract 3 shape (<e2eDir>/kg-evidence-index.json). */
 export interface EvidenceIndex {
   branch: string;
   updatedAt: string;

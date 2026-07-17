@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPOS } from "./topology.fixture";
 import { parseCases } from "./parseCases";
 
 const yaml = `
@@ -25,7 +26,7 @@ const yaml = `
 `;
 
 describe("parseCases", () => {
-  const { nodes, edges } = parseCases({ path: "dojostack_frontend/e2e/cases/house-view.cases.yaml", content: yaml });
+  const { nodes, edges } = parseCases({ path: "svc_frontend/e2e/cases/house-view.cases.yaml", content: yaml }, REPOS);
 
   it("creates a test node per case, tagged kind e2e", () => {
     expect(nodes.map((n) => n.id).sort()).toEqual(["frontend:HV-1", "frontend:HV-2"]);
@@ -34,10 +35,10 @@ describe("parseCases", () => {
     expect(nodes.find((n) => n.id === "frontend:HV-1")?.spec).toBe("house-view-cascade.spec.ts");
   });
   it("emits verifies/covers/exercises + explicit feature tags edges", () => {
-    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "house-view-freeze", type: "verifies", source: "dojostack_frontend/e2e/cases/house-view.cases.yaml" });
-    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "REQ-HV-FREEZE-01", type: "covers", source: "dojostack_frontend/e2e/cases/house-view.cases.yaml" });
-    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "services/house_view/", type: "exercises", source: "dojostack_frontend/e2e/cases/house-view.cases.yaml" });
-    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "hv.publish", type: "tags", source: "dojostack_frontend/e2e/cases/house-view.cases.yaml" });
+    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "house-view-freeze", type: "verifies", source: "svc_frontend/e2e/cases/house-view.cases.yaml" });
+    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "REQ-HV-FREEZE-01", type: "covers", source: "svc_frontend/e2e/cases/house-view.cases.yaml" });
+    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "services/house_view/", type: "exercises", source: "svc_frontend/e2e/cases/house-view.cases.yaml" });
+    expect(edges).toContainEqual({ from: "frontend:HV-1", to: "hv.publish", type: "tags", source: "svc_frontend/e2e/cases/house-view.cases.yaml" });
   });
   it("parses steps (action/expected/optional screenshot) when present, undefined otherwise", () => {
     const hv1 = nodes.find((n) => n.id === "frontend:HV-1")!;

@@ -4,9 +4,9 @@ import { rawUrlToContentsApiUrl, base64ToDataUrl } from "./evidenceUrl";
 describe("rawUrlToContentsApiUrl", () => {
   it("derives the GitHub Contents API URL from a raw.githubusercontent.com URL", () => {
     const raw =
-      "https://raw.githubusercontent.com/dojostack-app/dojostack_frontend/e2e-evidence/kg-cases/add-4/a8193d04/01-add4-1-wizard.png";
+      "https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-4/a8193d04/01-add4-1-wizard.png";
     expect(rawUrlToContentsApiUrl(raw)).toBe(
-      "https://api.github.com/repos/dojostack-app/dojostack_frontend/contents/kg-cases/add-4/a8193d04/01-add4-1-wizard.png?ref=e2e-evidence",
+      "https://api.github.com/repos/acme-org/svc_frontend/contents/kg-cases/add-4/a8193d04/01-add4-1-wizard.png?ref=e2e-evidence",
     );
   });
 
@@ -20,7 +20,7 @@ describe("rawUrlToContentsApiUrl", () => {
 
   it("returns the URL unchanged (passthrough) when already a Contents API URL", () => {
     const api =
-      "https://api.github.com/repos/dojostack-app/dojostack_frontend/contents/kg-cases/add-4/x.png?ref=e2e-evidence";
+      "https://api.github.com/repos/acme-org/svc_frontend/contents/kg-cases/add-4/x.png?ref=e2e-evidence";
     expect(rawUrlToContentsApiUrl(api)).toBe(api);
   });
 

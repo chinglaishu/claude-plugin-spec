@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPOS } from "./topology.fixture";
 import matter from "gray-matter";
 import { parseDoc } from "./parseDoc";
 
@@ -16,43 +17,43 @@ requirements:
 Body links to [[live-freshness-and-freeze]] here.`;
 
 describe("parseDoc", () => {
-  const { nodes, edges } = parseDoc({ path: "dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md", content: md });
+  const { nodes, edges } = parseDoc({ path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md", content: md }, REPOS);
 
   it("creates a doc node with frontmatter", () => {
     const doc = nodes.find((n) => n.type === "doc")!;
     expect(doc.id).toBe("backend:house-view-freeze");
     expect(doc.lens).toBe("state-machine");
-    expect(doc.path).toBe("dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md");
+    expect(doc.path).toBe("svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md");
   });
   it("creates a requirement node + specifies edge", () => {
     expect(nodes.find((n) => n.id === "REQ-HV-FREEZE-01")?.type).toBe("requirement");
-    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "REQ-HV-FREEZE-01", type: "specifies", source: "dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
+    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "REQ-HV-FREEZE-01", type: "specifies", source: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
   });
   it("emits references from related and [[wikilinks]]", () => {
     const refs = edges.filter((e) => e.type === "references").map((e) => e.to).sort();
     expect(refs).toEqual(["assumption-hierarchy-ux", "live-freshness-and-freeze"]);
   });
   it("emits governs edge", () => {
-    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "services/house_view/", type: "governs", source: "dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
+    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "services/house_view/", type: "governs", source: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
   });
   it("inlines the markdown body (post-frontmatter) on the doc node", () => {
     const doc = nodes.find((n) => n.type === "doc")!;
     expect(doc.body).toBe("Body links to [[live-freshness-and-freeze]] here.");
   });
   it("leaves body undefined when the doc has only frontmatter (no body)", () => {
-    const r = parseDoc({ path: "x/y.md", content: "---\nid: y\n---\n" });
+    const r = parseDoc({ path: "x/y.md", content: "---\nid: y\n---\n" }, REPOS);
     expect(r.nodes[0].body).toBeUndefined();
   });
   it("defaults id to slug(filename) when omitted", () => {
-    const r = parseDoc({ path: "x/My Doc.md", content: "no frontmatter" });
+    const r = parseDoc({ path: "x/My Doc.md", content: "no frontmatter" }, REPOS);
     expect(r.nodes[0].id).toBe("main:my-doc");
   });
 
   it("namespaces the doc id by repo but leaves reference targets bare", () => {
     const r = parseDoc({
-      path: "dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md",
+      path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md",
       content: "---\nid: house-view-freeze\nrelated: [assumption-hierarchy-ux]\n---\nbody",
-    });
+    }, REPOS);
     expect(r.nodes[0].id).toBe("backend:house-view-freeze");
     const ref = r.edges.find((e) => e.type === "references");
     expect(ref).toMatchObject({ from: "backend:house-view-freeze", to: "assumption-hierarchy-ux" });
@@ -65,17 +66,17 @@ describe("parseDoc", () => {
   // reported as broken-link "target 'house-view-freeze' is not a node".
   it("prefers the frontmatter slug over a catalog id, so slug references resolve", () => {
     const r = parseDoc({
-      path: "dojostack_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE_AND_VERSION_RESOLUTION.md",
+      path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE_AND_VERSION_RESOLUTION.md",
       content: "---\nid: SD-56\nslug: house-view-freeze\ntitle: House View Freeze\n---\nbody",
-    });
+    }, REPOS);
     expect(r.nodes[0].id).toBe("backend:house-view-freeze");
   });
 
   it("still falls back to the catalog id when no slug is declared", () => {
     const r = parseDoc({
-      path: "dojostack_backend/.github/system-design/00_platform/NO_SLUG.md",
+      path: "svc_backend/.github/system-design/00_platform/NO_SLUG.md",
       content: "---\nid: SD-99\ntitle: No Slug\n---\nbody",
-    });
+    }, REPOS);
     expect(r.nodes[0].id).toBe("backend:SD-99");
   });
 });
@@ -109,7 +110,7 @@ DECISION: the debounce window is 400ms, locked after the 2026-06 review.
 
 Locked decision: this section both cites a requirement and states a locked decision — decision wins per heuristic precedence (decision > requirement > open-question > knowledge) since a section that locks a decision about a requirement is documenting the decision, not defining it.
 `;
-  const { nodes } = parseDoc({ path: "dojostack_backend/.github/system-design/40_financial_engine/UNDERWRITING_LIVE_WHAT_IF.md", content: md });
+  const { nodes } = parseDoc({ path: "svc_backend/.github/system-design/40_financial_engine/UNDERWRITING_LIVE_WHAT_IF.md", content: md }, REPOS);
   const doc = nodes.find((n) => n.type === "doc")!;
 
   it("emits one section per H2/H3 heading with a GitHub-style slug anchor", () => {
@@ -148,7 +149,7 @@ Locked decision: this section both cites a requirement and states a locked decis
   });
 
   it("omits sections when the doc body has no H2/H3 headings", () => {
-    const r = parseDoc({ path: "x/y.md", content: "---\nid: y\n---\nJust a paragraph, no headings." });
+    const r = parseDoc({ path: "x/y.md", content: "---\nid: y\n---\nJust a paragraph, no headings." }, REPOS);
     expect(r.nodes[0].sections).toBeUndefined();
   });
 
@@ -156,7 +157,7 @@ Locked decision: this section both cites a requirement and states a locked decis
     const r = parseDoc({
       path: "x/y.md",
       content: "---\nid: y\n---\n## Hello, World! (v2)\nbody\n## Already-hyphenated_and_underscored\nbody",
-    });
+    }, REPOS);
     expect(r.nodes[0].sections?.map((s) => s.anchor)).toEqual(["hello-world-v2", "already-hyphenated_and_underscored"]);
   });
 });
@@ -177,7 +178,7 @@ requirements:
     covers: [tools/knowledge-graph/src/check.test.ts]
 ---
 body`;
-    const { nodes } = parseDoc({ path: "dojostack_main/.github/system-design/KNOWLEDGE_GRAPH_TOOL.md", content: md });
+    const { nodes } = parseDoc({ path: "svc_main/.github/system-design/KNOWLEDGE_GRAPH_TOOL.md", content: md }, REPOS);
     const req = nodes.find((n) => n.id === "REQ-KG-01")!;
     expect(req.provenBy).toEqual(["tools/knowledge-graph/src/check.test.ts"]);
   });
@@ -190,7 +191,7 @@ requirements:
     text: Some requirement with no covers list.
 ---
 body`;
-    const { nodes } = parseDoc({ path: "x/y.md", content: md });
+    const { nodes } = parseDoc({ path: "x/y.md", content: md }, REPOS);
     expect(nodes.find((n) => n.id === "REQ-KG-02")?.provenBy).toEqual([]);
   });
 });
@@ -206,7 +207,7 @@ id: y
 last_reviewed: "2026-07-01"
 ---
 body`;
-    const { nodes } = parseDoc({ path: "x/y.md", content: md });
+    const { nodes } = parseDoc({ path: "x/y.md", content: md }, REPOS);
     expect(nodes[0].reviewedAt).toBe("2026-07-01");
   });
 
@@ -216,7 +217,7 @@ id: y
 last_reviewed: "2026-07-01T12:34:56Z"
 ---
 body`;
-    const { nodes } = parseDoc({ path: "x/y.md", content: md });
+    const { nodes } = parseDoc({ path: "x/y.md", content: md }, REPOS);
     expect(nodes[0].reviewedAt).toBe("2026-07-01");
   });
 
@@ -229,7 +230,7 @@ body`;
     const { data } = matter(md);
     // Guard the premise: the YAML engine really did hand us a Date, not a string.
     expect(data.last_reviewed instanceof Date).toBe(true);
-    const { nodes } = parseDoc({ path: "x/y.md", content: md });
+    const { nodes } = parseDoc({ path: "x/y.md", content: md }, REPOS);
     expect(nodes[0].reviewedAt).toBe("2026-07-01");
   });
 
@@ -239,7 +240,7 @@ id: y
 title: No review date
 ---
 body`;
-    const { nodes } = parseDoc({ path: "x/y.md", content: md });
+    const { nodes } = parseDoc({ path: "x/y.md", content: md }, REPOS);
     expect(nodes[0].reviewedAt).toBeUndefined();
   });
 });

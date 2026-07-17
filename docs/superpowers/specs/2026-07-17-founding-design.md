@@ -198,8 +198,17 @@ Two things this reframes:
 > the one DojoStack's in-tree copy produces — knowing nothing about DojoStack.*
 
 Simultaneously the port's acceptance criterion, the proof genericization worked, and the first honest
-test that "reusable" is real rather than aspirational. **It fails today** — the topology is hardcoded in
-twelve files — and goes green exactly when config lands.
+test that "reusable" is real rather than aspirational. ~~It fails today — the topology is hardcoded in
+twelve files — and goes green exactly when config lands.~~
+
+**GREEN as of 2026-07-17**, when phase 2 landed config and the last `dojostack` string left `src/`. The
+fingerprint against `dojostack_main` was byte-identical at every step
+(`0d66f86c…`, 1395 nodes / 1968 edges / 831 issues), which is the other half of the claim: the graph did
+not move, so nothing about the *measurement* changed — only who supplies the topology.
+
+**This retires the question in §12.1 by asking it.** REQ-0's byte-identical half needs a private repo,
+so it can never run in this repo's CI or survive distribution; only the grep half can. That was always
+known — the point is that "resolve it before REQ-0 goes green" is now overdue, not upcoming.
 
 ## 8. The oracle, and why a ~55-module port is not an act of faith
 
@@ -306,6 +315,26 @@ decoration.**
    assumes it lives inside the project it measures.** That is the more fundamental assumption for a
    package, and no amount of reading found it; porting did, as 3 failing serve tests.
 
+   **DONE 2026-07-17, and the second class was worse than 3 serve tests suggested.** Collapsing the four
+   copies was exactly as mechanical as §10.8 predicted. But "the tool assumes it lives in-tree" had four
+   more instances that no failing test named, because they had **silently stopped running**:
+   - `recordRun`/`syncResults`/`serve` spawn the tool's own scripts (`src/sync.ts`, `src/build.ts`) with
+     the *artifact dir* as cwd — which contains a `src/` only in-tree.
+   - `gitDates.test.ts`'s real-git regression guard walked up three levels to a workspace, landed
+     outside any repo after the port, and `skipIf`'d itself away.
+   - `viewerRevamp.test.ts` borrowed **jsdom from a sibling package's node_modules** ("adds no new
+     devDependency to the tool" — true only while the tool was not a package), and self-skipped: 13
+     tests.
+   - `serveProvenance.test.ts` read the real checkout. Its negative cases then passed for the *wrong
+     reason*: "404s a non-allowlisted extension **even when the file exists**" asserted a 404 on a file
+     that no longer existed, so it proved nothing.
+
+   The pattern is one thing, not four: **a coupling to the environment degrades into a skipped or
+   vacuous test, not a red one.** The port converted `join(__dirname, "..")` from correct to broken, and
+   the suite reported that as *fewer tests*, which reads as green. Both are now fixed and hermetic; the
+   suite runs 475 tests with **nothing skipped**. `TOOL_DIR` (`src/toolDir.ts`) names the split the whole
+   class came from: assets the tool ships vs. artifacts the project owns.
+
 10. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
    Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots on
    the dedicated `e2e-evidence` branch addressed by URL, never on the working branch and never inside
@@ -349,8 +378,8 @@ per the rule that docs get corrected in place, with the reason attached.
 
 | # | What | Done when |
 |---|---|---|
-| **1** | Port `src`/tests/PRD/viewer; npm deps | fingerprint vs `dojostack_main` matches |
-| **2** | Genericize onto `kg.config.json` (topology → paths → runners) | REQ-0 green; fingerprint still matches |
+| **1** | Port `src`/tests/PRD/viewer; npm deps | ✅ fingerprint vs `dojostack_main` matches |
+| **2** | Genericize onto `kg.config.json` (topology → paths → runners) | ✅ **done 2026-07-17** — REQ-0 green, fingerprint unchanged (`0d66f86c…`) |
 | **3** | Self-host: own config, own graph, own gate | its `REQ-KG-*` live in its own graph (= the single-repo proof, §8) |
 | **4** | The **staff prompt** — skill + `UserPromptSubmit` hook; plugin manifest + marketplace | installable, and staff consults the SSoT before it writes a line |
 | **5** | Rewire DojoStack: delete `tools/knowledge-graph/`, consume the npm dep | DojoStack's graph is purely DojoStack |
@@ -402,8 +431,24 @@ project. Phase 5 is hygiene, not value.
    them — **npm is not a constraint on the choice.**
 5. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
    examples need scrubbing.
-6. **Config file name/location** in a consuming project.
+6. **Config file name/location** in a consuming project. *Provisionally `kg.config.json` at the
+   workspace root (2026-07-17) — phase 2 needed a name to load. Staff's pick, not a decision: it is one
+   exported constant (`CONFIG_FILE` in `config.ts`) and every reference goes through it, so renaming is
+   a one-line change for as long as nobody has written one. That deadline is the same as §12.4's.*
 7. **`resolveBackendVenvPython`** — a generic tool arguably should not know what a Python venv is;
-   probably an opaque command the project supplies.
+   probably an opaque command the project supplies. *Still open, deliberately: phase 2 removed only the
+   hardcoded LOCATIONS (`repoRoot`/`backendDir` were already parameters), which is all REQ-0 forced. The
+   knowledge that a backend is Python, runs under uvicorn as `main:app`, and that a frontend runs
+   `npm run dev` with `NEXT_PUBLIC_*` env still sits in `serve.ts` — REQ-0 cannot see it because none of
+   it spells "dojostack". **A generic tool that hardcodes uvicorn is not generic; REQ-0 just cannot say
+   so.** That is a real gap in the requirement, not only in the code.*
 8. **Do `flows` labels belong in config**, or can they derive from the feature registries the graph
    already reads?
+9. **Does REQ-0 measure the right thing?** *Raised by making it green, 2026-07-17.* It greps for one
+   project's name, so it goes green when the tool stops naming DojoStack — not when the tool stops
+   assuming DojoStack. §12.7 above is the proof: `uvicorn main:app` passes REQ-0 today. The grep was the
+   right instrument for the port (it decays honestly and anyone can run it) and it caught real coupling
+   in files nobody would have thought to look at, including two written during phase 2 itself. But
+   "names no project" is a proxy for "assumes no project", and the gap between them is now where the
+   remaining coupling lives. Bears on §12.1's successor: a committed fixture repo whose graph is
+   asserted would test the assumption rather than the spelling.

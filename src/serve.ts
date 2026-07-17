@@ -18,7 +18,7 @@ import { buildRunArgs } from "./runSchedule";
 import { parseCaseResult } from "./parsePlaywrightReport";
 import { runArtifactUrl } from "./serveArtifacts";
 import { readDecisions, applyDecision, serializeDecisions, decisionsFor, type DecisionStatus } from "./conflictDecisions";
-import { loadConfig, e2ePath, artifactPath, subdirOf, repoOf, stripRepoPrefix } from "./config";
+import { loadConfig, e2ePath, artifactPath, subdirOf, repoOf, stripRepoPrefix, repoDirNames } from "./config";
 import { TOOL_DIR } from "./toolDir";
 import type { Graph, GraphNode } from "./types";
 
@@ -44,9 +44,9 @@ const runnerDir = (name: string | null): string | null =>
 const frontendDir = runnerDir(config.runners.frontend);
 const backendDir = runnerDir(config.runners.backend);
 // Playwright runs from the repo that OWNS the e2e suite — that repo's package.json holds the
-// Playwright dep and its config. This used to be `frontendDir`, which is the same directory in a
-// workspace shaped like DojoStack's and merely a coincidence in general: what a Playwright run needs
-// is the suite's own repo, not whichever repo happens to serve the UI.
+// Playwright dep and its config. This used to be `frontendDir`: the same directory in a workspace
+// whose suite sits under the frontend, and merely a coincidence in general — what a Playwright run
+// needs is the suite's own repo, not whichever repo happens to serve the UI.
 const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
 // The e2e dir as Playwright sees it — relative to ITS cwd, not the workspace.
 const e2eRel = stripRepoPrefix(config.e2eDir, config.repos);
@@ -502,8 +502,8 @@ export async function serveRegistry(
 // extension allowlist; isWithinRoot against the workspace root. `root` is
 // injectable for tests only.
 //
-// This used to switch on `segments[0] === "dojostack_frontend"` and resolve inside
-// a per-repo root — the topology's fourth shadow copy (§10.9). It was always an
+// This used to switch on a hardcoded `segments[0] === "<some_repo>"` and resolve
+// inside a per-repo root — the topology's fourth shadow copy (§10.9). It was always an
 // identity: a nested repo's root IS `join(repoRoot, subdir)`, so stripping the
 // subdir only to re-join it lands on the same absolute path. The narrower
 // isWithinRoot it implied was never load-bearing either — the dot-segment filter
@@ -771,7 +771,7 @@ const server = createServer(async (req, res) => {
       // Best-effort: any parse/read failure still emits exit so the panel terminates cleanly.
       try {
         const reportJson = await readFile(reportPath, "utf8");
-        const parsed = parseCaseResult(reportJson, title ?? "");
+        const parsed = parseCaseResult(reportJson, title ?? "", repoDirNames(config, repoRoot));
         const screenshots = parsed.screenshots.map((s) => ({ name: s.name, path: runArtifactUrl(runId, s.path) }));
         send("result", { status: parsed.status, error: parsed.error, screenshots });
       } catch { /* no report (spawn failed / never wrote) → skip result, still send exit */ }

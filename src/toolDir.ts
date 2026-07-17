@@ -11,8 +11,8 @@
 //   - TOOL_DIR      — assets the tool SHIPS (the viewer template, its own src/ for self-spawn).
 //   - config.artifactDir — artifacts the PROJECT owns (graph, viewer, baseline, lockfile, digest).
 //
-// They coincided in DojoStack's in-tree copy, which is exactly why nobody noticed they are different
-// things.
+// They coincided in the original in-tree copy, which is exactly why nobody noticed they are
+// different things.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 

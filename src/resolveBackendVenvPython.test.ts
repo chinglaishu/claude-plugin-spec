@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { resolveBackendVenvPython } from "./resolveBackendVenvPython";
 
 const repoRoot = "/repo";
-const backendDir = "/repo/dojostack_backend";
+const backendDir = "/repo/svc_backend";
 
 describe("resolveBackendVenvPython", () => {
   it("picks the backend-package venv when only that layout exists (this repo's actual layout)", () => {

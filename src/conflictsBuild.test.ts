@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildGraph } from "./discover";
+import { CONFIG } from "./topology.fixture";
 
 let root: string;
 const finding = (subject: string) => ({
@@ -16,9 +17,9 @@ const finding = (subject: string) => ({
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), "kg-conf-"));
-  await mkdir(join(root, "tools/knowledge-graph/conflicts"), { recursive: true });
+  await mkdir(join(root, CONFIG.artifactDir, "conflicts"), { recursive: true });
   await writeFile(
-    join(root, "tools/knowledge-graph/conflicts/pfl.conflicts.json"),
+    join(root, CONFIG.artifactDir, "conflicts", "pfl.conflicts.json"),
     JSON.stringify({ scope: "pfl", findings: [finding("beta"), finding("alpha")] }),
   );
 });
@@ -26,19 +27,19 @@ afterAll(async () => { await rm(root, { recursive: true, force: true }); });
 
 describe("buildGraph — conflicts fold", () => {
   it("attaches graph.conflicts, sorted by id, from source files", async () => {
-    const g = await buildGraph(root, "2026-07-10T00:00:00.000Z");
+    const g = await buildGraph(root, "2026-07-10T00:00:00.000Z", CONFIG);
     expect(g.conflicts).toBeDefined();
     expect(g.conflicts!.length).toBe(2);
     const ids = g.conflicts!.map((f) => f.id);
     expect(ids).toEqual([...ids].sort()); // deterministic order
   });
   it("adds no issues for findings (zero ratchet impact)", async () => {
-    const g = await buildGraph(root, "2026-07-10T00:00:00.000Z");
+    const g = await buildGraph(root, "2026-07-10T00:00:00.000Z", CONFIG);
     expect(g.issues.some((i) => JSON.stringify(i).includes("conflict"))).toBe(false);
   });
   it("omits graph.conflicts entirely when there are no source files", async () => {
     const empty = await mkdtemp(join(tmpdir(), "kg-empty-"));
-    const g = await buildGraph(empty, "2026-07-10T00:00:00.000Z");
+    const g = await buildGraph(empty, "2026-07-10T00:00:00.000Z", CONFIG);
     expect(g.conflicts).toBeUndefined();
     await rm(empty, { recursive: true, force: true });
   });

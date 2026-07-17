@@ -5,18 +5,30 @@ interface PwSpec { title: string; ok: boolean; tests?: { results?: PwResult[] }[
 interface PwSuite { title?: string; suites?: PwSuite[]; specs?: PwSpec[] }
 
 const ANSI_RE = /\u001b\[[0-9;]*m/g;
-// Filesystem-absolute prefix ending in a repo folder → strip to repo-relative
-// (e.g. "C:\Users\…\dojostack_frontend\e2e\x.spec.ts" → "e2e\x.spec.ts").
-// Windows and POSIX separators both handled; no user-name/machine-path leakage.
-const ABS_REPO_PREFIX_RE = /(?:[A-Za-z]:)?[\\/](?:[^\\/\r\n"']+[\\/])*dojostack_(?:frontend|backend|main)[\\/]/g;
 const MAX_ERROR_CHARS = 300;
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Filesystem-absolute prefix ending in one of the workspace's repo folders → strip to repo-relative
+ * (e.g. "C:\Users\…\svc_frontend\e2e\x.spec.ts" → "e2e\x.spec.ts"). Windows and POSIX separators
+ * both handled; no user-name/machine-path leakage.
+ *
+ * The folder names come from config (`repoDirNames`) rather than a baked-in literal. No names at all
+ * is a legitimate degenerate case, and yields a matcher that strips NOTHING rather than one that
+ * strips everything — an empty alternation `(?:)` would match at every position.
+ */
+function absRepoPrefixRe(repoDirs: string[]): RegExp | null {
+  if (!repoDirs.length) return null;
+  const names = repoDirs.map(escapeRe).join("|");
+  return new RegExp(String.raw`(?:[A-Za-z]:)?[\\/](?:[^\\/\r\n"']+[\\/])*(?:` + names + String.raw`)[\\/]`, "g");
+}
 
 /** First non-empty line(s) of a Playwright error message, ANSI-stripped,
  *  absolute-path prefixes removed, capped at ~300 chars. */
-function cleanErrorMessage(raw: string): string | undefined {
-  const lines = raw
-    .replace(ANSI_RE, "")
-    .replace(ABS_REPO_PREFIX_RE, "")
+function cleanErrorMessage(raw: string, repoDirs: string[]): string | undefined {
+  const absRe = absRepoPrefixRe(repoDirs);
+  const noAnsi = raw.replace(ANSI_RE, "");
+  const lines = (absRe ? noAnsi.replace(absRe, "") : noAnsi)
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
@@ -45,7 +57,7 @@ export interface ParsedCaseResult { status: string; attempts: number; error?: st
  * error message, ANSI-stripped, absolute paths reduced to repo-relative,
  * first non-empty line(s) capped at ~300 chars. Passing cases never carry one
  * (a retried-then-passed case's first-attempt error is flake noise, not signal). */
-export function parsePlaywrightJson(reportJson: string, titles: Map<string, string>): Record<string, ParsedCaseResult> {
+export function parsePlaywrightJson(reportJson: string, titles: Map<string, string>, repoDirs: string[] = []): Record<string, ParsedCaseResult> {
   const root = JSON.parse(reportJson) as { suites?: PwSuite[] };
   const out: Record<string, ParsedCaseResult> = {};
   const walk = (s: PwSuite) => {
@@ -58,7 +70,7 @@ export function parsePlaywrightJson(reportJson: string, titles: Map<string, stri
       const entry: ParsedCaseResult = { status: spec.ok ? "pass" : "fail", attempts: executed.length };
       if (!spec.ok) {
         const firstMsg = executed.map((r) => r.errors?.[0]?.message ?? r.error?.message).find((m) => m != null);
-        const cleaned = firstMsg != null ? cleanErrorMessage(firstMsg) : undefined;
+        const cleaned = firstMsg != null ? cleanErrorMessage(firstMsg, repoDirs) : undefined;
         if (cleaned) entry.error = cleaned;
       }
       out[caseId] = entry;
@@ -77,7 +89,7 @@ export interface LiveCaseResult { status: "pass" | "fail"; error: string | null;
  *  image screenshot attachments of the first executed result. `path` is the raw report path;
  *  serve.ts rewrites it to a /run-artifacts URL before sending. Never throws on a malformed or
  *  title-less report — defaults to a clean pass so the panel degrades gracefully. */
-export function parseCaseResult(reportJson: string, playwrightTitle: string): LiveCaseResult {
+export function parseCaseResult(reportJson: string, playwrightTitle: string, repoDirs: string[] = []): LiveCaseResult {
   let root: { suites?: PwSuite[] };
   try { root = JSON.parse(reportJson) as { suites?: PwSuite[] }; } catch { return { status: "pass", error: null, screenshots: [] }; }
   let found: PwSpec | undefined;
@@ -92,7 +104,7 @@ export function parseCaseResult(reportJson: string, playwrightTitle: string): Li
   const status: "pass" | "fail" = found.ok ? "pass" : "fail";
   if (status === "pass") return { status, error: null, screenshots: [] };
   const firstMsg = executed.map((r) => r.errors?.[0]?.message ?? r.error?.message).find((m) => m != null);
-  const error = firstMsg != null ? cleanErrorMessage(firstMsg) ?? null : null;
+  const error = firstMsg != null ? cleanErrorMessage(firstMsg, repoDirs) ?? null : null;
   const shots: ResultScreenshot[] = [];
   for (const r of executed) {
     for (const a of r.attachments ?? []) {

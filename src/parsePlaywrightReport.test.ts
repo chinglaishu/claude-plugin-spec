@@ -78,11 +78,31 @@ describe("parsePlaywrightJson — error extraction (failed cases)", () => {
     expect(out["uw-8"].error).not.toContain("second-attempt");
   });
 
+  // The repo folder names are config-derived now (repoDirNames(config, repoRoot) at the call sites),
+  // so the test states them instead of relying on a literal baked into the module.
+  const REPO_DIRS = ["ws_root", "svc_frontend", "svc_backend"];
+
   it("strips filesystem-absolute path prefixes down to repo-relative", () => {
-    const msg = "Error: boom\n    at C:\\Users\\ching\\workspace\\dojostack\\dojostack_frontend\\e2e\\uw.spec.ts:42:5";
-    const out = parsePlaywrightJson(failedReport(msg), titles);
+    const msg = "Error: boom\n    at C:\\Users\\ching\\workspace\\ws_root\\svc_frontend\\e2e\\uw.spec.ts:42:5";
+    const out = parsePlaywrightJson(failedReport(msg), titles, REPO_DIRS);
     expect(out["uw-8"].error).not.toMatch(/[A-Za-z]:\\/);
     expect(out["uw-8"].error).toContain("e2e\\uw.spec.ts:42:5");
+  });
+
+  // A path under a directory the workspace does not contain is left alone — the stripper must not
+  // guess at an arbitrary absolute prefix, only reduce ones it can name.
+  it("leaves an unrelated absolute path untouched", () => {
+    const msg = "Error: boom\n    at /opt/homebrew/lib/node_modules/x.js:1:1";
+    const out = parsePlaywrightJson(failedReport(msg), titles, REPO_DIRS);
+    expect(out["uw-8"].error).toContain("/opt/homebrew/lib/node_modules/x.js:1:1");
+  });
+
+  // Degenerate case: no names to match. Must strip NOTHING — an empty alternation would match at
+  // every position and eat the message.
+  it("strips nothing when given no repo dir names", () => {
+    const msg = "Error: boom\n    at /a/b/c.spec.ts:1:1";
+    const out = parsePlaywrightJson(failedReport(msg), titles, []);
+    expect(out["uw-8"].error).toContain("/a/b/c.spec.ts:1:1");
   });
 
   it("truncates to ~300 chars with an ellipsis", () => {
@@ -127,7 +147,7 @@ describe("parseCaseResult — single live run (2a)", () => {
   const rep = (spec: object) => JSON.stringify({ suites: [{ title: "s.spec.ts", specs: [spec] }] });
 
   it("pass: status pass, no error, no screenshots", () => {
-    const r = parseCaseResult(rep({ title: "t", ok: true, tests: [{ results: [{ status: "passed" }] }] }), "t");
+    const r = parseCaseResult(rep({ title: "t", ok: true, tests: [{ results: [{ status: "passed" }] }] }), "t", ["ws_root", "svc_frontend", "svc_backend"]);
     expect(r).toEqual({ status: "pass", error: null, screenshots: [] });
   });
 
@@ -136,24 +156,24 @@ describe("parseCaseResult — single live run (2a)", () => {
       status: "failed",
       errors: [{ message: "[31mError: boom[39m" }],
       attachments: [
-        { name: "screenshot", contentType: "image/png", path: "C:\\Users\\x\\dojostack_frontend\\test-results\\t\\test-failed-1.png" },
+        { name: "screenshot", contentType: "image/png", path: "C:\\Users\\x\\svc_frontend\\test-results\\t\\test-failed-1.png" },
         { name: "trace", contentType: "application/zip", path: "C:\\x\\trace.zip" },
       ],
-    }] }] }), "t");
+    }] }] }), "t", ["ws_root", "svc_frontend", "svc_backend"]);
     expect(r.status).toBe("fail");
     expect(r.error).toBe("Error: boom");
     expect(r.error).not.toContain("");
     // only image screenshots, name = attachment name, path = raw report path (serve rewrites it)
-    expect(r.screenshots).toEqual([{ name: "test-failed-1.png", path: "C:\\Users\\x\\dojostack_frontend\\test-results\\t\\test-failed-1.png" }]);
+    expect(r.screenshots).toEqual([{ name: "test-failed-1.png", path: "C:\\Users\\x\\svc_frontend\\test-results\\t\\test-failed-1.png" }]);
   });
 
   it("fail with no screenshot attachment: empty screenshots, error still set", () => {
-    const r = parseCaseResult(rep({ title: "t", ok: false, tests: [{ results: [{ status: "failed", errors: [{ message: "Error: nope" }] }] }] }), "t");
+    const r = parseCaseResult(rep({ title: "t", ok: false, tests: [{ results: [{ status: "failed", errors: [{ message: "Error: nope" }] }] }] }), "t", ["ws_root", "svc_frontend", "svc_backend"]);
     expect(r).toEqual({ status: "fail", error: "Error: nope", screenshots: [] });
   });
 
   it("unknown title → pass/null/empty (defensive default, never throws)", () => {
-    const r = parseCaseResult(rep({ title: "other", ok: true, tests: [{ results: [{ status: "passed" }] }] }), "t");
+    const r = parseCaseResult(rep({ title: "other", ok: true, tests: [{ results: [{ status: "passed" }] }] }), "t", ["ws_root", "svc_frontend", "svc_backend"]);
     expect(r).toEqual({ status: "pass", error: null, screenshots: [] });
   });
 });

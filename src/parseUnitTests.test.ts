@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPOS } from "./topology.fixture";
 import { parseUnitTest } from "./parseUnitTests";
 
 const feContent = `import { describe, it, expect } from "vitest";
@@ -24,9 +25,9 @@ def test_leases_reconciled(): pass
 describe("parseUnitTest", () => {
   it("parses a Vitest file into a unit-fe node (kind, title=basename, description, count)", () => {
     const { nodes, edges } = parseUnitTest({
-      path: "dojostack_frontend/src/app/(main)/properties/addProperty/steps/step2/rowValidation.test.ts",
+      path: "svc_frontend/src/app/(main)/properties/addProperty/steps/step2/rowValidation.test.ts",
       content: feContent,
-    });
+    }, REPOS);
     expect(edges).toEqual([]);
     expect(nodes).toHaveLength(1);
     const n = nodes[0];
@@ -54,15 +55,15 @@ describe("parseUnitTest", () => {
       '  it("returns noop when the new date equals the current date", () => {});',
       '});',
     ].join("\r\n");
-    const fe = parseUnitTest({ path: "dojostack_frontend/src/a.test.ts", content: feWithComment }).nodes[0];
+    const fe = parseUnitTest({ path: "svc_frontend/src/a.test.ts", content: feWithComment }, REPOS).nodes[0];
     expect(fe.text).toBe("evaluateAnalysisDateChange"); // the "what"
     expect(fe.summary).toBe("Both Step 1 and Step 2 pipe analysis-date changes through these helpers. Tests pin the gate so the two surfaces never silently drift apart again."); // the "why", eslint directive skipped
 
-    const be = parseUnitTest({ path: "dojostack_backend/tests/test_x.py", content: beContent }).nodes[0];
+    const be = parseUnitTest({ path: "svc_backend/tests/test_x.py", content: beContent }, REPOS).nodes[0];
     expect(be.summary).toBe("Contract tests for the update_property_rent_roll stored procedure. Pins that existing units are updated in place, never deleted.");
 
     // A file with no leading comment gets no summary (viewer falls back to the title alone).
-    expect(parseUnitTest({ path: "dojostack_frontend/src/b.test.ts", content: feContent }).nodes[0].summary).toBeUndefined();
+    expect(parseUnitTest({ path: "svc_frontend/src/b.test.ts", content: feContent }, REPOS).nodes[0].summary).toBeUndefined();
   });
 
   it("counts chained test forms (it.each/it.only/test.skip) and ignores method calls like regex.test(", () => {
@@ -74,16 +75,16 @@ describe("counting", () => {
   test.skip("d", () => {});
   test("e", () => { expect(/x/.test("x")).toBe(true); });
 });`;
-    const { nodes } = parseUnitTest({ path: "dojostack_frontend/src/foo.test.ts", content: src });
+    const { nodes } = parseUnitTest({ path: "svc_frontend/src/foo.test.ts", content: src }, REPOS);
     // it, it.each, it.only, test.skip, test → 5; the `.test(` method call is NOT counted.
     expect(nodes[0].testCount).toBe(5);
   });
 
   it("parses a pytest file into a unit-be node (docstring description, def test_ count)", () => {
     const { nodes } = parseUnitTest({
-      path: "dojostack_backend/tests/test_update_property_rent_roll_sql_contract.py",
+      path: "svc_backend/tests/test_update_property_rent_roll_sql_contract.py",
       content: beContent,
-    });
+    }, REPOS);
     const n = nodes[0];
     expect(n.kind).toBe("unit-be");
     expect(n.id).toBe("backend:tests/test_update_property_rent_roll_sql_contract.py");

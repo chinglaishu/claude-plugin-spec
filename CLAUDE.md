@@ -42,21 +42,39 @@ review agent, no soc-gate.
 
 ## State
 
-- **REQ-0 is RED** and is the acceptance criterion for phase 2: *"given any repo root supplied as
-  configuration, the tool builds a byte-identical graph to the one DojoStack's in-tree copy produces —
-  knowing nothing about DojoStack."* `npx vitest run src/req0.test.ts` names every file still failing it.
-- **Phase 2.1 is half done.** `src/config.ts` owns the topology; nothing consumes it yet. Next: delete the
-  four shadow copies (`repo.ts`, `gitDates.ts`, `sources.ts`, `serve.ts`) and thread it through the six
-  parsers.
-- **The oracle — use it on every phase-2 step.** The graph is a pure function of the tree, so a config
-  refactor must leave it **byte-identical**. `npx tsx scripts/fingerprint.mts <repo-root>`. Capture from
-  an unmodified tree *before* you start, refactor without touching indexed content, assert unchanged.
-  **The method is the contract, not any particular hash** — it moves whenever the target tree changes, so
-  never compare against a hash written down on another day.
-- **Known-failing, not yours to be surprised by:** 3 serve tests (`serve.ts` reads the graph from
-  `join(__dirname, "..")` — the tool assumes it lives inside the project it measures; phase 2's problem)
-  and `req0.test.ts` (the intentional RED).
+- **REQ-0 is GREEN as of 2026-07-17.** *"Given any repo root supplied as configuration, the tool builds
+  a byte-identical graph to the one DojoStack's in-tree copy produces — knowing nothing about
+  DojoStack."* Phase 2 is complete: the topology, the paths and the artifact dir are all
+  configuration, and the word `dojostack` appears nowhere in `src/`. The suite is fully green (475
+  tests, 58 files, **nothing skipped**).
+- **REQ-0 now needs its successor — open question §12.1, and it is due.** The doc says to resolve it
+  "before REQ-0 goes green and the question stops being asked". It has gone green, so the clock has
+  run out: REQ-0's byte-identical half needs DojoStack's private repo and can never run in CI or
+  survive distribution. Its permanent replacement is a committed fixture repo. **CEO call.**
+- **The oracle — use it on every change that could move the graph.** The graph is a pure function of
+  the tree, so a refactor must leave it **byte-identical**:
+  `npx tsx scripts/fingerprint.mts <repo-root> [config.json]` (defaults to
+  `scripts/dojostack.kg.config.json`, the migration fixture — DojoStack's layout as config, which is
+  what it will own at phase 5). Capture from an unmodified tree *before* you start, refactor without
+  touching indexed content, assert unchanged. **The method is the contract, not any particular hash**
+  — it moves whenever the target tree changes, so never compare against a hash written down on
+  another day.
+- **Config is threaded, never a singleton** (§10.8). Entrypoints resolve the project from `cwd`
+  (`KG_REPO_ROOT` overrides), call `loadConfig(repoRoot)` once, and pass it down. `loadConfig` throws
+  when `kg.config.json` is absent — it must not guess a layout, because guessing wrong emits a
+  complete, confident, wrong graph.
+- **Two things are `TOOL_DIR`, not the project** (`src/toolDir.ts`): the viewer template, and the
+  tool's own `src/` when it spawns itself. Everything else the tool reads or writes belongs to the
+  project and hangs off `config.artifactDir` / `config.e2eDir`.
+- **Pre-existing and not yours:** ~20 `tsc --noEmit` strictness errors in `parseResults.test.ts` and
+  `applyEvidence.test.ts`, present since the port (`917a01d`). The suite runs under `tsx`, which does
+  not typecheck, so they have never been surfaced. Harmless; unowned.
 - **The name is a placeholder** — see the founding design §12.4.
+
+## Next
+
+Phase 3 (self-host: own config, own graph, own gate). `kg.config.json` at the root already declares
+this repo as the single-repo case; the rest of phase 3 is its `REQ-KG-*` living in its own graph.
 
 ## Commands
 

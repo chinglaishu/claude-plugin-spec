@@ -41,7 +41,7 @@ const bareLower = (id: string) => id.toLowerCase();
 
 /**
  * Scan both local shot directories (E2E_SHOTS_DIR default, falling back to
- * dojostack_frontend/e2e/.step-shots — same fallback order as the serve.ts `/shots/` route,
+ * <e2eDir>/.step-shots — same fallback order as the serve.ts `/shots/` route,
  * contract 2) and merge into one case-dir list. When a case id exists under both roots, the
  * primary (E2E_SHOTS_DIR) wins outright — file lists are never silently merged across roots,
  * so a stale fallback copy can't blend with a fresher primary one.
@@ -96,7 +96,7 @@ export interface EvidenceIndexShape {
 }
 
 /**
- * Build the frozen contract-3 index shape (dojostack_frontend/e2e/kg-evidence-index.json).
+ * Build the frozen contract-3 index shape (<e2eDir>/kg-evidence-index.json).
  * The `shots` map is keyed by the ORIGINAL bare `filename` (e.g. "add3-1-rent-roll.png") — the
  * exact string a case's `steps[].screenshot` carries — never the remote `01-`/`02`-numbered name.
  * The viewer's shotSrcCandidates() does an exact `n.evidence[filename]` lookup against that bare
@@ -173,8 +173,9 @@ const isMain = (() => {
 
 if (isMain) {
   const { readdir, readFile: nodeReadFile, writeFile, unlink } = await import("node:fs/promises");
-  const { join, dirname } = await import("node:path");
-  const { fileURLToPath, pathToFileURL: p2f } = await import("node:url");
+  const { join } = await import("node:path");
+  const { pathToFileURL: p2f } = await import("node:url");
+  const { loadConfig, e2ePath, repoOf, subdirOf } = await import("./config");
   const { execFile } = await import("node:child_process");
   const { promisify } = await import("node:util");
   const { tmpdir } = await import("node:os");
@@ -195,12 +196,19 @@ if (isMain) {
     }
   };
 
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  const toolDir = join(__dirname, "..");
-  const repoRoot = process.env.KG_REPO_ROOT ?? join(toolDir, "..", "..");
-  const frontendDir = join(repoRoot, "dojostack_frontend");
+  const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
+  const config = await loadConfig(repoRoot);
+  const outDir = join(repoRoot, config.artifactDir);
+  // The repo that owns the e2e suite: its git sha stamps the evidence, and its checkout holds the
+  // fallback shots. Previously hardcoded to a frontend repo, which is the same directory in a
+  // workspace laid out like that one and a coincidence in general.
+  const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
   const branch = "e2e-evidence";
-  const repo = process.env.KG_EVIDENCE_REPO ?? "dojostack-app/dojostack_frontend";
+  const repo = process.env.KG_EVIDENCE_REPO ?? config.evidenceRepo;
+  if (!repo) {
+    console.error("kg shots:upload — no evidence repo: set `evidenceRepo` in kg.config.json (or KG_EVIDENCE_REPO)");
+    process.exit(1);
+  }
 
   const argOf = (flag: string): string | undefined => {
     const i = process.argv.indexOf(flag);
@@ -264,16 +272,16 @@ if (isMain) {
     },
   };
 
-  const graph = JSON.parse(await nodeReadFile(join(toolDir, "knowledge-graph.json"), "utf8")) as { nodes: { id: string; type: string; kind?: string }[] };
+  const graph = JSON.parse(await nodeReadFile(join(outDir, "knowledge-graph.json"), "utf8")) as { nodes: { id: string; type: string; kind?: string }[] };
   const graphCaseIds = new Set(
     graph.nodes.filter((n) => n.type === "test" && n.kind === "e2e").map((n) => { const i = n.id.indexOf(":"); return (i >= 0 ? n.id.slice(i + 1) : n.id).toLowerCase(); }),
   );
 
-  const primary = process.env.E2E_SHOTS_DIR ?? join(repoRoot, "..", ".dojostack-e2e-shots");
-  const fallback = join(frontendDir, "e2e", ".step-shots");
+  const primary = process.env.E2E_SHOTS_DIR ?? join(repoRoot, config.shotsDir);
+  const fallback = join(repoRoot, e2ePath(config, ".step-shots"));
   const local = await scanLocalShotDirs(fsAdapter, { primary, fallback });
 
-  const { stdout: shaOut } = await execFileAsync("git", ["rev-parse", "--short", "HEAD"], { cwd: frontendDir, timeout: SUBPROCESS_TIMEOUT_MS });
+  const { stdout: shaOut } = await execFileAsync("git", ["rev-parse", "--short", "HEAD"], { cwd: e2eRepoDir, timeout: SUBPROCESS_TIMEOUT_MS });
   const sha = shaOut.trim() || "unknown";
 
   const result = await runUpload({ repo, local, graphCaseIds, sha, dryRun, caseFilter, fs: fsAdapter, gh: ghAdapter, now: new Date().toISOString() });
@@ -282,7 +290,7 @@ if (isMain) {
   console.log(`kg shots:upload — ${dryRun ? "[dry-run] " : ""}${result.uploadedCount} case(s), ${totalShots} shot(s) @ sha ${sha}${caseFilter ? ` (scoped: ${caseFilter.join(",")})` : ""}`);
 
   if (!dryRun) {
-    const indexPath = join(frontendDir, "e2e", "kg-evidence-index.json");
+    const indexPath = join(repoRoot, e2ePath(config, "kg-evidence-index.json"));
     // Full runs replace the index; scoped (--case) runs merge into the existing file so an
     // unrelated case's evidence isn't dropped.
     const existing = caseFilter

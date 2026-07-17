@@ -88,7 +88,7 @@ if (isMain) {
   const { parsePlaywrightJson } = await import("./parsePlaywrightReport");
   const { mergeResults, normalizeResults } = await import("./resultsFile");
 
-  const { loadConfig, e2ePath, repoOf, subdirOf } = await import("./config");
+  const { loadConfig, e2ePath, repoOf, subdirOf, repoDirNames } = await import("./config");
   const { TOOL_DIR } = await import("./toolDir");
 
   const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
@@ -97,8 +97,8 @@ if (isMain) {
   const resultsPath = join(repoRoot, e2ePath(config, "kg-test-results.json"));
   const shotsRoot = join(repoRoot, e2ePath(config, ".step-shots"));
   // Stamp the commit of the repo that OWNS the e2e suite — the code whose behaviour these results
-  // describe. Previously hardcoded to the frontend, which is the same repo in a workspace laid out
-  // like DojoStack's and the wrong one in general.
+  // describe. Previously hardcoded to a frontend repo: the same directory in a workspace laid out
+  // with the suite under the frontend, and the wrong one in general.
   const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
 
   const reportArg = process.argv[2];
@@ -132,7 +132,7 @@ if (isMain) {
   const titles = new Map([...refs.entries()].map(([t, v]) => [t, v.caseId]));
 
   // (a) record results — same composition syncResults performs (parse → per-entry commit stamp → merge).
-  const parsed = parsePlaywrightJson(reportJson, titles);
+  const parsed = parsePlaywrightJson(reportJson, titles, repoDirNames(config, repoRoot));
   const now = new Date().toISOString();
   const commit = await new Promise<string>((resolve) => {
     const p = spawn("git", ["rev-parse", "--short", "HEAD"], { cwd: e2eRepoDir, shell: true });

@@ -41,10 +41,10 @@ describe("assemble — bare-slug resolver", () => {
   it("resolves bare reference targets to the namespaced node id", () => {
     const parts = {
       nodes: [
-        { id: "backend:house-view-freeze", type: "doc", title: "HVF", path: "dojostack_backend/a.md", status: "current" },
-        { id: "backend:assumption-hierarchy-ux", type: "doc", title: "AH", path: "dojostack_backend/b.md", status: "current" },
+        { id: "backend:house-view-freeze", type: "doc", title: "HVF", path: "svc_backend/a.md", status: "current" },
+        { id: "backend:assumption-hierarchy-ux", type: "doc", title: "AH", path: "svc_backend/b.md", status: "current" },
       ],
-      edges: [{ from: "backend:house-view-freeze", to: "assumption-hierarchy-ux", type: "references", source: "dojostack_backend/a.md" }],
+      edges: [{ from: "backend:house-view-freeze", to: "assumption-hierarchy-ux", type: "references", source: "svc_backend/a.md" }],
     } as any;
     const g = assemble(parts, "T");
     expect(g.edges[0].to).toBe("backend:assumption-hierarchy-ux");
@@ -54,8 +54,8 @@ describe("assemble — bare-slug resolver", () => {
   it("flags a bare target that matches two nodes as ambiguous-link", () => {
     const parts = {
       nodes: [
-        { id: "backend:readme", type: "doc", title: "R", path: "dojostack_backend/README.md", status: "current" },
-        { id: "frontend:readme", type: "doc", title: "R", path: "dojostack_frontend/README.md", status: "current" },
+        { id: "backend:readme", type: "doc", title: "R", path: "svc_backend/README.md", status: "current" },
+        { id: "frontend:readme", type: "doc", title: "R", path: "svc_frontend/README.md", status: "current" },
         { id: "main:x", type: "doc", title: "X", path: "x.md", status: "current" },
       ],
       edges: [{ from: "main:x", to: "readme", type: "references", source: "x.md" }],

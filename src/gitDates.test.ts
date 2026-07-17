@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPOS, SOLO } from "./topology.fixture";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -68,55 +69,55 @@ describe("docDates — grouping, prefix strip/re-add, one process per repo (inje
     const calls: { cwd: string; relPaths: string[] }[] = [];
     const runner: GitRunner = async (cwd, relPaths) => {
       calls.push({ cwd, relPaths });
-      if (cwd.endsWith("dojostack_backend"))
+      if (cwd.endsWith("svc_backend"))
         return `${NUL}2026-07-10T00:00:00Z\n.github/system-design/foo.md\n\n${NUL}2026-03-03T00:00:00Z\n.github/memories/note.md\n`;
-      if (cwd.endsWith("dojostack_frontend")) return `${NUL}2026-05-02T00:00:00Z\ne2e/cases/bar.cases.yaml\n`;
+      if (cwd.endsWith("svc_frontend")) return `${NUL}2026-05-02T00:00:00Z\ne2e/cases/bar.cases.yaml\n`;
       return `${NUL}2026-01-01T00:00:00Z\nCLAUDE.md\n`; // main
     };
     const root = "/repo/root";
     const paths = [
-      "dojostack_backend/.github/system-design/foo.md",
-      "dojostack_backend/.github/memories/note.md",
-      "dojostack_frontend/e2e/cases/bar.cases.yaml",
+      "svc_backend/.github/system-design/foo.md",
+      "svc_backend/.github/memories/note.md",
+      "svc_frontend/e2e/cases/bar.cases.yaml",
       "CLAUDE.md",
     ];
-    const m = await docDates(root, paths, runner);
+    const m = await docDates(root, paths, REPOS, runner);
 
     // exactly one process per distinct repo (backend, frontend, main)
     expect(calls.length).toBe(3);
 
-    const backendCall = calls.find((c) => c.cwd === join(root, "dojostack_backend"))!;
+    const backendCall = calls.find((c) => c.cwd === join(root, "svc_backend"))!;
     expect(backendCall).toBeDefined();
     // repo prefix stripped; runner receives the repo-relative paths as an argv-ready array
     expect(backendCall.relPaths).toEqual([".github/system-design/foo.md", ".github/memories/note.md"]);
 
-    expect(calls.find((c) => c.cwd === join(root, "dojostack_frontend"))?.relPaths).toEqual(["e2e/cases/bar.cases.yaml"]);
+    expect(calls.find((c) => c.cwd === join(root, "svc_frontend"))?.relPaths).toEqual(["e2e/cases/bar.cases.yaml"]);
     expect(calls.find((c) => c.cwd === root)?.relPaths).toEqual(["CLAUDE.md"]); // main uses repoRoot itself
 
     // keys are the ORIGINAL input paths (prefix re-added)
-    expect(m.get("dojostack_backend/.github/system-design/foo.md")).toEqual({ created: "2026-07-10", updated: "2026-07-10" });
-    expect(m.get("dojostack_backend/.github/memories/note.md")).toEqual({ created: "2026-03-03", updated: "2026-03-03" });
-    expect(m.get("dojostack_frontend/e2e/cases/bar.cases.yaml")).toEqual({ created: "2026-05-02", updated: "2026-05-02" });
+    expect(m.get("svc_backend/.github/system-design/foo.md")).toEqual({ created: "2026-07-10", updated: "2026-07-10" });
+    expect(m.get("svc_backend/.github/memories/note.md")).toEqual({ created: "2026-03-03", updated: "2026-03-03" });
+    expect(m.get("svc_frontend/e2e/cases/bar.cases.yaml")).toEqual({ created: "2026-05-02", updated: "2026-05-02" });
     expect(m.get("CLAUDE.md")).toEqual({ created: "2026-01-01", updated: "2026-01-01" });
   });
 
   it("tolerates a per-repo git failure (runner returns null) — that group contributes nothing, others still resolve", async () => {
     const runner: GitRunner = async (cwd) => {
-      if (cwd.endsWith("dojostack_backend")) return null; // non-git dir / git exited non-zero
+      if (cwd.endsWith("svc_backend")) return null; // non-git dir / git exited non-zero
       return `${NUL}2026-01-01T00:00:00Z\nCLAUDE.md\n`;
     };
-    const m = await docDates("/root", ["dojostack_backend/x/y.md", "CLAUDE.md"], runner);
-    expect(m.has("dojostack_backend/x/y.md")).toBe(false);
+    const m = await docDates("/root", ["svc_backend/x/y.md", "CLAUDE.md"], REPOS, runner);
+    expect(m.has("svc_backend/x/y.md")).toBe(false);
     expect(m.get("CLAUDE.md")).toEqual({ created: "2026-01-01", updated: "2026-01-01" });
   });
 
   it("tolerates a runner that throws (missing git binary) — caught and skipped, other groups resolve", async () => {
     const runner: GitRunner = async (cwd) => {
-      if (cwd.endsWith("dojostack_frontend")) throw new Error("spawn git ENOENT");
+      if (cwd.endsWith("svc_frontend")) throw new Error("spawn git ENOENT");
       return `${NUL}2026-02-02T00:00:00Z\nCLAUDE.md\n`;
     };
-    const m = await docDates("/root", ["dojostack_frontend/a.md", "CLAUDE.md"], runner);
-    expect(m.has("dojostack_frontend/a.md")).toBe(false);
+    const m = await docDates("/root", ["svc_frontend/a.md", "CLAUDE.md"], REPOS, runner);
+    expect(m.has("svc_frontend/a.md")).toBe(false);
     expect(m.get("CLAUDE.md")).toEqual({ created: "2026-02-02", updated: "2026-02-02" });
   });
 
@@ -126,7 +127,7 @@ describe("docDates — grouping, prefix strip/re-add, one process per repo (inje
       called++;
       return "";
     };
-    const m = await docDates("/root", [], runner);
+    const m = await docDates("/root", [], REPOS, runner);
     expect(m.size).toBe(0);
     expect(called).toBe(0);
   });
@@ -137,8 +138,13 @@ describe("docDates — grouping, prefix strip/re-add, one process per repo (inje
 // (`fatal: unrecognized argument: --pathspec-from-file=-`) → every process exited non-zero →
 // docDates returned nothing for every node. This test exercises the DEFAULT runner (no injection)
 // against a file known to be tracked in THIS repo, so a broken real spawn can never pass again.
-const here = dirname(fileURLToPath(import.meta.url)); // .../tools/knowledge-graph/src
-const repoRoot = join(here, "..", "..", ".."); // workspace (main) git repo root
+// This repo IS the workspace under test — a single-repo project, which is the degenerate topology and
+// the one worth smoke-testing against real git. It used to walk `join(here, "..", "..", "..")` to
+// reach a workspace three levels up, which was true only of the in-tree copy: after the port that path
+// left the git repo entirely, `gitUsable` went false, and this guard SILENTLY SKIPPED. A regression
+// test that stops running is worse than one that fails, because nothing says so (§10.2's lesson).
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(here, "..");
 function gitUsable(cwd: string): boolean {
   try {
     const r = spawnSync("git", ["-C", cwd, "rev-parse", "--is-inside-work-tree"], { encoding: "utf8" });
@@ -151,8 +157,8 @@ const REAL_GIT = gitUsable(repoRoot);
 
 describe("docDates — real git (default runner, no injection)", () => {
   it.skipIf(!REAL_GIT)("dates a tracked file via a real git spawn (created <= updated, both YYYY-MM-DD)", async () => {
-    const tracked = "tools/knowledge-graph/package.json"; // main repo, cwd = repoRoot
-    const m = await docDates(repoRoot, [tracked]); // DEFAULT runner — real `git log`
+    const tracked = "package.json"; // tracked in this repo, at its root, so cwd = repoRoot
+    const m = await docDates(repoRoot, [tracked], SOLO); // DEFAULT runner — real `git log`
     const d = m.get(tracked);
     expect(d).toBeDefined();
     expect(d!.created).toMatch(/^\d{4}-\d{2}-\d{2}$/);

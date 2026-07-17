@@ -19,7 +19,7 @@ const index = JSON.stringify({
     "add-3": {
       sha: "abc1234",
       shots: {
-        "add3-1-rent-roll.png": "https://raw.githubusercontent.com/dojostack-app/dojostack_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
+        "add3-1-rent-roll.png": "https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
       },
     },
   },
@@ -30,7 +30,7 @@ describe("applyEvidence", () => {
     const g = applyEvidence(graph, index);
     const n = g.nodes.find((n: any) => n.id === "frontend:add-3");
     expect(n.evidence).toEqual({
-      "add3-1-rent-roll.png": "https://raw.githubusercontent.com/dojostack-app/dojostack_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
+      "add3-1-rent-roll.png": "https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
     });
   });
 

@@ -209,6 +209,20 @@ export function siblingsOf(repos: Repos): Repos {
   return repos.filter((r) => r.subdir !== "");
 }
 
+/**
+ * PURE. The directory NAMES an absolute path from a test report may be rooted at: the workspace
+ * directory itself, plus each nested repo's own directory.
+ *
+ * Matched by NAME rather than against this machine's absolute paths on purpose — a Playwright report
+ * carries the paths of whatever machine ran it (a CI box, a colleague's laptop), so comparing them to
+ * local absolutes would strip nothing and leak `C:\Users\<someone>\...` into the graph.
+ */
+export function repoDirNames(config: Config, repoRoot: string): string[] {
+  const workspace = repoRoot.replace(/[\\/]+$/, "").split(/[\\/]/).pop() ?? "";
+  const nested = siblingsOf(config.repos).map((r) => r.subdir.split("/").pop()!);
+  return [workspace, ...nested].filter(Boolean);
+}
+
 /** PURE. A workspace-relative path re-expressed relative to its OWN repo. Windows separators are
  *  normalized first, so a path harvested from a Windows checkout matches. */
 export function stripRepoPrefix(path: string, repos: Repos): string {

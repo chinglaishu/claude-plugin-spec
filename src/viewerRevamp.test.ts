@@ -4,31 +4,26 @@
 // marker. We render viewer.template.html with a tiny synthetic graph (the real graph has zero
 // flow-kind tests) and execute it in JSDOM.
 //
-// JSDOM is resolved from the sibling frontend package (which already depends on it) so this adds no
-// new devDependency to the tool. If it can't be resolved (e.g. a tool-only CI where the frontend
-// isn't installed), the suite self-skips rather than failing — the heavier Playwright e2e-viewer
-// specs remain the always-on coverage.
+// JSDOM is a devDependency OF THIS TOOL. It used to be resolved out of a sibling frontend package
+// three directories up ("which already depends on it, so this adds no new devDependency") — true
+// while the tool lived inside that workspace, and false the moment it became a package of its own.
+// After the port the require failed, the suite self-skipped, and 13 tests stopped running silently.
+// A test that borrows another project's node_modules is coupled to that project as surely as a
+// hardcoded path is (REQ-0), and one that vanishes when the borrow fails is worse than one that
+// fails: nothing says so.
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
 import { join } from "node:path";
 import { describe, it, expect, beforeAll } from "vitest";
+import { JSDOM } from "jsdom";
 import { renderViewer } from "./viewer";
 import type { Graph } from "./types";
-
-let JSDOM: any = null;
-try {
-  const req = createRequire(fileURLToPath(new URL("../../../dojostack_frontend/", import.meta.url)));
-  JSDOM = req("jsdom").JSDOM;
-} catch {
-  JSDOM = null;
-}
 
 const graph = {
   generatedAt: "2026-07-12T10:00:00+08:00",
   nodes: [
-    { id: "main:hv-freeze", type: "doc", title: "House View Freeze", path: "dojostack_backend/.github/system-design/00_platform/hv-freeze.md", body: "House View freeze.", created: "2026-03-02", updated: "2026-06-18", reviewedAt: "2026-01-05" },
-    { id: "main:portfolio", type: "doc", title: "Portfolio Modeler", path: "dojostack_backend/.github/system-design/50_portfolio/portfolio.md", body: "Portfolio.", created: "2026-05-01", updated: "2026-07-10", reviewedAt: "2026-07-01" },
+    { id: "main:hv-freeze", type: "doc", title: "House View Freeze", path: "svc_backend/.github/system-design/00_platform/hv-freeze.md", body: "House View freeze.", created: "2026-03-02", updated: "2026-06-18", reviewedAt: "2026-01-05" },
+    { id: "main:portfolio", type: "doc", title: "Portfolio Modeler", path: "svc_backend/.github/system-design/50_portfolio/portfolio.md", body: "Portfolio.", created: "2026-05-01", updated: "2026-07-10", reviewedAt: "2026-07-01" },
     { id: "add.page", type: "feature", title: "Add Property", flow: "add", page: true },
     { id: "add.mapping", type: "feature", title: "Column mapping", flow: "add" },
     { id: "frontend:ADD-1", type: "test", kind: "e2e", e2eKind: "feature", title: "Column mapping scenario", status: "pass", spec: "add.spec.ts", steps: [] },
@@ -61,7 +56,9 @@ const graph = {
   }],
 } as unknown as Graph;
 
-describe.skipIf(!JSDOM)("viewer revamp — runtime render", () => {
+// No skip guard: jsdom is a devDependency now, so an unresolvable import is a broken install to fix,
+// not a suite to quietly drop.
+describe("viewer revamp — runtime render", () => {
   let dom: any, doc: any;
   const click = (el: any) => el && el.dispatchEvent(new dom.window.Event("click", { bubbles: true }));
   const tab = (label: string) => [...doc.querySelectorAll("#tabs .tab")].find((t: any) => t.textContent.includes(label));

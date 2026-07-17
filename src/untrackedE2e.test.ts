@@ -69,6 +69,6 @@ describe("detectUntrackedE2e", () => {
       [testNode("HV-1", "house-view-cascade.spec.ts")],
       [{ from: "HV-1", to: "d", type: "verifies", source: "x" }],
     );
-    expect(detectUntrackedE2e(["dojostack_frontend/e2e/house-view-cascade.spec.ts"], g)).toEqual([]);
+    expect(detectUntrackedE2e(["svc_frontend/e2e/house-view-cascade.spec.ts"], g)).toEqual([]);
   });
 });

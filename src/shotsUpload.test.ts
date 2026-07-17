@@ -36,28 +36,28 @@ describe("scanLocalShotDirs", () => {
 
   it("scans both shot dirs (E2E_SHOTS_DIR default + e2e/.step-shots) and merges case dirs", () => {
     const tree: Record<string, string[]> = {
-      "/ws/.dojostack-e2e-shots": ["ADD-2", "SMK-1"],
-      "/ws/.dojostack-e2e-shots/ADD-2": ["add2-1-rent-roll.png", "add2-2-column-mapping.png"],
-      "/ws/.dojostack-e2e-shots/SMK-1": ["smk-1-login-page.png"],
+      "/ws/.kg-e2e-shots": ["ADD-2", "SMK-1"],
+      "/ws/.kg-e2e-shots/ADD-2": ["add2-1-rent-roll.png", "add2-2-column-mapping.png"],
+      "/ws/.kg-e2e-shots/SMK-1": ["smk-1-login-page.png"],
       "/fe/e2e/.step-shots": ["ADD-3"],
       "/fe/e2e/.step-shots/ADD-3": ["add3-1-rent-roll.png"],
     };
-    return scanLocalShotDirs(fs(tree), { primary: "/ws/.dojostack-e2e-shots", fallback: "/fe/e2e/.step-shots" }).then((entries) => {
+    return scanLocalShotDirs(fs(tree), { primary: "/ws/.kg-e2e-shots", fallback: "/fe/e2e/.step-shots" }).then((entries) => {
       expect(entries.map((e) => e.caseId).sort()).toEqual(["ADD-2", "ADD-3", "SMK-1"]);
       const add2 = entries.find((e) => e.caseId === "ADD-2")!;
       expect(add2.files.sort()).toEqual(["add2-1-rent-roll.png", "add2-2-column-mapping.png"]);
-      expect(add2.dir).toBe("/ws/.dojostack-e2e-shots/ADD-2");
+      expect(add2.dir).toBe("/ws/.kg-e2e-shots/ADD-2");
     });
   });
 
   it("when a case exists in both dirs, the primary dir wins (no silent merge of file lists)", async () => {
     const tree: Record<string, string[]> = {
-      "/ws/.dojostack-e2e-shots": ["ADD-2"],
-      "/ws/.dojostack-e2e-shots/ADD-2": ["fresh.png"],
+      "/ws/.kg-e2e-shots": ["ADD-2"],
+      "/ws/.kg-e2e-shots/ADD-2": ["fresh.png"],
       "/fe/e2e/.step-shots": ["ADD-2"],
       "/fe/e2e/.step-shots/ADD-2": ["stale.png"],
     };
-    const entries = await scanLocalShotDirs(fs(tree), { primary: "/ws/.dojostack-e2e-shots", fallback: "/fe/e2e/.step-shots" });
+    const entries = await scanLocalShotDirs(fs(tree), { primary: "/ws/.kg-e2e-shots", fallback: "/fe/e2e/.step-shots" });
     expect(entries.filter((e) => e.caseId === "ADD-2")).toHaveLength(1);
     expect(entries.find((e) => e.caseId === "ADD-2")?.files).toEqual(["fresh.png"]);
   });
@@ -130,7 +130,7 @@ describe("buildEvidenceIndex", () => {
   // every evidenced case fell through to the "not available" placeholder even with valid URLs).
   it("builds the frozen contract-3 index shape, keyed by the bare filename (not the remote-numbered name)", () => {
     const idx = buildEvidenceIndex(
-      "dojostack-app/dojostack_frontend",
+      "acme-org/svc_frontend",
       [
         {
           caseId: "ADD-3",
@@ -147,7 +147,7 @@ describe("buildEvidenceIndex", () => {
         "add-3": {
           sha: "abc1234",
           shots: {
-            "add3-1-rent-roll.png": "https://raw.githubusercontent.com/dojostack-app/dojostack_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
+            "add3-1-rent-roll.png": "https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png",
           },
         },
       },
@@ -185,7 +185,7 @@ describe("runUpload", () => {
     const gh = makeGh();
     const local: ShotDirEntry[] = [{ caseId: "ADD-3", dir: "/shots/ADD-3", files: ["add3-1.png"] }];
     const result = await runUpload({
-      repo: "dojostack-app/dojostack_frontend",
+      repo: "acme-org/svc_frontend",
       local,
       graphCaseIds: new Set(["add-3"]),
       sha: "abc1234",
@@ -203,7 +203,7 @@ describe("runUpload", () => {
     const gh = makeGh({ "add-3": ["sha3", "sha2", "sha1"] }); // newest-first; 3 existing + 1 new = prune oldest
     const local: ShotDirEntry[] = [{ caseId: "ADD-3", dir: "/shots/ADD-3", files: ["add3-1.png"] }];
     const result = await runUpload({
-      repo: "dojostack-app/dojostack_frontend",
+      repo: "acme-org/svc_frontend",
       local,
       graphCaseIds: new Set(["add-3"]),
       sha: "shaNEW",

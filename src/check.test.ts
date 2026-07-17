@@ -58,7 +58,7 @@ describe("graphsMatch", () => {
 describe("graphsMatch — volatile git dates (created/updated) excluded, reviewedAt kept", () => {
   const dated = (created: string, updated: string, title = "Node 1"): Graph => ({
     generatedAt: "2026-07-01T00:00:00Z",
-    nodes: [{ id: "n1", type: "doc", title, path: "dojostack_backend/.github/x.md", created, updated }],
+    nodes: [{ id: "n1", type: "doc", title, path: "svc_backend/.github/x.md", created, updated }],
     edges: [],
     issues: [],
   });
@@ -130,7 +130,7 @@ describe("viewerMatches", () => {
         {
           generatedAt: "2026-07-01T00:00:00Z",
           nodes: [
-            { id: "backend:foo", type: "doc", title, path: "dojostack_backend/.github/system-design/foo.md", created, updated },
+            { id: "backend:foo", type: "doc", title, path: "svc_backend/.github/system-design/foo.md", created, updated },
           ],
           edges: [],
           issues: [],

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { REPOS } from "./topology.fixture";
 import { parseCache } from "./parseCache";
 
 const yaml = `
@@ -24,7 +25,7 @@ const yaml = `
 `;
 
 describe("parseCache", () => {
-  const { nodes, edges } = parseCache({ path: "dojostack_frontend/e2e/cache/house-view.cache.yaml", content: yaml });
+  const { nodes, edges } = parseCache({ path: "svc_frontend/e2e/cache/house-view.cache.yaml", content: yaml }, REPOS);
 
   it("creates a cache-entry node per entry, skipping entries without an id", () => {
     expect(nodes.map((n) => n.id).sort()).toEqual([
@@ -47,8 +48,8 @@ describe("parseCache", () => {
 
   it("emits a tags edge to each declared feature", () => {
     expect(edges).toEqual([
-      { from: "frontend:hv-versions-query", to: "hv.versions", type: "tags", source: "dojostack_frontend/e2e/cache/house-view.cache.yaml" },
-      { from: "frontend:metrics-batch", to: "pfl.list", type: "tags", source: "dojostack_frontend/e2e/cache/house-view.cache.yaml" },
+      { from: "frontend:hv-versions-query", to: "hv.versions", type: "tags", source: "svc_frontend/e2e/cache/house-view.cache.yaml" },
+      { from: "frontend:metrics-batch", to: "pfl.list", type: "tags", source: "svc_frontend/e2e/cache/house-view.cache.yaml" },
     ]);
   });
 
@@ -59,7 +60,7 @@ describe("parseCache", () => {
   });
 
   it("tolerates a non-list root without throwing", () => {
-    expect(() => parseCache({ path: "x.cache.yaml", content: "key: nope" })).not.toThrow();
-    expect(parseCache({ path: "x.cache.yaml", content: "" }).nodes).toEqual([]);
+    expect(() => parseCache({ path: "x.cache.yaml", content: "key: nope" }, REPOS)).not.toThrow();
+    expect(parseCache({ path: "x.cache.yaml", content: "" }, REPOS).nodes).toEqual([]);
   });
 });

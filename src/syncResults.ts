@@ -7,7 +7,7 @@ import { buildRunGrep } from "./runGrep";
 import { parsePlaywrightJson } from "./parsePlaywrightReport";
 import { mergeResults, normalizeResults, type ResultsFileV2 } from "./resultsFile";
 import { shouldAutoUpload, uploadCaseArg } from "./shotsUploadHook";
-import { loadConfig, e2ePath, repoOf, subdirOf, stripRepoPrefix } from "./config";
+import { loadConfig, e2ePath, repoOf, subdirOf, stripRepoPrefix, repoDirNames } from "./config";
 import { TOOL_DIR } from "./toolDir";
 import type { Graph } from "./types";
 
@@ -60,7 +60,7 @@ if (!reportJson) { console.error(`kg sync:results — Playwright produced no ${R
 await unlink(join(e2eRepoDir, REPORT_FILE)).catch(() => {});
 
 const titles = new Map(cases.map((c) => [c.playwrightTitle, c.caseId]));
-const parsed = parsePlaywrightJson(reportJson, titles);
+const parsed = parsePlaywrightJson(reportJson, titles, repoDirNames(config, repoRoot));
 const now = new Date().toISOString();
 const commit = await new Promise<string>((resolve) => {
   const p = spawn("git", ["rev-parse", "--short", "HEAD"], { cwd: e2eRepoDir, shell: true });
