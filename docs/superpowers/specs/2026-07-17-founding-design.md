@@ -121,6 +121,44 @@ for a platform limitation that no longer exists — dated design, not a decision
 *ratifies a requirement*, not a copied string a human re-types. Without it, §6 is a nice idea with no
 mechanism.
 
+### 6a. Where it renders — verified 2026-07-17
+
+**The Claude Code CLI does not render MCP Apps.** Its MCP documentation mentions tools, resources,
+prompts, elicitation, output limits and approval — and **zero** occurrences of `ui://`, "MCP Apps",
+"display mode", "fullscreen", "iframe", "callServerTool" or "interactive UI". The spec's adopters are
+Postman, HuggingFace, Shopify, Goose and ElevenLabs; the announcement's hosts are Claude web + desktop,
+Goose, VS Code Insiders and ChatGPT. Claude Code appears in neither list. **There is no working Claude
+Code example to copy.**
+
+**This is not a blocker — it is the CEO ↔ staff split expressing itself in surfaces:**
+
+| | surface | needs UI? |
+|---|---|---|
+| **CEO** | Claude desktop / web | **yes** — and it renders. Proven 2026-07-17: an interactive widget with a working dispatch button, in this very project's conversation. |
+| **staff** | Claude Code CLI | **no.** Staff needs the prompt and the gate. Both are text. |
+
+Design for that split rather than against it. The cockpit targets where the CEO already is; the CLI gets
+no cockpit and does not want one.
+
+**Three display modes**, and the mechanics are a negotiation, not a command: a view declares
+`appCapabilities.availableDisplayModes` during `ui/initialize`, requests changes via
+`ui/request-display-mode`, and the **host returns the mode actually set** — which may differ — notifying
+via `ui/notifications/host-context-changed`. A host MUST NOT switch a view to a mode it never declared.
+So **design for inline and treat fullscreen as an upgrade the host may decline.**
+
+- **inline** — the decision inbox. *"This flow changed — approve?"* The CEO surface, and the one that matters.
+- **fullscreen** — the knowledge map and coverage tables. Note this is a **staff** surface: per §4 the CEO does not read specs. It is therefore the *least* important mode, despite looking the most like a product — and `serve.ts` already provides it in a browser.
+- **pip** — a persistent gate light. **This is the anti-`|| echo`**: the gate was broken for months because the signal was a CI log nobody reads, and 32 requirements vanished behind a `console.warn` that scrolled past. PiP is not a new detector — the data already exists — it is the difference between a truth that is *available* and one that is *unavoidable*. It attacks the real failure mode: not "we couldn't detect it" but "nobody looked."
+
+**External URLs are deferred from the MVP** (model visibility, un-screenshottable content, review process),
+so an app **cannot iframe `localhost`** — it is a self-contained bundle the host reviews. That forces an
+architecture change which is a **win regardless**: today `viewer.html` is **13 MB**, the whole graph
+inlined, regenerated and committed on every build. As an app it inverts to a lean shell that calls
+`app.callServerTool('graph')` for its data — **and the 13 MB commit-on-every-build disappears.** The
+current design only exists because a static file had no way to ask a server for anything. It does now.
+A button can still `window.open()` an external URL after scheme validation, so `serve.ts` survives as the
+deep-dive surface.
+
 ## 7. Requirement zero
 
 > **REQ-0** — *Given any repo root supplied as configuration, the tool builds a byte-identical graph to
@@ -198,8 +236,13 @@ decoration.**
    (the fingerprint is the test), and spikes.
 3. **Greenfield is an issue kind, not a tab.** "No code without a requirement doc" is enforced as an
    `ungoverned-code` issue in the **existing ratchet** — frozen baseline, count may fall but never rise.
-   Existing untouched code stays legal; new ungoverned code fails the build. No new UI. *(Blocked on
-   §11.1.)*
+   Existing untouched code stays legal; new ungoverned code fails the build. No new UI.
+   **Unblocked 2026-07-17: the CEO committed to adopting `governs:`.** That was the load-bearing
+   question — detection is cheap to build and worthless if docs never declare governance (nine of 272
+   did). With the habit committed to, this becomes real work rather than a smoke detector in a house with
+   no alarms wired in. The mechanism already exists (`governs:` edges map docs → code paths); what is
+   needed is the diff-time check and the baseline. **A rule alone would be the honour system — which is
+   exactly what failed at 70 requirements — so it is a gate, not a staff instruction.**
 4. **The staff prompt is a first-class deliverable**, shipped as a skill plus a `UserPromptSubmit` hook
    that routes coding tasks through it.
 5. **One repo, three consumers** — npm package (CI runs the gate, where Claude Code does not exist),
@@ -232,16 +275,6 @@ project. Phase 5 is hygiene, not value.
 
 ## 12. Open questions
 
-0. **MCP Apps: verify Claude Code support before committing to it.** The direction is MCP Apps for the
-   decision inbox (§6) — it is the official extension, production-ready, and `app.callServerTool()` is
-   exactly the dispatch bridge flow-approval needs. **But the official announcement lists Claude web +
-   desktop, Goose, VS Code Insiders and ChatGPT, and does NOT mention Claude Code.** One secondary source
-   claims Claude Code support; that is unverified. This is load-bearing: a dev tool whose cockpit only
-   renders outside the dev surface is a different product. Note the CEO may legitimately live in Claude
-   Desktop while staff lives in Claude Code — in which case the gap is acceptable and should be a stated
-   choice, not a discovery. **Verify before phase 4.** Fallback if unsupported: the `sendPrompt()` widget
-   pattern, demonstrated working in Claude Code on 2026-07-17 — weaker (it routes through the model
-   rather than straight to a tool) but sufficient for a dispatch.
 1. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
    "byte-identical to DojoStack's copy", which is exactly right as a *migration* acceptance criterion and
    unshippable as a permanent one: the test needs a private CRE codebase, so it cannot run in this repo's
@@ -251,10 +284,10 @@ project. Phase 5 is hygiene, not value.
    project, one-repo and multi-repo variants) whose graph is asserted — which is also the cheapest honest
    proof that "reusable" is real (§8). Resolve during phase 2, before REQ-0 goes green and the question
    stops being asked.
-1. **Will `governs:` be adopted?** Nine docs of 272 declare it today. Decision 10.3 is dead without it —
-   detection would report "everything is ungoverned", which is true, useless, and instantly ignored. **The
-   real question is whether declaring which code a spec governs is a habit worth keeping.** Resolve before
-   building any detection.
+2. ~~**Will `governs:` be adopted?**~~ — **RESOLVED 2026-07-17: yes.** See decision 10.3. Nine docs of 272
+   declared it at the time of asking; the CEO committed to the habit, which is what makes the
+   `ungoverned-code` ratchet worth building. Open follow-up: backfilling `governs:` across the existing
+   corpus is its own slice, and the ratchet must not block on it — freeze the baseline where it lands.
 2. **Build flow-approval (§6)?** The most differentiated idea here and entirely undesigned. Overlaps
    Percy/Chromatic on approve-the-diff; the novelty is that approval **ratifies a requirement** rather
    than blessing a screenshot.
