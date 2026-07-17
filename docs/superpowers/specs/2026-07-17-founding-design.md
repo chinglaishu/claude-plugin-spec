@@ -62,9 +62,15 @@ to you — here is the tool that keeps it honest while you iterate.*
 > milestones. AI = **staff**: works to the doc. Implied product shape: **staff tooling** (context for
 > agents + a drift gate) + **CEO cockpit** (SSoT · a decision inbox for conflicts/open-questions · review).
 
-The sharp consequence: **the CEO's only gate is approving requirement text.** They never read a long
-spec. They never watch the process. They state intent and approve words — and, for UI behaviour, approve
-a *flow* (§6).
+The sharp consequence: **the CEO's only gate is approving requirement text.** They state intent and
+approve words — and, for UI behaviour, approve a *flow* (§6). They never watch the process.
+
+**They do read — just not routinely.** *(Corrected 2026-07-17: this first said "they never read a long
+spec", which is false and was load-bearing — it was used to rank fullscreen as a staff-only surface.)*
+Reading is **for judging**, not a standing obligation: pulling context before adjudicating a conflict,
+checking what a requirement actually says before approving a change to it. So the CEO needs a surface to
+read *on demand* — which is what fullscreen is for. What they must never need is to read the spec
+**to stay current**. That is the tool's job.
 
 ## 5. The three deliverables — and the missing one is the gold
 
@@ -147,7 +153,7 @@ via `ui/notifications/host-context-changed`. A host MUST NOT switch a view to a 
 So **design for inline and treat fullscreen as an upgrade the host may decline.**
 
 - **inline** — the decision inbox. *"This flow changed — approve?"* The CEO surface, and the one that matters.
-- **fullscreen** — the knowledge map and coverage tables. Note this is a **staff** surface: per §4 the CEO does not read specs. It is therefore the *least* important mode, despite looking the most like a product — and `serve.ts` already provides it in a browser.
+- **fullscreen** — the knowledge map, coverage tables, and **the batch review bench** (§6b). Serves both: staff browsing, and the CEO reading *on demand* to judge (§4). `serve.ts` already provides it in a browser, which is why it is the least *urgent* mode — not the least important. An earlier draft ranked it staff-only on the strength of "the CEO never reads", which was wrong.
 - **pip** — a persistent gate light. **This is the anti-`|| echo`**: the gate was broken for months because the signal was a CI log nobody reads, and 32 requirements vanished behind a `console.warn` that scrolled past. PiP is not a new detector — the data already exists — it is the difference between a truth that is *available* and one that is *unavoidable*. It attacks the real failure mode: not "we couldn't detect it" but "nobody looked."
 
 **External URLs are deferred from the MVP** (model visibility, un-screenshottable content, review process),
@@ -159,7 +165,32 @@ current design only exists because a static file had no way to ask a server for 
 A button can still `window.open()` an external URL after scheme validation, so `serve.ts` survives as the
 deep-dive surface.
 
-## 7. Requirement zero
+### 6b. The review bench — batch, not one-at-a-time
+
+The inline inbox (§6a) is for *one* decision arriving while you work. It is the wrong shape for the
+CEO's real motion: **sit down, go through everything, leave comments, dispatch one fix job.** That is the
+GitHub PR-review model — pending comments, then submit once — and it is how humans actually review.
+Adjudicating conflicts one at a time in a chat is not review; it is interruption.
+
+**Nearly all of this is already built, and was never reachable.** Measured 2026-07-17:
+
+| step | mechanism | status |
+|---|---|---|
+| review all | the viewer's Conflicts tab | **built** |
+| leave a comment | `Decision.note?: string` | **built** — the field exists |
+| store it | `conflicts/decisions.json`, via `/api/conflict-decisions` | **built**, keyed by hash(subject+scope) so a decision survives a re-scan (REQ-KG-CONF-05) |
+| fix all at once | `fixPlanFor(finding, canonicalPositionId, note?)` → `/kg-fix-conflicts <scope>` | **built** — the fix plan already consumes the note |
+| **type the comment** | a `<textarea>` in the Conflicts tab | **missing** |
+
+**The `note` is plumbed end-to-end — store → fix plan → skill — and there is no box to type it into.**
+The feature is one input away, not a subsystem. Decisions are deliberately a *runtime overlay* outside
+the deterministic graph, so triage never makes `check` byte-dishonest — that design is right and stays.
+
+Two things this reframes:
+- **Fullscreen is where this lives** (§6a), which is the CEO reading-to-judge that §4 now admits to.
+- **The batch bench and the inline inbox are different products for different moments**, not two designs
+  competing. Inline = "this changed while you were working, approve?". Bench = "you have twenty minutes,
+  clear the queue."
 
 > **REQ-0** — *Given any repo root supplied as configuration, the tool builds a byte-identical graph to
 > the one DojoStack's in-tree copy produces — knowing nothing about DojoStack.*
