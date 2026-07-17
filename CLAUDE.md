@@ -48,9 +48,11 @@ review agent, no soc-gate.
 - **Phase 2.1 is half done.** `src/config.ts` owns the topology; nothing consumes it yet. Next: delete the
   four shadow copies (`repo.ts`, `gitDates.ts`, `sources.ts`, `serve.ts`) and thread it through the six
   parsers.
-- **The oracle.** The graph is a pure function of the tree, so any refactor must leave it byte-identical:
-  build with `KG_REPO_ROOT=<a repo>`, normalize as `check.ts`'s `normalizeForCompare` does, SHA256. The
-  method is the contract, not any particular hash.
+- **The oracle — use it on every phase-2 step.** The graph is a pure function of the tree, so a config
+  refactor must leave it **byte-identical**. `npx tsx scripts/fingerprint.mts <repo-root>`. Capture from
+  an unmodified tree *before* you start, refactor without touching indexed content, assert unchanged.
+  **The method is the contract, not any particular hash** — it moves whenever the target tree changes, so
+  never compare against a hash written down on another day.
 - **Known-failing, not yours to be surprised by:** 3 serve tests (`serve.ts` reads the graph from
   `join(__dirname, "..")` — the tool assumes it lives inside the project it measures; phase 2's problem)
   and `req0.test.ts` (the intentional RED).
