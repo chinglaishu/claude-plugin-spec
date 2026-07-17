@@ -282,7 +282,31 @@ decoration.**
    Claude plugin (the skills + hook), self-hosted (its own graph).
 6. **Move first, then genericize** — `KG_REPO_ROOT` means the oracle survives the move.
 7. **DojoStack is rewired last**, so nothing breaks meanwhile.
-8. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
+8. **Config is threaded explicitly, never a module-level singleton.** Entrypoints call
+   `loadConfig(repoRoot)` once and pass it down; `repoOf(path, repos)` / `nsId(path, bare, repos)` take
+   the topology. A singleton would be near-zero churn but makes the tool stateful, forces test
+   setup/teardown, and a parser imported standalone would silently emit wrong ids — a permanent hazard
+   traded for a one-time mechanical cost. It also matches the codebase's own instinct: `gitDates.ts`
+   injects a `GitRunner` rather than reaching for global git, which is exactly why its logic is testable
+   without a real repo. **Rejected outright:** a project-supplied `kg.config.ts` the tool imports — an
+   inverted dependency that would make extraction impossible, which is the whole point.
+
+   **The cost is bounded and mechanical, not structural:** `nsId` has 8 call sites and `repoOf` 2. The
+   six parsers already take a *path* and never mention repos — they do not know the topology exists.
+
+9. **The topology gets one owner.** It is currently re-declared in four places — `repo.ts` (as a union
+   **type**, so it is in the type system, not just strings), `gitDates.ts`, `serve.ts`, and `sources.ts`,
+   which the gate work added on 2026-07-16 as the third independent copy. **The pattern is still actively
+   reproducing.** Shipping config while leaving three shadow copies would be a symptom fix — the config
+   would be true and the code would still believe something else. Collapsing all four is the defect, not
+   scope creep.
+
+   **Two classes of coupling, and only the move revealed the second:** twelve non-test files hardcode
+   `dojostack_*` *paths*, but `serve.ts` also reads the graph from `join(__dirname, "..")` — **the tool
+   assumes it lives inside the project it measures.** That is the more fundamental assumption for a
+   package, and no amount of reading found it; porting did, as 3 failing serve tests.
+
+10. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
    Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots on
    the dedicated `e2e-evidence` branch addressed by URL, never on the working branch and never inside
    the graph JSON (REQ-KG-05). Three reasons, in order of weight:
