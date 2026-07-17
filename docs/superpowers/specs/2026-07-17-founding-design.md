@@ -278,7 +278,7 @@ project. Phase 5 is hygiene, not value.
 1. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
    "byte-identical to DojoStack's copy", which is exactly right as a *migration* acceptance criterion and
    unshippable as a permanent one: the test needs a private CRE codebase, so it cannot run in this repo's
-   CI and cannot survive public distribution (§12.4). A generic tool whose requirement-zero cannot be
+   CI and cannot survive public distribution (§12.5). A generic tool whose requirement-zero cannot be
    verified by anyone who installs it is not generic. Likely answer: REQ-0 is a **migration requirement**
    that retires once green, and its permanent successor is a **committed fixture repo** (a tiny synthetic
    project, one-repo and multi-repo variants) whose graph is asserted — which is also the cheapest honest
@@ -288,15 +288,15 @@ project. Phase 5 is hygiene, not value.
    declared it at the time of asking; the CEO committed to the habit, which is what makes the
    `ungoverned-code` ratchet worth building. Open follow-up: backfilling `governs:` across the existing
    corpus is its own slice, and the ratchet must not block on it — freeze the baseline where it lands.
-2. **Build flow-approval (§6)?** The most differentiated idea here and entirely undesigned. Overlaps
+3. **Build flow-approval (§6)?** The most differentiated idea here and entirely undesigned. Overlaps
    Percy/Chromatic on approve-the-diff; the novelty is that approval **ratifies a requirement** rather
    than blessing a screenshot.
-3. **The name.** `kg-tool` is a working title and becomes the plugin id, the npm package and the
+4. **The name.** `kg-tool` is a working title and becomes the plugin id, the npm package and the
    marketplace entry. Cheap now, painful after anyone installs it.
-4. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
+5. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
    examples need scrubbing.
-5. **Config file name/location** in a consuming project.
-6. **`resolveBackendVenvPython`** — a generic tool arguably should not know what a Python venv is;
+6. **Config file name/location** in a consuming project.
+7. **`resolveBackendVenvPython`** — a generic tool arguably should not know what a Python venv is;
    probably an opaque command the project supplies.
-7. **Do `flows` labels belong in config**, or can they derive from the feature registries the graph
+8. **Do `flows` labels belong in config**, or can they derive from the feature registries the graph
    already reads?
