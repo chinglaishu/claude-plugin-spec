@@ -31,8 +31,12 @@ export interface ContextPack {
   requirements: PackRequirement[];
   tests: { id: string; title: string; status?: string }[];
   conflicts: { id: string; subject: string; severity: string }[];
-  /** True when NOTHING governs this path. Staff must stop and ask the CEO for a requirement (§9b.2). */
+  /** True when nothing governs this path AND the baseline does not already know it. Staff must stop
+   *  and ask the CEO for a requirement (§9b.2). */
   halt: boolean;
+  /** True when this path is ungoverned but excused: either the project has no frozen baseline yet, or
+   *  the baseline already contains it. Ungoverned, and legal — the ratchet's whole idea (§10.3). */
+  grandfathered: boolean;
   reason?: string;
 }
 
@@ -45,6 +49,17 @@ export function renderPack(pack: ContextPack): string {
   const out: string[] = [`# Governing context — ${pack.path}`];
   if (pack.halt) {
     out.push("", `## ⛔ STOP — ${pack.reason}`, "", "Do not write code here. Ask the CEO for a requirement first.");
+    return out.join("\n") + "\n";
+  }
+  if (pack.grandfathered) {
+    out.push(
+      "",
+      "## ⚠ Ungoverned — but grandfathered",
+      "",
+      `No spec governs this path. ${pack.reason ?? ""} (§10.3)`,
+      "There is no statement of correct behaviour here, so anything you change is a guess.",
+      "**Ask the CEO for a requirement if you are changing behaviour rather than tidying.**",
+    );
     return out.join("\n") + "\n";
   }
   const owners = [...pack.governedBy.map((d) => `${d.title} (${d.path ?? d.id})`), ...pack.features.map((f) => `feature: ${f.title}`)];
@@ -84,7 +99,7 @@ export function targetCovers(path: string, target: string): boolean {
  * authored relative to the doc's own repo while callers hand us a workspace-relative path. Deriving
  * the repo-relative form from config is exactly what the prototype hardcoded.
  */
-export function contextPack(graph: Graph, config: Config, path: string): ContextPack {
+export function contextPack(graph: Graph, config: Config, path: string, baseline?: string[]): ContextPack {
   const byId = new Map(graph.nodes.map((n) => [n.id, n] as const));
   const forms = [path, stripRepoPrefix(path, config.repos)].filter((v, i, a) => a.indexOf(v) === i);
   const covers = (target: string) => forms.some((f) => targetCovers(f, target));
@@ -131,17 +146,31 @@ export function contextPack(graph: Graph, config: Config, path: string): Context
   // staff can act on; an ungoverned path has no statement of correct behaviour at all, so anything
   // written there is a guess — and the next person to change it inherits the guess with no way to
   // tell it from a decision. Report-only here would be the `|| echo` failure (§9c).
-  const halt = owners.size === 0;
+  //
+  // The BASELINE is what makes this shippable (§10.3): "existing untouched code stays legal; new
+  // ungoverned code fails the build." An absent baseline means the project has not been governed yet
+  // — every project on the day it installs the plugin — and halting a user out of their own repo on
+  // install is not a strict gate, it is a broken product. So: no baseline, never halt; a frozen
+  // baseline, halt only on what it does not already know.
+  const ungoverned = owners.size === 0;
+  const excused = baseline === undefined || baseline.includes(path);
+  const halt = ungoverned && !excused;
+  const grandfathered = ungoverned && excused;
   return {
     path,
     governedBy,
     features: features.map((f) => ({ id: f.id, title: f.title ?? f.id })),
     requirements,
+    grandfathered,
     tests,
     conflicts,
     halt,
     reason: halt
       ? "Nothing governs this path — stop and ask the CEO for a requirement before writing code."
-      : undefined,
+      : grandfathered
+        ? baseline === undefined
+          ? "This project has no frozen baseline yet — it has not been governed. Run the kg-init skill."
+          : "The frozen baseline already records this path as ungoverned, so editing it is legal."
+        : undefined,
   };
 }

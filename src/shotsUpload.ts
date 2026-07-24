@@ -1,12 +1,22 @@
 import { pathToFileURL } from "node:url";
+import { objectKey, evidenceRef, blobAdapter } from "./blobStore";
+import type { Evidence } from "./config";
 
-// src/shotsUpload.ts — evidence-branch uploader (spec §5 item 2).
+// src/shotsUpload.ts — evidence uploader (spec §5).
+//
+// Header amended 2026-07-24: this said "evidence-branch uploader", which stopped being true when the
+// blob destination landed. The orchestration below is destination-NEUTRAL — plan, put, prune, index
+// is the same sequence for a bucket as for a branch — and only two things vary, both injected:
+// `GhLike` (how bytes get there) and `ShotRef` (what the committed index then points at). They are
+// chosen together in a single expression at the bottom, because uploading one way and indexing the
+// other fails silently: every upload reports ✓ and every screenshot renders "not available".
 //
 // Pure logic (scanning, planning, pruning, index-building) is exported and unit-tested with an
-// injected FsLike/GhLike so the test suite never touches the real filesystem or `gh`. The CLI
-// entrypoint at the bottom wires real `node:fs` + a thin `gh api` exec wrapper and is NOT covered
-// by unit tests (it's a few lines of glue — the proven pr-evidence upload pattern: gh api contents
-// base64 PUT with sha when replacing, verified via `gh api ...?ref=`, never anon curl).
+// injected FsLike/GhLike so the test suite never touches the real filesystem, `gh` or `aws`. The CLI
+// entrypoint at the bottom wires real `node:fs` + thin exec wrappers and is NOT covered by unit tests
+// (a few lines of glue — for github, the proven pr-evidence upload pattern: gh api contents base64
+// PUT with sha when replacing, verified via `gh api ...?ref=`, never anon curl; for blob, `aws s3`,
+// whose argv is built and asserted in `blobStore.ts`).
 
 // Every gh/git subprocess call below is capped by this timeout so a hung `gh` process (auth
 // prompt, stalled network) or a wedged `git` can never block sync:results / shots:upload
@@ -90,10 +100,32 @@ export function pruneShaSet(existing: string[], newSha?: string): { keep: string
 }
 
 export interface EvidenceIndexShape {
-  branch: string;
+  /** The `e2e-evidence` branch, for the github destination. OPTIONAL because it is a fact about that
+   *  ONE destination, and a blob-destination index has no branch to name (REQ-KG-05). Provenance
+   *  only — nothing reads it; `applyEvidence` folds `cases` alone, which is why the blob index simply
+   *  omits it rather than gaining a second, half-set sibling field beside it. */
+  branch?: string;
   updatedAt: string;
   cases: Record<string, { sha: string; shots: Record<string, string> }>;
 }
+
+/**
+ * How a destination ADDRESSES one uploaded object in the committed index — the second half of the
+ * `GhLike` seam. `GhLike` says how bytes get there; this says what the index then points at, and the
+ * two must be swapped together or the upload lands somewhere the index never names.
+ */
+export type ShotRef = (caseSlug: string, sha: string, remoteName: string) => string;
+
+/** The evidence branch's raw URL. Public content in a public repo; a private one is read through the
+ *  viewer's token tier (`evidenceUrl.ts`). */
+export const githubRef = (repo: string, branch = "e2e-evidence"): ShotRef =>
+  (caseSlug, sha, remoteName) =>
+    `https://raw.githubusercontent.com/${repo}/${branch}/kg-cases/${caseSlug}/${sha}/${remoteName}`;
+
+/** A private bucket's object KEY, addressed through serve.ts's signing route. Never a URL: a signed
+ *  one expires long before the committed index does. */
+export const blobRef = (evidence: Extract<Evidence, { kind: "blob" }>): ShotRef =>
+  (caseSlug, sha, remoteName) => evidenceRef(objectKey(evidence, caseSlug, sha, remoteName));
 
 /**
  * Build the frozen contract-3 index shape (<e2eDir>/kg-evidence-index.json).
@@ -101,29 +133,45 @@ export interface EvidenceIndexShape {
  * exact string a case's `steps[].screenshot` carries — never the remote `01-`/`02`-numbered name.
  * The viewer's shotSrcCandidates() does an exact `n.evidence[filename]` lookup against that bare
  * name (spec §2 contract 3's own JSON example shows this), so a remoteName-keyed index silently
- * never resolves for any case. The ordinal prefix belongs only in the URL's path segment, which
- * must still point at the real uploaded (remote-numbered) object.
+ * never resolves for any case. The ordinal prefix belongs only in the reference's path segment,
+ * which must still point at the real uploaded (remote-numbered) object.
+ *
+ * ONE builder for every destination, deliberately: that bare-filename rule is the one this file has
+ * already got wrong once in production, and a second copy of the loop is a second place to get it
+ * wrong again. Only the reference format varies, so only the reference format is injected.
  */
+export function buildIndex(
+  ref: ShotRef,
+  uploaded: { caseId: string; sha: string; shots: { filename: string; remoteName: string }[] }[],
+  updatedAt: string,
+  branch?: string,
+): EvidenceIndexShape {
+  const cases: EvidenceIndexShape["cases"] = {};
+  for (const u of uploaded) {
+    const caseSlug = bareLower(u.caseId);
+    const shots: Record<string, string> = {};
+    for (const s of u.shots) shots[s.filename] = ref(caseSlug, u.sha, s.remoteName);
+    cases[caseSlug] = { sha: u.sha, shots };
+  }
+  return { ...(branch ? { branch } : {}), updatedAt, cases };
+}
+
+/** The github destination's index — the shape this file has always written. */
 export function buildEvidenceIndex(
   repo: string,
   uploaded: { caseId: string; sha: string; shots: { filename: string; remoteName: string }[] }[],
   updatedAt: string,
   branch = "e2e-evidence",
 ): EvidenceIndexShape {
-  const cases: EvidenceIndexShape["cases"] = {};
-  for (const u of uploaded) {
-    const caseSlug = bareLower(u.caseId);
-    const shots: Record<string, string> = {};
-    for (const s of u.shots) {
-      shots[s.filename] = `https://raw.githubusercontent.com/${repo}/${branch}/kg-cases/${caseSlug}/${u.sha}/${s.remoteName}`;
-    }
-    cases[caseSlug] = { sha: u.sha, shots };
-  }
-  return { branch, updatedAt, cases };
+  return buildIndex(githubRef(repo, branch), uploaded, updatedAt, branch);
 }
 
 export interface RunUploadOptions {
-  repo: string;                 // "owner/repo"
+  /** How the committed index addresses what this run uploads — `githubRef` or `blobRef`, matching
+   *  the `gh` adapter below. */
+  ref: ShotRef;
+  /** Provenance stamped into the index; the github destination's branch, absent for a bucket. */
+  branch?: string;
   local: ShotDirEntry[];
   graphCaseIds: Set<string>;
   sha: string;                   // short commit sha for this upload
@@ -159,10 +207,10 @@ export async function runUpload(opts: RunUploadOptions): Promise<RunUploadResult
     uploaded.push({ caseId: c.caseId, sha: opts.sha, shots: c.uploads.map((u) => ({ filename: u.filename, remoteName: u.remoteName })) });
   }
 
-  return { index: buildEvidenceIndex(opts.repo, uploaded, opts.now), uploadedCount: uploaded.length };
+  return { index: buildIndex(opts.ref, uploaded, opts.now, opts.branch), uploadedCount: uploaded.length };
 }
 
-// ── CLI entrypoint (real fs + real `gh api`) — glue only, not unit-tested; the logic above is. ──
+// ── CLI entrypoint (real fs + real `gh api` / `aws s3`) — glue only; the logic above is tested. ──
 const isMain = (() => {
   try {
     return import.meta.url === pathToFileURL(process.argv[1]).href;
@@ -216,13 +264,6 @@ if (isMain) {
     console.log(`kg shots:upload — screenshots remain under ${config.shotsDir}. Declare \`evidence\` in kg.config.json to share them across machines.`);
     process.exit(0);
   }
-  if (evidence.kind === "blob") {
-    console.error("kg shots:upload — `evidence.kind: \"blob\"` is declared, but its transport is not wired yet.");
-    console.error("kg shots:upload — use `github` for now, or leave `evidence` out to keep shots local.");
-    process.exit(1);
-  }
-  const repo = evidence.repo;
-
   const argOf = (flag: string): string | undefined => {
     const i = process.argv.indexOf(flag);
     return i >= 0 ? process.argv[i + 1] : undefined;
@@ -236,13 +277,34 @@ if (isMain) {
     readFile: async (path: string) => nodeReadFile(path),
   };
 
+  // `aws s3 …`, the blob destination's whole subprocess surface. Credentials are deliberately absent:
+  // they resolve from the standard AWS chain at run time, so nothing here can leak a secret and every
+  // argv is safe to log verbatim (REQ-KG-05).
+  const awsCli = async (args: string[]): Promise<string> => {
+    const { stdout } = await execFileAsync("aws", args, { timeout: SUBPROCESS_TIMEOUT_MS });
+    return stdout;
+  };
+
+  // RAW BYTES — and emphatically NOT `withTempBodyFile` above, which JSON.stringifies its argument
+  // for `gh api --input`. Handing a PNG to that one would write `{"0":137,"1":80,…}` to disk and
+  // `aws s3 cp` would upload the wrapper as the screenshot, exiting 0 while doing it.
+  const withRawTempFile = async <T>(bytes: Buffer, fn: (path: string) => Promise<T>): Promise<T> => {
+    const path = join(tmpdir(), `kg-blob-${randomUUID()}.png`);
+    await writeFile(path, bytes);
+    try {
+      return await fn(path);
+    } finally {
+      await unlink(path).catch(() => {});
+    }
+  };
+
   // `gh api repos/{owner}/{repo}/contents/...` base64 PUT (with sha when replacing) — the
   // proven pr-evidence pattern. Verify via `gh api ...?ref=e2e-evidence`, never anon curl.
   const ghApi = async (args: string[]): Promise<string> => {
     const { stdout } = await execFileAsync("gh", ["api", ...args], { timeout: SUBPROCESS_TIMEOUT_MS });
     return stdout;
   };
-  const ghAdapter: GhLike = {
+  const githubAdapter = (repo: string): GhLike => ({
     listCaseShas: async (caseId: string) => {
       try {
         const out = await ghApi([`repos/${repo}/contents/kg-cases/${caseId}?ref=${branch}`]);
@@ -283,7 +345,25 @@ if (isMain) {
         console.warn(`kg shots:upload — prune skipped for ${remotePath}: ${(e as Error).message}`);
       }
     },
-  };
+  });
+
+  // EXACTLY ONE destination is built. The discriminated union means there is no path on which both
+  // an adapter and a mismatched reference format exist — the two are chosen in a single expression
+  // precisely because uploading one way and indexing the other is the failure that looks like
+  // success: every upload reports ✓ and every screenshot renders as "not available".
+  const { gh: ghAdapter, ref, indexBranch, destination } = evidence.kind === "blob"
+    ? {
+        gh: blobAdapter(evidence, { aws: awsCli, withRawTempFile, warn: (m: string) => console.warn(m) }),
+        ref: blobRef(evidence),
+        indexBranch: undefined as string | undefined,
+        destination: `s3://${evidence.bucket}/${evidence.prefix}`,
+      }
+    : {
+        gh: githubAdapter(evidence.repo),
+        ref: githubRef(evidence.repo, branch),
+        indexBranch: branch as string | undefined,
+        destination: `${evidence.repo}@${branch}`,
+      };
 
   const graph = JSON.parse(await nodeReadFile(join(outDir, "knowledge-graph.json"), "utf8")) as { nodes: { id: string; type: string; kind?: string }[] };
   const graphCaseIds = new Set(
@@ -297,10 +377,10 @@ if (isMain) {
   const { stdout: shaOut } = await execFileAsync("git", ["rev-parse", "--short", "HEAD"], { cwd: e2eRepoDir, timeout: SUBPROCESS_TIMEOUT_MS });
   const sha = shaOut.trim() || "unknown";
 
-  const result = await runUpload({ repo, local, graphCaseIds, sha, dryRun, caseFilter, fs: fsAdapter, gh: ghAdapter, now: new Date().toISOString() });
+  const result = await runUpload({ ref, branch: indexBranch, local, graphCaseIds, sha, dryRun, caseFilter, fs: fsAdapter, gh: ghAdapter, now: new Date().toISOString() });
 
   const totalShots = Object.values(result.index.cases).reduce((n, c) => n + Object.keys(c.shots).length, 0);
-  console.log(`kg shots:upload — ${dryRun ? "[dry-run] " : ""}${result.uploadedCount} case(s), ${totalShots} shot(s) @ sha ${sha}${caseFilter ? ` (scoped: ${caseFilter.join(",")})` : ""}`);
+  console.log(`kg shots:upload — ${dryRun ? "[dry-run] " : ""}${result.uploadedCount} case(s), ${totalShots} shot(s) @ sha ${sha} → ${destination}${caseFilter ? ` (scoped: ${caseFilter.join(",")})` : ""}`);
 
   if (!dryRun) {
     const indexPath = join(repoRoot, e2ePath(config, "kg-evidence-index.json"));

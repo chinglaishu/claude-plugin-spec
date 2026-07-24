@@ -21,12 +21,15 @@ const FIXTURES = join(__dirname, "..", "fixtures");
 const PINNED = "2000-01-01T00:00:00.000Z";
 const NO_GIT: GitRunner = async () => null;
 
-async function packFor(fixture: string, path: string) {
+async function packForBaseline(fixture: string, path: string, baseline?: string[]) {
   const root = join(FIXTURES, fixture);
   const config = await loadConfig(root);
   const graph = await buildGraph(root, PINNED, config, NO_GIT);
-  return contextPack(graph, config, path);
+  return contextPack(graph, config, path, baseline);
 }
+
+/** A project with a frozen-but-empty baseline: governed, and nothing grandfathered. */
+const packFor = (fixture: string, path: string) => packForBaseline(fixture, path, []);
 
 describe("contextPack — a governed path", () => {
   it("names the doc that governs it", async () => {
@@ -94,6 +97,43 @@ describe("contextPack — an ungoverned path HALTS", () => {
   it("does not halt merely because a governed path has gaps", async () => {
     const pack = await packFor("one-repo", "src/checkout.ts");
     expect(pack.halt).toBe(false);
+  });
+});
+
+/**
+ * The frozen baseline (§10.3) — "existing untouched code stays legal; new ungoverned code fails".
+ *
+ * Without this the pack halts on EVERY file of any project that has not been governed yet, which is
+ * every project on the day it installs the plugin. Halting a user out of their own repo on install
+ * is not a strict gate, it is a broken product — and the ratchet idiom for exactly this was already
+ * a locked decision.
+ */
+describe("contextPack — the frozen baseline", () => {
+  const pack = (path: string, baseline?: string[]) =>
+    packForBaseline("one-repo", path, baseline);
+
+  it("never halts when the project has NO baseline — it is not governed yet", async () => {
+    const p = await pack("src/totallyNewThing.ts", undefined);
+    expect(p.halt).toBe(false);
+    expect(p.grandfathered).toBe(true);
+  });
+
+  it("does not halt on ungoverned code the baseline already froze", async () => {
+    const p = await pack("src/legacyThing.ts", ["src/legacyThing.ts"]);
+    expect(p.halt).toBe(false);
+    expect(p.grandfathered).toBe(true);
+  });
+
+  it("HALTS on ungoverned code the baseline does not know — this is new", async () => {
+    const p = await pack("src/brandNew.ts", ["src/legacyThing.ts"]);
+    expect(p.halt).toBe(true);
+    expect(p.grandfathered).toBe(false);
+  });
+
+  it("never grandfathers a governed path — governance is not a concession", async () => {
+    const p = await pack("src/checkout.ts", []);
+    expect(p.halt).toBe(false);
+    expect(p.grandfathered).toBe(false);
   });
 });
 

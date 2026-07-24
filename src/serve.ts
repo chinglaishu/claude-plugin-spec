@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { readFileSync, writeFileSync, unlinkSync, watch, mkdtempSync, existsSync, type FSWatcher } from "node:fs";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, execFile, type ChildProcess } from "node:child_process";
 import { dirname, join, normalize } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -18,7 +18,9 @@ import { buildRunArgs } from "./runSchedule";
 import { parseCaseResult } from "./parsePlaywrightReport";
 import { runArtifactUrl } from "./serveArtifacts";
 import { readDecisions, applyDecision, serializeDecisions, decisionsFor, type DecisionStatus } from "./conflictDecisions";
-import { loadConfig, e2ePath, artifactPath, subdirOf, repoOf, stripRepoPrefix, repoDirNames } from "./config";
+import { presignArgs, evidenceKeyFromPath, EVIDENCE_ROUTE } from "./blobStore";
+import { subprocessTimeoutMs } from "./shotsUpload";
+import { loadConfig, e2ePath, artifactPath, subdirOf, repoOf, stripRepoPrefix, repoDirNames, type Evidence } from "./config";
 import { TOOL_DIR } from "./toolDir";
 import type { Graph, GraphNode } from "./types";
 
@@ -563,6 +565,63 @@ function armGraphWatcher(): void {
   }
 }
 
+// ── GET /evidence/<objectKey> — a short-lived signed GET for one private-bucket screenshot ───────
+//
+// The read half of the S3 evidence transport (REQ-KG-05). The bucket is private, so neither address
+// the committed index could hold would work in an `<img>`: the durable object URL 403s, and a signed
+// URL expires long before the file it was written into. The index therefore stores the KEY, and the
+// signature is minted HERE, per view — which is exactly the inversion `blobStore.ts` documents, where
+// a signature is wrong for upload (one signature, one key, many keys unknown until the run happens)
+// and right for read (the key is known, the URL is generated per view, and a short life is the point).
+//
+// Confinement is REQ-KG-SERVE-02's idiom one step removed: there is no filesystem read to confine, so
+// `evidenceKeyFromPath` runs the same decode → guard → boundary-check sequence in KEY space, with
+// `withinPrefix` where the other routes use `isWithinRoot`. A request can only ever name an object
+// under the configured prefix, so this can never become a general-purpose signer for someone's bucket.
+export interface EvidenceDeps {
+  evidence: Evidence;
+  presign(evidence: Extract<Evidence, { kind: "blob" }>, key: string): Promise<string>;
+}
+
+/** Sign one key with the `aws` CLI. Credentials resolve from the standard AWS chain at run time, so
+ *  nothing here holds one and the argv is safe to log. */
+const presignWithAws: EvidenceDeps["presign"] = (evidence, key) =>
+  new Promise((resolve, reject) => {
+    execFile("aws", presignArgs(evidence, key), { timeout: subprocessTimeoutMs(process.env) }, (err, stdout) =>
+      err ? reject(err) : resolve(String(stdout).trim()),
+    );
+  });
+
+/** `deps` is injectable for tests only; production reads the project's declared destination. */
+export async function serveEvidence(
+  pathname: string,
+  res: import("node:http").ServerResponse,
+  cors: Record<string, string>,
+  deps: EvidenceDeps = { evidence: config.evidence, presign: presignWithAws },
+): Promise<void> {
+  // A project whose evidence is the github branch or the local device has no bucket to sign against.
+  // Anything but a 404 would imply a destination it never declared.
+  if (deps.evidence.kind !== "blob") return notFound(res, cors);
+  const key = evidenceKeyFromPath(deps.evidence, pathname);
+  if (!key) return notFound(res, cors);
+  let url: string;
+  try {
+    url = await deps.presign(deps.evidence, key);
+  } catch (e) {
+    console.warn(`kg serve — could not sign evidence key ${key}: ${(e as Error).message}`);
+    return notFound(res, cors);
+  }
+  // An `aws` that printed nothing (a broken profile, a changed subcommand) would otherwise redirect
+  // the browser at the viewer's own page, which renders as a CORRUPT image rather than a missing one.
+  if (!/^https?:\/\//i.test(url)) {
+    console.warn(`kg serve — aws s3 presign returned no URL for ${key}`);
+    return notFound(res, cors);
+  }
+  // `no-store`, because the target dies in PRESIGN_TTL_SECONDS: a cached redirect would outlive its
+  // own signature and leave the viewer with a broken image it can never retry its way out of.
+  res.writeHead(302, { Location: url, "Cache-Control": "no-store", ...cors }).end();
+}
+
 // GET /api/graph — the current knowledge-graph.json, read FRESH from disk on
 // every request, as application/json with the same CORS header as the other
 // routes. This is what the viewer re-fetches when /api/live tells it the graph
@@ -628,6 +687,11 @@ const server = createServer(async (req, res) => {
   // Read-only failure screenshots for a live run (Feature 2a). GET only, path-traversal-safe.
   if (req.method === "GET" && url.pathname.startsWith("/run-artifacts/")) {
     return serveRunArtifact(url.pathname, res, cors);
+  }
+
+  // A private-bucket screenshot, signed per view (REQ-KG-05). The committed index points here.
+  if (req.method === "GET" && url.pathname.startsWith(EVIDENCE_ROUTE)) {
+    return serveEvidence(url.pathname, res, cors);
   }
 
   // Provenance links (viewer → source). GET only, read-only, path-traversal-safe.

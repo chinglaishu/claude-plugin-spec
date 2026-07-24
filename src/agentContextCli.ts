@@ -33,5 +33,22 @@ if (json === null) {
   process.exit(2);
 }
 
+// The frozen baseline of already-ungoverned paths (§10.3). ABSENT IS MEANINGFUL: a project that has
+// never run `kg-init` has not been governed yet, and `contextPack` must not halt it out of its own
+// repo. So absence is passed through as undefined rather than defaulted to an empty list — an empty
+// baseline says "nothing is excused", which is the opposite claim.
+const baselinePath = join(repoRoot, artifactPath(config, "ungoverned-baseline.json"));
+const baselineJson = await readFile(baselinePath, "utf8").catch(() => null);
+let baseline: string[] | undefined;
+if (baselineJson !== null) {
+  try {
+    const parsed = JSON.parse(baselineJson);
+    baseline = Array.isArray(parsed) ? parsed.map(String) : undefined;
+  } catch {
+    // A corrupt baseline must not silently become "halt everything".
+    console.error(`kg agent-context — ${baselinePath} is unreadable; treating the project as ungoverned.`);
+  }
+}
+
 const graph = JSON.parse(json) as Graph;
-console.log(renderPack(contextPack(graph, config, path)));
+console.log(renderPack(contextPack(graph, config, path, baseline)));

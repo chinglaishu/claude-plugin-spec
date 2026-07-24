@@ -114,27 +114,30 @@ minted per view by `serve.ts` and never committed.
 
 Immediately next:
 
-1. **Finish the S3 transport — three known traps, found by reading `shotsUpload.ts` and left
-   deliberately unwired rather than guessed at.** `src/blobStore.ts` already has the pure half fully
-   tested (`objectKey`, `objectUrl`, `uploadArgs`, `listArgs`, `pruneArgs`, `presignArgs`,
-   `parseShaDirs`); only the subprocess glue remains, roughly 40 lines:
-   - **`withTempBodyFile` is NOT a raw-bytes writer** — it writes a `gh` API JSON body for
-     `--input`. Reusing it for `aws s3 cp` would upload the JSON wrapper instead of the PNG, and it
-     would look like a successful upload. The blob path needs its own raw-bytes temp file.
-   - **`GhLike.putFile`/`deleteDir` take a repo-relative `remotePath`, not a case id.** The builders
-     compose from `(caseId, sha, filename)`, which fits `listCaseShas` but not those two. Add a
-     `keyOf(evidence, remotePath)` that prepends the configured prefix.
-   - **`aws s3 ls` exits non-zero for a never-uploaded case**, so `listCaseShas` must catch and
-     return `[]` — otherwise the first upload of any new case fails instead of pruning nothing.
+1. ~~**Finish the S3 transport**~~ — **DONE 2026-07-24, both halves.** All three traps were real and
+   each is now pinned by a test that fails the way the trap would: raw PNG bytes go to their own temp
+   file (never `withTempBodyFile`, which JSON-wraps for `gh api --input`), `keyOf` maps
+   `runUpload`'s remote path onto the configured prefix, and `aws s3 ls` exiting non-zero on a
+   never-uploaded case reads as "nothing to prune" rather than failing the first upload of every new
+   case. `blobAdapter` in `src/blobStore.ts` takes its subprocess and its temp-file writer injected,
+   so the argv stays asserted verbatim and no test shells out.
 
-   **Then the read half, which is a separate job — do not stop at upload.** The bucket is private, so
-   an `<img>` cannot load it: `serve.ts` needs a route that takes an object key and returns a
-   short-lived signed GET (`presignArgs` is built and tested; `PRESIGN_TTL_SECONDS` is 900). Confine
-   it under the existing `pathGuard` idiom the other read routes use (REQ-KG-SERVE-02). Without this,
-   uploads succeed and **no evidence image ever renders** — a failure that looks like a viewer bug.
-   The committed index stores KEYS, never URLs, precisely so this can be minted per view.
+   **The read half landed with it:** `GET /evidence/<objectKey>` in `serve.ts` mints a signed GET per
+   view and 302s to it, `no-store` so the redirect cannot outlive its own signature. Non-blob
+   destinations, rejected keys, a failing `aws`, and an `aws` that prints something that is not a URL
+   all 404 — the last one because a 302 to the viewer's own page renders as a *corrupt* image rather
+   than a missing one. Spec §5b documents the layout and the read path.
 
-   `blob` currently fails loudly, so nothing is half-wired or able to mislead.
+   Two things worth knowing before the next change here:
+   - **The destination seam is now two halves, not one.** `GhLike` says how bytes get there;
+     `ShotRef` says what the committed index then points at. They are chosen in a single expression
+     in the CLI **on purpose** — uploading one way and indexing the other fails silently, with every
+     upload reporting ✓ and every screenshot rendering "not available".
+   - **`REQ-KG-SERVE-02` now names five routes** (CEO 2026-07-24). `/evidence` was a fifth read-only
+     route while the requirement's own list said four — the enumeration being the thing that had
+     drifted. Its designated root is a bucket prefix rather than a directory, so the text states
+     confinement by ROOT rather than by filesystem, and adds the one clause the new route needs:
+     **a request the guard rejects is never signed.**
 
 2. **Wire `agent-context` as a hook.** The prototype is at
    `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a

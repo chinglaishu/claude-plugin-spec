@@ -66,7 +66,7 @@ Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
 - REQ-KG-SERVE-01: The /api/live SSE hub coalesces a burst of graph-rebuild notifications into exactly one debounced graph-updated broadcast, delivers it only to still-connected clients, keepalives idle ones, and evicts any client on socket close or a throwing write — one rebuild yields one re-fetch and no client leaks.
   Proven by: liveHub.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-02: Every read-only serve route (/registry, /src, /run-artifacts, /shots, /evidence) confines each read within its designated root — a directory for the four that read files, the configured bucket prefix for /evidence, which resolves object keys rather than paths — rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404. A request the guard rejects is never signed.
-  Proven by: blobStore.test.ts (unit-fe, pass) · pathGuard.test.ts (unit-fe, pass) · serveEvidence.test.ts (unit-fe, pass)
+  Proven by: blobStore.test.ts (unit-fe, pass) · pathGuard.test.ts (unit-fe, pass) · serveEvidence.test.ts (unit-fe, pass) · serveProvenance.test.ts (unit-fe, pass) · serveRunArtifact.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-03: /api/graph returns the current graph read fresh from disk on every request (a rewrite is served on the next fetch) and 404s a missing file.
   Proven by: serveGraph.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-04: Star curation writes back only the targeted feature entry — depth-anchored, idempotent, never matching a prefix or substring sibling or a nested star key, and throws on an unknown id.

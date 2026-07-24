@@ -162,6 +162,68 @@ describe("assemble — unverified-doc: self-proven via specified requirements", 
   });
 });
 
+/**
+ * broken-proof — a cited proof that names nothing (REQ-KG-CORE-06).
+ *
+ * `provenBy` is where a doc's `covers:` frontmatter lands, and it was the one authored claim in the
+ * graph that could be WRONG WITHOUT CONSEQUENCE: `provenByTest` kept the slugs that resolved to a
+ * test node and silently discarded the rest, so a requirement could cite four proofs, have three of
+ * them name files that do not exist, and still read as fully proven — with nothing anywhere saying
+ * so. Found live: the port moved every test out of `tools/knowledge-graph/src/`, and 48 of the 49
+ * cited paths in this repo's own PRD kept pointing at the old location. It survived a coverage
+ * backfill and a PRD split precisely because nothing reported it.
+ *
+ * The asymmetry it fixes: an edge's TARGET has always been validated (`broken-link`, REQ-KG-CORE-01)
+ * while a requirement's cited PROOF was not. Note this is a claim about the citation, not about
+ * coverage — a requirement genuinely proven by a `covers:` comment still gets flagged for the dead
+ * path it also cites, because "proven anyway" is exactly how the wrong citation survives.
+ */
+describe("assemble — broken-proof", () => {
+  const doc = (provenBy: string[]): ParseResult => ({
+    nodes: [
+      { id: "tool-prd", type: "doc", title: "Tool PRD", status: "current", entrypoint: true },
+      { id: "REQ-TOOL-01", type: "requirement", title: "req 1", provenBy },
+      { id: "main:src/real.test.ts", type: "test", kind: "unit-fe", title: "real test" },
+      { id: "main:src/helper.ts", type: "doc", title: "not a test", status: "current" },
+    ],
+    edges: [{ from: "tool-prd", to: "REQ-TOOL-01", type: "specifies", source: "doc" }],
+  });
+
+  it("flags a provenBy entry that resolves to no node at all", () => {
+    const g = assemble(doc(["main:tools/knowledge-graph/src/real.test.ts"]), "T");
+    expect(g.issues).toContainEqual({
+      kind: "broken-proof",
+      node: "REQ-TOOL-01",
+      detail: "cited proof 'main:tools/knowledge-graph/src/real.test.ts' is not a test node",
+    });
+  });
+
+  it("flags a provenBy entry that resolves to a node which is not a test", () => {
+    const g = assemble(doc(["main:src/helper.ts"]), "T");
+    expect(g.issues.filter((i) => i.kind === "broken-proof")).toHaveLength(1);
+  });
+
+  it("accepts a resolving proof, by full id and by bare slug alike", () => {
+    for (const slug of ["main:src/real.test.ts", "src/real.test.ts"]) {
+      const g = assemble(doc([slug]), "T");
+      expect(g.issues.filter((i) => i.kind === "broken-proof"), slug).toHaveLength(0);
+    }
+  });
+
+  // The point of the whole issue kind: a dead citation must not be masked by a live one.
+  it("flags the dead citation even when a sibling citation proves the requirement", () => {
+    const g = assemble(doc(["main:src/real.test.ts", "main:tools/knowledge-graph/src/gone.test.ts"]), "T");
+    expect(g.issues.filter((i) => i.kind === "uncovered-requirement")).toHaveLength(0);
+    expect(g.issues.filter((i) => i.kind === "broken-proof")).toHaveLength(1);
+  });
+
+  it("says nothing about a requirement that cites no proof — that is uncovered-requirement's job", () => {
+    const g = assemble(doc([]), "T");
+    expect(g.issues.filter((i) => i.kind === "broken-proof")).toHaveLength(0);
+    expect(g.issues).toContainEqual({ kind: "uncovered-requirement", node: "REQ-TOOL-01", detail: "no test covers this requirement" });
+  });
+});
+
 // graph.registries — viewer-only payload (features.yaml basename → raw file text) powering the
 // in-viewer registry document page. Explicitly NOT nodes/edges: it must never influence
 // issues/ratchet, and it must serialize deterministically (keys inserted sorted, since

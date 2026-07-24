@@ -4,6 +4,7 @@ import {
   planUpload,
   pruneShaSet,
   buildEvidenceIndex,
+  githubRef,
   runUpload,
   subprocessTimeoutMs,
   type ShotDirEntry,
@@ -185,7 +186,7 @@ describe("runUpload", () => {
     const gh = makeGh();
     const local: ShotDirEntry[] = [{ caseId: "ADD-3", dir: "/shots/ADD-3", files: ["add3-1.png"] }];
     const result = await runUpload({
-      repo: "acme-org/svc_frontend",
+      ref: githubRef("acme-org/svc_frontend"),
       local,
       graphCaseIds: new Set(["add-3"]),
       sha: "abc1234",
@@ -203,7 +204,7 @@ describe("runUpload", () => {
     const gh = makeGh({ "add-3": ["sha3", "sha2", "sha1"] }); // newest-first; 3 existing + 1 new = prune oldest
     const local: ShotDirEntry[] = [{ caseId: "ADD-3", dir: "/shots/ADD-3", files: ["add3-1.png"] }];
     const result = await runUpload({
-      repo: "acme-org/svc_frontend",
+      ref: githubRef("acme-org/svc_frontend"),
       local,
       graphCaseIds: new Set(["add-3"]),
       sha: "shaNEW",
@@ -225,7 +226,7 @@ describe("runUpload", () => {
       { caseId: "ADD-3", dir: "/shots/ADD-3", files: ["b.png"] },
     ];
     const result = await runUpload({
-      repo: "org/repo",
+      ref: githubRef("org/repo"),
       local,
       graphCaseIds: new Set(["add-2", "add-3"]),
       sha: "x",
@@ -243,7 +244,7 @@ describe("runUpload", () => {
     const gh = makeGh();
     const local: ShotDirEntry[] = [{ caseId: "ADD-3", dir: "/shots/ADD-3", files: ["add3-1-rent-roll.png"] }];
     const result = await runUpload({
-      repo: "org/repo",
+      ref: githubRef("org/repo"),
       local,
       graphCaseIds: new Set(["add-3"]),
       sha: "abc1234",

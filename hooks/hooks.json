@@ -1,0 +1,25 @@
+{
+  "$comment": [
+    "PreToolUse on Edit|Write, not UserPromptSubmit. §10.4 said UserPromptSubmit, and that was written",
+    "before the mechanism existed: UserPromptSubmit receives the user's prompt, which does not name a",
+    "file, while the whole briefing is keyed BY file path. PreToolUse is the only event that carries",
+    "one. Recorded here rather than silently deviating.",
+    "",
+    "Non-blocking by design: the hook prints the briefing into the transcript. The HALT decision lives",
+    "in the pack itself (§10.3's frozen baseline), so a project that has not been governed yet is never",
+    "locked out of its own repo on install day."
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx tsx \"${CLAUDE_PLUGIN_ROOT}/src/agentContextCli.ts\" \"${TOOL_INPUT_FILE_PATH}\" 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
