@@ -45,7 +45,10 @@ export type Runners = { backend: string | null; frontend: string | null };
  * and a GitHub repo would have no defined winner, and something downstream would silently pick one.
  * That is precisely the contradiction this tool exists to detect, so its own config must not commit it.
  *
- * - `blob`   — a project-supplied URL (S3 or any HTTP blob store). Nothing reaches us.
+ * - `blob`   — a project-supplied S3 bucket, named by COORDINATES ONLY. Nothing reaches us, and no
+ *              credential is ever named here: `kg.config.json` is committed, so a signed URL or a key
+ *              would enter git history permanently. Credentials resolve at run time from the standard
+ *              AWS chain (env vars, `~/.aws`, instance role, or CI's OIDC-minted short-lived creds).
  * - `github` — the tool-managed `e2e-evidence` orphan branch. Shared and versioned with no bucket to
  *              provision, and still nothing leaves the user's own repo.
  * - `local`  — the fallback when nothing is declared. Honest, but note it gives CI and a second
@@ -54,9 +57,13 @@ export type Runners = { backend: string | null; frontend: string | null };
  * Whichever is chosen, evidence is addressed by URL: binaries never enter the committed graph.
  */
 export type Evidence =
-  | { kind: "blob"; url: string }
+  | { kind: "blob"; bucket: string; prefix: string; region: string }
   | { kind: "github"; repo: string }
   | { kind: "local" };
+
+/** Keys that would put a secret into a committed file. Refused outright rather than ignored — a
+ *  config that silently dropped them would leave the author believing they had been used. */
+const CREDENTIAL_KEYS = ["url", "accessKeyId", "secretAccessKey", "sessionToken", "credentials", "token"];
 
 /** Everything the tool must be told about a project. Every path is relative to the workspace root. */
 export type Config = {
@@ -133,9 +140,21 @@ function parseEvidence(raw: unknown): Evidence {
   const kind = o.kind;
   if (kind === "local") return { kind: "local" };
   if (kind === "blob") {
-    const url = o.url;
-    if (typeof url !== "string" || !url) return bad("`evidence.url` is required for kind 'blob'");
-    return { kind: "blob", url: url.replace(/\/+$/, "") };
+    const smuggled = CREDENTIAL_KEYS.filter((k) => o[k] !== undefined);
+    if (smuggled.length)
+      return bad(
+        `\`evidence\` must not carry a credential (${smuggled.join(", ")}) — kg.config.json is committed. ` +
+          `Credentials resolve from the standard AWS chain at run time.`,
+      );
+    const bucket = o.bucket;
+    const region = o.region;
+    if (typeof bucket !== "string" || !bucket) return bad("`evidence.bucket` is required for kind 'blob'");
+    // Without a region the object URL cannot be composed, so evidence would upload and then be
+    // unaddressable — worse than refusing, because the loss is silent.
+    if (typeof region !== "string" || !region) return bad("`evidence.region` is required for kind 'blob'");
+    const prefix = o.prefix === undefined ? "" : o.prefix;
+    if (typeof prefix !== "string") return bad("`evidence.prefix` must be a string");
+    return { kind: "blob", bucket, prefix: clean(prefix), region };
   }
   if (kind === "github") {
     const repo = o.repo;

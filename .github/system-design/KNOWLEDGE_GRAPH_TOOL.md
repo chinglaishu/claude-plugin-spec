@@ -20,7 +20,7 @@ requirements:
     text: "`check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through."
     covers: [main:tools/knowledge-graph/src/check.test.ts]
   - id: REQ-KG-05
-    text: Run screenshots are stored outside the committed graph at exactly one declared destination — a project-supplied blob URL, the tool-managed GitHub evidence branch, or the local device when none is declared. Evidence is addressed by URL; screenshot binaries never enter the committed graph JSON or the working branch.
+    text: Run screenshots are stored outside the committed graph at exactly one declared destination — a project-supplied S3 bucket, the tool-managed GitHub evidence branch, or the local device when none is declared. The config names coordinates only and never a credential. Evidence is addressed by URL; screenshot binaries never enter the committed graph JSON or the working branch.
     covers: [main:src/applyEvidence.test.ts]
   - id: REQ-KG-06
     text: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
@@ -211,9 +211,22 @@ never a silent hang or a fabricated result.
 >
 > | kind | where shots go | shared baseline? |
 > |---|---|---|
-> | `blob` | a project-supplied URL (S3 or any HTTP blob store) | yes |
+> | `blob` | a project-supplied S3 bucket + prefix | yes |
 > | `github` | the tool-managed `e2e-evidence` orphan branch (§5a) | yes — with no bucket to provision |
 > | *omitted* | the local device, under `shotsDir` | **no** |
+>
+> ```json
+> "evidence": { "kind": "blob", "bucket": "acme-kg", "prefix": "kg-cases", "region": "us-east-1" }
+> ```
+>
+> **Coordinates only — never a credential.** `kg.config.json` is committed, so a signed URL or an
+> access key placed here would enter git history permanently; those keys are *refused*, not ignored.
+> Credentials resolve at run time from the standard AWS chain (env vars, `~/.aws`, instance role, or
+> CI's OIDC-minted short-lived creds), so no long-lived secret need exist at all.
+>
+> A pre-signed URL was considered and rejected: one URL signs exactly one object key, while a run
+> uploads many keys not known until it happens; and the evidence index is committed, so its URLs must
+> outlive the short expiry a pre-signed URL carries.
 >
 > Modelled as one declared destination rather than several optional fields on purpose: a config that
 > could set both a blob URL and a repo would have no defined winner, and something downstream would

@@ -388,9 +388,11 @@ decoration.**
 
 10. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
    Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots at
-   **exactly one declared destination — a project-supplied blob URL, the `e2e-evidence` branch, or the
+   **exactly one declared destination — a project-supplied S3 bucket, the `e2e-evidence` branch, or the
    local device** — addressed by URL and never on the working branch or inside the graph JSON
-   (REQ-KG-05). Three reasons, in order of weight:
+   (REQ-KG-05). The config names coordinates only; credentials resolve from the standard AWS chain at
+   run time, because `kg.config.json` is committed and a key in it would live in git history forever.
+   Three reasons, in order of weight:
 
    > **Amended 2026-07-24 (CEO): the `e2e-evidence` branch is now one destination of three, not the
    > mandate.** Committing PNGs to a side branch is an unusual mechanism that surprises people, and

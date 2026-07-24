@@ -313,11 +313,22 @@ describe("evidence destination", () => {
     expect(parseConfig(JSON.stringify(base)).evidence).toEqual({ kind: "local" });
   });
 
-  // The trailing slash is stripped for the same reason e2eDir/artifactDir are: every composed URL
-  // would otherwise double up as `.../kg//01-start.png`.
-  it("takes a project-supplied blob url, normalizing its trailing slash", () => {
-    const c = parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", url: "https://b.s3.amazonaws.com/kg/" } }));
-    expect(c.evidence).toEqual({ kind: "blob", url: "https://b.s3.amazonaws.com/kg" });
+  // Coordinates only — NEVER a credential. kg.config.json is committed, so a signed URL or a key in
+  // it would land in git history permanently. Credentials come from the standard AWS chain at run
+  // time (env, ~/.aws, instance role, or CI's OIDC-minted short-lived creds).
+  it("takes a blob bucket, prefix and region", () => {
+    const c = parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", bucket: "acme-kg", prefix: "kg-cases/", region: "us-east-1" } }));
+    expect(c.evidence).toEqual({ kind: "blob", bucket: "acme-kg", prefix: "kg-cases", region: "us-east-1" });
+  });
+
+  it("defaults the prefix to the bucket root", () => {
+    const c = parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", bucket: "acme-kg", region: "us-east-1" } }));
+    expect(c.evidence).toEqual({ kind: "blob", bucket: "acme-kg", prefix: "", region: "us-east-1" });
+  });
+
+  it("rejects a credential smuggled into the committed config", () => {
+    const withKey = { ...base, evidence: { kind: "blob", bucket: "b", region: "r", secretAccessKey: "AKIA..." } };
+    expect(() => parseConfig(JSON.stringify(withKey))).toThrow(/credential/i);
   });
 
   it("takes the tool-managed github evidence branch", () => {
@@ -331,8 +342,14 @@ describe("evidence destination", () => {
 
   // Each of these would otherwise degrade into "store locally", which loses evidence silently — the
   // report-only failure mode again: confidently wrong beats obviously broken, and costs more.
-  it("rejects a blob destination with no url", () => {
-    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob" } }))).toThrow(/url/i);
+  it("rejects a blob destination with no bucket", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", region: "us-east-1" } }))).toThrow(/bucket/i);
+  });
+
+  // Without a region the object URL cannot be composed, so evidence would upload and then be
+  // unaddressable — the worst of both outcomes.
+  it("rejects a blob destination with no region", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", bucket: "acme-kg" } }))).toThrow(/region/i);
   });
 
   it("rejects a github destination with no repo", () => {
