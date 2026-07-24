@@ -387,17 +387,22 @@ decoration.**
    class came from: assets the tool ships vs. artifacts the project owns.
 
 10. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
-   Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots
-   **on the local device by default, or at a project-supplied blob URL**, addressed by URL and never
-   on the working branch or inside the graph JSON (REQ-KG-05). Three reasons, in order of weight:
+   Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots at
+   **exactly one declared destination — a project-supplied blob URL, the `e2e-evidence` branch, or the
+   local device** — addressed by URL and never on the working branch or inside the graph JSON
+   (REQ-KG-05). Three reasons, in order of weight:
 
-   > **Amended 2026-07-24 (CEO): the `e2e-evidence` branch is no longer the mandated destination.**
-   > Committing PNGs to a side branch is an unusual mechanism that surprises people and baked one
-   > vendor's hosting into a requirement. This does **not** weaken the decision — a *user-supplied*
-   > bucket is not a cloud service in the core, and reason 2 below gets **stronger**, not weaker:
-   > nothing ships to us under either mode. Reason 1 is untouched, because screenshots were never the
-   > SSoT — the graph carries references, and now provably so (see the amendment to the YAGNI note
-   > below).
+   > **Amended 2026-07-24 (CEO): the `e2e-evidence` branch is now one destination of three, not the
+   > mandate.** Committing PNGs to a side branch is an unusual mechanism that surprises people, and
+   > mandating it baked one vendor's hosting into a requirement. Making it **opt-in** answers that
+   > objection without discarding it — which matters, because it is the only shared destination that
+   > needs no bucket provisioned, and the local fallback gives CI and a second machine no shared
+   > baseline for flow-approval (§6) to diff against.
+   >
+   > This does **not** weaken the decision. A *user-supplied* bucket is not a cloud service in the
+   > core, and reason 2 below gets **stronger**: nothing ships to us under any of the three. Reason 1
+   > is untouched — screenshots were never the SSoT; the graph carries references, and now provably
+   > so (see the amendment to the YAGNI note below).
 
    - **A cloud SSoT would contradict the central claim.** The thesis is that the graph is a *pure
      function of the tree* — that is why the fingerprint works, why `check` can gate, and why REQ-KG-01

@@ -22,6 +22,6 @@
     "tools/knowledge-graph/src/**/*.test.ts"
   ],
   "shotsDir": "../.dojostack-e2e-shots",
-  "evidenceRepo": "dojostack-app/dojostack_frontend",
+  "evidence": { "kind": "github", "repo": "dojostack-app/dojostack_frontend" },
   "runners": { "backend": "backend", "frontend": "frontend" }
 }

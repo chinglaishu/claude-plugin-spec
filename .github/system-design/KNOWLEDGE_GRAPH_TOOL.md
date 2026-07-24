@@ -20,7 +20,7 @@ requirements:
     text: "`check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through."
     covers: [main:tools/knowledge-graph/src/check.test.ts]
   - id: REQ-KG-05
-    text: Run screenshots are stored outside the committed graph — uploaded to a project-supplied blob URL when one is configured, and kept on the local device otherwise. Screenshot binaries never enter the committed graph JSON or the working branch.
+    text: Run screenshots are stored outside the committed graph at exactly one declared destination — a project-supplied blob URL, the tool-managed GitHub evidence branch, or the local device when none is declared. Evidence is addressed by URL; screenshot binaries never enter the committed graph JSON or the working branch.
     covers: [main:src/applyEvidence.test.ts]
   - id: REQ-KG-06
     text: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
@@ -205,20 +205,28 @@ never a silent hang or a fabricated result.
 
 ## 5. Evidence storage
 
-> **Rewritten 2026-07-24 (CEO).** This section used to mandate a dedicated `e2e-evidence` orphan
-> branch as *the* destination. Committing PNG binaries to a side branch is an unusual mechanism that
-> surprises people, and it hard-coded one vendor's hosting into a requirement. The invariant that
-> actually mattered — **binaries never enter the committed graph or the working branch** — is
-> preserved verbatim; only the destination became the project's choice. The prose below is retained
-> for the layout contract it still describes, but the branch is no longer required.
+> **Rewritten 2026-07-24 (CEO).** This section used to mandate the `e2e-evidence` orphan branch as
+> *the* destination. It is now **one of three**, declared as exactly one `evidence` destination in
+> `kg.config.json`:
 >
-> **Known cost, recorded rather than discovered later:** flow-approval (§6 of the founding design)
-> diffs a *previous* screenshot against a new one. On local-device storage there is no shared
-> baseline, so CI and a second machine have nothing to diff against. Acceptable now — flow-approval
-> is deferred pending spikes (§12.3) and there are zero users — but it is a real constraint on that
-> feature, not a detail.
+> | kind | where shots go | shared baseline? |
+> |---|---|---|
+> | `blob` | a project-supplied URL (S3 or any HTTP blob store) | yes |
+> | `github` | the tool-managed `e2e-evidence` orphan branch (§5a) | yes — with no bucket to provision |
+> | *omitted* | the local device, under `shotsDir` | **no** |
+>
+> Modelled as one declared destination rather than several optional fields on purpose: a config that
+> could set both a blob URL and a repo would have no defined winner, and something downstream would
+> silently pick one — the exact contradiction this tool exists to detect.
+>
+> The invariant that actually mattered is unchanged and now **enforced** rather than merely asserted:
+> binaries never enter the committed graph (`referencesOnly` in `applyEvidence.ts`).
+>
+> **Known cost, recorded rather than discovered later:** flow-approval (founding design §6) diffs a
+> *previous* screenshot against a new one. Local storage gives CI and a second machine no shared
+> baseline, so that feature needs `blob` or `github`.
 
-## 5a. The former evidence branch (layout contract)
+## 5a. The GitHub evidence branch (layout contract)
 
 Screenshots captured during e2e runs are never committed on the working branch and never embedded as
 binaries in `knowledge-graph.json` — only URLs are (REQ-KG-05). They are uploaded to a dedicated

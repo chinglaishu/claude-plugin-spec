@@ -204,11 +204,24 @@ if (isMain) {
   // workspace laid out like that one and a coincidence in general.
   const e2eRepoDir = join(repoRoot, subdirOf(repoOf(config.e2eDir, config.repos), config.repos));
   const branch = "e2e-evidence";
-  const repo = process.env.KG_EVIDENCE_REPO ?? config.evidenceRepo;
-  if (!repo) {
-    console.error("kg shots:upload — no evidence repo: set `evidenceRepo` in kg.config.json (or KG_EVIDENCE_REPO)");
+  // Exactly one destination, and the env override is a github repo by definition (REQ-KG-05).
+  const evidence = process.env.KG_EVIDENCE_REPO
+    ? ({ kind: "github", repo: process.env.KG_EVIDENCE_REPO } as const)
+    : config.evidence;
+
+  if (evidence.kind === "local") {
+    // Not a failure: local IS a valid declared destination. Shots stay on the device, and there is
+    // simply nothing to upload — but say so, rather than exiting silently as if work had happened.
+    console.log(`kg shots:upload — evidence destination is the local device; nothing to upload.`);
+    console.log(`kg shots:upload — screenshots remain under ${config.shotsDir}. Declare \`evidence\` in kg.config.json to share them across machines.`);
+    process.exit(0);
+  }
+  if (evidence.kind === "blob") {
+    console.error("kg shots:upload — `evidence.kind: \"blob\"` is declared, but its transport is not wired yet.");
+    console.error("kg shots:upload — use `github` for now, or leave `evidence` out to keep shots local.");
     process.exit(1);
   }
+  const repo = evidence.repo;
 
   const argOf = (flag: string): string | undefined => {
     const i = process.argv.indexOf(flag);

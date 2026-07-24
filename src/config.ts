@@ -39,6 +39,25 @@ export type Repos = Repo[];
  */
 export type Runners = { backend: string | null; frontend: string | null };
 
+/**
+ * Where run screenshots are stored (REQ-KG-05). EXACTLY ONE destination, modelled as a discriminated
+ * union rather than several independently-settable fields — a config that could carry both a blob URL
+ * and a GitHub repo would have no defined winner, and something downstream would silently pick one.
+ * That is precisely the contradiction this tool exists to detect, so its own config must not commit it.
+ *
+ * - `blob`   — a project-supplied URL (S3 or any HTTP blob store). Nothing reaches us.
+ * - `github` — the tool-managed `e2e-evidence` orphan branch. Shared and versioned with no bucket to
+ *              provision, and still nothing leaves the user's own repo.
+ * - `local`  — the fallback when nothing is declared. Honest, but note it gives CI and a second
+ *              machine NO shared baseline, which is what flow-approval diffs against (§6).
+ *
+ * Whichever is chosen, evidence is addressed by URL: binaries never enter the committed graph.
+ */
+export type Evidence =
+  | { kind: "blob"; url: string }
+  | { kind: "github"; repo: string }
+  | { kind: "local" };
+
 /** Everything the tool must be told about a project. Every path is relative to the workspace root. */
 export type Config = {
   /** The repo topology. */
@@ -64,8 +83,8 @@ export type Config = {
   exclude: string[];
   /** Where run screenshots land. Defaults OUTSIDE the repo so evidence never enters git (REQ-KG-05). */
   shotsDir: string;
-  /** The `owner/repo` whose `e2e-evidence` branch holds uploaded screenshots. `""` disables upload. */
-  evidenceRepo: string;
+  /** The single declared destination for run screenshots. Omitted in the file means local device. */
+  evidence: Evidence;
   /** Which repo each server runs in. */
   runners: Runners;
 };
@@ -100,6 +119,30 @@ function parseRepos(raw: unknown): Repos {
     return bad(`${roots.length} root repos (${roots.map((r) => r.name).join(", ")}) — the root cannot be ambiguous`);
 
   return out;
+}
+
+/**
+ * Parse the evidence destination. Absent is the ONLY thing that means local — every other defect
+ * throws rather than degrading into it, because a misdeclared destination that silently stored
+ * locally would lose shared evidence without ever saying so.
+ */
+function parseEvidence(raw: unknown): Evidence {
+  if (raw === undefined || raw === null) return { kind: "local" };
+  if (typeof raw !== "object") return bad("`evidence` must be an object declaring a `kind`");
+  const o = raw as Record<string, unknown>;
+  const kind = o.kind;
+  if (kind === "local") return { kind: "local" };
+  if (kind === "blob") {
+    const url = o.url;
+    if (typeof url !== "string" || !url) return bad("`evidence.url` is required for kind 'blob'");
+    return { kind: "blob", url: url.replace(/\/+$/, "") };
+  }
+  if (kind === "github") {
+    const repo = o.repo;
+    if (typeof repo !== "string" || !repo) return bad("`evidence.repo` is required for kind 'github'");
+    return { kind: "github", repo };
+  }
+  return bad(`\`evidence.kind\` must be 'blob', 'github' or 'local' — got ${JSON.stringify(kind)}`);
 }
 
 function parseRunners(raw: unknown, repos: Repos): Runners {
@@ -157,7 +200,7 @@ export function parseConfig(json: string): Config {
     unitTestGlobs: (globs as string[] | undefined) ?? [],
     exclude: (excl as string[] | undefined) ?? [],
     shotsDir: str(o, "shotsDir", "../.kg-e2e-shots"),
-    evidenceRepo: str(o, "evidenceRepo", ""),
+    evidence: parseEvidence(o.evidence),
     runners: parseRunners(o.runners, repos),
   };
 }

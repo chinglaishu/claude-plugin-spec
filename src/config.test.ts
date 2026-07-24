@@ -296,3 +296,50 @@ describe("exclude", () => {
     expect(() => parseConfig(JSON.stringify({ ...base, exclude: ["ok", 7] }))).toThrow(/exclude/);
   });
 });
+
+/**
+ * `evidence` — exactly ONE declared destination for run screenshots (CEO 2026-07-24).
+ *
+ * A discriminated union rather than several independently-settable fields, deliberately: a config
+ * that could carry both a blob URL and a GitHub repo would have no defined winner, and something
+ * downstream would silently pick one. That is precisely the failure this tool exists to detect, so
+ * its own config must not commit it.
+ *
+ * Omitted means local device — the honest fallback, and the one with no shared baseline for
+ * flow-approval to diff against.
+ */
+describe("evidence destination", () => {
+  it("falls back to the local device when nothing is declared", () => {
+    expect(parseConfig(JSON.stringify(base)).evidence).toEqual({ kind: "local" });
+  });
+
+  // The trailing slash is stripped for the same reason e2eDir/artifactDir are: every composed URL
+  // would otherwise double up as `.../kg//01-start.png`.
+  it("takes a project-supplied blob url, normalizing its trailing slash", () => {
+    const c = parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob", url: "https://b.s3.amazonaws.com/kg/" } }));
+    expect(c.evidence).toEqual({ kind: "blob", url: "https://b.s3.amazonaws.com/kg" });
+  });
+
+  it("takes the tool-managed github evidence branch", () => {
+    const c = parseConfig(JSON.stringify({ ...base, evidence: { kind: "github", repo: "acme/web" } }));
+    expect(c.evidence).toEqual({ kind: "github", repo: "acme/web" });
+  });
+
+  it("accepts an explicit local declaration", () => {
+    expect(parseConfig(JSON.stringify({ ...base, evidence: { kind: "local" } })).evidence).toEqual({ kind: "local" });
+  });
+
+  // Each of these would otherwise degrade into "store locally", which loses evidence silently — the
+  // report-only failure mode again: confidently wrong beats obviously broken, and costs more.
+  it("rejects a blob destination with no url", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "blob" } }))).toThrow(/url/i);
+  });
+
+  it("rejects a github destination with no repo", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "github" } }))).toThrow(/repo/i);
+  });
+
+  it("rejects an unknown kind rather than silently storing locally", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, evidence: { kind: "ftp", url: "x" } }))).toThrow(/evidence/i);
+  });
+});
