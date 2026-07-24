@@ -1,3 +1,4 @@
+// covers: REQ-KG-02
 import { describe, it, expect } from "vitest";
 import { detectUntrackedE2e } from "./untrackedE2e";
 import type { Graph, GraphNode, GraphEdge } from "./types";

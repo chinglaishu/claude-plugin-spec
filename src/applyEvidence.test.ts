@@ -1,3 +1,4 @@
+// covers: REQ-KG-EVID-03, REQ-KG-EVID-04
 import { describe, it, expect } from "vitest";
 import { applyEvidence } from "./applyEvidence";
 

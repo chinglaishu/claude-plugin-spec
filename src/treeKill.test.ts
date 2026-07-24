@@ -1,3 +1,4 @@
+// covers: REQ-KG-RUN-04
 import { describe, it, expect } from "vitest";
 import { treeKillCommand } from "./treeKill";
 

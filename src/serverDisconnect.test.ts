@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-06
 import { describe, it, expect } from "vitest";
 import http from "node:http";
 import { EventEmitter } from "node:events";

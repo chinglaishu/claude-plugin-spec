@@ -1,3 +1,4 @@
+// covers: REQ-KG-06, REQ-KG-07
 import { describe, it, expect } from "vitest";
 import { REPOS } from "./topology.fixture";
 import matter from "gray-matter";

@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-05
 import { describe, it, expect, vi } from "vitest";
 import { acquireLock, releaseLock, type LockFs } from "./serveLock";
 

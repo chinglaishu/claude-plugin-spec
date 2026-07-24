@@ -2,4 +2,4 @@
 
 Read the file for the area you are working on BEFORE changing it.
 
-- [Platform & docs](other.md) — 0 capabilities, 0/39 promises proven, 0 failing
+- [Platform & docs](other.md) — 0 capabilities, 38/39 promises proven, 0 failing

@@ -1,3 +1,4 @@
+// covers: REQ-KG-04
 import { describe, it, expect } from "vitest";
 import { gateDecision } from "./gateDecision";
 

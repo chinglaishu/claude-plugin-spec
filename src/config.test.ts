@@ -1,3 +1,4 @@
+// covers: REQ-KG-CORE-02
 import { describe, it, expect } from "vitest";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";

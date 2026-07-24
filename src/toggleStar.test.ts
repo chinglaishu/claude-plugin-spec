@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-04
 import { describe, it, expect } from "vitest";
 import { toggleStarInYaml } from "./toggleStar";
 

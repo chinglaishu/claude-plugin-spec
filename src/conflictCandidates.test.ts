@@ -1,3 +1,4 @@
+// covers: REQ-KG-CONF-02
 import { describe, it, expect } from "vitest";
 import { enumerateCandidates } from "./conflictCandidates";
 import type { Graph, GraphNode, GraphEdge } from "./types";

@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-03
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import http from "node:http";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";

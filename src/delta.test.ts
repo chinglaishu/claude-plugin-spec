@@ -1,3 +1,4 @@
+// covers: REQ-KG-VIEW-02
 import { describe, it, expect } from "vitest";
 import { computeDelta, formatDelta } from "./delta";
 

@@ -1,3 +1,4 @@
+// covers: REQ-KG-CORE-05, REQ-KG-VIEW-04
 import { describe, it, expect } from "vitest";
 import { healthForGraph, provingTestsOf, reqFlowOf, KIND_LABELS, FLOW_LABELS } from "./summarize";
 

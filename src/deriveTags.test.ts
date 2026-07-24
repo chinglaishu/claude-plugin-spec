@@ -1,3 +1,4 @@
+// covers: REQ-KG-CORE-03
 import { describe, it, expect } from "vitest";
 import { matchingFeatures, deriveUnitTagEdges } from "./deriveTags";
 import type { GraphNode } from "./types";

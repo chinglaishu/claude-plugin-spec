@@ -1,3 +1,4 @@
+// covers: REQ-KG-EVID-01, REQ-KG-EVID-02
 import { describe, it, expect } from "vitest";
 import { rawUrlToContentsApiUrl, base64ToDataUrl } from "./evidenceUrl";
 

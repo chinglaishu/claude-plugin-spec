@@ -1,3 +1,4 @@
+// covers: REQ-KG-01
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

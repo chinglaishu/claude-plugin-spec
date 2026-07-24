@@ -1,3 +1,4 @@
+// covers: REQ-KG-VIEW-01
 import { describe, it, expect } from "vitest";
 import { renderViewer } from "./viewer";
 

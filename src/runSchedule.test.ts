@@ -1,3 +1,4 @@
+// covers: REQ-KG-RUN-03
 import { describe, it, expect } from "vitest";
 import { planRun, buildRunArgs } from "./runSchedule";
 

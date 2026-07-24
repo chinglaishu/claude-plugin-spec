@@ -1,3 +1,4 @@
+// covers: REQ-KG-CONF-05
 import { describe, it, expect } from "vitest";
 import { conflictId } from "./conflictId";
 

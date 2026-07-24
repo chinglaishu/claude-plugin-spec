@@ -1,3 +1,4 @@
+// covers: REQ-KG-VIEW-03
 import { describe, it, expect } from "vitest";
 import { renderDigest } from "./digest";
 import { healthForGraph } from "./summarize";

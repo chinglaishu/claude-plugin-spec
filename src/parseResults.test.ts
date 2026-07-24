@@ -1,3 +1,4 @@
+// covers: REQ-KG-03
 import { describe, it, expect } from "vitest";
 import { applyResults } from "./parseResults";
 

@@ -1,3 +1,4 @@
+// covers: REQ-KG-CONF-06
 import { describe, it, expect } from "vitest";
 import { fixPlanFor, fixPlan } from "./conflictFixPlan";
 import type { ConflictFinding } from "./types";

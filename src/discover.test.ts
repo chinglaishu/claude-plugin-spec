@@ -1,3 +1,4 @@
+// covers: REQ-KG-CORE-04
 import { describe, it, expect } from "vitest";
 import micromatch from "micromatch";
 import { classify } from "./discover";

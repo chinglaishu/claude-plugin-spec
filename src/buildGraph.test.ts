@@ -1,3 +1,4 @@
+// covers: REQ-KG-CORE-01
 import { describe, it, expect } from "vitest";
 import { assemble } from "./buildGraph";
 import type { ParseResult } from "./types";

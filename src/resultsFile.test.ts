@@ -1,3 +1,4 @@
+// covers: REQ-KG-RUN-01, REQ-KG-RUN-02
 import { describe, it, expect } from "vitest";
 import { normalizeResults, mergeResults, type ResultsFileV2 } from "./resultsFile";
 

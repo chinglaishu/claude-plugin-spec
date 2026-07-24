@@ -1,3 +1,4 @@
+// covers: REQ-KG-GATE-01, REQ-KG-GATE-02
 import { describe, it, expect } from "vitest";
 import { REPOS, SOLO } from "./topology.fixture";
 import { mkdtemp, readFile } from "node:fs/promises";

@@ -1,3 +1,4 @@
+// covers: REQ-KG-CONF-04
 import { describe, it, expect } from "vitest";
 import { parseConflicts, foldConflicts } from "./parseConflicts";
 

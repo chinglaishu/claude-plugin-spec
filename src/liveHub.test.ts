@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-01
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "node:events";
 import { LiveHub, type SseClient } from "./liveHub";

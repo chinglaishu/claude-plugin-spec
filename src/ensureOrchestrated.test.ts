@@ -1,3 +1,4 @@
+// covers: REQ-KG-RUN-05
 import { describe, it, expect } from "vitest";
 import { orchestratePlan } from "./ensureOrchestrated";
 

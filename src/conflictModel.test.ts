@@ -1,3 +1,4 @@
+// covers: REQ-KG-CONF-01
 import { describe, it, expect } from "vitest";
 import { deriveAxis, normalizeFinding } from "./conflictModel";
 import { conflictId } from "./conflictId";

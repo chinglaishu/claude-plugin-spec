@@ -1,3 +1,4 @@
+// covers: REQ-KG-SERVE-02
 import { describe, it, expect } from "vitest";
 import { sep } from "node:path";
 import { isWithinRoot } from "./pathGuard";
