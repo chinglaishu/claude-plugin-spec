@@ -95,18 +95,24 @@ Phases 3 and 4 run as **one loop** (founding design §11, CEO-approved): wire th
 hook into this repo, self-host (own config, own graph, own gate), and dogfood whether the staff
 prompt actually changes behaviour — measured per §5.
 
-Immediately next, in order:
+**Done 2026-07-24:** `covers:` is backfilled — **38 of 39 requirements proven**, the self-hosted graph
+is down from 40 issues to 2, and `knowledge-graph/` is committed (CEO: the tool carries its own
+artifacts, as any consuming project would).
 
-1. **Backfill `covers:` across the suite.** The mechanism exists; nothing uses it, so all 39
-   requirements still read `uncovered`. **Do this one claim at a time and only where the test really
-   proves the requirement** — a false `covers:` edge is exactly the lie the tool exists to detect
-   (§10.2), and 39 cheap guesses would poison the graph far worse than 39 honest gaps.
-2. **Wire `agent-context` as a hook.** The prototype is at
+**The one open gap is deliberate and worth keeping open.** `REQ-KG-05` says screenshots live on the
+evidence branch, addressed by URL, *"never embedded as binaries in the committed graph JSON or on the
+working branch"*. `shotsUpload.test.ts` proves the positive half thoroughly and **nothing asserts the
+negative clause** — so it stays uncovered rather than taking a false edge. Closing it means writing
+that missing assertion, not adding a `covers:` line.
+
+Immediately next:
+
+1. **Wire `agent-context` as a hook.** The prototype is at
    `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a
    file, prints its governing spec, requirements, covering tests and conflicts. It needs porting
    (it hardcodes sibling repo prefixes and assumes it sits inside the artifact dir) and a REQ.
-3. **Decide whether the generated `knowledge-graph/` is committed.** Left untracked so far — the
-   graph was corrupted by the fixture pollution until it was fixed, and it is still incomplete.
+   **It can now actually pay off:** before the backfill it would have printed "no covering tests" for
+   every file in the repo.
 
 Also queued: the two flow-approval spikes (§12.3), conflict-scan precision on the DojoStack corpus
 (§12.10), a gate flake policy draft (§12.12), and porting the five skills into the empty `skills/`.
