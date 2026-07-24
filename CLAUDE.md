@@ -99,15 +99,37 @@ prompt actually changes behaviour — measured per §5.
 is down from 40 issues to 2, and `knowledge-graph/` is committed (CEO: the tool carries its own
 artifacts, as any consuming project would).
 
-**The one open gap is deliberate and worth keeping open.** `REQ-KG-05` says screenshots live on the
-evidence branch, addressed by URL, *"never embedded as binaries in the committed graph JSON or on the
-working branch"*. `shotsUpload.test.ts` proves the positive half thoroughly and **nothing asserts the
-negative clause** — so it stays uncovered rather than taking a false edge. Closing it means writing
-that missing assertion, not adding a `covers:` line.
+**`REQ-KG-05` was then rewritten and its gap closed** (CEO 2026-07-24). Evidence now goes to
+**exactly one declared destination** — an S3 bucket, the GitHub `e2e-evidence` branch, or the local
+device — modelled as a discriminated union in config so two half-set fields can never leave the
+winner ambiguous. The config names **coordinates only and refuses credential keys outright**
+(`kg.config.json` is committed; a key here would live in git history forever). The negative clause is
+now *enforced*, not merely asserted: `referencesOnly` in `applyEvidence.ts` drops `data:` payloads,
+so binaries cannot reach the graph. **The graph is at 0 issues, 39/39 proven.**
+
+**Rejected and recorded, so it is not relitigated:** a pre-signed URL for *upload*. One signature
+covers one key while a run writes many keys unknown until it happens, and the committed index must
+outlive a short expiry. The same mechanism is *correct for reads* — the key is known, the URL is
+minted per view by `serve.ts` and never committed.
 
 Immediately next:
 
-1. **Wire `agent-context` as a hook.** The prototype is at
+1. **Finish the S3 transport — three known traps, found by reading `shotsUpload.ts` and left
+   deliberately unwired rather than guessed at.** `src/blobStore.ts` already has the pure half fully
+   tested (`objectKey`, `objectUrl`, `uploadArgs`, `listArgs`, `pruneArgs`, `presignArgs`,
+   `parseShaDirs`); only the subprocess glue remains, roughly 40 lines:
+   - **`withTempBodyFile` is NOT a raw-bytes writer** — it writes a `gh` API JSON body for
+     `--input`. Reusing it for `aws s3 cp` would upload the JSON wrapper instead of the PNG, and it
+     would look like a successful upload. The blob path needs its own raw-bytes temp file.
+   - **`GhLike.putFile`/`deleteDir` take a repo-relative `remotePath`, not a case id.** The builders
+     compose from `(caseId, sha, filename)`, which fits `listCaseShas` but not those two. Add a
+     `keyOf(evidence, remotePath)` that prepends the configured prefix.
+   - **`aws s3 ls` exits non-zero for a never-uploaded case**, so `listCaseShas` must catch and
+     return `[]` — otherwise the first upload of any new case fails instead of pruning nothing.
+
+   `blob` currently fails loudly, so nothing is half-wired or able to mislead.
+
+2. **Wire `agent-context` as a hook.** The prototype is at
    `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a
    file, prints its governing spec, requirements, covering tests and conflicts. It needs porting
    (it hardcodes sibling repo prefixes and assumes it sits inside the artifact dir) and a REQ.
