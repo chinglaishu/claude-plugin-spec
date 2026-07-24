@@ -104,6 +104,20 @@ requirements:
       masked by a live one is how a stale claim survives a rename.
     covers:
       - main:src/buildGraph.test.ts
+  - id: REQ-KG-CORE-07
+    text: A doc with status draft is a proposal, so neither it nor the requirements
+      only it specifies are counted by the ratchet as unverified or uncovered —
+      a proposal has claimed nothing and so cannot have failed to prove
+      anything. A requirement any non-draft doc also specifies stays counted,
+      and a draft nobody links to is still an orphan.
+    covers:
+      - main:src/buildGraph.test.ts
+    # Added 2026-07-24 (CEO) after dogfooding `kg-draft-spec` on this repo. Drafting one spec raised
+    # `uncovered-requirement` by four and `unverified-doc` by one, while `check --update-baseline`
+    # only ever LOWERS — so there was no sanctioned way to accept the rise, and the product's own
+    # recommended first move on an unspecced repo left the gate permanently red. The only escapes
+    # were deleting the draft or refreshing a baseline, and the second is the one move this project
+    # never makes. Promotion to `current` is what makes a promise countable.
 ---
 
 ## Why this exists

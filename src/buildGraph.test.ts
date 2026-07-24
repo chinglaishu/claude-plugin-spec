@@ -265,3 +265,69 @@ describe("assemble — graph.registries (inline feature-registry yaml)", () => {
     expect(g.issues).toEqual([]);
   });
 });
+
+/**
+ * REQ-KG-CORE-07 — a `status: draft` doc is a PROPOSAL, and the ratchet must not count proposals.
+ *
+ * Found by dogfooding `kg-draft-spec` on this repo: drafting one doc raised `uncovered-requirement`
+ * by four and `unverified-doc` by one, and `check --update-baseline` only ever LOWERS — so there was
+ * no sanctioned way to accept the rise. The product's own recommended first move on an unspecced repo
+ * left `npm run check` permanently red, and the only ways out were deleting the draft or refreshing a
+ * baseline, which is the one move this project never makes.
+ *
+ * A draft has not claimed anything yet, so there is nothing to have failed to prove. It becomes
+ * countable the moment the CEO promotes it.
+ */
+describe("assemble — a draft doc is a proposal, not an unmet promise", () => {
+  const draftParts = (status: string): ParseResult => ({
+    nodes: [
+      { id: "d", type: "doc", title: "Drafted", status, entrypoint: true },
+      { id: "REQ-D-1", type: "requirement", title: "drafted claim" },
+    ],
+    edges: [{ from: "d", to: "REQ-D-1", type: "specifies", source: "doc" }],
+  });
+
+  it("does not count a drafted requirement as uncovered", () => {
+    const g = assemble(draftParts("draft"), "T");
+    expect(g.issues.filter((i) => i.kind === "uncovered-requirement")).toHaveLength(0);
+  });
+
+  it("does not count a draft doc as unverified", () => {
+    const g = assemble(draftParts("draft"), "T");
+    expect(g.issues.filter((i) => i.kind === "unverified-doc")).toHaveLength(0);
+  });
+
+  // The exemption must be the DRAFT status doing the work, not the shape of the fixture — otherwise
+  // this passes for a reason that has nothing to do with what it claims to test.
+  it("counts both the moment the same doc is promoted to current", () => {
+    const g = assemble(draftParts("current"), "T");
+    expect(g.issues.filter((i) => i.kind === "uncovered-requirement")).toHaveLength(1);
+    expect(g.issues.filter((i) => i.kind === "unverified-doc")).toHaveLength(1);
+  });
+
+  // A requirement an approved doc also specifies is a real promise; a draft restating it must not
+  // launder it out of the ratchet.
+  it("still counts a requirement that any non-draft doc specifies", () => {
+    const parts: ParseResult = {
+      nodes: [
+        { id: "draft", type: "doc", title: "Drafted", status: "draft", entrypoint: true },
+        { id: "real", type: "doc", title: "Approved", status: "current", entrypoint: true },
+        { id: "REQ-X-1", type: "requirement", title: "shared claim" },
+      ],
+      edges: [
+        { from: "draft", to: "REQ-X-1", type: "specifies", source: "doc" },
+        { from: "real", to: "REQ-X-1", type: "specifies", source: "doc" },
+      ],
+    };
+    expect(assemble(parts, "T").issues.filter((i) => i.kind === "uncovered-requirement")).toHaveLength(1);
+  });
+
+  // A draft still has to be reachable, or drafts accumulate as unlinked strays.
+  it("still flags an unlinked draft as an orphan", () => {
+    const parts: ParseResult = {
+      nodes: [{ id: "d", type: "doc", title: "Drafted", status: "draft" }],
+      edges: [],
+    };
+    expect(assemble(parts, "T").issues.filter((i) => i.kind === "orphan-doc")).toHaveLength(1);
+  });
+});

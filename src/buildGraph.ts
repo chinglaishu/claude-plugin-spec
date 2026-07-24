@@ -44,8 +44,28 @@ export function assemble(parts: ParseResult, now: string, registries?: Record<st
     return !!r && r.type === "requirement" && (inbound(id, ["covers"]) || provenByTest(r));
   };
 
+  // A `status: draft` doc is a PROPOSAL — typically drafted FROM the code by kg-draft-spec and not yet
+  // approved — so it has claimed nothing, and there is nothing it can have failed to prove. The ratchet
+  // must not count proposals (REQ-KG-CORE-07).
+  //
+  // Without this, drafting one spec raised `uncovered-requirement` once per requirement plus
+  // `unverified-doc`, while `check --update-baseline` only ever LOWERS — so there was no sanctioned way
+  // to accept the rise, and the product's own first move on an unspecced repo left the gate permanently
+  // red. The only escapes were deleting the draft or refreshing a baseline, which is the one move this
+  // project never makes. A promotion to `current` is what makes the promise countable.
+  const isDraftDoc = (id: string) => {
+    const d = byId.get(id);
+    return d?.type === "doc" && d.status === "draft";
+  };
+  // Only when EVERY specifying doc is a draft: a draft restating an approved doc's requirement must
+  // not launder that requirement out of the ratchet.
+  const onlyDrafted = (reqId: string) => {
+    const owners = edges.filter((e) => e.type === "specifies" && e.to === reqId).map((e) => e.from);
+    return owners.length > 0 && owners.every(isDraftDoc);
+  };
+
   for (const n of byId.values()) {
-    if (n.type === "requirement" && !isProvenRequirement(n.id))
+    if (n.type === "requirement" && !isProvenRequirement(n.id) && !onlyDrafted(n.id))
       issues.push({ kind: "uncovered-requirement", node: n.id, detail: "no test covers this requirement" });
     // An edge's TARGET has always been validated (broken-link, REQ-KG-CORE-01); a requirement's
     // cited PROOF was not. `provenBy` — where a doc's `covers:` frontmatter lands — kept whatever
@@ -59,7 +79,9 @@ export function assemble(parts: ParseResult, now: string, registries?: Record<st
           issues.push({ kind: "broken-proof", node: n.id, detail: `cited proof '${s}' is not a test node` });
     if (n.type === "doc" && !n.entrypoint && !inbound(n.id, ["references", "imports"]))
       issues.push({ kind: "orphan-doc", node: n.id, detail: "no inbound references/imports" });
-    if (n.type === "doc" && !inbound(n.id, ["verifies"])) {
+    // `orphan-doc` deliberately still applies to a draft above: a proposal nobody links to is a stray,
+    // and drafts would otherwise accumulate unreachable.
+    if (n.type === "doc" && n.status !== "draft" && !inbound(n.id, ["verifies"])) {
       // Soft escape hatch: a doc with no test directly `verifies`-ing it as a whole is still
       // honestly "proven" if it `specifies` at least one requirement AND every one of those
       // requirements is independently proven (covers/provenBy resolving to a real test node).

@@ -96,6 +96,19 @@ records what the implementation currently does. **Nothing here has been decided 
 The open-questions section is the most valuable part of the document. Do not skip it because you found
 nothing — if you genuinely found nothing ambiguous in a whole area, say that, and be suspicious of it.
 
+**Link the new doc in from an existing one**, usually the area's index or parent. `orphan-doc` needs an
+*inbound* reference, so writing `Parent: [[whatever]]` inside your new doc does not clear it — the
+parent has to name the child. Miss this and every draft you write lands as an orphan.
+
+## 4b. Expect the gate to go red, and say so before it does
+
+A drafted doc raises `uncovered-requirement` by one per requirement and `unverified-doc` by one, and
+the ratchet's `--update-baseline` **only lowers** — so there is no sanctioned way to accept the rise.
+Drafting a spec therefore breaks `npm run check` until every drafted requirement has a covering test.
+
+**Tell the CEO this before you draft, not after.** Do not reach for `--update-baseline`, and never
+delete requirements to get the gate green: that is refreshing a baseline by another name.
+
 ## 5. Rebuild and hand it over
 
 ```bash
