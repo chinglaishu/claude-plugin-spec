@@ -12,7 +12,7 @@ Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
 - REQ-KG-04: `check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through.
   Proven by: gateDecision.test.ts (unit-fe, pass)
 - REQ-KG-05: Run screenshots are stored outside the committed graph at exactly one declared destination — a project-supplied S3 bucket, the tool-managed GitHub evidence branch, or the local device when none is declared. The config names coordinates only and never a credential. Evidence is addressed by URL; screenshot binaries never enter the committed graph JSON or the working branch.
-  Proven by: applyEvidence.test.ts (unit-fe, pass)
+  Proven by: applyEvidence.test.ts (unit-fe, pass) · blobStore.test.ts (unit-fe, pass)
 - REQ-KG-06: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
   Proven by: parseDoc.test.ts (unit-fe, pass)
 - REQ-KG-07: A doc is identified by its frontmatter `slug` when it declares one, falling back to `id` and then the filename — so a corpus that carries a catalog id (SD-nn) alongside a human slug stays cross-referenceable by the name its siblings actually cite.
