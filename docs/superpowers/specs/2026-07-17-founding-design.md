@@ -2,7 +2,7 @@
 
 - **Date:** 2026-07-17 (rewritten same day — see §10)
 - **Status:** Founding design note. The project's first artifact and its north star.
-- **Prior art:** `dojostack_main/tools/knowledge-graph/` (the in-tree original, ~55 modules / 438 tests)
+- **Prior art:** the origin project's in-tree `tools/knowledge-graph/` (the original, ~55 modules / 438 tests)
   and its PRD `.github/system-design/KNOWLEDGE_GRAPH_TOOL.md`; the design notes
   `2026-07-14-greenfield-spec-first-mode-design.md`, `2026-07-16-kg-gate-pinned-sources-design.md`,
   `2026-07-17-kg-config-extraction-design.md`; `mockups/DIRECTION.md` (the landscape scan).
@@ -23,7 +23,7 @@ That is the entire product. Everything below serves those two sentences or it do
 original framing read as if an existing SSoT and an existing Playwright suite were preconditions, which
 inverted the adoption story.)* The user arrives with a codebase and an AI agent, nothing else. The SSoT
 accretes through the tool's own motions: the conflict scan needs no docs to find code-vs-code
-contradictions (`irrCalculator.ts` vs `financial.py` is exactly that); each adjudication becomes a
+contradictions (`rateCalculator.ts` vs `pricing.py` is exactly that); each adjudication becomes a
 canonical position; stop-and-ask (§9b.2) forces a requirement into existence for every new behaviour;
 a flow approval (§6) ratifies watched behaviour into a requirement. And the Playwright tests are
 written by staff through the skills (`kg-e2e`, `add-test`) — created for the user, never demanded of
@@ -62,7 +62,7 @@ a one-way flow, idea → spec → code.
 Kiro comes closest to us with "requirements analysis", and its own framing shows the gap: it validates
 **one spec document**, at **spec-authoring time**, **before** implementation, with no CI and no
 requirement→test linkage. It ensures the spec is sound before code exists. It has nothing to say six
-months later when the backend flips to post-tax and `irrCalculator.ts` still claims parity.
+months later when the backend flips to post-tax and `rateCalculator.ts` still claims parity.
 
 > **Everyone validates the spec BEFORE implementation. Nobody keeps it true AFTER.**
 
@@ -96,7 +96,7 @@ read *on demand* — which is what fullscreen is for. What they must never need 
 | # | deliverable | status |
 |---|---|---|
 | 1 | **The platform** — graph, conflict scan, requirement→test linkage, the gate | mostly built |
-| 2 | **The skills** — `kg-spec`, `kg-e2e`, `kg-scan-conflicts`, `kg-fix-conflicts`, `add-test` | built **in DojoStack — not yet ported**: this repo's `skills/` is empty *(corrected 2026-07-17 — "built" read as done for this product, which it is not)* |
+| 2 | **The skills** — `kg-spec`, `kg-e2e`, `kg-scan-conflicts`, `kg-fix-conflicts`, `add-test` | built **in the origin project — not yet ported**: this repo's `skills/` is empty *(corrected 2026-07-17 — "built" read as done for this product, which it is not)* |
 | 3 | **The staff prompt** — how the AI must behave | **does not exist** |
 
 **(3) is the gold and it is the cheapest.** The platform can detect every contradiction in a repo and
@@ -122,7 +122,7 @@ make the difference checkable.
 
 **Text, for what cannot be watched** — invariants, formulas, orderings, definitions. This is not a
 fallback; it is where the real conflicts live. Every genuine contradiction found so far is of this kind:
-`irrCalculator.ts` vs `financial.py` (a tax basis), the House-View status enum, the npi_margin
+`rateCalculator.ts` vs `pricing.py` (a tax basis), the Billing status enum, the net_margin
 denominator, overlay composition order, occupancy weighting. **No browser can click any of those.**
 
 **Flow, for user-facing behaviour** — the CEO ratifies by *watching* a Playwright run, not reading.
@@ -227,14 +227,14 @@ Two things this reframes:
 ## 7. Requirement zero
 
 > **REQ-0** — *Given any repo root supplied as configuration, the tool builds a byte-identical graph to
-> the one DojoStack's in-tree copy produces — knowing nothing about DojoStack.*
+> the one the origin project's in-tree copy produces — knowing nothing about that project.*
 
 Simultaneously the port's acceptance criterion, the proof genericization worked, and the first honest
 test that "reusable" is real rather than aspirational. ~~It fails today — the topology is hardcoded in
 twelve files — and goes green exactly when config lands.~~
 
-**GREEN as of 2026-07-17**, when phase 2 landed config and the last `dojostack` string left `src/`. The
-fingerprint against `dojostack_main` was byte-identical at every step
+**GREEN as of 2026-07-17**, when phase 2 landed config and the last reference to the origin project left `src/`. The
+fingerprint against the origin workspace was byte-identical at every step
 (`0d66f86c…`, 1395 nodes / 1968 edges / 831 issues), which is the other half of the claim: the graph did
 not move, so nothing about the *measurement* changed — only who supplies the topology.
 
@@ -251,8 +251,8 @@ succeeded by:**
 REQ-1 is the standing, CI-runnable proof that "generic" is real (§8's single-repo argument, made
 permanent), and it tests the assumption rather than the spelling — closing §12.9's gap: a tool that
 hardcodes a runner or a layout will build the wrong fixture graph, whether or not it ever says
-"dojostack". REQ-0's grep half survives as a lint; its byte-identical half lives on only as the manual
-oracle against `dojostack_main` until phase 5 rewires it.
+the origin project's name. REQ-0's grep half survives as a lint; its byte-identical half lives on only as the manual
+oracle against the origin workspace until phase 5 rewires it.
 
 **REQ-1 is GREEN as of 2026-07-17**, the day it was approved — written test-first
 (`src/fixtureRepo.test.ts`: five tests, all watched red before the fixtures existed). The fixtures
@@ -268,21 +268,21 @@ normalized exactly as `check.ts`'s `normalizeForCompare` does, SHA256'd — **by
 darwin-arm64, linux-arm64 and linux-x64**.
 
 Every entrypoint honours `KG_REPO_ROOT`, so **the oracle survives the move**: this repo's ported tool,
-pointed at `dojostack_main`, must reproduce the same hash. **The contract is the method, not a literal
-hash** — the fingerprint moves whenever DojoStack's tree changes, so each phase captures it fresh from an
+pointed at the origin workspace, must reproduce the same hash. **The contract is the method, not a literal
+hash** — the fingerprint moves whenever the target tree changes, so each phase captures it fresh from an
 unmodified tree, changes only tool code, and asserts it unchanged.
 
 The port and the genericization are guarded **separately**: port as-is → hash must match immediately
 (proving only that the *move* was clean, which is all it needs to prove); then genericize → REQ-0 goes
 green **and** the hash still matches.
 
-**Self-hosting is the single-repo proof.** `claude-plugin-spec` is a one-repo project; DojoStack is the three-repo
-case. The tool cannot govern itself while it still believes the world contains `dojostack_backend/`. The
+**Self-hosting is the single-repo proof.** `plugin-spec` is a one-repo project; the origin project is the three-repo
+case. The tool cannot govern itself while it still believes the world contains that project's repo directories. The
 dogfood is the test, not a gesture.
 
 ## 9. The rules
 
-DojoStack's ceremony does **not** apply here: no Stop hooks, no mandatory review agent, no `soc-gate`.
+The origin project's ceremony does **not** apply here: no Stop hooks, no mandatory review agent, no `soc-gate`.
 These are chosen, and short on purpose — *nobody reads long text* applies to operating manuals too.
 
 ### 9a. CEO page — how to lead staff well
@@ -322,7 +322,7 @@ decoration.**
 2. **Test-first for new or changed behaviour.** Not ceremony — the thesis. *Evidence, from this project's
    own repo:* REQ-KG-04's `covers:` pointed at a test proving `ratchetFailures()` **returns** failures
    while nothing proved the pipeline **acts** — green for months, requirement false. `parseDoc.test.ts`'s
-   fixture encoded the code's own assumption (`id: house-view-freeze`), so it stayed green while the graph
+   fixture encoded the code's own assumption (`id: billing-freeze`), so it stayed green while the graph
    silently dropped 7 docs. **A test written after the code can only confirm the code, never contradict
    it** — and a `covers:` edge from a code-derived test is a false claim, which is precisely what this
    tool exists to detect. **Exempt:** the 438 ported tests (history can't be re-TDD'd), pure refactors
@@ -341,7 +341,7 @@ decoration.**
 5. **One repo, three consumers** — npm package (CI runs the gate, where Claude Code does not exist),
    Claude plugin (the skills + hook), self-hosted (its own graph).
 6. **Move first, then genericize** — `KG_REPO_ROOT` means the oracle survives the move.
-7. **DojoStack is rewired last**, so nothing breaks meanwhile.
+7. **The origin project is rewired last**, so nothing breaks meanwhile.
 8. **Config is threaded explicitly, never a module-level singleton.** Entrypoints call
    `loadConfig(repoRoot)` once and pass it down; `repoOf(path, repos)` / `nsId(path, bare, repos)` take
    the topology. A singleton would be near-zero churn but makes the tool stateful, forces test
@@ -362,7 +362,7 @@ decoration.**
    scope creep.
 
    **Two classes of coupling, and only the move revealed the second:** twelve non-test files hardcode
-   `dojostack_*` *paths*, but `serve.ts` also reads the graph from `join(__dirname, "..")` — **the tool
+   the origin project's *paths*, but `serve.ts` also reads the graph from `join(__dirname, "..")` — **the tool
    assumes it lives inside the project it measures.** That is the more fundamental assumption for a
    package, and no amount of reading found it; porting did, as 3 failing serve tests.
 
@@ -460,18 +460,18 @@ the SSoT must not contradict itself. They are now 11 and 12. The `src/` comments
 
 | # | What | Done when |
 |---|---|---|
-| **1** | Port `src`/tests/PRD/viewer; npm deps | ✅ fingerprint vs `dojostack_main` matches |
+| **1** | Port `src`/tests/PRD/viewer; npm deps | ✅ fingerprint vs the origin workspace matches |
 | **2** | Genericize onto `kg.config.json` (topology → paths → runners) | ✅ **done 2026-07-17** — REQ-0 green, fingerprint unchanged (`0d66f86c…`) |
 | **3** | Self-host: own config, own graph, own gate | its `REQ-KG-*` live in its own graph (= the single-repo proof, §8) |
 | **4** | The **staff prompt** — skill + `UserPromptSubmit` hook; plugin manifest + marketplace | installable; staff consults the SSoT before it writes a line, *measured* per §5; **renamed off the placeholder first (§12.4)** |
-| **5** | Rewire DojoStack: delete `tools/knowledge-graph/`, consume the npm dep | DojoStack's graph is purely DojoStack |
+| **5** | Rewire the origin project: delete `tools/knowledge-graph/`, consume the npm dep | its graph is purely its own |
 
-DojoStack keeps its **artifacts** (graph, viewer, baseline, lockfile), its **config** and its **workflow**
+The origin project keeps its **artifacts** (graph, viewer, baseline, lockfile), its **config** and its **workflow**
 — those are its data, not the tool. `tools/knowledge-graph/` keeps working untouched until phase 5, so
 nothing breaks while this is built.
 
 **Phase 4 is where the value lands** (§5): the platform is inert until staff is made to consult it. If
-time runs out, ship 1–4 and leave DojoStack on its in-tree copy — the tool still works for the next
+time runs out, ship 1–4 and leave the origin project on its in-tree copy — the tool still works for the next
 project. Phase 5 is hygiene, not value.
 
 **Amended 2026-07-17 (CEO-approved): 3 and 4 run as one loop, not a sequence.** Self-hosting without
@@ -485,7 +485,7 @@ phases; it is precisely the one to test first.
 ## 12. Open questions
 
 1. **REQ-0's test depends on a private repo — what replaces it after the port?** REQ-0 is defined as
-   "byte-identical to DojoStack's copy", which is exactly right as a *migration* acceptance criterion and
+   "byte-identical to the origin project's copy", which is exactly right as a *migration* acceptance criterion and
    unshippable as a permanent one: the test needs a private CRE codebase, so it cannot run in this repo's
    CI and cannot survive public distribution (§12.5). A generic tool whose requirement-zero cannot be
    verified by anyone who installs it is not generic. Likely answer: REQ-0 is a **migration requirement**
@@ -527,7 +527,7 @@ phases; it is precisely the one to test first.
    `fixPlanFor(finding, canonicalPositionId)`), `datum` (the fixed reference every measurement is taken
    from), `writ`, `moor`. Every short English word is taken on npm, but a scope (`@fumia/…`) frees all of
    them — **npm is not a constraint on the choice.**
-5. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
+5. **Distribution** — private to the team first, or public? Gates whether the PRD's origin-project-specific
    examples need scrubbing. **RESOLVED 2026-07-17 (CEO): private to the team first.** Public waits for
    the rename (§12.4) and the PRD scrub this question exists to gate.
 6. **Config file name/location** in a consuming project. *Provisionally `kg.config.json` at the
@@ -539,13 +539,13 @@ phases; it is precisely the one to test first.
    hardcoded LOCATIONS (`repoRoot`/`backendDir` were already parameters), which is all REQ-0 forced. The
    knowledge that a backend is Python, runs under uvicorn as `main:app`, and that a frontend runs
    `npm run dev` with `NEXT_PUBLIC_*` env still sits in `serve.ts` — REQ-0 cannot see it because none of
-   it spells "dojostack". **A generic tool that hardcodes uvicorn is not generic; REQ-0 just cannot say
+   it spells the origin project's name. **A generic tool that hardcodes uvicorn is not generic; REQ-0 just cannot say
    so.** That is a real gap in the requirement, not only in the code.*
 8. **Do `flows` labels belong in config**, or can they derive from the feature registries the graph
    already reads?
 9. **Does REQ-0 measure the right thing?** *Raised by making it green, 2026-07-17.* It greps for one
-   project's name, so it goes green when the tool stops naming DojoStack — not when the tool stops
-   assuming DojoStack. §12.7 above is the proof: `uvicorn main:app` passes REQ-0 today. The grep was the
+   project's name, so it goes green when the tool stops naming the origin project — not when the tool stops
+   assuming it. §12.7 above is the proof: `uvicorn main:app` passes REQ-0 today. The grep was the
    right instrument for the port (it decays honestly and anyone can run it) and it caught real coupling
    in files nobody would have thought to look at, including two written during phase 2 itself. But
    "names no project" is a proxy for "assumes no project", and the gap between them is now where the
@@ -556,7 +556,7 @@ phases; it is precisely the one to test first.
     a denominator, a weighting. What detects that kind, and at what false-positive rate? The decision
     inbox lives or dies on precision — too many spurious findings and the CEO stops opening it, which
     is the `|| echo` failure recurring one layer up: the signal exists and nobody looks. Before any
-    inbox ships, measure precision on DojoStack's corpus, where the true conflicts are already
+    inbox ships, measure precision on the origin project's corpus, where the true conflicts are already
     catalogued.
 11. **Screenshot-diff stability.** *(Added 2026-07-17, from review.)* §6 and §10.11 rest on "two
     screenshots diff". Visual diffing's classic failure is the false positive — fonts, animation
@@ -569,11 +569,19 @@ phases; it is precisely the one to test first.
     pressure that produced `|| echo` in the first place. Retries, a quarantine lane, a flake budget —
     something must keep the gate credible without teaching people to bypass it, and it must be decided
     before the gate blocks anyone.
-13. **`REQ-KG-CORE-02`'s text is stale — two sources disagree.** *(Raised 2026-07-24; staff stopped
-    rather than picking a side, per rule 3.)* It says repo classification is "purely by path prefix
-    (`dojostack_backend` → backend, `dojostack_frontend` → frontend, else main)" — the hardcoded
-    topology **REQ-0 removed**. The code reads it from `config.repos`. The citation has been fixed;
-    the sentence has not, because changing requirement text is the CEO's gate. Decide which is canon.
+13. ~~**`REQ-KG-CORE-02`'s text is stale — two sources disagree.**~~ — **RESOLVED 2026-07-24 (CEO):
+    the code is canon.** It described repo classification as a fixed table of the origin project's
+    repo directories — the hardcoded topology **REQ-0 removed** — while the code and `config.test.ts`
+    had read it from `config.repos` since phase 2. The requirement text now states the declared-topology
+    rule, with the correction and its reason recorded inline in `KG_CORE.md`.
+
+    **The bigger finding was why it survived.** REQ-0's lint scanned `src/` only, so every asset outside
+    that one directory kept its coupling unchallenged — including the **shipped viewer template**, which
+    hardcoded the origin project's repo directories, GitHub org and working branch, and would have
+    rendered that project's name in the title bar of every installed copy. The lint is now repo-wide
+    (`src/req0.test.ts`), the topology reaches the viewer as a `graph.project` payload, and static-mode
+    source links degrade to plain chips rather than pointing at somebody else's repository. **A guard
+    aimed at the one place already cleaned proves nothing about the places that were not.**
 14. **The gate is red on one `unverified-doc`, and lowering it is refused.** *(2026-07-24.)* The PRD
     split left `KNOWLEDGE_GRAPH_TOOL.md` holding narrative with `requirements: []`, so nothing proves
     it. Isolated and confirmed byte-identical with every other change stashed. **The baseline was

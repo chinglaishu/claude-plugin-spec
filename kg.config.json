@@ -1,7 +1,8 @@
 {
   "_comment": [
     "This project's own config. It is the SINGLE-REPO case — one repo owning the workspace root, no",
-    "siblings, nothing to pin — which is precisely the case DojoStack can never exercise and the one",
+    "siblings, nothing to pin — which is precisely the case a multi-repo workspace can never exercise",
+    "and the one",
     "that decides whether 'reusable' is real rather than aspirational (founding design §8).",
     "Phase 3 (self-hosting: own graph, own gate) builds on this; declaring the topology is just the",
     "tool saying what it is, and the entrypoints refuse to guess without it."

@@ -17,7 +17,7 @@ const RUN_CASE = process.env.KG_RESULT_TEST_CASE ?? "frontend:ADD-1";
 
 const FAKE_SSE = [
   "event: start",
-  'data: {"spec":"add-property-scenarios.spec.ts"}',
+  'data: {"spec":"onboarding-scenarios.spec.ts"}',
   "",
   "event: result",
   'data: {"status":"fail","error":"<img src=x onerror=alert(1)>Error: boom","screenshots":[{"name":"test-failed-1.png","path":"/run-artifacts/run-x/test-failed-1.png"}]}',

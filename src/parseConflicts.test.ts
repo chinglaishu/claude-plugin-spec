@@ -17,7 +17,7 @@ const finding = (subject: string) => ({
 
 describe("parseConflicts", () => {
   it("parses valid findings and stamps ids + scope", () => {
-    const out = parseConflicts(file("pfl", [finding("npi_margin denominator")]));
+    const out = parseConflicts(file("pfl", [finding("net_margin denominator")]));
     expect(out).toHaveLength(1);
     expect(out[0].scope).toBe("pfl");
     expect(out[0].id).toMatch(/^cf-/);
@@ -27,8 +27,8 @@ describe("parseConflicts", () => {
     expect(out.map((f) => f.subject)).toEqual(["ok"]);
   });
   it("falls back to the filename stem when scope is absent", () => {
-    const out = parseConflicts({ path: "conflicts/hv.conflicts.json", content: JSON.stringify({ findings: [finding("q")] }) });
-    expect(out[0].scope).toBe("hv");
+    const out = parseConflicts({ path: "conflicts/bil.conflicts.json", content: JSON.stringify({ findings: [finding("q")] }) });
+    expect(out[0].scope).toBe("bil");
   });
   it("returns [] for malformed JSON, never throws", () => {
     expect(parseConflicts({ path: "conflicts/x.conflicts.json", content: "{not json" })).toEqual([]);

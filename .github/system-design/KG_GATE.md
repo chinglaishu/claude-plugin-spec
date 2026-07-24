@@ -13,13 +13,13 @@ requirements:
       knowledge-graph.json, viewer.html, report.md, or digest/ can drift from
       what a fresh build produces.
     covers:
-      - main:tools/knowledge-graph/src/check.test.ts
+      - main:src/check.test.ts
   - id: REQ-KG-04
     text: "`check` is the strict gate: any issue kind whose count rises above its
       frozen baseline fails the build, even by one — a regression cannot be
       waved through."
     covers:
-      - main:tools/knowledge-graph/src/check.test.ts
+      - main:src/check.test.ts
   - id: REQ-KG-GATE-01
     text: Every path that writes the graph also stamps
       `knowledge-graph.sources.json` with the exact sibling-repo commits it was
@@ -27,7 +27,7 @@ requirements:
       the inner loop stays usable while the lockfile never silently disagrees
       with the graph beside it.
     covers:
-      - main:tools/knowledge-graph/src/sources.test.ts
+      - main:src/sources.test.ts
   - id: REQ-KG-GATE-02
     text: "`check --pinned` refuses to certify a graph unless the sibling checkouts
       sit exactly at the lockfile's commits, and a missing or malformed lockfile
@@ -35,7 +35,7 @@ requirements:
       reproducible-from-pins, never merely that the graph happened to match one
       machine's checkout."
     covers:
-      - main:tools/knowledge-graph/src/sources.test.ts
+      - main:src/sources.test.ts
 ---
 
 ## Why this exists

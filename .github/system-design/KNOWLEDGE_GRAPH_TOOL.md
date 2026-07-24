@@ -12,7 +12,7 @@ last_reviewed: 2026-07-10T00:00:00.000Z
 
 ## 0. Purpose
 
-`tools/knowledge-graph/` turns the scattered, easy-to-drift sources of truth about DojoStack —
+`tools/knowledge-graph/` turns the scattered, easy-to-drift sources of truth about a codebase —
 system-design docs, e2e case registries, feature registries, unit/e2e test files, config/instruction
 files — into one committed, machine-checkable graph (`knowledge-graph.json`), a browsable viewer
 (`viewer.html`), a human digest (`digest/*.md`), and a short status report (`report.md`). This
@@ -119,12 +119,12 @@ never a silent hang or a fabricated result.
 
 Screenshots captured during e2e runs are never committed on the working branch and never embedded as
 binaries in `knowledge-graph.json` — only URLs are (REQ-KG-05). They are uploaded to a dedicated
-orphan branch, `e2e-evidence`, in `dojostack_frontend`, laid out as
+orphan branch, `e2e-evidence`, in the repo named by `evidence.repo`, laid out as
 `kg-cases/<caseBareId>/<shortSha>/<NN>-<shotName>.png` with the newest 3 SHAs per case retained (older
 ones pruned on every upload) — see that branch's own `README.md` for the full contract. The upload
 path (`tools/knowledge-graph/src/shotsUpload.ts`) is invoked automatically at the end of
 `sync:results` for the cases just run (`KG_SHOTS_UPLOAD=0` to disable) and can be run manually via
-`npm run shots:upload`. The resulting `dojostack_frontend/e2e/kg-evidence-index.json` — case id → SHA
+`npm run shots:upload`. The resulting `<e2eDir>/kg-evidence-index.json` — case id → SHA
 → `{ filename: raw URL }` — is ingested by `discover.ts` the same way `kg-test-results.json` is, and
 attached as `evidence` on the matching e2e test node, so the viewer's screenshot strip can resolve a
 step's image locally (live `serve` `/shots/` route) or from this branch, in that order.
@@ -198,7 +198,7 @@ edge whose test doesn't assert them (which would launder coverage):
 
 A planned feature: detect and resolve **semantic contradictions** — one fact stated inconsistently
 across docs and/or code (a formula, an ordering, a definition) — which the structural issue kinds do
-not catch. This is the automation of the manual "portfolio docs tidy" (npi_margin denominator, overlay
+not catch. This is the automation of the manual "pricing docs tidy" (net_margin denominator, overlay
 composition order, occupancy weighting). Shape:
 
 - A finding is a **cluster**: one `subject` described by N participants grouped into `positions`
@@ -294,7 +294,7 @@ per §7 — so this section cannot itself add `uncovered-requirement` issues whi
 
 **REQ-KG-GATE-06 was earned by an incident during this section's own authoring (2026-07-16).** A single
 unquoted `[id]` dynamic-route segment inside a YAML flow sequence made
-`dojostack_backend/.github/system-design/00_platform/MODULE_HEADER_ACTIONS_AND_GLOSSARY.md` unparseable.
+one of the origin project's largest system-design docs unparseable.
 `buildGraph` warned once to the console and skipped it — silently removing **30 requirements** from the
 graph (`uncovered-requirement` 95→65, because they ceased to *exist* rather than becoming proven) and
 stranding **221** references (`broken-link` 37→258). This is §7's known-uncovered item 5 exactly — *"a

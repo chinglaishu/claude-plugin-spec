@@ -1,3 +1,5 @@
+import type { Repo } from "./config";
+
 export type NodeType = "doc" | "test" | "requirement" | "instruction" | "agent" | "hook" | "feature" | "cache-entry";
 
 /** A cache entry's backing store. */
@@ -97,6 +99,11 @@ export interface Graph {
    *  conflicts/*.conflicts.json. NOT nodes/edges — never influences issues or the ratchet.
    *  Deterministically deduped-by-id and sorted so serialization is byte-stable. */
   conflicts?: ConflictFinding[];
+  /** Viewer-only payload: the project's declared topology. The viewer is a SHIPPED asset and receives
+   *  no config, so without this it can only strip path prefixes and label repos by hardcoding one
+   *  particular project's directory names — which is exactly what it used to do (REQ-0). NOT
+   *  nodes/edges — never influences issues or the ratchet. */
+  project?: { repos: Repo[]; e2eDir: string };
 }
 
 export type ConflictAxis = "doc" | "code" | "mixed";

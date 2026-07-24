@@ -19,7 +19,7 @@ requirements:
       socket close or a throwing write — one rebuild yields one re-fetch and no
       client leaks.
     covers:
-      - main:tools/knowledge-graph/src/liveHub.test.ts
+      - main:src/liveHub.test.ts
   - id: REQ-KG-SERVE-02
     text: Every read-only serve route (/registry, /src, /run-artifacts, /shots,
       /evidence) confines each read within its designated root — a directory for
@@ -29,34 +29,34 @@ requirements:
       dotfiles, .local. credential files, and non-allowlisted extensions with a
       404. A request the guard rejects is never signed.
     covers:
-      - main:tools/knowledge-graph/src/pathGuard.test.ts
-      - main:tools/knowledge-graph/src/serveProvenance.test.ts
-      - main:tools/knowledge-graph/src/serveRunArtifact.test.ts
+      - main:src/pathGuard.test.ts
+      - main:src/serveProvenance.test.ts
+      - main:src/serveRunArtifact.test.ts
       - main:src/serveEvidence.test.ts
   - id: REQ-KG-SERVE-03
     text: /api/graph returns the current graph read fresh from disk on every request
       (a rewrite is served on the next fetch) and 404s a missing file.
     covers:
-      - main:tools/knowledge-graph/src/serveGraph.test.ts
+      - main:src/serveGraph.test.ts
   - id: REQ-KG-SERVE-04
     text: Star curation writes back only the targeted feature entry —
       depth-anchored, idempotent, never matching a prefix or substring sibling
       or a nested star key, and throws on an unknown id.
     covers:
-      - main:tools/knowledge-graph/src/toggleStar.test.ts
+      - main:src/toggleStar.test.ts
   - id: REQ-KG-SERVE-05
     text: The serve spawn-lock enforces single-owner server management — a lock held
       by a live process yields contended (no double-spawn), a stale, dead-owner,
       or corrupt lock is atomically reclaimed with the wx flag, and release only
       removes the caller's own lock.
     covers:
-      - main:tools/knowledge-graph/src/serveLock.test.ts
+      - main:src/serveLock.test.ts
   - id: REQ-KG-SERVE-06
     text: A run client disconnect is detected via the ServerResponse close event
       (not the request) and tree-kills the spawned run, guarded by an exited
       flag so normal completion never fires a kill.
     covers:
-      - main:tools/knowledge-graph/src/serverDisconnect.test.ts
+      - main:src/serverDisconnect.test.ts
 ---
 
 ## Why this exists

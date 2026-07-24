@@ -21,19 +21,19 @@ describe("deriveAxis", () => {
 
 describe("normalizeFinding", () => {
   const base = {
-    subject: "npi_margin denominator", category: "formula", severity: "high", tags: ["pfl"], why: "disagree",
+    subject: "net_margin denominator", category: "formula", severity: "high", tags: ["pfl"], why: "disagree",
     positions: [
-      { id: "A", statement: "/ gross_income", heldBy: ["doc:fin"] },
-      { id: "B", statement: "/ effective_income", heldBy: ["code:run"] },
+      { id: "A", statement: "/ gross_revenue", heldBy: ["doc:fin"] },
+      { id: "B", statement: "/ net_revenue", heldBy: ["code:run"] },
     ],
     participants: [
-      { kind: "doc", ref: "doc:fin", quote: "/ gross_income", positionId: "A" },
-      { kind: "code", ref: "run.py", quote: "/ effective_income", positionId: "B" },
+      { kind: "doc", ref: "doc:fin", quote: "/ gross_revenue", positionId: "A" },
+      { kind: "code", ref: "run.py", quote: "/ net_revenue", positionId: "B" },
     ],
   };
   it("stamps the content id and derives axis", () => {
     const f = normalizeFinding(base, "pfl")!;
-    expect(f.id).toBe(conflictId("npi_margin denominator", "pfl"));
+    expect(f.id).toBe(conflictId("net_margin denominator", "pfl"));
     expect(f.axis).toBe("mixed");
     expect(f.scope).toBe("pfl");
   });

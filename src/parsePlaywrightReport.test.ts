@@ -1,21 +1,21 @@
 import { describe, it, expect } from "vitest";
 import { parsePlaywrightJson, parseCaseResult } from "./parsePlaywrightReport";
 const report = JSON.stringify({
-  suites: [{ title: "house-view.spec.ts", suites: [{ title: "hv", specs: [
-    { title: "hv one", ok: true, tests: [{ results: [{ status: "failed" }, { status: "passed" }] }] },
+  suites: [{ title: "billing.spec.ts", suites: [{ title: "bil", specs: [
+    { title: "bil one", ok: true, tests: [{ results: [{ status: "failed" }, { status: "passed" }] }] },
   ] }], specs: [
-    { title: "hv two", ok: false, tests: [{ results: [{ status: "failed" }, { status: "failed" }] }] },
+    { title: "bil two", ok: false, tests: [{ results: [{ status: "failed" }, { status: "failed" }] }] },
   ] }],
 });
 describe("parsePlaywrightJson", () => {
-  const titles = new Map([["hv one", "hv-1"], ["hv two", "hv-2"]]);
+  const titles = new Map([["bil one", "bil-1"], ["bil two", "bil-2"]]);
   const r = parsePlaywrightJson(report, titles);
   it("maps titles to case ids with pass/fail + attempts (nested suites)", () => {
-    expect(r["hv-1"]).toEqual({ status: "pass", attempts: 2 });
-    expect(r["hv-2"]).toEqual({ status: "fail", attempts: 2 });
+    expect(r["bil-1"]).toEqual({ status: "pass", attempts: 2 });
+    expect(r["bil-2"]).toEqual({ status: "fail", attempts: 2 });
   });
   it("ignores specs whose title is not a known case", () => {
-    expect(Object.keys(r).sort()).toEqual(["hv-1", "hv-2"]);
+    expect(Object.keys(r).sort()).toEqual(["bil-1", "bil-2"]);
   });
 
   // Regression: a batch whose auth setup failed reports its tests as "did not

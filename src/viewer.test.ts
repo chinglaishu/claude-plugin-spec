@@ -30,8 +30,8 @@ const tpl = 'var KG=/*__KG_DATA__*/{}/*__KG_END__*/;\nvar DELTA=/*__KG_DELTA__*/
 const g = { generatedAt: "T", nodes: [], edges: [], issues: [] } as any;
 
 it("injects the delta between DELTA markers", () => {
-  const out = renderViewer(g, tpl, { added: [], removed: [], newlyFailing: ["frontend:hv-4"], newlyPassing: [], issueDeltas: [] } as any);
-  expect(out).toContain('"newlyFailing":["frontend:hv-4"]');
+  const out = renderViewer(g, tpl, { added: [], removed: [], newlyFailing: ["frontend:bil-4"], newlyPassing: [], issueDeltas: [] } as any);
+  expect(out).toContain('"newlyFailing":["frontend:bil-4"]');
 });
 it("leaves DELTA null when no delta is passed (plain build)", () => {
   expect(renderViewer(g, tpl)).toContain("/*__KG_DELTA__*/null/*__KG_END_DELTA__*/");
@@ -55,9 +55,9 @@ describe("renderViewer — marker collision with node content", () => {
       edges: [],
       issues: [],
     } as any;
-    const out = renderViewer(graphWithMarkerText, tplWithMarkers, { added: [], removed: [], newlyFailing: ["frontend:hv-4"], newlyPassing: [], issueDeltas: [] } as any);
+    const out = renderViewer(graphWithMarkerText, tplWithMarkers, { added: [], removed: [], newlyFailing: ["frontend:bil-4"], newlyPassing: [], issueDeltas: [] } as any);
     // The real delta must still land at the REAL (template) marker, not the one embedded in node data.
-    expect(out).toContain('"newlyFailing":["frontend:hv-4"]');
+    expect(out).toContain('"newlyFailing":["frontend:bil-4"]');
     // The KG object itself must still be valid, parseable JSON — the corruption bug produced
     // a syntax error inside the KG blob (delta JSON spliced mid-string) that this catches.
     const m = out.match(/var KG=(\{[\s\S]*?\});\n/);

@@ -26,7 +26,7 @@ describe("shouldAutoUpload", () => {
 
 describe("uploadCaseArg", () => {
   it("builds the --case argument scoped to exactly the case ids just run", () => {
-    expect(uploadCaseArg(["HV-1", "HV-2", "ADD-3"])).toBe("HV-1,HV-2,ADD-3");
+    expect(uploadCaseArg(["BIL-1", "BIL-2", "ADD-3"])).toBe("BIL-1,BIL-2,ADD-3");
   });
   it("returns undefined for an empty case list (caller should not invoke the upload)", () => {
     expect(uploadCaseArg([])).toBeUndefined();

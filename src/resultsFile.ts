@@ -6,7 +6,7 @@
 export interface ResultEntryV2 { status: string; attempts: number; at: string; error?: string; commit?: string; suggestedFix?: string; suggestedFixAt?: string; suggestedFixBy?: string }
 export interface ResultsFileV2 { generatedAt: string; commit: string; results: Record<string, ResultEntryV2> }
 
-/** Accept both the legacy v1 form (`"hv-1": "pass"`) and v2 objects. */
+/** Accept both the legacy v1 form (`"bil-1": "pass"`) and v2 objects. */
 export function normalizeResults(json: string): ResultsFileV2 {
   const parsed = JSON.parse(json) as { generatedAt: string; commit: string; results: Record<string, string | ResultEntryV2> };
   const results: Record<string, ResultEntryV2> = {};

@@ -5,37 +5,37 @@ import matter from "gray-matter";
 import { parseDoc } from "./parseDoc";
 
 const md = `---
-id: house-view-freeze
-title: House View Freeze
+id: billing-freeze
+title: Billing Freeze
 lens: state-machine
 status: current
-governs: [services/house_view/]
+governs: [services/billing/]
 related: [assumption-hierarchy-ux]
 requirements:
-  - id: REQ-HV-FREEZE-01
+  - id: REQ-BIL-FREEZE-01
     text: Resolves against a published version.
 ---
 Body links to [[live-freshness-and-freeze]] here.`;
 
 describe("parseDoc", () => {
-  const { nodes, edges } = parseDoc({ path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md", content: md }, REPOS);
+  const { nodes, edges } = parseDoc({ path: "svc_backend/.github/system-design/00_platform/BILLING_FREEZE.md", content: md }, REPOS);
 
   it("creates a doc node with frontmatter", () => {
     const doc = nodes.find((n) => n.type === "doc")!;
-    expect(doc.id).toBe("backend:house-view-freeze");
+    expect(doc.id).toBe("backend:billing-freeze");
     expect(doc.lens).toBe("state-machine");
-    expect(doc.path).toBe("svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md");
+    expect(doc.path).toBe("svc_backend/.github/system-design/00_platform/BILLING_FREEZE.md");
   });
   it("creates a requirement node + specifies edge", () => {
-    expect(nodes.find((n) => n.id === "REQ-HV-FREEZE-01")?.type).toBe("requirement");
-    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "REQ-HV-FREEZE-01", type: "specifies", source: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
+    expect(nodes.find((n) => n.id === "REQ-BIL-FREEZE-01")?.type).toBe("requirement");
+    expect(edges).toContainEqual({ from: "backend:billing-freeze", to: "REQ-BIL-FREEZE-01", type: "specifies", source: "svc_backend/.github/system-design/00_platform/BILLING_FREEZE.md" });
   });
   it("emits references from related and [[wikilinks]]", () => {
     const refs = edges.filter((e) => e.type === "references").map((e) => e.to).sort();
     expect(refs).toEqual(["assumption-hierarchy-ux", "live-freshness-and-freeze"]);
   });
   it("emits governs edge", () => {
-    expect(edges).toContainEqual({ from: "backend:house-view-freeze", to: "services/house_view/", type: "governs", source: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md" });
+    expect(edges).toContainEqual({ from: "backend:billing-freeze", to: "services/billing/", type: "governs", source: "svc_backend/.github/system-design/00_platform/BILLING_FREEZE.md" });
   });
   it("inlines the markdown body (post-frontmatter) on the doc node", () => {
     const doc = nodes.find((n) => n.type === "doc")!;
@@ -52,25 +52,25 @@ describe("parseDoc", () => {
 
   it("namespaces the doc id by repo but leaves reference targets bare", () => {
     const r = parseDoc({
-      path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE.md",
-      content: "---\nid: house-view-freeze\nrelated: [assumption-hierarchy-ux]\n---\nbody",
+      path: "svc_backend/.github/system-design/00_platform/BILLING_FREEZE.md",
+      content: "---\nid: billing-freeze\nrelated: [assumption-hierarchy-ux]\n---\nbody",
     }, REPOS);
-    expect(r.nodes[0].id).toBe("backend:house-view-freeze");
+    expect(r.nodes[0].id).toBe("backend:billing-freeze");
     const ref = r.edges.find((e) => e.type === "references");
-    expect(ref).toMatchObject({ from: "backend:house-view-freeze", to: "assumption-hierarchy-ux" });
+    expect(ref).toMatchObject({ from: "backend:billing-freeze", to: "assumption-hierarchy-ux" });
   });
 
   // The backend system-design corpus identifies a doc by TWO fields: a catalog `id:` (SD-nn) and a
   // human `slug:`, and every cross-doc `related:` reference targets the SLUG — no reference anywhere
   // uses SD-nn. Keying the node off `id:` therefore made all 7 slug-bearing docs unreachable:
-  // `related: [house-view-freeze]` resolved to nothing while the node sat at `backend:SD-56`,
-  // reported as broken-link "target 'house-view-freeze' is not a node".
+  // `related: [billing-freeze]` resolved to nothing while the node sat at `backend:SD-56`,
+  // reported as broken-link "target 'billing-freeze' is not a node".
   it("prefers the frontmatter slug over a catalog id, so slug references resolve", () => {
     const r = parseDoc({
-      path: "svc_backend/.github/system-design/00_platform/HOUSE_VIEW_FREEZE_AND_VERSION_RESOLUTION.md",
-      content: "---\nid: SD-56\nslug: house-view-freeze\ntitle: House View Freeze\n---\nbody",
+      path: "svc_backend/.github/system-design/00_platform/BILLING_FREEZE_AND_VERSION_RESOLUTION.md",
+      content: "---\nid: SD-56\nslug: billing-freeze\ntitle: Billing Freeze\n---\nbody",
     }, REPOS);
-    expect(r.nodes[0].id).toBe("backend:house-view-freeze");
+    expect(r.nodes[0].id).toBe("backend:billing-freeze");
   });
 
   it("still falls back to the catalog id when no slug is declared", () => {

@@ -22,10 +22,10 @@ const testNode = (id: string, spec: string): GraphNode => ({
 describe("detectUntrackedE2e", () => {
   it("returns nothing when every spec has a case entry with at least one link", () => {
     const g = graph(
-      [testNode("HV-1", "house-view-cascade.spec.ts")],
-      [{ from: "HV-1", to: "house-view-freeze", type: "verifies", source: "x" }],
+      [testNode("BIL-1", "billing-cascade.spec.ts")],
+      [{ from: "BIL-1", to: "billing-freeze", type: "verifies", source: "x" }],
     );
-    expect(detectUntrackedE2e(["e2e/house-view-cascade.spec.ts"], g)).toEqual([]);
+    expect(detectUntrackedE2e(["e2e/billing-cascade.spec.ts"], g)).toEqual([]);
   });
 
   it("flags a spec file with no matching case entry at all", () => {
@@ -64,12 +64,12 @@ describe("detectUntrackedE2e", () => {
   });
 
   it("matches spec paths regardless of directory prefix (case entry `spec:` is a bare filename)", () => {
-    // Case entries record `spec: house-view-cascade.spec.ts` (bare), while the
+    // Case entries record `spec: billing-cascade.spec.ts` (bare), while the
     // discovered file list gives us the full relative path.
     const g = graph(
-      [testNode("HV-1", "house-view-cascade.spec.ts")],
-      [{ from: "HV-1", to: "d", type: "verifies", source: "x" }],
+      [testNode("BIL-1", "billing-cascade.spec.ts")],
+      [{ from: "BIL-1", to: "d", type: "verifies", source: "x" }],
     );
-    expect(detectUntrackedE2e(["svc_frontend/e2e/house-view-cascade.spec.ts"], g)).toEqual([]);
+    expect(detectUntrackedE2e(["svc_frontend/e2e/billing-cascade.spec.ts"], g)).toEqual([]);
   });
 });

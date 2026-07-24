@@ -1,9 +1,17 @@
 import type { Graph, GraphNode, Health, HealthFlow } from "./types";
 
-export const FLOW_LABELS: Record<string, string> = {
-  add: "Add Property", hv: "House View", schedule: "Tenancy Schedule", ops: "Operations",
-  val: "Valuation", pfl: "Portfolio", fin: "Financial", auth: "Authentication", other: "Platform & docs",
-};
+/**
+ * Flow keys come from the PROJECT's own `*.features.yaml`, so their display names belong to the
+ * project too — a flow renders under whatever key it declared.
+ *
+ * This used to be a lookup table of one particular project's eight product surfaces, which every
+ * installed copy then rendered as its own flow taxonomy. REQ-0's grep never caught it because it
+ * names no project — the assumption survived without the name, which is precisely the gap §12.14
+ * predicted.
+ *
+ * `other` stays: it is the tool's OWN bucket for features that declare no flow, not a borrowed one.
+ */
+export const FLOW_LABELS: Record<string, string> = { other: "Platform & docs" };
 
 export const KIND_LABELS: Record<string, string> = {
   "uncovered-requirement": "promise without a test",

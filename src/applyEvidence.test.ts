@@ -6,7 +6,7 @@ const graph = {
   generatedAt: "T",
   nodes: [
     { id: "frontend:add-3", type: "test", kind: "e2e", title: "Add 3" },
-    { id: "frontend:hv-1", type: "test", kind: "e2e", title: "HV-1" },
+    { id: "frontend:bil-1", type: "test", kind: "e2e", title: "BIL-1" },
     { id: "frontend:some-unit.test.ts", type: "test", kind: "unit-fe", title: "some-unit.test.ts" },
     { id: "backend:x", type: "doc", title: "X" },
   ],
@@ -37,7 +37,7 @@ describe("applyEvidence", () => {
 
   it("leaves e2e nodes with no matching case entry untouched", () => {
     const g = applyEvidence(graph, index);
-    expect(g.nodes.find((n: any) => n.id === "frontend:hv-1").evidence).toBeUndefined();
+    expect(g.nodes.find((n: any) => n.id === "frontend:bil-1").evidence).toBeUndefined();
   });
 
   it("never attaches evidence to a non-e2e test node even if the bare id matched", () => {

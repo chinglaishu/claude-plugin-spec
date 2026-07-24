@@ -15,7 +15,7 @@ import { parseConflicts, foldConflicts } from "./parseConflicts";
 import { detectUntrackedE2e } from "./untrackedE2e";
 import { healthForGraph } from "./summarize";
 import { docDates, type GitRunner } from "./gitDates";
-import { knowledgeGlobs, e2ePath, artifactPath, type Config } from "./config";
+import { knowledgeGlobs, e2ePath, artifactPath, IGNORE, type Config } from "./config";
 import type { ConflictFinding, Graph, GraphNode, ParseResult } from "./types";
 
 /** Node types that are backed by a real committed file and can carry git created/updated dates.
@@ -23,7 +23,6 @@ import type { ConflictFinding, Graph, GraphNode, ParseResult } from "./types";
  *  must be dated consistently with their doc/instruction/agent siblings. */
 const DATED_TYPES: ReadonlySet<GraphNode["type"]> = new Set(["doc", "instruction", "agent", "hook"]);
 
-const IGNORE = ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/.config-backup*/**", "**/.git/**"];
 
 export function classify(rel: string): "doc" | "cases" | "features" | "cache" | "instruction" | "agent" | "hook" | null {
   const p = rel.replace(/\\/g, "/");
@@ -146,6 +145,10 @@ export async function buildGraph(repoRoot: string, now: string, config: Config, 
   }
   const conflicts = foldConflicts(findings);
   if (conflicts.length) withEvidence.conflicts = conflicts;
+
+  // The topology, for the viewer — which ships with the tool and never sees a config, so anything it
+  // needs to know about a project's layout has to arrive as data or get hardcoded (REQ-0).
+  withEvidence.project = { repos: config.repos, e2eDir: config.e2eDir };
 
   return withEvidence;
 }

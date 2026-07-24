@@ -7,7 +7,7 @@
      'auto'/unset follows the OS. data-theme on <html> holds the RESOLVED value the CSS keys off.
      The viewer is JS-required (the whole UI is script-rendered), so keying theme off JS is safe. -->
 <script>(function(){var p=null;try{p=localStorage.getItem('kgv.theme');}catch(e){}var eff=(p==='light'||p==='dark')?p:((window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light');try{document.documentElement.setAttribute('data-theme',eff);}catch(e){}})();</script>
-<title>DojoStack — Knowledge & Test Graph</title>
+<title>Knowledge &amp; Test Graph</title>
 <!-- Inline favicon (3-node graph glyph, neutral grey) — kills the /favicon.ico 404 in both serve and file:// modes. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='%238a8980' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='6' cy='6' r='2.6'/%3E%3Ccircle cx='18' cy='9' r='2.6'/%3E%3Ccircle cx='9' cy='18' r='2.6'/%3E%3Cpath d='M8.5 7.5l7 1M7 8.6l1.4 6.8M11.2 16.2l5-5'/%3E%3C/g%3E%3C/svg%3E" />
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -655,7 +655,7 @@
       <input type="password" id="ghtoken-input" class="ghtoken-field" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_… or ghp_…" aria-describedby="ghtoken-note" />
       <button class="ghtoken-reveal" id="ghtoken-reveal" type="button" aria-pressed="false" aria-label="Show token">Show</button>
     </div>
-    <p class="ghtoken-note" id="ghtoken-note">Read-only fine-grained PAT (Contents: read) for <code>dojostack_frontend</code>; stays in your browser, sent only to <code>api.github.com</code>.</p>
+    <p class="ghtoken-note" id="ghtoken-note">Read-only fine-grained PAT (Contents: read) for the repository holding your run evidence; stays in your browser, sent only to <code>api.github.com</code>.</p>
     <div class="ghtoken-status" id="ghtoken-status" role="status" aria-live="polite"></div>
     <div class="ghtoken-actions">
       <button class="btn ghtoken-save" id="ghtoken-save" type="button">Save</button>
@@ -854,7 +854,9 @@
   function reqSpecifier(reqId){var e=edgesTo('specifies',reqId)[0];return e?e.from:null;}
   function provingTests(reqId){var set={};coverers(reqId).forEach(function(t){if(N[t])set[t]=1;});(N[reqId].provenBy||[]).forEach(function(s){var id=resolveSlug(s);if(id&&N[id]&&N[id].type==='test')set[id]=1;});return Object.keys(set);}
   // ---- shared flow taxonomy (drives the By-feature sidebar) ----
-  var FLOW_LABELS={add:'Add Property',hv:'House View',schedule:'Tenancy Schedule',ops:'Operations',val:'Valuation',pfl:'Portfolio',fin:'Financial',auth:'Authentication'};
+  // Flow keys are the project's own, declared in its *.features.yaml — so a flow renders under the key
+  // it declared. This was a table of one particular project's product surfaces, shown to everyone.
+  var FLOW_LABELS={other:'Platform & docs'};
   function flowLabel(f){return FLOW_LABELS[f]||f;}
   function bareId(id){var i=id.indexOf(':');return i>=0?id.slice(i+1):id;}
   function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -913,27 +915,49 @@
     return p;
   }
   function ghAuthBad(){return _ghAuthBad;}
+  // The project's declared topology, injected with the graph (KG.project). The viewer ships with the
+  // tool and never sees a kg.config.json, so before this existed it hardcoded one particular project's
+  // repo directory names here — which made every other project's paths render wrong (REQ-0).
+  function projRepos(){return (KG.project&&KG.project.repos)||[{name:'main',subdir:''}];}
+  function projE2eDir(){return (KG.project&&KG.project.e2eDir)||'e2e';}
+  // Nested repos longest-subdir-first, so a nested repo wins over a shallower one — the same
+  // boundary rule repoOf() applies server-side.
+  function nestedRepos(){
+    return projRepos().filter(function(r){return r.subdir;})
+      .sort(function(a,b){return b.subdir.length-a.subdir.length;});
+  }
+  function rootRepoName(){
+    var r=projRepos().filter(function(x){return !x.subdir;})[0];
+    return r?r.name:'main';
+  }
   // Trim the repo prefix off a test path so file rows read cleanly.
-  function shortPath(p){return String(p||'').replace(/^dojostack_(frontend|backend)\//,'');}
+  function shortPath(p){
+    var s=String(p||''),n=nestedRepos();
+    for(var i=0;i<n.length;i++){if(s.indexOf(n[i].subdir+'/')===0)return s.slice(n[i].subdir.length+1);}
+    return s;
+  }
 
   // ---- source links: ONE mechanism for "anything named gets linked" -------
   // Serve mode (RUN_SERVER) → the companion server's read-only routes
   // (GET /src/<repo-relative-path>, GET /registry/<basename>); static file://
   // → GitHub blob/tree URLs on the working branch. Hrefs are derived from
   // RUN_SERVER at render time, so the probe-success re-render swaps them live.
-  var GH_BRANCH='feat/knowledge-test-graph';
   var SRC_EXT_RE=/\.(ts|tsx|py|md|yaml|yml|json|sql)$/i;
   var GLOB_RE=/[*?\[\]{}]/;
   function repoSplit(p){
     p=String(p||'');
-    if(p.indexOf('dojostack_frontend/')===0)return{repo:'dojostack_frontend',rel:p.slice(19)};
-    if(p.indexOf('dojostack_backend/')===0)return{repo:'dojostack_backend',rel:p.slice(18)};
-    return{repo:'dojostack_main',rel:p};
+    var n=nestedRepos();
+    for(var i=0;i<n.length;i++){if(p.indexOf(n[i].subdir+'/')===0)return{repo:n[i].name,rel:p.slice(n[i].subdir.length+1)};}
+    return{repo:rootRepoName(),rel:p};
   }
-  function ghBlobUrl(p){var r=repoSplit(p);return 'https://github.com/dojostack-app/'+r.repo+'/blob/'+GH_BRANCH+'/'+r.rel;}
-  function ghTreeUrl(dir){var r=repoSplit(dir);return 'https://github.com/dojostack-app/'+r.repo+'/tree/'+GH_BRANCH+(r.rel?'/'+r.rel:'');}
-  function srcHref(p){return RUN_SERVER?'/src/'+String(p).split('/').map(encodeURIComponent).join('/'):ghBlobUrl(p);}
-  function registryHref(p){return RUN_SERVER?'/registry/'+encodeURIComponent(String(p).split('/').pop()):ghBlobUrl(p);}
+  // Static file:// mode has NO source links. Building one needs a forge host, an owner and a branch —
+  // none of which the tool is told, and all three of which used to be hardcoded to one project's
+  // GitHub org and working branch. A link to somebody else's repository is worse than no link, so
+  // callers render a plain chip when this returns null. Serve mode is unaffected: it reads from disk.
+  function ghBlobUrl(){return null;}
+  function ghTreeUrl(){return null;}
+  function srcHref(p){return RUN_SERVER?'/src/'+String(p).split('/').map(encodeURIComponent).join('/'):null;}
+  function registryHref(p){return RUN_SERVER?'/registry/'+encodeURIComponent(String(p).split('/').pop()):null;}
   // Linking rule for a named source entry (exercises, feature path globs, …):
   //   concrete file with an allowlisted extension → srcHref (serve route / GitHub blob);
   //   glob → GitHub tree of its deepest literal directory prefix (both modes — trees
@@ -945,9 +969,15 @@
       var segs=p.split('/'),lit=[];
       for(var i=0;i<segs.length;i++){if(GLOB_RE.test(segs[i]))break;lit.push(segs[i]);}
       if(!lit.length)return '<span class="specchip">'+esc(p)+'</span>';
-      return '<a class="specchip srclink" href="'+esc(ghTreeUrl(lit.join('/')))+'" target="_blank" rel="noopener" title="Open the matched directory on GitHub ('+esc(GH_BRANCH)+')">'+esc(p)+'</a>';
+      var t=ghTreeUrl(lit.join('/'));
+      if(!t)return '<span class="specchip" title="Directory links need a running server">'+esc(p)+'</span>';
+      return '<a class="specchip srclink" href="'+esc(t)+'" target="_blank" rel="noopener">'+esc(p)+'</a>';
     }
-    if(SRC_EXT_RE.test(p))return '<a class="specchip srclink" href="'+esc(srcHref(p))+'" target="_blank" rel="noopener" title="'+(RUN_SERVER?'Open the source file (served locally)':'Open the source file on GitHub ('+esc(GH_BRANCH)+')')+'">'+esc(p)+'</a>';
+    if(SRC_EXT_RE.test(p)){
+      var h=srcHref(p);
+      if(!h)return '<span class="specchip" title="Run the viewer with npm run serve to open sources">'+esc(p)+'</span>';
+      return '<a class="specchip srclink" href="'+esc(h)+'" target="_blank" rel="noopener" title="Open the source file (served locally)">'+esc(p)+'</a>';
+    }
     return '<span class="specchip">'+esc(p)+'</span>';
   }
 
@@ -1001,7 +1031,7 @@
   var expanded={};
   var mapBucket='specs';
   // F6: Knowledge-map master-detail selection. kind: 'none' (empty-state prompt, the initial-load
-  // default) | 'folder' (a curated-tree folder key, e.g. "specs:30_tenancy") | 'doc' (a doc node
+  // default) | 'folder' (a curated-tree folder key, e.g. "specs:30_billing") | 'doc' (a doc node
   // id). Deliberately NOT persisted to kgv.state.v1 — the doc case round-trips via the existing
   // #doc= hash (spec: "Persist mapSel is optional; the hash already carries #doc="); a fresh load
   // with no hash and no folder click lands on the empty-state prompt (the documented new default).
@@ -1096,13 +1126,13 @@
     if(bucketId==='specs'){var m=path.match(/\/system-design\/(.*)$/);return m?m[1]:path;}
     if(bucketId==='inst'){
       var m1=path.match(/\/instructions\/(.*)$/);
-      var repo=path.indexOf('dojostack_backend/')===0?'backend/':path.indexOf('dojostack_frontend/')===0?'frontend/':'workspace/';
+      var repo=repoSplit(path).rel===path?'workspace/':repoSplit(path).repo+'/';
       if(m1)return repo+m1[1];
       return repo+path.split('/').pop();
     }
     if(bucketId==='mem'){
       var m=path.match(/\/memories\/(.*)$/);if(!m)return path;
-      var repo=path.indexOf('dojostack_backend/')===0?'backend/':path.indexOf('dojostack_frontend/')===0?'frontend/':'';
+      var repo=repoSplit(path).rel===path?'':repoSplit(path).repo+'/';
       return repo+m[1];
     }
     if(bucketId==='design'){
@@ -1671,13 +1701,13 @@
     var feats=Object.keys(N).filter(function(id){var n=N[id];return n.type==='feature'&&n.path&&n.path.split('/').pop()===base;})
       .sort(function(a,b){return (N[a].title||a)<(N[b].title||b)?-1:1;});
     var reqCt=Object.keys(N).filter(function(id){var n=N[id];return n.type==='requirement'&&n.path&&n.path.split('/').pop()===base;}).length;
-    var fullPath=feats.length&&N[feats[0]].path?N[feats[0]].path:('dojostack_frontend/e2e/features/'+base);
+    var fullPath=feats.length&&N[feats[0]].path?N[feats[0]].path:(projE2eDir()+'/features/'+base);
     var h='<div class="card" style="padding:14px 16px">';
     h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
       +'<span class="reqsublab">feature registry</span>'
       +'<b style="font-family:var(--mono);font-size:14px">'+esc(base)+'</b>'
       +'<span style="color:var(--text-3);font-size:12px">'+feats.length+' feature'+(feats.length===1?'':'s')+' · '+reqCt+' requirement'+(reqCt===1?'':'s')+' defined in this file</span>'
-      +'<a class="srclink" style="margin-left:auto;font-size:12px" href="'+esc(ghBlobUrl(fullPath))+'" target="_blank" rel="noopener" title="Open this file on GitHub ('+esc(GH_BRANCH)+')">'+icon('aur')+' View on GitHub</a>'
+      +(registryHref(fullPath)?'<a class="srclink" style="margin-left:auto;font-size:12px" href="'+esc(registryHref(fullPath))+'" target="_blank" rel="noopener" title="Open this file (served locally)">'+icon('aur')+' View source</a>':'')
       +'</div>';
     if(feats.length){
       h+='<div class="ftags" style="margin-top:10px"><span class="ftlab">features</span>'
@@ -1758,7 +1788,7 @@
     installScrollSpy(el.querySelectorAll('.card[data-anchor]'),bucket.id);
   }
 
-  // F6: main pane shows ONLY the docs belonging to one selected folder key (e.g. "30_tenancy"),
+  // F6: main pane shows ONLY the docs belonging to one selected folder key (e.g. "30_billing"),
   // scoped within the current bucket — narrowed via the same stripToBucket prefix match walkSubtree
   // uses for its "containsOpen" ancestor tint (line ~1105), so folder selection and sidebar
   // highlighting agree on what "inside this folder" means.
@@ -1877,7 +1907,9 @@
     var h='<div class="card" data-anchor="'+esc((opt.anchorPrefix||'')+id)+'">';
     h+='<div class="chd" '+tog+'="'+esc(id)+'" tabindex="0" role="button" aria-expanded="'+o+'">';
     h+=statusDot(n)+'<span class="cid">'+esc(bareId(id))+'</span><span class="ctitle">'+esc(n.title||id)+'</span>';
-    if(n.spec)h+='<a class="specchip srclink" href="'+esc(srcHref('dojostack_frontend/e2e/'+n.spec))+'" target="_blank" rel="noopener" title="'+(RUN_SERVER?'Open the spec source (served locally)':'Open the spec source on GitHub ('+esc(GH_BRANCH)+')')+'">'+esc(n.spec)+'</a>';
+    if(n.spec){var sh=srcHref(projE2eDir()+'/'+n.spec);
+      h+=sh?'<a class="specchip srclink" href="'+esc(sh)+'" target="_blank" rel="noopener" title="Open the spec source (served locally)">'+esc(n.spec)+'</a>'
+           :'<span class="specchip" title="Run the viewer with npm run serve to open sources">'+esc(n.spec)+'</span>';}
     if(stepN)h+='<span class="stepct">'+stepN+' steps</span>';
     if(RUN_SERVER&&n.spec){
       h+='<label class="run-pick" title="Select for a batch run"><input type="checkbox" class="run-check" data-pick="'+esc(id)+'"'+(runSel[id]?' checked':'')+'/></label>';
@@ -2125,7 +2157,7 @@
     var canInline=!!(base&&KG.registries&&KG.registries[base]);
     var href=base?(canInline?(location.href.split('#')[0]+'#registry='+encodeURIComponent(base)+'&req='+encodeURIComponent(bareId(rid))):registryHref(p.registryPath)):null;
     var reg=base
-      ?' <a class="srclink" href="'+esc(href)+'" target="_blank" rel="noopener" title="'+(canInline?'Open this feature registry as a document (new tab)':(RUN_SERVER?'Open the feature registry yaml (served locally)':'Open the feature registry yaml on GitHub ('+esc(GH_BRANCH)+')'))+'"><code>'+esc(base)+'</code></a>'
+      ?' <a class="srclink" href="'+esc(href)+'" target="_blank" rel="noopener" title="'+(canInline?'Open this feature registry as a document (new tab)':'Open the feature registry yaml (served locally)')+'"><code>'+esc(base)+'</code></a>'
       :' <span style="color:var(--text-3)">('+esc(p.feat.title)+')</span>';
     return '<div class="provrow">'+icon('branch','color:var(--text-3)')+'Defined in: feature registry'+reg+'</div>';
   }

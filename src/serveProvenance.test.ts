@@ -35,8 +35,8 @@ import { serveRegistry, serveSrc } from "./serve";
 // nothing here ever needed a specific one — any nested-repo workspace exercises the same paths.
 
 const CORS = { "Access-Control-Allow-Origin": "http://127.0.0.1:8971" };
-const REGISTRY = "house-view.features.yaml";
-const REGISTRY_BODY = "- id: hv.publish\n  label: Publish\n  flow: hv\n  paths: []\n";
+const REGISTRY = "billing.features.yaml";
+const REGISTRY_BODY = "- id: bil.publish\n  label: Publish\n  flow: bil\n  paths: []\n";
 const GUARD_BODY = "export function isWithinRoot() { return true; }\n";
 const MAIN_PY = "app = 1\n";
 

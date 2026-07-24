@@ -46,7 +46,7 @@ paragraph of requirement prose. An approval of words nobody understood is not a 
 
 Escalate only for 2, 3 and 8.
 
-**This project's ceremony is its own.** DojoStack's rules do not apply here: no Stop hooks, no mandatory
+**This project's ceremony is its own.** The origin project's rules do not apply here: no Stop hooks, no mandatory
 review agent, no soc-gate.
 
 ## Authored vs measured — and why this file stays short
@@ -85,7 +85,10 @@ written down on another day.
   complete, confident, wrong graph.
 - **Two things are `TOOL_DIR`, not the project** (`src/toolDir.ts`): the viewer template, and the
   tool's own `src/` when it spawns itself. Everything else hangs off `config.artifactDir` / `e2eDir`.
-- **The REQ-0 lint fails the suite if `dojostack` appears anywhere in `src/`** — comments included.
+- **The REQ-0 lint fails the suite if the origin project is named anywhere in the repo** — comments,
+  docs and the shipped viewer template included. It used to scan `src/` only, which is exactly how the
+  template kept that project's repo dirs, GitHub org and branch while the suite stayed green.
+  `src/req0.test.ts` is the one file allowed to spell the name, because it is the file that greps for it.
 - **The evidence destination is two halves that must be chosen together**: `GhLike` moves the bytes,
   `ShotRef` decides what the committed index points at. Upload one way and index the other and every
   upload reports success while every screenshot renders "not available".

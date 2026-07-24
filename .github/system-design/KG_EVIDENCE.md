@@ -28,27 +28,27 @@ requirements:
       the local or placeholder tiers instead of firing an authenticated fetch at
       a bad target.
     covers:
-      - main:tools/knowledge-graph/src/evidenceUrl.test.ts
+      - main:src/evidenceUrl.test.ts
   - id: REQ-KG-EVID-02
     text: Contents-API base64 content is stripped of GitHub's 60-char line wraps and
       shaped into a data:image/png;base64 URL (empty or non-string content
       becomes null), consumed only as an img src and never injected as HTML.
     covers:
-      - main:tools/knowledge-graph/src/evidenceUrl.test.ts
+      - main:src/evidenceUrl.test.ts
   - id: REQ-KG-EVID-03
     text: The evidence index keys each case's shots map by the original bare
       screenshot filename (the exact string a step's screenshot carries),
       confining the remote ordinal prefix to the URL path, so the viewer's exact
       evidence-by-filename lookup resolves.
     covers:
-      - main:tools/knowledge-graph/src/shotsUpload.test.ts
+      - main:src/shotsUpload.test.ts
   - id: REQ-KG-EVID-04
     text: Ingesting the evidence index attaches the shot-URL map only onto e2e-kind
       nodes matched by case-insensitive bare id, never a non-e2e node on a
       bare-id collision; a missing or malformed index leaves the graph unchanged
       (deterministic).
     covers:
-      - main:tools/knowledge-graph/src/applyEvidence.test.ts
+      - main:src/applyEvidence.test.ts
 ---
 
 ## Why this exists

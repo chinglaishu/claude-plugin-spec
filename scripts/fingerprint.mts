@@ -8,28 +8,26 @@
 // changes. So each phase: capture from an UNMODIFIED tree, refactor without touching indexed content,
 // assert unchanged. Never compare against a hash written down on another day.
 //
-//   npx tsx scripts/fingerprint.mts <repo-root> [config.json]
+//   npx tsx scripts/fingerprint.mts <repo-root> <config.json>
 //
 // Normalization mirrors check.ts's normalizeForCompare exactly (blank generatedAt and per-node git
 // created/updated; keep reviewedAt) — so this measures precisely what graphsMatch() compares.
 //
-// The config defaults to the DojoStack fixture beside this script, because the target tree does not
-// carry a kg.config.json until phase 5 rewires it — and phase 2 must not touch the tree it measures.
+// BOTH ARGUMENTS ARE REQUIRED. The config used to default to a fixture naming one particular private
+// codebase, which made the oracle silently measure the wrong tree the moment it was pointed anywhere
+// else. A measuring instrument must not guess its own units.
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { buildGraph } from "../src/discover";
 import { parseConfig } from "../src/config";
 
 const root = process.argv[2] ?? process.env.KG_REPO_ROOT;
-if (!root) {
-  console.error("usage: npx tsx scripts/fingerprint.mts <repo-root> [config.json]");
+const configPath = process.argv[3];
+if (!root || !configPath) {
+  console.error("usage: npx tsx scripts/fingerprint.mts <repo-root> <config.json>");
   process.exit(2);
 }
 
-const here = dirname(fileURLToPath(import.meta.url));
-const configPath = process.argv[3] ?? join(here, "dojostack.kg.config.json");
 const config = parseConfig(await readFile(configPath, "utf8"));
 
 const FIXED = "2000-01-01T00:00:00.000Z"; // pin the clock so only content differs

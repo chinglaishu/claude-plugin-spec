@@ -4,13 +4,13 @@ import { conflictId } from "./conflictId";
 
 describe("conflictId", () => {
   it("is stable for the same subject+scope (basis for sticky dismiss/resolve)", () => {
-    expect(conflictId("npi_margin denominator", "pfl")).toBe(conflictId("npi_margin denominator", "pfl"));
+    expect(conflictId("net_margin denominator", "pfl")).toBe(conflictId("net_margin denominator", "pfl"));
   });
   it("differs when the subject differs", () => {
     expect(conflictId("a", "pfl")).not.toBe(conflictId("b", "pfl"));
   });
   it("differs when the scope differs", () => {
-    expect(conflictId("a", "pfl")).not.toBe(conflictId("a", "hv"));
+    expect(conflictId("a", "pfl")).not.toBe(conflictId("a", "bil"));
   });
   it("has no subject/scope boundary collision (subjects contain spaces)", () => {
     // With a plain-space separator, id("b c","a") and id("c","a b") would both hash "a b c".

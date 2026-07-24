@@ -2,18 +2,18 @@
 import { describe, it, expect } from "vitest";
 import { normalizeResults, mergeResults, type ResultsFileV2 } from "./resultsFile";
 
-const v1 = JSON.stringify({ generatedAt: "2026-07-02T09:14:00Z", commit: "a1b2c3d", results: { "hv-1": "pass", "hv-4": "fail" } });
-const v2 = JSON.stringify({ generatedAt: "2026-07-03T10:00:00Z", commit: "e4f5a6b", results: { "hv-1": { status: "pass", attempts: 2, at: "2026-07-03T10:00:00Z" } } });
+const v1 = JSON.stringify({ generatedAt: "2026-07-02T09:14:00Z", commit: "a1b2c3d", results: { "bil-1": "pass", "bil-4": "fail" } });
+const v2 = JSON.stringify({ generatedAt: "2026-07-03T10:00:00Z", commit: "e4f5a6b", results: { "bil-1": { status: "pass", attempts: 2, at: "2026-07-03T10:00:00Z" } } });
 
 describe("normalizeResults", () => {
   it("upgrades v1 string entries to v2 objects (attempts 1, at = file generatedAt)", () => {
     const r = normalizeResults(v1);
-    expect(r.results["hv-1"]).toEqual({ status: "pass", attempts: 1, at: "2026-07-02T09:14:00Z" });
-    expect(r.results["hv-4"].status).toBe("fail");
+    expect(r.results["bil-1"]).toEqual({ status: "pass", attempts: 1, at: "2026-07-02T09:14:00Z" });
+    expect(r.results["bil-4"].status).toBe("fail");
     expect(r.commit).toBe("a1b2c3d");
   });
   it("passes v2 entries through unchanged", () => {
-    expect(normalizeResults(v2).results["hv-1"]).toEqual({ status: "pass", attempts: 2, at: "2026-07-03T10:00:00Z" });
+    expect(normalizeResults(v2).results["bil-1"]).toEqual({ status: "pass", attempts: 2, at: "2026-07-03T10:00:00Z" });
   });
 });
 
@@ -22,18 +22,18 @@ describe("mergeResults", () => {
   const incoming = normalizeResults(v2);
   it("scoped merge upserts incoming and keeps other existing entries", () => {
     const m = mergeResults(existing, incoming, true);
-    expect(m.results["hv-1"].attempts).toBe(2);          // updated
-    expect(m.results["hv-4"].status).toBe("fail");       // preserved
+    expect(m.results["bil-1"].attempts).toBe(2);          // updated
+    expect(m.results["bil-4"].status).toBe("fail");       // preserved
     expect(m.generatedAt).toBe("2026-07-03T10:00:00Z");  // meta from incoming
     expect(m.commit).toBe("e4f5a6b");
   });
   it("full (unscoped) merge replaces the results map entirely", () => {
     const m = mergeResults(existing, incoming, false);
-    expect(m.results["hv-4"]).toBeUndefined();
-    expect(Object.keys(m.results)).toEqual(["hv-1"]);
+    expect(m.results["bil-4"]).toBeUndefined();
+    expect(Object.keys(m.results)).toEqual(["bil-1"]);
   });
   it("scoped merge with no existing file behaves like full", () => {
-    expect(mergeResults(null, incoming, true).results["hv-1"].attempts).toBe(2);
+    expect(mergeResults(null, incoming, true).results["bil-1"].attempts).toBe(2);
   });
 });
 
@@ -58,11 +58,11 @@ describe("ResultEntry error/commit fields (R2-B, additive)", () => {
 
   it("does not invent error/commit for v1 strings or older v2 objects", () => {
     const r1 = normalizeResults(v1);
-    expect(r1.results["hv-1"].error).toBeUndefined();
-    expect(r1.results["hv-1"].commit).toBeUndefined();
+    expect(r1.results["bil-1"].error).toBeUndefined();
+    expect(r1.results["bil-1"].commit).toBeUndefined();
     const r2 = normalizeResults(v2);
-    expect(r2.results["hv-1"].error).toBeUndefined();
-    expect(r2.results["hv-1"].commit).toBeUndefined();
+    expect(r2.results["bil-1"].error).toBeUndefined();
+    expect(r2.results["bil-1"].commit).toBeUndefined();
   });
 
   it("scoped merge preserves the untouched entries' error/commit fields", () => {

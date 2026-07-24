@@ -12,9 +12,9 @@ import type { Graph } from "./types";
 const graph = {
   generatedAt: "T",
   nodes: [
-    { id: "frontend:ADD-4", type: "test", title: "ADD-4", kind: "e2e", spec: "add-property-scenarios.spec.ts", playwrightTitle: "a wizard draft persists and can be resumed" },
+    { id: "frontend:ADD-4", type: "test", title: "ADD-4", kind: "e2e", spec: "onboarding-scenarios.spec.ts", playwrightTitle: "a wizard draft persists and can be resumed" },
     { id: "frontend:UW-8", type: "test", title: "UW-8", kind: "e2e", spec: "underwrite.spec.ts", playwrightTitle: "UW-8 reverse yield" },
-    { id: "frontend:HV-1", type: "test", title: "HV-1", kind: "unit-fe" }, // not e2e → not in map
+    { id: "frontend:BIL-1", type: "test", title: "BIL-1", kind: "unit-fe" }, // not e2e → not in map
   ],
   edges: [], issues: [],
 } as unknown as Graph;
@@ -23,7 +23,7 @@ const graph = {
 // two attempts (last attempt's shot must win), plus an auth-setup spec that maps to NO case.
 const report = JSON.stringify({
   suites: [
-    { title: "add-property-scenarios.spec.ts", specs: [
+    { title: "onboarding-scenarios.spec.ts", specs: [
       { title: "a wizard draft persists and can be resumed", ok: true, tests: [{ results: [
         { status: "passed", attachments: [{ name: "screenshot", contentType: "image/png", path: "/tmp/pw/add4/test-finished-1.png" }] },
       ] }] },

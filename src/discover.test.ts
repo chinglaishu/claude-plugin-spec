@@ -9,9 +9,9 @@ describe("classify", () => {
   it("routes paths to parsers", () => {
     expect(classify("svc_backend/.github/system-design/00_platform/X.md")).toBe("doc");
     expect(classify("svc_frontend/.github/memories/y.md")).toBe("doc");
-    expect(classify("svc_frontend/e2e/cases/house-view.cases.yaml")).toBe("cases");
-    expect(classify("svc_frontend/e2e/features/house-view.features.yaml")).toBe("features");
-    expect(classify("svc_frontend/e2e/cache/house-view.cache.yaml")).toBe("cache");
+    expect(classify("svc_frontend/e2e/cases/billing.cases.yaml")).toBe("cases");
+    expect(classify("svc_frontend/e2e/features/billing.features.yaml")).toBe("features");
+    expect(classify("svc_frontend/e2e/cache/billing.cache.yaml")).toBe("cache");
     expect(classify("CLAUDE.md")).toBe("instruction");
     expect(classify(".github/instructions/frontend.instructions.md")).toBe("instruction");
     expect(classify(".claude/agents/code-review.md")).toBe("agent");
@@ -52,13 +52,13 @@ describe("buildGraph — inlines feature registries into graph.registries", () =
       const rawA = "- id: uw.deal\n  label: Deal return\n  flow: uw\n  paths: []\n";
       const rawB = "- id: add.map\n  label: Mapping\n  flow: add\n  paths: []\n";
       await writeFile(join(featDir, "underwriting.features.yaml"), rawA);
-      await writeFile(join(featDir, "add-property.features.yaml"), rawB);
+      await writeFile(join(featDir, "onboarding.features.yaml"), rawB);
 
       const graph = await buildGraph(root, "2026-07-05T00:00:00Z", CONFIG);
       expect(graph.registries).toBeDefined();
-      expect(Object.keys(graph.registries!)).toEqual(["add-property.features.yaml", "underwriting.features.yaml"]);
+      expect(Object.keys(graph.registries!)).toEqual(["onboarding.features.yaml", "underwriting.features.yaml"]);
       expect(graph.registries!["underwriting.features.yaml"]).toBe(rawA);
-      expect(graph.registries!["add-property.features.yaml"]).toBe(rawB);
+      expect(graph.registries!["onboarding.features.yaml"]).toBe(rawB);
       // registries is payload-only: the feature nodes still come from parsing, not from this map
       expect(graph.nodes.some((n) => n.id === "frontend:uw.deal")).toBe(true);
     } finally {
@@ -137,6 +137,26 @@ describe("buildGraph — stamps git created/updated onto file-backed knowledge n
       expect(hook).toBeDefined();
       expect(hook.created).toBe("2026-02-02");
       expect(hook.updated).toBe("2026-06-06");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// REQ-0. The viewer is a SHIPPED asset and gets no config — so it used to hardcode one project's repo
+// directories to strip path prefixes, label repos and build source links. The topology has to reach it
+// as data, or the coupling has nowhere to live but in the template.
+describe("buildGraph — project topology as a viewer-only payload", () => {
+  it("carries the declared repos and e2e dir, so the viewer can strip prefixes it was never told", async () => {
+    const { mkdtemp, rm } = await import("node:fs/promises");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { buildGraph } = await import("./discover");
+    const root = await mkdtemp(join(tmpdir(), "kg-project-payload-"));
+    try {
+      const graph = await buildGraph(root, "2026-07-11T00:00:00Z", CONFIG);
+      expect(graph.project?.repos).toEqual(CONFIG.repos);
+      expect(graph.project?.e2eDir).toBe(CONFIG.e2eDir);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

@@ -8,7 +8,7 @@ const yaml = `
   flow: add
   paths:
     - "**/addProperty/steps/step2/ColumnMappingStage.test.tsx"
-    - "**/dojo_ai/**column_mapping**"
+    - "**/svc_ai/**column_mapping**"
 - id: add.validate
   label: Data review & validation
   flow: add
@@ -17,7 +17,7 @@ const yaml = `
 `;
 
 describe("parseFeatures", () => {
-  const { nodes, edges } = parseFeatures({ path: "svc_frontend/e2e/features/add-property.features.yaml", content: yaml }, REPOS);
+  const { nodes, edges } = parseFeatures({ path: "svc_frontend/e2e/features/onboarding.features.yaml", content: yaml }, REPOS);
 
   it("creates one feature node per entry, skipping entries without an id", () => {
     expect(nodes.map((n) => n.id).sort()).toEqual(["frontend:add.mapping", "frontend:add.validate"]);
@@ -30,7 +30,7 @@ describe("parseFeatures", () => {
     expect(m.flow).toBe("add");
     expect(m.paths).toEqual([
       "**/addProperty/steps/step2/ColumnMappingStage.test.tsx",
-      "**/dojo_ai/**column_mapping**",
+      "**/svc_ai/**column_mapping**",
     ]);
   });
 
@@ -55,7 +55,7 @@ describe("parseFeatures", () => {
       covers: [PFL-1]
     - text: The Run button is disabled until an edit is applied.
 - id: pfl.page
-  label: Portfolio Scenario — overview
+  label: Pricing Scenario — overview
   flow: pfl
   page: true
   paths: []
@@ -63,7 +63,7 @@ describe("parseFeatures", () => {
     - id: REQ-PFL-PAGE-01
       text: The page models levers without mutating saved data.
 `;
-    const { nodes, edges } = parseFeatures({ path: "svc_frontend/e2e/features/portfolio.features.yaml", content: reqYaml }, REPOS);
+    const { nodes, edges } = parseFeatures({ path: "svc_frontend/e2e/features/pricing.features.yaml", content: reqYaml }, REPOS);
     const reqs = nodes.filter((n) => n.type === "requirement");
     expect(reqs.map((r) => r.id).sort()).toEqual(["REQ-FRONTEND-PFL-SCENARIO-2", "REQ-PFL-PAGE-01", "REQ-PFL-SCEN-01"]); // authored ids kept; auto id (namespaced) for the untitled one
     const scen = reqs.find((r) => r.id === "REQ-PFL-SCEN-01")!;
@@ -72,32 +72,32 @@ describe("parseFeatures", () => {
     // the page feature is flagged
     expect(nodes.find((n) => n.id === "frontend:pfl.page")!.page).toBe(true);
     // feature → requirement specifies edges
-    expect(edges).toContainEqual({ from: "frontend:pfl.scenario", to: "REQ-PFL-SCEN-01", type: "specifies", source: "svc_frontend/e2e/features/portfolio.features.yaml" });
+    expect(edges).toContainEqual({ from: "frontend:pfl.scenario", to: "REQ-PFL-SCEN-01", type: "specifies", source: "svc_frontend/e2e/features/pricing.features.yaml" });
     expect(edges.filter((e) => e.type === "specifies").length).toBe(3);
   });
 
   it("parses `star: true` as a feature-node favourite flag (defaults undefined)", () => {
     const starYaml = `
-- id: hv.versions
+- id: bil.versions
   label: Versions
-  flow: hv
+  flow: bil
   star: true
   paths: []
-- id: hv.leasing
+- id: bil.leasing
   label: Leasing
-  flow: hv
+  flow: bil
   paths: []
-- id: hv.macro
+- id: bil.macro
   label: Macro
-  flow: hv
+  flow: bil
   star: false
   paths: []
 `;
-    const { nodes } = parseFeatures({ path: "svc_frontend/e2e/features/house-view.features.yaml", content: starYaml }, REPOS);
+    const { nodes } = parseFeatures({ path: "svc_frontend/e2e/features/billing.features.yaml", content: starYaml }, REPOS);
     const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
-    expect(byId["frontend:hv.versions"].star).toBe(true);
-    expect(byId["frontend:hv.leasing"].star).toBeUndefined();  // omitted → undefined, not false, so consumers can use truthy check
-    expect(byId["frontend:hv.macro"].star).toBeUndefined();    // explicit false also normalises to undefined — the field is a flag, not a tri-state
+    expect(byId["frontend:bil.versions"].star).toBe(true);
+    expect(byId["frontend:bil.leasing"].star).toBeUndefined();  // omitted → undefined, not false, so consumers can use truthy check
+    expect(byId["frontend:bil.macro"].star).toBeUndefined();    // explicit false also normalises to undefined — the field is a flag, not a tri-state
   });
 
   // PIN (provenance contract, not TDD — locks existing behaviour): the serve-mode

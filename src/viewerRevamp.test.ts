@@ -22,12 +22,12 @@ import type { Graph } from "./types";
 const graph = {
   generatedAt: "2026-07-12T10:00:00+08:00",
   nodes: [
-    { id: "main:hv-freeze", type: "doc", title: "House View Freeze", path: "svc_backend/.github/system-design/00_platform/hv-freeze.md", body: "House View freeze.", created: "2026-03-02", updated: "2026-06-18", reviewedAt: "2026-01-05" },
-    { id: "main:portfolio", type: "doc", title: "Portfolio Modeler", path: "svc_backend/.github/system-design/50_portfolio/portfolio.md", body: "Portfolio.", created: "2026-05-01", updated: "2026-07-10", reviewedAt: "2026-07-01" },
-    { id: "add.page", type: "feature", title: "Add Property", flow: "add", page: true },
-    { id: "add.mapping", type: "feature", title: "Column mapping", flow: "add" },
+    { id: "main:billing-freeze", type: "doc", title: "Billing Freeze", path: "svc_backend/.github/system-design/00_platform/billing-freeze.md", body: "Billing freeze.", created: "2026-03-02", updated: "2026-06-18", reviewedAt: "2026-01-05" },
+    { id: "main:pricing", type: "doc", title: "Pricing Model", path: "svc_backend/.github/system-design/50_pricing/portfolio.md", body: "Portfolio.", created: "2026-05-01", updated: "2026-07-10", reviewedAt: "2026-07-01" },
+    { id: "add.page", type: "feature", title: "Onboarding", flow: "onboarding", page: true },
+    { id: "add.mapping", type: "feature", title: "Column mapping", flow: "onboarding" },
     { id: "frontend:ADD-1", type: "test", kind: "e2e", e2eKind: "feature", title: "Column mapping scenario", status: "pass", spec: "add.spec.ts", steps: [] },
-    { id: "frontend:ADD-FLOW-1", type: "test", kind: "e2e", e2eKind: "flow", title: "Add property end-to-end", status: "pass", spec: "add.spec.ts", runAt: "2026-07-05T09:00:00+08:00", steps: [{ action: "Upload file", expected: "grid shows" }] },
+    { id: "frontend:ADD-FLOW-1", type: "test", kind: "e2e", e2eKind: "flow", title: "Onboarding end-to-end", status: "pass", spec: "add.spec.ts", runAt: "2026-07-05T09:00:00+08:00", steps: [{ action: "Upload file", expected: "grid shows" }] },
     { id: "REQ-ADD-1", type: "requirement", title: "Mapping applies", text: "Mapping applies", provenBy: ["frontend:ADD-1"] },
   ],
   edges: [
@@ -38,20 +38,20 @@ const graph = {
   ],
   issues: [],
   health: {
-    flows: [{ flow: "add", label: "Add Property", capabilities: 2, tested: 2, untested: [], failing: [], flaky: [], reqTotal: 1, reqProven: 1, unproven: [], lastVerified: "2026-07-05T09:00:00+08:00" }],
+    flows: [{ flow: "onboarding", label: "onboarding", capabilities: 2, tested: 2, untested: [], failing: [], flaky: [], reqTotal: 1, reqProven: 1, unproven: [], lastVerified: "2026-07-05T09:00:00+08:00" }],
     totals: { features: 2, tested: 2, reqTotal: 1, reqProven: 1, failing: 0, flaky: 0 },
   },
   registries: {},
   conflicts: [{
-    id: "c1", subject: "Freeze semantics", scope: "add", category: "definition", severity: "med", axis: "doc", tags: ["hv"],
+    id: "c1", subject: "Freeze semantics", scope: "add", category: "definition", severity: "med", axis: "doc", tags: ["bil"],
     why: "Two docs disagree on when freeze happens",
     participants: [
-      { kind: "doc", ref: "main:hv-freeze", span: "overview", quote: "at publish", positionId: "p1" },
-      { kind: "doc", ref: "main:portfolio", span: "model", quote: "at draft", positionId: "p2" },
+      { kind: "doc", ref: "main:billing-freeze", span: "overview", quote: "at publish", positionId: "p1" },
+      { kind: "doc", ref: "main:pricing", span: "model", quote: "at draft", positionId: "p2" },
     ],
     positions: [
-      { id: "p1", statement: "freeze at publish", heldBy: ["main:hv-freeze"] },
-      { id: "p2", statement: "freeze at draft", heldBy: ["main:portfolio"] },
+      { id: "p1", statement: "freeze at publish", heldBy: ["main:billing-freeze"] },
+      { id: "p2", statement: "freeze at draft", heldBy: ["main:pricing"] },
     ],
   }],
 } as unknown as Graph;
@@ -87,8 +87,8 @@ describe("viewer revamp — runtime render", () => {
   it("Flow tests lists the flow-kind journey grouped by flow, with status chips and NO FE/BE/cache", () => {
     click(tab("Flow tests"));
     const text = doc.getElementById("list").textContent || "";
-    expect(text).toMatch(/Add Property/);           // flow group header
-    expect(text).toMatch(/Add property end-to-end/); // the flow case
+    expect(text).toMatch(/onboarding/);           // flow group header = the project's declared flow key
+    expect(text).toMatch(/Onboarding end-to-end/); // the flow case
     expect(text).not.toMatch(/FE unit|BE unit|Cache/i);
     expect(doc.querySelector(".statchips")).toBeTruthy();
   });
@@ -115,11 +115,11 @@ describe("viewer revamp — runtime render", () => {
 
   it("Flow tests sidebar filters the journey list to the picked flow", () => {
     click(tab("Flow tests"));
-    // pick the 'add' flow category → list shows only that flow's journeys
-    const addCat = [...doc.querySelectorAll("[data-flowsel]")].find((n: any) => /Add Property/.test(n.textContent));
+    // pick the declared flow category → list shows only that flow's journeys
+    const addCat = [...doc.querySelectorAll("[data-flowsel]")].find((n: any) => /onboarding/.test(n.textContent));
     expect(addCat).toBeTruthy();
     click(addCat);
-    expect(doc.getElementById("list").textContent).toMatch(/Add property end-to-end/);
+    expect(doc.getElementById("list").textContent).toMatch(/Onboarding end-to-end/);
   });
 
   it("keeps feature-scenario e2e in Feature tests and excludes flow-kind (each case lives in one tab)", () => {
@@ -129,7 +129,7 @@ describe("viewer revamp — runtime render", () => {
     click(doc.querySelector('[data-fp="add.mapping"]'));
     const text = doc.getElementById("list").textContent || "";
     expect(text).toMatch(/1\s*E2E/);
-    expect(text).not.toMatch(/Add property end-to-end/); // the flow-kind case is NOT duplicated here
+    expect(text).not.toMatch(/Onboarding end-to-end/); // the flow-kind case is NOT duplicated here
     // add.page is tagged only by the flow-kind case → a pointer sends you to the Flow tests tab.
     click(doc.querySelector('[data-fp="add.page"]'));
     expect(doc.querySelector("[data-goflow]")).toBeTruthy();
@@ -157,7 +157,7 @@ describe("viewer revamp — runtime render", () => {
   });
 
   it("Knowledge map shows document created + updated dates and flags a stale doc", () => {
-    dom.window.location.hash = "#doc=main:hv-freeze";
+    dom.window.location.hash = "#doc=main:billing-freeze";
     dom.window.dispatchEvent(new dom.window.Event("hashchange"));
     click(tab("Knowledge map"));
     click(doc.querySelector("#side [data-jump]"));
