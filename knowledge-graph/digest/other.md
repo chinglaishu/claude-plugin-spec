@@ -1,6 +1,6 @@
 # Platform & docs — knowledge digest (synced 2026-07-24, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
+Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -12,7 +12,7 @@ Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
 - REQ-KG-04: `check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through.
   Proven by: gateDecision.test.ts (unit-fe, pass)
 - REQ-KG-05: Run screenshots are stored outside the committed graph at exactly one declared destination — a project-supplied S3 bucket, the tool-managed GitHub evidence branch, or the local device when none is declared. The config names coordinates only and never a credential. Evidence is addressed by URL; screenshot binaries never enter the committed graph JSON or the working branch.
-  Proven by: applyEvidence.test.ts (unit-fe, pass) · blobStore.test.ts (unit-fe, pass)
+  Proven by: applyEvidence.test.ts (unit-fe, pass) · blobStore.test.ts (unit-fe, pass) · serveEvidence.test.ts (unit-fe, pass)
 - REQ-KG-06: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
   Proven by: parseDoc.test.ts (unit-fe, pass)
 - REQ-KG-07: A doc is identified by its frontmatter `slug` when it declares one, falling back to `id` and then the filename — so a corpus that carries a catalog id (SD-nn) alongside a human slug stays cross-referenceable by the name its siblings actually cite.
@@ -39,6 +39,8 @@ Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
   Proven by: discover.test.ts (unit-fe, pass)
 - REQ-KG-CORE-05: A requirement is proven only via an inbound covers edge or a provenBy slug resolving to a real test node (else uncovered-requirement); a doc is unverified-doc unless a test verifies it or every requirement it specifies is independently proven — the self-proven escape can never launder a doc with zero or any unproven requirement.
   Proven by: summarize.test.ts (unit-fe, pass)
+- REQ-KG-CTX-01: Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.
+  Proven by: agentContext.test.ts (unit-fe, pass)
 - REQ-KG-EVID-01: A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.
   Proven by: evidenceUrl.test.ts (unit-fe, pass)
 - REQ-KG-EVID-02: Contents-API base64 content is stripped of GitHub's 60-char line wraps and shaped into a data:image/png;base64 URL (empty or non-string content becomes null), consumed only as an img src and never injected as HTML.
@@ -63,8 +65,8 @@ Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
   Proven by: ensureOrchestrated.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-01: The /api/live SSE hub coalesces a burst of graph-rebuild notifications into exactly one debounced graph-updated broadcast, delivers it only to still-connected clients, keepalives idle ones, and evicts any client on socket close or a throwing write — one rebuild yields one re-fetch and no client leaks.
   Proven by: liveHub.test.ts (unit-fe, pass)
-- REQ-KG-SERVE-02: Every read-only serve route (/registry, /src, /run-artifacts, /shots) confines each read within its designated root, rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404.
-  Proven by: pathGuard.test.ts (unit-fe, pass)
+- REQ-KG-SERVE-02: Every read-only serve route (/registry, /src, /run-artifacts, /shots, /evidence) confines each read within its designated root — a directory for the four that read files, the configured bucket prefix for /evidence, which resolves object keys rather than paths — rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404. A request the guard rejects is never signed.
+  Proven by: blobStore.test.ts (unit-fe, pass) · pathGuard.test.ts (unit-fe, pass) · serveEvidence.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-03: /api/graph returns the current graph read fresh from disk on every request (a rewrite is served on the next fetch) and 404s a missing file.
   Proven by: serveGraph.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-04: Star curation writes back only the targeted feature entry — depth-anchored, idempotent, never matching a prefix or substring sibling or a nested star key, and throws on an unknown id.

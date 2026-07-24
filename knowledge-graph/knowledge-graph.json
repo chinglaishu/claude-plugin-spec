@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T07:32:59.844Z",
+  "generatedAt": "2026-07-24T08:12:46.189Z",
   "nodes": [
     {
       "id": "REQ-KG-01",
@@ -169,6 +169,15 @@
       ]
     },
     {
+      "id": "REQ-KG-CTX-01",
+      "type": "requirement",
+      "title": "Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.",
+      "text": "Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.",
+      "provenBy": [
+        "main:src/agentContext.test.ts"
+      ]
+    },
+    {
       "id": "REQ-KG-EVID-01",
       "type": "requirement",
       "title": "A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.",
@@ -281,12 +290,13 @@
     {
       "id": "REQ-KG-SERVE-02",
       "type": "requirement",
-      "title": "Every read-only serve route (/registry, /src, /run-artifacts, /shots) confines each read within its designated root, rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404.",
-      "text": "Every read-only serve route (/registry, /src, /run-artifacts, /shots) confines each read within its designated root, rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404.",
+      "title": "Every read-only serve route (/registry, /src, /run-artifacts, /shots, /evidence) confines each read within its designated root — a directory for the four that read files, the configured bucket prefix for /evidence, which resolves object keys rather than paths — rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404. A request the guard rejects is never signed.",
+      "text": "Every read-only serve route (/registry, /src, /run-artifacts, /shots, /evidence) confines each read within its designated root — a directory for the four that read files, the configured bucket prefix for /evidence, which resolves object keys rather than paths — rejecting raw and URL-encoded traversal, backslashes, absolute or drive-letter paths, dotfiles, .local. credential files, and non-allowlisted extensions with a 404. A request the guard rejects is never signed.",
       "provenBy": [
         "main:tools/knowledge-graph/src/pathGuard.test.ts",
         "main:tools/knowledge-graph/src/serveProvenance.test.ts",
-        "main:tools/knowledge-graph/src/serveRunArtifact.test.ts"
+        "main:tools/knowledge-graph/src/serveRunArtifact.test.ts",
+        "main:src/serveEvidence.test.ts"
       ]
     },
     {
@@ -367,9 +377,232 @@
       "type": "instruction",
       "title": "claude",
       "path": "CLAUDE.md",
-      "body": "# claude-plugin-spec\n\nA tool that **builds** a requirement SSoT out of a codebase — and keeps it **true after\nimplementation**. The user arrives with code and an AI agent; the tool writes the spec and the\nPlaywright tests. Two jobs, and only two:\n\n1. **One truth** — the SSoT must not contradict itself, because when it does the AI picks a side\n   *silently*, and different sessions pick differently. That is what \"the feature randomly changed\" is.\n2. **Every behaviour proven** — each expected behaviour has a Playwright test. All green = safe to iterate.\n\nScope is **(3) AI coding + (4) launch/iteration**. Not idea→PRD, not wireframe — Claude conversation and\nFigma own those. Do not widen this.\n\n**North star: [`docs/superpowers/specs/2026-07-17-founding-design.md`](docs/superpowers/specs/2026-07-17-founding-design.md).**\nRead it before any non-trivial change. It holds the scope, the CEO ↔ staff model, the two languages for\nrequirements, and twelve locked decisions with the evidence behind each.\n\n## You are staff. The human is the CEO.\n\nThe CEO writes the requirement SSoT, answers only the decisions you can't make, and reviews at\nmilestones. You work to the doc. **Their only gate is approving requirement text** — so don't make them\nread, don't make them watch, and don't ask permission to work.\n\n## The rules\n\n1. **Before touching code, find what governs it** — spec, requirements, covering tests, known conflicts.\n2. **Nothing governs it → STOP. Ask the CEO for a requirement.** Never write ungoverned code: the next\n   person to change it has no guideline for how it should work, and that is where the bug is born.\n3. **Two sources disagree → STOP. Ask the CEO which is canon. Never pick a side.**\n4. **Write the failing test first**, for new or changed behaviour. Not ceremony — the thesis. A test\n   written after the code can only confirm the code, never contradict it. *Exempt:* the ported tests,\n   pure refactors (the fingerprint is the test), spikes.\n5. **Never weaken, skip, or delete a test to go green.**\n6. **Tidy docs freely** — structure, typos, dead links, stale counts.\n7. **Requirement *semantics* need CEO approval**: a new REQ, changed REQ text, a deleted REQ, or choosing\n   a canonical side. **You edit prose; the CEO owns meaning.**\n8. **Correct docs in place, with the reason attached.** When the code teaches you a spec was wrong, fix\n   the spec and say why. Conforming the doc to the code is how a requirement quietly becomes false.\n\nEscalate only for 2, 3 and 7.\n\n**This project's ceremony is its own.** DojoStack's rules do not apply here: no Stop hooks, no mandatory\nreview agent, no soc-gate.\n\n## State\n\n- **REQ-0 went GREEN and RETIRED 2026-07-17** (CEO): it was the migration acceptance criterion, and\n  phase 2 completed it — topology, paths and artifact dir are all configuration, the word `dojostack`\n  appears nowhere in `src/`, and the fingerprint against `dojostack_main` was byte-identical\n  throughout.\n- **REQ-1 is its successor, and it is GREEN.** *\"The committed fixture projects — one-repo and\n  multi-repo — build to their committed expected graphs, byte-identical, on any machine, with no\n  access to any private codebase.\"* The fixtures live in `fixtures/`; `src/fixtureRepo.test.ts`\n  asserts them; `npx tsx scripts/fixture-expected.mts` recaptures the expected graphs — **a committed\n  claim to re-review on any deliberate change, never a cache to refresh blindly.** The suite is fully\n  green (490 tests, 59 files, **nothing skipped**).\n- **Phase 3 has started and the tool self-hosts** (2026-07-24). `npm run build` on this repo produces\n  its own graph: 100 nodes, 39 requirements, 59 test files, single-repo with nothing to pin. Three\n  defects surfaced by doing it, each fixed test-first:\n  - `writeArtifacts` never created the artifact dir — the first build in *any* fresh project died with\n    ENOENT, because the dir had only ever existed by virtue of the tool living in it (§10.9).\n  - **`config.exclude`** (CEO-approved): the knowledge globs are repo-wide, so REQ-1's fixtures were\n    indexed as *our* knowledge — a duplicate `main:claude`, four foreign docs, and the fixtures'\n    deliberately-broken cases reported as our defects. It lives in config, never the tool: a hardcoded\n    `fixtures/**` would re-introduce the coupling REQ-0 removed.\n  - **a unit test can declare `covers:`** (CEO-approved) and unit tests are no longer gated on matching\n    a registered feature. Both together meant a project with no e2e flow registry could never prove a\n    requirement — \"every behaviour proven\" was unreachable for a library or CLI, this tool included.\n  **Phase 5 note:** the `covers:` change deliberately moves the migration fingerprint (tests outside a\n  registered feature are now indexed). Recapture there; it is not a regression.\n- **The oracle — use it on every change that could move the graph.** The graph is a pure function of\n  the tree, so a refactor must leave it **byte-identical**:\n  `npx tsx scripts/fingerprint.mts <repo-root> [config.json]` (defaults to\n  `scripts/dojostack.kg.config.json`, the migration fixture — DojoStack's layout as config, which is\n  what it will own at phase 5). Capture from an unmodified tree *before* you start, refactor without\n  touching indexed content, assert unchanged. **The method is the contract, not any particular hash**\n  — it moves whenever the target tree changes, so never compare against a hash written down on\n  another day.\n- **Config is threaded, never a singleton** (§10.8). Entrypoints resolve the project from `cwd`\n  (`KG_REPO_ROOT` overrides), call `loadConfig(repoRoot)` once, and pass it down. `loadConfig` throws\n  when `kg.config.json` is absent — it must not guess a layout, because guessing wrong emits a\n  complete, confident, wrong graph.\n- **Two things are `TOOL_DIR`, not the project** (`src/toolDir.ts`): the viewer template, and the\n  tool's own `src/` when it spawns itself. Everything else the tool reads or writes belongs to the\n  project and hangs off `config.artifactDir` / `config.e2eDir`.\n- **Pre-existing and not yours:** ~20 `tsc --noEmit` strictness errors in `parseResults.test.ts` and\n  `applyEvidence.test.ts`, present since the port (`917a01d`). The suite runs under `tsx`, which does\n  not typecheck, so they have never been surfaced. Harmless; unowned.\n- **The name is a placeholder, deliberately** — CEO 2026-07-17: keep it for now, rename later. The\n  rename is a phase-4 gate: nothing publishes under it (founding design §12.4).\n\n## Next\n\nPhases 3 and 4 run as **one loop** (founding design §11, CEO-approved): wire the `agent-context`\nhook into this repo, self-host (own config, own graph, own gate), and dogfood whether the staff\nprompt actually changes behaviour — measured per §5.\n\n**Done 2026-07-24:** `covers:` is backfilled — **38 of 39 requirements proven**, the self-hosted graph\nis down from 40 issues to 2, and `knowledge-graph/` is committed (CEO: the tool carries its own\nartifacts, as any consuming project would).\n\n**`REQ-KG-05` was then rewritten and its gap closed** (CEO 2026-07-24). Evidence now goes to\n**exactly one declared destination** — an S3 bucket, the GitHub `e2e-evidence` branch, or the local\ndevice — modelled as a discriminated union in config so two half-set fields can never leave the\nwinner ambiguous. The config names **coordinates only and refuses credential keys outright**\n(`kg.config.json` is committed; a key here would live in git history forever). The negative clause is\nnow *enforced*, not merely asserted: `referencesOnly` in `applyEvidence.ts` drops `data:` payloads,\nso binaries cannot reach the graph. **The graph is at 0 issues, 39/39 proven.**\n\n**Rejected and recorded, so it is not relitigated:** a pre-signed URL for *upload*. One signature\ncovers one key while a run writes many keys unknown until it happens, and the committed index must\noutlive a short expiry. The same mechanism is *correct for reads* — the key is known, the URL is\nminted per view by `serve.ts` and never committed.\n\nImmediately next:\n\n1. **Finish the S3 transport — three known traps, found by reading `shotsUpload.ts` and left\n   deliberately unwired rather than guessed at.** `src/blobStore.ts` already has the pure half fully\n   tested (`objectKey`, `objectUrl`, `uploadArgs`, `listArgs`, `pruneArgs`, `presignArgs`,\n   `parseShaDirs`); only the subprocess glue remains, roughly 40 lines:\n   - **`withTempBodyFile` is NOT a raw-bytes writer** — it writes a `gh` API JSON body for\n     `--input`. Reusing it for `aws s3 cp` would upload the JSON wrapper instead of the PNG, and it\n     would look like a successful upload. The blob path needs its own raw-bytes temp file.\n   - **`GhLike.putFile`/`deleteDir` take a repo-relative `remotePath`, not a case id.** The builders\n     compose from `(caseId, sha, filename)`, which fits `listCaseShas` but not those two. Add a\n     `keyOf(evidence, remotePath)` that prepends the configured prefix.\n   - **`aws s3 ls` exits non-zero for a never-uploaded case**, so `listCaseShas` must catch and\n     return `[]` — otherwise the first upload of any new case fails instead of pruning nothing.\n\n   `blob` currently fails loudly, so nothing is half-wired or able to mislead.\n\n2. **Wire `agent-context` as a hook.** The prototype is at\n   `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a\n   file, prints its governing spec, requirements, covering tests and conflicts. It needs porting\n   (it hardcodes sibling repo prefixes and assumes it sits inside the artifact dir) and a REQ.\n   **It can now actually pay off:** before the backfill it would have printed \"no covering tests\" for\n   every file in the repo.\n\nAlso queued: the two flow-approval spikes (§12.3), conflict-scan precision on the DojoStack corpus\n(§12.10), a gate flake policy draft (§12.12), and porting the five skills into the empty `skills/`.\n\n## Commands\n\n```\nnpx vitest run                 # the suite\nnpx vitest run src/x.test.ts   # one file\n```",
+      "body": "# claude-plugin-spec\n\nA tool that **builds** a requirement SSoT out of a codebase — and keeps it **true after\nimplementation**. The user arrives with code and an AI agent; the tool writes the spec and the\nPlaywright tests. Two jobs, and only two:\n\n1. **One truth** — the SSoT must not contradict itself, because when it does the AI picks a side\n   *silently*, and different sessions pick differently. That is what \"the feature randomly changed\" is.\n2. **Every behaviour proven** — each expected behaviour has a Playwright test. All green = safe to iterate.\n\nScope is **(3) AI coding + (4) launch/iteration**. Not idea→PRD, not wireframe — Claude conversation and\nFigma own those. Do not widen this.\n\n**North star: [`docs/superpowers/specs/2026-07-17-founding-design.md`](docs/superpowers/specs/2026-07-17-founding-design.md).**\nRead it before any non-trivial change. It holds the scope, the CEO ↔ staff model, the two languages for\nrequirements, and twelve locked decisions with the evidence behind each.\n\n## You are staff. The human is the CEO.\n\nThe CEO writes the requirement SSoT, answers only the decisions you can't make, and reviews at\nmilestones. You work to the doc. **Their only gate is approving requirement text** — so don't make them\nread, don't make them watch, and don't ask permission to work.\n\n## The rules\n\n1. **Before touching code, find what governs it** — spec, requirements, covering tests, known conflicts.\n2. **Nothing governs it → STOP. Ask the CEO for a requirement.** Never write ungoverned code: the next\n   person to change it has no guideline for how it should work, and that is where the bug is born.\n3. **Two sources disagree → STOP. Ask the CEO which is canon. Never pick a side.**\n4. **Write the failing test first**, for new or changed behaviour. Not ceremony — the thesis. A test\n   written after the code can only confirm the code, never contradict it. *Exempt:* the ported tests,\n   pure refactors (the fingerprint is the test), spikes.\n5. **Never weaken, skip, or delete a test to go green.**\n6. **Tidy docs freely** — structure, typos, dead links, stale counts.\n7. **Requirement *semantics* need CEO approval**: a new REQ, changed REQ text, a deleted REQ, or choosing\n   a canonical side. **You edit prose; the CEO owns meaning.**\n8. **Correct docs in place, with the reason attached.** When the code teaches you a spec was wrong, fix\n   the spec and say why. Conforming the doc to the code is how a requirement quietly becomes false.\n\nEscalate only for 2, 3 and 7.\n\n**This project's ceremony is its own.** DojoStack's rules do not apply here: no Stop hooks, no mandatory\nreview agent, no soc-gate.\n\n## State\n\n- **REQ-0 went GREEN and RETIRED 2026-07-17** (CEO): it was the migration acceptance criterion, and\n  phase 2 completed it — topology, paths and artifact dir are all configuration, the word `dojostack`\n  appears nowhere in `src/`, and the fingerprint against `dojostack_main` was byte-identical\n  throughout.\n- **REQ-1 is its successor, and it is GREEN.** *\"The committed fixture projects — one-repo and\n  multi-repo — build to their committed expected graphs, byte-identical, on any machine, with no\n  access to any private codebase.\"* The fixtures live in `fixtures/`; `src/fixtureRepo.test.ts`\n  asserts them; `npx tsx scripts/fixture-expected.mts` recaptures the expected graphs — **a committed\n  claim to re-review on any deliberate change, never a cache to refresh blindly.** The suite is fully\n  green (490 tests, 59 files, **nothing skipped**).\n- **Phase 3 has started and the tool self-hosts** (2026-07-24). `npm run build` on this repo produces\n  its own graph: 100 nodes, 39 requirements, 59 test files, single-repo with nothing to pin. Three\n  defects surfaced by doing it, each fixed test-first:\n  - `writeArtifacts` never created the artifact dir — the first build in *any* fresh project died with\n    ENOENT, because the dir had only ever existed by virtue of the tool living in it (§10.9).\n  - **`config.exclude`** (CEO-approved): the knowledge globs are repo-wide, so REQ-1's fixtures were\n    indexed as *our* knowledge — a duplicate `main:claude`, four foreign docs, and the fixtures'\n    deliberately-broken cases reported as our defects. It lives in config, never the tool: a hardcoded\n    `fixtures/**` would re-introduce the coupling REQ-0 removed.\n  - **a unit test can declare `covers:`** (CEO-approved) and unit tests are no longer gated on matching\n    a registered feature. Both together meant a project with no e2e flow registry could never prove a\n    requirement — \"every behaviour proven\" was unreachable for a library or CLI, this tool included.\n  **Phase 5 note:** the `covers:` change deliberately moves the migration fingerprint (tests outside a\n  registered feature are now indexed). Recapture there; it is not a regression.\n- **The oracle — use it on every change that could move the graph.** The graph is a pure function of\n  the tree, so a refactor must leave it **byte-identical**:\n  `npx tsx scripts/fingerprint.mts <repo-root> [config.json]` (defaults to\n  `scripts/dojostack.kg.config.json`, the migration fixture — DojoStack's layout as config, which is\n  what it will own at phase 5). Capture from an unmodified tree *before* you start, refactor without\n  touching indexed content, assert unchanged. **The method is the contract, not any particular hash**\n  — it moves whenever the target tree changes, so never compare against a hash written down on\n  another day.\n- **Config is threaded, never a singleton** (§10.8). Entrypoints resolve the project from `cwd`\n  (`KG_REPO_ROOT` overrides), call `loadConfig(repoRoot)` once, and pass it down. `loadConfig` throws\n  when `kg.config.json` is absent — it must not guess a layout, because guessing wrong emits a\n  complete, confident, wrong graph.\n- **Two things are `TOOL_DIR`, not the project** (`src/toolDir.ts`): the viewer template, and the\n  tool's own `src/` when it spawns itself. Everything else the tool reads or writes belongs to the\n  project and hangs off `config.artifactDir` / `config.e2eDir`.\n- **Pre-existing and not yours:** ~20 `tsc --noEmit` strictness errors in `parseResults.test.ts` and\n  `applyEvidence.test.ts`, present since the port (`917a01d`). The suite runs under `tsx`, which does\n  not typecheck, so they have never been surfaced. Harmless; unowned.\n- **The name is a placeholder, deliberately** — CEO 2026-07-17: keep it for now, rename later. The\n  rename is a phase-4 gate: nothing publishes under it (founding design §12.4).\n\n## Next\n\nPhases 3 and 4 run as **one loop** (founding design §11, CEO-approved): wire the `agent-context`\nhook into this repo, self-host (own config, own graph, own gate), and dogfood whether the staff\nprompt actually changes behaviour — measured per §5.\n\n**Done 2026-07-24:** `covers:` is backfilled — **38 of 39 requirements proven**, the self-hosted graph\nis down from 40 issues to 2, and `knowledge-graph/` is committed (CEO: the tool carries its own\nartifacts, as any consuming project would).\n\n**`REQ-KG-05` was then rewritten and its gap closed** (CEO 2026-07-24). Evidence now goes to\n**exactly one declared destination** — an S3 bucket, the GitHub `e2e-evidence` branch, or the local\ndevice — modelled as a discriminated union in config so two half-set fields can never leave the\nwinner ambiguous. The config names **coordinates only and refuses credential keys outright**\n(`kg.config.json` is committed; a key here would live in git history forever). The negative clause is\nnow *enforced*, not merely asserted: `referencesOnly` in `applyEvidence.ts` drops `data:` payloads,\nso binaries cannot reach the graph. **The graph is at 0 issues, 39/39 proven.**\n\n**Rejected and recorded, so it is not relitigated:** a pre-signed URL for *upload*. One signature\ncovers one key while a run writes many keys unknown until it happens, and the committed index must\noutlive a short expiry. The same mechanism is *correct for reads* — the key is known, the URL is\nminted per view by `serve.ts` and never committed.\n\nImmediately next:\n\n1. ~~**Finish the S3 transport**~~ — **DONE 2026-07-24, both halves.** All three traps were real and\n   each is now pinned by a test that fails the way the trap would: raw PNG bytes go to their own temp\n   file (never `withTempBodyFile`, which JSON-wraps for `gh api --input`), `keyOf` maps\n   `runUpload`'s remote path onto the configured prefix, and `aws s3 ls` exiting non-zero on a\n   never-uploaded case reads as \"nothing to prune\" rather than failing the first upload of every new\n   case. `blobAdapter` in `src/blobStore.ts` takes its subprocess and its temp-file writer injected,\n   so the argv stays asserted verbatim and no test shells out.\n\n   **The read half landed with it:** `GET /evidence/<objectKey>` in `serve.ts` mints a signed GET per\n   view and 302s to it, `no-store` so the redirect cannot outlive its own signature. Non-blob\n   destinations, rejected keys, a failing `aws`, and an `aws` that prints something that is not a URL\n   all 404 — the last one because a 302 to the viewer's own page renders as a *corrupt* image rather\n   than a missing one. Spec §5b documents the layout and the read path.\n\n   Two things worth knowing before the next change here:\n   - **The destination seam is now two halves, not one.** `GhLike` says how bytes get there;\n     `ShotRef` says what the committed index then points at. They are chosen in a single expression\n     in the CLI **on purpose** — uploading one way and indexing the other fails silently, with every\n     upload reporting ✓ and every screenshot rendering \"not available\".\n   - **`REQ-KG-SERVE-02` now names five routes** (CEO 2026-07-24). `/evidence` was a fifth read-only\n     route while the requirement's own list said four — the enumeration being the thing that had\n     drifted. Its designated root is a bucket prefix rather than a directory, so the text states\n     confinement by ROOT rather than by filesystem, and adds the one clause the new route needs:\n     **a request the guard rejects is never signed.**\n\n2. **Wire `agent-context` as a hook.** The prototype is at\n   `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a\n   file, prints its governing spec, requirements, covering tests and conflicts. It needs porting\n   (it hardcodes sibling repo prefixes and assumes it sits inside the artifact dir) and a REQ.\n   **It can now actually pay off:** before the backfill it would have printed \"no covering tests\" for\n   every file in the repo.\n\nAlso queued: the two flow-approval spikes (§12.3), conflict-scan precision on the DojoStack corpus\n(§12.10), a gate flake policy draft (§12.12), and porting the five skills into the empty `skills/`.\n\n## Commands\n\n```\nnpx vitest run                 # the suite\nnpx vitest run src/x.test.ts   # one file\n```",
       "created": "2026-07-17",
       "updated": "2026-07-24"
+    },
+    {
+      "id": "main:kg-agent-context",
+      "type": "doc",
+      "title": "Agent context — the briefing before an edit",
+      "path": ".github/system-design/KG_AGENT_CONTEXT.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/agentContext.ts",
+        "src/agentContextCli.ts"
+      ],
+      "body": "## Why this exists\n\nThe gold (founding design §5): a perfect graph nobody consults is an expensive lint. This is what makes it consulted.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-conflicts",
+      "type": "doc",
+      "title": "Conflict scan and adjudication",
+      "path": ".github/system-design/KG_CONFLICTS.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/conflictCandidates.ts",
+        "src/conflictDecisions.ts",
+        "src/conflictFixPlan.ts",
+        "src/conflictId.ts",
+        "src/conflictModel.ts",
+        "src/conflictScanContext.ts",
+        "src/parseConflicts.ts",
+        "src/scanContext.ts",
+        "src/fixPlan.ts"
+      ],
+      "body": "## Why this exists\n\nOne subject, two or more positions, each quoting its source. The decision inbox lives or dies on precision.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-core",
+      "type": "doc",
+      "title": "Graph core — discovery, parsing, ids",
+      "path": ".github/system-design/KG_CORE.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/discover.ts",
+        "src/buildGraph.ts",
+        "src/ids.ts",
+        "src/config.ts",
+        "src/parseDoc.ts",
+        "src/parseFeatures.ts",
+        "src/parseCases.ts",
+        "src/parseCache.ts",
+        "src/parseUnitTests.ts",
+        "src/parseConfig.ts",
+        "src/deriveTags.ts",
+        "src/untrackedE2e.ts",
+        "src/artifacts.ts",
+        "src/topology.fixture.ts"
+      ],
+      "body": "## Why this exists\n\nHow a tree becomes a graph: which file goes to which parser, how ids are namespaced, and what counts as proven.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-evidence",
+      "type": "doc",
+      "title": "Evidence and screenshots",
+      "path": ".github/system-design/KG_EVIDENCE.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/applyEvidence.ts",
+        "src/evidenceUrl.ts",
+        "src/shotsUpload.ts",
+        "src/shotsUploadHook.ts",
+        "src/blobStore.ts"
+      ],
+      "body": "## Why this exists\n\nScreenshots live outside the committed graph at exactly one declared destination. Binaries never enter the graph.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-gate",
+      "type": "doc",
+      "title": "The drift gate",
+      "path": ".github/system-design/KG_GATE.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/check.ts",
+        "src/sources.ts"
+      ],
+      "body": "## Why this exists\n\nThe gate blocks; report-only is decoration. Freshness, the ratchet, and the pins a graph was built from.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-run",
+      "type": "doc",
+      "title": "Test runs and results",
+      "path": ".github/system-design/KG_RUN.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/runSchedule.ts",
+        "src/recordRun.ts",
+        "src/treeKill.ts",
+        "src/ensureOrchestrated.ts",
+        "src/selectCases.ts",
+        "src/resultsFile.ts",
+        "src/gateDecision.ts",
+        "src/parseResults.ts",
+        "src/parsePlaywrightReport.ts",
+        "src/syncResults.ts",
+        "src/resolvePlaywrightUrls.ts",
+        "src/resolveBackendVenvPython.ts"
+      ],
+      "body": "## Why this exists\n\nA status in the graph always traces back to an actual execution — never a hand-edited field.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-serve",
+      "type": "doc",
+      "title": "Serve, routes and live updates",
+      "path": ".github/system-design/KG_SERVE.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/serve.ts",
+        "src/serveArtifacts.ts",
+        "src/serveLock.ts",
+        "src/liveHub.ts",
+        "src/pathGuard.ts",
+        "src/toggleStar.ts"
+      ],
+      "body": "## Why this exists\n\nRead-only routes confined to their roots, an SSE hub that coalesces rebuilds, and single-owner spawn locking.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
+    },
+    {
+      "id": "main:kg-viewer",
+      "type": "doc",
+      "title": "Viewer, digest and delta",
+      "path": ".github/system-design/KG_VIEWER.md",
+      "lens": "workflow",
+      "domain": "dev-tooling",
+      "status": "current",
+      "entrypoint": false,
+      "governs": [
+        "src/viewer.ts",
+        "src/digest.ts",
+        "src/delta.ts",
+        "src/summarize.ts",
+        "src/typeVisibility.ts"
+      ],
+      "body": "## Why this exists\n\nWhat the graph renders as, and what changed since the last sync.\n\nSplit out of the monolithic tool PRD on 2026-07-24 (CEO). One doc governing all of `src/` meant the\nagent-context pack returned every requirement for every file — too noisy to act on, and noise is what\ngets a briefing ignored. Requirement text moved verbatim; only which doc owns it changed.\n\nParent: [[knowledge-graph-tool]]",
+      "sections": [
+        {
+          "anchor": "why-this-exists",
+          "title": "Why this exists",
+          "kind": "knowledge",
+          "reqIds": []
+        }
+      ]
     },
     {
       "id": "main:knowledge-graph-tool",
@@ -380,10 +613,8 @@
       "domain": "dev-tooling",
       "status": "current",
       "entrypoint": true,
-      "governs": [
-        "tools/knowledge-graph/"
-      ],
-      "body": "## 0. Purpose\n\n`tools/knowledge-graph/` turns the scattered, easy-to-drift sources of truth about DojoStack —\nsystem-design docs, e2e case registries, feature registries, unit/e2e test files, config/instruction\nfiles — into one committed, machine-checkable graph (`knowledge-graph.json`), a browsable viewer\n(`viewer.html`), a human digest (`digest/*.md`), and a short status report (`report.md`). This\ndocument is the tool's own product-requirements spec: what it must always be true, indexed into the\nsame graph it produces (the tool eating its own dog food — this doc's requirements are proven by the\ntool's own Vitest suite, not by assertion).\n\nThe problem this tool solves: without it, \"is this requirement actually tested?\", \"is this doc still\nread by anything?\", and \"did this e2e test get wired up correctly?\" are all questions a human has to\nanswer by grep and memory, and the answer silently rots as the codebase changes. The graph makes those\nquestions machine-answerable and machine-enforceable (`npm run check`), and cheap enough to run in\nevery session.\n\n## 1. Derive-from-source principle\n\n**Nothing in the graph is hand-authored data about the codebase — it is always parsed FROM the\ncodebase.** Every node and edge traces back to one committed source file:\n\n- A `doc` node comes from a system-design/instruction markdown file's frontmatter + body.\n- A `test` node (`kind: e2e`) comes from a `*.cases.yaml` entry; a `test` node (`kind: unit-fe` /\n  `unit-be`) comes from a real `*.test.ts(x)` / `test_*.py` file that matches a registered feature's\n  path globs.\n- A `feature` node and its `requirement` children come from a `*.features.yaml` registry entry, or a\n  `requirements:` block in a doc's frontmatter.\n- A `test` node's **status** comes only from `kg-test-results.json`, written by an actual Playwright/\n  pytest run — never edited by hand (REQ-KG-03).\n- A `test` node's (e2e) **evidence** (screenshot URLs) comes only from `kg-evidence-index.json`,\n  itself generated by uploading real captured PNGs — never a hand-typed URL (REQ-KG-05).\n\nThis is why `npm run check` can assert **freshness**: rebuild from the same source files and byte-\ncompare against what's committed (REQ-KG-01). If the rebuild differs, the committed graph is stale —\nby definition, a fact about the codebase changed and the graph wasn't regenerated.\n\n## 2. The four generated views\n\n| View | File | Purpose |\n| --- | --- | --- |\n| Graph | `knowledge-graph.json` | The canonical machine-readable node/edge/issue list. Every other view is derived from this. |\n| Viewer | `viewer.html` | A single-file, no-build-step HTML page (rendered from `viewer.template.html` + the graph) for browsing docs, features, tests, and requirements interactively, plus a live \"▶ Run\" panel (see §4). |\n| Report | `report.md` | A short, git-diffable status summary — node/edge/issue counts and the issue list — for a quick \"what changed\" read without opening the viewer. |\n| Digest | `digest/*.md` | One markdown file per flow (`digest/<flow>.md`) plus an index, listing that flow's requirements with proof status and gaps — the \"what's actually covered\" view for a specific product area. |\n\n## 3. Commands\n\n| Command | What it does | Blocks? |\n| --- | --- | --- |\n| `npm run sync` | Rebuilds from source and **always** writes fresh artifacts (graph, viewer, report, digest), then reports the issue-ratchet delta informationally. Meant to be run after any change to a source file the graph indexes, and safe to run repeatedly. | Never — always exits 0. |\n| `npm run sync:results` | Runs the Playwright cases in scope (`--flow`/`--case`, or everything), records results into `kg-test-results.json`, invokes the evidence auto-upload for the cases just run (§5), then chains `sync`. | Only on a genuine internal failure to produce a report; a failing *test* is still recorded, not a tool failure. |\n| `npm run check` | Rebuilds from source and asserts the committed graph + viewer are byte-identical to a fresh rebuild (REQ-KG-01), then asserts no issue kind rose above its frozen baseline (REQ-KG-04, `knowledge-graph.baseline.json`). | Yes — this is the CI/pre-merge gate. |\n| `npm run build` | One-shot rebuild + artifact write, no ratchet reporting — used for local iteration. | Never. |\n| `npm run serve` | Companion dev server: serves the viewer, a `/shots/<caseId>/<file>` route for local screenshot preview, `/api/star` (curate features), and `/api/run` (spawn a scoped Playwright run with live SSE log streaming into the viewer's Run panel). | N/A (long-running dev server). |\n| `npm run shots:upload` | Uploads locally captured e2e screenshots to the `e2e-evidence` branch and regenerates `kg-evidence-index.json` (§5). `--case <ids>` scopes it; `--dry-run` previews with no network calls. | Never; a failed upload warns loudly rather than throwing. |\n\n## 4. Run pipeline (summary)\n\n`serve`'s `/api/run` spawns a scoped Playwright run (one case, a flow, or everything) and streams\n`start` / `log` / `status` / `serverNotReady` / `exit` events over SSE into the viewer's Run panel, so\na user can trigger and watch a real test run without leaving the browser. It gates on frontend/backend\nreadiness before spawning anything (never blindly reusing a wedged dev server), tracks its own spawn\nlock so two `serve` instances never race to start duplicate app servers, and tree-kills the whole\nprocess group on client disconnect or run abort. Full behavioural contract lives in\n`serve.ts` itself and the run-pipeline design doc (`2026-07-05-kg-viewer-ux-runinfra-design.md`,\nworkspace root, not committed to a repo) — this PRD only asserts the product-level requirement that a\nrun's outcome is always either a real pass/fail/flaky or an honest \"servers weren't ready\" explanation,\nnever a silent hang or a fabricated result.\n\n## 5. Evidence storage\n\n> **Rewritten 2026-07-24 (CEO).** This section used to mandate the `e2e-evidence` orphan branch as\n> *the* destination. It is now **one of three**, declared as exactly one `evidence` destination in\n> `kg.config.json`:\n>\n> | kind | where shots go | shared baseline? |\n> |---|---|---|\n> | `blob` | a project-supplied S3 bucket + prefix | yes |\n> | `github` | the tool-managed `e2e-evidence` orphan branch (§5a) | yes — with no bucket to provision |\n> | *omitted* | the local device, under `shotsDir` | **no** |\n>\n> ```json\n> \"evidence\": { \"kind\": \"blob\", \"bucket\": \"acme-kg\", \"prefix\": \"kg-cases\", \"region\": \"us-east-1\" }\n> ```\n>\n> **Coordinates only — never a credential.** `kg.config.json` is committed, so a signed URL or an\n> access key placed here would enter git history permanently; those keys are *refused*, not ignored.\n> Credentials resolve at run time from the standard AWS chain (env vars, `~/.aws`, instance role, or\n> CI's OIDC-minted short-lived creds), so no long-lived secret need exist at all.\n>\n> A pre-signed URL was considered and rejected: one URL signs exactly one object key, while a run\n> uploads many keys not known until it happens; and the evidence index is committed, so its URLs must\n> outlive the short expiry a pre-signed URL carries.\n>\n> Modelled as one declared destination rather than several optional fields on purpose: a config that\n> could set both a blob URL and a repo would have no defined winner, and something downstream would\n> silently pick one — the exact contradiction this tool exists to detect.\n>\n> The invariant that actually mattered is unchanged and now **enforced** rather than merely asserted:\n> binaries never enter the committed graph (`referencesOnly` in `applyEvidence.ts`).\n>\n> **Known cost, recorded rather than discovered later:** flow-approval (founding design §6) diffs a\n> *previous* screenshot against a new one. Local storage gives CI and a second machine no shared\n> baseline, so that feature needs `blob` or `github`.\n\n## 5a. The GitHub evidence branch (layout contract)\n\nScreenshots captured during e2e runs are never committed on the working branch and never embedded as\nbinaries in `knowledge-graph.json` — only URLs are (REQ-KG-05). They are uploaded to a dedicated\norphan branch, `e2e-evidence`, in `dojostack_frontend`, laid out as\n`kg-cases/<caseBareId>/<shortSha>/<NN>-<shotName>.png` with the newest 3 SHAs per case retained (older\nones pruned on every upload) — see that branch's own `README.md` for the full contract. The upload\npath (`tools/knowledge-graph/src/shotsUpload.ts`) is invoked automatically at the end of\n`sync:results` for the cases just run (`KG_SHOTS_UPLOAD=0` to disable) and can be run manually via\n`npm run shots:upload`. The resulting `dojostack_frontend/e2e/kg-evidence-index.json` — case id → SHA\n→ `{ filename: raw URL }` — is ingested by `discover.ts` the same way `kg-test-results.json` is, and\nattached as `evidence` on the matching e2e test node, so the viewer's screenshot strip can resolve a\nstep's image locally (live `serve` `/shots/` route) or from this branch, in that order.\n\n## 6. Doc section metadata\n\nA system-design doc's H2/H3 headings are classified deterministically into `requirement` / `decision`\n/ `open-question` / `knowledge` sections purely from their content — no per-section frontmatter\nneeded (REQ-KG-06): a section mentioning a `REQ-…` id is a requirement section; one containing\n`Decision needed` / `DECISION:` / `Locked decision` is a decision section (taking precedence over a\nrequirement match, since a section that locks a decision *about* a requirement is documenting the\ndecision, not defining it); one whose heading or text matches `Open Question(s)` / `OQ-\\d+` is an\nopen-question section; anything else is knowledge. Anchors use a GitHub-style heading slug so the\nviewer's in-page links and the anchors GitHub itself generates for the same markdown always agree.\nThis lets the viewer render per-section chips, a colored left border, and a kind-colored \"on this\npage\" mini-TOC — and lets a requirement card link straight to \"Defined in: `<doc>` § `<section>`\"\ninstead of a generic doc reference.\n\n## 7. What's deliberately not claimed here (ratchet honesty)\n\n**`sync` never blocking regardless of ratchet state** (`sync.ts`) is real and important but is\ndeliberately **not** a `REQ-KG-*` requirement: `sync.ts` has no test file, so this doc cannot honestly\n`provenBy` it — matching the tool's own freshness/honesty principle (§1) applied to itself. If\n`sync.ts` gains a test asserting its always-exit-0 behavior, promote that prose sentence then.\n\nThe run pipeline's **readiness-gate / spawn-lock / tree-kill** mechanics were previously excluded here\non the same \"no asserting test\" grounds. That was outdated: they *are* asserted by real unit tests\n(`gateDecision.test.ts`, `serveLock.test.ts`, `serverDisconnect.test.ts`, `treeKill.test.ts`), so as\nof 2026-07-10 they are **promoted** to `REQ-KG-RUN-05`, `REQ-KG-SERVE-05`, `REQ-KG-SERVE-06`, and\n`REQ-KG-RUN-04`. (The `KG_ORCHESTRATE` opt-out in `ensureOrchestrated.ts` stays prose — minor env glue.)\n\n### Known uncovered invariants (tracked, not faked as requirements)\n\nReal invariants with no unit test today. Per §1 they are listed here rather than wired to a `covers:`\nedge whose test doesn't assert them (which would launder coverage):\n\n1. The read-only fine-grained PAT + token-fetch DOM glue in `viewer.template.html` (sessionStorage\n   only, never baked into `viewer.html`) — no unit test; the build-determinism half is REQ-KG-01.\n2. Live-refresh re-renders in place, never `location.reload()`, preserving UI state — client JS in\n   `viewer.template.html`; needs a DOM/Playwright test to become falsifiable.\n3. `flaky = (status pass AND attempts > 1)` derivation in `syncResults.ts` — untested (its input,\n   attempts counting only executed results, is covered by `parsePlaywrightReport.test.ts`).\n4. The `E2E_KG_NO_AUTO` record-once guard (stops the frontend reporter double-recording) — untested\n   spawn/env glue.\n5. buildGraph's end-to-end skip-gates (an unregistered unit-test file is skipped; a parser that throws\n   is warned and skipped) — the predicates are tested, the wiring is not.\n\n## 8. Conflict-Resolution feature (planned — spec-first, requirements staged)\n\nA planned feature: detect and resolve **semantic contradictions** — one fact stated inconsistently\nacross docs and/or code (a formula, an ordering, a definition) — which the structural issue kinds do\nnot catch. This is the automation of the manual \"portfolio docs tidy\" (npi_margin denominator, overlay\ncomposition order, occupancy weighting). Shape:\n\n- A finding is a **cluster**: one `subject` described by N participants grouped into `positions`\n  (camps); the binary case is N=2. `axis` (doc / code / mixed) is derived from participant kinds, so\n  multi-doc, multi-code, and mixed contradictions share one model.\n- **Scan** (`kg-scan-conflicts --flow <f>`) runs AI adjudication **out of platform** (like the\n  `kg-e2e` runner) over comparison candidates the graph enumerates from its own edges\n  (`related` / `governs` / `specifies`+`covers`, plus same-scope co-membership); results fold into a\n  deterministic `graph.conflicts` block. The viewer and serve routes call no AI.\n- **Resolve** by picking one canonical position; non-canonical participants are fixed by type —\n  dissenting docs as text edits, dissenting code via TDD + the code-review gate. Triage decisions live\n  in a separate, non-deterministic decisions file (a serve route sibling of `/api/star`). Identity =\n  hash(`subject` + `scope`): a dismissed finding never returns on re-scan; a resolved finding re-opens\n  iff a new dissenting participant appears.\n- **Apply** via a clipboard handoff — the Conflicts tab copies `/kg-fix-conflicts <scope>`; a browser\n  page cannot drive the terminal, so it never applies code edits itself.\n\nIts requirements `REQ-KG-CONF-01..09` are promoted into this frontmatter (each with a real `covers:`)\nas its test lands, so the strict ratchet (REQ-KG-04) stays green instead of gaining\n`uncovered-requirement` issues up front — the same promote-when-tested rule §7 applies to `sync.ts`.\n**Phases 1a (data pipeline), 1b (scan skill), 1c (viewer tab + serve decisions) and 2 (fix plan +\nkg-fix-conflicts skill) are built**, so `REQ-KG-CONF-01/02/03/04/05/06` are now in the frontmatter\nabove. `07` (tab groups/filters) and `08` (clipboard) are implemented in `viewer.template.html` and\nverified by driving the served viewer, but stay staged until a browser e2e-viewer spec covers them;\n`09`'s \"code fix writes a failing test first\" is enforced by the kg-fix-conflicts skill (not a unit\ntest), so it also stays staged.\n\n## 9. Gate enforcement (planned — spec-first, requirements staged)\n\n**The gate does not currently enforce anything.** `.github/workflows/knowledge-graph.yml` runs\n`npm run check || echo \"::warning::…\"`; the `||` swallows the exit code, so `check` has never failed a\nPR. Measured 2026-07-16, five of seven issue kinds are above the frozen baseline — `broken-link` 37>11,\n`orphan-doc` 202>196, `uncovered-requirement` **95>25**, `untracked-e2e` 4>2, `unverified-doc` 267>244 —\nand `check` fails at the freshness step before reaching the ratchet at all.\n\n**REQ-KG-04 is therefore currently false**, and it is false in exactly the shape §7's known-uncovered\nlist already names: *\"the predicates are tested, the wiring is not.\"* Its text claims a regression\n\"fails the build… cannot be waved through\"; its `covers:` is `check.test.ts`, which proves\n`ratchetFailures()` **returns** failures. Nothing asserts the **pipeline acts on them**. Per §7's\nhonesty rule this is a laundered `covers:` edge, and it is being fixed rather than re-labelled: Phase 3\nbelow narrows REQ-KG-01/04 to what is enforced and adds the pipeline test that makes the stronger claim\nhonest again.\n\n**Root cause (why report-only stuck).** The committed graph is a derived artifact of **three** repos —\nit is irreducibly cross-repo (267 `backend→frontend` edges, 56 `main→frontend`, 15 `frontend→main`,\n8 `frontend→backend`), so a partial checkout severs ~347 edges and *fabricates* uncovered/broken-link\nissues. But the three repos sit on independent branches and the graph pins **no source commits** (only\n`lastRun.commit`, describing the test run). A build with no lockfile is not reproducible, so its output\ncannot be checked. That, not the missing checkout step, is why the workflow's own comment says \"Do NOT\npromote this to blocking.\"\n\nThis is also why the `uncovered-requirement` rise is **not** a recent lapse in discipline: the four\nbackend specs carrying all 70 (`MODULE_HEADER_ACTIONS_AND_GLOSSARY` 30, `FLOOR_PLAN_EDITOR` 15,\n`LIVE_FRESHNESS_AND_FREEZE` 14, `VERSION_LIFECYCLE_AND_ARCHIVE` 11) span 2026-06-19 → 2026-07-09, and\nthe baseline commit `63fbd7b` states the graph was \"frozen against an older repo state\". The graph\nabsorbs sibling promises whenever a rebuild runs against a newer checkout, and nothing checks the\nresult. The fix is a pin, not a memo.\n\n**Shape.** Pin the inputs, which splits one unanswerable question into two answerable ones: *is the\ngraph a correct build of its pinned inputs?* (reproducible → **blocking** in CI) and *are the pins\ncurrent with the siblings?* (a **non-blocking** scheduled signal that opens an advance-the-pins PR).\nThis is the lockfile pattern — `npm ci` verifies internal consistency; Dependabot separately reports\nyou are behind. Conflating them is what left the gate off.\n\nStaged requirements, promoted into the frontmatter above with a real `covers:` **as each test lands**,\nper §7 — so this section cannot itself add `uncovered-requirement` issues while it is only planned:\n\n- ~~**REQ-KG-GATE-01**~~ — **BUILT + PROMOTED to the frontmatter above** (`sources.ts`,\n  `sources.test.ts`; `build` and `sync` both stamp).\n  *(Text corrected 2026-07-17 while building it. It first read \"refuses to stamp an unpushed commit\" —\n  and the module written to that text promptly refused on this very workspace. An unpushed sibling HEAD\n  is the normal state of feature-branch work, so a blocking build would break the inner loop daily, and\n  it contradicted §7's standing split: \"`sync` never blocking regardless of ratchet state\"; `check` is\n  the gate. The invariant is narrower than the first draft assumed — never* **commit** *a lockfile CI\n  cannot resolve — so the block belongs at check time (GATE-04), not build time. `sources.ts` now\n  reports facts and `unfetchablePins` states the rule once, so the warning and the block can never\n  disagree. Scope also widened: `sync` writes the graph too, so it stamps as well — resolving the design\n  note's open question 4. A graph whose lockfile disagrees with it is itself a drift source.)*\n- ~~**REQ-KG-GATE-02**~~ — **BUILT + PROMOTED** (`check --pinned`; `sources.ts`, `sources.test.ts`).\n  *(Narrowed 2026-07-17 to what it uniquely contributes. It first read \"CI rebuilds at the pinned\n  sibling commits **and fails when the committed graph differs**\" — but that second half is REQ-KG-01's\n  pre-existing freshness check, and the \"CI\" half belongs to GATE-03 + the workflow. What is genuinely\n  new, and now tested, is the pin assertion: `check --pinned` refuses to certify a graph unless the\n  sibling checkouts sit exactly at the lockfile's commits, so a \"fresh ✓\" verdict always means\n  reproducible-from-pins rather than \"happened to match this machine\". Splitting it that way is not\n  trimming the requirement to fit the code — GATE-03 already owned the CI half.)*\n- **REQ-KG-GATE-03** — the CI gate propagates `check`'s exit code: no step swallows a stale graph or a\n  blown ratchet. *(This is the requirement REQ-KG-04 was believed to have.)*\n- **REQ-KG-GATE-04** — an unfetchable pin fails with an actionable rebuild instruction, never a silent pass.\n- **REQ-KG-GATE-05** — pin **currency** is reported separately from pin **correctness**, and never blocks a PR.\n- **REQ-KG-GATE-06** — a source doc that fails to parse **fails the build**; it is never warned-and-skipped\n  into a silently smaller graph.\n\n**REQ-KG-GATE-06 was earned by an incident during this section's own authoring (2026-07-16).** A single\nunquoted `[id]` dynamic-route segment inside a YAML flow sequence made\n`dojostack_backend/.github/system-design/00_platform/MODULE_HEADER_ACTIONS_AND_GLOSSARY.md` unparseable.\n`buildGraph` warned once to the console and skipped it — silently removing **30 requirements** from the\ngraph (`uncovered-requirement` 95→65, because they ceased to *exist* rather than becoming proven) and\nstranding **221** references (`broken-link` 37→258). This is §7's known-uncovered item 5 exactly — *\"a\nparser that throws is warned and skipped… the predicates are tested, the wiring is not\"* — so the hole\nwas known, documented, and unclosed. A `console.warn` is not a gate: the SSoT lost 30 promises and every\ndownstream reader, human or agent, would have seen a smaller graph and believed it.\n\nThe same incident is also the sharpest evidence for the pin: the doc parsed cleanly during a probe one\nhour earlier and broke when a concurrent agent pulled the backend repo mid-session, moving the graph's\ninputs underneath an in-flight build. Three different \"correct\" graphs in one session.\n\n**Phases** (mechanism → debt → flip, so CI is never red):\n\n| Phase | What | Repo(s) | Exit condition |\n|---|---|---|---|\n| **1 — Mechanism** | Lockfile + build stamp + `check --pinned` + 3-repo CI checkout. **Stays report-only** — but the report becomes reproducible, hence trustworthy for the first time. | main | one green pinned comparison on ubuntu |\n| **2 — Debt** | §7 promote-when-tested on the 4 specs (frontmatter → staged prose); register 2 untracked e2e; triage `broken-link` +26; documented raise for `orphan-doc` 196→202 and `unverified-doc` 244→267 only | backend, frontend, + main rebuild | all 7 kinds at or under baseline |\n| **3 — Flip** | Drop `\\|\\| echo`; narrow REQ-KG-01/04; add the pipeline tests; pin-currency job | main | `check` blocking and green; REQ-KG-04 true |\n\n**`uncovered-requirement` is never raised** — raising it to 95 would concede the exact regression the\nratchet exists to refuse. It is paid down by §7 promotion, which writes no tests up front and fakes\nnothing: it restores the distinction between a *staged intention* and a *ratified, proven* requirement.\n\n**Lead risk — RETIRED 2026-07-17.** The whole design rests on \"rebuild at the pins → compare\nbyte-for-byte\", and that comparison had **never once passed on any platform** (the gate has been\nreport-only its entire life). Spiked before building anything: `buildGraph()` at a pinned timestamp,\nnormalized exactly as `check.ts` does, SHA256'd, run natively and in `node:20` containers —\n**darwin arm64, linux arm64 and linux x64 (`ubuntu-latest`'s arch) all produce a byte-identical graph**\n(1392 nodes / 1965 edges / 13,578,939 bytes / `0de872d2c697…c198c`). So REQ-KG-GATE-02 is implementable\nand the fallback layered design is not needed. The hazards reasoned about up front all held:\n`assemble()`'s canonical sort keeps glob order out, `normalizeForCompare` absorbs git-history\ndifferences, Node 20 is pinned both sides. Residual: the spike bind-mounted a case-insensitive macOS\nfilesystem, so a true ext4 checkout is still untested — small, since every filename in the tree is\ncanonical and `fast-glob` matches case-sensitively in userspace, and the first real CI run closes it.\nThis proves the build is deterministic, **not** that the pin mechanism works — that is still Phase 1.\n\n**Open questions:** (1) fine-grained PAT vs GitHub App for the sibling checkout — note §7's\nknown-uncovered item 1 records a read-only fine-grained PAT already in use for the viewer's token glue,\nso that is the precedent; (2) scheduled pin-currency vs sibling `repository_dispatch`; (3) the\none-command recovery when a pin is rebased away; (4) whether `sync.ts` needs the same pinning;\n(5) the 19 `uncovered-requirement` nodes with **no governing-doc edge** are unattributed — possibly a\nmodelling gap rather than debt.\n\nFull design note: `docs/superpowers/specs/2026-07-16-kg-gate-pinned-sources-design.md` (pre-ratification\nscaffolding; not in the graph by design — see §1).\n\n## 10. Open questions\n\n- Should `check`'s ratchet baseline be per-repo (main/frontend/backend) instead of one flat file, now\n  that the tool indexes its own `tools/knowledge-graph/` sources under the `main:` namespace\n  alongside the two app repos? Not urgent — the baseline already tracks total counts correctly; this\n  is only about attribution clarity if the flat total grows harder to read.\n- Should the digest gain a fifth view — a per-tool \"self-coverage\" digest analogous to the per-flow\n  ones — now that the tool has its own `kg.tool` feature and unit-test population? Deferred until\n  there's a second dev-tool in the workspace to make the pattern worth generalizing.",
+      "governs": [],
+      "body": "## 0. Purpose\n\n`tools/knowledge-graph/` turns the scattered, easy-to-drift sources of truth about DojoStack —\nsystem-design docs, e2e case registries, feature registries, unit/e2e test files, config/instruction\nfiles — into one committed, machine-checkable graph (`knowledge-graph.json`), a browsable viewer\n(`viewer.html`), a human digest (`digest/*.md`), and a short status report (`report.md`). This\ndocument is the tool's own product-requirements spec: what it must always be true, indexed into the\nsame graph it produces (the tool eating its own dog food — this doc's requirements are proven by the\ntool's own Vitest suite, not by assertion).\n\nThe problem this tool solves: without it, \"is this requirement actually tested?\", \"is this doc still\nread by anything?\", and \"did this e2e test get wired up correctly?\" are all questions a human has to\nanswer by grep and memory, and the answer silently rots as the codebase changes. The graph makes those\nquestions machine-answerable and machine-enforceable (`npm run check`), and cheap enough to run in\nevery session.\n\n## 1. Derive-from-source principle\n\n**Nothing in the graph is hand-authored data about the codebase — it is always parsed FROM the\ncodebase.** Every node and edge traces back to one committed source file:\n\n- A `doc` node comes from a system-design/instruction markdown file's frontmatter + body.\n- A `test` node (`kind: e2e`) comes from a `*.cases.yaml` entry; a `test` node (`kind: unit-fe` /\n  `unit-be`) comes from a real `*.test.ts(x)` / `test_*.py` file that matches a registered feature's\n  path globs.\n- A `feature` node and its `requirement` children come from a `*.features.yaml` registry entry, or a\n  `requirements:` block in a doc's frontmatter.\n- A `test` node's **status** comes only from `kg-test-results.json`, written by an actual Playwright/\n  pytest run — never edited by hand (REQ-KG-03).\n- A `test` node's (e2e) **evidence** (screenshot URLs) comes only from `kg-evidence-index.json`,\n  itself generated by uploading real captured PNGs — never a hand-typed URL (REQ-KG-05).\n\nThis is why `npm run check` can assert **freshness**: rebuild from the same source files and byte-\ncompare against what's committed (REQ-KG-01). If the rebuild differs, the committed graph is stale —\nby definition, a fact about the codebase changed and the graph wasn't regenerated.\n\n## 2. The four generated views\n\n| View | File | Purpose |\n| --- | --- | --- |\n| Graph | `knowledge-graph.json` | The canonical machine-readable node/edge/issue list. Every other view is derived from this. |\n| Viewer | `viewer.html` | A single-file, no-build-step HTML page (rendered from `viewer.template.html` + the graph) for browsing docs, features, tests, and requirements interactively, plus a live \"▶ Run\" panel (see §4). |\n| Report | `report.md` | A short, git-diffable status summary — node/edge/issue counts and the issue list — for a quick \"what changed\" read without opening the viewer. |\n| Digest | `digest/*.md` | One markdown file per flow (`digest/<flow>.md`) plus an index, listing that flow's requirements with proof status and gaps — the \"what's actually covered\" view for a specific product area. |\n\n## 3. Commands\n\n| Command | What it does | Blocks? |\n| --- | --- | --- |\n| `npm run sync` | Rebuilds from source and **always** writes fresh artifacts (graph, viewer, report, digest), then reports the issue-ratchet delta informationally. Meant to be run after any change to a source file the graph indexes, and safe to run repeatedly. | Never — always exits 0. |\n| `npm run sync:results` | Runs the Playwright cases in scope (`--flow`/`--case`, or everything), records results into `kg-test-results.json`, invokes the evidence auto-upload for the cases just run (§5), then chains `sync`. | Only on a genuine internal failure to produce a report; a failing *test* is still recorded, not a tool failure. |\n| `npm run check` | Rebuilds from source and asserts the committed graph + viewer are byte-identical to a fresh rebuild (REQ-KG-01), then asserts no issue kind rose above its frozen baseline (REQ-KG-04, `knowledge-graph.baseline.json`). | Yes — this is the CI/pre-merge gate. |\n| `npm run build` | One-shot rebuild + artifact write, no ratchet reporting — used for local iteration. | Never. |\n| `npm run serve` | Companion dev server: serves the viewer, a `/shots/<caseId>/<file>` route for local screenshot preview, `/api/star` (curate features), and `/api/run` (spawn a scoped Playwright run with live SSE log streaming into the viewer's Run panel). | N/A (long-running dev server). |\n| `npm run shots:upload` | Uploads locally captured e2e screenshots to the `e2e-evidence` branch and regenerates `kg-evidence-index.json` (§5). `--case <ids>` scopes it; `--dry-run` previews with no network calls. | Never; a failed upload warns loudly rather than throwing. |\n\n## 4. Run pipeline (summary)\n\n`serve`'s `/api/run` spawns a scoped Playwright run (one case, a flow, or everything) and streams\n`start` / `log` / `status` / `serverNotReady` / `exit` events over SSE into the viewer's Run panel, so\na user can trigger and watch a real test run without leaving the browser. It gates on frontend/backend\nreadiness before spawning anything (never blindly reusing a wedged dev server), tracks its own spawn\nlock so two `serve` instances never race to start duplicate app servers, and tree-kills the whole\nprocess group on client disconnect or run abort. Full behavioural contract lives in\n`serve.ts` itself and the run-pipeline design doc (`2026-07-05-kg-viewer-ux-runinfra-design.md`,\nworkspace root, not committed to a repo) — this PRD only asserts the product-level requirement that a\nrun's outcome is always either a real pass/fail/flaky or an honest \"servers weren't ready\" explanation,\nnever a silent hang or a fabricated result.\n\n## 5. Evidence storage\n\n> **Rewritten 2026-07-24 (CEO).** This section used to mandate the `e2e-evidence` orphan branch as\n> *the* destination. It is now **one of three**, declared as exactly one `evidence` destination in\n> `kg.config.json`:\n>\n> | kind | where shots go | shared baseline? |\n> |---|---|---|\n> | `blob` | a project-supplied S3 bucket + prefix | yes |\n> | `github` | the tool-managed `e2e-evidence` orphan branch (§5a) | yes — with no bucket to provision |\n> | *omitted* | the local device, under `shotsDir` | **no** |\n>\n> ```json\n> \"evidence\": { \"kind\": \"blob\", \"bucket\": \"acme-kg\", \"prefix\": \"kg-cases\", \"region\": \"us-east-1\" }\n> ```\n>\n> **Coordinates only — never a credential.** `kg.config.json` is committed, so a signed URL or an\n> access key placed here would enter git history permanently; those keys are *refused*, not ignored.\n> Credentials resolve at run time from the standard AWS chain (env vars, `~/.aws`, instance role, or\n> CI's OIDC-minted short-lived creds), so no long-lived secret need exist at all.\n>\n> A pre-signed URL was considered and rejected: one URL signs exactly one object key, while a run\n> uploads many keys not known until it happens; and the evidence index is committed, so its URLs must\n> outlive the short expiry a pre-signed URL carries.\n>\n> Modelled as one declared destination rather than several optional fields on purpose: a config that\n> could set both a blob URL and a repo would have no defined winner, and something downstream would\n> silently pick one — the exact contradiction this tool exists to detect.\n>\n> The invariant that actually mattered is unchanged and now **enforced** rather than merely asserted:\n> binaries never enter the committed graph (`referencesOnly` in `applyEvidence.ts`).\n>\n> **Known cost, recorded rather than discovered later:** flow-approval (founding design §6) diffs a\n> *previous* screenshot against a new one. Local storage gives CI and a second machine no shared\n> baseline, so that feature needs `blob` or `github`.\n\n## 5a. The GitHub evidence branch (layout contract)\n\nScreenshots captured during e2e runs are never committed on the working branch and never embedded as\nbinaries in `knowledge-graph.json` — only URLs are (REQ-KG-05). They are uploaded to a dedicated\norphan branch, `e2e-evidence`, in `dojostack_frontend`, laid out as\n`kg-cases/<caseBareId>/<shortSha>/<NN>-<shotName>.png` with the newest 3 SHAs per case retained (older\nones pruned on every upload) — see that branch's own `README.md` for the full contract. The upload\npath (`tools/knowledge-graph/src/shotsUpload.ts`) is invoked automatically at the end of\n`sync:results` for the cases just run (`KG_SHOTS_UPLOAD=0` to disable) and can be run manually via\n`npm run shots:upload`. The resulting `dojostack_frontend/e2e/kg-evidence-index.json` — case id → SHA\n→ `{ filename: raw URL }` — is ingested by `discover.ts` the same way `kg-test-results.json` is, and\nattached as `evidence` on the matching e2e test node, so the viewer's screenshot strip can resolve a\nstep's image locally (live `serve` `/shots/` route) or from this branch, in that order.\n\n## 5b. The S3 bucket (layout contract, and why reads are signed)\n\nThe bucket destination mirrors §5a's layout exactly — `<prefix>/<caseBareId>/<shortSha>/<NN>-<shotName>.png`,\nnewest 3 SHAs per case — so the two shared destinations stay directly comparable and moving between\nthem is a copy rather than a migration. `src/blobStore.ts` builds every `aws` argv and `shotsUpload.ts`\nruns it; credentials appear nowhere, resolving at run time from the standard AWS chain, because\n`kg.config.json` is committed and a key in it would live in git history forever (REQ-KG-05).\n\n**Reads are the half that is easy to forget, and its absence looks like a viewer bug.** The bucket is\nprivate, so an `<img>` cannot load an object: it sends no auth header, and the durable object URL\n403s. Committing a pre-signed URL instead is no better — one expires months before the index holding\nit does. So `kg-evidence-index.json` stores the object **key**, addressed through `serve`'s\n`GET /evidence/<objectKey>` route, which mints a short-lived signed GET (`PRESIGN_TTL_SECONDS`, 900)\nand 302s to it, `no-store` so the redirect cannot outlive its own signature.\n\nNote the inversion, which is the whole reason a signature is right here and wrong for upload: one\nsignature covers one key, and a run writes many keys not known until it happens — but on read the key\nis already known, the URL is generated per view, and a short life is the point rather than a\nlimitation. The route is confined the same way the other read-only routes are (REQ-KG-SERVE-02), one\nstep removed: with no filesystem read to confine, the decode → guard → boundary-check sequence runs in\nkey space, so a request can only ever name an object under the configured prefix.\n\n## 6. Doc section metadata\n\nA system-design doc's H2/H3 headings are classified deterministically into `requirement` / `decision`\n/ `open-question` / `knowledge` sections purely from their content — no per-section frontmatter\nneeded (REQ-KG-06): a section mentioning a `REQ-…` id is a requirement section; one containing\n`Decision needed` / `DECISION:` / `Locked decision` is a decision section (taking precedence over a\nrequirement match, since a section that locks a decision *about* a requirement is documenting the\ndecision, not defining it); one whose heading or text matches `Open Question(s)` / `OQ-\\d+` is an\nopen-question section; anything else is knowledge. Anchors use a GitHub-style heading slug so the\nviewer's in-page links and the anchors GitHub itself generates for the same markdown always agree.\nThis lets the viewer render per-section chips, a colored left border, and a kind-colored \"on this\npage\" mini-TOC — and lets a requirement card link straight to \"Defined in: `<doc>` § `<section>`\"\ninstead of a generic doc reference.\n\n## 7. What's deliberately not claimed here (ratchet honesty)\n\n**`sync` never blocking regardless of ratchet state** (`sync.ts`) is real and important but is\ndeliberately **not** a `REQ-KG-*` requirement: `sync.ts` has no test file, so this doc cannot honestly\n`provenBy` it — matching the tool's own freshness/honesty principle (§1) applied to itself. If\n`sync.ts` gains a test asserting its always-exit-0 behavior, promote that prose sentence then.\n\nThe run pipeline's **readiness-gate / spawn-lock / tree-kill** mechanics were previously excluded here\non the same \"no asserting test\" grounds. That was outdated: they *are* asserted by real unit tests\n(`gateDecision.test.ts`, `serveLock.test.ts`, `serverDisconnect.test.ts`, `treeKill.test.ts`), so as\nof 2026-07-10 they are **promoted** to `REQ-KG-RUN-05`, `REQ-KG-SERVE-05`, `REQ-KG-SERVE-06`, and\n`REQ-KG-RUN-04`. (The `KG_ORCHESTRATE` opt-out in `ensureOrchestrated.ts` stays prose — minor env glue.)\n\n### Known uncovered invariants (tracked, not faked as requirements)\n\nReal invariants with no unit test today. Per §1 they are listed here rather than wired to a `covers:`\nedge whose test doesn't assert them (which would launder coverage):\n\n1. The read-only fine-grained PAT + token-fetch DOM glue in `viewer.template.html` (sessionStorage\n   only, never baked into `viewer.html`) — no unit test; the build-determinism half is REQ-KG-01.\n2. Live-refresh re-renders in place, never `location.reload()`, preserving UI state — client JS in\n   `viewer.template.html`; needs a DOM/Playwright test to become falsifiable.\n3. `flaky = (status pass AND attempts > 1)` derivation in `syncResults.ts` — untested (its input,\n   attempts counting only executed results, is covered by `parsePlaywrightReport.test.ts`).\n4. The `E2E_KG_NO_AUTO` record-once guard (stops the frontend reporter double-recording) — untested\n   spawn/env glue.\n5. buildGraph's end-to-end skip-gates (an unregistered unit-test file is skipped; a parser that throws\n   is warned and skipped) — the predicates are tested, the wiring is not.\n\n## 8. Conflict-Resolution feature (planned — spec-first, requirements staged)\n\nA planned feature: detect and resolve **semantic contradictions** — one fact stated inconsistently\nacross docs and/or code (a formula, an ordering, a definition) — which the structural issue kinds do\nnot catch. This is the automation of the manual \"portfolio docs tidy\" (npi_margin denominator, overlay\ncomposition order, occupancy weighting). Shape:\n\n- A finding is a **cluster**: one `subject` described by N participants grouped into `positions`\n  (camps); the binary case is N=2. `axis` (doc / code / mixed) is derived from participant kinds, so\n  multi-doc, multi-code, and mixed contradictions share one model.\n- **Scan** (`kg-scan-conflicts --flow <f>`) runs AI adjudication **out of platform** (like the\n  `kg-e2e` runner) over comparison candidates the graph enumerates from its own edges\n  (`related` / `governs` / `specifies`+`covers`, plus same-scope co-membership); results fold into a\n  deterministic `graph.conflicts` block. The viewer and serve routes call no AI.\n- **Resolve** by picking one canonical position; non-canonical participants are fixed by type —\n  dissenting docs as text edits, dissenting code via TDD + the code-review gate. Triage decisions live\n  in a separate, non-deterministic decisions file (a serve route sibling of `/api/star`). Identity =\n  hash(`subject` + `scope`): a dismissed finding never returns on re-scan; a resolved finding re-opens\n  iff a new dissenting participant appears.\n- **Apply** via a clipboard handoff — the Conflicts tab copies `/kg-fix-conflicts <scope>`; a browser\n  page cannot drive the terminal, so it never applies code edits itself.\n\nIts requirements `REQ-KG-CONF-01..09` are promoted into this frontmatter (each with a real `covers:`)\nas its test lands, so the strict ratchet (REQ-KG-04) stays green instead of gaining\n`uncovered-requirement` issues up front — the same promote-when-tested rule §7 applies to `sync.ts`.\n**Phases 1a (data pipeline), 1b (scan skill), 1c (viewer tab + serve decisions) and 2 (fix plan +\nkg-fix-conflicts skill) are built**, so `REQ-KG-CONF-01/02/03/04/05/06` are now in the frontmatter\nabove. `07` (tab groups/filters) and `08` (clipboard) are implemented in `viewer.template.html` and\nverified by driving the served viewer, but stay staged until a browser e2e-viewer spec covers them;\n`09`'s \"code fix writes a failing test first\" is enforced by the kg-fix-conflicts skill (not a unit\ntest), so it also stays staged.\n\n## 9. Gate enforcement (planned — spec-first, requirements staged)\n\n**The gate does not currently enforce anything.** `.github/workflows/knowledge-graph.yml` runs\n`npm run check || echo \"::warning::…\"`; the `||` swallows the exit code, so `check` has never failed a\nPR. Measured 2026-07-16, five of seven issue kinds are above the frozen baseline — `broken-link` 37>11,\n`orphan-doc` 202>196, `uncovered-requirement` **95>25**, `untracked-e2e` 4>2, `unverified-doc` 267>244 —\nand `check` fails at the freshness step before reaching the ratchet at all.\n\n**REQ-KG-04 is therefore currently false**, and it is false in exactly the shape §7's known-uncovered\nlist already names: *\"the predicates are tested, the wiring is not.\"* Its text claims a regression\n\"fails the build… cannot be waved through\"; its `covers:` is `check.test.ts`, which proves\n`ratchetFailures()` **returns** failures. Nothing asserts the **pipeline acts on them**. Per §7's\nhonesty rule this is a laundered `covers:` edge, and it is being fixed rather than re-labelled: Phase 3\nbelow narrows REQ-KG-01/04 to what is enforced and adds the pipeline test that makes the stronger claim\nhonest again.\n\n**Root cause (why report-only stuck).** The committed graph is a derived artifact of **three** repos —\nit is irreducibly cross-repo (267 `backend→frontend` edges, 56 `main→frontend`, 15 `frontend→main`,\n8 `frontend→backend`), so a partial checkout severs ~347 edges and *fabricates* uncovered/broken-link\nissues. But the three repos sit on independent branches and the graph pins **no source commits** (only\n`lastRun.commit`, describing the test run). A build with no lockfile is not reproducible, so its output\ncannot be checked. That, not the missing checkout step, is why the workflow's own comment says \"Do NOT\npromote this to blocking.\"\n\nThis is also why the `uncovered-requirement` rise is **not** a recent lapse in discipline: the four\nbackend specs carrying all 70 (`MODULE_HEADER_ACTIONS_AND_GLOSSARY` 30, `FLOOR_PLAN_EDITOR` 15,\n`LIVE_FRESHNESS_AND_FREEZE` 14, `VERSION_LIFECYCLE_AND_ARCHIVE` 11) span 2026-06-19 → 2026-07-09, and\nthe baseline commit `63fbd7b` states the graph was \"frozen against an older repo state\". The graph\nabsorbs sibling promises whenever a rebuild runs against a newer checkout, and nothing checks the\nresult. The fix is a pin, not a memo.\n\n**Shape.** Pin the inputs, which splits one unanswerable question into two answerable ones: *is the\ngraph a correct build of its pinned inputs?* (reproducible → **blocking** in CI) and *are the pins\ncurrent with the siblings?* (a **non-blocking** scheduled signal that opens an advance-the-pins PR).\nThis is the lockfile pattern — `npm ci` verifies internal consistency; Dependabot separately reports\nyou are behind. Conflating them is what left the gate off.\n\nStaged requirements, promoted into the frontmatter above with a real `covers:` **as each test lands**,\nper §7 — so this section cannot itself add `uncovered-requirement` issues while it is only planned:\n\n- ~~**REQ-KG-GATE-01**~~ — **BUILT + PROMOTED to the frontmatter above** (`sources.ts`,\n  `sources.test.ts`; `build` and `sync` both stamp).\n  *(Text corrected 2026-07-17 while building it. It first read \"refuses to stamp an unpushed commit\" —\n  and the module written to that text promptly refused on this very workspace. An unpushed sibling HEAD\n  is the normal state of feature-branch work, so a blocking build would break the inner loop daily, and\n  it contradicted §7's standing split: \"`sync` never blocking regardless of ratchet state\"; `check` is\n  the gate. The invariant is narrower than the first draft assumed — never* **commit** *a lockfile CI\n  cannot resolve — so the block belongs at check time (GATE-04), not build time. `sources.ts` now\n  reports facts and `unfetchablePins` states the rule once, so the warning and the block can never\n  disagree. Scope also widened: `sync` writes the graph too, so it stamps as well — resolving the design\n  note's open question 4. A graph whose lockfile disagrees with it is itself a drift source.)*\n- ~~**REQ-KG-GATE-02**~~ — **BUILT + PROMOTED** (`check --pinned`; `sources.ts`, `sources.test.ts`).\n  *(Narrowed 2026-07-17 to what it uniquely contributes. It first read \"CI rebuilds at the pinned\n  sibling commits **and fails when the committed graph differs**\" — but that second half is REQ-KG-01's\n  pre-existing freshness check, and the \"CI\" half belongs to GATE-03 + the workflow. What is genuinely\n  new, and now tested, is the pin assertion: `check --pinned` refuses to certify a graph unless the\n  sibling checkouts sit exactly at the lockfile's commits, so a \"fresh ✓\" verdict always means\n  reproducible-from-pins rather than \"happened to match this machine\". Splitting it that way is not\n  trimming the requirement to fit the code — GATE-03 already owned the CI half.)*\n- **REQ-KG-GATE-03** — the CI gate propagates `check`'s exit code: no step swallows a stale graph or a\n  blown ratchet. *(This is the requirement REQ-KG-04 was believed to have.)*\n- **REQ-KG-GATE-04** — an unfetchable pin fails with an actionable rebuild instruction, never a silent pass.\n- **REQ-KG-GATE-05** — pin **currency** is reported separately from pin **correctness**, and never blocks a PR.\n- **REQ-KG-GATE-06** — a source doc that fails to parse **fails the build**; it is never warned-and-skipped\n  into a silently smaller graph.\n\n**REQ-KG-GATE-06 was earned by an incident during this section's own authoring (2026-07-16).** A single\nunquoted `[id]` dynamic-route segment inside a YAML flow sequence made\n`dojostack_backend/.github/system-design/00_platform/MODULE_HEADER_ACTIONS_AND_GLOSSARY.md` unparseable.\n`buildGraph` warned once to the console and skipped it — silently removing **30 requirements** from the\ngraph (`uncovered-requirement` 95→65, because they ceased to *exist* rather than becoming proven) and\nstranding **221** references (`broken-link` 37→258). This is §7's known-uncovered item 5 exactly — *\"a\nparser that throws is warned and skipped… the predicates are tested, the wiring is not\"* — so the hole\nwas known, documented, and unclosed. A `console.warn` is not a gate: the SSoT lost 30 promises and every\ndownstream reader, human or agent, would have seen a smaller graph and believed it.\n\nThe same incident is also the sharpest evidence for the pin: the doc parsed cleanly during a probe one\nhour earlier and broke when a concurrent agent pulled the backend repo mid-session, moving the graph's\ninputs underneath an in-flight build. Three different \"correct\" graphs in one session.\n\n**Phases** (mechanism → debt → flip, so CI is never red):\n\n| Phase | What | Repo(s) | Exit condition |\n|---|---|---|---|\n| **1 — Mechanism** | Lockfile + build stamp + `check --pinned` + 3-repo CI checkout. **Stays report-only** — but the report becomes reproducible, hence trustworthy for the first time. | main | one green pinned comparison on ubuntu |\n| **2 — Debt** | §7 promote-when-tested on the 4 specs (frontmatter → staged prose); register 2 untracked e2e; triage `broken-link` +26; documented raise for `orphan-doc` 196→202 and `unverified-doc` 244→267 only | backend, frontend, + main rebuild | all 7 kinds at or under baseline |\n| **3 — Flip** | Drop `\\|\\| echo`; narrow REQ-KG-01/04; add the pipeline tests; pin-currency job | main | `check` blocking and green; REQ-KG-04 true |\n\n**`uncovered-requirement` is never raised** — raising it to 95 would concede the exact regression the\nratchet exists to refuse. It is paid down by §7 promotion, which writes no tests up front and fakes\nnothing: it restores the distinction between a *staged intention* and a *ratified, proven* requirement.\n\n**Lead risk — RETIRED 2026-07-17.** The whole design rests on \"rebuild at the pins → compare\nbyte-for-byte\", and that comparison had **never once passed on any platform** (the gate has been\nreport-only its entire life). Spiked before building anything: `buildGraph()` at a pinned timestamp,\nnormalized exactly as `check.ts` does, SHA256'd, run natively and in `node:20` containers —\n**darwin arm64, linux arm64 and linux x64 (`ubuntu-latest`'s arch) all produce a byte-identical graph**\n(1392 nodes / 1965 edges / 13,578,939 bytes / `0de872d2c697…c198c`). So REQ-KG-GATE-02 is implementable\nand the fallback layered design is not needed. The hazards reasoned about up front all held:\n`assemble()`'s canonical sort keeps glob order out, `normalizeForCompare` absorbs git-history\ndifferences, Node 20 is pinned both sides. Residual: the spike bind-mounted a case-insensitive macOS\nfilesystem, so a true ext4 checkout is still untested — small, since every filename in the tree is\ncanonical and `fast-glob` matches case-sensitively in userspace, and the first real CI run closes it.\nThis proves the build is deterministic, **not** that the pin mechanism works — that is still Phase 1.\n\n**Open questions:** (1) fine-grained PAT vs GitHub App for the sibling checkout — note §7's\nknown-uncovered item 1 records a read-only fine-grained PAT already in use for the viewer's token glue,\nso that is the precedent; (2) scheduled pin-currency vs sibling `repository_dispatch`; (3) the\none-command recovery when a pin is rebased away; (4) whether `sync.ts` needs the same pinning;\n(5) the 19 `uncovered-requirement` nodes with **no governing-doc edge** are unattributed — possibly a\nmodelling gap rather than debt.\n\nFull design note: `docs/superpowers/specs/2026-07-16-kg-gate-pinned-sources-design.md` (pre-ratification\nscaffolding; not in the graph by design — see §1).\n\n## 10. Open questions\n\n- Should `check`'s ratchet baseline be per-repo (main/frontend/backend) instead of one flat file, now\n  that the tool indexes its own `tools/knowledge-graph/` sources under the `main:` namespace\n  alongside the two app repos? Not urgent — the baseline already tracks total counts correctly; this\n  is only about attribution clarity if the flat total grows harder to read.\n- Should the digest gain a fifth view — a per-tool \"self-coverage\" digest analogous to the per-flow\n  ones — now that the tool has its own `kg.tool` feature and unit-test population? Deferred until\n  there's a second dev-tool in the workspace to make the pattern worth generalizing.\n\n## Area docs\n\nSplit out 2026-07-24 (CEO). This doc keeps the narrative and governs nothing directly; each area\nbelow owns its own `governs:` paths, so the agent-context briefing for a file returns that file's\nrequirements rather than all forty.\n\n- [[kg-core]] — discovery, parsing, ids, what counts as proven\n- [[kg-gate]] — freshness, the ratchet, the pins a graph was built from\n- [[kg-conflicts]] — the scan, the cluster invariant, adjudication and fix plans\n- [[kg-serve]] — read-only routes, the SSE hub, spawn locking\n- [[kg-run]] — run scheduling, results, provenance\n- [[kg-evidence]] — screenshots, destinations, the index\n- [[kg-viewer]] — viewer, digest, delta\n- [[kg-agent-context]] — the briefing staff reads before an edit",
       "reviewedAt": "2026-07-10",
       "sections": [
         {
@@ -435,6 +666,15 @@
           "kind": "requirement",
           "reqIds": [
             "REQ-KG-05"
+          ]
+        },
+        {
+          "anchor": "5b-the-s3-bucket-layout-contract-and-why-reads-are-signed",
+          "title": "5b. The S3 bucket (layout contract, and why reads are signed)",
+          "kind": "requirement",
+          "reqIds": [
+            "REQ-KG-05",
+            "REQ-KG-SERVE-02"
           ]
         },
         {
@@ -493,10 +733,28 @@
           "title": "10. Open questions",
           "kind": "open-question",
           "reqIds": []
+        },
+        {
+          "anchor": "area-docs",
+          "title": "Area docs",
+          "kind": "knowledge",
+          "reqIds": []
         }
       ],
       "created": "2026-07-17",
       "updated": "2026-07-24"
+    },
+    {
+      "id": "main:src/agentContext.test.ts",
+      "type": "test",
+      "kind": "unit-fe",
+      "title": "agentContext.test.ts",
+      "path": "src/agentContext.test.ts",
+      "status": "pass",
+      "text": "REQ-KG-CTX-01 — the briefing handed to staff BEFORE it edits a file (founding design §5, the gold).",
+      "summary": "REQ-KG-CTX-01 — the briefing handed to staff BEFORE it edits a file (founding design §5, the gold). Tested against the MULTI-REPO fixture first, deliberately. The prototype this replaces (`mockups/agent-context.mjs`) stripped one project's sibling repo prefixes with a hardcoded regex, so a single-repo test would pass while the coupling survived untouched — the §12.9 gap again, \"names no project…",
+      "testCount": 10,
+      "source": "// covers: REQ-KG-CTX-01\nimport { describe, it, expect } from \"vitest\";\nimport { join } from \"node:path\";\nimport { contextPack, renderPack } from \"./agentContext\";\nimport { buildGraph } from \"./discover\";\nimport { loadConfig } from \"./config\";\nimport type { GitRunner } from \"./gitDates\";\n\n/**\n * REQ-KG-CTX-01 — the briefing handed to staff BEFORE it edits a file (founding design §5, the gold).\n *\n * Tested against the MULTI-REPO fixture first, deliberately. The prototype this replaces\n * (`mockups/agent-context.mjs`) stripped one project's sibling repo prefixes with a hardcoded regex,\n * so a single-repo test would pass while the coupling survived untouched — the §12.9 gap again,\n * \"names no project\" standing in for \"assumes no project\". Multi-repo is where that assumption breaks.\n *\n * Same pinned clock and inert GitRunner as REQ-1's fixture test, so the pack is a pure function of the\n * committed tree and reproduces on a machine with no git.\n */\nconst FIXTURES = join(__dirname, \"..\", \"fixtures\");\nconst PINNED = \"2000-01-01T00:00:00.000Z\";\nconst NO_GIT: GitRunner = async () => null;\n\nasync function packFor(fixture: string, path: string) {\n  const root = join(FIXTURES, fixture);\n  const config = await loadConfig(root);\n  const graph = await buildGraph(root, PINNED, config, NO_GIT);\n  return contextPack(graph, config, path);\n}\n\ndescribe(\"contextPack — a governed path\", () => {\n  it(\"names the doc that governs it\", async () => {\n    const pack = await packFor(\"one-repo\", \"src/checkout.ts\");\n    expect(pack.halt).toBe(false);\n    expect(pack.governedBy.map((d) => d.id)).toContain(\"main:checkout-spec\");\n  });\n\n  it(\"lists the requirements that doc specifies, and what proves each\", async () => {\n    const pack = await packFor(\"one-repo\", \"src/checkout.ts\");\n    const ids = pack.requirements.map((r) => r.id);\n    expect(ids.length).toBeGreaterThan(0);\n    // REQ-FX-3 is covered by src/checkout.test.ts in the fixture's feature registry.\n    const proven = pack.requirements.find((r) => r.provenBy.length > 0);\n    expect(proven, \"at least one requirement must show its proving test\").toBeTruthy();\n  });\n\n  // The gap is the whole point of the briefing: a requirement with no covering test means there is no\n  // safety net under the edit about to happen.\n  it(\"flags requirements with no covering test\", async () => {\n    const pack = await packFor(\"one-repo\", \"src/checkout.ts\");\n    expect(pack.requirements.some((r) => r.provenBy.length === 0)).toBe(true);\n  });\n});\n\ndescribe(\"contextPack — multi-repo, where a hardcoded prefix would break\", () => {\n  // These two replace a pair that asserted `Array.isArray(...)` and `toBeTruthy()` — both of which\n  // passed just as happily when the pack came back completely empty, so they proved nothing about\n  // the multi-repo resolution they were named for. Rule 5 cuts the other way here: strengthening a\n  // test that could not fail is not weakening it.\n  //\n  // The multi-repo fixture declares no `governs:` anywhere, so ownership comes from a FEATURE whose\n  // path glob is workspace-relative and reaches into a nested sibling repo. That crossing is the\n  // multi-repo resolution.\n  it(\"lets a feature's glob claim a path inside a nested sibling repo\", async () => {\n    const pack = await packFor(\"multi-repo\", \"svc_backend/tests/test_rates.py\");\n    expect(pack.features.map((f) => f.id).some((id) => id.endsWith(\":rates-api\"))).toBe(true);\n    expect(pack.halt).toBe(false);\n  });\n\n  it(\"does not let one sibling's glob claim another sibling's path\", async () => {\n    const pack = await packFor(\"multi-repo\", \"svc_frontend/src/rates/widget.test.ts\");\n    // rates-widget covers svc_frontend/src/rates/**; rates-api covers svc_backend/tests/** only.\n    const ids = pack.features.map((f) => f.id);\n    expect(ids.some((id) => id.endsWith(\":rates-widget\"))).toBe(true);\n    expect(ids.some((id) => id.endsWith(\":rates-api\"))).toBe(false);\n  });\n\n  it(\"halts on a nested-repo path that nothing claims\", async () => {\n    const pack = await packFor(\"multi-repo\", \"svc_backend/app/unclaimed.py\");\n    expect(pack.halt).toBe(true);\n  });\n});\n\ndescribe(\"contextPack — an ungoverned path HALTS\", () => {\n  it(\"halts rather than warning, so the briefing cannot be scrolled past\", async () => {\n    const pack = await packFor(\"one-repo\", \"src/totallyNewThing.ts\");\n    expect(pack.halt).toBe(true);\n    expect(pack.governedBy).toEqual([]);\n    expect(pack.reason).toMatch(/requirement/i);\n  });\n\n  // A warning that does not stop anything is the `|| echo` failure: the signal exists and nobody\n  // looks. §9c — the gate blocks; report-only is decoration.\n  it(\"does not halt merely because a governed path has gaps\", async () => {\n    const pack = await packFor(\"one-repo\", \"src/checkout.ts\");\n    expect(pack.halt).toBe(false);\n  });\n});\n\ndescribe(\"renderPack — the text staff actually reads\", () => {\n  it(\"leads with STOP and nothing else when the path is ungoverned\", async () => {\n    const text = renderPack(await packFor(\"one-repo\", \"src/totallyNewThing.ts\"));\n    expect(text).toContain(\"STOP\");\n    // The briefing must not also print a requirements section: a halt that still renders a normal\n    // pack invites skimming past it, which is the `|| echo` failure in presentation form.\n    expect(text).not.toContain(\"## Requirements\");\n  });\n\n  it(\"names the requirement and what proves it, and flags what proves nothing\", async () => {\n    const text = renderPack(await packFor(\"one-repo\", \"src/checkout.ts\"));\n    expect(text).toContain(\"## Governed by\");\n    expect(text).toContain(\"NO COVERING TEST\");\n  });\n});\n"
     },
     {
       "id": "main:src/applyEvidence.test.ts",
@@ -530,8 +788,8 @@
       "status": "pass",
       "text": "The S3 evidence transport, tested as COMMANDS rather than as uploads — the same idiom as",
       "summary": "The S3 evidence transport, tested as COMMANDS rather than as uploads — the same idiom as treeKillCommand and buildRunArgs, and for the same reason: the subprocess is the untestable part, the argv is where the bugs live. Credentials never appear here. They resolve at run time from the standard AWS chain, so every command below is safe to assert on verbatim (REQ-KG-05).",
-      "testCount": 12,
-      "source": "// covers: REQ-KG-05\nimport { describe, it, expect } from \"vitest\";\nimport { objectKey, objectUrl, uploadArgs, listArgs, pruneArgs, presignArgs, parseShaDirs, PRESIGN_TTL_SECONDS } from \"./blobStore\";\nimport type { Evidence } from \"./config\";\n\n/**\n * The S3 evidence transport, tested as COMMANDS rather than as uploads — the same idiom as\n * treeKillCommand and buildRunArgs, and for the same reason: the subprocess is the untestable part,\n * the argv is where the bugs live.\n *\n * Credentials never appear here. They resolve at run time from the standard AWS chain, so every\n * command below is safe to assert on verbatim (REQ-KG-05).\n */\nconst S3: Extract<Evidence, { kind: \"blob\" }> = { kind: \"blob\", bucket: \"acme-kg\", prefix: \"kg-cases\", region: \"us-east-1\" };\nconst ROOT: Extract<Evidence, { kind: \"blob\" }> = { kind: \"blob\", bucket: \"acme-kg\", prefix: \"\", region: \"us-east-1\" };\n\ndescribe(\"objectKey — mirrors the github branch layout so destinations stay comparable\", () => {\n  it(\"composes prefix/case/sha/file\", () => {\n    expect(objectKey(S3, \"checkout\", \"a1b2c3d\", \"01-start.png\")).toBe(\"kg-cases/checkout/a1b2c3d/01-start.png\");\n  });\n\n  it(\"omits the prefix segment when the bucket root is used\", () => {\n    expect(objectKey(ROOT, \"checkout\", \"a1b2c3d\", \"01-start.png\")).toBe(\"checkout/a1b2c3d/01-start.png\");\n  });\n\n  // Bare ids are lower-cased everywhere in the graph; a key that disagreed would make the viewer's\n  // lookup miss silently rather than loudly.\n  it(\"lower-cases the case id, matching the graph's bare-id convention\", () => {\n    expect(objectKey(S3, \"CheckOut\", \"a1b2c3d\", \"01.png\")).toBe(\"kg-cases/checkout/a1b2c3d/01.png\");\n  });\n});\n\ndescribe(\"objectUrl — durable address, composed from coordinates\", () => {\n  it(\"uses the regional virtual-hosted form\", () => {\n    expect(objectUrl(S3, \"kg-cases/checkout/a1/01.png\")).toBe(\n      \"https://acme-kg.s3.us-east-1.amazonaws.com/kg-cases/checkout/a1/01.png\",\n    );\n  });\n});\n\ndescribe(\"aws argv\", () => {\n  it(\"uploads a single object with its region\", () => {\n    expect(uploadArgs(S3, \"/tmp/01.png\", \"kg-cases/checkout/a1/01.png\")).toEqual([\n      \"s3\", \"cp\", \"/tmp/01.png\", \"s3://acme-kg/kg-cases/checkout/a1/01.png\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"lists a case's shas so pruning and index rebuilding still work\", () => {\n    expect(listArgs(S3, \"checkout\")).toEqual([\n      \"s3\", \"ls\", \"s3://acme-kg/kg-cases/checkout/\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"prunes one sha directory recursively\", () => {\n    expect(pruneArgs(S3, \"checkout\", \"old1234\")).toEqual([\n      \"s3\", \"rm\", \"s3://acme-kg/kg-cases/checkout/old1234/\", \"--recursive\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  // The bucket stays PRIVATE. A browser <img> cannot send an auth header, so serve.ts mints a\n  // short-lived signed GET on demand. Expiry is a feature here, not the flaw it was for upload:\n  // the URL is generated per view and never committed.\n  it(\"presigns a read with a short ttl\", () => {\n    expect(presignArgs(S3, \"kg-cases/checkout/a1/01.png\")).toEqual([\n      \"s3\", \"presign\", \"s3://acme-kg/kg-cases/checkout/a1/01.png\",\n      \"--expires-in\", String(PRESIGN_TTL_SECONDS), \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"keeps the presign ttl short enough that a leaked url dies quickly\", () => {\n    expect(PRESIGN_TTL_SECONDS).toBeLessThanOrEqual(900);\n  });\n});\n\ndescribe(\"parseShaDirs — reads sha dirs out of `aws s3 ls` output\", () => {\n  it(\"takes the PRE entries and drops their trailing slash\", () => {\n    const out = [\"                           PRE a1b2c3d/\", \"                           PRE 9f8e7d6/\"].join(\"\\n\");\n    expect(parseShaDirs(out)).toEqual([\"a1b2c3d\", \"9f8e7d6\"]);\n  });\n\n  it(\"ignores object lines, which are files rather than sha dirs\", () => {\n    const out = [\"2026-07-24 12:00:00       1234 stray.png\", \"                           PRE a1b2c3d/\"].join(\"\\n\");\n    expect(parseShaDirs(out)).toEqual([\"a1b2c3d\"]);\n  });\n\n  it(\"returns nothing for an empty listing (a case never uploaded before)\", () => {\n    expect(parseShaDirs(\"\")).toEqual([]);\n    expect(parseShaDirs(\"\\n  \\n\")).toEqual([]);\n  });\n});\n"
+      "testCount": 27,
+      "source": "// covers: REQ-KG-05, REQ-KG-SERVE-02\nimport { describe, it, expect } from \"vitest\";\nimport {\n  objectKey, objectUrl, uploadArgs, listArgs, pruneArgs, presignArgs, parseShaDirs,\n  keyOf, evidenceRef, evidenceKeyFromPath, blobAdapter, EVIDENCE_ROUTE, PRESIGN_TTL_SECONDS,\n} from \"./blobStore\";\nimport { runUpload, blobRef, type ShotDirEntry, type FsLike } from \"./shotsUpload\";\nimport type { Evidence } from \"./config\";\n\n/**\n * The S3 evidence transport, tested as COMMANDS rather than as uploads — the same idiom as\n * treeKillCommand and buildRunArgs, and for the same reason: the subprocess is the untestable part,\n * the argv is where the bugs live.\n *\n * Credentials never appear here. They resolve at run time from the standard AWS chain, so every\n * command below is safe to assert on verbatim (REQ-KG-05).\n */\nconst S3: Extract<Evidence, { kind: \"blob\" }> = { kind: \"blob\", bucket: \"acme-kg\", prefix: \"kg-cases\", region: \"us-east-1\" };\nconst ROOT: Extract<Evidence, { kind: \"blob\" }> = { kind: \"blob\", bucket: \"acme-kg\", prefix: \"\", region: \"us-east-1\" };\n\ndescribe(\"objectKey — mirrors the github branch layout so destinations stay comparable\", () => {\n  it(\"composes prefix/case/sha/file\", () => {\n    expect(objectKey(S3, \"checkout\", \"a1b2c3d\", \"01-start.png\")).toBe(\"kg-cases/checkout/a1b2c3d/01-start.png\");\n  });\n\n  it(\"omits the prefix segment when the bucket root is used\", () => {\n    expect(objectKey(ROOT, \"checkout\", \"a1b2c3d\", \"01-start.png\")).toBe(\"checkout/a1b2c3d/01-start.png\");\n  });\n\n  // Bare ids are lower-cased everywhere in the graph; a key that disagreed would make the viewer's\n  // lookup miss silently rather than loudly.\n  it(\"lower-cases the case id, matching the graph's bare-id convention\", () => {\n    expect(objectKey(S3, \"CheckOut\", \"a1b2c3d\", \"01.png\")).toBe(\"kg-cases/checkout/a1b2c3d/01.png\");\n  });\n});\n\ndescribe(\"objectUrl — durable address, composed from coordinates\", () => {\n  it(\"uses the regional virtual-hosted form\", () => {\n    expect(objectUrl(S3, \"kg-cases/checkout/a1/01.png\")).toBe(\n      \"https://acme-kg.s3.us-east-1.amazonaws.com/kg-cases/checkout/a1/01.png\",\n    );\n  });\n});\n\ndescribe(\"aws argv\", () => {\n  it(\"uploads a single object with its region\", () => {\n    expect(uploadArgs(S3, \"/tmp/01.png\", \"kg-cases/checkout/a1/01.png\")).toEqual([\n      \"s3\", \"cp\", \"/tmp/01.png\", \"s3://acme-kg/kg-cases/checkout/a1/01.png\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"lists a case's shas so pruning and index rebuilding still work\", () => {\n    expect(listArgs(S3, \"checkout\")).toEqual([\n      \"s3\", \"ls\", \"s3://acme-kg/kg-cases/checkout/\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"prunes one sha directory recursively\", () => {\n    expect(pruneArgs(S3, \"checkout\", \"old1234\")).toEqual([\n      \"s3\", \"rm\", \"s3://acme-kg/kg-cases/checkout/old1234/\", \"--recursive\", \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  // The bucket stays PRIVATE. A browser <img> cannot send an auth header, so serve.ts mints a\n  // short-lived signed GET on demand. Expiry is a feature here, not the flaw it was for upload:\n  // the URL is generated per view and never committed.\n  it(\"presigns a read with a short ttl\", () => {\n    expect(presignArgs(S3, \"kg-cases/checkout/a1/01.png\")).toEqual([\n      \"s3\", \"presign\", \"s3://acme-kg/kg-cases/checkout/a1/01.png\",\n      \"--expires-in\", String(PRESIGN_TTL_SECONDS), \"--region\", \"us-east-1\",\n    ]);\n  });\n\n  it(\"keeps the presign ttl short enough that a leaked url dies quickly\", () => {\n    expect(PRESIGN_TTL_SECONDS).toBeLessThanOrEqual(900);\n  });\n});\n\ndescribe(\"parseShaDirs — reads sha dirs out of `aws s3 ls` output\", () => {\n  it(\"takes the PRE entries and drops their trailing slash\", () => {\n    const out = [\"                           PRE a1b2c3d/\", \"                           PRE 9f8e7d6/\"].join(\"\\n\");\n    expect(parseShaDirs(out)).toEqual([\"a1b2c3d\", \"9f8e7d6\"]);\n  });\n\n  it(\"ignores object lines, which are files rather than sha dirs\", () => {\n    const out = [\"2026-07-24 12:00:00       1234 stray.png\", \"                           PRE a1b2c3d/\"].join(\"\\n\");\n    expect(parseShaDirs(out)).toEqual([\"a1b2c3d\"]);\n  });\n\n  it(\"returns nothing for an empty listing (a case never uploaded before)\", () => {\n    expect(parseShaDirs(\"\")).toEqual([]);\n    expect(parseShaDirs(\"\\n  \\n\")).toEqual([]);\n  });\n});\n\ndescribe(\"keyOf — the seam between runUpload's remote path and an object key\", () => {\n  // `runUpload` composes `kg-cases/<case>/<sha>/<file>` — the GitHub branch's layout, and the ONLY\n  // shape either adapter is handed. S3 roots the same tree at the CONFIGURED prefix instead, so the\n  // whole mapping is: drop the branch root, prepend the prefix. Asserted against `objectKey` rather\n  // than a literal, because the thing that must hold is that the two agree — a key composed one way\n  // that disagreed with the other would upload to a path the index never points at.\n  it(\"agrees with objectKey for the same case/sha/file\", () => {\n    expect(keyOf(S3, \"kg-cases/checkout/a1b2c3d/01-start.png\")).toBe(\n      objectKey(S3, \"checkout\", \"a1b2c3d\", \"01-start.png\"),\n    );\n  });\n\n  it(\"drops the segment entirely at the bucket root\", () => {\n    expect(keyOf(ROOT, \"kg-cases/checkout/a1b2c3d/01-start.png\")).toBe(\"checkout/a1b2c3d/01-start.png\");\n  });\n});\n\ndescribe(\"evidenceRef / evidenceKeyFromPath — what the committed index stores, and how it is read back\", () => {\n  // The index stores the KEY behind serve.ts's route, never a URL: a pre-signed URL would expire\n  // long before the committed index does, and the bucket is private so the durable objectUrl cannot\n  // load in an <img>. One constant owns both ends, so the writer and the reader cannot drift.\n  it(\"addresses a shot through the serve route, carrying the key verbatim\", () => {\n    expect(evidenceRef(\"kg-cases/checkout/a1/01.png\")).toBe(\"/evidence/kg-cases/checkout/a1/01.png\");\n    expect(evidenceRef(\"x.png\").startsWith(EVIDENCE_ROUTE)).toBe(true);\n  });\n\n  it(\"round-trips a key written by the uploader back out of a request path\", () => {\n    const key = objectKey(S3, \"CheckOut\", \"a1b2c3d\", \"01-start.png\");\n    expect(evidenceKeyFromPath(S3, evidenceRef(key))).toBe(key);\n  });\n\n  // REQ-KG-SERVE-02's confinement, in key space rather than path space: a request can only ever\n  // name an object under the CONFIGURED prefix, so the route can never be used as a generic signer\n  // for the rest of someone's bucket.\n  it(\"refuses a key outside the configured prefix, including a sibling that merely shares its name\", () => {\n    expect(evidenceKeyFromPath(S3, \"/evidence/other/checkout/a1/01.png\")).toBeNull();\n    expect(evidenceKeyFromPath(S3, \"/evidence/kg-cases-evil/checkout/a1/01.png\")).toBeNull();\n  });\n\n  it(\"refuses traversal, raw and URL-encoded\", () => {\n    for (const p of [\n      \"/evidence/kg-cases/../../secrets/01.png\",\n      \"/evidence/kg-cases/%2e%2e/%2e%2e/secrets/01.png\",\n      \"/evidence/kg-cases/checkout/..%2Fa1/01.png\",\n    ]) expect(evidenceKeyFromPath(S3, p), p).toBeNull();\n  });\n\n  it(\"refuses backslashes, drive letters, dotfiles, empty segments and malformed percent-encoding\", () => {\n    for (const p of [\n      \"/evidence/kg-cases\\\\checkout\\\\a1\\\\01.png\",\n      \"/evidence/kg-cases/C:/a1/01.png\",\n      \"/evidence/kg-cases/.env/01.png\",\n      \"/evidence/kg-cases//a1/01.png\",\n      \"/evidence/kg-cases/checkout/%zz.png\",\n      \"/evidence/\",\n      \"/shots/kg-cases/checkout/a1/01.png\",\n    ]) expect(evidenceKeyFromPath(S3, p), p).toBeNull();\n  });\n\n  it(\"refuses a non-image object — evidence is screenshots, and nothing else needs signing\", () => {\n    expect(evidenceKeyFromPath(S3, \"/evidence/kg-cases/checkout/a1/creds.json\")).toBeNull();\n    expect(evidenceKeyFromPath(S3, \"/evidence/kg-cases/checkout/a1/shot.jpeg\")).toBe(\"kg-cases/checkout/a1/shot.jpeg\");\n  });\n\n  it(\"treats the bucket root as the root when no prefix is configured\", () => {\n    expect(evidenceKeyFromPath(ROOT, \"/evidence/checkout/a1/01.png\")).toBe(\"checkout/a1/01.png\");\n    expect(evidenceKeyFromPath(ROOT, \"/evidence/../01.png\")).toBeNull();\n  });\n});\n\n/**\n * The adapter — the only part of the S3 transport that touches a subprocess, tested through an\n * injected runner so the argv stays asserted verbatim and no test ever shells out to `aws`.\n *\n * All three assertions below are traps found by READING `shotsUpload.ts`'s github adapter rather\n * than by guessing at the aws equivalent; each one fails in a way that looks like success.\n */\ndescribe(\"blobAdapter\", () => {\n  const spy = () => {\n    const calls: string[][] = [];\n    const wrote: Buffer[] = [];\n    const warnings: string[] = [];\n    return { calls, wrote, warnings };\n  };\n  const deps = (s: ReturnType<typeof spy>, aws?: (args: string[]) => Promise<string>) => ({\n    aws: aws ?? (async (args: string[]) => { s.calls.push(args); return \"\"; }),\n    withRawTempFile: async <T>(bytes: Buffer, fn: (path: string) => Promise<T>): Promise<T> => {\n      s.wrote.push(bytes);\n      return fn(`/tmp/kg-blob-${s.wrote.length}.png`);\n    },\n    warn: (m: string) => { s.warnings.push(m); },\n  });\n\n  // TRAP 1. `withTempBodyFile` in shotsUpload.ts is a `gh api --input` JSON body writer, NOT a\n  // raw-bytes writer. Reusing it here would upload the JSON wrapper in place of the PNG — and the\n  // upload would still exit 0, so the bucket would fill with plausible-looking garbage.\n  it(\"hands the PNG bytes themselves to the temp file, and uploads that exact file\", async () => {\n    const s = spy();\n    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);\n    await blobAdapter(S3, deps(s)).putFile(\"kg-cases/add-3/abc1234/01-x.png\", png);\n    expect(s.wrote[0]).toEqual(png);\n    expect(s.calls[0]).toEqual(uploadArgs(S3, \"/tmp/kg-blob-1.png\", \"kg-cases/add-3/abc1234/01-x.png\"));\n  });\n\n  // TRAP 2. putFile/deleteDir are handed a repo-relative remotePath, not a case id — the builders\n  // compose from (caseId, sha, filename), which fits listCaseShas and neither of these.\n  it(\"prunes a sha dir addressed as a remote path, under the configured prefix\", async () => {\n    const s = spy();\n    await blobAdapter(S3, deps(s)).deleteDir(\"kg-cases/add-3/old1234\");\n    expect(s.calls[0]).toEqual(pruneArgs(S3, \"add-3\", \"old1234\"));\n  });\n\n  // TRAP 3. `aws s3 ls` EXITS NON-ZERO on a prefix with no objects, which is exactly the state of\n  // every case's first upload. A throw here would fail the run before a single file was written.\n  it(\"reports no existing shas when the case has never been uploaded (`aws s3 ls` exits non-zero)\", async () => {\n    const s = spy();\n    const gh = blobAdapter(S3, deps(s, async () => { throw new Error(\"An error occurred (NoSuchKey)\"); }));\n    await expect(gh.listCaseShas(\"brand-new\")).resolves.toEqual([]);\n  });\n\n  it(\"lists a case's existing shas from the aws listing\", async () => {\n    const s = spy();\n    const gh = blobAdapter(S3, deps(s, async (args) => {\n      s.calls.push(args);\n      return \"                           PRE a1b2c3d/\\n                           PRE 9f8e7d6/\\n\";\n    }));\n    expect(await gh.listCaseShas(\"checkout\")).toEqual([\"a1b2c3d\", \"9f8e7d6\"]);\n    expect(s.calls[0]).toEqual(listArgs(S3, \"checkout\"));\n  });\n\n  // Pruning is best-effort in the github adapter for a reason: evidence that uploaded fine must not\n  // be reported as a failed run because an old dir could not be removed.\n  it(\"warns rather than throwing when a prune fails, so a good upload is never failed by it\", async () => {\n    const s = spy();\n    const gh = blobAdapter(S3, deps(s, async () => { throw new Error(\"AccessDenied\"); }));\n    await expect(gh.deleteDir(\"kg-cases/add-3/old1234\")).resolves.toBeUndefined();\n    expect(s.warnings.join(\" \")).toContain(\"AccessDenied\");\n  });\n\n  // End to end through the real orchestrator: this is what pins the `kg-cases/…` layout literal in\n  // runUpload to keyOf's understanding of it. If either side moved, the uploaded key and the key the\n  // index points at would silently disagree.\n  it(\"drives a real runUpload — uploaded key, pruned dir and index reference all agree\", async () => {\n    const s = spy();\n    const fs: FsLike & { readFile: NonNullable<FsLike[\"readFile\"]> } = {\n      listDir: async () => [],\n      readFile: async () => Buffer.from([0x89, 0x50, 0x4e, 0x47]),\n    };\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1-rent-roll.png\"] }];\n    const gh = blobAdapter(S3, deps(s, async (args) => {\n      s.calls.push(args);\n      return args[1] === \"ls\" ? \"                           PRE sha3/\\n                           PRE sha2/\\n                           PRE sha1/\\n\" : \"\";\n    }));\n    const result = await runUpload({\n      ref: blobRef(S3), local, graphCaseIds: new Set([\"add-3\"]), sha: \"shaNEW\",\n      dryRun: false, fs, gh, now: \"2026-07-24T00:00:00.000Z\",\n    });\n\n    const key = objectKey(S3, \"add-3\", \"shaNEW\", \"01-add3-1-rent-roll.png\");\n    expect(s.calls[0]).toEqual(uploadArgs(S3, \"/tmp/kg-blob-1.png\", key));\n    expect(s.calls).toContainEqual(pruneArgs(S3, \"add-3\", \"sha1\"));\n    expect(s.calls).not.toContainEqual(pruneArgs(S3, \"add-3\", \"sha2\"));\n    // The committed index points at the key that was actually uploaded — through the route, so the\n    // signature can be minted per view rather than frozen into a file.\n    expect(result.index.cases[\"add-3\"].shots[\"add3-1-rent-roll.png\"]).toBe(evidenceRef(key));\n    expect(evidenceKeyFromPath(S3, result.index.cases[\"add-3\"].shots[\"add3-1-rent-roll.png\"])).toBe(key);\n    // Nothing that expires, and no bucket host, reaches the committed file.\n    expect(JSON.stringify(result.index)).not.toContain(\"amazonaws.com\");\n    expect(result.index.branch).toBeUndefined();\n  });\n});\n"
     },
     {
       "id": "main:src/buildGraph.test.ts",
@@ -1013,6 +1271,18 @@
       "source": "import { describe, it, expect } from \"vitest\";\nimport { runArtifactUrl } from \"./serveArtifacts\";\n\ndescribe(\"runArtifactUrl\", () => {\n  it(\"maps a report screenshot to /run-artifacts/<runId>/<basename>\", () => {\n    expect(runArtifactUrl(\"run-abc\", \"C:\\\\x\\\\svc_frontend\\\\test-results\\\\t\\\\test-failed-1.png\"))\n      .toBe(\"/run-artifacts/run-abc/test-failed-1.png\");\n  });\n  it(\"url-encodes the run id and the file basename\", () => {\n    expect(runArtifactUrl(\"run abc\", \"/a/b/shot 1.png\")).toBe(\"/run-artifacts/run%20abc/shot%201.png\");\n  });\n});\n"
     },
     {
+      "id": "main:src/serveEvidence.test.ts",
+      "type": "test",
+      "kind": "unit-fe",
+      "title": "serveEvidence.test.ts",
+      "path": "src/serveEvidence.test.ts",
+      "status": "pass",
+      "text": "GET /evidence/<objectKey> — the READ half of the S3 evidence transport (REQ-KG-05).",
+      "summary": "GET /evidence/<objectKey> — the READ half of the S3 evidence transport (REQ-KG-05). Why a route at all: the bucket is private, so an <img> cannot load it — an <img> sends no auth header, and the durable object URL 403s. Committing a pre-signed URL instead is not an option either, since one would expire months before the index does. So the committed index stores the KEY, and the signature is min…",
+      "testCount": 6,
+      "source": "// covers: REQ-KG-05, REQ-KG-SERVE-02\nimport { describe, it, expect, beforeAll, afterAll } from \"vitest\";\nimport http from \"node:http\";\nimport type { AddressInfo } from \"node:net\";\nimport type { ServerResponse } from \"node:http\";\nimport { serveEvidence } from \"./serve\";\nimport { objectKey, evidenceRef, PRESIGN_TTL_SECONDS } from \"./blobStore\";\nimport type { Evidence } from \"./config\";\n\n/**\n * GET /evidence/<objectKey> — the READ half of the S3 evidence transport (REQ-KG-05).\n *\n * Why a route at all: the bucket is private, so an <img> cannot load it — an <img> sends no auth\n * header, and the durable object URL 403s. Committing a pre-signed URL instead is not an option\n * either, since one would expire months before the index does. So the committed index stores the\n * KEY, and the signature is minted here, per view. Without this route uploads succeed and no\n * evidence image ever renders — a failure that presents as a viewer bug.\n *\n * Confinement is REQ-KG-SERVE-02's, which names this route as its fifth (CEO 2026-07-24) — one step\n * removed from the other four, since with no filesystem read to confine the guard runs in KEY space\n * against the configured bucket prefix. The guard's exhaustive matrix lives beside\n * `evidenceKeyFromPath` in blobStore.test.ts; what is asserted HERE is the pair that only the route\n * can prove: that it actually applies that guard, and that a rejected request is never signed.\n */\n\nconst CORS = { \"Access-Control-Allow-Origin\": \"http://127.0.0.1:8971\" };\nconst S3: Evidence = { kind: \"blob\", bucket: \"acme-kg\", prefix: \"kg-cases\", region: \"us-east-1\" };\nconst KEY = objectKey(S3 as Extract<Evidence, { kind: \"blob\" }>, \"checkout\", \"a1b2c3d\", \"01-start.png\");\nconst SIGNED = `https://acme-kg.s3.us-east-1.amazonaws.com/${KEY}?X-Amz-Signature=deadbeef&X-Amz-Expires=${PRESIGN_TTL_SECONDS}`;\n\n/** Records every key this route asked to have signed — the negative cases assert it stays empty. */\nlet signed: string[] = [];\nconst deps = (evidence: Evidence = S3, presign?: (e: never, key: string) => Promise<string>) => ({\n  evidence,\n  presign: presign ?? (async (_e: never, key: string) => { signed.push(key); return SIGNED; }),\n}) as Parameters<typeof serveEvidence>[3];\n\nlet server: http.Server;\nlet base: string;\n\nbeforeAll(async () => {\n  server = http.createServer((req, res) => {\n    const url = new URL(req.url ?? \"/\", \"http://127.0.0.1/\");\n    if (req.method === \"GET\" && url.pathname.startsWith(\"/evidence/\")) {\n      return void serveEvidence(url.pathname, res, CORS, deps());\n    }\n    res.writeHead(404).end(\"not found\");\n  });\n  await new Promise<void>((r) => server.listen(0, \"127.0.0.1\", r));\n  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;\n});\nafterAll(async () => {\n  await new Promise<void>((r) => server.close(() => r()));\n});\n\n/** Minimal ServerResponse recorder, for calling the handler with raw unnormalised pathnames. */\nfunction fakeRes(): { rec: { status?: number; headers?: Record<string, string>; body?: string }; res: ServerResponse } {\n  const rec: { status?: number; headers?: Record<string, string>; body?: string } = {};\n  const res = {\n    writeHead(status: number, headers?: Record<string, string>) { rec.status = status; rec.headers = headers; return res; },\n    end(body?: unknown) { rec.body = body === undefined ? \"\" : String(body); },\n  } as unknown as ServerResponse;\n  return { rec, res };\n}\n\ndescribe(\"GET /evidence/<objectKey>\", () => {\n  beforeAll(() => { signed = []; });\n\n  it(\"redirects to a freshly minted signed GET for the key the committed index names\", async () => {\n    const r = await fetch(`${base}${evidenceRef(KEY)}`, { redirect: \"manual\" });\n    expect(r.status).toBe(302);\n    expect(r.headers.get(\"location\")).toBe(SIGNED);\n    expect(r.headers.get(\"access-control-allow-origin\")).toBe(CORS[\"Access-Control-Allow-Origin\"]);\n    expect(signed).toEqual([KEY]);\n  });\n\n  // The redirect itself must never be cached: the URL behind it dies in PRESIGN_TTL_SECONDS, and a\n  // cached 302 would outlive it and render as a broken image with no way for the viewer to recover.\n  it(\"forbids caching the redirect, whose target expires\", async () => {\n    const r = await fetch(`${base}${evidenceRef(KEY)}`, { redirect: \"manual\" });\n    expect(r.headers.get(\"cache-control\")).toBe(\"no-store\");\n  });\n\n  it(\"404s — and signs NOTHING — for a key the guard rejects\", async () => {\n    signed = [];\n    for (const p of [\n      \"/evidence/kg-cases/../../secrets/01.png\",\n      \"/evidence/kg-cases/%2e%2e/%2e%2e/secrets/01.png\",\n      \"/evidence/other-bucket-area/checkout/a1/01.png\",\n      \"/evidence/kg-cases/checkout/a1/creds.json\",\n      \"/evidence/kg-cases/checkout/a1/%zz.png\",\n      \"/evidence/\",\n    ]) {\n      const { rec, res } = fakeRes();\n      await serveEvidence(p, res, CORS, deps());\n      expect(rec.status, p).toBe(404);\n      expect(rec.body, p).toBe(\"not found\");\n    }\n    expect(signed).toEqual([]);\n  });\n\n  // A project whose evidence is the github branch or the local device has no bucket to sign against.\n  // Answering anything but 404 would imply a destination that was never declared (REQ-KG-05).\n  it(\"404s when the declared destination is not a bucket\", async () => {\n    for (const evidence of [{ kind: \"local\" } as const, { kind: \"github\", repo: \"org/repo\" } as const]) {\n      const { rec, res } = fakeRes();\n      await serveEvidence(evidenceRef(KEY), res, CORS, deps(evidence));\n      expect(rec.status, evidence.kind).toBe(404);\n    }\n  });\n\n  it(\"404s rather than throwing when the aws presign call fails\", async () => {\n    const { rec, res } = fakeRes();\n    await serveEvidence(evidenceRef(KEY), res, CORS, deps(S3, async () => { throw new Error(\"no credentials\"); }));\n    expect(rec.status).toBe(404);\n    expect(rec.body).toBe(\"not found\");\n  });\n\n  // An `aws` that printed nothing (a wrong subcommand, a silently-failing profile) would otherwise\n  // redirect the browser to the viewer's own page, which renders as a corrupt image instead of a\n  // missing one — the same \"confidently wrong beats obviously broken\" trap the config parser refuses.\n  it(\"404s when presign returns something that is not a URL\", async () => {\n    for (const output of [\"\", \"   \", \"usage: aws [options]\"]) {\n      const { rec, res } = fakeRes();\n      await serveEvidence(evidenceRef(KEY), res, CORS, deps(S3, async () => output));\n      expect(rec.status, JSON.stringify(output)).toBe(404);\n    }\n  });\n});\n"
+    },
+    {
       "id": "main:src/serveGraph.test.ts",
       "type": "test",
       "kind": "unit-fe",
@@ -1081,7 +1351,7 @@
       "text": "subprocessTimeoutMs",
       "summary": "── subprocessTimeoutMs: pure env resolver for the gh/git execFile timeouts ──",
       "testCount": 18,
-      "source": "import { describe, it, expect, vi } from \"vitest\";\nimport {\n  scanLocalShotDirs,\n  planUpload,\n  pruneShaSet,\n  buildEvidenceIndex,\n  runUpload,\n  subprocessTimeoutMs,\n  type ShotDirEntry,\n  type FsLike,\n  type GhLike,\n} from \"./shotsUpload\";\n\n// ── subprocessTimeoutMs: pure env resolver for the gh/git execFile timeouts ──\ndescribe(\"subprocessTimeoutMs\", () => {\n  it(\"defaults to 30s when KG_SHOTS_SUBPROCESS_TIMEOUT_MS is unset\", () => {\n    expect(subprocessTimeoutMs({})).toBe(30_000);\n  });\n\n  it(\"is overridable via KG_SHOTS_SUBPROCESS_TIMEOUT_MS\", () => {\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"5000\" })).toBe(5000);\n  });\n\n  it(\"falls back to the default on a non-numeric or non-positive override\", () => {\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"not-a-number\" })).toBe(30_000);\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"0\" })).toBe(30_000);\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"-5\" })).toBe(30_000);\n  });\n});\n\n// ── scanLocalShotDirs: pure given an injected directory-listing fs ──\ndescribe(\"scanLocalShotDirs\", () => {\n  const fs = (tree: Record<string, string[]>): FsLike => ({\n    listDir: async (dir: string) => tree[dir] ?? [],\n  });\n\n  it(\"scans both shot dirs (E2E_SHOTS_DIR default + e2e/.step-shots) and merges case dirs\", () => {\n    const tree: Record<string, string[]> = {\n      \"/ws/.kg-e2e-shots\": [\"ADD-2\", \"SMK-1\"],\n      \"/ws/.kg-e2e-shots/ADD-2\": [\"add2-1-rent-roll.png\", \"add2-2-column-mapping.png\"],\n      \"/ws/.kg-e2e-shots/SMK-1\": [\"smk-1-login-page.png\"],\n      \"/fe/e2e/.step-shots\": [\"ADD-3\"],\n      \"/fe/e2e/.step-shots/ADD-3\": [\"add3-1-rent-roll.png\"],\n    };\n    return scanLocalShotDirs(fs(tree), { primary: \"/ws/.kg-e2e-shots\", fallback: \"/fe/e2e/.step-shots\" }).then((entries) => {\n      expect(entries.map((e) => e.caseId).sort()).toEqual([\"ADD-2\", \"ADD-3\", \"SMK-1\"]);\n      const add2 = entries.find((e) => e.caseId === \"ADD-2\")!;\n      expect(add2.files.sort()).toEqual([\"add2-1-rent-roll.png\", \"add2-2-column-mapping.png\"]);\n      expect(add2.dir).toBe(\"/ws/.kg-e2e-shots/ADD-2\");\n    });\n  });\n\n  it(\"when a case exists in both dirs, the primary dir wins (no silent merge of file lists)\", async () => {\n    const tree: Record<string, string[]> = {\n      \"/ws/.kg-e2e-shots\": [\"ADD-2\"],\n      \"/ws/.kg-e2e-shots/ADD-2\": [\"fresh.png\"],\n      \"/fe/e2e/.step-shots\": [\"ADD-2\"],\n      \"/fe/e2e/.step-shots/ADD-2\": [\"stale.png\"],\n    };\n    const entries = await scanLocalShotDirs(fs(tree), { primary: \"/ws/.kg-e2e-shots\", fallback: \"/fe/e2e/.step-shots\" });\n    expect(entries.filter((e) => e.caseId === \"ADD-2\")).toHaveLength(1);\n    expect(entries.find((e) => e.caseId === \"ADD-2\")?.files).toEqual([\"fresh.png\"]);\n  });\n\n  it(\"returns an empty list when neither dir exists\", async () => {\n    const entries = await scanLocalShotDirs(fs({}), { primary: \"/nope\", fallback: \"/also-nope\" });\n    expect(entries).toEqual([]);\n  });\n});\n\n// ── planUpload: map local case dirs -> runnable case ids from the graph, honoring --case scope ──\ndescribe(\"planUpload\", () => {\n  const local: ShotDirEntry[] = [\n    { caseId: \"ADD-2\", dir: \"/shots/ADD-2\", files: [\"add2-1.png\", \"add2-2.png\"] },\n    { caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] },\n    { caseId: \"ORPHAN-9\", dir: \"/shots/ORPHAN-9\", files: [\"x.png\"] },\n  ];\n  const graphCaseIds = new Set([\"add-2\", \"add-3\", \"smk-1\"]); // graph stores bare ids lowercase\n\n  it(\"only plans cases that exist as runnable e2e nodes in the graph (drops orphaned shot dirs)\", () => {\n    const plan = planUpload(local, graphCaseIds);\n    expect(plan.map((p) => p.caseId).sort()).toEqual([\"ADD-2\", \"ADD-3\"]);\n    expect(plan.find((p) => p.caseId === \"ORPHAN-9\")).toBeUndefined();\n  });\n\n  it(\"--case scope narrows the plan to exactly the requested case ids (case-insensitive)\", () => {\n    const plan = planUpload(local, graphCaseIds, [\"add-2\"]);\n    expect(plan.map((p) => p.caseId)).toEqual([\"ADD-2\"]);\n  });\n\n  it(\"numbers files deterministically (01-, 02-, … by sorted filename) for the kg-cases/<case>/<sha>/NN-<name>.png layout\", () => {\n    const plan = planUpload(local, graphCaseIds);\n    const add2 = plan.find((p) => p.caseId === \"ADD-2\")!;\n    expect(add2.uploads).toEqual([\n      { filename: \"add2-1.png\", remoteName: \"01-add2-1.png\" },\n      { filename: \"add2-2.png\", remoteName: \"02-add2-2.png\" },\n    ]);\n  });\n});\n\n// ── pruneShaSet: keep newest 3 SHAs per case ──\ndescribe(\"pruneShaSet\", () => {\n  it(\"keeps the newest 3 SHA dirs (by given recency order) and marks the rest for deletion\", () => {\n    // caller passes SHAs already ordered newest-first (e.g. from `gh api` dir listing + commit dates)\n    const result = pruneShaSet([\"sha5\", \"sha4\", \"sha3\", \"sha2\", \"sha1\"]);\n    expect(result.keep).toEqual([\"sha5\", \"sha4\", \"sha3\"]);\n    expect(result.prune).toEqual([\"sha2\", \"sha1\"]);\n  });\n\n  it(\"keeps everything (prunes nothing) when there are 3 or fewer SHAs\", () => {\n    expect(pruneShaSet([\"sha2\", \"sha1\"])).toEqual({ keep: [\"sha2\", \"sha1\"], prune: [] });\n  });\n\n  it(\"the new SHA about to be uploaded is always kept, even if it would push an old one out\", () => {\n    const result = pruneShaSet([\"sha3\", \"sha2\", \"sha1\"], \"sha-new\");\n    expect(result.keep).toEqual([\"sha-new\", \"sha3\", \"sha2\"]);\n    expect(result.prune).toEqual([\"sha1\"]);\n  });\n});\n\n// ── buildEvidenceIndex: contract 3 shape ──\ndescribe(\"buildEvidenceIndex\", () => {\n  // Contract 3 (spec §2) keys `shots` by the ORIGINAL bare filename (e.g. \"add3-1-rent-roll.png\",\n  // matching a case's `steps[].screenshot` exactly) — the spec's own JSON example shows this:\n  // `\"shots\": { \"add3-1-rent-roll.png\": \".../01-add3-1-rent-roll.png\" }`. The remote's ordinal\n  // prefix (\"01-\") is a GitHub-folder-ordering detail that belongs ONLY in the URL path segment,\n  // never in the index key — the viewer's shotSrcCandidates() does an exact `n.evidence[filename]`\n  // lookup against the step's bare screenshot name, so a remoteName-keyed index silently never\n  // resolves for ANY case (regression: found live during integration verification — every step in\n  // every evidenced case fell through to the \"not available\" placeholder even with valid URLs).\n  it(\"builds the frozen contract-3 index shape, keyed by the bare filename (not the remote-numbered name)\", () => {\n    const idx = buildEvidenceIndex(\n      \"acme-org/svc_frontend\",\n      [\n        {\n          caseId: \"ADD-3\",\n          sha: \"abc1234\",\n          shots: [{ filename: \"add3-1-rent-roll.png\", remoteName: \"01-add3-1-rent-roll.png\" }],\n        },\n      ],\n      \"2026-07-05T00:00:00.000Z\",\n    );\n    expect(idx).toEqual({\n      branch: \"e2e-evidence\",\n      updatedAt: \"2026-07-05T00:00:00.000Z\",\n      cases: {\n        \"add-3\": {\n          sha: \"abc1234\",\n          shots: {\n            \"add3-1-rent-roll.png\": \"https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png\",\n          },\n        },\n      },\n    });\n  });\n\n  it(\"lower-cases the case id key (graph bare-id convention) while the URL path segment uses the same lower-cased id\", () => {\n    const idx = buildEvidenceIndex(\"org/repo\", [{ caseId: \"SMK-1\", sha: \"z\", shots: [{ filename: \"x.png\", remoteName: \"01-x.png\" }] }], \"T\");\n    expect(Object.keys(idx.cases)).toEqual([\"smk-1\"]);\n    expect(idx.cases[\"smk-1\"].shots[\"x.png\"]).toContain(\"/kg-cases/smk-1/z/01-x.png\");\n  });\n});\n\n// ── runUpload: orchestration behind an injected gh wrapper (no real network calls in tests) ──\ndescribe(\"runUpload\", () => {\n  function makeGh(existingShas: Record<string, string[]> = {}): GhLike & { calls: string[] } {\n    const calls: string[] = [];\n    return {\n      calls,\n      listCaseShas: async (caseId: string) => existingShas[caseId] ?? [],\n      putFile: async (remotePath: string, _content: Buffer) => {\n        calls.push(`PUT ${remotePath}`);\n      },\n      deleteDir: async (remotePath: string) => {\n        calls.push(`DELETE ${remotePath}`);\n      },\n    };\n  }\n  const fs: FsLike & { readFile: NonNullable<FsLike[\"readFile\"]> } = {\n    listDir: async () => [],\n    readFile: async (p: string) => Buffer.from(`content of ${p}`),\n  };\n\n  it(\"dry-run performs no gh calls and returns the planned index without mutating remote state\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] }];\n    const result = await runUpload({\n      repo: \"acme-org/svc_frontend\",\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"abc1234\",\n      dryRun: true,\n      fs,\n      gh,\n      now: \"2026-07-05T00:00:00.000Z\",\n    });\n    expect(gh.calls).toEqual([]);\n    expect(result.index.cases[\"add-3\"].sha).toBe(\"abc1234\");\n    expect(result.uploadedCount).toBe(1);\n  });\n\n  it(\"real run uploads each file via gh api contents PUT and prunes SHAs older than the newest 3\", async () => {\n    const gh = makeGh({ \"add-3\": [\"sha3\", \"sha2\", \"sha1\"] }); // newest-first; 3 existing + 1 new = prune oldest\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] }];\n    const result = await runUpload({\n      repo: \"acme-org/svc_frontend\",\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"shaNEW\",\n      dryRun: false,\n      fs,\n      gh,\n      now: \"2026-07-05T00:00:00.000Z\",\n    });\n    expect(gh.calls).toContain(\"PUT kg-cases/add-3/shaNEW/01-add3-1.png\");\n    expect(gh.calls).toContain(\"DELETE kg-cases/add-3/sha1\");\n    expect(gh.calls).not.toContain(\"DELETE kg-cases/add-3/sha2\");\n    expect(result.uploadedCount).toBe(1);\n  });\n\n  it(\"--case scope only uploads the requested case(s)\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [\n      { caseId: \"ADD-2\", dir: \"/shots/ADD-2\", files: [\"a.png\"] },\n      { caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"b.png\"] },\n    ];\n    const result = await runUpload({\n      repo: \"org/repo\",\n      local,\n      graphCaseIds: new Set([\"add-2\", \"add-3\"]),\n      sha: \"x\",\n      dryRun: false,\n      caseFilter: [\"add-3\"],\n      fs,\n      gh,\n      now: \"T\",\n    });\n    expect(Object.keys(result.index.cases)).toEqual([\"add-3\"]);\n    expect(gh.calls.some((c) => c.includes(\"add-2\"))).toBe(false);\n  });\n\n  it(\"indexes shots by the bare local filename end-to-end, not the remote 01-/02-numbered name (viewer lookup contract)\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1-rent-roll.png\"] }];\n    const result = await runUpload({\n      repo: \"org/repo\",\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"abc1234\",\n      dryRun: false,\n      fs,\n      gh,\n      now: \"T\",\n    });\n    // The graph's shotSrcCandidates() looks up n.evidence[s.screenshot] with the BARE name a\n    // case's steps[] carries — the index must be keyed that way, with the remote 01- prefix\n    // living only in the URL's path segment.\n    expect(Object.keys(result.index.cases[\"add-3\"].shots)).toEqual([\"add3-1-rent-roll.png\"]);\n    expect(result.index.cases[\"add-3\"].shots[\"add3-1-rent-roll.png\"]).toContain(\"/01-add3-1-rent-roll.png\");\n  });\n});\n"
+      "source": "import { describe, it, expect, vi } from \"vitest\";\nimport {\n  scanLocalShotDirs,\n  planUpload,\n  pruneShaSet,\n  buildEvidenceIndex,\n  githubRef,\n  runUpload,\n  subprocessTimeoutMs,\n  type ShotDirEntry,\n  type FsLike,\n  type GhLike,\n} from \"./shotsUpload\";\n\n// ── subprocessTimeoutMs: pure env resolver for the gh/git execFile timeouts ──\ndescribe(\"subprocessTimeoutMs\", () => {\n  it(\"defaults to 30s when KG_SHOTS_SUBPROCESS_TIMEOUT_MS is unset\", () => {\n    expect(subprocessTimeoutMs({})).toBe(30_000);\n  });\n\n  it(\"is overridable via KG_SHOTS_SUBPROCESS_TIMEOUT_MS\", () => {\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"5000\" })).toBe(5000);\n  });\n\n  it(\"falls back to the default on a non-numeric or non-positive override\", () => {\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"not-a-number\" })).toBe(30_000);\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"0\" })).toBe(30_000);\n    expect(subprocessTimeoutMs({ KG_SHOTS_SUBPROCESS_TIMEOUT_MS: \"-5\" })).toBe(30_000);\n  });\n});\n\n// ── scanLocalShotDirs: pure given an injected directory-listing fs ──\ndescribe(\"scanLocalShotDirs\", () => {\n  const fs = (tree: Record<string, string[]>): FsLike => ({\n    listDir: async (dir: string) => tree[dir] ?? [],\n  });\n\n  it(\"scans both shot dirs (E2E_SHOTS_DIR default + e2e/.step-shots) and merges case dirs\", () => {\n    const tree: Record<string, string[]> = {\n      \"/ws/.kg-e2e-shots\": [\"ADD-2\", \"SMK-1\"],\n      \"/ws/.kg-e2e-shots/ADD-2\": [\"add2-1-rent-roll.png\", \"add2-2-column-mapping.png\"],\n      \"/ws/.kg-e2e-shots/SMK-1\": [\"smk-1-login-page.png\"],\n      \"/fe/e2e/.step-shots\": [\"ADD-3\"],\n      \"/fe/e2e/.step-shots/ADD-3\": [\"add3-1-rent-roll.png\"],\n    };\n    return scanLocalShotDirs(fs(tree), { primary: \"/ws/.kg-e2e-shots\", fallback: \"/fe/e2e/.step-shots\" }).then((entries) => {\n      expect(entries.map((e) => e.caseId).sort()).toEqual([\"ADD-2\", \"ADD-3\", \"SMK-1\"]);\n      const add2 = entries.find((e) => e.caseId === \"ADD-2\")!;\n      expect(add2.files.sort()).toEqual([\"add2-1-rent-roll.png\", \"add2-2-column-mapping.png\"]);\n      expect(add2.dir).toBe(\"/ws/.kg-e2e-shots/ADD-2\");\n    });\n  });\n\n  it(\"when a case exists in both dirs, the primary dir wins (no silent merge of file lists)\", async () => {\n    const tree: Record<string, string[]> = {\n      \"/ws/.kg-e2e-shots\": [\"ADD-2\"],\n      \"/ws/.kg-e2e-shots/ADD-2\": [\"fresh.png\"],\n      \"/fe/e2e/.step-shots\": [\"ADD-2\"],\n      \"/fe/e2e/.step-shots/ADD-2\": [\"stale.png\"],\n    };\n    const entries = await scanLocalShotDirs(fs(tree), { primary: \"/ws/.kg-e2e-shots\", fallback: \"/fe/e2e/.step-shots\" });\n    expect(entries.filter((e) => e.caseId === \"ADD-2\")).toHaveLength(1);\n    expect(entries.find((e) => e.caseId === \"ADD-2\")?.files).toEqual([\"fresh.png\"]);\n  });\n\n  it(\"returns an empty list when neither dir exists\", async () => {\n    const entries = await scanLocalShotDirs(fs({}), { primary: \"/nope\", fallback: \"/also-nope\" });\n    expect(entries).toEqual([]);\n  });\n});\n\n// ── planUpload: map local case dirs -> runnable case ids from the graph, honoring --case scope ──\ndescribe(\"planUpload\", () => {\n  const local: ShotDirEntry[] = [\n    { caseId: \"ADD-2\", dir: \"/shots/ADD-2\", files: [\"add2-1.png\", \"add2-2.png\"] },\n    { caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] },\n    { caseId: \"ORPHAN-9\", dir: \"/shots/ORPHAN-9\", files: [\"x.png\"] },\n  ];\n  const graphCaseIds = new Set([\"add-2\", \"add-3\", \"smk-1\"]); // graph stores bare ids lowercase\n\n  it(\"only plans cases that exist as runnable e2e nodes in the graph (drops orphaned shot dirs)\", () => {\n    const plan = planUpload(local, graphCaseIds);\n    expect(plan.map((p) => p.caseId).sort()).toEqual([\"ADD-2\", \"ADD-3\"]);\n    expect(plan.find((p) => p.caseId === \"ORPHAN-9\")).toBeUndefined();\n  });\n\n  it(\"--case scope narrows the plan to exactly the requested case ids (case-insensitive)\", () => {\n    const plan = planUpload(local, graphCaseIds, [\"add-2\"]);\n    expect(plan.map((p) => p.caseId)).toEqual([\"ADD-2\"]);\n  });\n\n  it(\"numbers files deterministically (01-, 02-, … by sorted filename) for the kg-cases/<case>/<sha>/NN-<name>.png layout\", () => {\n    const plan = planUpload(local, graphCaseIds);\n    const add2 = plan.find((p) => p.caseId === \"ADD-2\")!;\n    expect(add2.uploads).toEqual([\n      { filename: \"add2-1.png\", remoteName: \"01-add2-1.png\" },\n      { filename: \"add2-2.png\", remoteName: \"02-add2-2.png\" },\n    ]);\n  });\n});\n\n// ── pruneShaSet: keep newest 3 SHAs per case ──\ndescribe(\"pruneShaSet\", () => {\n  it(\"keeps the newest 3 SHA dirs (by given recency order) and marks the rest for deletion\", () => {\n    // caller passes SHAs already ordered newest-first (e.g. from `gh api` dir listing + commit dates)\n    const result = pruneShaSet([\"sha5\", \"sha4\", \"sha3\", \"sha2\", \"sha1\"]);\n    expect(result.keep).toEqual([\"sha5\", \"sha4\", \"sha3\"]);\n    expect(result.prune).toEqual([\"sha2\", \"sha1\"]);\n  });\n\n  it(\"keeps everything (prunes nothing) when there are 3 or fewer SHAs\", () => {\n    expect(pruneShaSet([\"sha2\", \"sha1\"])).toEqual({ keep: [\"sha2\", \"sha1\"], prune: [] });\n  });\n\n  it(\"the new SHA about to be uploaded is always kept, even if it would push an old one out\", () => {\n    const result = pruneShaSet([\"sha3\", \"sha2\", \"sha1\"], \"sha-new\");\n    expect(result.keep).toEqual([\"sha-new\", \"sha3\", \"sha2\"]);\n    expect(result.prune).toEqual([\"sha1\"]);\n  });\n});\n\n// ── buildEvidenceIndex: contract 3 shape ──\ndescribe(\"buildEvidenceIndex\", () => {\n  // Contract 3 (spec §2) keys `shots` by the ORIGINAL bare filename (e.g. \"add3-1-rent-roll.png\",\n  // matching a case's `steps[].screenshot` exactly) — the spec's own JSON example shows this:\n  // `\"shots\": { \"add3-1-rent-roll.png\": \".../01-add3-1-rent-roll.png\" }`. The remote's ordinal\n  // prefix (\"01-\") is a GitHub-folder-ordering detail that belongs ONLY in the URL path segment,\n  // never in the index key — the viewer's shotSrcCandidates() does an exact `n.evidence[filename]`\n  // lookup against the step's bare screenshot name, so a remoteName-keyed index silently never\n  // resolves for ANY case (regression: found live during integration verification — every step in\n  // every evidenced case fell through to the \"not available\" placeholder even with valid URLs).\n  it(\"builds the frozen contract-3 index shape, keyed by the bare filename (not the remote-numbered name)\", () => {\n    const idx = buildEvidenceIndex(\n      \"acme-org/svc_frontend\",\n      [\n        {\n          caseId: \"ADD-3\",\n          sha: \"abc1234\",\n          shots: [{ filename: \"add3-1-rent-roll.png\", remoteName: \"01-add3-1-rent-roll.png\" }],\n        },\n      ],\n      \"2026-07-05T00:00:00.000Z\",\n    );\n    expect(idx).toEqual({\n      branch: \"e2e-evidence\",\n      updatedAt: \"2026-07-05T00:00:00.000Z\",\n      cases: {\n        \"add-3\": {\n          sha: \"abc1234\",\n          shots: {\n            \"add3-1-rent-roll.png\": \"https://raw.githubusercontent.com/acme-org/svc_frontend/e2e-evidence/kg-cases/add-3/abc1234/01-add3-1-rent-roll.png\",\n          },\n        },\n      },\n    });\n  });\n\n  it(\"lower-cases the case id key (graph bare-id convention) while the URL path segment uses the same lower-cased id\", () => {\n    const idx = buildEvidenceIndex(\"org/repo\", [{ caseId: \"SMK-1\", sha: \"z\", shots: [{ filename: \"x.png\", remoteName: \"01-x.png\" }] }], \"T\");\n    expect(Object.keys(idx.cases)).toEqual([\"smk-1\"]);\n    expect(idx.cases[\"smk-1\"].shots[\"x.png\"]).toContain(\"/kg-cases/smk-1/z/01-x.png\");\n  });\n});\n\n// ── runUpload: orchestration behind an injected gh wrapper (no real network calls in tests) ──\ndescribe(\"runUpload\", () => {\n  function makeGh(existingShas: Record<string, string[]> = {}): GhLike & { calls: string[] } {\n    const calls: string[] = [];\n    return {\n      calls,\n      listCaseShas: async (caseId: string) => existingShas[caseId] ?? [],\n      putFile: async (remotePath: string, _content: Buffer) => {\n        calls.push(`PUT ${remotePath}`);\n      },\n      deleteDir: async (remotePath: string) => {\n        calls.push(`DELETE ${remotePath}`);\n      },\n    };\n  }\n  const fs: FsLike & { readFile: NonNullable<FsLike[\"readFile\"]> } = {\n    listDir: async () => [],\n    readFile: async (p: string) => Buffer.from(`content of ${p}`),\n  };\n\n  it(\"dry-run performs no gh calls and returns the planned index without mutating remote state\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] }];\n    const result = await runUpload({\n      ref: githubRef(\"acme-org/svc_frontend\"),\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"abc1234\",\n      dryRun: true,\n      fs,\n      gh,\n      now: \"2026-07-05T00:00:00.000Z\",\n    });\n    expect(gh.calls).toEqual([]);\n    expect(result.index.cases[\"add-3\"].sha).toBe(\"abc1234\");\n    expect(result.uploadedCount).toBe(1);\n  });\n\n  it(\"real run uploads each file via gh api contents PUT and prunes SHAs older than the newest 3\", async () => {\n    const gh = makeGh({ \"add-3\": [\"sha3\", \"sha2\", \"sha1\"] }); // newest-first; 3 existing + 1 new = prune oldest\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1.png\"] }];\n    const result = await runUpload({\n      ref: githubRef(\"acme-org/svc_frontend\"),\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"shaNEW\",\n      dryRun: false,\n      fs,\n      gh,\n      now: \"2026-07-05T00:00:00.000Z\",\n    });\n    expect(gh.calls).toContain(\"PUT kg-cases/add-3/shaNEW/01-add3-1.png\");\n    expect(gh.calls).toContain(\"DELETE kg-cases/add-3/sha1\");\n    expect(gh.calls).not.toContain(\"DELETE kg-cases/add-3/sha2\");\n    expect(result.uploadedCount).toBe(1);\n  });\n\n  it(\"--case scope only uploads the requested case(s)\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [\n      { caseId: \"ADD-2\", dir: \"/shots/ADD-2\", files: [\"a.png\"] },\n      { caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"b.png\"] },\n    ];\n    const result = await runUpload({\n      ref: githubRef(\"org/repo\"),\n      local,\n      graphCaseIds: new Set([\"add-2\", \"add-3\"]),\n      sha: \"x\",\n      dryRun: false,\n      caseFilter: [\"add-3\"],\n      fs,\n      gh,\n      now: \"T\",\n    });\n    expect(Object.keys(result.index.cases)).toEqual([\"add-3\"]);\n    expect(gh.calls.some((c) => c.includes(\"add-2\"))).toBe(false);\n  });\n\n  it(\"indexes shots by the bare local filename end-to-end, not the remote 01-/02-numbered name (viewer lookup contract)\", async () => {\n    const gh = makeGh();\n    const local: ShotDirEntry[] = [{ caseId: \"ADD-3\", dir: \"/shots/ADD-3\", files: [\"add3-1-rent-roll.png\"] }];\n    const result = await runUpload({\n      ref: githubRef(\"org/repo\"),\n      local,\n      graphCaseIds: new Set([\"add-3\"]),\n      sha: \"abc1234\",\n      dryRun: false,\n      fs,\n      gh,\n      now: \"T\",\n    });\n    // The graph's shotSrcCandidates() looks up n.evidence[s.screenshot] with the BARE name a\n    // case's steps[] carries — the index must be keyed that way, with the remote 01- prefix\n    // living only in the URL's path segment.\n    expect(Object.keys(result.index.cases[\"add-3\"].shots)).toEqual([\"add3-1-rent-roll.png\"]);\n    expect(result.index.cases[\"add-3\"].shots[\"add3-1-rent-roll.png\"]).toContain(\"/01-add3-1-rent-roll.png\");\n  });\n});\n"
     },
     {
       "id": "main:src/shotsUploadHook.test.ts",
@@ -1191,244 +1461,676 @@
   ],
   "edges": [
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "tools/knowledge-graph/",
+      "from": "main:kg-agent-context",
+      "to": "src/agentContext.ts",
       "type": "governs",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-01",
+      "from": "main:kg-agent-context",
+      "to": "src/agentContextCli.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
+    },
+    {
+      "from": "main:kg-agent-context",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
+    },
+    {
+      "from": "main:kg-agent-context",
+      "to": "REQ-KG-CTX-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-02",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictCandidates.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-03",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictDecisions.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-04",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictFixPlan.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-05",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictId.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-06",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictModel.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-07",
-      "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "from": "main:kg-conflicts",
+      "to": "src/conflictScanContext.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
+      "to": "src/fixPlan.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
+    },
+    {
+      "from": "main:kg-conflicts",
+      "to": "src/parseConflicts.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
+    },
+    {
+      "from": "main:kg-conflicts",
+      "to": "src/scanContext.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CONFLICTS.md"
+    },
+    {
+      "from": "main:kg-conflicts",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_CONFLICTS.md"
+    },
+    {
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-03",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-04",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-05",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-conflicts",
       "to": "REQ-KG-CONF-06",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CONFLICTS.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-core",
+      "to": "src/artifacts.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/buildGraph.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/config.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/deriveTags.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/discover.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/ids.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseCache.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseCases.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseConfig.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseDoc.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseFeatures.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/parseUnitTests.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/topology.fixture.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "src/untrackedE2e.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "REQ-KG-02",
+      "type": "specifies",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "REQ-KG-06",
+      "type": "specifies",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
+      "to": "REQ-KG-07",
+      "type": "specifies",
+      "source": ".github/system-design/KG_CORE.md"
+    },
+    {
+      "from": "main:kg-core",
       "to": "REQ-KG-CORE-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CORE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-core",
       "to": "REQ-KG-CORE-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CORE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-core",
       "to": "REQ-KG-CORE-03",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CORE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-core",
       "to": "REQ-KG-CORE-04",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CORE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-core",
       "to": "REQ-KG-CORE-05",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_CORE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-evidence",
+      "to": "src/applyEvidence.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "src/blobStore.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "src/evidenceUrl.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "src/shotsUpload.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "src/shotsUploadHook.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
+      "to": "REQ-KG-05",
+      "type": "specifies",
+      "source": ".github/system-design/KG_EVIDENCE.md"
+    },
+    {
+      "from": "main:kg-evidence",
       "to": "REQ-KG-EVID-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_EVIDENCE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-evidence",
       "to": "REQ-KG-EVID-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_EVIDENCE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-evidence",
       "to": "REQ-KG-EVID-03",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_EVIDENCE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-evidence",
       "to": "REQ-KG-EVID-04",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_EVIDENCE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-gate",
+      "to": "src/check.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_GATE.md"
+    },
+    {
+      "from": "main:kg-gate",
+      "to": "src/sources.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_GATE.md"
+    },
+    {
+      "from": "main:kg-gate",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_GATE.md"
+    },
+    {
+      "from": "main:kg-gate",
+      "to": "REQ-KG-01",
+      "type": "specifies",
+      "source": ".github/system-design/KG_GATE.md"
+    },
+    {
+      "from": "main:kg-gate",
+      "to": "REQ-KG-04",
+      "type": "specifies",
+      "source": ".github/system-design/KG_GATE.md"
+    },
+    {
+      "from": "main:kg-gate",
       "to": "REQ-KG-GATE-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_GATE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-gate",
       "to": "REQ-KG-GATE-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_GATE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-run",
+      "to": "src/ensureOrchestrated.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/gateDecision.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/parsePlaywrightReport.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/parseResults.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/recordRun.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/resolveBackendVenvPython.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/resolvePlaywrightUrls.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/resultsFile.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/runSchedule.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/selectCases.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/syncResults.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "src/treeKill.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
+      "to": "REQ-KG-03",
+      "type": "specifies",
+      "source": ".github/system-design/KG_RUN.md"
+    },
+    {
+      "from": "main:kg-run",
       "to": "REQ-KG-RUN-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_RUN.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-run",
       "to": "REQ-KG-RUN-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_RUN.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-run",
       "to": "REQ-KG-RUN-03",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_RUN.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-run",
       "to": "REQ-KG-RUN-04",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_RUN.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-run",
       "to": "REQ-KG-RUN-05",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_RUN.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
+      "to": "src/liveHub.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "src/pathGuard.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "src/serve.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "src/serveArtifacts.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "src/serveLock.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "src/toggleStar.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_SERVE.md"
+    },
+    {
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-03",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-04",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-05",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-serve",
       "to": "REQ-KG-SERVE-06",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_SERVE.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-viewer",
+      "to": "src/delta.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "src/digest.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "src/summarize.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "src/typeVisibility.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "src/viewer.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "main:knowledge-graph-tool",
+      "type": "references",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
       "to": "REQ-KG-VIEW-01",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_VIEWER.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-viewer",
       "to": "REQ-KG-VIEW-02",
       "type": "specifies",
-      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+      "source": ".github/system-design/KG_VIEWER.md"
     },
     {
-      "from": "main:knowledge-graph-tool",
+      "from": "main:kg-viewer",
       "to": "REQ-KG-VIEW-03",
       "type": "specifies",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:kg-viewer",
+      "to": "REQ-KG-VIEW-04",
+      "type": "specifies",
+      "source": ".github/system-design/KG_VIEWER.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-agent-context",
+      "type": "references",
       "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
     },
     {
       "from": "main:knowledge-graph-tool",
-      "to": "REQ-KG-VIEW-04",
-      "type": "specifies",
+      "to": "main:kg-conflicts",
+      "type": "references",
       "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-core",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-evidence",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-gate",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-run",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-serve",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:knowledge-graph-tool",
+      "to": "main:kg-viewer",
+      "type": "references",
+      "source": ".github/system-design/KNOWLEDGE_GRAPH_TOOL.md"
+    },
+    {
+      "from": "main:src/agentContext.test.ts",
+      "to": "REQ-KG-CTX-01",
+      "type": "covers",
+      "source": "src/agentContext.test.ts"
     },
     {
       "from": "main:src/applyEvidence.test.ts",
@@ -1451,6 +2153,12 @@
     {
       "from": "main:src/blobStore.test.ts",
       "to": "REQ-KG-05",
+      "type": "covers",
+      "source": "src/blobStore.test.ts"
+    },
+    {
+      "from": "main:src/blobStore.test.ts",
+      "to": "REQ-KG-SERVE-02",
       "type": "covers",
       "source": "src/blobStore.test.ts"
     },
@@ -1605,6 +2313,18 @@
       "source": "src/runSchedule.test.ts"
     },
     {
+      "from": "main:src/serveEvidence.test.ts",
+      "to": "REQ-KG-05",
+      "type": "covers",
+      "source": "src/serveEvidence.test.ts"
+    },
+    {
+      "from": "main:src/serveEvidence.test.ts",
+      "to": "REQ-KG-SERVE-02",
+      "type": "covers",
+      "source": "src/serveEvidence.test.ts"
+    },
+    {
       "from": "main:src/serveGraph.test.ts",
       "to": "REQ-KG-SERVE-03",
       "type": "covers",
@@ -1671,7 +2391,13 @@
       "source": "src/viewer.test.ts"
     }
   ],
-  "issues": [],
+  "issues": [
+    {
+      "kind": "unverified-doc",
+      "node": "main:knowledge-graph-tool",
+      "detail": "no test verifies this doc (soft)"
+    }
+  ],
   "health": {
     "flows": [
       {
@@ -1682,8 +2408,8 @@
         "untested": [],
         "failing": [],
         "flaky": [],
-        "reqTotal": 39,
-        "reqProven": 39,
+        "reqTotal": 40,
+        "reqProven": 40,
         "unproven": [],
         "lastVerified": null
       }
@@ -1691,8 +2417,8 @@
     "totals": {
       "features": 0,
       "tested": 0,
-      "reqTotal": 39,
-      "reqProven": 39,
+      "reqTotal": 40,
+      "reqProven": 40,
       "failing": 0,
       "flaky": 0
     }
