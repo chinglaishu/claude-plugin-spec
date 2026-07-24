@@ -1,5 +1,5 @@
 {
-  "name": "claude-plugin-spec",
+  "name": "plugin-spec",
   "private": true,
   "type": "module",
   "scripts": {

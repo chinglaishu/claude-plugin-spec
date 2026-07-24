@@ -1,11 +1,11 @@
 {
   "$comment": [
-    "PLACEHOLDER NAME — the rename gate (founding design §12.4) is NOT satisfied. `claude-` is",
-    "Anthropic's trademark and this id would be permanent the moment anyone installs it, so this",
-    "manifest exists to make the plugin runnable LOCALLY and must not be published or added to a",
-    "marketplace until the CEO renames the project."
+    "Renamed off the `claude-` placeholder 2026-07-24 (CEO), clearing the trademark half of the",
+    "§12.4 gate. The doc's OTHER recorded objection stands and was accepted knowingly: `plugin-spec`",
+    "still reads as 'a specification for plugins', which is a different product. Cheap to change",
+    "again while the repo is private and unpublished; permanent the moment someone installs it."
   ],
-  "name": "claude-plugin-spec",
+  "name": "plugin-spec",
   "version": "0.1.0",
   "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven.",
   "author": { "name": "fumia" },

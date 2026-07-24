@@ -1,4 +1,4 @@
-# claude-plugin-spec
+# plugin-spec
 
 A tool that **builds** a requirement SSoT out of a codebase — and keeps it **true after
 implementation**. The user arrives with code and an AI agent; the tool writes the spec and the
@@ -138,6 +138,28 @@ Immediately next:
      drifted. Its designated root is a bucket prefix rather than a directory, so the text states
      confinement by ROOT rather than by filesystem, and adds the one clause the new route needs:
      **a request the guard rejects is never signed.**
+
+   **`REQ-KG-CORE-06` came out of the same thread and is the more valuable half** (CEO-approved
+   2026-07-24). Extending SERVE-02's `covers:` list did nothing, which is how the real defect
+   surfaced: `provenBy` — where a doc's `covers:` frontmatter lands — kept the slugs that resolved
+   to a test node and **silently discarded the rest**. An edge's target had been validated since
+   REQ-KG-CORE-01; a requirement's cited *proof* never was. **47 of this repo's own citations were
+   dead**, every one pointing at the pre-port `tools/knowledge-graph/src/`, and the graph said
+   nothing — it survived the coverage backfill and the PRD split for exactly that reason.
+   `broken-proof` now reports **per citation, independently of coverage**: a dead path masked by a
+   live sibling is how a stale claim survives a rename, so "proven anyway" must not silence it.
+   46 citations were rewritten to their real `src/` paths; one was retired rather than moved
+   (`repo.test.ts` died with REQ-0's repo.ts→config.ts collapse — its successor is `config.test.ts`).
+
+   **Two things this turned up that are yours, not staff's:**
+   - **`REQ-KG-CORE-02`'s text is stale.** It says repo classification is "purely by path prefix
+     (dojostack_backend to backend, dojostack_frontend to frontend, else main)" — the hardcoded
+     topology **REQ-0 removed**. The code reads it from `config.repos`. Two sources disagree, so
+     staff stopped rather than picking a side; the citation is fixed, the sentence is not.
+   - **The gate is red on one `unverified-doc`**, and it is not from any of this: the PRD split left
+     `KNOWLEDGE_GRAPH_TOOL.md` with `requirements: []`, so nothing proves it. Isolated and confirmed
+     — the issue is byte-identical with every change above stashed. **The baseline was deliberately
+     not updated**, because lowering the gate to go green is the one move this project never makes.
 
 2. **Wire `agent-context` as a hook.** The prototype is at
    `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a
