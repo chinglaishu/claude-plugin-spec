@@ -59,6 +59,23 @@ export function pruneArgs(evidence: Blob, caseId: string, sha: string): string[]
   return ["s3", "rm", caseUri(evidence, caseId, sha), "--recursive", "--region", evidence.region];
 }
 
+/**
+ * Read the SHA directory names out of `aws s3 ls` output. Prefix listings arrive as `PRE <name>/`;
+ * object lines are files and are not SHA dirs.
+ *
+ * Order is whatever the CLI returned (alphabetical), NOT recency — the same best-effort contract the
+ * GitHub adapter documents, which is why the caller always passes the new SHA in explicitly rather
+ * than inferring the newest from a listing.
+ */
+export function parseShaDirs(stdout: string): string[] {
+  const out: string[] = [];
+  for (const line of stdout.split(/\r?\n/)) {
+    const m = /^\s*PRE\s+(.+?)\/\s*$/.exec(line);
+    if (m) out.push(m[1]);
+  }
+  return out;
+}
+
 /** Minted per view by serve.ts, never committed. */
 export function presignArgs(evidence: Blob, key: string, ttlSeconds: number = PRESIGN_TTL_SECONDS): string[] {
   return ["s3", "presign", s3Uri(evidence, key), "--expires-in", String(ttlSeconds), "--region", evidence.region];

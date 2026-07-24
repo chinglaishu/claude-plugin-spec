@@ -1,6 +1,6 @@
 // covers: REQ-KG-05
 import { describe, it, expect } from "vitest";
-import { objectKey, objectUrl, uploadArgs, listArgs, pruneArgs, presignArgs, PRESIGN_TTL_SECONDS } from "./blobStore";
+import { objectKey, objectUrl, uploadArgs, listArgs, pruneArgs, presignArgs, parseShaDirs, PRESIGN_TTL_SECONDS } from "./blobStore";
 import type { Evidence } from "./config";
 
 /**
@@ -69,5 +69,22 @@ describe("aws argv", () => {
 
   it("keeps the presign ttl short enough that a leaked url dies quickly", () => {
     expect(PRESIGN_TTL_SECONDS).toBeLessThanOrEqual(900);
+  });
+});
+
+describe("parseShaDirs — reads sha dirs out of `aws s3 ls` output", () => {
+  it("takes the PRE entries and drops their trailing slash", () => {
+    const out = ["                           PRE a1b2c3d/", "                           PRE 9f8e7d6/"].join("\n");
+    expect(parseShaDirs(out)).toEqual(["a1b2c3d", "9f8e7d6"]);
+  });
+
+  it("ignores object lines, which are files rather than sha dirs", () => {
+    const out = ["2026-07-24 12:00:00       1234 stray.png", "                           PRE a1b2c3d/"].join("\n");
+    expect(parseShaDirs(out)).toEqual(["a1b2c3d"]);
+  });
+
+  it("returns nothing for an empty listing (a case never uploaded before)", () => {
+    expect(parseShaDirs("")).toEqual([]);
+    expect(parseShaDirs("\n  \n")).toEqual([]);
   });
 });
