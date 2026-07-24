@@ -23,6 +23,11 @@ export function report(g: Graph, deltaLines?: string[]): string {
 }
 
 export async function writeArtifacts(graph: Graph, outDir: string, opts: { delta?: Delta | null; deltaLines?: string[] } = {}): Promise<void> {
+  // The artifact dir is the PROJECT's data, not something the tool ships (§10.9, TOOL_DIR), so in a
+  // project adopting the tool it does not exist yet. In the tree this was extracted from it always
+  // did — the tool lived inside it — which is why the first build in any other repo threw ENOENT
+  // here. Found by self-hosting, which is the point of doing it (§8).
+  await mkdir(outDir, { recursive: true });
   await writeFile(join(outDir, "knowledge-graph.json"), JSON.stringify(graph, null, 2) + "\n");
   await writeFile(join(outDir, "report.md"), report(graph, opts.deltaLines));
   const template = await readFile(TEMPLATE_PATH, "utf8");
