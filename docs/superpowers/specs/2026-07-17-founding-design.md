@@ -387,9 +387,17 @@ decoration.**
    class came from: assets the tool ships vs. artifacts the project owns.
 
 10. **Everything stays local — in the user's own repo and git. No cloud service in the core.**
-   Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots on
-   the dedicated `e2e-evidence` branch addressed by URL, never on the working branch and never inside
-   the graph JSON (REQ-KG-05). Three reasons, in order of weight:
+   Comments live in `conflicts/decisions.json`; test results in `kg-test-results.json`; screenshots
+   **on the local device by default, or at a project-supplied blob URL**, addressed by URL and never
+   on the working branch or inside the graph JSON (REQ-KG-05). Three reasons, in order of weight:
+
+   > **Amended 2026-07-24 (CEO): the `e2e-evidence` branch is no longer the mandated destination.**
+   > Committing PNGs to a side branch is an unusual mechanism that surprises people and baked one
+   > vendor's hosting into a requirement. This does **not** weaken the decision — a *user-supplied*
+   > bucket is not a cloud service in the core, and reason 2 below gets **stronger**, not weaker:
+   > nothing ships to us under either mode. Reason 1 is untouched, because screenshots were never the
+   > SSoT — the graph carries references, and now provably so (see the amendment to the YAGNI note
+   > below).
 
    - **A cloud SSoT would contradict the central claim.** The thesis is that the graph is a *pure
      function of the tree* — that is why the fingerprint works, why `check` can gate, and why REQ-KG-01
@@ -403,9 +411,20 @@ decoration.**
    - **There are zero users.** Building storage infrastructure before anyone uses the thing is the
      classic mistake. The repo works today.
 
-   **Do not build a storage abstraction** (YAGNI — there is no second implementation to abstract over),
-   but **do not couple to git either**, so a cloud adapter stays possible. `shotsUpload.ts` already gets
-   this right by injecting `FsLike`/`GhLike`.
+   ~~**Do not build a storage abstraction** (YAGNI — there is no second implementation to abstract
+   over)~~, but **do not couple to git either**, so a cloud adapter stays possible. `shotsUpload.ts`
+   already gets this right by injecting `FsLike`/`GhLike`.
+
+   > **Amended 2026-07-24:** the YAGNI clause is spent, and by its own terms. It said not to abstract
+   > because there was no second implementation; the CEO's blob-URL decision **creates** the second
+   > one (local device, project blob URL), so the condition that justified the ban no longer holds.
+   > The "do not couple to git" half is what made this cheap — the injected `FsLike`/`GhLike` seam was
+   > left for exactly this, and it is the reason this is a swap rather than a rewrite.
+   >
+   > It also exposed a real hole: REQ-KG-05 asserted binaries never enter the graph, and **nothing
+   > enforced it** — `applyEvidence` passed any value through, including an inline `data:` image.
+   > That is now enforced and proven (`referencesOnly`), which is what finally closes the one
+   > requirement the 2026-07-24 backfill honestly left uncovered.
 
 11. **Video is not in the core; it is a monetization candidate.** Playwright videos run ~1–5 MB each —
    gigabytes across a suite, and git would break. But **flow-approval (§6) does not need video and is

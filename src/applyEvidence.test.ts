@@ -1,4 +1,4 @@
-// covers: REQ-KG-EVID-03, REQ-KG-EVID-04
+// covers: REQ-KG-EVID-03, REQ-KG-EVID-04, REQ-KG-05
 import { describe, it, expect } from "vitest";
 import { applyEvidence } from "./applyEvidence";
 
@@ -69,5 +69,43 @@ describe("applyEvidence", () => {
     const a = applyEvidence(graph, index);
     const b = applyEvidence(graph, index);
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+});
+
+/**
+ * REQ-KG-05's NEGATIVE clause — screenshot binaries never enter the committed graph.
+ *
+ * This was the one requirement left uncovered by the 2026-07-24 backfill, and deliberately so: the
+ * upload path proved the positive half thoroughly while nothing asserted the negative, and a
+ * `covers:` edge over an unproven clause is the exact failure §10.2 records. Enforcing it is what
+ * closes the gap — a test alone would only have described the hole.
+ *
+ * The graph is a pure function of the tree and is committed on every build. An inline `data:` image
+ * would put megabytes of base64 into `knowledge-graph.json`, and — worse than size — it would put
+ * the *content* of a screenshot into version control, which is precisely what storing evidence out
+ * of band exists to prevent.
+ */
+describe("evidence carries references, never binaries (REQ-KG-05)", () => {
+  const g = { generatedAt: "T", nodes: [{ id: "main:checkout", type: "test", kind: "e2e" }], edges: [], issues: [] } as any;
+  const idx = (shots: Record<string, string>) =>
+    JSON.stringify({ branch: "b", updatedAt: "T", cases: { checkout: { sha: "abc", shots } } });
+
+  it("keeps ordinary URL references", () => {
+    const out = applyEvidence(g, idx({ "01-start.png": "https://blobs.example.com/kg/checkout/01-start.png" }));
+    expect(out.nodes[0].evidence).toEqual({ "01-start.png": "https://blobs.example.com/kg/checkout/01-start.png" });
+  });
+
+  it("drops an inline data: image so it can never reach knowledge-graph.json", () => {
+    const out = applyEvidence(g, idx({ "01-start.png": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==" }));
+    expect(out.nodes[0].evidence).toBeUndefined();
+    expect(JSON.stringify(out)).not.toContain("base64");
+  });
+
+  it("keeps the good references and drops only the binary one", () => {
+    const out = applyEvidence(
+      g,
+      idx({ "01.png": "https://blobs.example.com/a.png", "02.png": "data:image/png;base64,AAAA" }),
+    );
+    expect(out.nodes[0].evidence).toEqual({ "01.png": "https://blobs.example.com/a.png" });
   });
 });

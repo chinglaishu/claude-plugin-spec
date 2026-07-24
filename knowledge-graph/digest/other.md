@@ -1,6 +1,6 @@
 # Platform & docs — knowledge digest (synced 2026-07-24, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 39 (proven 38)
+Capabilities: 0 · with tests: 0 · promises: 39 (proven 39)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -11,8 +11,8 @@ Capabilities: 0 · with tests: 0 · promises: 39 (proven 38)
   Proven by: parseResults.test.ts (unit-fe, pass)
 - REQ-KG-04: `check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through.
   Proven by: gateDecision.test.ts (unit-fe, pass)
-- REQ-KG-05: Run screenshots are stored on the dedicated e2e-evidence branch, addressed by URL, never embedded as binaries in the committed graph JSON or on the working branch.
-  ⚠ NO COVERING TEST
+- REQ-KG-05: Run screenshots are stored outside the committed graph — uploaded to a project-supplied blob URL when one is configured, and kept on the local device otherwise. Screenshot binaries never enter the committed graph JSON or the working branch.
+  Proven by: applyEvidence.test.ts (unit-fe, pass)
 - REQ-KG-06: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
   Proven by: parseDoc.test.ts (unit-fe, pass)
 - REQ-KG-07: A doc is identified by its frontmatter `slug` when it declares one, falling back to `id` and then the filename — so a corpus that carries a catalog id (SD-nn) alongside a human slug stays cross-referenceable by the name its siblings actually cite.

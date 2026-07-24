@@ -20,8 +20,8 @@ requirements:
     text: "`check` is the strict gate: any issue kind whose count rises above its frozen baseline fails the build, even by one — a regression cannot be waved through."
     covers: [main:tools/knowledge-graph/src/check.test.ts]
   - id: REQ-KG-05
-    text: Run screenshots are stored on the dedicated e2e-evidence branch, addressed by URL, never embedded as binaries in the committed graph JSON or on the working branch.
-    covers: [main:tools/knowledge-graph/src/shotsUpload.test.ts, main:tools/knowledge-graph/src/applyEvidence.test.ts]
+    text: Run screenshots are stored outside the committed graph — uploaded to a project-supplied blob URL when one is configured, and kept on the local device otherwise. Screenshot binaries never enter the committed graph JSON or the working branch.
+    covers: [main:src/applyEvidence.test.ts]
   - id: REQ-KG-06
     text: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
     covers: [main:tools/knowledge-graph/src/parseDoc.test.ts]
@@ -203,7 +203,22 @@ workspace root, not committed to a repo) — this PRD only asserts the product-l
 run's outcome is always either a real pass/fail/flaky or an honest "servers weren't ready" explanation,
 never a silent hang or a fabricated result.
 
-## 5. Evidence branch
+## 5. Evidence storage
+
+> **Rewritten 2026-07-24 (CEO).** This section used to mandate a dedicated `e2e-evidence` orphan
+> branch as *the* destination. Committing PNG binaries to a side branch is an unusual mechanism that
+> surprises people, and it hard-coded one vendor's hosting into a requirement. The invariant that
+> actually mattered — **binaries never enter the committed graph or the working branch** — is
+> preserved verbatim; only the destination became the project's choice. The prose below is retained
+> for the layout contract it still describes, but the branch is no longer required.
+>
+> **Known cost, recorded rather than discovered later:** flow-approval (§6 of the founding design)
+> diffs a *previous* screenshot against a new one. On local-device storage there is no shared
+> baseline, so CI and a second machine have nothing to diff against. Acceptable now — flow-approval
+> is deferred pending spikes (§12.3) and there are zero users — but it is a real constraint on that
+> feature, not a detail.
+
+## 5a. The former evidence branch (layout contract)
 
 Screenshots captured during e2e runs are never committed on the working branch and never embedded as
 binaries in `knowledge-graph.json` — only URLs are (REQ-KG-05). They are uploaded to a dedicated
