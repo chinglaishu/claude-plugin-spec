@@ -39,7 +39,11 @@ export function classify(rel: string): "doc" | "cases" | "features" | "cache" | 
 }
 
 export async function buildGraph(repoRoot: string, now: string, config: Config, gitRunner?: GitRunner): Promise<Graph> {
-  const files = await fg(knowledgeGlobs(config), { cwd: repoRoot, ignore: IGNORE, dot: true, unique: true });
+  // IGNORE is the tool's own floor (build output, vcs); `config.exclude` is the project saying which
+  // sub-trees are not its knowledge — committed fixtures, samples, vendored trees. Applied to every
+  // pass below, so an excluded tree cannot enter as a doc, a test, a spec or a conflict finding.
+  const ignore = [...IGNORE, ...config.exclude];
+  const files = await fg(knowledgeGlobs(config), { cwd: repoRoot, ignore, dot: true, unique: true });
   const all: ParseResult = { nodes: [], edges: [] };
   // Raw *.features.yaml text keyed by basename — inlined into graph.registries (viewer-only
   // payload for the in-viewer registry document page; assemble() sorts the keys).
@@ -79,7 +83,7 @@ export async function buildGraph(repoRoot: string, now: string, config: Config, 
   // Unit-test pass: index only the Vitest/pytest files that fall under a registered feature.
   const features = all.nodes.filter((n): n is GraphNode => n.type === "feature");
   if (features.length) {
-    const candidates = await fg(config.unitTestGlobs, { cwd: repoRoot, ignore: IGNORE, dot: true, unique: true });
+    const candidates = await fg(config.unitTestGlobs, { cwd: repoRoot, ignore, dot: true, unique: true });
     for (const rel of candidates) {
       if (!matchingFeatures(rel, features).length) continue;
       const content = await readFile(join(repoRoot, rel), "utf8");
@@ -108,7 +112,7 @@ export async function buildGraph(repoRoot: string, now: string, config: Config, 
 
   // fork-② rule: every e2e *.spec.ts must be linked to a *.cases.yaml entry
   // carrying verifies/covers/features. New bare e2e tests are not allowed.
-  const specFiles = await fg(e2ePath(config, "**/*.spec.ts"), { cwd: repoRoot, ignore: IGNORE, dot: false, unique: true });
+  const specFiles = await fg(e2ePath(config, "**/*.spec.ts"), { cwd: repoRoot, ignore, dot: false, unique: true });
   graph.issues.push(...detectUntrackedE2e(specFiles, graph));
   graph.issues.sort((a, b) => {
     const ka = [a.kind, a.node ?? "", a.from ?? "", a.to ?? "", a.detail].join("\x00");
@@ -131,7 +135,7 @@ export async function buildGraph(repoRoot: string, now: string, config: Config, 
   // Conflicts payload (contradiction findings, viewer-only) — same ingestion idiom as
   // kg-test-results.json / kg-evidence-index.json: read from source, tolerate absence, fold in
   // deterministically. NOT nodes/edges → zero issue/ratchet impact (like registries).
-  const conflictFiles = await fg(artifactPath(config, "conflicts/**/*.conflicts.json"), { cwd: repoRoot, ignore: IGNORE, dot: true, unique: true });
+  const conflictFiles = await fg(artifactPath(config, "conflicts/**/*.conflicts.json"), { cwd: repoRoot, ignore, dot: true, unique: true });
   const findings: ConflictFinding[] = [];
   for (const rel of conflictFiles) {
     const content = await readFile(join(repoRoot, rel), "utf8");

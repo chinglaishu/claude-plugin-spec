@@ -54,6 +54,14 @@ export type Config = {
   /** Globs for candidate unit-test files. Only a project knows where its source lives, and only those
    *  matching a registered feature's globs are indexed, so this stays bounded. */
   unitTestGlobs: string[];
+  /** Sub-trees that are NOT this project's knowledge: committed fixtures, samples, vendored trees.
+   *  Subtracted from every glob the knowledge pass runs.
+   *
+   *  The knowledge globs are repo-wide on purpose — the tool defines where knowledge lives in any
+   *  project. That holds until a repo contains a SECOND project as data, whose docs then get indexed
+   *  as the host's own. This lives in config and never in the tool, because a hardcoded `fixtures/**`
+   *  would re-introduce exactly the project-specific coupling REQ-0 removed. */
+  exclude: string[];
   /** Where run screenshots land. Defaults OUTSIDE the repo so evidence never enters git (REQ-KG-05). */
   shotsDir: string;
   /** The `owner/repo` whose `e2e-evidence` branch holds uploaded screenshots. `""` disables upload. */
@@ -138,12 +146,16 @@ export function parseConfig(json: string): Config {
   const globs = o.unitTestGlobs;
   if (globs !== undefined && (!Array.isArray(globs) || globs.some((g) => typeof g !== "string")))
     return bad("`unitTestGlobs` must be an array of glob strings");
+  const excl = o.exclude;
+  if (excl !== undefined && (!Array.isArray(excl) || excl.some((g) => typeof g !== "string")))
+    return bad("`exclude` must be an array of glob strings");
 
   return {
     repos,
     e2eDir: str(o, "e2eDir", "e2e"),
     artifactDir: str(o, "artifactDir", "knowledge-graph"),
     unitTestGlobs: (globs as string[] | undefined) ?? [],
+    exclude: (excl as string[] | undefined) ?? [],
     shotsDir: str(o, "shotsDir", "../.kg-e2e-shots"),
     evidenceRepo: str(o, "evidenceRepo", ""),
     runners: parseRunners(o.runners, repos),

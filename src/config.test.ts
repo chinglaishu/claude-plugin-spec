@@ -263,3 +263,35 @@ describe("loadConfig — reads the project's config from its own root", () => {
     await expect(loadConfig(dir)).rejects.toThrow();
   });
 });
+
+/**
+ * `exclude` — sub-trees that are NOT this project's knowledge (CEO 2026-07-24).
+ *
+ * The knowledge globs are deliberately repo-wide (`**\/CLAUDE.md`, `**\/.github/**\/*.md`) because the
+ * tool defines where knowledge lives in ANY project. That is right until a repo contains a *second*
+ * project as data — committed fixtures, samples, vendored trees — whose docs then get indexed as the
+ * host's own. Self-hosting found it: this repo's REQ-1 fixtures collided on `main:claude` and
+ * contributed four docs and three requirements that are not ours.
+ *
+ * It lives in config, never in the tool, because a hardcoded `fixtures/**` would re-introduce exactly
+ * the project-specific coupling REQ-0 removed.
+ */
+const base = { repos: [{ name: "main", subdir: "" }] };
+describe("exclude", () => {
+  it("defaults to excluding nothing", () => {
+    expect(parseConfig(JSON.stringify(base)).exclude).toEqual([]);
+  });
+
+  it("keeps a declared sub-tree out of the graph", () => {
+    const c = parseConfig(JSON.stringify({ ...base, exclude: ["fixtures/**", "samples/**"] }));
+    expect(c.exclude).toEqual(["fixtures/**", "samples/**"]);
+  });
+
+  it("rejects a non-array exclude rather than silently ignoring it", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, exclude: "fixtures/**" }))).toThrow(/exclude/);
+  });
+
+  it("rejects non-string entries", () => {
+    expect(() => parseConfig(JSON.stringify({ ...base, exclude: ["ok", 7] }))).toThrow(/exclude/);
+  });
+});

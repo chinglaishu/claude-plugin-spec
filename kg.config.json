@@ -9,5 +9,13 @@
   "repos": [{ "name": "main", "subdir": "" }],
   "e2eDir": "e2e",
   "artifactDir": "knowledge-graph",
-  "unitTestGlobs": ["src/**/*.test.ts"]
+  "unitTestGlobs": ["src/**/*.test.ts"],
+  "_exclude_comment": [
+    "fixtures/ holds two COMPLETE synthetic projects — REQ-1's oracle. They carry their own",
+    "CLAUDE.md, .github/system-design specs and requirements, and deliberately-broken cases (a",
+    "dangling reference, an orphan doc) that exist to be asserted against. Without this they are",
+    "indexed as OUR knowledge: 'main:claude' collides with the real CLAUDE.md, and the fixtures'",
+    "defects are reported as this project's own issues."
+  ],
+  "exclude": ["fixtures/**"]
 }
