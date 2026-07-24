@@ -24,6 +24,10 @@ export interface PackRequirement {
 export interface ContextPack {
   path: string;
   governedBy: { id: string; title: string; path?: string }[];
+  /** Features whose registered path globs claim this file. The SECOND route to ownership, and the one
+   *  carrying UI behaviour — reported because otherwise a path claimed only by a feature returns
+   *  `halt: false` with an empty `governedBy`, and nothing explains why it did not halt. */
+  features: { id: string; title: string }[];
   requirements: PackRequirement[];
   tests: { id: string; title: string; status?: string }[];
   conflicts: { id: string; subject: string; severity: string }[];
@@ -104,6 +108,7 @@ export function contextPack(graph: Graph, config: Config, path: string): Context
   return {
     path,
     governedBy,
+    features: features.map((f) => ({ id: f.id, title: f.title ?? f.id })),
     requirements,
     tests,
     conflicts,

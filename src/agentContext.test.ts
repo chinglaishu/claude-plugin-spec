@@ -53,17 +53,31 @@ describe("contextPack — a governed path", () => {
 });
 
 describe("contextPack — multi-repo, where a hardcoded prefix would break", () => {
-  it("resolves a path inside a nested sibling repo", async () => {
+  // These two replace a pair that asserted `Array.isArray(...)` and `toBeTruthy()` — both of which
+  // passed just as happily when the pack came back completely empty, so they proved nothing about
+  // the multi-repo resolution they were named for. Rule 5 cuts the other way here: strengthening a
+  // test that could not fail is not weakening it.
+  //
+  // The multi-repo fixture declares no `governs:` anywhere, so ownership comes from a FEATURE whose
+  // path glob is workspace-relative and reaches into a nested sibling repo. That crossing is the
+  // multi-repo resolution.
+  it("lets a feature's glob claim a path inside a nested sibling repo", async () => {
     const pack = await packFor("multi-repo", "svc_backend/tests/test_rates.py");
-    expect(pack.path).toBe("svc_backend/tests/test_rates.py");
-    expect(pack).toBeTruthy();
+    expect(pack.features.map((f) => f.id).some((id) => id.endsWith(":rates-api"))).toBe(true);
+    expect(pack.halt).toBe(false);
   });
 
-  it("governs a nested repo's code from that repo's own doc", async () => {
-    const pack = await packFor("multi-repo", "svc_backend/app/rates.py");
-    // Whatever it resolves, it must never throw or silently return a single-repo shaped answer.
-    expect(Array.isArray(pack.governedBy)).toBe(true);
-    expect(Array.isArray(pack.requirements)).toBe(true);
+  it("does not let one sibling's glob claim another sibling's path", async () => {
+    const pack = await packFor("multi-repo", "svc_frontend/src/rates/widget.test.ts");
+    // rates-widget covers svc_frontend/src/rates/**; rates-api covers svc_backend/tests/** only.
+    const ids = pack.features.map((f) => f.id);
+    expect(ids.some((id) => id.endsWith(":rates-widget"))).toBe(true);
+    expect(ids.some((id) => id.endsWith(":rates-api"))).toBe(false);
+  });
+
+  it("halts on a nested-repo path that nothing claims", async () => {
+    const pack = await packFor("multi-repo", "svc_backend/app/unclaimed.py");
+    expect(pack.halt).toBe(true);
   });
 });
 
