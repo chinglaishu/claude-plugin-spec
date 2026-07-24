@@ -93,3 +93,40 @@ describe("counting", () => {
     expect(n.testCount).toBe(3);
   });
 });
+
+/**
+ * `covers:` in a unit test (CEO 2026-07-24). Until now the ONLY way a requirement got a covering
+ * test was a `*.cases.yaml` or a feature registry — both e2e artifacts — so a project with no UI
+ * flows could never prove a requirement at all. This tool is exactly that project: 39 requirements,
+ * 485 tests, and every requirement reading `uncovered`.
+ *
+ * Comment-anchored on purpose: a bare `covers:` appearing in test data or a string literal must not
+ * be mistaken for a declaration.
+ */
+describe("declared covers", () => {
+  const req = (src: string) => parseUnitTest({ path: "src/x.test.ts", content: src }, REPOS).edges;
+
+  it("links a test to the requirement it declares it proves", () => {
+    const e = req(`// covers: REQ-KG-01\nit('x', () => {})`);
+    expect(e).toEqual([{ from: "main:src/x.test.ts", to: "REQ-KG-01", type: "covers", source: "src/x.test.ts" }]);
+  });
+
+  it("accepts several ids on one line", () => {
+    expect(req(`// covers: REQ-A, REQ-B\n`).map((x) => x.to)).toEqual(["REQ-A", "REQ-B"]);
+  });
+
+  it("reads a JSDoc block and a python comment", () => {
+    expect(req(`/**\n * covers: REQ-A\n */`).map((x) => x.to)).toEqual(["REQ-A"]);
+    expect(
+      parseUnitTest({ path: "tests/test_x.py", content: `# covers: REQ-B\n` }, REPOS).edges.map((x) => x.to),
+    ).toEqual(["REQ-B"]);
+  });
+
+  it("does not mistake a covers: inside test data for a declaration", () => {
+    expect(req(`it('x', () => { expect(y).toBe("covers: REQ-FAKE") })`)).toEqual([]);
+  });
+
+  it("emits nothing when the test declares nothing", () => {
+    expect(req(`it('x', () => {})`)).toEqual([]);
+  });
+});

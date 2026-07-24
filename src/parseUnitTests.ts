@@ -1,6 +1,6 @@
 import { basename } from "node:path";
 import { nsId, stripRepoPrefix, type Repos } from "./config";
-import type { GraphNode, ParseResult, TestKind } from "./types";
+import type { GraphEdge, GraphNode, ParseResult, TestKind } from "./types";
 
 function firstMatch(re: RegExp, s: string): string {
   const m = s.match(re);
@@ -72,6 +72,27 @@ export function unitKind(path: string): TestKind {
 }
 
 /**
+ * Requirement ids a test DECLARES it proves: a `covers:` line inside a comment — `// covers: REQ-A,
+ * REQ-B`, `# covers: REQ-A`, or `* covers: REQ-A` within a JSDoc block.
+ *
+ * Until this existed the only sources of a `covers` edge were `*.cases.yaml` and the feature
+ * registry — both e2e artifacts — so a project with no UI flows could never prove a requirement.
+ *
+ * Comment-anchored deliberately: a bare `covers:` inside test data or a string literal must not be
+ * mistaken for a declaration, because a false `covers` edge is precisely the lie this tool exists to
+ * detect (§10.2).
+ */
+export function declaredCovers(src: string): string[] {
+  const out: string[] = [];
+  for (const m of src.matchAll(/^[ \t]*(?:\/\/|#|\*)[ \t]*covers:[ \t]*(.+)$/gim))
+    for (const raw of m[1].split(/[,\s]+/)) {
+      const id = raw.trim();
+      if (id) out.push(id);
+    }
+  return [...new Set(out)];
+}
+
+/**
  * Parse a single co-located unit-test file (Vitest `*.test.ts(x)` or pytest
  * `test_*.py`) into a `test` node with `kind: unit-fe | unit-be`. Tag edges to
  * features are derived from the file path against the feature registry globs.
@@ -96,5 +117,11 @@ export function parseUnitTest(input: { path: string; content: string }, repos: R
     testCount: py ? countMatches(/\bdef\s+test_/g, input.content) : countMatches(/(?<![.\w])(?:it|test)(?:\.\w+)*\s*\(/g, input.content),
     source: input.content,   // full file, so the viewer can show the real test code on demand
   };
-  return { nodes: [node], edges: [] };
+  const edges: GraphEdge[] = declaredCovers(input.content).map((to) => ({
+    from: node.id,
+    to,
+    type: "covers",
+    source: input.path,
+  }));
+  return { nodes: [node], edges };
 }

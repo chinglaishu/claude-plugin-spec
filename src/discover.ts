@@ -8,7 +8,7 @@ import { parseCache } from "./parseCache";
 import { parseUnitTest } from "./parseUnitTests";
 import { parseInstruction, parseAgent, parseHooks } from "./parseConfig";
 import { assemble } from "./buildGraph";
-import { matchingFeatures, deriveUnitTagEdges } from "./deriveTags";
+import { deriveUnitTagEdges } from "./deriveTags";
 import { applyResults } from "./parseResults";
 import { applyEvidence } from "./applyEvidence";
 import { parseConflicts, foldConflicts } from "./parseConflicts";
@@ -80,18 +80,21 @@ export async function buildGraph(repoRoot: string, now: string, config: Config, 
     all.edges.push(...r.edges);
   }
 
-  // Unit-test pass: index only the Vitest/pytest files that fall under a registered feature.
-  const features = all.nodes.filter((n): n is GraphNode => n.type === "feature");
-  if (features.length) {
-    const candidates = await fg(config.unitTestGlobs, { cwd: repoRoot, ignore, dot: true, unique: true });
-    for (const rel of candidates) {
-      if (!matchingFeatures(rel, features).length) continue;
-      const content = await readFile(join(repoRoot, rel), "utf8");
-      const r = parseUnitTest({ path: rel, content }, config.repos);
-      all.nodes.push(...r.nodes);
-    }
-    all.edges.push(...deriveUnitTagEdges(all.nodes));
+  // Unit-test pass: index every file matching the project's own test globs.
+  //
+  // Feature registration used to GATE this, which silently excluded every project with no UI flow
+  // registry — this tool among them: 39 requirements, 485 passing tests, and every requirement
+  // reading `uncovered` because the linkage pass never ran at all (CEO 2026-07-24). A gate that
+  // depends on an e2e artifact makes "every behaviour proven" unreachable for a library or a CLI.
+  // Feature matching now only DERIVES tag edges, which is the only thing it was ever evidence of.
+  const candidates = await fg(config.unitTestGlobs, { cwd: repoRoot, ignore, dot: true, unique: true });
+  for (const rel of candidates) {
+    const content = await readFile(join(repoRoot, rel), "utf8");
+    const r = parseUnitTest({ path: rel, content }, config.repos);
+    all.nodes.push(...r.nodes);
+    all.edges.push(...r.edges);
   }
+  all.edges.push(...deriveUnitTagEdges(all.nodes));
 
   const graph = assemble(all, now, registries);
 
