@@ -53,7 +53,21 @@ review agent, no soc-gate.
   access to any private codebase."* The fixtures live in `fixtures/`; `src/fixtureRepo.test.ts`
   asserts them; `npx tsx scripts/fixture-expected.mts` recaptures the expected graphs — **a committed
   claim to re-review on any deliberate change, never a cache to refresh blindly.** The suite is fully
-  green (480 tests, 59 files, **nothing skipped**).
+  green (490 tests, 59 files, **nothing skipped**).
+- **Phase 3 has started and the tool self-hosts** (2026-07-24). `npm run build` on this repo produces
+  its own graph: 100 nodes, 39 requirements, 59 test files, single-repo with nothing to pin. Three
+  defects surfaced by doing it, each fixed test-first:
+  - `writeArtifacts` never created the artifact dir — the first build in *any* fresh project died with
+    ENOENT, because the dir had only ever existed by virtue of the tool living in it (§10.9).
+  - **`config.exclude`** (CEO-approved): the knowledge globs are repo-wide, so REQ-1's fixtures were
+    indexed as *our* knowledge — a duplicate `main:claude`, four foreign docs, and the fixtures'
+    deliberately-broken cases reported as our defects. It lives in config, never the tool: a hardcoded
+    `fixtures/**` would re-introduce the coupling REQ-0 removed.
+  - **a unit test can declare `covers:`** (CEO-approved) and unit tests are no longer gated on matching
+    a registered feature. Both together meant a project with no e2e flow registry could never prove a
+    requirement — "every behaviour proven" was unreachable for a library or CLI, this tool included.
+  **Phase 5 note:** the `covers:` change deliberately moves the migration fingerprint (tests outside a
+  registered feature are now indexed). Recapture there; it is not a regression.
 - **The oracle — use it on every change that could move the graph.** The graph is a pure function of
   the tree, so a refactor must leave it **byte-identical**:
   `npx tsx scripts/fingerprint.mts <repo-root> [config.json]` (defaults to
@@ -79,9 +93,23 @@ review agent, no soc-gate.
 
 Phases 3 and 4 run as **one loop** (founding design §11, CEO-approved): wire the `agent-context`
 hook into this repo, self-host (own config, own graph, own gate), and dogfood whether the staff
-prompt actually changes behaviour — measured per §5. Also queued: the two flow-approval spikes
-(§12.3), conflict-scan precision on the DojoStack corpus (§12.10), and a gate flake policy draft
-(§12.12).
+prompt actually changes behaviour — measured per §5.
+
+Immediately next, in order:
+
+1. **Backfill `covers:` across the suite.** The mechanism exists; nothing uses it, so all 39
+   requirements still read `uncovered`. **Do this one claim at a time and only where the test really
+   proves the requirement** — a false `covers:` edge is exactly the lie the tool exists to detect
+   (§10.2), and 39 cheap guesses would poison the graph far worse than 39 honest gaps.
+2. **Wire `agent-context` as a hook.** The prototype is at
+   `dojostack_main/tools/knowledge-graph/mockups/agent-context.mjs` — it reads the graph and, given a
+   file, prints its governing spec, requirements, covering tests and conflicts. It needs porting
+   (it hardcodes sibling repo prefixes and assumes it sits inside the artifact dir) and a REQ.
+3. **Decide whether the generated `knowledge-graph/` is committed.** Left untracked so far — the
+   graph was corrupted by the fixture pollution until it was fixed, and it is still incomplete.
+
+Also queued: the two flow-approval spikes (§12.3), conflict-scan precision on the DojoStack corpus
+(§12.10), a gate flake policy draft (§12.12), and porting the five skills into the empty `skills/`.
 
 ## Commands
 
