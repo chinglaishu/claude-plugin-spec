@@ -25,6 +25,9 @@ requirements:
   - id: REQ-KG-06
     text: A system-design doc's markdown sections are classified deterministically (requirement / decision / open-question / knowledge) from content alone, so the viewer can navigate and tag them without any hand-authored per-section metadata.
     covers: [main:tools/knowledge-graph/src/parseDoc.test.ts]
+  - id: REQ-KG-CTX-01
+    text: "Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning."
+    covers: [main:src/agentContext.test.ts]
   - id: REQ-KG-07
     text: "A doc is identified by its frontmatter `slug` when it declares one, falling back to `id` and then the filename — so a corpus that carries a catalog id (SD-nn) alongside a human slug stays cross-referenceable by the name its siblings actually cite."
     covers: [main:tools/knowledge-graph/src/parseDoc.test.ts]
