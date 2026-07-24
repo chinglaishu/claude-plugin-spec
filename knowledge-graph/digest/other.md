@@ -1,6 +1,6 @@
 # Platform & docs — knowledge digest (synced 2026-07-24, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 41 (proven 41)
+Capabilities: 0 · with tests: 0 · promises: 51 (proven 41)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -41,6 +41,8 @@ Capabilities: 0 · with tests: 0 · promises: 41 (proven 41)
   Proven by: summarize.test.ts (unit-fe, pass)
 - REQ-KG-CORE-06: Every proof a requirement cites must resolve to a real test node; one that resolves to nothing, or to a node that is not a test, is reported as broken-proof rather than silently discarded — and is reported per citation even when a sibling citation proves the requirement, because a dead path masked by a live one is how a stale claim survives a rename.
   Proven by: buildGraph.test.ts (unit-fe, pass)
+- REQ-KG-CORE-07: A doc with status draft is a proposal, so neither it nor the requirements only it specifies are counted by the ratchet as unverified or uncovered — a proposal has claimed nothing and so cannot have failed to prove anything. A requirement any non-draft doc also specifies stays counted, and a draft nobody links to is still an orphan.
+  ⚠ NO COVERING TEST
 - REQ-KG-CTX-01: Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.
   Proven by: agentContext.test.ts (unit-fe, pass)
 - REQ-KG-EVID-01: A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.
@@ -55,6 +57,14 @@ Capabilities: 0 · with tests: 0 · promises: 41 (proven 41)
   Proven by: sources.test.ts (unit-fe, pass)
 - REQ-KG-GATE-02: `check --pinned` refuses to certify a graph unless the sibling checkouts sit exactly at the lockfile's commits, and a missing or malformed lockfile is refused rather than guessed at — so a `fresh ✓` verdict always means reproducible-from-pins, never merely that the graph happened to match one machine's checkout.
   Proven by: sources.test.ts (unit-fe, pass)
+- REQ-KG-PIPE-01: Every entrypoint that writes the graph resolves the project it measures from the working directory, with KG_REPO_ROOT overriding it, and loads that project's config once rather than deriving any path from the tool's own location.
+  ⚠ NO COVERING TEST
+- REQ-KG-PIPE-02: sync reports the issue ratchet without ever blocking on it, naming each kind whose count moved and warning when any rose above baseline, so the inner loop stays usable while check remains the only gate that fails.
+  ⚠ NO COVERING TEST
+- REQ-KG-PIPE-03: sync warns when no test results have been recorded, and when the recorded results are older than a staleness threshold, because a graph whose test statuses came from a stale run reports proof it no longer has.
+  ⚠ NO COVERING TEST
+- REQ-KG-PIPE-04: sync reports what changed against the previously committed graph, and suppresses that report under --quiet.
+  ⚠ NO COVERING TEST
 - REQ-KG-RUN-01: A scoped run (--flow or --case) upserts only the cases it executed into kg-test-results.json, leaving untouched cases' status, attempts, and at intact; a full run replaces the map.
   Proven by: resultsFile.test.ts (unit-fe, pass)
 - REQ-KG-RUN-02: Each result entry is stamped with the commit and timestamp of the run that produced it (per-entry), so a scoped re-record overwrites only its own entries' provenance and untouched or pre-schema entries keep — and never fabricate — their commit, at, and error.
@@ -77,6 +87,16 @@ Capabilities: 0 · with tests: 0 · promises: 41 (proven 41)
   Proven by: serveLock.test.ts (unit-fe, pass)
 - REQ-KG-SERVE-06: A run client disconnect is detected via the ServerResponse close event (not the request) and tree-kills the spawned run, guarded by an exited flag so normal completion never fires a kill.
   Proven by: serverDisconnect.test.ts (unit-fe, pass)
+- REQ-KG-SUB-01: A repo the tool cannot read git history for contributes no dates and never fails the build — a missing git binary, a directory that is not a checkout, and a git invocation that errors are all tolerated per repo, so the graph builds on a machine with no git at all.
+  ⚠ NO COVERING TEST
+- REQ-KG-SUB-02: Dates are derived per owning repo, against that repo's own root and with the repo prefix stripped, because a workspace's nested repos are separate checkouts that share no history.
+  ⚠ NO COVERING TEST
+- REQ-KG-SUB-03: File paths are passed to git in bounded chunks rather than one invocation, so a large repo cannot exceed the platform's command-line length limit, and the chunks' output is concatenated before parsing because each chunk covers a disjoint path set.
+  ⚠ NO COVERING TEST
+- REQ-KG-SUB-04: A scoped test run passes its case filter through an environment variable rather than argv, and an unscoped run passes no filter at all, so a large scope cannot overflow the platform's command-line limit and silently produce no report.
+  ⚠ NO COVERING TEST
+- REQ-KG-SUB-05: Assets the tool ships are resolved relative to the tool's own package, and everything a project owns is resolved from its configured artifact directory — the two are never the same path, however the tool was installed.
+  ⚠ NO COVERING TEST
 - REQ-KG-VIEW-01: The since-last-sync delta is injected only at the real __KG_DELTA__ template markers in the post-data tail — never at a marker string inside the inlined graph JSON — and a build passed no delta leaves the region null.
   Proven by: viewer.test.ts (unit-fe, pass)
 - REQ-KG-VIEW-02: The delta reports, versus the previously committed graph, nodes added and removed grouped and sorted by type, test pass and fail transitions only for ids present in both graphs, and only the issue kinds whose count changed; the first sync yields no delta.

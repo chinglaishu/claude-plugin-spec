@@ -365,3 +365,5 @@ requirements rather than all forty.
 - [[kg-evidence]] — screenshots, destinations, the index
 - [[kg-viewer]] — viewer, digest, delta
 - [[kg-agent-context]] — the briefing staff reads before an edit
+- [[kg-pipeline]] — build and sync, the entrypoints that write the graph *(draft)*
+- [[kg-subprocess]] — git history, run scoping, and the tool's own assets *(draft)*
