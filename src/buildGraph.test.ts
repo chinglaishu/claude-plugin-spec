@@ -1,20 +1,20 @@
-// covers: REQ-KG-CORE-01
+// covers: REQ-KG-CORE-01, REQ-KG-CORE-06
 import { describe, it, expect } from "vitest";
 import { assemble } from "./buildGraph";
 import type { ParseResult } from "./types";
 
 const parts: ParseResult = {
   nodes: [
-    { id: "house-view-freeze", type: "doc", title: "HV Freeze", status: "current", entrypoint: true },
-    { id: "REQ-HV-FREEZE-01", type: "requirement", title: "req" },
-    { id: "HV-1", type: "test", title: "publish" },
+    { id: "billing-freeze", type: "doc", title: "BIL Freeze", status: "current", entrypoint: true },
+    { id: "REQ-BIL-FREEZE-01", type: "requirement", title: "req" },
+    { id: "BIL-1", type: "test", title: "publish" },
     { id: "lonely-doc", type: "doc", title: "orphan", status: "current" },
   ],
   edges: [
-    { from: "HV-1", to: "house-view-freeze", type: "verifies", source: "cases" },
-    { from: "house-view-freeze", to: "REQ-HV-FREEZE-01", type: "specifies", source: "doc" },
-    { from: "house-view-freeze", to: "missing-doc", type: "references", source: "doc" },
-    { from: "house-view-freeze", to: "services/house_view/", type: "governs", source: "doc" },
+    { from: "BIL-1", to: "billing-freeze", type: "verifies", source: "cases" },
+    { from: "billing-freeze", to: "REQ-BIL-FREEZE-01", type: "specifies", source: "doc" },
+    { from: "billing-freeze", to: "missing-doc", type: "references", source: "doc" },
+    { from: "billing-freeze", to: "services/billing/", type: "governs", source: "doc" },
   ],
 };
 
@@ -23,11 +23,11 @@ describe("assemble", () => {
   const kinds = g.issues.map((i) => i.kind);
 
   it("flags broken-link only for node-target edges", () => {
-    expect(g.issues).toContainEqual({ kind: "broken-link", from: "house-view-freeze", to: "missing-doc", detail: "references target 'missing-doc' is not a node" });
+    expect(g.issues).toContainEqual({ kind: "broken-link", from: "billing-freeze", to: "missing-doc", detail: "references target 'missing-doc' is not a node" });
     expect(kinds.filter((k) => k === "broken-link")).toHaveLength(1); // governs code path is NOT broken
   });
   it("flags uncovered requirement (no covers edge)", () => {
-    expect(g.issues).toContainEqual({ kind: "uncovered-requirement", node: "REQ-HV-FREEZE-01", detail: "no test covers this requirement" });
+    expect(g.issues).toContainEqual({ kind: "uncovered-requirement", node: "REQ-BIL-FREEZE-01", detail: "no test covers this requirement" });
   });
   it("flags orphan-doc (no inbound references/imports)", () => {
     expect(kinds).toContain("orphan-doc");
@@ -42,10 +42,10 @@ describe("assemble — bare-slug resolver", () => {
   it("resolves bare reference targets to the namespaced node id", () => {
     const parts = {
       nodes: [
-        { id: "backend:house-view-freeze", type: "doc", title: "HVF", path: "svc_backend/a.md", status: "current" },
+        { id: "backend:billing-freeze", type: "doc", title: "HVF", path: "svc_backend/a.md", status: "current" },
         { id: "backend:assumption-hierarchy-ux", type: "doc", title: "AH", path: "svc_backend/b.md", status: "current" },
       ],
-      edges: [{ from: "backend:house-view-freeze", to: "assumption-hierarchy-ux", type: "references", source: "svc_backend/a.md" }],
+      edges: [{ from: "backend:billing-freeze", to: "assumption-hierarchy-ux", type: "references", source: "svc_backend/a.md" }],
     } as any;
     const g = assemble(parts, "T");
     expect(g.edges[0].to).toBe("backend:assumption-hierarchy-ux");
@@ -232,16 +232,16 @@ describe("assemble — graph.registries (inline feature-registry yaml)", () => {
   const empty: ParseResult = { nodes: [], edges: [] };
   const regs = {
     // deliberately inserted OUT of order to prove assemble sorts on insert
-    "portfolio.features.yaml": "- id: pfl.scenario\n  label: Scenario modeling\n",
-    "add-property.features.yaml": "- id: add.mapping\n  label: Column mapping\n",
+    "pricing.features.yaml": "- id: pfl.scenario\n  label: Scenario modeling\n",
+    "onboarding.features.yaml": "- id: add.mapping\n  label: Column mapping\n",
   };
 
   it("carries registries keyed by basename with byte-exact content, keys sorted", () => {
     const g = assemble(empty, "T", regs);
     expect(g.registries).toBeDefined();
-    expect(Object.keys(g.registries!)).toEqual(["add-property.features.yaml", "portfolio.features.yaml"]);
-    expect(g.registries!["add-property.features.yaml"]).toBe("- id: add.mapping\n  label: Column mapping\n");
-    expect(g.registries!["portfolio.features.yaml"]).toBe("- id: pfl.scenario\n  label: Scenario modeling\n");
+    expect(Object.keys(g.registries!)).toEqual(["onboarding.features.yaml", "pricing.features.yaml"]);
+    expect(g.registries!["onboarding.features.yaml"]).toBe("- id: add.mapping\n  label: Column mapping\n");
+    expect(g.registries!["pricing.features.yaml"]).toBe("- id: pfl.scenario\n  label: Scenario modeling\n");
   });
 
   it("omits the registries key entirely when none are provided (no artifact churn)", () => {

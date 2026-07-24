@@ -36,8 +36,9 @@ export function assemble(parts: ParseResult, now: string, registries?: Record<st
 
   // A requirement is proven if a test `covers` it, or an authored `provenBy` slug resolves
   // to a real test node (mirrors the viewer's provingTests — so CI and the UI never disagree).
-  const provenByTest = (r: GraphNode) =>
-    (r.provenBy ?? []).some((s) => (byId.has(s) ? [s] : slugIndex.get(s) ?? []).some((id) => byId.get(id)?.type === "test"));
+  const resolvesToTest = (s: string) =>
+    (byId.has(s) ? [s] : slugIndex.get(s) ?? []).some((id) => byId.get(id)?.type === "test");
+  const provenByTest = (r: GraphNode) => (r.provenBy ?? []).some(resolvesToTest);
   const isProvenRequirement = (id: string) => {
     const r = byId.get(id);
     return !!r && r.type === "requirement" && (inbound(id, ["covers"]) || provenByTest(r));
@@ -46,6 +47,16 @@ export function assemble(parts: ParseResult, now: string, registries?: Record<st
   for (const n of byId.values()) {
     if (n.type === "requirement" && !isProvenRequirement(n.id))
       issues.push({ kind: "uncovered-requirement", node: n.id, detail: "no test covers this requirement" });
+    // An edge's TARGET has always been validated (broken-link, REQ-KG-CORE-01); a requirement's
+    // cited PROOF was not. `provenBy` — where a doc's `covers:` frontmatter lands — kept whatever
+    // resolved and silently discarded the rest, so a requirement could cite four proofs, have three
+    // name files that do not exist, and still read as fully proven. Reported PER CITATION and
+    // independently of coverage: a dead path masked by a live sibling is exactly how the wrong
+    // citation survives a rename (REQ-KG-CORE-06).
+    if (n.type === "requirement")
+      for (const s of n.provenBy ?? [])
+        if (!resolvesToTest(s))
+          issues.push({ kind: "broken-proof", node: n.id, detail: `cited proof '${s}' is not a test node` });
     if (n.type === "doc" && !n.entrypoint && !inbound(n.id, ["references", "imports"]))
       issues.push({ kind: "orphan-doc", node: n.id, detail: "no inbound references/imports" });
     if (n.type === "doc" && !inbound(n.id, ["verifies"])) {
