@@ -1,6 +1,6 @@
 # Platform & docs — knowledge digest (synced 2026-07-24, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
+Capabilities: 0 · with tests: 0 · promises: 41 (proven 41)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -19,8 +19,8 @@ Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
   Proven by: parseDoc.test.ts (unit-fe, pass)
 - REQ-KG-CONF-01: A conflict finding models one subject with at least two participants grouped into at least two positions (camps); a finding failing that cluster invariant is rejected, and the binary case is simply N=2 with no special-casing.
   Proven by: conflictModel.test.ts (unit-fe, pass)
-- REQ-KG-CONF-02: The scan's comparison surface is enumerated deterministically from the graph's own edges (references for doc-doc, governs for doc-code, covers for requirement-test); two nodes with no connecting edge never become a candidate pair, so the AI adjudicates a bounded set and never free-hunts the tree.
-  Proven by: conflictCandidates.test.ts (unit-fe, pass)
+- REQ-KG-CONF-02: The scan's comparison surface is always enumerated, never free-hunted. Doc-anchored pairs come from the graph's own edges (references for doc-doc, governs for doc-code, covers for requirement-test), and code-to-code pairs come from a shared declared-symbol index over the project's source files, bounded to symbols declared in at least two files and in few enough files to be distinctive. Two files sharing no declared symbol never become a candidate pair, and a repo carrying no docs at all still yields a bounded surface.
+  Proven by: codeCandidates.test.ts (unit-fe, pass) · conflictCandidates.test.ts (unit-fe, pass) · conflictCli.test.ts (unit-fe, pass)
 - REQ-KG-CONF-03: Contradiction adjudication runs out-of-platform (the kg-scan-conflicts skill); the viewer template and the serve process never call an AI SDK or invoke a model.
   Proven by: noAiInViewerServe.test.ts (unit-fe, pass)
 - REQ-KG-CONF-04: graph.conflicts is a viewer-only payload deduped by content id and sorted, adding no nodes, edges, or issues (zero ratchet impact), so the same source findings always fold to byte-identical output.
@@ -28,10 +28,10 @@ Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
 - REQ-KG-CONF-05: A finding's identity is a stable hash of subject plus scope, so a re-scan of the same subject in the same scope yields the same id — the basis for dismissals and resolutions surviving a re-scan.
   Proven by: conflictId.test.ts (unit-fe, pass)
 - REQ-KG-CONF-06: Resolving a finding is choosing one canonical position; every non-canonical participant is then a target for a fix, a dissenting doc as a text edit and dissenting code via TDD plus the code-review gate, and only resolved findings produce a fix plan.
-  Proven by: conflictFixPlan.test.ts (unit-fe, pass)
+  Proven by: conflictCli.test.ts (unit-fe, pass) · conflictFixPlan.test.ts (unit-fe, pass)
 - REQ-KG-CORE-01: A bare cross-reference resolves only when exactly one namespaced id shares its slug (auto-resolved); a slug matching two or more nodes is ambiguous-link and one matching zero is broken-link, and only node-target edges are link-validated (code-path edges like governs or exercises are never broken-link).
   Proven by: buildGraph.test.ts (unit-fe, pass)
-- REQ-KG-CORE-02: Every path-bearing node id is namespaced repo:bare with repo classified purely by path prefix (dojostack_backend to backend, dojostack_frontend to frontend, else main), and auto-generated requirement ids embed the namespaced feature id, so the same authored id in two repos can never collide.
+- REQ-KG-CORE-02: Every path-bearing node id is namespaced repo:bare, with the repo decided solely by the project's declared topology — the longest declared subdir matching on a path boundary wins, and the repo declared at the workspace root is the fallback — and auto-generated requirement ids embed the namespaced feature id, so the same authored id in two repos can never collide.
   Proven by: config.test.ts (unit-fe, pass)
 - REQ-KG-CORE-03: A unit test's feature membership is derived by glob-matching its path against registered feature paths — a file under no feature derives none; e2e tests are never glob-derived (they carry explicit features), and a features.yaml registry emits zero tag edges of its own.
   Proven by: deriveTags.test.ts (unit-fe, pass)
@@ -39,6 +39,8 @@ Capabilities: 0 · with tests: 0 · promises: 40 (proven 40)
   Proven by: discover.test.ts (unit-fe, pass)
 - REQ-KG-CORE-05: A requirement is proven only via an inbound covers edge or a provenBy slug resolving to a real test node (else uncovered-requirement); a doc is unverified-doc unless a test verifies it or every requirement it specifies is independently proven — the self-proven escape can never launder a doc with zero or any unproven requirement.
   Proven by: summarize.test.ts (unit-fe, pass)
+- REQ-KG-CORE-06: Every proof a requirement cites must resolve to a real test node; one that resolves to nothing, or to a node that is not a test, is reported as broken-proof rather than silently discarded — and is reported per citation even when a sibling citation proves the requirement, because a dead path masked by a live one is how a stale claim survives a rename.
+  Proven by: buildGraph.test.ts (unit-fe, pass)
 - REQ-KG-CTX-01: Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.
   Proven by: agentContext.test.ts (unit-fe, pass)
 - REQ-KG-EVID-01: A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.
