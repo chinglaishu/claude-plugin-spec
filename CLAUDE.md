@@ -127,6 +127,13 @@ Immediately next:
    - **`aws s3 ls` exits non-zero for a never-uploaded case**, so `listCaseShas` must catch and
      return `[]` — otherwise the first upload of any new case fails instead of pruning nothing.
 
+   **Then the read half, which is a separate job — do not stop at upload.** The bucket is private, so
+   an `<img>` cannot load it: `serve.ts` needs a route that takes an object key and returns a
+   short-lived signed GET (`presignArgs` is built and tested; `PRESIGN_TTL_SECONDS` is 900). Confine
+   it under the existing `pathGuard` idiom the other read routes use (REQ-KG-SERVE-02). Without this,
+   uploads succeed and **no evidence image ever renders** — a failure that looks like a viewer bug.
+   The committed index stores KEYS, never URLs, precisely so this can be minted per view.
+
    `blob` currently fails loudly, so nothing is half-wired or able to mislead.
 
 2. **Wire `agent-context` as a hook.** The prototype is at
