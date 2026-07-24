@@ -1,0 +1,10 @@
+- id: rates-happy
+  title: A visitor sees a gross rate
+  status: pass
+  spec: rates.spec.ts
+  verifies: [api-spec]
+  covers: [REQ-FXB-1]
+  features: [rates-widget]
+  steps:
+    - action: Open the rates page
+      expected: The quoted rate is gross

@@ -14,7 +14,7 @@ import type { Graph, Issue } from "./types";
  * key kept, value → "") so key order is preserved and nodes without them are untouched; `reviewedAt`
  * is frontmatter-derived content and is deliberately left in the fingerprint.
  */
-function normalizeForCompare(g: Graph): Graph {
+export function normalizeForCompare(g: Graph): Graph {
   return {
     ...g,
     generatedAt: "",

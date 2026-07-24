@@ -1,0 +1,10 @@
+{
+  "_comment": [
+    "REQ-1 fixture — the degenerate single-repo case (founding design §8): one repo owning the",
+    "workspace root, no siblings. The committed expected graph is one-repo.expected.json."
+  ],
+  "repos": [{ "name": "main", "subdir": "" }],
+  "e2eDir": "e2e",
+  "artifactDir": "kg",
+  "unitTestGlobs": ["src/**/*.test.ts"]
+}

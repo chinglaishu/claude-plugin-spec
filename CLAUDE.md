@@ -1,6 +1,8 @@
 # claude-plugin-spec
 
-A tool that keeps a spec **true after implementation**. Two jobs, and only two:
+A tool that **builds** a requirement SSoT out of a codebase — and keeps it **true after
+implementation**. The user arrives with code and an AI agent; the tool writes the spec and the
+Playwright tests. Two jobs, and only two:
 
 1. **One truth** — the SSoT must not contradict itself, because when it does the AI picks a side
    *silently*, and different sessions pick differently. That is what "the feature randomly changed" is.
@@ -11,7 +13,7 @@ Figma own those. Do not widen this.
 
 **North star: [`docs/superpowers/specs/2026-07-17-founding-design.md`](docs/superpowers/specs/2026-07-17-founding-design.md).**
 Read it before any non-trivial change. It holds the scope, the CEO ↔ staff model, the two languages for
-requirements, and ten locked decisions with the evidence behind each.
+requirements, and twelve locked decisions with the evidence behind each.
 
 ## You are staff. The human is the CEO.
 
@@ -42,15 +44,16 @@ review agent, no soc-gate.
 
 ## State
 
-- **REQ-0 is GREEN as of 2026-07-17.** *"Given any repo root supplied as configuration, the tool builds
-  a byte-identical graph to the one DojoStack's in-tree copy produces — knowing nothing about
-  DojoStack."* Phase 2 is complete: the topology, the paths and the artifact dir are all
-  configuration, and the word `dojostack` appears nowhere in `src/`. The suite is fully green (475
-  tests, 58 files, **nothing skipped**).
-- **REQ-0 now needs its successor — open question §12.1, and it is due.** The doc says to resolve it
-  "before REQ-0 goes green and the question stops being asked". It has gone green, so the clock has
-  run out: REQ-0's byte-identical half needs DojoStack's private repo and can never run in CI or
-  survive distribution. Its permanent replacement is a committed fixture repo. **CEO call.**
+- **REQ-0 went GREEN and RETIRED 2026-07-17** (CEO): it was the migration acceptance criterion, and
+  phase 2 completed it — topology, paths and artifact dir are all configuration, the word `dojostack`
+  appears nowhere in `src/`, and the fingerprint against `dojostack_main` was byte-identical
+  throughout.
+- **REQ-1 is its successor, and it is GREEN.** *"The committed fixture projects — one-repo and
+  multi-repo — build to their committed expected graphs, byte-identical, on any machine, with no
+  access to any private codebase."* The fixtures live in `fixtures/`; `src/fixtureRepo.test.ts`
+  asserts them; `npx tsx scripts/fixture-expected.mts` recaptures the expected graphs — **a committed
+  claim to re-review on any deliberate change, never a cache to refresh blindly.** The suite is fully
+  green (480 tests, 59 files, **nothing skipped**).
 - **The oracle — use it on every change that could move the graph.** The graph is a pure function of
   the tree, so a refactor must leave it **byte-identical**:
   `npx tsx scripts/fingerprint.mts <repo-root> [config.json]` (defaults to
@@ -69,12 +72,16 @@ review agent, no soc-gate.
 - **Pre-existing and not yours:** ~20 `tsc --noEmit` strictness errors in `parseResults.test.ts` and
   `applyEvidence.test.ts`, present since the port (`917a01d`). The suite runs under `tsx`, which does
   not typecheck, so they have never been surfaced. Harmless; unowned.
-- **The name is a placeholder** — see the founding design §12.4.
+- **The name is a placeholder, deliberately** — CEO 2026-07-17: keep it for now, rename later. The
+  rename is a phase-4 gate: nothing publishes under it (founding design §12.4).
 
 ## Next
 
-Phase 3 (self-host: own config, own graph, own gate). `kg.config.json` at the root already declares
-this repo as the single-repo case; the rest of phase 3 is its `REQ-KG-*` living in its own graph.
+Phases 3 and 4 run as **one loop** (founding design §11, CEO-approved): wire the `agent-context`
+hook into this repo, self-host (own config, own graph, own gate), and dogfood whether the staff
+prompt actually changes behaviour — measured per §5. Also queued: the two flow-approval spikes
+(§12.3), conflict-scan precision on the DojoStack corpus (§12.10), and a gate flake policy draft
+(§12.12).
 
 ## Commands
 

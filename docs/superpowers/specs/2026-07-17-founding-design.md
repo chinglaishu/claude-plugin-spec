@@ -19,6 +19,16 @@
 
 That is the entire product. Everything below serves those two sentences or it does not ship.
 
+**Neither artifact is an entry requirement — the tool builds both.** *(Corrected 2026-07-17, CEO: the
+original framing read as if an existing SSoT and an existing Playwright suite were preconditions, which
+inverted the adoption story.)* The user arrives with a codebase and an AI agent, nothing else. The SSoT
+accretes through the tool's own motions: the conflict scan needs no docs to find code-vs-code
+contradictions (`irrCalculator.ts` vs `financial.py` is exactly that); each adjudication becomes a
+canonical position; stop-and-ask (§9b.2) forces a requirement into existence for every new behaviour;
+a flow approval (§6) ratifies watched behaviour into a requirement. And the Playwright tests are
+written by staff through the skills (`kg-e2e`, `add-test`) — created for the user, never demanded of
+them.
+
 ## 2. Scope — where this helps, stated honestly
 
 A normal build, web or mobile, runs roughly:
@@ -38,7 +48,10 @@ this exists for is (3) and (4): *it is painful to repeatedly debug with AI.* Con
 - nothing proves the behaviour → every iteration risks a regression nobody notices.
 
 The tool starts when a behaviour is **decided**, and its whole job is keeping that behaviour **true**
-while people and AI keep changing the code around it.
+while people and AI keep changing the code around it. "Decided" describes each behaviour's lifecycle,
+not the user's starting state *(clarified 2026-07-17, CEO)*: a behaviour can be decided and live only
+in code, undocumented — then the tool's job starts by writing it down (§1). What stays out of scope is
+deciding *what to build*; that is phases 1–2, owned elsewhere.
 
 ## 3. The seam nobody else is in
 
@@ -55,6 +68,12 @@ months later when the backend flips to post-tax and `irrCalculator.ts` still cla
 
 That is the seam. **Do not compete on SDD.** Compete on: *your spec is already written and already lying
 to you — here is the tool that keeps it honest while you iterate.*
+
+**And the entry point does not require a spec at all** *(clarified 2026-07-17, CEO)*: every SDD tool
+needs you to start from a spec; this one can also start from code — scan the codebase (or one domain),
+surface its contradictions, and build the SSoT out of the adjudications. "Already written and lying"
+and "never written down" are the same seam: nobody else keeps truth after implementation, whichever
+state you arrive in.
 
 ## 4. CEO ↔ staff — the north star everything derives from
 
@@ -77,7 +96,7 @@ read *on demand* — which is what fullscreen is for. What they must never need 
 | # | deliverable | status |
 |---|---|---|
 | 1 | **The platform** — graph, conflict scan, requirement→test linkage, the gate | mostly built |
-| 2 | **The skills** — `kg-spec`, `kg-e2e`, `kg-scan-conflicts`, `kg-fix-conflicts`, `add-test` | built |
+| 2 | **The skills** — `kg-spec`, `kg-e2e`, `kg-scan-conflicts`, `kg-fix-conflicts`, `add-test` | built **in DojoStack — not yet ported**: this repo's `skills/` is empty *(corrected 2026-07-17 — "built" read as done for this product, which it is not)* |
 | 3 | **The staff prompt** — how the AI must behave | **does not exist** |
 
 **(3) is the gold and it is the cheapest.** The platform can detect every contradiction in a repo and
@@ -85,6 +104,19 @@ change *nothing* if staff never looks before coding. A perfect graph nobody cons
 lint. The staff prompt is what makes (1) and (2) pay off — it is the difference between "the tool knows"
 and "the tool is used". Its search-first mechanism already has a prototype (`agent-context.mjs`: given a
 file, print its governing spec + requirements + covering tests + conflicts).
+
+**Consultation has two paths, and the prompt is only the ambient one** *(clarified 2026-07-17, CEO)*:
+deliberate — the user or staff invokes the scan skill over the whole codebase or a single domain
+*before* development starts, so "no conflicts before we build" is an explicit motion, not a hope; and
+ambient — the hook routes every coding task through governing context. The metrics below measure the
+ambient path; the deliberate path is a skill invocation, which either ran or did not.
+
+**What "working" means, measurably** *(added 2026-07-17: the gate has metrics — ratchet counts,
+fingerprints — while the gold had none, and "the hook is installed" must not be allowed to pass for
+"the prompt works")*: (a) coding sessions consult governing context **before the first edit** —
+observable in session transcripts, not assumed; (b) the `ungoverned-code` ratchet count trends down
+rather than merely holding. Available ≠ used is this section's own point; these two numbers are what
+make the difference checkable.
 
 ## 6. Two languages for requirements
 
@@ -209,6 +241,25 @@ not move, so nothing about the *measurement* changed — only who supplies the t
 **This retires the question in §12.1 by asking it.** REQ-0's byte-identical half needs a private repo,
 so it can never run in this repo's CI or survive distribution; only the grep half can. That was always
 known — the point is that "resolve it before REQ-0 goes green" is now overdue, not upcoming.
+
+**RETIRED 2026-07-17 (CEO): REQ-0 completed its job as the migration acceptance criterion and is
+succeeded by:**
+
+> **REQ-1** — *The committed fixture projects — one-repo and multi-repo — build to their committed
+> expected graphs, byte-identical, on any machine, with no access to any private codebase.*
+
+REQ-1 is the standing, CI-runnable proof that "generic" is real (§8's single-repo argument, made
+permanent), and it tests the assumption rather than the spelling — closing §12.9's gap: a tool that
+hardcodes a runner or a layout will build the wrong fixture graph, whether or not it ever says
+"dojostack". REQ-0's grep half survives as a lint; its byte-identical half lives on only as the manual
+oracle against `dojostack_main` until phase 5 rewires it.
+
+**REQ-1 is GREEN as of 2026-07-17**, the day it was approved — written test-first
+(`src/fixtureRepo.test.ts`: five tests, all watched red before the fixtures existed). The fixtures
+live at `fixtures/one-repo` and `fixtures/multi-repo`; their expected graphs are captured normalized,
+with a pinned clock and an inert `GitRunner`, so they reproduce on a machine with no git and no
+history. `scripts/fixture-expected.mts` regenerates them — a committed claim to re-review on any
+deliberate change, never a cache to refresh blindly.
 
 ## 8. The oracle, and why a ~55-module port is not an act of faith
 
@@ -356,14 +407,14 @@ decoration.**
    but **do not couple to git either**, so a cloud adapter stays possible. `shotsUpload.ts` already gets
    this right by injecting `FsLike`/`GhLike`.
 
-9. **Video is not in the core; it is a monetization candidate.** Playwright videos run ~1–5 MB each —
+11. **Video is not in the core; it is a monetization candidate.** Playwright videos run ~1–5 MB each —
    gigabytes across a suite, and git would break. But **flow-approval (§6) does not need video and is
    worse with it**: `pacedStep` + `.step-shots` already produce a step-by-step screenshot storyboard, and
    **two screenshots diff — two videos do not.** The diff *is* the product ("before → after — intended?"),
    so step-shots are the mechanism, not a compromise. Video may earn its place in a paid tier (sharing a
-   run with a stakeholder), which is a **business question, deferred with the cloud** — see §10.10.
+   run with a stakeholder), which is a **business question, deferred with the cloud** — see §10.12.
 
-10. **The cloud is a monetization question, not an architecture one.** If a team ever wants shared review
+12. **The cloud is a monetization question, not an architecture one.** If a team ever wants shared review
     threads, comment history across people, or cross-project dashboards, that is a product *on top* of
     the git-native core — not a replacement for it. Deciding it now, with no users, would be answering a
     question nobody has asked yet. Revisit when a paying customer asks; the answer is worthless before
@@ -374,6 +425,11 @@ prompt was identified as the gold, design drift was cut, greenfield was reframed
 kind, and flows were recognised as the CEO's language for UI. Recorded rather than silently replaced —
 per the rule that docs get corrected in place, with the reason attached.
 
+**Numbering corrected 2026-07-17:** the last two decisions were mis-numbered 9 and 10 — duplicating
+earlier items and making references like "§10.10" ambiguous, in a document whose whole thesis is that
+the SSoT must not contradict itself. They are now 11 and 12. The `src/` comments citing §10.8/§10.9
+(config threading, topology owner) referred to the correctly-numbered items and keep their meaning.
+
 ## 11. Phases
 
 | # | What | Done when |
@@ -381,7 +437,7 @@ per the rule that docs get corrected in place, with the reason attached.
 | **1** | Port `src`/tests/PRD/viewer; npm deps | ✅ fingerprint vs `dojostack_main` matches |
 | **2** | Genericize onto `kg.config.json` (topology → paths → runners) | ✅ **done 2026-07-17** — REQ-0 green, fingerprint unchanged (`0d66f86c…`) |
 | **3** | Self-host: own config, own graph, own gate | its `REQ-KG-*` live in its own graph (= the single-repo proof, §8) |
-| **4** | The **staff prompt** — skill + `UserPromptSubmit` hook; plugin manifest + marketplace | installable, and staff consults the SSoT before it writes a line |
+| **4** | The **staff prompt** — skill + `UserPromptSubmit` hook; plugin manifest + marketplace | installable; staff consults the SSoT before it writes a line, *measured* per §5; **renamed off the placeholder first (§12.4)** |
 | **5** | Rewire DojoStack: delete `tools/knowledge-graph/`, consume the npm dep | DojoStack's graph is purely DojoStack |
 
 DojoStack keeps its **artifacts** (graph, viewer, baseline, lockfile), its **config** and its **workflow**
@@ -391,6 +447,14 @@ nothing breaks while this is built.
 **Phase 4 is where the value lands** (§5): the platform is inert until staff is made to consult it. If
 time runs out, ship 1–4 and leave DojoStack on its in-tree copy — the tool still works for the next
 project. Phase 5 is hygiene, not value.
+
+**Amended 2026-07-17 (CEO-approved): 3 and 4 run as one loop, not a sequence.** Self-hosting without
+the staff prompt is a graph nobody consults — §5's own critique, applied to this plan — and the prompt
+without a graph has nothing to consult. So the `agent-context.mjs` prototype gets wired as a hook in
+this repo at the *start* of phase 3, and every session spent building the tool doubles as the test of
+whether the gold actually changes staff behaviour (§5's measure). The project's highest-risk assumption
+— that a prompt plus a hook makes staff look before coding — was scheduled last of the value-bearing
+phases; it is precisely the one to test first.
 
 ## 12. Open questions
 
@@ -403,13 +467,19 @@ project. Phase 5 is hygiene, not value.
    project, one-repo and multi-repo variants) whose graph is asserted — which is also the cheapest honest
    proof that "reusable" is real (§8). Resolve during phase 2, before REQ-0 goes green and the question
    stops being asked.
+   **RESOLVED 2026-07-17 (CEO): yes, as the likely answer predicted.** REQ-0 retires as a completed
+   migration requirement; its permanent successor is **REQ-1 (§7)** — the committed fixture repos,
+   asserted byte-identical in CI, which also answers §12.9 by testing the assumption instead of the
+   spelling.
 2. ~~**Will `governs:` be adopted?**~~ — **RESOLVED 2026-07-17: yes.** See decision 10.3. Nine docs of 272
    declared it at the time of asking; the CEO committed to the habit, which is what makes the
    `ungoverned-code` ratchet worth building. Open follow-up: backfilling `governs:` across the existing
    corpus is its own slice, and the ratchet must not block on it — freeze the baseline where it lands.
 3. **Build flow-approval (§6)?** The most differentiated idea here and entirely undesigned. Overlaps
    Percy/Chromatic on approve-the-diff; the novelty is that approval **ratifies a requirement** rather
-   than blessing a screenshot.
+   than blessing a screenshot. *Deferred pending spikes (CEO, 2026-07-17): two cheap experiments —
+   approval as a recorded tool call, and step-shot diff stability (§12.11) — run as staff work, and the
+   build/no-build call returns to the CEO with their results.*
 4. **The name — `claude-plugin-spec` is an explicit placeholder.** *(Set 2026-07-17 so the repo could
    exist; the CEO will rename later. It replaced `claude-mcp-debugger`, which was worse: the tool is
    neither a debugger nor an MCP thing — MCP Apps is one delivery surface for one half of it.)*
@@ -423,14 +493,17 @@ project. Phase 5 is hygiene, not value.
 
    **The rename stays cheap only while the repo is private, unpushed anywhere public, and unpublished.**
    That is the deadline — once it is a plugin id someone typed or a package someone installed, it is
-   permanent. Shortlists already rejected, kept so the next attempt does not restart: `plumb` / `trueup` /
+   permanent. **Made concrete 2026-07-17: the rename is a phase-4 gate (§11) — no plugin manifest,
+   marketplace entry, or npm publish happens under the placeholder.** **CEO 2026-07-17: continue under
+   the placeholder for now; rename later. The phase-4 gate stands.** Shortlists already rejected, kept so the next attempt does not restart: `plumb` / `trueup` /
    `keel` / `specanchor` (descriptive); `cairn` / `fathom` / `quoin` / `kestrel` / `vellum`; and at 4–5
    letters **`canon`** (the code already calls the winning side the *canonical position* —
    `fixPlanFor(finding, canonicalPositionId)`), `datum` (the fixed reference every measurement is taken
    from), `writ`, `moor`. Every short English word is taken on npm, but a scope (`@fumia/…`) frees all of
    them — **npm is not a constraint on the choice.**
 5. **Distribution** — private to the team first, or public? Gates whether the PRD's DojoStack-specific
-   examples need scrubbing.
+   examples need scrubbing. **RESOLVED 2026-07-17 (CEO): private to the team first.** Public waits for
+   the rename (§12.4) and the PRD scrub this question exists to gate.
 6. **Config file name/location** in a consuming project. *Provisionally `kg.config.json` at the
    workspace root (2026-07-17) — phase 2 needed a name to load. Staff's pick, not a decision: it is one
    exported constant (`CONFIG_FILE` in `config.ts`) and every reference goes through it, so renaming is
@@ -452,3 +525,21 @@ project. Phase 5 is hygiene, not value.
    "names no project" is a proxy for "assumes no project", and the gap between them is now where the
    remaining coupling lives. Bears on §12.1's successor: a committed fixture repo whose graph is
    asserted would test the assumption rather than the spelling.
+10. **Conflict-scan precision — measured, not assumed.** *(Added 2026-07-17, from review.)* Every
+    genuine conflict cited in §6 is semantic and cross-language: a tax basis in TS vs Python, an enum,
+    a denominator, a weighting. What detects that kind, and at what false-positive rate? The decision
+    inbox lives or dies on precision — too many spurious findings and the CEO stops opening it, which
+    is the `|| echo` failure recurring one layer up: the signal exists and nobody looks. Before any
+    inbox ships, measure precision on DojoStack's corpus, where the true conflicts are already
+    catalogued.
+11. **Screenshot-diff stability.** *(Added 2026-07-17, from review.)* §6 and §10.11 rest on "two
+    screenshots diff". Visual diffing's classic failure is the false positive — fonts, animation
+    timing, dates, CI-vs-local rendering — the anti-flake problem Percy and Chromatic exist to solve.
+    If step-shot diffs are noisy, flow-approval drowns in spurious "this flow changed — intended?" and
+    the inbox becomes spam. Cheap spike before designing §12.3 any further: are `pacedStep` step-shots
+    stable across runs and machines, and if not, what normalization makes them so?
+12. **A flake policy for the blocking gate.** *(Added 2026-07-17, from review.)* §9c is right that
+    report-only is decoration — but a blocking gate over a flaky Playwright suite is exactly the
+    pressure that produced `|| echo` in the first place. Retries, a quarantine lane, a flake budget —
+    something must keep the gate credible without teaching people to bypass it, and it must be decided
+    before the gate blocks anyone.

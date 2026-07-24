@@ -1,0 +1,8 @@
+- id: checkout
+  label: Checkout
+  paths:
+    - src/checkout*
+  requirements:
+    - id: REQ-FX-3
+      text: An empty order totals zero.
+      covers: [src/checkout.test.ts]
