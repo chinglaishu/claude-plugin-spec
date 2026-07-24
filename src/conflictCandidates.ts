@@ -1,6 +1,15 @@
 import type { Graph, GraphNode } from "./types";
 
-export interface CandidatePair { kind: "doc-doc" | "doc-code" | "req-test"; a: string; b: string; }
+/** `code-code` pairs are NOT derived here — they come from the shared-symbol index in
+ *  codeCandidates.ts, because a repo with no docs has no edges for this enumerator to walk. */
+export interface CandidatePair {
+  kind: "doc-doc" | "doc-code" | "req-test" | "code-code";
+  a: string;
+  b: string;
+  /** `code-code` only: the declared names both files share — i.e. WHY this pair exists and what the
+   *  adjudicator should be comparing. Absent for doc-anchored pairs, where the edge is the reason. */
+  sharedSymbols?: string[];
+}
 
 /** Enumerate the comparison surface DETERMINISTICALLY from the graph's own edges — the scan
  *  skill adjudicates only these, never free-hunting the tree (REQ-KG-CONF-02): doc↔doc via

@@ -19,6 +19,11 @@ export interface PackRequirement {
   text: string;
   /** Test node ids proving it. EMPTY IS THE INTERESTING CASE — it means no safety net under this edit. */
   provenBy: string[];
+  /** True when the doc that specifies it is still `status: draft` — typically drafted FROM the code by
+   *  `kg-draft-spec` and not yet approved. Such a requirement is a mirror of the implementation: it
+   *  cannot contradict the code, so it can never catch a bug in it, and if the code is wrong it states
+   *  the bug as intent. Tolerable while it is visibly unapproved; canon-laundering the moment it is not. */
+  draft: boolean;
 }
 
 export interface ContextPack {
@@ -68,7 +73,10 @@ export function renderPack(pack: ContextPack): string {
   if (!pack.requirements.length) out.push("_None declared for this path._");
   for (const r of pack.requirements) {
     const proof = r.provenBy.length ? `proven by ${r.provenBy.join(", ")}` : "**NO COVERING TEST — no safety net here**";
-    out.push(`- \`${r.id}\` ${r.text} — ${proof}`);
+    // The marker rides on the requirement's own line rather than in a footnote: a warning somewhere
+    // else on the page is a warning that gets read after the edit.
+    const mark = r.draft ? " — ⚠ **UNAPPROVED DRAFT**, describes what the code does, not what it should" : "";
+    out.push(`- \`${r.id}\` ${r.text} — ${proof}${mark}`);
   }
   if (pack.conflicts.length) {
     out.push("", `## ⚖ Conflicts touching this area — ${pack.conflicts.length}`);
@@ -125,10 +133,27 @@ export function contextPack(graph: Graph, config: Config, path: string, baseline
     provingByReq.set(e.to, [...(provingByReq.get(e.to) ?? []), e.from]);
   }
 
+  // Which owning docs are still drafts, so each requirement can carry its approval status. A
+  // requirement specified by ANY approved owner is approved — a draft doc restating it does not
+  // downgrade a decision the CEO already made.
+  const draftOwners = new Set(
+    [...owners].filter((id) => byId.get(id)?.type === "doc" && byId.get(id)?.status === "draft"),
+  );
+  const specifiedBy = new Map<string, string[]>();
+  for (const e of graph.edges) {
+    if (e.type !== "specifies" || !owners.has(e.from)) continue;
+    specifiedBy.set(e.to, [...(specifiedBy.get(e.to) ?? []), e.from]);
+  }
+
   const requirements: PackRequirement[] = [...reqIds]
     .map((id) => byId.get(id))
     .filter((n): n is GraphNode => !!n && n.type === "requirement")
-    .map((n) => ({ id: n.id, text: (n.text ?? n.title ?? "").trim(), provenBy: provingByReq.get(n.id) ?? [] }))
+    .map((n) => ({
+      id: n.id,
+      text: (n.text ?? n.title ?? "").trim(),
+      provenBy: provingByReq.get(n.id) ?? [],
+      draft: (specifiedBy.get(n.id) ?? []).every((o) => draftOwners.has(o)),
+    }))
     .sort((a, b) => (a.id < b.id ? -1 : 1));
 
   const testIds = new Set(requirements.flatMap((r) => r.provenBy));

@@ -55,6 +55,47 @@ describe("contextPack — a governed path", () => {
   });
 });
 
+/**
+ * Generated requirements are a MIRROR of the code, so they cannot contradict it — if the code is
+ * wrong, a drafted requirement documents the bug as intent. That is tolerable while it is visibly
+ * unapproved and fatal the moment it reads like a decision the CEO made, so the briefing has to tell
+ * the two apart. Without this, `kg-draft-spec` would quietly launder generated prose into canon.
+ */
+describe("contextPack — a drafted requirement is not an approved one", () => {
+  const graph: any = {
+    generatedAt: "",
+    nodes: [
+      { id: "main:drafted", type: "doc", title: "Checkout (drafted)", path: ".github/system-design/D.md", status: "draft" },
+      { id: "main:approved", type: "doc", title: "Pricing", path: ".github/system-design/A.md", status: "current" },
+      { id: "REQ-D-1", type: "requirement", title: "Totals sum line items.", text: "Totals sum line items." },
+      { id: "REQ-A-1", type: "requirement", title: "A voucher never goes below zero.", text: "A voucher never goes below zero." },
+    ],
+    edges: [
+      { from: "main:drafted", to: "src/pay.ts", type: "governs" },
+      { from: "main:approved", to: "src/pay.ts", type: "governs" },
+      { from: "main:drafted", to: "REQ-D-1", type: "specifies" },
+      { from: "main:approved", to: "REQ-A-1", type: "specifies" },
+    ],
+    issues: [],
+  };
+  const config: any = { repos: [{ name: "main", subdir: "" }] };
+
+  it("marks a requirement whose owning doc is still a draft", () => {
+    const pack = contextPack(graph, config, "src/pay.ts", []);
+    expect(pack.requirements.find((r) => r.id === "REQ-D-1")?.draft).toBe(true);
+    expect(pack.requirements.find((r) => r.id === "REQ-A-1")?.draft).toBe(false);
+  });
+
+  it("says so in the briefing, in words that stop someone treating it as decided", () => {
+    const text = renderPack(contextPack(graph, config, "src/pay.ts", []));
+    expect(text).toMatch(/UNAPPROVED DRAFT/);
+    // The warning must attach to the drafted requirement, not float loose at the bottom.
+    const line = text.split("\n").find((l) => l.includes("REQ-D-1"))!;
+    expect(line).toMatch(/UNAPPROVED DRAFT/);
+    expect(text.split("\n").find((l) => l.includes("REQ-A-1"))).not.toMatch(/UNAPPROVED DRAFT/);
+  });
+});
+
 describe("contextPack — multi-repo, where a hardcoded prefix would break", () => {
   // These two replace a pair that asserted `Array.isArray(...)` and `toBeTruthy()` — both of which
   // passed just as happily when the pack came back completely empty, so they proved nothing about

@@ -35,7 +35,7 @@ describe("enumerateCandidates", () => {
   });
   it("filters doc-anchored pairs to the requested scope (by doc domain)", () => {
     const g = graph(
-      [doc("main:a", "pfl"), doc("main:b", "pfl"), doc("main:c", "hv"), doc("main:d", "hv")],
+      [doc("main:a", "pfl"), doc("main:b", "pfl"), doc("main:c", "bil"), doc("main:d", "bil")],
       [edge("main:a", "main:b", "references"), edge("main:c", "main:d", "references")],
     );
     expect(enumerateCandidates(g, "pfl")).toEqual([{ kind: "doc-doc", a: "main:a", b: "main:b" }]);
