@@ -7,7 +7,13 @@
     "",
     "Non-blocking by design: the hook prints the briefing into the transcript. The HALT decision lives",
     "in the pack itself (§10.3's frozen baseline), so a project that has not been governed yet is never",
-    "locked out of its own repo on install day."
+    "locked out of its own repo on install day.",
+    "",
+    "stderr is NOT suppressed, and `|| true` is what keeps it non-blocking. It used to be `2>/dev/null`,",
+    "which meant the three ways a fresh install fails — dependencies never installed, no kg.config.json,",
+    "no graph built — all presented identically as the plugin doing nothing at all. Each of those writes",
+    "one actionable line saying what to run. A silent failure is the one outcome a briefing hook cannot",
+    "afford: it is indistinguishable from a project where everything is governed."
   ],
   "hooks": {
     "PreToolUse": [
@@ -16,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx tsx \"${CLAUDE_PLUGIN_ROOT}/src/agentContextCli.ts\" \"${TOOL_INPUT_FILE_PATH}\" 2>/dev/null || true"
+            "command": "npx tsx \"${CLAUDE_PLUGIN_ROOT}/src/agentContextCli.ts\" \"${TOOL_INPUT_FILE_PATH}\" || true"
           }
         ]
       }

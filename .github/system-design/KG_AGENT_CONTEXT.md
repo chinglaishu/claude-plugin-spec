@@ -7,6 +7,8 @@ status: current
 governs:
   - src/agentContext.ts
   - src/agentContextCli.ts
+  - src/ungovernedBaseline.ts
+  - src/ungovernedBaselineCli.ts
 requirements:
   - id: REQ-KG-CTX-01
     text: Given any file path in a project, the agent-context pack lists that path's

@@ -319,6 +319,11 @@ export function artifactPath(config: Config, ...segments: string[]): string {
 // patterns the tool DEFINES, so they are not configurable — a project that renamed them would be using
 // a different tool. Only the e2e registries below need a location, because only the project knows it.
 const DOC_GLOBS = ["**/.github/**/*.md", "**/system-design/**/*.md", "**/memories/**/*.md"];
+
+/** The tool's own floor: build output and vcs internals are never any project's content, whatever it
+ *  declares. Every pass that walks the tree subtracts this, and then `config.exclude` on top — so the
+ *  floor has ONE owner rather than a copy per walker. */
+export const IGNORE = ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/.config-backup*/**", "**/.git/**"];
 const INSTRUCTION_GLOBS = [
   "**/CLAUDE.md", "**/copilot-instructions.md", "**/*.instructions.md",
   ".claude/agents/**/*.md", "**/*.agent.md", ".claude/settings*.json",

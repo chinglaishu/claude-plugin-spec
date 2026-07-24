@@ -1,0 +1,20 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "plugin-spec",
+  "description": "The plugin-spec marketplace — a requirement source-of-truth built out of your own codebase, and kept true after implementation.",
+  "owner": {
+    "name": "fumia",
+    "email": "fumia@fumia.io"
+  },
+  "plugins": [
+    {
+      "name": "plugin-spec",
+      "version": "0.1.0",
+      "source": "./",
+      "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven. Briefs the agent on what governs a file before it edits, halts on ungoverned code, and surfaces contradictions for you to adjudicate.",
+      "author": { "name": "fumia" },
+      "category": "development",
+      "keywords": ["requirements", "specification", "knowledge-graph", "testing", "governance"]
+    }
+  ]
+}
