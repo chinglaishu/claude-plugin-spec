@@ -569,3 +569,14 @@ phases; it is precisely the one to test first.
     pressure that produced `|| echo` in the first place. Retries, a quarantine lane, a flake budget —
     something must keep the gate credible without teaching people to bypass it, and it must be decided
     before the gate blocks anyone.
+13. **`REQ-KG-CORE-02`'s text is stale — two sources disagree.** *(Raised 2026-07-24; staff stopped
+    rather than picking a side, per rule 3.)* It says repo classification is "purely by path prefix
+    (`dojostack_backend` → backend, `dojostack_frontend` → frontend, else main)" — the hardcoded
+    topology **REQ-0 removed**. The code reads it from `config.repos`. The citation has been fixed;
+    the sentence has not, because changing requirement text is the CEO's gate. Decide which is canon.
+14. **The gate is red on one `unverified-doc`, and lowering it is refused.** *(2026-07-24.)* The PRD
+    split left `KNOWLEDGE_GRAPH_TOOL.md` holding narrative with `requirements: []`, so nothing proves
+    it. Isolated and confirmed byte-identical with every other change stashed. **The baseline was
+    deliberately not updated** — refreshing a baseline to go green is the one move this project never
+    makes (§10.3). Either the parent doc earns a requirement, or `unverified-doc` should not apply to
+    a doc that deliberately declares none. That is a requirement decision, not a staff one.
