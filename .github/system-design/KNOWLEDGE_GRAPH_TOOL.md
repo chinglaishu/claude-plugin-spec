@@ -5,7 +5,10 @@ lens: workflow
 domain: dev-tooling
 status: current
 entrypoint: true
-governs: [tools/knowledge-graph/]
+# Corrected 2026-07-24: this said `tools/knowledge-graph/`, the path the tool lived at BEFORE the
+# port. Nothing in this repo sits there, so every file read as ungoverned — found the moment the
+# agent-context pack was pointed at a real file, which is what dogfooding is for.
+governs: [src/]
 requirements:
   - id: REQ-KG-01
     text: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -255,6 +258,28 @@ path (`tools/knowledge-graph/src/shotsUpload.ts`) is invoked automatically at th
 → `{ filename: raw URL }` — is ingested by `discover.ts` the same way `kg-test-results.json` is, and
 attached as `evidence` on the matching e2e test node, so the viewer's screenshot strip can resolve a
 step's image locally (live `serve` `/shots/` route) or from this branch, in that order.
+
+## 5b. The S3 bucket (layout contract, and why reads are signed)
+
+The bucket destination mirrors §5a's layout exactly — `<prefix>/<caseBareId>/<shortSha>/<NN>-<shotName>.png`,
+newest 3 SHAs per case — so the two shared destinations stay directly comparable and moving between
+them is a copy rather than a migration. `src/blobStore.ts` builds every `aws` argv and `shotsUpload.ts`
+runs it; credentials appear nowhere, resolving at run time from the standard AWS chain, because
+`kg.config.json` is committed and a key in it would live in git history forever (REQ-KG-05).
+
+**Reads are the half that is easy to forget, and its absence looks like a viewer bug.** The bucket is
+private, so an `<img>` cannot load an object: it sends no auth header, and the durable object URL
+403s. Committing a pre-signed URL instead is no better — one expires months before the index holding
+it does. So `kg-evidence-index.json` stores the object **key**, addressed through `serve`'s
+`GET /evidence/<objectKey>` route, which mints a short-lived signed GET (`PRESIGN_TTL_SECONDS`, 900)
+and 302s to it, `no-store` so the redirect cannot outlive its own signature.
+
+Note the inversion, which is the whole reason a signature is right here and wrong for upload: one
+signature covers one key, and a run writes many keys not known until it happens — but on read the key
+is already known, the URL is generated per view, and a short life is the point rather than a
+limitation. The route is confined the same way the other read-only routes are (REQ-KG-SERVE-02), one
+step removed: with no filesystem read to confine, the decode → guard → boundary-check sequence runs in
+key space, so a request can only ever name an object under the configured prefix.
 
 ## 6. Doc section metadata
 

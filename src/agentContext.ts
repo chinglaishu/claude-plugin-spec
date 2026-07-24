@@ -37,6 +37,33 @@ export interface ContextPack {
 }
 
 /**
+ * Render the pack as the text staff actually reads. Kept pure and separate from the CLI so the
+ * wording — especially the HALT line, which is the only part that must change behaviour — is
+ * asserted by tests rather than inspected by eye.
+ */
+export function renderPack(pack: ContextPack): string {
+  const out: string[] = [`# Governing context — ${pack.path}`];
+  if (pack.halt) {
+    out.push("", `## ⛔ STOP — ${pack.reason}`, "", "Do not write code here. Ask the CEO for a requirement first.");
+    return out.join("\n") + "\n";
+  }
+  const owners = [...pack.governedBy.map((d) => `${d.title} (${d.path ?? d.id})`), ...pack.features.map((f) => `feature: ${f.title}`)];
+  out.push("", "## Governed by", ...owners.map((o) => `- ${o}`));
+  out.push("", `## Requirements — ${pack.requirements.length}`);
+  if (!pack.requirements.length) out.push("_None declared for this path._");
+  for (const r of pack.requirements) {
+    const proof = r.provenBy.length ? `proven by ${r.provenBy.join(", ")}` : "**NO COVERING TEST — no safety net here**";
+    out.push(`- \`${r.id}\` ${r.text} — ${proof}`);
+  }
+  if (pack.conflicts.length) {
+    out.push("", `## ⚖ Conflicts touching this area — ${pack.conflicts.length}`);
+    for (const c of pack.conflicts) out.push(`- [${c.severity}] ${c.subject}`);
+  }
+  out.push("", "## Before changing behaviour here", "1. Change the requirement first — never the code first.", "2. Make its covering test red, then green.", "3. `npx vitest run` must be green before you stop.");
+  return out.join("\n") + "\n";
+}
+
+/**
  * Does a `governs:` target cover this path? Targets are authored as globs or as directory/file
  * prefixes, so both are honoured — and a prefix must match on a PATH BOUNDARY, never as a bare string
  * prefix, or `src/checkout` would claim `src/checkout_old.ts`. That is the same boundary rule

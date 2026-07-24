@@ -1,7 +1,7 @@
 // covers: REQ-KG-CTX-01
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
-import { contextPack } from "./agentContext";
+import { contextPack, renderPack } from "./agentContext";
 import { buildGraph } from "./discover";
 import { loadConfig } from "./config";
 import type { GitRunner } from "./gitDates";
@@ -94,5 +94,21 @@ describe("contextPack — an ungoverned path HALTS", () => {
   it("does not halt merely because a governed path has gaps", async () => {
     const pack = await packFor("one-repo", "src/checkout.ts");
     expect(pack.halt).toBe(false);
+  });
+});
+
+describe("renderPack — the text staff actually reads", () => {
+  it("leads with STOP and nothing else when the path is ungoverned", async () => {
+    const text = renderPack(await packFor("one-repo", "src/totallyNewThing.ts"));
+    expect(text).toContain("STOP");
+    // The briefing must not also print a requirements section: a halt that still renders a normal
+    // pack invites skimming past it, which is the `|| echo` failure in presentation form.
+    expect(text).not.toContain("## Requirements");
+  });
+
+  it("names the requirement and what proves it, and flags what proves nothing", async () => {
+    const text = renderPack(await packFor("one-repo", "src/checkout.ts"));
+    expect(text).toContain("## Governed by");
+    expect(text).toContain("NO COVERING TEST");
   });
 });
