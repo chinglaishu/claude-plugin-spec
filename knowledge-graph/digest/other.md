@@ -1,6 +1,6 @@
 # Platform & docs — knowledge digest (synced 2026-07-25, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 52 (proven 42)
+Capabilities: 0 · with tests: 0 · promises: 53 (proven 43)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -107,3 +107,5 @@ Capabilities: 0 · with tests: 0 · promises: 52 (proven 42)
   Proven by: digest.test.ts (unit-fe, pass)
 - REQ-KG-VIEW-04: A flow's health lastVerified is the oldest runAt among its tagged e2e tests (worst-case honesty, not the newest), and a test tagged into features of more than one flow is counted once in the health totals.
   Proven by: summarize.test.ts (unit-fe, pass)
+- REQ-KG-VIEW-05: Every untrusted string the viewer renders — a test's error output and an AI-authored suggested fix among them — is escaped as text and never injected as markup, so markup arriving from a test run or a model cannot become live DOM in the reader's browser.
+  Proven by: A run result renders its error escaped, and its failure screenshot opens (e2e, todo) · A committed failure carrying a suggested fix renders it, escaped and labelled (e2e, todo) · A committed failure with no suggested fix renders no fix section at all (e2e, todo)

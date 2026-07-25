@@ -13,7 +13,7 @@ import { test, expect } from "@playwright/test";
 // the `result` branch) populates by calling `renderRunResult`. This exercises the true F1/F2a
 // wiring end-to-end, not just the helper in isolation.
 const BASE = process.env.KG_VIEWER_URL ?? "http://127.0.0.1:8971";
-const RUN_CASE = process.env.KG_RESULT_TEST_CASE ?? "frontend:ADD-1";
+const RUN_CASE = process.env.KG_RESULT_TEST_CASE ?? "main:VIEW-1";
 
 const FAKE_SSE = [
   "event: start",

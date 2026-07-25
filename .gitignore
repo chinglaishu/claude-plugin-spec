@@ -1,1 +1,8 @@
 node_modules/
+# Playwright run artifacts — traces, screenshots and the JSON report of a local run. The graph
+# ingests results via kg-test-results.json, never from these.
+test-results/
+playwright-report/
+e2e/.report.json
+# serve's spawn lock — runtime state, one per machine.
+.kg-serve.lock

@@ -14,10 +14,12 @@ import { test, expect } from "@playwright/test";
 // `page.evaluate(() => lastRunLine(...))` call.
 const BASE = process.env.KG_VIEWER_URL ?? "http://127.0.0.1:8971";
 
-// Real committed nodes (frontend:APX-1 has a lastError + status:fail; frontend:APX-2 likewise,
+// This repo's own committed case nodes, registered in e2e/cases/viewer.cases.yaml. The spec
+// injects the failure state it needs into the served graph, so the nodes need only exist.
+// (Previously two case ids from the project this tool was ported from, which never existed here.)
 // used as the "no suggestedFix" control so we don't need two round-trips off one node's card).
-const NODE_WITH_FIX = "frontend:APX-1";
-const NODE_WITHOUT_FIX = "frontend:APX-2";
+const NODE_WITH_FIX = "main:VIEW-2";
+const NODE_WITHOUT_FIX = "main:VIEW-3";
 const INJECTED_FIX = "<b>bad</b> add an await before the assert";
 
 /** Brace-match the `var KG={...};` blob emitted by src/viewer.ts (JSON.stringify(graph),
@@ -57,11 +59,23 @@ test.describe("suggestedFix in .lr-fail (committed results)", () => {
       const response = await route.fetch();
       const body = await response.text();
       const patched = patchGraphHtml(body, (graph) => {
+        // Inject the WHOLE failure state, not just the fix. The viewer gates the failure block on
+        // `status === 'fail' && (lastError || suggestedFix)` and needs a runAt for the result line.
+        // These specs used to lean on two committed nodes that happened to be red, which made them
+        // depend on someone else's run history — so they broke the moment they met a graph where
+        // those cases were green, or absent.
+        const fail = (n: any) => {
+          n.status = "fail";
+          n.runAt = "2026-07-26T00:00:00.000Z";
+          n.lastError = "Error: expected true to be false";
+        };
         const withFix = graph.nodes.find((n: any) => n.id === NODE_WITH_FIX);
         if (!withFix) throw new Error(`${NODE_WITH_FIX} not found in served graph`);
+        fail(withFix);
         withFix.suggestedFix = INJECTED_FIX;
         const withoutFix = graph.nodes.find((n: any) => n.id === NODE_WITHOUT_FIX);
         if (!withoutFix) throw new Error(`${NODE_WITHOUT_FIX} not found in served graph`);
+        fail(withoutFix);
         delete withoutFix.suggestedFix;
       });
       await route.fulfill({ response, body: patched, headers: { ...response.headers(), "content-length": String(Buffer.byteLength(patched)) } });

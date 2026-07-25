@@ -39,6 +39,19 @@ requirements:
       features of more than one flow is counted once in the health totals.
     covers:
       - main:src/summarize.test.ts
+  - id: REQ-KG-VIEW-05
+    text: Every untrusted string the viewer renders — a test's error output and an
+      AI-authored suggested fix among them — is escaped as text and never
+      injected as markup, so markup arriving from a test run or a model cannot
+      become live DOM in the reader's browser.
+    covers:
+      - main:VIEW-1
+      - main:VIEW-2
+      - main:VIEW-3
+    # NEEDS CEO RATIFICATION. The invariant is real and already implemented — the viewer's client JS
+    # routes these strings through esc() — and the two browser specs asserting it were written before
+    # this repo could run them. What did not exist was any requirement stating it, so the specs proved
+    # a promise no document made. Wording is mine and reversible; the behaviour is not new.
 ---
 
 ## Why this exists

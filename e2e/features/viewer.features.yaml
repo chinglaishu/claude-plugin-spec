@@ -1,0 +1,8 @@
+# This project's first feature registry. `paths` globs are how unit tests get auto-tagged into a
+# feature, so they name the viewer's real source: the shipped template and the renderer that fills it.
+- id: viewer.render
+  label: Viewer rendering
+  flow: viewer
+  paths:
+    - viewer.template.html
+    - src/viewer*

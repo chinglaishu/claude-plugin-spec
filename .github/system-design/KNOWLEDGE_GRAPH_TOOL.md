@@ -222,7 +222,7 @@ as its test lands, so the strict ratchet (REQ-KG-04) stays green instead of gain
 **Phases 1a (data pipeline), 1b (scan skill), 1c (viewer tab + serve decisions) and 2 (fix plan +
 kg-fix-conflicts skill) are built**, so `REQ-KG-CONF-01/02/03/04/05/06` are now in the frontmatter
 above. `07` (tab groups/filters) and `08` (clipboard) are implemented in `viewer.template.html` and
-verified by driving the served viewer, but stay staged until a browser e2e-viewer spec covers them;
+verified by driving the served viewer, but stay staged until a browser e2e spec covers them;
 `09`'s "code fix writes a failing test first" is enforced by the kg-fix-conflicts skill (not a unit
 test), so it also stays staged.
 

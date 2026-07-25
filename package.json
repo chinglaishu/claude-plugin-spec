@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "build": "tsx src/build.ts",
     "sync": "tsx src/sync.ts",
     "sync:results": "tsx src/syncResults.ts",
@@ -20,6 +21,7 @@
     "yaml": "^2.5.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
     "@types/jsdom": "^28.0.3",
     "@types/micromatch": "^4.0.9",
     "@types/node": "^22.0.0",
