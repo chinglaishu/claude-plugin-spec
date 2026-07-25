@@ -56,6 +56,50 @@ describe("contextPack — a governed path", () => {
 });
 
 /**
+ * A test file that PROVES a requirement is not ungoverned — the requirement is precisely the statement
+ * of what it must assert. The gate used to halt on one anyway, because governance was read only from a
+ * doc's `governs:` list and no doc lists test files.
+ *
+ * Found by writing `isMain.test.ts`: it is cited in REQ-KG-SUB-06's own `covers:`, and the briefing
+ * still said nothing governs it. That halts an agent out of the one file it must edit to close a gap
+ * the gate is complaining about — so the gate blocked its own remedy.
+ */
+describe("contextPack — a test is governed by what it proves", () => {
+  const graph: any = {
+    generatedAt: "",
+    nodes: [
+      { id: "main:spec", type: "doc", title: "Spec", path: ".github/system-design/S.md", status: "current" },
+      { id: "REQ-S-1", type: "requirement", title: "A total sums its lines.", text: "A total sums its lines." },
+      { id: "main:src/total.test.ts", type: "test", kind: "unit-fe", title: "total.test.ts", path: "src/total.test.ts" },
+      { id: "main:src/stray.test.ts", type: "test", kind: "unit-fe", title: "stray.test.ts", path: "src/stray.test.ts" },
+    ],
+    edges: [
+      { from: "main:spec", to: "REQ-S-1", type: "specifies" },
+      { from: "main:src/total.test.ts", to: "REQ-S-1", type: "covers" },
+    ],
+    issues: [],
+  };
+  const config: any = { repos: [{ name: "main", subdir: "" }] };
+
+  it("does not halt on a test that covers a requirement", () => {
+    const pack = contextPack(graph, config, "src/total.test.ts", []);
+    expect(pack.halt).toBe(false);
+    expect(pack.requirements.map((r) => r.id)).toContain("REQ-S-1");
+  });
+
+  it("names the doc behind the requirement as the owner", () => {
+    const pack = contextPack(graph, config, "src/total.test.ts", []);
+    expect(pack.governedBy.map((d) => d.id)).toContain("main:spec");
+  });
+
+  // The exemption must come from the covers edge, not from being a test. A test proving nothing is
+  // exactly the bare, unanchored test the gate exists to catch.
+  it("still halts on a test that proves nothing", () => {
+    expect(contextPack(graph, config, "src/stray.test.ts", []).halt).toBe(true);
+  });
+});
+
+/**
  * Generated requirements are a MIRROR of the code, so they cannot contradict it — if the code is
  * wrong, a drafted requirement documents the bug as intent. That is tolerable while it is visibly
  * unapproved and fatal the moment it reads like a decision the CEO made, so the briefing has to tell

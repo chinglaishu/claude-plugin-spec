@@ -17,6 +17,7 @@ governs:
   - src/syncResults.ts
   - src/resolvePlaywrightUrls.ts
   - src/resolveBackendVenvPython.ts
+  - playwright.config.ts
 requirements:
   - id: REQ-KG-03
     text: Test statuses in the graph come only from a recorded Playwright/pytest run

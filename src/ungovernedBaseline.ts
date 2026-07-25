@@ -104,7 +104,14 @@ export async function writeBaseline(opts: {
         `Use --prune to drop paths that have since become governed; it can never admit a new one.`,
     );
 
-  const scannedPaths = await (opts.lister ?? globPaths)(repoRoot, [...IGNORE, ...config.exclude]);
+  // The artifact dir is excluded alongside the tool's own floor: the graph, viewer, report and digest
+  // are REGENERATED every build, so freezing them records the tool's own output as "ungoverned code
+  // we are excusing" — padding the count with churn and making the real number meaningless.
+  const scannedPaths = await (opts.lister ?? globPaths)(repoRoot, [
+    ...IGNORE,
+    ...config.exclude,
+    artifactPath(config, "**"),
+  ]);
   if (scannedPaths.length === 0)
     throw new Error(
       `kg: found no files under ${repoRoot} — refusing to freeze an empty baseline. ` +

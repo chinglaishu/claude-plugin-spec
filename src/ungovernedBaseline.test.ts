@@ -116,6 +116,24 @@ describe("writeBaseline — the artifact the briefing hook actually reads", () =
     expect(parsed).toContain("e2e/orphan.spec.ts");
   });
 
+  // Found by running kg-init against a foreign repo: the freeze swept the tool's OWN artifact dir
+  // into the baseline — knowledge-graph.json, viewer.html, report.md, the digest. Those are
+  // regenerated every build, can never be governed, and would pad the baseline with churn that makes
+  // the real count meaningless.
+  it("never freezes the tool's own generated artifacts", async () => {
+    const fresh = await mkdtemp(join(tmpdir(), "kg-baseline-artifacts-"));
+    await cp(join(FIXTURES, "one-repo"), fresh, { recursive: true });
+    await mkdir(join(fresh, config.artifactDir, "digest"), { recursive: true });
+    await writeFile(join(fresh, config.artifactDir, "knowledge-graph.json"), "{}");
+    await writeFile(join(fresh, config.artifactDir, "viewer.html"), "<html></html>");
+    await writeFile(join(fresh, config.artifactDir, "digest", "index.md"), "# digest");
+    const { paths } = await writeBaseline({ repoRoot: fresh, config, graph, mode: "create" });
+    expect(paths.filter((p) => p.startsWith(config.artifactDir + "/"))).toEqual([]);
+    // and it still froze the real source, so the exclusion is not just an empty result
+    expect(paths).toContain("e2e/orphan.spec.ts");
+    await rm(fresh, { recursive: true, force: true });
+  });
+
   // Pruning what was never frozen would intersect against an empty set and write `[]` — "nothing is
   // excused" — turning a mistyped flag into a repo-wide halt.
   it("refuses to prune a project that has no frozen baseline", async () => {

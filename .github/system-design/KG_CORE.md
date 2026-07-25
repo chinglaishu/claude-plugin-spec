@@ -19,6 +19,7 @@ governs:
   - src/untrackedE2e.ts
   - src/artifacts.ts
   - src/topology.fixture.ts
+  - src/types.ts
 requirements:
   - id: REQ-KG-02
     text: A new e2e spec cannot land without a linked case entry carrying at least

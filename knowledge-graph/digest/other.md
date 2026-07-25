@@ -20,7 +20,7 @@ Capabilities: 0 · with tests: 0 · promises: 53 (proven 43)
 - REQ-KG-CONF-01: A conflict finding models one subject with at least two participants grouped into at least two positions (camps); a finding failing that cluster invariant is rejected, and the binary case is simply N=2 with no special-casing.
   Proven by: conflictModel.test.ts (unit-fe, pass)
 - REQ-KG-CONF-02: The scan's comparison surface is always enumerated, never free-hunted. Doc-anchored pairs come from the graph's own edges (references for doc-doc, governs for doc-code, covers for requirement-test), and code-to-code pairs come from a shared declared-symbol index over the project's source files, bounded to symbols declared in at least two files and in few enough files to be distinctive. Two files sharing no declared symbol never become a candidate pair, and a repo carrying no docs at all still yields a bounded surface.
-  Proven by: codeCandidates.test.ts (unit-fe, pass) · conflictCandidates.test.ts (unit-fe, pass) · conflictCli.test.ts (unit-fe, pass)
+  Proven by: codeCandidates.test.ts (unit-fe, pass) · conflictCandidates.test.ts (unit-fe, pass) · conflictCli.test.ts (unit-fe, pass) · freshInstall.test.ts (unit-fe, pass)
 - REQ-KG-CONF-03: Contradiction adjudication runs out-of-platform (the kg-scan-conflicts skill); the viewer template and the serve process never call an AI SDK or invoke a model.
   Proven by: noAiInViewerServe.test.ts (unit-fe, pass)
 - REQ-KG-CONF-04: graph.conflicts is a viewer-only payload deduped by content id and sorted, adding no nodes, edges, or issues (zero ratchet impact), so the same source findings always fold to byte-identical output.
@@ -44,7 +44,7 @@ Capabilities: 0 · with tests: 0 · promises: 53 (proven 43)
 - REQ-KG-CORE-07: A doc with status draft is a proposal, so neither it nor the requirements only it specifies are counted by the ratchet as unverified or uncovered — a proposal has claimed nothing and so cannot have failed to prove anything. A requirement any non-draft doc also specifies stays counted, and a draft nobody links to is still an orphan.
   ⚠ NO COVERING TEST
 - REQ-KG-CTX-01: Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.
-  Proven by: agentContext.test.ts (unit-fe, pass)
+  Proven by: agentContext.test.ts (unit-fe, pass) · freshInstall.test.ts (unit-fe, pass)
 - REQ-KG-EVID-01: A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.
   Proven by: evidenceUrl.test.ts (unit-fe, pass)
 - REQ-KG-EVID-02: Contents-API base64 content is stripped of GitHub's 60-char line wraps and shaped into a data:image/png;base64 URL (empty or non-string content becomes null), consumed only as an img src and never injected as HTML.

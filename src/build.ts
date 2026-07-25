@@ -8,7 +8,16 @@ import { loadConfig } from "./config";
 // `join(__dirname, "..", "..", "..")` — the tool assuming it was installed inside the tree it
 // measures, which is exactly the assumption a distributable package cannot make (§10.9).
 const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
-const config = await loadConfig(repoRoot);
+
+// `loadConfig` throws a precise, actionable message — and an uncaught throw buried it in a Node stack
+// trace ending in "Node.js v20.20.2". This is `kg-init` step 2, so that trace was the first thing a
+// new user saw on the most likely mistake (building before declaring the topology). The diagnosis was
+// never the problem; the presentation was.
+const config = await loadConfig(repoRoot).catch((err: unknown) => {
+  console.error(err instanceof Error ? err.message : String(err));
+  console.error("kg: declare the project's layout in kg.config.json first — the kg-init skill writes it.");
+  process.exit(2);
+});
 const outDir = join(repoRoot, config.artifactDir);
 
 const graph = await buildGraph(repoRoot, new Date().toISOString(), config);

@@ -122,10 +122,29 @@ export function contextPack(graph: Graph, config: Config, path: string, baseline
   // requirements that govern it, and the one that carries UI behaviour.
   const features = graph.nodes.filter((n) => n.type === "feature" && (n.paths ?? []).some((p) => covers(p)));
 
-  const owners = new Set([...governedBy.map((d) => d.id), ...features.map((f) => f.id)]);
-  const reqIds = new Set(
-    graph.edges.filter((e) => e.type === "specifies" && owners.has(e.from)).map((e) => e.to),
+  // A TEST is governed by what it proves. Its covering requirement is precisely the statement of what
+  // it must assert, so a test carrying a `covers` edge is the best-anchored file in the repo — yet
+  // governance read only from a doc's `governs:` list, and no doc lists test files. The gate therefore
+  // halted on a test cited in a requirement's own `covers:`, blocking the very edit that closes the
+  // gap it was complaining about. A test proving NOTHING still halts: that is the bare, unanchored
+  // test REQ-KG-02 exists to catch.
+  const provenReqIds = new Set(
+    graph.nodes
+      .filter((n) => n.type === "test" && covers(n.path ?? ""))
+      .flatMap((n) => graph.edges.filter((e) => e.type === "covers" && e.from === n.id).map((e) => e.to)),
   );
+  const docsBehindProofs = graph.edges
+    .filter((e) => e.type === "specifies" && provenReqIds.has(e.to))
+    .map((e) => byId.get(e.from))
+    .filter((n): n is GraphNode => !!n && n.type === "doc")
+    .map((n) => ({ id: n.id, title: n.title ?? n.id, path: n.path }));
+  for (const d of docsBehindProofs) if (!governedBy.some((g) => g.id === d.id)) governedBy.push(d);
+
+  const owners = new Set([...governedBy.map((d) => d.id), ...features.map((f) => f.id)]);
+  const reqIds = new Set([
+    ...graph.edges.filter((e) => e.type === "specifies" && owners.has(e.from)).map((e) => e.to),
+    ...provenReqIds,
+  ]);
 
   const provingByReq = new Map<string, string[]>();
   for (const e of graph.edges) {
