@@ -7,6 +7,8 @@ status: current
 governs:
   - src/agentContext.ts
   - src/agentContextCli.ts
+  - src/hookBriefing.ts
+  - src/hookCli.ts
   - src/ungovernedBaseline.ts
   - src/ungovernedBaselineCli.ts
 requirements:

@@ -44,7 +44,7 @@ Capabilities: 0 · with tests: 0 · promises: 53 (proven 43)
 - REQ-KG-CORE-07: A doc with status draft is a proposal, so neither it nor the requirements only it specifies are counted by the ratchet as unverified or uncovered — a proposal has claimed nothing and so cannot have failed to prove anything. A requirement any non-draft doc also specifies stays counted, and a draft nobody links to is still an orphan.
   ⚠ NO COVERING TEST
 - REQ-KG-CTX-01: Given any file path in a project, the agent-context pack lists that path's governing docs, the requirements they specify, the tests covering those requirements, and any conflicts touching them — resolved from the project's own graph and config, knowing nothing about any particular project's layout. When nothing governs the path, the pack halts rather than warning.
-  Proven by: agentContext.test.ts (unit-fe, pass) · freshInstall.test.ts (unit-fe, pass)
+  Proven by: agentContext.test.ts (unit-fe, pass) · freshInstall.test.ts (unit-fe, pass) · hookBriefing.test.ts (unit-fe, pass)
 - REQ-KG-EVID-01: A raw.githubusercontent.com evidence URL is deterministically rewritten into a GitHub Contents API URL with each path segment and the ref URL-encoded (slashes preserved); an already-API URL passes through, and any non-raw or malformed URL returns null so the viewer falls through to the local or placeholder tiers instead of firing an authenticated fetch at a bad target.
   Proven by: evidenceUrl.test.ts (unit-fe, pass)
 - REQ-KG-EVID-02: Contents-API base64 content is stripped of GitHub's 60-char line wraps and shaped into a data:image/png;base64 URL (empty or non-string content becomes null), consumed only as an img src and never injected as HTML.

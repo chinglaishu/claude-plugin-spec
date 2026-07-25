@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T17:24:59.426Z",
+  "generatedAt": "2026-07-25T17:32:31.939Z",
   "nodes": [
     {
       "id": "REQ-KG-01",
@@ -554,6 +554,8 @@
       "governs": [
         "src/agentContext.ts",
         "src/agentContextCli.ts",
+        "src/hookBriefing.ts",
+        "src/hookCli.ts",
         "src/ungovernedBaseline.ts",
         "src/ungovernedBaselineCli.ts"
       ],
@@ -638,7 +640,7 @@
         }
       ],
       "created": "2026-07-24",
-      "updated": "2026-07-24"
+      "updated": "2026-07-26"
     },
     {
       "id": "main:kg-evidence",
@@ -762,7 +764,7 @@
         }
       ],
       "created": "2026-07-24",
-      "updated": "2026-07-24"
+      "updated": "2026-07-26"
     },
     {
       "id": "main:kg-serve",
@@ -1296,6 +1298,18 @@
       "summary": "git log --format=%x00%aI --name-only emits, newest→oldest: a NUL then the ISO author date on one line, then the changed file paths one per line. parseGitLog collapses that to per-file created (oldest date seen) / updated (newest date seen), normalized to YYYY-MM-DD.",
       "testCount": 10,
       "source": "import { describe, it, expect } from \"vitest\";\nimport { REPOS, SOLO } from \"./topology.fixture\";\nimport { dirname, join } from \"node:path\";\nimport { fileURLToPath } from \"node:url\";\nimport { spawnSync } from \"node:child_process\";\nimport { parseGitLog, docDates, type GitRunner } from \"./gitDates\";\n\n// git log --format=%x00%aI --name-only emits, newest→oldest: a NUL then the ISO author date on one\n// line, then the changed file paths one per line. parseGitLog collapses that to per-file created\n// (oldest date seen) / updated (newest date seen), normalized to YYYY-MM-DD.\nconst NUL = \"\\x00\";\n\ndescribe(\"parseGitLog\", () => {\n  it(\"maps a single file in one commit with created == updated == that date\", () => {\n    const out = `${NUL}2026-07-10T12:00:00+08:00\\ndocs/a.md\\n`;\n    const m = parseGitLog(out);\n    expect(m.get(\"docs/a.md\")).toEqual({ created: \"2026-07-10\", updated: \"2026-07-10\" });\n    expect(m.size).toBe(1);\n  });\n\n  const multi = [\n    `${NUL}2026-07-10T12:00:00+08:00`,\n    \"docs/a.md\",\n    \"docs/b.md\",\n    \"\",\n    `${NUL}2026-07-05T09:00:00+08:00`,\n    \"docs/a.md\",\n    \"\",\n    `${NUL}2026-06-01T08:00:00+08:00`,\n    \"docs/a.md\",\n    \"docs/c.md\",\n  ].join(\"\\n\");\n\n  it(\"for a file across several commits, created = oldest and updated = newest (git emits newest→oldest)\", () => {\n    const m = parseGitLog(multi);\n    expect(m.get(\"docs/a.md\")).toEqual({ created: \"2026-06-01\", updated: \"2026-07-10\" });\n  });\n\n  it(\"tracks a file present in only some commits independently of the others\", () => {\n    const m = parseGitLog(multi);\n    // b.md only in the newest commit; c.md only in the oldest commit\n    expect(m.get(\"docs/b.md\")).toEqual({ created: \"2026-07-10\", updated: \"2026-07-10\" });\n    expect(m.get(\"docs/c.md\")).toEqual({ created: \"2026-06-01\", updated: \"2026-06-01\" });\n  });\n\n  it(\"returns an empty map for empty output\", () => {\n    expect(parseGitLog(\"\").size).toBe(0);\n  });\n\n  it(\"ignores blank lines, a malformed date header, and path lines with no date context\", () => {\n    const out = [\n      \"\",                            // leading blank\n      `${NUL}not-a-date`,            // malformed date header → no context set\n      \"orphan-before-any-date.md\",   // path before any valid date → ignored\n      `${NUL}2026-07-10T00:00:00Z`,  // valid header\n      \"\",                            // blank between header and files\n      \"docs/a.md\",\n      \"   \",                         // whitespace-only → ignored\n    ].join(\"\\n\");\n    const m = parseGitLog(out);\n    expect(m.get(\"docs/a.md\")).toEqual({ created: \"2026-07-10\", updated: \"2026-07-10\" });\n    expect(m.has(\"orphan-before-any-date.md\")).toBe(false);\n    expect(m.size).toBe(1);\n  });\n});\n\ndescribe(\"docDates — grouping, prefix strip/re-add, one process per repo (injected runner)\", () => {\n  it(\"runs one git process per repo group against the right root, strips the repo prefix for git, and re-adds it on the result keys\", async () => {\n    const calls: { cwd: string; relPaths: string[] }[] = [];\n    const runner: GitRunner = async (cwd, relPaths) => {\n      calls.push({ cwd, relPaths });\n      if (cwd.endsWith(\"svc_backend\"))\n        return `${NUL}2026-07-10T00:00:00Z\\n.github/system-design/foo.md\\n\\n${NUL}2026-03-03T00:00:00Z\\n.github/memories/note.md\\n`;\n      if (cwd.endsWith(\"svc_frontend\")) return `${NUL}2026-05-02T00:00:00Z\\ne2e/cases/bar.cases.yaml\\n`;\n      return `${NUL}2026-01-01T00:00:00Z\\nCLAUDE.md\\n`; // main\n    };\n    const root = \"/repo/root\";\n    const paths = [\n      \"svc_backend/.github/system-design/foo.md\",\n      \"svc_backend/.github/memories/note.md\",\n      \"svc_frontend/e2e/cases/bar.cases.yaml\",\n      \"CLAUDE.md\",\n    ];\n    const m = await docDates(root, paths, REPOS, runner);\n\n    // exactly one process per distinct repo (backend, frontend, main)\n    expect(calls.length).toBe(3);\n\n    const backendCall = calls.find((c) => c.cwd === join(root, \"svc_backend\"))!;\n    expect(backendCall).toBeDefined();\n    // repo prefix stripped; runner receives the repo-relative paths as an argv-ready array\n    expect(backendCall.relPaths).toEqual([\".github/system-design/foo.md\", \".github/memories/note.md\"]);\n\n    expect(calls.find((c) => c.cwd === join(root, \"svc_frontend\"))?.relPaths).toEqual([\"e2e/cases/bar.cases.yaml\"]);\n    expect(calls.find((c) => c.cwd === root)?.relPaths).toEqual([\"CLAUDE.md\"]); // main uses repoRoot itself\n\n    // keys are the ORIGINAL input paths (prefix re-added)\n    expect(m.get(\"svc_backend/.github/system-design/foo.md\")).toEqual({ created: \"2026-07-10\", updated: \"2026-07-10\" });\n    expect(m.get(\"svc_backend/.github/memories/note.md\")).toEqual({ created: \"2026-03-03\", updated: \"2026-03-03\" });\n    expect(m.get(\"svc_frontend/e2e/cases/bar.cases.yaml\")).toEqual({ created: \"2026-05-02\", updated: \"2026-05-02\" });\n    expect(m.get(\"CLAUDE.md\")).toEqual({ created: \"2026-01-01\", updated: \"2026-01-01\" });\n  });\n\n  it(\"tolerates a per-repo git failure (runner returns null) — that group contributes nothing, others still resolve\", async () => {\n    const runner: GitRunner = async (cwd) => {\n      if (cwd.endsWith(\"svc_backend\")) return null; // non-git dir / git exited non-zero\n      return `${NUL}2026-01-01T00:00:00Z\\nCLAUDE.md\\n`;\n    };\n    const m = await docDates(\"/root\", [\"svc_backend/x/y.md\", \"CLAUDE.md\"], REPOS, runner);\n    expect(m.has(\"svc_backend/x/y.md\")).toBe(false);\n    expect(m.get(\"CLAUDE.md\")).toEqual({ created: \"2026-01-01\", updated: \"2026-01-01\" });\n  });\n\n  it(\"tolerates a runner that throws (missing git binary) — caught and skipped, other groups resolve\", async () => {\n    const runner: GitRunner = async (cwd) => {\n      if (cwd.endsWith(\"svc_frontend\")) throw new Error(\"spawn git ENOENT\");\n      return `${NUL}2026-02-02T00:00:00Z\\nCLAUDE.md\\n`;\n    };\n    const m = await docDates(\"/root\", [\"svc_frontend/a.md\", \"CLAUDE.md\"], REPOS, runner);\n    expect(m.has(\"svc_frontend/a.md\")).toBe(false);\n    expect(m.get(\"CLAUDE.md\")).toEqual({ created: \"2026-02-02\", updated: \"2026-02-02\" });\n  });\n\n  it(\"returns an empty map and never spawns git when given no paths\", async () => {\n    let called = 0;\n    const runner: GitRunner = async () => {\n      called++;\n      return \"\";\n    };\n    const m = await docDates(\"/root\", [], REPOS, runner);\n    expect(m.size).toBe(0);\n    expect(called).toBe(0);\n  });\n});\n\n// Regression / smoke test for the real spawn path. The original defaultGitRunner used\n// `git log ... --pathspec-from-file=- --pathspec-file-nul`, which git 2.32 rejects\n// (`fatal: unrecognized argument: --pathspec-from-file=-`) → every process exited non-zero →\n// docDates returned nothing for every node. This test exercises the DEFAULT runner (no injection)\n// against a file known to be tracked in THIS repo, so a broken real spawn can never pass again.\n// This repo IS the workspace under test — a single-repo project, which is the degenerate topology and\n// the one worth smoke-testing against real git. It used to walk `join(here, \"..\", \"..\", \"..\")` to\n// reach a workspace three levels up, which was true only of the in-tree copy: after the port that path\n// left the git repo entirely, `gitUsable` went false, and this guard SILENTLY SKIPPED. A regression\n// test that stops running is worse than one that fails, because nothing says so (§10.2's lesson).\nconst here = dirname(fileURLToPath(import.meta.url));\nconst repoRoot = join(here, \"..\");\nfunction gitUsable(cwd: string): boolean {\n  try {\n    const r = spawnSync(\"git\", [\"-C\", cwd, \"rev-parse\", \"--is-inside-work-tree\"], { encoding: \"utf8\" });\n    return r.status === 0 && String(r.stdout).trim() === \"true\";\n  } catch {\n    return false;\n  }\n}\nconst REAL_GIT = gitUsable(repoRoot);\n\ndescribe(\"docDates — real git (default runner, no injection)\", () => {\n  it.skipIf(!REAL_GIT)(\"dates a tracked file via a real git spawn (created <= updated, both YYYY-MM-DD)\", async () => {\n    const tracked = \"package.json\"; // tracked in this repo, at its root, so cwd = repoRoot\n    const m = await docDates(repoRoot, [tracked], SOLO); // DEFAULT runner — real `git log`\n    const d = m.get(tracked);\n    expect(d).toBeDefined();\n    expect(d!.created).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);\n    expect(d!.updated).toMatch(/^\\d{4}-\\d{2}-\\d{2}$/);\n    expect(d!.created! <= d!.updated!).toBe(true); // oldest commit no later than newest\n  });\n});\n"
+    },
+    {
+      "id": "main:src/hookBriefing.test.ts",
+      "type": "test",
+      "kind": "unit-fe",
+      "title": "hookBriefing.test.ts",
+      "path": "src/hookBriefing.test.ts",
+      "status": "pass",
+      "text": "The hook contract, which this plugin got wrong in both directions from the day it shipped.",
+      "summary": "The hook contract, which this plugin got wrong in both directions from the day it shipped. `hooks.json` passed `\"${TOOL_INPUT_FILE_PATH}\"` — not a substitution Claude Code performs. It expanded to an empty string, the CLI printed its usage line and exited 2, and `|| true` swallowed that. And even had the path arrived, a PreToolUse hook's plain stdout is DISCARDED: the model sees `permissionDeci…",
+      "testCount": 7,
+      "source": "// covers: REQ-KG-CTX-01\nimport { describe, it, expect } from \"vitest\";\nimport { editedPathFrom, hookDecision } from \"./hookBriefing\";\nimport type { ContextPack } from \"./agentContext\";\n\n/**\n * The hook contract, which this plugin got wrong in both directions from the day it shipped.\n *\n * `hooks.json` passed `\"${TOOL_INPUT_FILE_PATH}\"` — not a substitution Claude Code performs. It\n * expanded to an empty string, the CLI printed its usage line and exited 2, and `|| true` swallowed\n * that. And even had the path arrived, a PreToolUse hook's plain stdout is DISCARDED: the model sees\n * `permissionDecisionReason`, nothing else. So the briefing — founding design §5's \"gold\", the thing\n * that makes the graph get consulted at all — never reached a single session.\n *\n * Both halves are asserted here because fixing either one alone still yields silence.\n */\n\nconst pack = (over: Partial<ContextPack> = {}): ContextPack => ({\n  path: \"src/pay.ts\",\n  governedBy: [],\n  features: [],\n  requirements: [],\n  tests: [],\n  conflicts: [],\n  halt: false,\n  grandfathered: false,\n  ...over,\n});\n\ndescribe(\"editedPathFrom — the path arrives as JSON on stdin, never as an env var\", () => {\n  it(\"reads file_path for Edit and Write\", () => {\n    expect(editedPathFrom(JSON.stringify({ tool_name: \"Edit\", tool_input: { file_path: \"/repo/src/a.ts\" } })))\n      .toBe(\"/repo/src/a.ts\");\n    expect(editedPathFrom(JSON.stringify({ tool_name: \"Write\", tool_input: { file_path: \"/repo/src/b.ts\" } })))\n      .toBe(\"/repo/src/b.ts\");\n  });\n\n  // NotebookEdit names its target differently. Missing this means notebooks silently get no briefing\n  // while every other edit gets one — the worst kind of gap, because it looks like it works.\n  it(\"reads notebook_path for NotebookEdit\", () => {\n    expect(editedPathFrom(JSON.stringify({ tool_name: \"NotebookEdit\", tool_input: { notebook_path: \"/repo/n.ipynb\" } })))\n      .toBe(\"/repo/n.ipynb\");\n  });\n\n  it(\"returns null rather than guessing when there is no path\", () => {\n    expect(editedPathFrom(JSON.stringify({ tool_name: \"Edit\", tool_input: {} }))).toBeNull();\n    expect(editedPathFrom(\"not json\")).toBeNull();\n    expect(editedPathFrom(\"\")).toBeNull();\n  });\n});\n\ndescribe(\"hookDecision — the model only ever sees permissionDecisionReason\", () => {\n  it(\"emits the shape a PreToolUse hook must emit\", () => {\n    const out = hookDecision(pack({ governedBy: [{ id: \"main:spec\", title: \"Spec\" }] }));\n    expect(out.hookSpecificOutput.hookEventName).toBe(\"PreToolUse\");\n    expect(out.hookSpecificOutput.permissionDecision).toBe(\"allow\");\n  });\n\n  // The whole point. A decision with no reason is a hook that allows the edit and says nothing —\n  // exactly the silence this replaces.\n  it(\"carries the briefing in the reason, not in stdout\", () => {\n    const out = hookDecision(pack({\n      governedBy: [{ id: \"main:spec\", title: \"Checkout spec\", path: \".github/system-design/C.md\" }],\n      requirements: [{ id: \"REQ-1\", text: \"A total sums its lines.\", provenBy: [], draft: false }],\n    }));\n    const reason = out.hookSpecificOutput.permissionDecisionReason;\n    expect(reason).toMatch(/Checkout spec/);\n    expect(reason).toMatch(/REQ-1/);\n    expect(reason).toMatch(/NO COVERING TEST/);\n  });\n\n  it(\"passes the halt through as the reason, so the model is told to stop\", () => {\n    const out = hookDecision(pack({ halt: true, reason: \"Nothing governs this path\" }));\n    expect(out.hookSpecificOutput.permissionDecisionReason).toMatch(/STOP/);\n  });\n\n  // Non-blocking is the documented design (hooks.json): a project that has not been governed yet must\n  // never be locked out of its own repo on install day. The halt is an instruction, not a veto.\n  it(\"never denies the edit, even on a halt\", () => {\n    expect(hookDecision(pack({ halt: true, reason: \"x\" })).hookSpecificOutput.permissionDecision).toBe(\"allow\");\n  });\n});\n"
     },
     {
       "id": "main:src/ids.test.ts",
@@ -1866,6 +1880,18 @@
     {
       "from": "main:kg-agent-context",
       "to": "src/agentContextCli.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
+    },
+    {
+      "from": "main:kg-agent-context",
+      "to": "src/hookBriefing.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_AGENT_CONTEXT.md"
+    },
+    {
+      "from": "main:kg-agent-context",
+      "to": "src/hookCli.ts",
       "type": "governs",
       "source": ".github/system-design/KG_AGENT_CONTEXT.md"
     },
@@ -2852,6 +2878,12 @@
       "to": "REQ-KG-04",
       "type": "covers",
       "source": "src/gateDecision.test.ts"
+    },
+    {
+      "from": "main:src/hookBriefing.test.ts",
+      "to": "REQ-KG-CTX-01",
+      "type": "covers",
+      "source": "src/hookBriefing.test.ts"
     },
     {
       "from": "main:src/isMain.test.ts",
