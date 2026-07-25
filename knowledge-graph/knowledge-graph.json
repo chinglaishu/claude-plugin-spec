@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T17:32:31.939Z",
+  "generatedAt": "2026-07-25T17:42:04.964Z",
   "nodes": [
     {
       "id": "REQ-KG-01",
@@ -569,7 +569,7 @@
         }
       ],
       "created": "2026-07-24",
-      "updated": "2026-07-24"
+      "updated": "2026-07-26"
     },
     {
       "id": "main:kg-conflicts",

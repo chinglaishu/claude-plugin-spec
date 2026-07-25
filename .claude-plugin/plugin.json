@@ -1,14 +1,20 @@
 {
   "$comment": [
     "Renamed off the `claude-` placeholder 2026-07-24 (CEO), clearing the trademark half of the",
-    "§12.4 gate. The doc's OTHER recorded objection stands and was accepted knowingly: `plugin-spec`",
+    "\u00a712.4 gate. The doc's OTHER recorded objection stands and was accepted knowingly: `plugin-spec`",
     "still reads as 'a specification for plugins', which is a different product. Cheap to change",
-    "again while the repo is private and unpublished; permanent the moment someone installs it."
+    "again while the repo is private and unpublished; permanent the moment someone installs it.",
+    "",
+    "`hooks` and `skills` keys REMOVED 2026-07-26. `hooks/hooks.json` and `skills/` are loaded by",
+    "convention; naming them here registers them a SECOND time, and Claude Code rejects the duplicate \u2014",
+    "'Hook load failed: Duplicate hooks file detected' \u2014 which fails the whole hook load, so the plugin",
+    "installed with zero hooks. Found by running `claude --plugin-dir . plugin list`, which is the only",
+    "thing that reads this file. Nothing in the repo's own tests could have caught it."
   ],
   "name": "plugin-spec",
   "version": "0.1.0",
   "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven.",
-  "author": { "name": "fumia" },
-  "hooks": "./hooks/hooks.json",
-  "skills": "./skills"
+  "author": {
+    "name": "fumia"
+  }
 }
