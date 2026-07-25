@@ -14,6 +14,7 @@
 // PURE, and given its inputs rather than reading `import.meta`/`process` itself — that is what makes
 // the encoding and absent-argv cases testable at all, which is why three implementations could
 // disagree unnoticed for as long as they did.
+import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
 /**
@@ -27,7 +28,13 @@ import { pathToFileURL } from "node:url";
 export function isMain(moduleUrl: string, argv1: string | undefined): boolean {
   if (!argv1) return false;
   try {
-    return moduleUrl === pathToFileURL(argv1).href;
+    if (moduleUrl === pathToFileURL(argv1).href) return true;
+    // SYMLINKS. `import.meta.url` is always the RESOLVED real path; `process.argv[1]` is whatever the
+    // caller typed. Invoke through a symlink — macOS `/tmp` (a link to `/private/tmp`), a symlinked
+    // checkout, a pnpm store — and the two never match, so the module decides it is not the entrypoint
+    // and the CLI silently does nothing. Position B shipped with this and it survived the adjudication;
+    // found by running a bundled entrypoint out of a temp dir, where it fails every time.
+    return moduleUrl === pathToFileURL(realpathSync(argv1)).href;
   } catch {
     return false;
   }

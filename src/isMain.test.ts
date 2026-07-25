@@ -1,6 +1,10 @@
 // covers: REQ-KG-SUB-06
 import { describe, it, expect } from "vitest";
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { mkdtemp, mkdir, symlink, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { isMain } from "./isMain";
 
 /**
@@ -48,5 +52,31 @@ describe("isMain — one answer, in one place", () => {
   it("is false for a different script whose filename merely ends with this one's", () => {
     const url = pathToFileURL("/repo/src/build.ts").href;
     expect(isMain(url, "/repo/src/run-build.ts")).toBe(false);
+  });
+
+  /**
+   * The defect the approved position B still had, found by running a bundled entrypoint out of a
+   * macOS temp dir: `import.meta.url` is ALWAYS the resolved real path, while `process.argv[1]` is
+   * whatever the caller typed. Invoke a script through any symlink — /tmp on macOS, a symlinked
+   * checkout, a pnpm store — and the two never match, so the module decides it is not the entrypoint
+   * and every CLI silently does nothing. Same silence the whole conflict was about.
+   */
+  it("is true when the script was invoked through a symlink", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "kg-ismain-link-"));
+    try {
+      const real = join(dir, "real");
+      const link = join(dir, "link");
+      await mkdir(real, { recursive: true });
+      await writeFile(join(real, "cli.mjs"), "");
+      await symlink(real, link, "dir");
+      // What node ACTUALLY reports for a run via the link: `import.meta.url` fully resolved (verified
+      // by probe — a script under macOS /tmp reports /private/tmp), and argv[1] left as typed. The
+      // realpath here is the fixture being accurate, not the assertion being softened: without it the
+      // test also has to survive tmpdir() itself being a symlink, which is a different bug.
+      const moduleUrl = pathToFileURL(realpathSync(join(real, "cli.mjs"))).href;
+      expect(isMain(moduleUrl, join(link, "cli.mjs"))).toBe(true);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
