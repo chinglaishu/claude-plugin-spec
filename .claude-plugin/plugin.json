@@ -12,7 +12,7 @@
     "thing that reads this file. Nothing in the repo's own tests could have caught it."
   ],
   "name": "plugin-spec",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven.",
   "author": {
     "name": "fumia"
