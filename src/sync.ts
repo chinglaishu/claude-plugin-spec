@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { isMain } from "./isMain";
 import { buildGraph } from "./discover";
 import { writeArtifacts } from "./artifacts";
 import { computeDelta, formatDelta } from "./delta";
@@ -15,8 +15,7 @@ export function ageHours(iso: string | undefined | null, now: Date): number | nu
   return (now.getTime() - new Date(iso).getTime()) / 3_600_000;
 }
 
-const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isMain) {
+if (isMain(import.meta.url, process.argv[1])) {
   const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
   const config = await loadConfig(repoRoot);
   const outDir = join(repoRoot, config.artifactDir);

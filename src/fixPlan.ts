@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { artifactPath, loadConfig } from "./config";
 import { fixPlan } from "./conflictFixPlan";
 import { readDecisions } from "./conflictDecisions";
+import { isMain } from "./isMain";
 import type { Graph } from "./types";
 
 // CLI: `tsx src/fixPlan.ts` → prints the fix plan (dissenters to change, by type) for every finding
@@ -12,7 +13,7 @@ import type { Graph } from "./types";
 // Graph and decisions are resolved from the PROJECT (cwd, or `KG_REPO_ROOT`) via its own
 // `artifactDir` — never from the tool's own directory, which is only ever right when the tool happens
 // to be installed inside the project it measures (§10.9).
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("fixPlan.ts")) {
+if (isMain(import.meta.url, process.argv[1])) {
   const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
   const config = await loadConfig(repoRoot);
   const graphPath = join(repoRoot, artifactPath(config, "knowledge-graph.json"));

@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { isMain } from "./isMain";
 import { buildGraph } from "./discover";
 import { renderViewer } from "./viewer";
 import { TEMPLATE_PATH } from "./toolDir";
@@ -101,8 +101,7 @@ export function lowerBaseline(baseline: Baseline, counts: Record<string, number>
 }
 
 // Run as a script only when invoked directly (not when imported by tests)
-const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isMain) {
+if (isMain(import.meta.url, process.argv[1])) {
   // The project is the CWD (KG_REPO_ROOT overrides) and its artifacts live where IT says — not
   // beside the tool. See artifacts.ts's TOOL_DIR for the other half of that split (§10.9).
   const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();

@@ -11,7 +11,7 @@
 // The pure logic (title→case map, screenshot resolution) is exported and unit-tested; the CLI
 // entrypoint at the bottom is thin glue (real fs + spawn), mirroring shotsUpload.ts's split.
 
-import { pathToFileURL } from "node:url";
+import { isMain } from "./isMain";
 import type { Graph } from "./types";
 import type { ResultsFileV2 } from "./resultsFile";
 
@@ -73,15 +73,7 @@ export function resolveResultShots(reportJson: string, titles: Map<string, CaseR
 }
 
 // ── CLI entrypoint (real fs + spawn) — thin glue, not unit-tested; the logic above is. ──
-const isMain = (() => {
-  try {
-    return import.meta.url === pathToFileURL(process.argv[1]).href;
-  } catch {
-    return false;
-  }
-})();
-
-if (isMain) {
+if (isMain(import.meta.url, process.argv[1])) {
   const { readFile, writeFile, mkdir, copyFile } = await import("node:fs/promises");
   const { join } = await import("node:path");
   const { spawn } = await import("node:child_process");

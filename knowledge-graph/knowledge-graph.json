@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T10:35:16.582Z",
+  "generatedAt": "2026-07-25T16:30:55.702Z",
   "nodes": [
     {
       "id": "REQ-KG-01",
@@ -418,6 +418,15 @@
       "provenBy": []
     },
     {
+      "id": "REQ-KG-SUB-06",
+      "type": "requirement",
+      "title": "A module decides it is the process entrypoint one way, in one shared helper — comparing its own URL to the file URL of the invoked script, and yielding false rather than throwing when no script was invoked. No entrypoint decision is made by string-concatenating a file URL or by matching a filename suffix, because both answer wrongly on a path that needs URL encoding.",
+      "text": "A module decides it is the process entrypoint one way, in one shared helper — comparing its own URL to the file URL of the invoked script, and yielding false rather than throwing when no script was invoked. No entrypoint decision is made by string-concatenating a file URL or by matching a filename suffix, because both answer wrongly on a path that needs URL encoding.",
+      "provenBy": [
+        "main:src/isMain.test.ts"
+      ]
+    },
+    {
       "id": "REQ-KG-VIEW-01",
       "type": "requirement",
       "title": "The since-last-sync delta is injected only at the real __KG_DELTA__ template markers in the post-data tail — never at a marker string inside the inlined graph JSON — and a build passed no delta leaves the region null.",
@@ -644,7 +653,9 @@
             "REQ-KG-PIPE-02"
           ]
         }
-      ]
+      ],
+      "created": "2026-07-24",
+      "updated": "2026-07-24"
     },
     {
       "id": "main:kg-run",
@@ -722,7 +733,8 @@
       "governs": [
         "src/gitDates.ts",
         "src/runGrep.ts",
-        "src/toolDir.ts"
+        "src/toolDir.ts",
+        "src/isMain.ts"
       ],
       "body": "## Drafted from code, not yet approved\n\nRead from `src/gitDates.ts`, `src/runGrep.ts` and `src/toolDir.ts` on 2026-07-24 by `kg-draft-spec`.\nEach requirement records what the implementation currently does. **Nothing here has been decided by a\nhuman**, and a requirement read off an implementation cannot contradict it.\n\nUnusually, four of these five are *documented* in the code's own header comments with the incident that\nproduced them — a `git log` stdin form unsupported on git 2.32, and a Windows argv overflow that made\nPlaywright emit no report. That is the code carrying its own rationale, which is what made these\ndrafts worth writing rather than guessing at.\n\n## Open questions for the CEO\n\n1. **Two different command-line-limit defences, two different mechanisms.** `gitDates.ts` chunks\n   argv; `runGrep.ts` moves the payload into an env var. Both solve the same problem, and neither\n   file mentions the other. Is one of them the intended pattern?\n\n2. **`REQ-KG-SUB-01` makes git absence silent.** A repo with no git contributes no dates and says\n   nothing about it, so a graph missing every date looks identical to a graph whose files are\n   genuinely undated. Tolerating the failure is clearly right; staying quiet about it may not be.\n\n3. **`src/types.ts` is still ungoverned and I did not draft it.** It declares types and no behaviour,\n   so there is nothing to state that a test could ever prove. Either the gate should not expect a\n   requirement for a declaration-only file, or `types.ts` should stay grandfathered forever. That is\n   the same shape as the open `unverified-doc` question about a doc that declares no requirements.\n\n4. **`REQ-KG-SUB-04` describes the fix, not the rule.** The code knows *why* — an overflowed argv made\n   Playwright produce no report at all, so the run failed silently. The requirement as drafted says\n   what to do; it does not forbid the class of failure. Worth strengthening to \"a scoped run never\n   fails silently\" if that is the actual promise.\n\nParent: [[knowledge-graph-tool]]",
       "sections": [
@@ -741,7 +753,9 @@
             "REQ-KG-SUB-04"
           ]
         }
-      ]
+      ],
+      "created": "2026-07-24",
+      "updated": "2026-07-24"
     },
     {
       "id": "main:kg-viewer",
@@ -1209,6 +1223,18 @@
       "text": "slugify",
       "testCount": 2,
       "source": "import { describe, it, expect } from \"vitest\";\nimport { slugify } from \"./ids\";\n\ndescribe(\"slugify\", () => {\n  it(\"lowercases and dashes\", () => {\n    expect(slugify(\"Billing Freeze\")).toBe(\"billing-freeze\");\n  });\n  it(\"strips punctuation and edge dashes\", () => {\n    expect(slugify(\"  Financial: Formula_Reference! \")).toBe(\"financial-formula-reference\");\n  });\n});\n"
+    },
+    {
+      "id": "main:src/isMain.test.ts",
+      "type": "test",
+      "kind": "unit-fe",
+      "title": "isMain.test.ts",
+      "path": "src/isMain.test.ts",
+      "status": "pass",
+      "text": "REQ-KG-SUB-06 — the canonical answer to \"am I the process entrypoint?\", chosen by the CEO on",
+      "summary": "REQ-KG-SUB-06 — the canonical answer to \"am I the process entrypoint?\", chosen by the CEO on 2026-07-26 as position B of conflict cf-4b6d6187fc. Six CLI modules answered this three ways. The two cases below are exactly where the three disagreed, so each is a real defect in one of the losing positions rather than a hypothetical: - a path needing URL encoding (a space) — position C string-concate…",
+      "testCount": 5,
+      "source": "// covers: REQ-KG-SUB-06\nimport { describe, it, expect } from \"vitest\";\nimport { pathToFileURL } from \"node:url\";\nimport { isMain } from \"./isMain\";\n\n/**\n * REQ-KG-SUB-06 — the canonical answer to \"am I the process entrypoint?\", chosen by the CEO on\n * 2026-07-26 as position B of conflict cf-4b6d6187fc.\n *\n * Six CLI modules answered this three ways. The two cases below are exactly where the three\n * disagreed, so each is a real defect in one of the losing positions rather than a hypothetical:\n *\n *   - a path needing URL encoding (a space) — position C string-concatenated `file://` onto argv[1]\n *     and produced an unencoded URL that never matched, then leaned on a filename-suffix fallback to\n *     get the right answer for the wrong reason;\n *   - an absent argv[1] — position A called `pathToFileURL(undefined)`, which throws.\n */\ndescribe(\"isMain — one answer, in one place\", () => {\n  it(\"is true when the module is the invoked script\", () => {\n    const url = pathToFileURL(\"/repo/src/build.ts\").href;\n    expect(isMain(url, \"/repo/src/build.ts\")).toBe(true);\n  });\n\n  it(\"is false when some other script was invoked\", () => {\n    const url = pathToFileURL(\"/repo/src/build.ts\").href;\n    expect(isMain(url, \"/repo/src/serve.ts\")).toBe(false);\n  });\n\n  // Position C's PRIMARY comparison is wrong here — `file://` + \"/repo/my project/…\" yields a raw\n  // space that never equals the encoded import.meta.url. Verified by running C against this test: it\n  // still passes, because the filename fallback catches what the comparison missed. So this pins the\n  // right answer without discriminating C from B; the suffix case below is what actually catches C.\n  it(\"is true for a path that needs URL encoding\", () => {\n    const path = \"/repo/my project/src/build.ts\";\n    expect(isMain(pathToFileURL(path).href, path)).toBe(true);\n  });\n\n  // Position A's defect: pathToFileURL(undefined) throws, taking the whole process down at import\n  // time — for a module that was only ever imported, never run.\n  it(\"is false, and does not throw, when no script was invoked\", () => {\n    const url = pathToFileURL(\"/repo/src/build.ts\").href;\n    expect(() => isMain(url, undefined)).not.toThrow();\n    expect(isMain(url, undefined)).toBe(false);\n  });\n\n  // The suffix fallback position C used: any invoked script whose name merely ENDS WITH this\n  // module's filename claimed to be it. `run-build.ts` is not `build.ts`.\n  it(\"is false for a different script whose filename merely ends with this one's\", () => {\n    const url = pathToFileURL(\"/repo/src/build.ts\").href;\n    expect(isMain(url, \"/repo/src/run-build.ts\")).toBe(false);\n  });\n});\n"
     },
     {
       "id": "main:src/lastRunPipeline.test.ts",
@@ -2302,6 +2328,12 @@
     },
     {
       "from": "main:kg-subprocess",
+      "to": "src/isMain.ts",
+      "type": "governs",
+      "source": ".github/system-design/KG_SUBPROCESS.md"
+    },
+    {
+      "from": "main:kg-subprocess",
       "to": "src/runGrep.ts",
       "type": "governs",
       "source": ".github/system-design/KG_SUBPROCESS.md"
@@ -2345,6 +2377,12 @@
     {
       "from": "main:kg-subprocess",
       "to": "REQ-KG-SUB-05",
+      "type": "specifies",
+      "source": ".github/system-design/KG_SUBPROCESS.md"
+    },
+    {
+      "from": "main:kg-subprocess",
+      "to": "REQ-KG-SUB-06",
       "type": "specifies",
       "source": ".github/system-design/KG_SUBPROCESS.md"
     },
@@ -2619,6 +2657,12 @@
       "source": "src/gateDecision.test.ts"
     },
     {
+      "from": "main:src/isMain.test.ts",
+      "to": "REQ-KG-SUB-06",
+      "type": "covers",
+      "source": "src/isMain.test.ts"
+    },
+    {
       "from": "main:src/liveHub.test.ts",
       "to": "REQ-KG-SERVE-01",
       "type": "covers",
@@ -2786,8 +2830,8 @@
         "untested": [],
         "failing": [],
         "flaky": [],
-        "reqTotal": 51,
-        "reqProven": 41,
+        "reqTotal": 52,
+        "reqProven": 42,
         "unproven": [
           "A doc with status draft is a proposal, so neither it nor the requirements only it specifies are counted by the ratchet as unverified or uncovered — a proposal has claimed nothing and so cannot have failed to prove anything. A requirement any non-draft doc also specifies stays counted, and a draft nobody links to is still an orphan.",
           "A repo the tool cannot read git history for contributes no dates and never fails the build — a missing git binary, a directory that is not a checkout, and a git invocation that errors are all tolerated per repo, so the graph builds on a machine with no git at all.",
@@ -2806,76 +2850,12 @@
     "totals": {
       "features": 0,
       "tested": 0,
-      "reqTotal": 51,
-      "reqProven": 41,
+      "reqTotal": 52,
+      "reqProven": 42,
       "failing": 0,
       "flaky": 0
     }
   },
-  "conflicts": [
-    {
-      "id": "cf-4b6d6187fc",
-      "subject": "how a module decides it is the process entrypoint",
-      "scope": "dev-tooling",
-      "category": "definition",
-      "severity": "med",
-      "axis": "code",
-      "tags": [
-        "dev-tooling",
-        "cli"
-      ],
-      "why": "Six CLI modules answer the same question three ways. Two of the three disagree with the third on real inputs: a repo path containing a space, and an absent process.argv[1].",
-      "participants": [
-        {
-          "kind": "code",
-          "ref": "src/check.ts",
-          "span": "isMain",
-          "quote": "const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;",
-          "positionId": "A"
-        },
-        {
-          "kind": "code",
-          "ref": "src/recordRun.ts",
-          "span": "isMain",
-          "quote": "try {\n    return import.meta.url === pathToFileURL(process.argv[1]).href;\n  } catch {\n    return false;\n  }",
-          "positionId": "B"
-        },
-        {
-          "kind": "code",
-          "ref": "src/scanContext.ts",
-          "span": "CLI guard",
-          "quote": "if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith(\"scanContext.ts\")) {",
-          "positionId": "C"
-        }
-      ],
-      "positions": [
-        {
-          "id": "A",
-          "statement": "Compare import.meta.url to pathToFileURL(process.argv[1]).href — correct URL encoding, but throws when argv[1] is absent.",
-          "heldBy": [
-            "src/check.ts",
-            "src/sync.ts"
-          ]
-        },
-        {
-          "id": "B",
-          "statement": "The same comparison wrapped in try/catch, yielding false rather than throwing when argv[1] is absent.",
-          "heldBy": [
-            "src/recordRun.ts",
-            "src/shotsUpload.ts"
-          ]
-        },
-        {
-          "id": "C",
-          "statement": "String-concatenate file:// onto argv[1], then fall back to matching the filename suffix.",
-          "heldBy": [
-            "src/scanContext.ts",
-            "src/fixPlan.ts"
-          ]
-        }
-      ]
-    }
-  ],
   "project": {
     "repos": [
       {

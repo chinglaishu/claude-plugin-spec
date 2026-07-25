@@ -8,6 +8,7 @@ governs:
   - src/gitDates.ts
   - src/runGrep.ts
   - src/toolDir.ts
+  - src/isMain.ts
 requirements:
   - id: REQ-KG-SUB-01
     text: A repo the tool cannot read git history for contributes no dates and never
@@ -33,6 +34,19 @@ requirements:
       everything a project owns is resolved from its configured artifact
       directory — the two are never the same path, however the tool was
       installed.
+  - id: REQ-KG-SUB-06
+    text: A module decides it is the process entrypoint one way, in one shared
+      helper — comparing its own URL to the file URL of the invoked script, and
+      yielding false rather than throwing when no script was invoked. No
+      entrypoint decision is made by string-concatenating a file URL or by
+      matching a filename suffix, because both answer wrongly on a path that
+      needs URL encoding.
+    covers:
+      - main:src/isMain.test.ts
+    # APPROVED by the CEO on 2026-07-26 as the canonical position of conflict
+    # cf-4b6d6187fc, which found six CLI modules answering this one question three ways.
+    # This requirement carries a decision even though the doc around it is still a draft:
+    # the other five requirements here are read off the code and unapproved, this one is not.
 ---
 
 ## Drafted from code, not yet approved

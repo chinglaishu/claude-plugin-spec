@@ -1,52 +1,11 @@
 {
+  "_comment": [
+    "Scan output for the dev-tooling scope. Empty because the one finding it carried —",
+    "cf-4b6d6187fc, 'how a module decides it is the process entrypoint' — was resolved by the CEO",
+    "on 2026-07-26 in favour of position B and applied: all six modules now call the one shared",
+    "helper in src/isMain.ts, and a re-scan no longer pairs them. The decision survives as",
+    "REQ-KG-SUB-06, not as a finding."
+  ],
   "scope": "dev-tooling",
-  "findings": [
-    {
-      "subject": "how a module decides it is the process entrypoint",
-      "category": "definition",
-      "severity": "med",
-      "tags": ["dev-tooling", "cli"],
-      "why": "Six CLI modules answer the same question three ways. Two of the three disagree with the third on real inputs: a repo path containing a space, and an absent process.argv[1].",
-      "positions": [
-        {
-          "id": "A",
-          "statement": "Compare import.meta.url to pathToFileURL(process.argv[1]).href — correct URL encoding, but throws when argv[1] is absent.",
-          "heldBy": ["src/check.ts", "src/sync.ts"]
-        },
-        {
-          "id": "B",
-          "statement": "The same comparison wrapped in try/catch, yielding false rather than throwing when argv[1] is absent.",
-          "heldBy": ["src/recordRun.ts", "src/shotsUpload.ts"]
-        },
-        {
-          "id": "C",
-          "statement": "String-concatenate file:// onto argv[1], then fall back to matching the filename suffix.",
-          "heldBy": ["src/scanContext.ts", "src/fixPlan.ts"]
-        }
-      ],
-      "participants": [
-        {
-          "kind": "code",
-          "ref": "src/check.ts",
-          "span": "isMain",
-          "quote": "const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;",
-          "positionId": "A"
-        },
-        {
-          "kind": "code",
-          "ref": "src/recordRun.ts",
-          "span": "isMain",
-          "quote": "try {\n    return import.meta.url === pathToFileURL(process.argv[1]).href;\n  } catch {\n    return false;\n  }",
-          "positionId": "B"
-        },
-        {
-          "kind": "code",
-          "ref": "src/scanContext.ts",
-          "span": "CLI guard",
-          "quote": "if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith(\"scanContext.ts\")) {",
-          "positionId": "C"
-        }
-      ]
-    }
-  ]
+  "findings": []
 }

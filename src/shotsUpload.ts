@@ -1,4 +1,4 @@
-import { pathToFileURL } from "node:url";
+import { isMain } from "./isMain";
 import { objectKey, evidenceRef, blobAdapter } from "./blobStore";
 import type { Evidence } from "./config";
 
@@ -211,15 +211,7 @@ export async function runUpload(opts: RunUploadOptions): Promise<RunUploadResult
 }
 
 // ── CLI entrypoint (real fs + real `gh api` / `aws s3`) — glue only; the logic above is tested. ──
-const isMain = (() => {
-  try {
-    return import.meta.url === pathToFileURL(process.argv[1]).href;
-  } catch {
-    return false;
-  }
-})();
-
-if (isMain) {
+if (isMain(import.meta.url, process.argv[1])) {
   const { readdir, readFile: nodeReadFile, writeFile, unlink } = await import("node:fs/promises");
   const { join } = await import("node:path");
   const { pathToFileURL: p2f } = await import("node:url");

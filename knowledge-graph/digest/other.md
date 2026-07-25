@@ -1,6 +1,6 @@
-# Platform & docs — knowledge digest (synced 2026-07-24, results never)
+# Platform & docs — knowledge digest (synced 2026-07-25, results never)
 
-Capabilities: 0 · with tests: 0 · promises: 51 (proven 41)
+Capabilities: 0 · with tests: 0 · promises: 52 (proven 42)
 
 ## Requirements
 - REQ-KG-01: The committed graph always matches a rebuild from source — nothing in knowledge-graph.json, viewer.html, report.md, or digest/ can drift from what a fresh build produces.
@@ -97,6 +97,8 @@ Capabilities: 0 · with tests: 0 · promises: 51 (proven 41)
   ⚠ NO COVERING TEST
 - REQ-KG-SUB-05: Assets the tool ships are resolved relative to the tool's own package, and everything a project owns is resolved from its configured artifact directory — the two are never the same path, however the tool was installed.
   ⚠ NO COVERING TEST
+- REQ-KG-SUB-06: A module decides it is the process entrypoint one way, in one shared helper — comparing its own URL to the file URL of the invoked script, and yielding false rather than throwing when no script was invoked. No entrypoint decision is made by string-concatenating a file URL or by matching a filename suffix, because both answer wrongly on a path that needs URL encoding.
+  Proven by: isMain.test.ts (unit-fe, pass)
 - REQ-KG-VIEW-01: The since-last-sync delta is injected only at the real __KG_DELTA__ template markers in the post-data tail — never at a marker string inside the inlined graph JSON — and a build passed no delta leaves the region null.
   Proven by: viewer.test.ts (unit-fe, pass)
 - REQ-KG-VIEW-02: The delta reports, versus the previously committed graph, nodes added and removed grouped and sorted by type, test pass and fail transitions only for ids present in both graphs, and only the issue kinds whose count changed; the first sync yields no delta.

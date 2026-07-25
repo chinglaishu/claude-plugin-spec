@@ -5,6 +5,7 @@ import { artifactPath, loadConfig, IGNORE, type Config } from "./config";
 import { CODE_EXT, codeCandidatePairs, isProofFile } from "./codeCandidates";
 import { enumerateCandidates } from "./conflictCandidates";
 import { conflictScanContext, type ScanItem } from "./conflictScanContext";
+import { isMain } from "./isMain";
 import type { Graph } from "./types";
 
 /** Pure: the deterministic comparison surface for a scope, with the text to adjudicate.
@@ -62,7 +63,7 @@ export function scannableScopes(graph: Graph): { scope: string; pairs: number }[
 // The graph is resolved from the PROJECT (cwd, or `KG_REPO_ROOT`) via its own `artifactDir` — never
 // from the tool's own directory. The latter is true only while the tool lives inside the artifact dir
 // it measures (§10.9), which an installed plugin never does.
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("scanContext.ts")) {
+if (isMain(import.meta.url, process.argv[1])) {
   const scopeIdx = process.argv.indexOf("--scope");
   const scope = scopeIdx >= 0 ? process.argv[scopeIdx + 1] : undefined;
   const repoRoot = process.env.KG_REPO_ROOT ?? process.cwd();
