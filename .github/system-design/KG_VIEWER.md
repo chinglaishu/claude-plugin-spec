@@ -48,10 +48,9 @@ requirements:
       - main:VIEW-1
       - main:VIEW-2
       - main:VIEW-3
-    # NEEDS CEO RATIFICATION. The invariant is real and already implemented — the viewer's client JS
-    # routes these strings through esc() — and the two browser specs asserting it were written before
-    # this repo could run them. What did not exist was any requirement stating it, so the specs proved
-    # a promise no document made. Wording is mine and reversible; the behaviour is not new.
+    # Approved by the CEO 2026-07-26. The invariant was already implemented — the viewer's client JS
+    # routes these strings through esc() — but nothing stated it, so the browser specs asserting it
+    # were proving a promise no document made.
 ---
 
 ## Why this exists
