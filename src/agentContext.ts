@@ -36,6 +36,11 @@ export interface ContextPack {
   requirements: PackRequirement[];
   tests: { id: string; title: string; status?: string }[];
   conflicts: { id: string; subject: string; severity: string }[];
+  /** True when the project declares exactly one repo. DISPLAY ONLY: ids stay namespaced `repo:bare`
+   *  in the graph (REQ-KG-CORE-02, and the fingerprint rests on them), but rendering `main:` to a
+   *  reader whose project has no siblings is a namespace that disambiguates nothing — nine of them in
+   *  one briefing here. The briefing's whole value is being read, so noise in it is not cosmetic. */
+  singleRepo: boolean;
   /** True when nothing governs this path AND the baseline does not already know it. Staff must stop
    *  and ask the CEO for a requirement (§9b.2). */
   halt: boolean;
@@ -51,6 +56,10 @@ export interface ContextPack {
  * asserted by tests rather than inspected by eye.
  */
 export function renderPack(pack: ContextPack): string {
+  // A lone repo's namespace disambiguates nothing, so it is not shown. Display only — the graph keeps
+  // the namespaced ids (REQ-KG-CORE-02), and a project with siblings still needs them to tell two
+  // same-named files apart.
+  const show = (id: string) => (pack.singleRepo ? id.replace(/^[^:\s]+:/, "") : id);
   const out: string[] = [`# Governing context — ${pack.path}`];
   if (pack.halt) {
     out.push("", `## ⛔ STOP — ${pack.reason}`, "", "Do not write code here. Ask the CEO for a requirement first.");
@@ -67,16 +76,16 @@ export function renderPack(pack: ContextPack): string {
     );
     return out.join("\n") + "\n";
   }
-  const owners = [...pack.governedBy.map((d) => `${d.title} (${d.path ?? d.id})`), ...pack.features.map((f) => `feature: ${f.title}`)];
+  const owners = [...pack.governedBy.map((d) => `${d.title} (${d.path ?? show(d.id)})`), ...pack.features.map((f) => `feature: ${f.title}`)];
   out.push("", "## Governed by", ...owners.map((o) => `- ${o}`));
   out.push("", `## Requirements — ${pack.requirements.length}`);
   if (!pack.requirements.length) out.push("_None declared for this path._");
   for (const r of pack.requirements) {
-    const proof = r.provenBy.length ? `proven by ${r.provenBy.join(", ")}` : "**NO COVERING TEST — no safety net here**";
+    const proof = r.provenBy.length ? `proven by ${r.provenBy.map(show).join(", ")}` : "**NO COVERING TEST — no safety net here**";
     // The marker rides on the requirement's own line rather than in a footnote: a warning somewhere
     // else on the page is a warning that gets read after the edit.
     const mark = r.draft ? " — ⚠ **UNAPPROVED DRAFT**, describes what the code does, not what it should" : "";
-    out.push(`- \`${r.id}\` ${r.text} — ${proof}${mark}`);
+    out.push(`- \`${show(r.id)}\` ${r.text} — ${proof}${mark}`);
   }
   if (pack.conflicts.length) {
     out.push("", `## ⚖ Conflicts touching this area — ${pack.conflicts.length}`);
@@ -202,6 +211,7 @@ export function contextPack(graph: Graph, config: Config, path: string, baseline
   const grandfathered = ungoverned && excused;
   return {
     path,
+    singleRepo: config.repos.length === 1,
     governedBy,
     features: features.map((f) => ({ id: f.id, title: f.title ?? f.id })),
     requirements,

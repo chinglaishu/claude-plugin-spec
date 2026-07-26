@@ -56,6 +56,51 @@ describe("contextPack — a governed path", () => {
 });
 
 /**
+ * A single-repo project should not be made to read a namespace that disambiguates nothing.
+ *
+ * Ids are namespaced `repo:bare` in the GRAPH and must stay that way — REQ-KG-CORE-02, and the
+ * fingerprint depends on it. But rendering that prefix to a reader whose project has exactly one repo
+ * is noise: measured at NINE occurrences of `main:` in one briefing for this repo. The briefing is the
+ * artefact whose whole value is being read, so noise in it is not cosmetic.
+ */
+describe("renderPack — a lone repo's prefix is not shown", () => {
+  const graph: any = {
+    generatedAt: "",
+    nodes: [
+      { id: "main:spec", type: "doc", title: "Checkout", path: ".github/system-design/C.md", status: "current" },
+      { id: "REQ-C-1", type: "requirement", title: "Totals sum.", text: "Totals sum." },
+      { id: "main:src/total.test.ts", type: "test", kind: "unit-fe", title: "total.test.ts", path: "src/total.test.ts" },
+    ],
+    edges: [
+      { from: "main:spec", to: "src/total.ts", type: "governs" },
+      { from: "main:spec", to: "REQ-C-1", type: "specifies" },
+      { from: "main:src/total.test.ts", to: "REQ-C-1", type: "covers" },
+    ],
+    issues: [],
+  };
+  const solo: any = { repos: [{ name: "main", subdir: "" }] };
+  const multi: any = { repos: [{ name: "main", subdir: "" }, { name: "web", subdir: "svc_web" }] };
+
+  it("omits the prefix when the project declares one repo", () => {
+    const text = renderPack(contextPack(graph, solo, "src/total.ts", []));
+    expect(text).toMatch(/src\/total\.test\.ts/);
+    expect(text).not.toMatch(/main:/);
+  });
+
+  // With siblings the prefix is the only thing telling two same-named files apart, so it must stay.
+  it("keeps the prefix when the project declares siblings", () => {
+    const text = renderPack(contextPack(graph, multi, "src/total.ts", []));
+    expect(text).toMatch(/main:/);
+  });
+
+  // Display only. The graph's ids are the contract (REQ-KG-CORE-02) and the fingerprint rests on them.
+  it("does not alter the ids in the pack itself", () => {
+    const pack = contextPack(graph, solo, "src/total.ts", []);
+    expect(pack.governedBy[0].id).toBe("main:spec");
+  });
+});
+
+/**
  * A test file that PROVES a requirement is not ungoverned — the requirement is precisely the statement
  * of what it must assert. The gate used to halt on one anyway, because governance was read only from a
  * doc's `governs:` list and no doc lists test files.
