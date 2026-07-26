@@ -14,6 +14,10 @@
 // the whole time, which is precisely the failure mode §9c names: a gate that reports nothing is
 // indistinguishable from a codebase where everything is fine.
 //
+// VERIFIED LIVE 2026-07-26, v0.1.2, installed via the marketplace: writing a new ungoverned file
+// delivered the halt to the model as `PreToolUse:Write hook additional context`, and the agent obeyed
+// it and deleted the file. First time the graph has ever been consulted before an edit.
+//
 // PURE, and given its input rather than reading stdin itself, because the two mistakes above are only
 // catchable by a test that can hand this function a real payload.
 import { renderPack, type ContextPack } from "./agentContext";
