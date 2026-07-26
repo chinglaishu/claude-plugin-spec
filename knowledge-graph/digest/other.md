@@ -1,4 +1,4 @@
-# Platform & docs — knowledge digest (synced 2026-07-25, results never)
+# Platform & docs — knowledge digest (synced 2026-07-26, results never)
 
 Capabilities: 0 · with tests: 0 · promises: 53 (proven 43)
 

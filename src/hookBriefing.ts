@@ -5,8 +5,9 @@
 //   IN  — `hooks.json` passed `"${TOOL_INPUT_FILE_PATH}"`, which Claude Code does not substitute. It
 //         expanded to an empty string, `agentContextCli` printed its usage line, and the `|| true`
 //         swallowed the non-zero exit. The real input is JSON on STDIN.
-//   OUT — a PreToolUse hook's plain stdout is DISCARDED. The model sees `permissionDecisionReason`
-//         and nothing else, so even a correct path would have produced silence.
+//   OUT — a PreToolUse hook's plain stdout is DISCARDED, and a bare permission decision is
+//         classified "harness-only — no model context cost". Only `additionalContext` reaches the
+//         model, so even a correct path plus a decision produced silence.
 //
 // Net effect: the briefing never reached one session. Founding design §5 calls this deliverable "the
 // gold, and the cheapest" — the thing that stops the graph being an expensive lint — and it was inert
@@ -28,6 +29,9 @@ export interface HookDecision {
     hookEventName: "PreToolUse";
     permissionDecision: "allow";
     permissionDecisionReason: string;
+    /** The field that actually puts text in front of the model. Without it Claude Code classifies the
+     *  hook "harness-only — no model context cost" and the briefing reaches nobody. */
+    additionalContext: string;
   };
 }
 
@@ -64,7 +68,10 @@ export function hookDecision(pack: ContextPack): HookDecision {
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "allow",
-      permissionDecisionReason: renderPack(pack),
+      permissionDecisionReason: pack.halt
+        ? "This path has no governing requirement."
+        : "Governing context supplied.",
+      additionalContext: renderPack(pack),
     },
   };
 }

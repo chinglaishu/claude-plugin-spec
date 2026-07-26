@@ -49,29 +49,45 @@ describe("editedPathFrom — the path arrives as JSON on stdin, never as an env 
   });
 });
 
-describe("hookDecision — the model only ever sees permissionDecisionReason", () => {
+describe("hookDecision — only additionalContext reaches the model", () => {
   it("emits the shape a PreToolUse hook must emit", () => {
     const out = hookDecision(pack({ governedBy: [{ id: "main:spec", title: "Spec" }] }));
     expect(out.hookSpecificOutput.hookEventName).toBe("PreToolUse");
     expect(out.hookSpecificOutput.permissionDecision).toBe("allow");
   });
 
-  // The whole point. A decision with no reason is a hook that allows the edit and says nothing —
+  /**
+   * THE FIELD THAT ACTUALLY INJECTS. A PreToolUse hook returning only a permission decision is
+   * classified by Claude Code as "harness-only — no model context cost", and the briefing reaches
+   * nobody: verified against a live install, where `plugin details` said exactly that and a Write
+   * produced no briefing at all. `additionalContext` is the field that puts text beside the tool
+   * result. `permissionDecisionReason` is kept as well — it explains the decision — but on its own it
+   * was the third way this hook found to be silent.
+   */
+  it("puts the briefing in additionalContext, which is what reaches the model", () => {
+    const out = hookDecision(pack({ halt: true, reason: "Nothing governs this path" }));
+    expect(out.hookSpecificOutput.additionalContext).toMatch(/STOP/);
+  });
+
+  // The whole point. A decision with no context is a hook that allows the edit and says nothing —
   // exactly the silence this replaces.
-  it("carries the briefing in the reason, not in stdout", () => {
+  it("carries the whole briefing, not a summary of it", () => {
     const out = hookDecision(pack({
       governedBy: [{ id: "main:spec", title: "Checkout spec", path: ".github/system-design/C.md" }],
       requirements: [{ id: "REQ-1", text: "A total sums its lines.", provenBy: [], draft: false }],
     }));
-    const reason = out.hookSpecificOutput.permissionDecisionReason;
+    const reason = out.hookSpecificOutput.additionalContext;
     expect(reason).toMatch(/Checkout spec/);
     expect(reason).toMatch(/REQ-1/);
     expect(reason).toMatch(/NO COVERING TEST/);
   });
 
-  it("passes the halt through as the reason, so the model is told to stop", () => {
+  // permissionDecisionReason explains the DECISION and is short; the briefing itself is the context.
+  // Conflating them is what made this silent — a long reason on an `allow` is read by nobody.
+  it("keeps the decision's reason short and distinct from the briefing", () => {
     const out = hookDecision(pack({ halt: true, reason: "Nothing governs this path" }));
-    expect(out.hookSpecificOutput.permissionDecisionReason).toMatch(/STOP/);
+    expect(out.hookSpecificOutput.permissionDecisionReason).toMatch(/no governing requirement/i);
+    expect(out.hookSpecificOutput.permissionDecisionReason.length).toBeLessThan(120);
   });
 
   // Non-blocking is the documented design (hooks.json): a project that has not been governed yet must

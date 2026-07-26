@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "plugin-spec",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "source": "./",
       "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven. Briefs the agent on what governs a file before it edits, halts on ungoverned code, and surfaces contradictions for you to adjudicate.",
       "author": {
