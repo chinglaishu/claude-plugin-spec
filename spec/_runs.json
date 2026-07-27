@@ -1,5 +1,13 @@
 [
   {
+    "at": "2026-07-27T04:37:57.348Z",
+    "screen": "gate-draft-review",
+    "ms": 3854,
+    "total": 5,
+    "failed": 0,
+    "ok": true
+  },
+  {
     "at": "2026-07-27T04:36:17.388Z",
     "screen": "board",
     "ms": 3,
@@ -150,13 +158,5 @@
     "total": 7,
     "failed": 0,
     "ok": false
-  },
-  {
-    "at": "2026-07-27T04:15:08.301Z",
-    "screen": "board",
-    "ms": 3899,
-    "total": 7,
-    "failed": 0,
-    "ok": true
   }
 ]

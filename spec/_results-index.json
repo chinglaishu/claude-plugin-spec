@@ -139,40 +139,40 @@
       {
         "title": "R1 — PRD and wireframe are visible side by side",
         "ok": true,
-        "ms": 220,
+        "ms": 598,
         "error": null,
         "line": 13
       },
       {
         "title": "R3 — approving pins the PRD hash, and the bar says which",
         "ok": true,
-        "ms": 190,
+        "ms": 535,
         "error": null,
         "line": 29
       },
       {
         "title": "R4 — rejecting requires a reason; an empty one is refused",
         "ok": true,
-        "ms": 69,
+        "ms": 40,
         "error": null,
         "line": 42
       },
       {
         "title": "R5 — the gate opens by itself when the PRD moves",
         "ok": true,
-        "ms": 250,
+        "ms": 248,
         "error": null,
         "line": 50
       },
       {
         "title": "the detail view has its own address and survives a reload",
         "ok": true,
-        "ms": 321,
+        "ms": 344,
         "error": null,
         "line": 63
       }
     ],
-    "ranAt": 1785126980734
+    "ranAt": 1785127081193
   },
   "gate-screen-review": {
     "total": 4,
