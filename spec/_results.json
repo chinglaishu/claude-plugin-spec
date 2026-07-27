@@ -4,7 +4,8 @@
       "/opt/homebrew/Cellar/node@20/20.20.2/bin/node",
       "/Users/laishuching/workspace/claude-plugin-spec/node_modules/.bin/playwright",
       "test",
-      "--config=playwright.board.ts"
+      "--config=playwright.board.ts",
+      "spec/board/test.spec.ts"
     ],
     "configFile": "/Users/laishuching/workspace/claude-plugin-spec/playwright.board.ts",
     "rootDir": "/Users/laishuching/workspace/claude-plugin-spec/spec",
@@ -95,12 +96,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 548,
+                  "duration": 235,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:03.911Z",
+                  "startTime": "2026-07-27T03:34:04.272Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -129,12 +130,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 150,
+                  "duration": 160,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:04.805Z",
+                  "startTime": "2026-07-27T03:34:04.662Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -163,12 +164,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 155,
+                  "duration": 185,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:04.961Z",
+                  "startTime": "2026-07-27T03:34:04.830Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -197,12 +198,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 751,
+                  "duration": 779,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:05.124Z",
+                  "startTime": "2026-07-27T03:34:05.023Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -231,12 +232,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 147,
+                  "duration": 154,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:05.882Z",
+                  "startTime": "2026-07-27T03:34:05.809Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -265,12 +266,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 286,
+                  "duration": 265,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:06.035Z",
+                  "startTime": "2026-07-27T03:34:05.972Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -299,12 +300,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 232,
+                  "duration": 249,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T03:07:06.332Z",
+                  "startTime": "2026-07-27T03:34:06.245Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -318,335 +319,13 @@
           "column": 1
         }
       ]
-    },
-    {
-      "title": "gate-draft-review/test.spec.ts",
-      "file": "gate-draft-review/test.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "R1 — PRD and wireframe are visible side by side",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 205,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:06.580Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-9deaf70fa4b2b1e274a4",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 12,
-          "column": 1
-        },
-        {
-          "title": "R3 — approving pins the PRD hash, and the bar says which",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 186,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:06.790Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-4810b59c2bd63f5355ea",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 28,
-          "column": 1
-        },
-        {
-          "title": "R4 — rejecting requires a reason; an empty one is refused",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 38,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:06.983Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-016846a6dcb0192c036a",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 42,
-          "column": 1
-        },
-        {
-          "title": "R5 — the gate opens by itself when the PRD moves",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 242,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:07.027Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-e523ddd83d926c789cbe",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 50,
-          "column": 1
-        },
-        {
-          "title": "the detail view has its own address and survives a reload",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 314,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:07.275Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-936600c1d0aabf582d13",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 63,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "gate-screen-review/test.spec.ts",
-      "file": "gate-screen-review/test.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "R1 — the approved design and the built screen are shown side by side",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 216,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:07.600Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-b95ef1f96e5e03e75542",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 7,
-          "column": 1
-        },
-        {
-          "title": "R4 — approving pins the draft hash the screen was checked against",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 342,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:07.821Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-963b21e774887d8fdc8d",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 27,
-          "column": 1
-        },
-        {
-          "title": "R5 — rejecting has to name which side is wrong",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 106,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:08.171Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-0da3347a3256ef26b896",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 40,
-          "column": 1
-        },
-        {
-          "title": "R2 — a screen with no screenshot has no gate B to open",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 234,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T03:07:08.281Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-fcaeb33c67111ff3cf2e",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 56,
-          "column": 1
-        }
-      ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-27T03:07:02.909Z",
-    "duration": 5644.553,
-    "expected": 16,
+    "startTime": "2026-07-27T03:34:03.308Z",
+    "duration": 3229.4880000000003,
+    "expected": 7,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

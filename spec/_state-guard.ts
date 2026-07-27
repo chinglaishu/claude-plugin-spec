@@ -21,7 +21,12 @@ const files = () => [
   ...TOOL_STATE.map(n => join(SPEC, n))
 ]
 
-const SNAPSHOT = join(SPEC, '_state-snapshot.json')
+// PER PROCESS, not one shared file. The board can run the suite while a suite is already running
+// — the dispatch spec drives a real sub-run through the panel to prove it streams — and two
+// playwright processes sharing one snapshot file means the second one's setup overwrites the
+// first one's saved state, so the first one restores garbage. setup and teardown run in the same
+// runner process, so its pid names a file only it touches.
+const SNAPSHOT = join(SPEC, `_state-snapshot.${process.pid}.json`)
 
 // null means "this file did not exist", which has to be restorable too. The conflicts specs
 // CREATE spec/_conflicts.json out of nothing; putting back only the files that were there leaves
@@ -39,7 +44,8 @@ export async function restoreState () {
   for (const [f, body] of Object.entries(snap)) {
     if (body === null) { if (existsSync(f)) rmSync(f) } else writeFileSync(f, body as string)
   }
-  writeFileSync(SNAPSHOT, '{}')
+  // remove it, don't blank it — a leftover snapshot is a file the next run has to know to ignore
+  rmSync(SNAPSHOT)
 }
 
 export default saveState

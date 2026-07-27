@@ -997,6 +997,11 @@ ${detail}
     route()
   })
 
+  // The header count has to be right on the board too, not only inside the conflicts view — an
+  // open contradiction you cannot see from the board is one you never go and settle. So load it
+  // once at startup regardless of the current route.
+  loadConflicts()
+
   route()
 
   // running the suite ----------------------------------------------------
@@ -1130,17 +1135,20 @@ ${detail}
   document.getElementById('lbclose').addEventListener('click', closeLb)
   lbstage.addEventListener('click', e => { if (e.target === lbstage) closeLb() })
 
-  // live reload ----------------------------------------------------------
-  // A self-reloading page cannot be driven. Under automation a gate POST would notify this very
-  // page, which would reload mid-test and abort the navigation the test had just started —
-  // net::ERR_ABORTED, five specs failing at random. An automated driver does its own reloading.
-  // The trade is explicit: live reload is therefore not covered by the suite.
-  const live = !navigator.webdriver && !location.search.includes('nolive')
+  // live stream + live reload -------------------------------------------
+  // Two behaviours used to share one switch, and the switch was OFF under automation — which is
+  // why the panel's streaming, the whole point of the dispatch screen, could never be tested. But
+  // only ONE of the two actually fights Playwright: the page RELOADING itself mid-test, which
+  // aborts the navigation a spec just started (net::ERR_ABORTED). Streaming a job's output into
+  // the panel reloads nothing. So the stream stays on always — a driver watching a real run is
+  // exactly what R2 asks for — and only the self-navigation is held back under automation.
+  const automation = navigator.webdriver || location.search.includes('nolive')
   try {
-    if (!live) throw new Error('automation — live reload off')
     const es = new EventSource('/api/live')
-    // A reload mid-run would kill the panel you are watching, so hold it until the run finishes.
+    // A reload mid-run would kill the panel you are watching, so hold it until the run finishes —
+    // and never self-navigate under automation, which does its own reloading.
     es.addEventListener('change', () => {
+      if (automation) return
       if (!panel.hidden && !runDone) return
       // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
       // reload there would throw away a sentence you were half way through typing, so it refreshes
@@ -1165,8 +1173,9 @@ ${detail}
         document.getElementById('rpcancel').disabled = true
         // a scan or a rewrite changes what is waiting on you — the header count has to follow
         loadConflicts()
-        // finished while you were not watching — bring the board up to date on its own
-        if (panel.hidden) { loadRuns(); setTimeout(() => location.reload(), 300); return }
+        // finished while you were not watching — bring the board up to date on its own, unless a
+        // driver is in charge of its own navigation
+        if (panel.hidden) { loadRuns(); if (!automation) setTimeout(() => location.reload(), 300); return }
         rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
         rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
         rplog.textContent += '\\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +
