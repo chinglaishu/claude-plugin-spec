@@ -1,5 +1,37 @@
 [
   {
+    "at": "2026-07-27T04:47:23.804Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T04:47:19.787Z",
+    "screen": "board",
+    "ms": 3653,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T04:47:19.676Z",
+    "screen": "board",
+    "ms": 7,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T04:47:15.293Z",
+    "screen": "board",
+    "ms": 3803,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
     "at": "2026-07-27T04:37:57.348Z",
     "screen": "gate-draft-review",
     "ms": 3854,
@@ -123,38 +155,6 @@
     "at": "2026-07-27T04:15:32.434Z",
     "screen": "board",
     "ms": 9,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:15:27.068Z",
-    "screen": "board",
-    "ms": 4718,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:15:16.799Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:15:12.781Z",
-    "screen": "board",
-    "ms": 3587,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:15:12.652Z",
-    "screen": "board",
-    "ms": 8,
     "total": 7,
     "failed": 0,
     "ok": false

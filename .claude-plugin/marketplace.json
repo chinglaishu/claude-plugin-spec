@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "plugin-spec",
-  "description": "The plugin-spec marketplace \u2014 a requirement source-of-truth built out of your own codebase, and kept true after implementation.",
+  "description": "The plugin-spec marketplace — a visualised spec-driven development board built from your own codebase.",
   "owner": {
     "name": "fumia",
     "email": "fumia@fumia.io"
@@ -9,19 +9,19 @@
   "plugins": [
     {
       "name": "plugin-spec",
-      "version": "0.1.3",
+      "version": "0.2.0",
       "source": "./",
-      "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven. Briefs the agent on what governs a file before it edits, halts on ungoverned code, and surfaces contradictions for you to adjudicate.",
+      "description": "A visualised spec-driven development board. Every screen is a row — PRD → wireframe → screenshot → test — and staleness is derived, never tracked: edit the requirements and the wireframe goes stale, change the wireframe and the screenshot goes stale. Two human gates decide is-this-what-I-meant and did-you-build-it; contradictions across requirements are surfaced for you to adjudicate.",
       "author": {
         "name": "fumia"
       },
       "category": "development",
       "keywords": [
         "requirements",
-        "specification",
-        "knowledge-graph",
+        "spec-driven",
+        "wireframe",
         "testing",
-        "governance"
+        "staleness"
       ]
     }
   ]

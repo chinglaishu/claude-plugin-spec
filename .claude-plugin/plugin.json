@@ -1,19 +1,18 @@
 {
   "$comment": [
-    "Renamed off the `claude-` placeholder 2026-07-24 (CEO), clearing the trademark half of the",
-    "\u00a712.4 gate. The doc's OTHER recorded objection stands and was accepted knowingly: `plugin-spec`",
-    "still reads as 'a specification for plugins', which is a different product. Cheap to change",
-    "again while the repo is private and unpublished; permanent the moment someone installs it.",
+    "Name kept as `plugin-spec` for now. It reads as 'a specification for plugins', which is not what",
+    "this is — a visualised spec-driven development board. Renaming is a CEO decision, cheap while the",
+    "repo is private and unpublished and permanent the moment someone installs it.",
     "",
-    "`hooks` and `skills` keys REMOVED 2026-07-26. `hooks/hooks.json` and `skills/` are loaded by",
-    "convention; naming them here registers them a SECOND time, and Claude Code rejects the duplicate \u2014",
-    "'Hook load failed: Duplicate hooks file detected' \u2014 which fails the whole hook load, so the plugin",
-    "installed with zero hooks. Found by running `claude --plugin-dir . plugin list`, which is the only",
-    "thing that reads this file. Nothing in the repo's own tests could have caught it."
+    "The `hooks` key is gone because v1's briefing hook was deleted in the pivot to the board. `skills`",
+    "is loaded by CONVENTION from skills/ — do not list it here. Naming it registers it a second time and",
+    "Claude Code rejects the duplicate ('Duplicate hooks file detected'), failing the whole load. Verify",
+    "with `claude --plugin-dir . plugin list` — the only thing that reads this file; nothing in the",
+    "repo's own tests can catch a mistake here."
   ],
   "name": "plugin-spec",
-  "version": "0.1.3",
-  "description": "Builds a requirement source-of-truth out of your codebase and keeps it true after implementation: one truth, and every behaviour proven.",
+  "version": "0.2.0",
+  "description": "A visualised spec-driven development board: every screen as PRD → wireframe → screenshot → test, staleness derived rather than tracked, and two human gates — is this what I meant, and did you build it.",
   "author": {
     "name": "fumia"
   }

@@ -5,32 +5,10 @@
   "scripts": {
     "board": "node tools/serve-board.mjs",
     "board:build": "node tools/build-board.mjs",
-    "e2e": "playwright test --config=playwright.board.ts",
-    "test": "vitest run",
-    "test:e2e": "playwright test",
-    "build": "tsx src/build.ts",
-    "sync": "tsx src/sync.ts",
-    "sync:results": "tsx src/syncResults.ts",
-    "record:run": "tsx src/recordRun.ts",
-    "check": "tsx src/check.ts",
-    "serve": "tsx src/serve.ts",
-    "serve:watch": "tsx watch src/serve.ts",
-    "shots:upload": "tsx src/shotsUpload.ts"
-  },
-  "dependencies": {
-    "fast-glob": "^3.3.2",
-    "gray-matter": "^4.0.3",
-    "micromatch": "^4.0.8",
-    "yaml": "^2.5.0"
+    "e2e": "playwright test --config=playwright.board.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",
-    "@types/jsdom": "^28.0.3",
-    "@types/micromatch": "^4.0.9",
-    "@types/node": "^22.0.0",
-    "jsdom": "^29.1.1",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "@types/node": "^22.0.0"
   }
 }

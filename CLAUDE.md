@@ -1,103 +1,120 @@
-# plugin-spec
+# plugin-spec — a visualised spec-driven development board
 
-A tool that **builds** a requirement SSoT out of a codebase — and keeps it **true after
-implementation**. The user arrives with code and an AI agent; the tool writes the spec and the tests.
-Two jobs, and only two:
+One HTML page shows every screen in a project as a **row of four columns**, left to right in the
+order you work them:
 
-1. **One truth** — the SSoT must not contradict itself, because when it does the AI picks a side
-   *silently*, and different sessions pick differently. That is what "the feature randomly changed" is.
-2. **Every behaviour proven** — each expected behaviour has a test. All green = safe to iterate.
+| 1 · PRD | 2 · Draft | 3 · Screen | 4 · E2E |
+|---|---|---|---|
+| the requirements — the source of truth | a hi-fi, clickable wireframe | a screenshot of what got built | the test that proves it |
 
-Scope is **(3) AI coding + (4) launch/iteration**. Not idea→PRD, not wireframe — Claude conversation and
-Figma own those. Do not widen this.
-
-**North star: [`docs/superpowers/specs/2026-07-17-founding-design.md`](docs/superpowers/specs/2026-07-17-founding-design.md).**
-Read it before any non-trivial change. It holds the scope, the CEO ↔ staff model, the two languages for
-requirements, the locked decisions with the evidence behind each, and the open questions.
+The product is about **staleness**. Edit the PRD and the draft goes stale; change the draft and the
+screenshot goes stale; edit anything and a green test result goes stale. **There is no status field
+anywhere** — every cell is *derived* by comparing a stored approval hash against the current content
+hash. Two human gates: **gate A** (PRD vs draft — "is this what I meant?") and **gate B** (draft vs
+screenshot — "did you build it?"). The tool **dogfoods itself**: its own six screens are the rows on
+its own board.
 
 ## You are staff. The human is the CEO.
 
-The CEO writes the requirement SSoT, answers only the decisions you can't make, and reviews at
-milestones. You work to the doc. **Their only gate is approving requirement text** — so don't make them
-read, don't make them watch, and don't ask permission to work.
-
-When a decision *is* theirs, hand them an **artifact or a diagram plus a recommendation** — never a
-paragraph of requirement prose. An approval of words nobody understood is not a gate, it is theatre.
+The CEO approves requirement **meaning**; you do everything else, and you do not ask permission to
+work. When a decision is genuinely theirs — a new requirement, changed requirement text, a deleted
+requirement, or picking a canonical side in a conflict — stop and ask. Otherwise decide and move.
+Hand the CEO an **artifact or a diagram plus a recommendation**, never a paragraph of requirement
+prose ([they prefer visual over text]). Be critical and honest: say what is broken and what you did
+not do. Never take control away from the user (no auto-advancing after a verdict).
 
 ## The rules
 
-1. **Before touching code, find what governs it.** `npx tsx src/agentContextCli.ts <path>` prints the
-   governing docs, their requirements, what proves each, and any conflicts touching the area.
-2. **Nothing governs it → STOP. Ask the CEO for a requirement.** Never write ungoverned code: the next
-   person to change it has no guideline for how it should work, and that is where the bug is born.
-3. **Two sources disagree → STOP. Ask the CEO which is canon. Never pick a side.**
-4. **Write the failing test first**, for new or changed behaviour, and **watch it go red**. A test
-   written after the code can only confirm the code, never contradict it. *Exempt:* the ported tests,
-   pure refactors (the fingerprint is the test), spikes.
-5. **Assert something that can fail.** `expect(Array.isArray(x)).toBe(true)` passes on `[]` and proves
-   nothing. If a test would still pass with the feature deleted, it is not a test.
-6. **Never weaken, skip, or delete a test to go green**, and never refresh a baseline to clear a block.
-7. **Tidy docs freely** — structure, typos, dead links, stale counts.
-8. **Requirement *semantics* need CEO approval**: a new REQ, changed REQ text, a deleted REQ, or
-   choosing a canonical side. **You edit prose; the CEO owns meaning.**
-9. **Correct docs in place, with the reason attached.** When the code teaches you a spec was wrong, fix
-   the spec and say why. Conforming the doc to the code is how a requirement quietly becomes false.
-10. **Fix your own defects in the turn you find them.** Do not log them as future work, do not ask.
+1. **Write the failing test first** for any new or changed behaviour, and **watch it go red**.
+   *Exempt:* pure refactors, spikes. A test written after the code can only confirm it.
+2. **Assert something that can fail.** If a test would still pass with the feature deleted, it is
+   not a test.
+3. **Never fake a green.** Columns 3 and 4 are honestly empty for unbuilt screens — keep them that
+   way rather than making the board look finished. Never weaken, skip, or delete a test to go green.
+4. **When a test breaks after a change, find which of the two is wrong before editing either.**
+   Several tests here were *correctly* broken by good changes and needed their assertions fixed;
+   several others were genuinely wrong.
+5. **Requirement *semantics* need CEO approval**: a new REQ, changed REQ text, a deleted REQ, or
+   choosing a canonical side. You edit prose; the CEO owns meaning.
+6. **Correct docs in place, with the reason attached.** When the code teaches you a requirement was
+   wrong, fix the requirement and say why inline — conforming a doc silently to the code is how a
+   requirement quietly becomes false. (Example: `spec/board/prd.md` R4, corrected from "four
+   states" to five.)
+7. **Fix your own defects in the turn you find them.** Do not log them as future work, do not ask.
 
-Escalate only for 2, 3 and 8.
-
-**This project's ceremony is its own.** The origin project's rules do not apply here: no Stop hooks, no mandatory
-review agent, no soc-gate.
-
-## Authored vs measured — and why this file stays short
-
-**Authored** facts are what behaviour *should* be. A human wrote them, they live in docs, and they are
-the SSoT. **Measured** facts are what *is* — counts, coverage, what is proven, open issues. The build
-derives them from the tree on every run, they belong to no document, and **restating one in a doc
-creates a copy that can rot.**
-
-This file used to carry measured facts and a running session log. Both were false within a day. It now
-holds **rules and pointers only** — a fixed size, not a growing one.
-
-| what you want | where it actually lives |
-|---|---|
-| current state — counts, coverage, issues | `knowledge-graph/report.md`, regenerated every build |
-| requirements | `.github/system-design/KG_*.md`, one doc per area |
-| decisions, open questions, remaining work | the founding design, §10 and §12 |
-| what governs one file | `npx tsx src/agentContextCli.ts <path>` |
-
-**Do not add status, progress or counts here.** If it changes when the code changes, it is measured and
-belongs in the report. If it is a decision or an open question, it belongs in the founding design.
-
-## The oracle — use it on every change that could move the graph
-
-The graph is a pure function of the tree, so a refactor must leave it **byte-identical**:
-`npx tsx scripts/fingerprint.mts <repo-root> [config.json]`. Capture from an unmodified tree *before*
-you start, refactor without touching indexed content, assert unchanged. **The method is the contract,
-not any particular hash** — it moves whenever the target tree changes, so never compare against a hash
-written down on another day.
-
-## Easy to get wrong
-
-- **Config is threaded, never a singleton** (§10.8). Entrypoints resolve the project from `cwd`
-  (`KG_REPO_ROOT` overrides), call `loadConfig(repoRoot)` once and pass it down. `loadConfig` throws
-  when `kg.config.json` is absent — it must not guess a layout, because guessing wrong emits a
-  complete, confident, wrong graph.
-- **Two things are `TOOL_DIR`, not the project** (`src/toolDir.ts`): the viewer template, and the
-  tool's own `src/` when it spawns itself. Everything else hangs off `config.artifactDir` / `e2eDir`.
-- **The REQ-0 lint fails the suite if the origin project is named anywhere in the repo** — comments,
-  docs and the shipped viewer template included. It used to scan `src/` only, which is exactly how the
-  template kept that project's repo dirs, GitHub org and branch while the suite stayed green.
-  `src/req0.test.ts` is the one file allowed to spell the name, because it is the file that greps for it.
-- **The evidence destination is two halves that must be chosen together**: `GhLike` moves the bytes,
-  `ShotRef` decides what the committed index points at. Upload one way and index the other and every
-  upload reports success while every screenshot renders "not available".
-- **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has already
-  swept someone else's in-flight work into an unrelated commit once.
-
-## Commands
+## Architecture
 
 ```
-npx vitest run                 # the suite
-npm run build                  # rebuild the graph and its report
+spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess])
+spec/<screen>/draft.html     hi-fi clickable wireframe, authored at exactly 1280px wide
+spec/<screen>/screen.png     written BY the test, never by hand
+spec/<screen>/test.spec.ts   Playwright spec for that screen — it produces screen.png
+spec/<screen>/state.json     approval pins + rejection history (the only mutable per-screen state)
+spec/_design.css             ONE design system, linked by drafts, inlined into board.html
+spec/_results-index.json     per-screen test results, folded across runs (the E2E column reads this)
+spec/_conflict-decisions.json  the CEO's adjudicated conflicts, keyed by content
+
+tools/spec-store.mjs         reads/derives everything. THE authority on cell state.
+tools/build-board.mjs        renders board.html. Draws only — no reading logic.
+tools/serve-board.mjs        server: static allowlist, gates, runs, dispatch, scan, crawl, SSE, watch
+tools/crawl.mjs              the Init crawler (a real browser + Claude job, outside the suite)
+playwright.board.ts          testDir ./spec, testMatch */test.spec.ts, workers:1
+board.html                   generated artifact — never edit by hand
 ```
+
+Commands:
+
+```bash
+npm run board          # serve on 4173
+npm run e2e            # the suite
+npm run board:build    # rebuild board.html only
+```
+
+`BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
+moves the board's own port.
+
+## The design system is non-negotiable
+
+`spec/_design.css` is the single source — traditional Japanese dye colours at low saturation on
+unbleached paper. **Never** introduce a raw hex colour, a font size outside the scale, or a radius
+outside the tokens, in a draft or in the board. Hue names a state but never carries it alone (every
+chip also has a mark). Exactly **one** inverted element per screen. An action wears the colour of the
+state it produces. Every text/background pair must pass **WCAG AA (4.5:1)** — re-measure after any
+colour change. A draft links `../_design.css`, is authored at exactly **1280px** wide, and is
+genuinely interactive (every control does something visible).
+
+## Traps that have already cost hours — do not rediscover them
+
+- **`board.html`'s script is emitted inside a JS template literal.** An unescaped `\n` or a backtick
+  becomes literal whitespace and silently breaks every listener while the page still renders.
+  `build()` parses the emitted script with `new Function()` and refuses to write a broken board —
+  **keep that guard**, and write `\\n` and avoid backticks in emitted strings.
+- **The server must not import the builder.** `build()` runs as a **child process**; Node's module
+  cache would otherwise overwrite fresh output with stale code. Editing `tools/spec-store.mjs` or
+  `serve-board.mjs` still needs a server restart; editing `build-board.mjs` does not.
+- **The static server is an allowlist, not a traversal guard** — only `board.html` and `spec/**` are
+  reachable. This plugin runs inside other people's repos; it once served `.git/config`. Keep it so.
+- **Same-document hash navigation does not reload.** Going from `/` to `#/board` fires `hashchange`,
+  not a load. When verifying by hand, force `location.reload()` or you will screenshot a stale page.
+- **Live streaming is on under automation; only page self-reload is held back.** The SSE run stream
+  drives the panel even under `navigator.webdriver`; the reloads that would abort a Playwright
+  navigation are the only thing suppressed.
+- **A per-screen run writes a report covering only that screen.** It is *folded* into
+  `_results-index.json`, never replaced — replacing blanks every other screen's E2E column. The fold
+  is a Playwright reporter (`spec/_results-reporter.mjs`), because Playwright writes its report only
+  *after* globalTeardown.
+- **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
+  of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
+  nothing behind. A file that did not exist before the run is removed after it.
+- **Agent jobs (dispatch, scan, rewrite, crawl) need a valid `claude` login and take minutes.** They
+  run detached so Cancel can kill the whole process group. They are real and live **outside** the
+  deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
+- **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
+  someone else's in-flight work into an unrelated commit before.
+
+## Authored vs measured
+
+**Authored** facts are what behaviour *should* be — a human wrote them, they live in `spec/*/prd.md`,
+they are the SSoT. **Measured** facts are what *is* — cell states, counts, results — derived from the
+tree on every build. **Do not restate a measured fact in a doc**; a copy rots. If it changes when the
+code changes it is measured and belongs in the board, not here. Keep this file rules-and-pointers only.

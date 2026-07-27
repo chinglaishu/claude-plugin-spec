@@ -1,8 +1,0 @@
-{
-  "cf-4b6d6187fc": {
-    "status": "resolved",
-    "positionId": "B",
-    "note": "Extract into a single shared helper — one helper is what turns three answers into one.",
-    "at": "2026-07-26T00:00:00.000Z"
-  }
-}

@@ -1,8 +1,0 @@
-- id: rates-widget
-  label: Rates widget
-  paths:
-    - svc_frontend/src/rates/**
-- id: rates-api
-  label: Rates API
-  paths:
-    - svc_backend/tests/**

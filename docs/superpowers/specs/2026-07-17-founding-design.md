@@ -1,3 +1,8 @@
+> **ARCHIVED — historical.** This describes v1, the knowledge-graph tool, which was replaced by the
+> visualised spec board (see `CLAUDE.md` and `README.md`). It is kept for the real MCP-Apps research it
+> holds and as the record of how the project began; it is no longer the north star and its `src/`,
+> `knowledge-graph/`, hooks and skills no longer exist in the tree.
+
 # claude-plugin-spec — Founding Design
 
 - **Date:** 2026-07-17 (rewritten same day — see §10)
