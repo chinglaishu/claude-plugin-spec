@@ -612,7 +612,11 @@ function applyGate ({ screen, gate, act, why }) {
     // this one state marker. No pin is written, so nothing here can later go "stale".
     if (act !== 'accept') throw new Error(`unknown act: ${act}`)
     if (!s.guess) throw new Error('nothing to accept — this PRD is not a guess')
-    writeText(join(SPEC, screen, 'prd.md'), s.prdText.replace(/^guess:[^\n]*\n/m, ''))
+    // Strip the flag from the FRONTMATTER block only — scope the edit to the opening `---…---` fence
+    // so a requirement's PROSE is never touched, not even a body line that happens to begin "guess:".
+    const stripped = s.prdText.replace(/^(---\n[\s\S]*?\n---\n)/,
+      block => block.replace(/^guess:[^\n]*\n/m, ''))
+    writeText(join(SPEC, screen, 'prd.md'), stripped)
     build()
     return readState(screen)
   }

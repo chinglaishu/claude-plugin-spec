@@ -1,5 +1,5 @@
 import { test, expect } from '../_base'
-import { readdirSync, rmSync, statSync } from 'node:fs'
+import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync, copyFileSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { makeDocumentScreen, makeGreenfieldScreen, makeUnbuiltScreen, addWireframe } from '../_fixture'
@@ -100,6 +100,25 @@ test('accept — the PRD gate strips guess: true and pins nothing', async ({ req
   expect(after.state.prdApprovedAgainstPrd).toBeUndefined()
   expect(after.state.draftApprovedAgainstPrd).toBeUndefined()
   expect(isWaiting(after)).toBe(false)
+})
+
+test('accept — strips only the frontmatter flag, never a body line that begins "guess:"', async ({ request }) => {
+  // The server editing a prd.md is the one place it must never touch a requirement's PROSE. A body
+  // line that happens to start with "guess:" must survive accept; only the frontmatter flag goes.
+  const name = 'probe-accept-prose'
+  const dir = join(SPEC, name)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'prd.md'),
+    '---\nscreen: ' + name + '\narea: Crawled\ntitle: X\nroute: /x\nguess: true\n---\n\n' +
+    '## R1 — A requirement\n\nguess: this body line starts with the word and must survive accept.\n')
+  copyFileSync(join(SPEC, 'board', 'screen.png'), join(dir, 'screen.png'))
+  build()
+
+  const res = await request.post('/api/gate', { data: { screen: name, gate: 'prd', act: 'accept' } })
+  expect(res.ok()).toBe(true)
+  const after = readFileSync(join(dir, 'prd.md'), 'utf8')
+  expect(after).not.toMatch(/^guess: true$/m)                                          // frontmatter flag gone
+  expect(after).toContain('guess: this body line starts with the word and must survive') // prose kept
 })
 
 test('accept — refused when the PRD is not a guess', async ({ request }) => {
