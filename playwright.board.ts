@@ -41,12 +41,19 @@ export default defineConfig({
     ['list'],
     ['./spec/_results-reporter.mjs']
   ],
+  // When the BOARD starts a run it asks for a record of it: every screenshot and video Playwright
+  // captures goes into that run's own directory under spec/_runs/<id>/, which the board then shows
+  // back. Off for a plain `npm run e2e`, because recording every local run is a lot of disk for
+  // something nobody asked to see.
+  outputDir: process.env.BOARD_RECORD || 'test-results',
   use: {
     baseURL,
     // Screenshots feed gate B, where the question is "did this change on purpose". Animation and
     // a moving caret both change pixels without anything changing, so both are pinned off.
     viewport: { width: 1440, height: 900 },
-    trace: 'off'
+    trace: 'off',
+    screenshot: process.env.BOARD_RECORD ? 'on' : 'off',
+    video: process.env.BOARD_RECORD ? 'on' : 'off'
   },
   ...(EXTERNAL ? {} : {
     webServer: {

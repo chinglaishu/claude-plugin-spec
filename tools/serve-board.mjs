@@ -6,13 +6,13 @@
 // go stale. That write is the whole task-management feature.
 
 import { createServer } from 'node:http'
-import { readFileSync, writeFileSync, existsSync, statSync, watch } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, statSync, watch, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname } from 'node:path'
 import {
   ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
-  CRAWL, readConfig, writeConfig, readCrawl, parseReport
+  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson
 } from './spec-store.mjs'
 
 const PORT = Number(process.env.PORT || 4173)
@@ -30,7 +30,7 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.svg': 'image/svg+xml'
+  '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webm': 'video/webm'
 }
 
 const clients = new Set()
@@ -47,13 +47,41 @@ let running = null
 let watchOn = false
 
 const RUNS = join(SPEC, '_runs.json')
+const RUNDIR = join(SPEC, '_runs')
 const readRuns = () => existsSync(RUNS) ? JSON.parse(readFileSync(RUNS, 'utf8')) : []
+
+// Every image and video Playwright captured during one run, as paths the board can actually load.
+// Playwright nests them a directory deep per test, so this walks rather than lists.
+function collectRecord (dir) {
+  const out = []
+  const walk = d => {
+    for (const e of (existsSync(d) ? readdirSync(d, { withFileTypes: true }) : [])) {
+      const p = join(d, e.name)
+      if (e.isDirectory()) { walk(p); continue }
+      if (!/\.(png|webm)$/i.test(e.name)) continue
+      out.push({
+        // relative to the repo root, which is exactly what the static server serves
+        src: p.slice(ROOT.length + 1),
+        // the per-test folder name is the most human label available for a raw artifact
+        label: (p.split('/').slice(-2, -1)[0] || '').replace(/-/g, ' ').slice(0, 80),
+        video: /\.webm$/i.test(e.name)
+      })
+    }
+  }
+  walk(dir)
+  return out.slice(0, 60)
+}
 
 function recordRun (entry) {
   // A capped log, not a growing one. Twenty runs is enough to see a pattern and small enough that
-  // nobody has to remember to prune it.
+  // nobody has to remember to prune it — and the artifacts of a run that falls off the end go with
+  // it, or the record directory grows without limit.
   const runs = [entry, ...readRuns()].slice(0, 20)
-  writeFileSync(RUNS, JSON.stringify(runs, null, 2) + '\n')
+  const keep = new Set(runs.map(r => r.runId).filter(Boolean))
+  for (const name of (existsSync(RUNDIR) ? readdirSync(RUNDIR) : [])) {
+    if (!keep.has(name)) rmSync(join(RUNDIR, name), { recursive: true, force: true })
+  }
+  writeJson(RUNS, runs)
 }
 
 // The redraft prompt is assembled HERE, from files, not from anything the browser sends. The only
@@ -410,11 +438,18 @@ function decideConflict ({ key, canon, note, undo }) {
   return { ok: true, status: 'settled', decision: decisions[key] }
 }
 
-function startRun (screen) {
+function startRun (screen, opts = {}) {
   if (running) throw new Error('a run is already in progress')
   const args = ['playwright', 'test', '--config=playwright.board.ts']
   // the only interpolated value, and it is checked against real directories before it is used
   if (screen) args.push(join('spec', screen, 'test.spec.ts'))
+  // ONE test, not the whole file. Passed as its own argv entry, never interpolated into a shell
+  // string, so a title with quotes or spaces in it cannot become anything but a grep pattern.
+  const grep = String(opts.grep || '').trim()
+  if (grep) args.push('-g', grep)
+  // Headed: the browser opens and you watch the test drive the app. This is what "watch it run"
+  // means to a person — the file-watcher that re-runs on save is a different feature entirely.
+  if (opts.headed) args.push('--headed')
 
   const started = Date.now()
   // A run started BY the board writes to its OWN report file. Scoped to one screen it would
@@ -422,11 +457,28 @@ function startRun (screen) {
   // is also writing — and erase every other screen's result. It folds into the per-screen index
   // on close instead, so a one-screen run updates one screen and leaves the rest standing.
   const report = join(SPEC, '_run-report.json')
+  // The RECORD of this run: every screenshot and video Playwright captures while it drives the
+  // app, kept per run so "what did the test actually see" is answerable afterwards rather than
+  // only while you happened to be watching. Lives under spec/ because that is the only tree the
+  // static server will serve.
+  const runId = String(started)
+  const recordDir = join(RUNDIR, runId)
+  mkdirSync(recordDir, { recursive: true })
   // detached for the same reason the agent jobs are: npx is a launcher, playwright is the thing
   // actually running, and cancelling has to reach the browser it started.
-  const child = spawn('npx', args,
-    { cwd: ROOT, detached: true, env: { ...process.env, FORCE_COLOR: '0', BOARD_RESULTS: report } })
-  running = { screen: screen || 'all', started, child, kind: 'tests' }
+  const child = spawn('npx', args, {
+    cwd: ROOT,
+    detached: true,
+    env: {
+      ...process.env,
+      FORCE_COLOR: '0',
+      BOARD_RESULTS: report,
+      BOARD_RECORD: recordDir,
+      // a filtered run reports on a subset, so the index must merge rather than replace
+      ...(grep ? { BOARD_PARTIAL: '1' } : {})
+    }
+  })
+  running = { screen: screen || 'all', started, child, kind: 'tests', runId }
   push('run', { state: 'started', screen: running.screen })
 
   const feed = buf => {
@@ -449,7 +501,10 @@ function startRun (screen) {
       screen: running.screen,
       ms: Date.now() - started,
       ...totals,
-      ok: code === 0
+      ok: code === 0,
+      runId,
+      // what the test SAW, as served paths — the record is only useful if it can be looked at
+      shots: collectRecord(recordDir)
     }
     recordRun(entry)
     running = null
@@ -554,9 +609,9 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/run' && req.method === 'POST') {
     try {
-      const { screen } = JSON.parse(await readBody(req) || '{}')
+      const { screen, grep, headed } = JSON.parse(await readBody(req) || '{}')
       if (screen && !allScreens().some(s => s.name === screen)) throw new Error(`no such screen: ${screen}`)
-      startRun(screen || null)
+      startRun(screen || null, { grep, headed })
       res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"started":true}')
     } catch (err) {
       res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)

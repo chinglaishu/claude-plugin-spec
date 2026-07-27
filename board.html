@@ -301,14 +301,20 @@ ins { color:var(--koke); text-decoration:none; }
   .grp.shut .rows { display:none; }
   .rows { display:flex; flex-direction:column; gap:var(--s3); }
 
-  /* The four cells are ONE row and the eye has to read them together — PRD, then wireframe, then
-     screen, then test. Hovering any part binds the whole row: a faint band behind it and every
-     cell's border lifting at once, so the group is unmistakable. */
+  /* The four cells are ONE row and the eye must read them together — PRD, then wireframe, then
+     screen, then test. The row is therefore a CARD that is always visible, not a hover effect: a
+     grouping you can only see by pointing at it does not help you scan forty rows. The cells sit
+     inside it on the same paper, so the band reads as one object; hover only deepens what is
+     already there. The whole row is clickable, so there is no hunting for the one part that opens. */
   .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
-    padding:var(--s2); margin:0 calc(var(--s2) * -1); border-radius:var(--r-md);
-    transition:background .12s; align-items:stretch; }
-  .row:hover { background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair); }
-  .row:hover .c1, .row:hover .cell { border-color:var(--hair-2); }
+    padding:var(--s3); margin:0 calc(var(--s3) * -1) var(--s2); border-radius:var(--r-md);
+    background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair);
+    cursor:pointer; align-items:stretch;
+    transition:box-shadow .12s, transform .12s; }
+  .row:hover { box-shadow:inset 0 0 0 1px var(--hair-2), var(--sh-md); }
+  /* on the row's own paper the cells no longer need a fill of their own — a box inside an
+     identical box is the nested look that made four cells read as four separate cards */
+  .row .cell, .row .c1 { background:transparent; }
   .row.gone { display:none; }
   .c1 { background:var(--paper); border:1px solid var(--hair); padding:var(--s4);
     border-radius:var(--r-md); cursor:pointer;
@@ -366,16 +372,21 @@ ins { color:var(--koke); text-decoration:none; }
   /* Each column scrolls on its own. The PRD is a long read; the draft and the screen are single
      images. Scrolling them as one block meant reading requirement six scrolled both pictures off
      the screen — so the one comparison the whole view exists for became impossible to hold. */
-  .dtscroll { flex:1; overflow:hidden; padding:var(--s5) var(--s6) var(--s5); }
+  /* ONE scroller for the whole detail view. Four independently scrolling panels meant the wheel
+     only worked while the pointer sat over the exact column you wanted — and over the draft it
+     scrolled the prototype's own document instead of the page. Each panel now sizes to its
+     content and the view scrolls as a page, which is what every hand reaches for. */
+  .dtscroll { flex:1; overflow:auto; padding:var(--s5) var(--s6) var(--s5); }
   .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
-    max-width:1760px; margin:0 auto; height:100%; align-items:stretch; }
+    max-width:1760px; margin:0 auto; align-items:start; }
   .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
   /* the E2E column carries a control row (Run · Background · watch) and a test list, so it earns
      more width than the other three when all four are present */
   .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(220px,.72fr) .95fr .95fr minmax(330px,1.05fr); }
   .dtp { display:flex; flex-direction:column; min-height:0; }
   .dtp > .dtl { flex:none; }
-  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:auto; flex:1; min-height:0; }
+  /* content-sized, not scroll-boxed — the page scroller above owns the scrolling now */
+  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:visible; flex:none; }
   .bigshot { background:var(--wash); }
   .bigshot img { width:100%; display:block; }
 
@@ -444,9 +455,9 @@ ins { color:var(--koke); text-decoration:none; }
     border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
   /* a shortcut hint has to be legible on whatever the button is painted — inherit, don't guess */
   .btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
-  /* every screenshot is clickable — thumbnails render at a third of real size, and gate B's
+  /* every image is clickable — thumbnails render at a fraction of real size, and gate B's
      question cannot honestly be answered from a thumbnail */
-  .shot img, .bigshot img { cursor:zoom-in; }
+  img { cursor:zoom-in; }
   .lb { position:fixed; inset:0; z-index:80; background:rgba(28,27,24,.86);
     display:flex; flex-direction:column; }
   .lb[hidden] { display:none; }
@@ -476,6 +487,21 @@ ins { color:var(--koke); text-decoration:none; }
     font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
   .runrow .rr-s { color:var(--ink-4); }
   .runrow .ms { margin-left:auto; color:var(--ink-4); }
+  /* what the run SAW — thumbnails of everything the test captured, each one zoomable */
+  .recshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    padding:0 0 var(--s3) 14px; }
+  .recshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
+    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--wash); display:block; }
+  .recshots img:hover { border-color:var(--ink); }
+  .recmore { font-size:var(--t-xs); color:var(--ink-4); font-family:var(--mono); }
+  .recvids { display:inline-flex; gap:4px; margin-left:var(--s2); }
+  .recvids a { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
+    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:2px 5px; }
+  .recvids a:hover { border-color:var(--ink); color:var(--ink); }
+  /* per-test run controls appear on the row you are pointing at, so five tests do not become ten
+     competing buttons */
+  .tacts { display:inline-flex; gap:4px; margin-left:var(--s2); opacity:0; transition:opacity .12s; }
+  .tst:hover .tacts, .tst:focus-within .tacts { opacity:1; }
   .watchtog { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm);
     color:var(--ink-3); cursor:pointer; }
   .watchtog input { accent-color:var(--ai); width:13px; height:13px; }
@@ -1253,7 +1279,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="board" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=0b3d0a4123a2" alt="Board as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=7147e07ef31c" alt="Board as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="board" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -1731,7 +1757,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="conflicts" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=f25d983c8eaf" alt="Conflicts as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=39699c5dcd31" alt="Conflicts as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="conflicts" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -2174,7 +2200,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=8935fe411292" alt="Gate A — draft review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=d9d5b9e4865b" alt="Gate A — draft review as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -2592,7 +2618,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=6d7443283e57" alt="Gate B — screen review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=af796ed9a12c" alt="Gate B — screen review as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -3012,7 +3038,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="dispatch" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=a2a8e25c4e54" alt="Dispatch panel as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=5318ba5d0f7b" alt="Dispatch panel as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="dispatch" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -3453,7 +3479,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="init" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/init/screen.png?h=b6ac917f5e0c" alt="Init as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/init/screen.png?h=97f695c887cb" alt="Init as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="init" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -4259,48 +4285,92 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/board/screen.png?h=0b3d0a4123a2" alt="Board as built"></div>
+        <div class="bigshot"><img src="spec/board/screen.png?h=7147e07ef31c" alt="Board as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="board">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="board">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="board">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/board/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">175ms</span></div>
+          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">181ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R1 — one row per screen, never one per requirement"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R1 — one row per screen, never one per requirement"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">150ms</span></div>
+          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">154ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R2 — four cells, left to right, in workflow order"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R2 — four cells, left to right, in workflow order"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">158ms</span></div>
+          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">162ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R3 — the draft cell renders the wireframe itself, not a word for it"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R3 — the draft cell renders the wireframe itself, not a word for it"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">718ms</span></div>
+          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">830ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R4 — cell state is computed, and approving changes it"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R4 — cell state is computed, and approving changes it"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">149ms</span></div>
+          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">202ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R7 — screens are grouped into named areas, never paginated"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R7 — screens are grouped into named areas, never paginated"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">237ms</span></div>
+          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">251ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R8 — filter by whose turn it is, and search requirement text"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R8 — filter by whose turn it is, and search requirement text"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">245ms</span></div>
+          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">209ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="board" data-grep="R6 — the header counts agree with the rows beneath them"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="board" data-grep="R6 — the header counts agree with the rows beneath them"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="board">
@@ -4802,40 +4872,72 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/conflicts/screen.png?h=f25d983c8eaf" alt="Conflicts as built"></div>
+        <div class="bigshot"><img src="spec/conflicts/screen.png?h=39699c5dcd31" alt="Conflicts as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="conflicts">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="conflicts">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="conflicts">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/conflicts/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — both positions are shown in full, each naming where it came from</span><span class="ms">140ms</span></div>
+          <span class="tt">R2 — both positions are shown in full, each naming where it came from</span><span class="ms">141ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — the tool never picks: resolving is refused until you choose a side</span><span class="ms">206ms</span></div>
+          <span class="tt">R3 — the tool never picks: resolving is refused until you choose a side</span><span class="ms">206ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><span class="ms">318ms</span></div>
+          <span class="tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><span class="ms">319ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><span class="ms">348ms</span></div>
+          <span class="tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><span class="ms">345ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><span class="ms">441ms</span></div>
+          <span class="tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><span class="ms">426ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="conflicts">
@@ -5270,36 +5372,62 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/dispatch/screen.png?h=a2a8e25c4e54" alt="Dispatch panel as built"></div>
+        <div class="bigshot"><img src="spec/dispatch/screen.png?h=5318ba5d0f7b" alt="Dispatch panel as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="dispatch">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="dispatch">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="dispatch">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/dispatch/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><span class="ms">4409ms</span></div>
+          <span class="tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><span class="ms">5386ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — a second job is refused while one runs, not queued silently</span><span class="ms">261ms</span></div>
+          <span class="tt">R4 — a second job is refused while one runs, not queued silently</span><span class="ms">261ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R4 — a second job is refused while one runs, not queued silently"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R4 — a second job is refused while one runs, not queued silently"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">running one screen leaves every other screen's E2E result standing</span><span class="ms">4039ms</span></div>
+          <span class="tt">running one screen leaves every other screen's E2E result standing</span><span class="ms">5107ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><span class="ms">65ms</span></div>
+          <span class="tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><span class="ms">67ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="dispatch">
@@ -5757,40 +5885,72 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=8935fe411292" alt="Gate A — draft review as built"></div>
+        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=d9d5b9e4865b" alt="Gate A — draft review as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="gate-draft-review">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="gate-draft-review">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="gate-draft-review">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/gate-draft-review/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — PRD and wireframe are visible side by side</span><span class="ms">224ms</span></div>
+          <span class="tt">R1 — PRD and wireframe are visible side by side</span><span class="ms">234ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R1 — PRD and wireframe are visible side by side"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R1 — PRD and wireframe are visible side by side"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — approving pins the PRD hash, and the bar says which</span><span class="ms">189ms</span></div>
+          <span class="tt">R3 — approving pins the PRD hash, and the bar says which</span><span class="ms">215ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R3 — approving pins the PRD hash, and the bar says which"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R3 — approving pins the PRD hash, and the bar says which"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — rejecting requires a reason; an empty one is refused</span><span class="ms">73ms</span></div>
+          <span class="tt">R4 — rejecting requires a reason; an empty one is refused</span><span class="ms">58ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R4 — rejecting requires a reason; an empty one is refused"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R4 — rejecting requires a reason; an empty one is refused"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — the gate opens by itself when the PRD moves</span><span class="ms">242ms</span></div>
+          <span class="tt">R5 — the gate opens by itself when the PRD moves</span><span class="ms">323ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R5 — the gate opens by itself when the PRD moves"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="R5 — the gate opens by itself when the PRD moves"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">the detail view has its own address and survives a reload</span><span class="ms">324ms</span></div>
+          <span class="tt">the detail view has its own address and survives a reload</span><span class="ms">354ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="the detail view has its own address and survives a reload"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-draft-review" data-grep="the detail view has its own address and survives a reload"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="gate-draft-review">
@@ -6232,36 +6392,62 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=6d7443283e57" alt="Gate B — screen review as built"></div>
+        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=af796ed9a12c" alt="Gate B — screen review as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="gate-screen-review">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="gate-screen-review">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="gate-screen-review">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/gate-screen-review/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — the approved design and the built screen are shown side by side</span><span class="ms">218ms</span></div>
+          <span class="tt">R1 — the approved design and the built screen are shown side by side</span><span class="ms">237ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R1 — the approved design and the built screen are shown side by side"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R1 — the approved design and the built screen are shown side by side"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — approving pins the draft hash the screen was checked against</span><span class="ms">356ms</span></div>
+          <span class="tt">R4 — approving pins the draft hash the screen was checked against</span><span class="ms">439ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R4 — approving pins the draft hash the screen was checked against"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R4 — approving pins the draft hash the screen was checked against"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — rejecting has to name which side is wrong</span><span class="ms">106ms</span></div>
+          <span class="tt">R5 — rejecting has to name which side is wrong</span><span class="ms">157ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R5 — rejecting has to name which side is wrong"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R5 — rejecting has to name which side is wrong"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — a screen with no screenshot has no gate B to open</span><span class="ms">236ms</span></div>
+          <span class="tt">R2 — a screen with no screenshot has no gate B to open</span><span class="ms">251ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R2 — a screen with no screenshot has no gate B to open"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="gate-screen-review" data-grep="R2 — a screen with no screenshot has no gate B to open"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="gate-screen-review">
@@ -6717,40 +6903,72 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/init/screen.png?h=b6ac917f5e0c" alt="Init as built"></div>
+        <div class="bigshot"><img src="spec/init/screen.png?h=97f695c887cb" alt="Init as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="runbar"><span class="runctl">
   <button class="btn sm runbtn" data-run="init">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="init">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="init">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 06:00</b></span>
+        <span>last run <b>2026-07-27 06:25</b></span>
         
         <div class="path"><code>spec/init/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — the form persists what cannot be guessed, and reads it back</span><span class="ms">348ms</span></div>
+          <span class="tt">R1 — the form persists what cannot be guessed, and reads it back</span><span class="ms">425ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — start mode saves backend and frontend, in order</span><span class="ms">284ms</span></div>
+          <span class="tt">R1 — start mode saves backend and frontend, in order</span><span class="ms">270ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — a crawled PRD is marked a guess and cannot skip gate A</span><span class="ms">5343ms</span></div>
+          <span class="tt">R3 — a crawled PRD is marked a guess and cannot skip gate A</span><span class="ms">5373ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="init" data-grep="R3 — a crawled PRD is marked a guess and cannot skip gate A"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="init" data-grep="R3 — a crawled PRD is marked a guess and cannot skip gate A"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><span class="ms">146ms</span></div>
+          <span class="tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><span class="ms">148ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><span class="ms">232ms</span></div>
+          <span class="tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><span class="ms">276ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         
       </article>
       <div class="runlog" data-screen="init">
@@ -6894,10 +7112,14 @@ ins { color:var(--koke); text-decoration:none; }
   addEventListener('popstate', route)
   addEventListener('hashchange', route)
 
-  for (const c of document.querySelectorAll('.c1'))
-    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
-  for (const c of document.querySelectorAll('.cell.act'))
-    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
+  // The WHOLE row opens the screen — every cell in it is about that one screen, so any part of it
+  // is a reasonable place to click. Images are the exception: they open the zoom instead, because
+  // "let me look closer at this screenshot" is a different intent from "open this screen".
+  for (const r of document.querySelectorAll('.row'))
+    r.addEventListener('click', e => {
+      if (e.target.closest('img, button, a, input, label')) return
+      open(r.dataset.i)
+    })
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeAll(); history.pushState(null, '', location.pathname) })
 
@@ -7279,12 +7501,20 @@ ins { color:var(--koke); text-decoration:none; }
     document.getElementById('rpcancel').disabled = true
   }
 
-  async function runTests (screen) {
-    openPanel('running', screen ? screen + ' · test.spec.ts' : 'all tests')
+  async function runTests (screen, opts) {
+    const o = opts || {}
+    const what = o.headed ? 'watching' : 'running'
+    const title = (o.grep ? o.grep : screen ? screen + ' · test.spec.ts' : 'all tests') +
+      (o.headed ? ' · in a visible browser' : '')
+    openPanel(what, title)
+    if (o.headed) {
+      rplog.textContent = 'A browser window is opening — it drives the app in front of you.\n' +
+        'It closes itself when the test finishes.\n\n'
+    }
     try {
       const res = await fetch('/api/run', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ screen })
+        body: JSON.stringify({ screen, grep: o.grep, headed: !!o.headed })
       })
       if (!res.ok) throw new Error((await res.text()).slice(0, 120))
     } catch (err) { panelRefused(err.message) }
@@ -7319,6 +7549,15 @@ ins { color:var(--koke); text-decoration:none; }
   // going and the header chip stays lit so it is never a job you forget is happening.
   for (const b of document.querySelectorAll('.runbg'))
     b.addEventListener('click', async () => { await runTests(b.dataset.run); panel.hidden = true })
+  // Watch it run: a real browser window opens and drives the app in front of you. This is what
+  // people mean by watching a test — the re-run-on-save switch is a different thing entirely.
+  for (const b of document.querySelectorAll('.headed'))
+    b.addEventListener('click', () => runTests(b.dataset.run, { headed: true }))
+  // ONE test, not the whole file.
+  for (const b of document.querySelectorAll('.runone'))
+    b.addEventListener('click', () => runTests(b.dataset.run, {
+      grep: b.dataset.grep, headed: b.dataset.headed === '1'
+    }))
   // Watch, per screen, from the detail view — one global switch, mirrored on every copy so it
   // never disagrees with itself. Ticking it re-runs this screen whenever its files change.
   for (const w of document.querySelectorAll('.dwatch'))
@@ -7370,10 +7609,30 @@ ins { color:var(--koke); text-decoration:none; }
     for (const box of document.querySelectorAll('.runlog')) {
       const mine = data.runs.filter(r => r.screen === box.dataset.screen || r.screen === 'all').slice(0, 5)
       box.querySelector('.runrows').innerHTML = mine.length
-        ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
-            (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
-            '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
-            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>').join('')
+        ? mine.map(r => {
+            // The RECORD of the run, not just its verdict: what the test actually saw, as images
+            // you can open. A number alone asks you to trust it.
+            const shots = (r.shots || []).filter(s => !s.video)
+            const vids = (r.shots || []).filter(s => s.video)
+            return '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
+              (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
+              '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
+              (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>' +
+              (shots.length || vids.length
+                ? '<div class="recshots">' +
+                    shots.slice(0, 8).map(s =>
+                      '<img src="' + s.src + '" alt="' + s.label + '" title="' + s.label + '" loading="lazy">').join('') +
+                    (shots.length > 8 ? '<span class="recmore">+' + (shots.length - 8) + '</span>' : '') +
+                    // one line for the recordings, not one button per artifact — twelve identical
+                    // links is noise standing where the evidence should be
+                    (vids.length
+                      ? '<span class="recvids">' + vids.map((s, i) =>
+                          '<a href="' + s.src + '" target="_blank" title="' + s.label + '">▶&nbsp;' + (i + 1) + '</a>').join('') +
+                        '</span>'
+                      : '') +
+                  '</div>'
+                : '')
+          }).join('')
         : '<div class="runrow ms">no runs recorded yet</div>'
     }
   }
@@ -7392,9 +7651,13 @@ ins { color:var(--koke); text-decoration:none; }
     document.getElementById('lbzoom').textContent = 'Actual size'
     lb.hidden = false
   }
+  // EVERY image is zoomable, wherever it is — the row thumbnails, the detail screenshot, and the
+  // shots a test recorded. They all render at a fraction of real size, and a judgement about
+  // whether the build matches the design cannot honestly be made from a thumbnail.
   document.addEventListener('click', e => {
-    const img = e.target.closest('.shot img, .bigshot img')
-    if (!img) return
+    const img = e.target.closest('img')
+    if (!img || !img.src || img.closest('.lb')) return
+    e.stopPropagation()
     openLb(img.src, img.alt || 'screenshot')
   })
   document.getElementById('lbzoom').addEventListener('click', e => {

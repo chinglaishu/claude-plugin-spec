@@ -1,6 +1,7 @@
 _state-snapshot.*.json
 _dir-snapshot.*.json
 _run-report.json
+_runs/
 _conflicts.json
 _conflict-decisions.json
 _config.json

@@ -1,162 +1,954 @@
 [
   {
-    "at": "2026-07-27T06:00:12.955Z",
+    "at": "2026-07-27T06:25:39.977Z",
     "screen": "board",
     "ms": 3,
     "total": 7,
     "failed": 0,
-    "ok": false
+    "ok": false,
+    "runId": "1785133539977",
+    "shots": []
   },
   {
-    "at": "2026-07-27T06:00:08.935Z",
+    "at": "2026-07-27T06:25:34.900Z",
     "screen": "board",
-    "ms": 3611,
+    "ms": 4828,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": true,
+    "runId": "1785133534900",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133534900/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133534900/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   },
   {
-    "at": "2026-07-27T06:00:08.825Z",
+    "at": "2026-07-27T06:25:34.768Z",
     "screen": "board",
-    "ms": 9,
+    "ms": 12,
     "total": 7,
     "failed": 0,
-    "ok": false
+    "ok": false,
+    "runId": "1785133534768",
+    "shots": []
   },
   {
-    "at": "2026-07-27T06:00:04.437Z",
+    "at": "2026-07-27T06:25:29.381Z",
     "screen": "board",
-    "ms": 3748,
+    "ms": 4646,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": true,
+    "runId": "1785133529381",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133529381/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133529381/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   },
   {
-    "at": "2026-07-27T05:59:54.714Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T05:59:50.653Z",
-    "screen": "board",
-    "ms": 3696,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T05:59:50.536Z",
-    "screen": "board",
-    "ms": 7,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T05:59:46.184Z",
-    "screen": "board",
-    "ms": 3833,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T05:59:36.304Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T05:59:32.259Z",
-    "screen": "board",
-    "ms": 3665,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T05:59:32.147Z",
-    "screen": "board",
-    "ms": 6,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T05:59:27.761Z",
-    "screen": "board",
-    "ms": 3891,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T05:58:32.272Z",
+    "at": "2026-07-27T06:25:19.223Z",
     "screen": "board",
     "ms": 2,
     "total": 7,
     "failed": 0,
-    "ok": false
+    "ok": false,
+    "runId": "1785133519223",
+    "shots": []
   },
   {
-    "at": "2026-07-27T05:58:28.238Z",
+    "at": "2026-07-27T06:25:14.111Z",
     "screen": "board",
-    "ms": 3649,
+    "ms": 4549,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": true,
+    "runId": "1785133514111",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133514111/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133514111/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   },
   {
-    "at": "2026-07-27T05:58:28.126Z",
+    "at": "2026-07-27T06:25:13.968Z",
     "screen": "board",
-    "ms": 6,
+    "ms": 13,
     "total": 7,
     "failed": 0,
-    "ok": false
+    "ok": false,
+    "runId": "1785133513968",
+    "shots": []
   },
   {
-    "at": "2026-07-27T05:58:23.255Z",
+    "at": "2026-07-27T06:25:08.536Z",
     "screen": "board",
-    "ms": 4323,
+    "ms": 4643,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": true,
+    "runId": "1785133508536",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133508536/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133508536/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   },
   {
-    "at": "2026-07-27T05:55:50.203Z",
-    "screen": "all",
-    "ms": 34548,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T05:55:45.265Z",
+    "at": "2026-07-27T06:24:58.369Z",
     "screen": "board",
-    "ms": 4487,
+    "ms": 3,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": false,
+    "runId": "1785133498369",
+    "shots": []
   },
   {
-    "at": "2026-07-27T04:52:31.548Z",
+    "at": "2026-07-27T06:24:53.358Z",
     "screen": "board",
-    "ms": 2,
+    "ms": 4555,
     "total": 7,
     "failed": 0,
-    "ok": false
+    "ok": true,
+    "runId": "1785133493358",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133493358/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133493358/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   },
   {
-    "at": "2026-07-27T04:52:27.520Z",
+    "at": "2026-07-27T06:24:53.218Z",
     "screen": "board",
-    "ms": 3608,
+    "ms": 10,
     "total": 7,
     "failed": 0,
-    "ok": true
+    "ok": false,
+    "runId": "1785133493218",
+    "shots": []
+  },
+  {
+    "at": "2026-07-27T06:24:47.198Z",
+    "screen": "board",
+    "ms": 5251,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133487198",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133487198/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133487198/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:22:56.542Z",
+    "screen": "board",
+    "ms": 17716,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133376542",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133376542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133376542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:22:47.068Z",
+    "screen": "board",
+    "ms": 2640,
+    "total": 1,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133367068",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133367068/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133367068/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:20:51.974Z",
+    "screen": "conflicts",
+    "ms": 4735,
+    "total": 5,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133251974",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/test-finished-1.png",
+        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/video.webm",
+        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/test-finished-1.png",
+        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/video.webm",
+        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/test-finished-1.png",
+        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/video.webm",
+        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/test-finished-1.png",
+        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/video.webm",
+        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/test-finished-1.png",
+        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/video.webm",
+        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:19:24.262Z",
+    "screen": "conflicts",
+    "ms": 4186,
+    "total": 5,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133164262",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/test-finished-1.png",
+        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/video.webm",
+        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/test-finished-1.png",
+        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/video.webm",
+        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/test-finished-1.png",
+        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/video.webm",
+        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/test-finished-1.png",
+        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/video.webm",
+        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/test-finished-1.png",
+        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/video.webm",
+        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:19:06.536Z",
+    "screen": "board",
+    "ms": 17,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785133146536",
+    "shots": []
+  },
+  {
+    "at": "2026-07-27T06:19:01.406Z",
+    "screen": "board",
+    "ms": 4856,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133141406",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133141406/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133141406/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
+  },
+  {
+    "at": "2026-07-27T06:19:01.115Z",
+    "screen": "board",
+    "ms": 77,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785133141115",
+    "shots": []
+  },
+  {
+    "at": "2026-07-27T06:18:55.166Z",
+    "screen": "board",
+    "ms": 5178,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785133135166",
+    "shots": [
+      {
+        "src": "spec/_runs/1785133135166/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "label": "board test R1 — one row per screen never one per requirement",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "label": "board test R2 — four cells left to right in workflow order",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "label": "board test R4 — cell state e8d44 ed and approving changes it",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "label": "board test R6 — the header 2bee1  with the rows beneath them",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
+        "video": true
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": false
+      },
+      {
+        "src": "spec/_runs/1785133135166/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "label": "board test R8 — filter by  7437e and search requirement text",
+        "video": true
+      }
+    ]
   }
 ]

@@ -122,8 +122,10 @@ function prdBody (s) {
 // change), so you are not sent back to the board to reach any of them.
 const runControls = name => `<span class="runctl">
   <button class="btn sm runbtn" data-run="${esc(name)}">Run<span class="kbd">r</span></button>
+  <button class="btn sm headed" data-run="${esc(name)}">Watch it run ↗</button>
   <button class="btn sm gh runbg" data-run="${esc(name)}">Background</button>
-  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+  <label class="watchtog sm" title="re-run this screen whenever its files change">
+    <input type="checkbox" class="dwatch"> re-run on save</label>
 </span>`
 
 function e2ePanel (s) {
@@ -158,7 +160,13 @@ function e2ePanel (s) {
       </div>
       ${s.run.tests.map(t => `<article class="tst ${t.ok ? 'p' : 'f'}">
         <div class="th"><span class="mark ${t.ok ? '' : 'o'}"></span>
-          <span class="tt">${esc(t.title)}</span><span class="ms">${t.ms}ms</span></div>
+          <span class="tt">${esc(t.title)}</span><span class="ms">${t.ms}ms</span>
+          <span class="tacts">
+            <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
+              title="run only this test">Run</button>
+            <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
+              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
+          </span></div>
         ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
       </article>`).join('')}
       <div class="runlog" data-screen="${esc(s.name)}">
@@ -356,14 +364,20 @@ export function build () {
   .grp.shut .rows { display:none; }
   .rows { display:flex; flex-direction:column; gap:var(--s3); }
 
-  /* The four cells are ONE row and the eye has to read them together — PRD, then wireframe, then
-     screen, then test. Hovering any part binds the whole row: a faint band behind it and every
-     cell's border lifting at once, so the group is unmistakable. */
+  /* The four cells are ONE row and the eye must read them together — PRD, then wireframe, then
+     screen, then test. The row is therefore a CARD that is always visible, not a hover effect: a
+     grouping you can only see by pointing at it does not help you scan forty rows. The cells sit
+     inside it on the same paper, so the band reads as one object; hover only deepens what is
+     already there. The whole row is clickable, so there is no hunting for the one part that opens. */
   .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
-    padding:var(--s2); margin:0 calc(var(--s2) * -1); border-radius:var(--r-md);
-    transition:background .12s; align-items:stretch; }
-  .row:hover { background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair); }
-  .row:hover .c1, .row:hover .cell { border-color:var(--hair-2); }
+    padding:var(--s3); margin:0 calc(var(--s3) * -1) var(--s2); border-radius:var(--r-md);
+    background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair);
+    cursor:pointer; align-items:stretch;
+    transition:box-shadow .12s, transform .12s; }
+  .row:hover { box-shadow:inset 0 0 0 1px var(--hair-2), var(--sh-md); }
+  /* on the row's own paper the cells no longer need a fill of their own — a box inside an
+     identical box is the nested look that made four cells read as four separate cards */
+  .row .cell, .row .c1 { background:transparent; }
   .row.gone { display:none; }
   .c1 { background:var(--paper); border:1px solid var(--hair); padding:var(--s4);
     border-radius:var(--r-md); cursor:pointer;
@@ -421,16 +435,21 @@ export function build () {
   /* Each column scrolls on its own. The PRD is a long read; the draft and the screen are single
      images. Scrolling them as one block meant reading requirement six scrolled both pictures off
      the screen — so the one comparison the whole view exists for became impossible to hold. */
-  .dtscroll { flex:1; overflow:hidden; padding:var(--s5) var(--s6) var(--s5); }
+  /* ONE scroller for the whole detail view. Four independently scrolling panels meant the wheel
+     only worked while the pointer sat over the exact column you wanted — and over the draft it
+     scrolled the prototype's own document instead of the page. Each panel now sizes to its
+     content and the view scrolls as a page, which is what every hand reaches for. */
+  .dtscroll { flex:1; overflow:auto; padding:var(--s5) var(--s6) var(--s5); }
   .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
-    max-width:1760px; margin:0 auto; height:100%; align-items:stretch; }
+    max-width:1760px; margin:0 auto; align-items:start; }
   .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
   /* the E2E column carries a control row (Run · Background · watch) and a test list, so it earns
      more width than the other three when all four are present */
   .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(220px,.72fr) .95fr .95fr minmax(330px,1.05fr); }
   .dtp { display:flex; flex-direction:column; min-height:0; }
   .dtp > .dtl { flex:none; }
-  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:auto; flex:1; min-height:0; }
+  /* content-sized, not scroll-boxed — the page scroller above owns the scrolling now */
+  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:visible; flex:none; }
   .bigshot { background:var(--wash); }
   .bigshot img { width:100%; display:block; }
 
@@ -499,9 +518,9 @@ export function build () {
     border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
   /* a shortcut hint has to be legible on whatever the button is painted — inherit, don't guess */
   .btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
-  /* every screenshot is clickable — thumbnails render at a third of real size, and gate B's
+  /* every image is clickable — thumbnails render at a fraction of real size, and gate B's
      question cannot honestly be answered from a thumbnail */
-  .shot img, .bigshot img { cursor:zoom-in; }
+  img { cursor:zoom-in; }
   .lb { position:fixed; inset:0; z-index:80; background:rgba(28,27,24,.86);
     display:flex; flex-direction:column; }
   .lb[hidden] { display:none; }
@@ -531,6 +550,21 @@ export function build () {
     font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
   .runrow .rr-s { color:var(--ink-4); }
   .runrow .ms { margin-left:auto; color:var(--ink-4); }
+  /* what the run SAW — thumbnails of everything the test captured, each one zoomable */
+  .recshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    padding:0 0 var(--s3) 14px; }
+  .recshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
+    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--wash); display:block; }
+  .recshots img:hover { border-color:var(--ink); }
+  .recmore { font-size:var(--t-xs); color:var(--ink-4); font-family:var(--mono); }
+  .recvids { display:inline-flex; gap:4px; margin-left:var(--s2); }
+  .recvids a { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
+    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:2px 5px; }
+  .recvids a:hover { border-color:var(--ink); color:var(--ink); }
+  /* per-test run controls appear on the row you are pointing at, so five tests do not become ten
+     competing buttons */
+  .tacts { display:inline-flex; gap:4px; margin-left:var(--s2); opacity:0; transition:opacity .12s; }
+  .tst:hover .tacts, .tst:focus-within .tacts { opacity:1; }
   .watchtog { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm);
     color:var(--ink-3); cursor:pointer; }
   .watchtog input { accent-color:var(--ai); width:13px; height:13px; }
@@ -895,10 +929,14 @@ ${detail}
   addEventListener('popstate', route)
   addEventListener('hashchange', route)
 
-  for (const c of document.querySelectorAll('.c1'))
-    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
-  for (const c of document.querySelectorAll('.cell.act'))
-    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
+  // The WHOLE row opens the screen — every cell in it is about that one screen, so any part of it
+  // is a reasonable place to click. Images are the exception: they open the zoom instead, because
+  // "let me look closer at this screenshot" is a different intent from "open this screen".
+  for (const r of document.querySelectorAll('.row'))
+    r.addEventListener('click', e => {
+      if (e.target.closest('img, button, a, input, label')) return
+      open(r.dataset.i)
+    })
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeAll(); history.pushState(null, '', location.pathname) })
 
@@ -1280,12 +1318,20 @@ ${detail}
     document.getElementById('rpcancel').disabled = true
   }
 
-  async function runTests (screen) {
-    openPanel('running', screen ? screen + ' · test.spec.ts' : 'all tests')
+  async function runTests (screen, opts) {
+    const o = opts || {}
+    const what = o.headed ? 'watching' : 'running'
+    const title = (o.grep ? o.grep : screen ? screen + ' · test.spec.ts' : 'all tests') +
+      (o.headed ? ' · in a visible browser' : '')
+    openPanel(what, title)
+    if (o.headed) {
+      rplog.textContent = 'A browser window is opening — it drives the app in front of you.\\n' +
+        'It closes itself when the test finishes.\\n\\n'
+    }
     try {
       const res = await fetch('/api/run', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ screen })
+        body: JSON.stringify({ screen, grep: o.grep, headed: !!o.headed })
       })
       if (!res.ok) throw new Error((await res.text()).slice(0, 120))
     } catch (err) { panelRefused(err.message) }
@@ -1320,6 +1366,15 @@ ${detail}
   // going and the header chip stays lit so it is never a job you forget is happening.
   for (const b of document.querySelectorAll('.runbg'))
     b.addEventListener('click', async () => { await runTests(b.dataset.run); panel.hidden = true })
+  // Watch it run: a real browser window opens and drives the app in front of you. This is what
+  // people mean by watching a test — the re-run-on-save switch is a different thing entirely.
+  for (const b of document.querySelectorAll('.headed'))
+    b.addEventListener('click', () => runTests(b.dataset.run, { headed: true }))
+  // ONE test, not the whole file.
+  for (const b of document.querySelectorAll('.runone'))
+    b.addEventListener('click', () => runTests(b.dataset.run, {
+      grep: b.dataset.grep, headed: b.dataset.headed === '1'
+    }))
   // Watch, per screen, from the detail view — one global switch, mirrored on every copy so it
   // never disagrees with itself. Ticking it re-runs this screen whenever its files change.
   for (const w of document.querySelectorAll('.dwatch'))
@@ -1371,10 +1426,30 @@ ${detail}
     for (const box of document.querySelectorAll('.runlog')) {
       const mine = data.runs.filter(r => r.screen === box.dataset.screen || r.screen === 'all').slice(0, 5)
       box.querySelector('.runrows').innerHTML = mine.length
-        ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
-            (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
-            '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
-            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>').join('')
+        ? mine.map(r => {
+            // The RECORD of the run, not just its verdict: what the test actually saw, as images
+            // you can open. A number alone asks you to trust it.
+            const shots = (r.shots || []).filter(s => !s.video)
+            const vids = (r.shots || []).filter(s => s.video)
+            return '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
+              (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
+              '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
+              (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>' +
+              (shots.length || vids.length
+                ? '<div class="recshots">' +
+                    shots.slice(0, 8).map(s =>
+                      '<img src="' + s.src + '" alt="' + s.label + '" title="' + s.label + '" loading="lazy">').join('') +
+                    (shots.length > 8 ? '<span class="recmore">+' + (shots.length - 8) + '</span>' : '') +
+                    // one line for the recordings, not one button per artifact — twelve identical
+                    // links is noise standing where the evidence should be
+                    (vids.length
+                      ? '<span class="recvids">' + vids.map((s, i) =>
+                          '<a href="' + s.src + '" target="_blank" title="' + s.label + '">▶&nbsp;' + (i + 1) + '</a>').join('') +
+                        '</span>'
+                      : '') +
+                  '</div>'
+                : '')
+          }).join('')
         : '<div class="runrow ms">no runs recorded yet</div>'
     }
   }
@@ -1393,9 +1468,13 @@ ${detail}
     document.getElementById('lbzoom').textContent = 'Actual size'
     lb.hidden = false
   }
+  // EVERY image is zoomable, wherever it is — the row thumbnails, the detail screenshot, and the
+  // shots a test recorded. They all render at a fraction of real size, and a judgement about
+  // whether the build matches the design cannot honestly be made from a thumbnail.
   document.addEventListener('click', e => {
-    const img = e.target.closest('.shot img, .bigshot img')
-    if (!img) return
+    const img = e.target.closest('img')
+    if (!img || !img.src || img.closest('.lb')) return
+    e.stopPropagation()
     openLb(img.src, img.alt || 'screenshot')
   })
   document.getElementById('lbzoom').addEventListener('click', e => {

@@ -21,6 +21,17 @@ export const CANVAS_H = 940
 export const AREA_ORDER = ['Core', 'Gates', 'Running', 'Setup']
 
 export const sha = s => createHash('sha256').update(s).digest('hex').slice(0, 12)
+
+// Write, then rename. writeFileSync truncates and refills, so anything reading at that moment sees
+// a half-written file — and every one of these files is read by another process while the server
+// writes it (the board, the suite, a concurrent run). Rename is atomic within a filesystem, so a
+// reader sees either the old file or the new one and never a torn one. A test caught this as
+// "Unexpected end of JSON input"; the same race would corrupt a real approval.
+export function writeJson (path, value) {
+  const tmp = `${path}.${process.pid}.tmp`
+  writeFileSync(tmp, JSON.stringify(value, null, 2) + '\n')
+  renameSync(tmp, path)
+}
 export const esc = s => String(s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
@@ -104,16 +115,28 @@ export function parseReport (path = RESULTS) {
 // does — would erase every other screen's result and leave the E2E column lying that nothing was
 // ever proven. The index keeps each screen's latest result and a report only overwrites the
 // screens it actually contains. This is the source of truth the board reads.
-export function foldByScreen (fresh) {
+// `partial` means the run was filtered to a subset (a -g on one test), so its report is NOT the
+// whole truth about that screen: the tests it did not run still have perfectly good results from
+// before. Replacing wholesale made "run this one test" report "1 of 1 passing" for a screen with
+// five tests — the board understating its own coverage, which is the same species of lie as
+// overstating it. A FULL screen run still replaces, because there the report is authoritative and
+// a merge would keep a test that has since been deleted from the file.
+export function foldByScreen (fresh, { partial = false } = {}) {
   const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
-  for (const [screen, r] of Object.entries(fresh)) index[screen] = r
+  for (const [screen, r] of Object.entries(fresh)) {
+    const prev = index[screen]
+    if (partial && prev && Array.isArray(prev.tests)) {
+      const byTitle = new Map(prev.tests.map(t => [t.title, t]))
+      for (const t of r.tests) byTitle.set(t.title, t)
+      const tests = [...byTitle.values()]
+      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt }
+    } else index[screen] = r
+  }
   // drop screens whose directory is gone — a deleted screen should not haunt the column
   for (const screen of Object.keys(index)) if (!existsSync(join(SPEC, screen))) delete index[screen]
   // temp-then-rename: two runs can fold at once (a board-started run while the suite runs), and a
   // half-written index is worse than a stale one
-  const tmp = RESULTS_INDEX + '.' + process.pid + '.tmp'
-  writeFileSync(tmp, JSON.stringify(index, null, 2) + '\n')
-  renameSync(tmp, RESULTS_INDEX)
+  writeJson(RESULTS_INDEX, index)
   return index
 }
 
@@ -142,7 +165,7 @@ export function readState (name) {
 }
 
 export function writeState (name, state) {
-  writeFileSync(statePath(name), JSON.stringify(state, null, 2) + '\n')
+  writeJson(statePath(name), state)
 }
 
 export function readScreen (name, results = null) {
@@ -279,7 +302,7 @@ export function writeConfig (cfg) {
       .map(r => String(r).trim()).filter(Boolean).slice(0, 200),
     signIn: str(cfg.signIn, 4000)
   }
-  writeFileSync(CONFIG, JSON.stringify(clean, null, 2) + '\n')
+  writeJson(CONFIG, clean)
   return clean
 }
 
@@ -339,7 +362,7 @@ export const readDecisions = () =>
   existsSync(DECISIONS) ? JSON.parse(readFileSync(DECISIONS, 'utf8')) : {}
 
 export const writeDecisions = d =>
-  writeFileSync(DECISIONS, JSON.stringify(d, null, 2) + '\n')
+  writeJson(DECISIONS, d)
 
 // A finding is open or settled — there is no stored status, exactly as no cell on the board has
 // one. Settled means a decision exists whose key matches this finding's content.

@@ -35,7 +35,10 @@ export default class ResultsIndexReporter {
       }
     }
     if (Object.keys(byScreen).length) {
-      try { foldByScreen(byScreen) } catch (err) { console.error('results-index fold failed:', err) }
+      // BOARD_PARTIAL is set by the server when it filtered the run to a subset — then this
+      // report describes only the tests that ran, and the rest must keep their existing results.
+      const partial = !!process.env.BOARD_PARTIAL
+      try { foldByScreen(byScreen, { partial }) } catch (err) { console.error('results-index fold failed:', err) }
     }
   }
 }
