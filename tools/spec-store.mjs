@@ -198,6 +198,59 @@ export function readScreen (name, results = null) {
   }
 }
 
+// conflicts ----------------------------------------------------------------
+// Two files, deliberately. The scanner OVERWRITES _conflicts.json wholesale on every run, so a
+// decision stored inside it would be destroyed by the next scan. Decisions live apart and are
+// matched back by content.
+export const CONFLICTS = join(SPEC, '_conflicts.json')
+export const DECISIONS = join(SPEC, '_conflict-decisions.json')
+
+const flat = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ')
+
+// The identity of a contradiction is WHAT IT SAYS, never where it sat in a list. A rescan
+// renumbers, reorders, renames ids and is free to emit the two sides the other way round — and
+// under a positional or id-based key every one of those silently resurrects a question you had
+// already settled, which is the exact failure R5 of the conflicts PRD names. Sorting the two
+// sides before hashing is what makes an a/b swap the same conflict rather than a new one.
+export const conflictKey = f => {
+  const side = x => flat(x?.source) + '' + flat(x?.quote)
+  return sha([flat(f?.subject), ...[side(f?.a), side(f?.b)].sort()].join(' '))
+}
+
+export const readDecisions = () =>
+  existsSync(DECISIONS) ? JSON.parse(readFileSync(DECISIONS, 'utf8')) : {}
+
+export const writeDecisions = d =>
+  writeFileSync(DECISIONS, JSON.stringify(d, null, 2) + '\n')
+
+// A finding is open or settled — there is no stored status, exactly as no cell on the board has
+// one. Settled means a decision exists whose key matches this finding's content.
+export function readConflicts () {
+  let raw = null
+  if (existsSync(CONFLICTS)) {
+    try { raw = JSON.parse(readFileSync(CONFLICTS, 'utf8')) } catch { raw = null }
+  }
+  const decisions = readDecisions()
+  const findings = (Array.isArray(raw?.findings) ? raw.findings : []).map(f => {
+    const key = conflictKey(f)
+    const decision = decisions[key] || null
+    return { ...f, key, decision, status: decision ? 'settled' : 'open' }
+  })
+  return {
+    // never scanned and scanned-and-found-nothing are different answers, and only one of them
+    // means "there is nothing to worry about"
+    scanned: !!raw,
+    scannedAt: raw?.scannedAt || null,
+    findings,
+    open: findings.filter(f => f.status === 'open'),
+    settled: findings.filter(f => f.status === 'settled')
+  }
+}
+
+// Which file wins and which one has to be rewritten. The source is `spec/<screen>/prd.md · R<n>`;
+// the rewrite targets the FILE, so the requirement suffix is dropped.
+export const sideFile = side => String(side?.source || '').split('·')[0].trim()
+
 export function allScreens () {
   // read the report ONCE for the whole board, not once per screen
   const results = readResults()

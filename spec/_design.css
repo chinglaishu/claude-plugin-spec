@@ -100,6 +100,12 @@
 }
 
 * { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card > header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
 body {
   margin:0; width:1280px; background:var(--canvas); color:var(--ink);
   font:400 var(--t-md)/1.55 var(--sans);

@@ -486,6 +486,42 @@ export function build () {
   .kbd { border-radius:3px; }
   /* the sticky column header only earns a shadow once content is actually running under it */
   .colhs.stuck { box-shadow:var(--sh-sm); }
+
+  /* conflicts ------------------------------------------------------------
+     Two columns of equal weight, because the question is which of two sentences wins. Anything
+     that made one side look primary — order, size, a default selection — would be the tool
+     quietly picking, which is the one thing R3 forbids it to do. */
+  .cfscroll { overflow:auto; }
+  .cfwrap { max-width:1100px; margin:0 auto; }
+  .cfhd { display:flex; align-items:baseline; gap:var(--s3); padding-bottom:var(--s4); }
+  .cfn { margin-left:6px; }
+  .cf { background:var(--paper); border:1px solid var(--bengara-line);
+    border-radius:var(--r-md); overflow:hidden; margin-bottom:var(--s4); }
+  .cf > header { display:flex; align-items:center; gap:var(--s3); background:var(--wash);
+    padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); }
+  .cf .sub { font-size:var(--t-lg); letter-spacing:-.02em; }
+  .cf .imp { font-size:var(--t-xs); color:var(--ink-4); }
+  .two { display:grid; grid-template-columns:1fr 1fr; }
+  .side { padding:var(--s4) var(--s5); cursor:pointer; transition:background .12s; }
+  .side + .side { border-left:1px solid var(--hair); }
+  .side:hover { background:var(--canvas); }
+  .side.picked, .side.picked:hover { background:var(--ai-tint); }
+  .side .src { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-3);
+    margin-bottom:var(--s2); }
+  .side .quote { font-size:var(--t-md); line-height:1.7; color:var(--ink); margin:0 0 var(--s3); }
+  .side .pick { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-sm);
+    color:var(--ink-3); }
+  .side.picked .pick { color:var(--ai); }
+  .cfoot { display:flex; align-items:center; gap:var(--s3);
+    padding:var(--s3) var(--s4); border-top:1px solid var(--hair); }
+  .cfoot .note { flex:1; }
+  .srows { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); }
+  .srow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-top:1px solid var(--hair); font-size:var(--t-sm); color:var(--ink-3); }
+  .srow:first-child { border-top:0; }
+  .srow .w { color:var(--ink); }
+  .cfempty { text-align:center; padding:var(--s8) var(--s4); color:var(--ink-3);
+    font-size:var(--t-md); line-height:1.9; }
 </style>
 
 <div class="top">
@@ -500,6 +536,7 @@ export function build () {
   <span class="qwrap"><input id="q" class="input" style="width:250px"
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
   <span id="shown" class="gbn" style="min-width:64px"></span>
+  <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
 </div>
 
 <div class="wrap">
@@ -537,10 +574,39 @@ export function build () {
 <div class="runpanel" id="runpanel" hidden>
   <div class="rph"><span class="chip run" id="rpchip"><span class="dot"></span>running</span>
     <span id="rptitle">tests</span><span class="grow"></span>
+    <button class="btn sm" id="rpcancel">Cancel</button>
     <button class="btn sm gh" id="rpbg">Run in background</button>
     <button class="btn sm gh" id="rpclose">Close</button></div>
   <pre class="rplog" id="rplog"></pre>
 </div>
+
+<!-- Conflicts is a TOOL page, not a screen: it is about the whole spec rather than one row, so
+     it gets #conflicts and never #/<screen>. Its contents are fetched rather than baked, for the
+     same reason the run log is — a scan rebuilds the board, so a findings list written into the
+     HTML would always be one scan behind itself. -->
+<section class="dt" id="cfview" hidden>
+  <div class="dth">
+    <h2>Conflicts</h2>
+    <span class="gbn" id="cfsub">one fact, stated two incompatible ways</span>
+    <span class="grow"></span>
+    <div class="seg" id="cfseg">
+      <button data-cf="open" class="on">Open</button><button data-cf="settled">Settled</button>
+    </div>
+    <button class="btn" id="cfscan">Rescan</button>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll cfscroll">
+    <div class="cfwrap">
+      <div class="cfhd">
+        <span class="lbl">not gaps, not TODOs — only pairs that cannot both be true</span>
+        <span class="gbn" id="cfwhen"></span>
+      </div>
+      <div id="cfopen"></div>
+      <div id="cfsettled" hidden></div>
+      <div class="cfempty" id="cfempty" hidden></div>
+    </div>
+  </div>
+</section>
 
 <div class="lb" id="lb" hidden>
   <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
@@ -652,6 +718,15 @@ ${detail}
     if (push) history.pushState({ i }, '', '#/' + SCREENS[i])
   }
   const route = () => {
+    // #conflicts, not #/conflicts. The slash form addresses a SCREEN, and conflicts is a view of
+    // the whole spec rather than a row in it — there is also a screen called conflicts, and the
+    // two must not fight over one address.
+    if (location.hash === '#conflicts') {
+      closeAll()
+      document.getElementById('cfview').hidden = false
+      loadConflicts()
+      return
+    }
     const name = decodeURIComponent(location.hash.replace(/^#\\//, ''))
     const i = SCREENS.indexOf(name)
     if (i >= 0) show(i); else closeAll()
@@ -765,6 +840,163 @@ ${detail}
     })
   }
 
+  // conflicts ------------------------------------------------------------
+  // NOTE FOR ANYONE EDITING THIS FILE: every line below is emitted inside a JS template literal,
+  // so a backtick here becomes the end of the board's HTML and an unescaped newline becomes real
+  // whitespace. That has shipped a page with every listener dead, twice. String concatenation
+  // only, and \\n where a newline is meant.
+  const cfview = document.getElementById('cfview')
+  const cfcount = document.getElementById('cfcount')
+  let CF = { findings: [], open: [], settled: [], scanned: false, scannedAt: null }
+  // A pick you have made but not committed. It lives in the page, never on disk: choosing a side
+  // is not the same act as settling the question, and writing on the first click would mean a
+  // stray tap on a quote had already decided which requirement is canon.
+  const picked = {}
+
+  const eh = s => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+  // 'spec/init/prd.md · R2' names a requirement; the rewrite targets the FILE.
+  const fileOf = src => String(src || '').split('·')[0].trim()
+  const when = iso => String(iso || '').replace('T', ' ').slice(0, 16)
+
+  function sideHtml (f, which) {
+    const s = f[which] || {}
+    const on = picked[f.key] === which
+    return '<div class="side' + (on ? ' picked' : '') + '" data-side="' + which + '">' +
+      '<div class="src">' + eh(s.source) + '</div>' +
+      '<p class="quote">' + eh(s.quote) + '</p>' +
+      '<div class="pick"><span class="radio' + (on ? ' on' : '') + '"></span>This is canon</div></div>'
+  }
+
+  function cardHtml (f) {
+    const pick = picked[f.key]
+    const loser = pick ? fileOf((pick === 'a' ? f.b : f.a).source) : ''
+    return '<div class="cf" data-key="' + eh(f.key) + '">' +
+      '<header><span class="chip stale"><span class="mark h"></span>open</span>' +
+      '<span class="sub">' + eh(f.subject) + '</span><span class="grow"></span>' +
+      '<span class="imp">' + eh(f.impact || '') + '</span></header>' +
+      '<div class="two">' + sideHtml(f, 'a') + sideHtml(f, 'b') + '</div>' +
+      '<div class="cfoot">' +
+      '<button class="btn pri" data-resolve' + (pick ? '' : ' disabled') + '>' +
+      (pick ? 'Resolve — rewrite ' + eh(loser) : 'Pick a side first') + '</button>' +
+      '<div class="note"><input class="input cfnote" ' +
+      'placeholder="Note — carried into the rewrite job"></div></div></div>'
+  }
+
+  function rowHtml (f) {
+    const d = f.decision || {}
+    return '<div class="srow" data-key="' + eh(f.key) + '">' +
+      '<span class="chip ok"><span class="dot"></span>settled</span>' +
+      '<span class="w">' + eh(f.subject) + '</span><span class="grow"></span>' +
+      '<span class="gbn">' + eh(d.won) + ' won · ' + eh(when(d.at)) + '</span>' +
+      '<button class="btn sm" data-rewrite>Rewrite ' + eh(d.lost) + '</button>' +
+      '<button class="btn sm gh" data-undo>Undo</button></div>'
+  }
+
+  const cfTab = () => document.querySelector('#cfseg .on').dataset.cf
+  function setTab (v) {
+    for (const b of document.querySelectorAll('#cfseg button')) b.classList.toggle('on', b.dataset.cf === v)
+    renderConflicts()
+  }
+
+  function renderConflicts () {
+    const tab = cfTab()
+    for (const b of document.querySelectorAll('#cfseg button'))
+      b.textContent = (b.dataset.cf === 'open' ? 'Open ' : 'Settled ') +
+        (b.dataset.cf === 'open' ? CF.open.length : CF.settled.length)
+
+    const openWrap = document.getElementById('cfopen')
+    const setWrap = document.getElementById('cfsettled')
+    openWrap.innerHTML = CF.open.map(cardHtml).join('')
+    setWrap.innerHTML = CF.settled.length
+      ? '<div class="srows">' + CF.settled.map(rowHtml).join('') + '</div>' : ''
+    openWrap.hidden = tab !== 'open'
+    setWrap.hidden = tab !== 'settled'
+
+    // Never scanned and scanned-finding-nothing are DIFFERENT answers, and only one of them means
+    // there is nothing to worry about. Collapsing them would let an empty list read as a clean
+    // bill of health for a project nobody has ever looked at.
+    const empty = document.getElementById('cfempty')
+    const none = tab === 'open' ? !CF.open.length : !CF.settled.length
+    empty.hidden = !none
+    empty.innerHTML = tab === 'settled'
+      ? 'Nothing has been settled yet.'
+      : !CF.scanned
+        ? 'No scan has run yet.<br>Rescan reads every <code>prd.md</code> and looks for one fact stated two incompatible ways.'
+        : 'Nothing contradicts anything else.<br>Rescan after the next batch of requirements.'
+    document.getElementById('cfwhen').textContent =
+      CF.scannedAt ? 'last scanned ' + when(CF.scannedAt) : ''
+    cfcount.hidden = !CF.open.length
+    cfcount.textContent = CF.open.length
+  }
+
+  async function loadConflicts () {
+    try { CF = await (await fetch('/api/conflicts')).json() } catch (e) { return }
+    renderConflicts()
+  }
+
+  async function cfPost (path, body) {
+    try {
+      const r = await fetch(path, {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+      })
+      if (!r.ok) throw new Error((await r.text()).slice(0, 160))
+      return true
+    } catch (err) { toast(err.message); return false }
+  }
+
+  // Delegated, because the list is re-rendered after every decision and per-node listeners would
+  // be attached to elements that no longer exist.
+  cfview.addEventListener('click', async e => {
+    const side = e.target.closest('.side')
+    if (side) {
+      picked[side.closest('.cf').dataset.key] = side.dataset.side
+      renderConflicts()
+      return
+    }
+    const res = e.target.closest('[data-resolve]')
+    if (res) {
+      const card = res.closest('.cf')
+      const key = card.dataset.key
+      if (!picked[key]) return
+      const note = card.querySelector('.cfnote').value
+      if (!await cfPost('/api/conflict', { key: key, canon: picked[key], note: note })) return
+      delete picked[key]
+      await loadConflicts()
+      // Show what you just did. A card that silently vanishes from one tab is indistinguishable
+      // from a misclick, which is how you end up resolving the same thing twice.
+      setTab('settled')
+      return
+    }
+    const undo = e.target.closest('[data-undo]')
+    if (undo) {
+      const key = undo.closest('.srow').dataset.key
+      if (!await cfPost('/api/conflict', { key: key, undo: true })) return
+      await loadConflicts()
+      setTab('open')
+      return
+    }
+    const rw = e.target.closest('[data-rewrite]')
+    if (rw) {
+      const key = rw.closest('.srow').dataset.key
+      openPanel('rewriting', rw.textContent.replace('Rewrite ', ''))
+      if (!await cfPost('/api/rewrite', { key: key })) panelRefused('a job is already in progress')
+    }
+  })
+
+  for (const b of document.querySelectorAll('#cfseg button'))
+    b.addEventListener('click', () => setTab(b.dataset.cf))
+
+  document.getElementById('cfscan').addEventListener('click', async () => {
+    openPanel('scanning', 'every prd.md')
+    if (!await cfPost('/api/scan', {})) panelRefused('a job is already in progress')
+  })
+
+  document.getElementById('cfbtn').addEventListener('click', () => {
+    history.pushState(null, '', '#conflicts')
+    route()
+  })
+
   route()
 
   // running the suite ----------------------------------------------------
@@ -773,46 +1005,55 @@ ${detail}
   const rpchip = document.getElementById('rpchip')
   let runDone = false
 
-  async function runTests (screen) {
+  // ONE panel for every kind of job — tests, a redraft, a scan, a PRD rewrite. A job is a job,
+  // and a second panel would be a second place to look for "is something actually happening".
+  function openPanel (what, title) {
     rplog.textContent = ''
     runDone = false
     rpchip.className = 'chip run'
-    rpchip.innerHTML = '<span class="dot"></span>running'
-    document.getElementById('rptitle').textContent = screen ? screen + ' · test.spec.ts' : 'all tests'
+    rpchip.innerHTML = '<span class="dot"></span>' + what
+    document.getElementById('rptitle').textContent = title
+    document.getElementById('rpcancel').disabled = false
     panel.hidden = false
+  }
+  function panelRefused (msg) {
+    rpchip.className = 'chip bad'
+    rpchip.textContent = 'refused'
+    rplog.textContent = msg
+    runDone = true
+    document.getElementById('rpcancel').disabled = true
+  }
+
+  async function runTests (screen) {
+    openPanel('running', screen ? screen + ' · test.spec.ts' : 'all tests')
     try {
       const res = await fetch('/api/run', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ screen })
       })
       if (!res.ok) throw new Error((await res.text()).slice(0, 120))
-    } catch (err) {
-      rpchip.className = 'chip bad'; rpchip.textContent = 'refused'
-      rplog.textContent = err.message
-      runDone = true
-    }
+    } catch (err) { panelRefused(err.message) }
   }
-  // Dispatch reuses the run panel wholesale — a job is a job, and a second panel would be a
-  // second place to look for "is something happening".
   async function dispatch (screen) {
-    rplog.textContent = ''
-    runDone = false
-    rpchip.className = 'chip run'
-    rpchip.innerHTML = '<span class="dot"></span>redrafting'
-    document.getElementById('rptitle').textContent = screen + ' · draft.html'
-    panel.hidden = false
+    openPanel('redrafting', screen + ' · draft.html')
     try {
       const res = await fetch('/api/dispatch', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ screen })
       })
       if (!res.ok) throw new Error((await res.text()).slice(0, 160))
-    } catch (err) {
-      rpchip.className = 'chip bad'; rpchip.textContent = 'refused'
-      rplog.textContent = err.message
-      runDone = true
-    }
+    } catch (err) { panelRefused(err.message) }
   }
+
+  // A job you cannot stop is a job you have to sit out. A redraft runs for minutes, so noticing
+  // ten seconds in that you dispatched the wrong screen should cost ten seconds, not four minutes.
+  document.getElementById('rpcancel').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/cancel', { method: 'POST' })
+      if (!res.ok) throw new Error((await res.text()).slice(0, 120))
+      document.getElementById('rpcancel').disabled = true
+    } catch (err) { toast(err.message) }
+  })
   for (const b of document.querySelectorAll('[data-dispatch]'))
     b.addEventListener('click', () => dispatch(b.dataset.dispatch))
 
@@ -899,7 +1140,14 @@ ${detail}
     if (!live) throw new Error('automation — live reload off')
     const es = new EventSource('/api/live')
     // A reload mid-run would kill the panel you are watching, so hold it until the run finishes.
-    es.addEventListener('change', () => { if (!panel.hidden && !runDone) return; location.reload() })
+    es.addEventListener('change', () => {
+      if (!panel.hidden && !runDone) return
+      // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
+      // reload there would throw away a sentence you were half way through typing, so it refreshes
+      // in place instead — the one view on the board that owns its own state.
+      if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
+      location.reload()
+    })
     es.addEventListener('run', e => {
       const d = JSON.parse(e.data)
       if (d.state === 'started') {
@@ -914,6 +1162,9 @@ ${detail}
       } else if (d.state === 'done') {
         runDone = true
         setRunning(false)
+        document.getElementById('rpcancel').disabled = true
+        // a scan or a rewrite changes what is waiting on you — the header count has to follow
+        loadConflicts()
         // finished while you were not watching — bring the board up to date on its own
         if (panel.hidden) { loadRuns(); setTimeout(() => location.reload(), 300); return }
         rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
