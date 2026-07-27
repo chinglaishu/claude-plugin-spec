@@ -111,6 +111,14 @@ genuinely interactive (every control does something visible).
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
+- **Editing `board`'s PRD does not red the suite, but it does leave the live board stale.** `board`'s
+  gate B (the gate-screen specs) only renders once its gate A is `ok`, and the *only* thing that
+  approves board's gate A during a run is `spec/board/test.spec.ts` R4 — which re-pins the *current*
+  PRD hash as part of what it tests. So a change to board's requirements passes the suite (an earlier
+  spec re-approves against the new hash) while the state guard restores the old pin at teardown,
+  leaving the persistent board stale until the CEO approves. Do not read a green suite as "board is
+  settled", and never re-approve board's gate A yourself to make the live board green — that is the
+  CEO's gate.
 
 ## Authored vs measured
 
