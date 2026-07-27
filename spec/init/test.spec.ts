@@ -72,17 +72,17 @@ test('R1 — start mode saves backend and frontend, in order', async ({ page }) 
   expect(c.baseUrl).toBe('http://localhost:5173')
 })
 
-test('R3 — a crawled PRD is marked a guess and cannot skip gate A', async ({ page, request }) => {
+test('R3 — a crawled PRD is marked a guess and cannot skip gate A', async ({ page }) => {
   const dir = seedGuess('storefront', 'Storefront')
   try {
-    // wait for the file-watcher to rebuild the board with the new row before navigating — writing
-    // the file and reading the page are two processes, and the rebuild is a debounced child build,
-    // so polling the served HTML is what makes this deterministic instead of a race under load
-    await expect.poll(async () => (await (await request.get('/')).text()).includes('Storefront'),
-      { timeout: 15000, message: 'board never rebuilt to include the crawled row' }).toBe(true)
-    await page.goto('/')
+    // Writing the file and reading the page are two processes, and the rebuild is a debounced child
+    // build — so RELOAD until the row appears rather than loading once and hoping the rebuild won
+    // the race. toPass re-runs the goto each attempt, which a plain retry on toHaveCount cannot.
     const row = page.locator('.row', { hasText: 'Storefront' })
-    await expect(row).toHaveCount(1)
+    await expect(async () => {
+      await page.goto('/')
+      await expect(row).toHaveCount(1)
+    }).toPass({ timeout: 15000 })
     // visibly a guess — different from a PRD the CEO wrote
     await expect(row.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
     // and it is waiting on you: a guess you have not corrected is not settled work
