@@ -531,13 +531,19 @@ ins { color:var(--koke); text-decoration:none; }
 </div>
 
 <div class="wrap">
-  
+  <div class="clear">
+    <span class="chip ok"><span class="dot"></span>queue clear</span>
+    Nothing is waiting on you.
+    
+    
+    Every screen is built, approved and proven.
+  </div>
   <div class="stats">
     <span class="stat"><b>6</b> screens</span>
     <span class="stat"><b>6</b> drafted</span>
     <span class="stat"><b>6</b> built</span>
-    <span class="stat"><b>1</b> tested</span>
-    <span class="stat hot"><b>3</b> waiting on you</span>
+    <span class="stat"><b>6</b> tested</span>
+    <span class="stat hot"><b>0</b> waiting on you</span>
     <span class="grow"></span>
     <span class="chip run" id="runflag" hidden><span class="dot"></span>tests running</span>
     <button class="btn sm" id="runall">Run all tests</button>
@@ -558,7 +564,7 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Core</h2>
     <span class="gc">2 screens</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="rows">
 <div class="row" data-i="0" data-area="Core"
@@ -1214,7 +1220,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="board" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=54c1cf7e416f" alt="Board as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=814f21c6ad11" alt="Board as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="board" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -1224,15 +1230,15 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
 <div class="row" data-i="1" data-area="Core"
-     data-waiting="1" data-started="1"
+     data-waiting="0" data-started="1"
      data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
   <div class="c1">
     <div class="nm">Conflicts</div>
     <div class="meta">5 requirements · <code>/conflicts</code></div>
     <ul class="reqs"><li><span class="rq">R1</span><span class="rt">A conflict is one fact stated two incompatible ways</span></li><li><span class="rq">R2</span><span class="rt">Both positions are shown in full, with where each came from</span></li><li><span class="rq">R3</span><span class="rt">You pick which side is canon</span></li><li><span class="rq">R4</span><span class="rt">Resolving dispatches the rewrite of the losing side</span></li><li><span class="rq">R5</span><span class="rt">Decisions survive a rescan</span></li></ul>
   </div>
-  <div class="cell c-rev act" data-screen="conflicts" data-col="draft">
-    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
+  <div class="cell c-ok" data-screen="conflicts" data-col="draft">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
     <div class="cellb"><div class="frame"><iframe scrolling="no" srcdoc="&lt;!doctype html&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
 &lt;title&gt;Conflicts&lt;/title&gt;
@@ -1690,14 +1696,15 @@ ins { color:var(--koke); text-decoration:none; }
 &lt;/script&gt;
 "></iframe></div></div>
   </div>
-  <div class="cell c-rev" data-screen="conflicts" data-col="screen">
-    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=ffb21fe7b444" alt="Conflicts as built"></div></div>
+  <div class="cell c-ok" data-screen="conflicts" data-col="screen">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=b0a260f4eac9" alt="Conflicts as built"></div></div>
   </div>
-  <div class="cell c-gone" data-screen="conflicts" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">never run</div>
-  <div class="b2">npm run e2e</div></div></div>
+  <div class="cell c-ok" data-screen="conflicts" data-col="e2e">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
+    <div class="cellb"><div class="runs"><div class="tk pass">✓</div>
+       <div class="ms">5 of 5 passing</div>
+       </div></div>
   </div>
 </div></div>
 </section>
@@ -2134,12 +2141,13 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=df0f6b2159c9" alt="Gate A — draft review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=9bbbdd3dfcb3" alt="Gate A — draft review as built"></div></div>
   </div>
-  <div class="cell c-gone" data-screen="gate-draft-review" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">never run</div>
-  <div class="b2">npm run e2e</div></div></div>
+  <div class="cell c-ok" data-screen="gate-draft-review" data-col="e2e">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
+    <div class="cellb"><div class="runs"><div class="tk pass">✓</div>
+       <div class="ms">5 of 5 passing</div>
+       </div></div>
   </div>
 </div>
 <div class="row" data-i="4" data-area="Gates"
@@ -2551,12 +2559,13 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=bc3db0ec6092" alt="Gate B — screen review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=9ba47c55a6e7" alt="Gate B — screen review as built"></div></div>
   </div>
-  <div class="cell c-gone" data-screen="gate-screen-review" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">never run</div>
-  <div class="b2">npm run e2e</div></div></div>
+  <div class="cell c-ok" data-screen="gate-screen-review" data-col="e2e">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
+    <div class="cellb"><div class="runs"><div class="tk pass">✓</div>
+       <div class="ms">4 of 4 passing</div>
+       </div></div>
   </div>
 </div></div>
 </section>
@@ -2565,11 +2574,11 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Running</h2>
     <span class="gc">1 screen</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="rows">
 <div class="row" data-i="2" data-area="Running"
-     data-waiting="1" data-started="1"
+     data-waiting="0" data-started="1"
      data-q="dispatch panel /run/:job one panel per job, opened by the cell you clicked the work is visible while it runs finishing updates the board without a reload one job per screen at a time cancel actually stops it">
   <div class="c1">
     <div class="nm">Dispatch panel</div>
@@ -2968,14 +2977,15 @@ ins { color:var(--koke); text-decoration:none; }
 &lt;/script&gt;
 "></iframe></div></div>
   </div>
-  <div class="cell c-rev" data-screen="dispatch" data-col="screen">
-    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=515662e809c1" alt="Dispatch panel as built"></div></div>
+  <div class="cell c-ok" data-screen="dispatch" data-col="screen">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=6cc09f31717e" alt="Dispatch panel as built"></div></div>
   </div>
-  <div class="cell c-gone" data-screen="dispatch" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">never run</div>
-  <div class="b2">npm run e2e</div></div></div>
+  <div class="cell c-ok" data-screen="dispatch" data-col="e2e">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
+    <div class="cellb"><div class="runs"><div class="tk pass">✓</div>
+       <div class="ms">4 of 4 passing</div>
+       </div></div>
   </div>
 </div></div>
 </section>
@@ -2984,11 +2994,11 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Setup</h2>
     <span class="gc">1 screen</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="rows">
 <div class="row" data-i="5" data-area="Setup"
-     data-waiting="1" data-started="1"
+     data-waiting="0" data-started="1"
      data-q="init /init asks for what cannot be guessed, and nothing else an existing app is crawled into rows a crawled prd is marked as a guess an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
   <div class="c1">
     <div class="nm">Init</div>
@@ -3408,14 +3418,15 @@ ins { color:var(--koke); text-decoration:none; }
 &lt;/script&gt;
 "></iframe></div></div>
   </div>
-  <div class="cell c-rev" data-screen="init" data-col="screen">
-    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/init/screen.png?h=2972b8627522" alt="Init as built"></div></div>
+  <div class="cell c-ok" data-screen="init" data-col="screen">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="shot"><img src="spec/init/screen.png?h=95945c972294" alt="Init as built"></div></div>
   </div>
-  <div class="cell c-gone" data-screen="init" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">never run</div>
-  <div class="b2">npm run e2e</div></div></div>
+  <div class="cell c-ok" data-screen="init" data-col="e2e">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
+    <div class="cellb"><div class="runs"><div class="tk pass">✓</div>
+       <div class="ms">5 of 5 passing</div>
+       </div></div>
   </div>
 </div></div>
 </section>
@@ -4206,44 +4217,44 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/board/screen.png?h=54c1cf7e416f" alt="Board as built"></div>
+        <div class="bigshot"><img src="spec/board/screen.png?h=814f21c6ad11" alt="Board as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
       <button class="btn sm runbtn" data-run="board">Run<span class="kbd">r</span></button></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 03:52</b></span>
+        <span>last run <b>2026-07-27 04:15</b></span>
         
         <div class="path"><code>spec/board/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">215ms</span></div>
+          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">237ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">149ms</span></div>
+          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">158ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">157ms</span></div>
+          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">181ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">766ms</span></div>
+          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">863ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">150ms</span></div>
+          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">169ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">238ms</span></div>
+          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">312ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">258ms</span></div>
+          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">275ms</span></div>
         
       </article>
       <div class="runlog" data-screen="board">
@@ -4263,7 +4274,7 @@ ins { color:var(--koke); text-decoration:none; }
 <section class="dt" data-i="1" hidden>
   <div class="dth">
     <h2>Conflicts</h2>
-    <span class="chip rev"><span class="dot"></span>needs review</span>
+    <span class="chip ok"><span class="dot"></span>approved</span>
     <span class="gbn">5 requirements · <code>spec/conflicts/</code></span>
     <span class="grow"></span>
     <a class="btn" href="spec/conflicts/draft.html" target="_blank">Open draft full size ↗</a>
@@ -4745,19 +4756,51 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/conflicts/screen.png?h=ffb21fe7b444" alt="Conflicts as built"></div>
+        <div class="bigshot"><img src="spec/conflicts/screen.png?h=b0a260f4eac9" alt="Conflicts as built"></div>
       </div>
-      
+      <div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
+      <button class="btn sm runbtn" data-run="conflicts">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>2026-07-27 04:15</b></span>
+        
+        <div class="path"><code>spec/conflicts/test.spec.ts</code></div>
+      </div>
+      <article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R2 — both positions are shown in full, each naming where it came from</span><span class="ms">184ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R3 — the tool never picks: resolving is refused until you choose a side</span><span class="ms">205ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><span class="ms">328ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><span class="ms">350ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><span class="ms">426ms</span></div>
+        
+      </article>
+      <div class="runlog" data-screen="conflicts">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
     </div>
   </div>
-  <div class="gb open"><div class="gbin">
-    <span class="gbn" style="flex:none">Nobody has said yes to this draft yet.</span>
-    <button class="btn ok" data-act="approve" data-screen="conflicts">Looks right</button>
-    <span class="gor">or</span>
-    <input class="why input" required
-      placeholder="Say what is wrong — one sentence, saved with the rejection">
-    <button class="btn no" data-act="reject" data-screen="conflicts">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>ade3db95f8b7</code></span></div></div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">built screen matches the approved design — pinned to <code>draft 01123c80f66f</code></span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-gate="screen" data-screen="conflicts">Un-approve</button></div></div>
 </section>
 <section class="dt" data-i="2" hidden>
   <div class="dth">
@@ -5177,19 +5220,47 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/dispatch/screen.png?h=515662e809c1" alt="Dispatch panel as built"></div>
+        <div class="bigshot"><img src="spec/dispatch/screen.png?h=6cc09f31717e" alt="Dispatch panel as built"></div>
       </div>
-      
+      <div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
+      <button class="btn sm runbtn" data-run="dispatch">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>2026-07-27 04:15</b></span>
+        
+        <div class="path"><code>spec/dispatch/test.spec.ts</code></div>
+      </div>
+      <article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><span class="ms">5352ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R4 — a second job is refused while one runs, not queued silently</span><span class="ms">251ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">running one screen leaves every other screen's E2E result standing</span><span class="ms">4069ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><span class="ms">67ms</span></div>
+        
+      </article>
+      <div class="runlog" data-screen="dispatch">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
     </div>
   </div>
-  <div class="gb open"><div class="gbin">
-    <span class="gbn" style="flex:none">Nobody has checked the built screen against the design yet.</span>
-    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="dispatch">Matches the design</button>
-    <span class="gor">or</span>
-    <input class="why input" required
-      placeholder="Which is wrong — the build or the design? One sentence.">
-    <button class="btn no" data-act="reject" data-gate="screen" data-screen="dispatch">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>68bd9377e68c</code></span></div></div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">built screen matches the approved design — pinned to <code>draft 68bd9377e68c</code></span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-gate="screen" data-screen="dispatch">Un-approve</button></div></div>
 </section>
 <section class="dt" data-i="3" hidden>
   <div class="dth">
@@ -5632,9 +5703,44 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=df0f6b2159c9" alt="Gate A — draft review as built"></div>
+        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=9bbbdd3dfcb3" alt="Gate A — draft review as built"></div>
       </div>
-      
+      <div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
+      <button class="btn sm runbtn" data-run="gate-draft-review">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>2026-07-27 04:15</b></span>
+        
+        <div class="path"><code>spec/gate-draft-review/test.spec.ts</code></div>
+      </div>
+      <article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R1 — PRD and wireframe are visible side by side</span><span class="ms">224ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R3 — approving pins the PRD hash, and the bar says which</span><span class="ms">209ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R4 — rejecting requires a reason; an empty one is refused</span><span class="ms">55ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — the gate opens by itself when the PRD moves</span><span class="ms">265ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">the detail view has its own address and survives a reload</span><span class="ms">358ms</span></div>
+        
+      </article>
+      <div class="runlog" data-screen="gate-draft-review">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
+    </div>
+  </div>
     </div>
   </div>
   <div class="gb ok"><div class="gbin">
@@ -6068,9 +6174,40 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=bc3db0ec6092" alt="Gate B — screen review as built"></div>
+        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=9ba47c55a6e7" alt="Gate B — screen review as built"></div>
       </div>
-      
+      <div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
+      <button class="btn sm runbtn" data-run="gate-screen-review">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>2026-07-27 04:15</b></span>
+        
+        <div class="path"><code>spec/gate-screen-review/test.spec.ts</code></div>
+      </div>
+      <article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R1 — the approved design and the built screen are shown side by side</span><span class="ms">226ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R4 — approving pins the draft hash the screen was checked against</span><span class="ms">366ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — rejecting has to name which side is wrong</span><span class="ms">107ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R2 — a screen with no screenshot has no gate B to open</span><span class="ms">252ms</span></div>
+        
+      </article>
+      <div class="runlog" data-screen="gate-screen-review">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
+    </div>
+  </div>
     </div>
   </div>
   <div class="gb ok"><div class="gbin">
@@ -6518,19 +6655,51 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/init/screen.png?h=2972b8627522" alt="Init as built"></div>
+        <div class="bigshot"><img src="spec/init/screen.png?h=95945c972294" alt="Init as built"></div>
       </div>
-      
+      <div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
+      <button class="btn sm runbtn" data-run="init">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>2026-07-27 04:15</b></span>
+        
+        <div class="path"><code>spec/init/test.spec.ts</code></div>
+      </div>
+      <article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R1 — the form persists what cannot be guessed, and reads it back</span><span class="ms">363ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R1 — start mode saves the command it will run</span><span class="ms">282ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R3 — a crawled PRD is marked a guess and cannot skip gate A</span><span class="ms">192ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><span class="ms">167ms</span></div>
+        
+      </article><article class="tst p">
+        <div class="th"><span class="mark "></span>
+          <span class="tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><span class="ms">222ms</span></div>
+        
+      </article>
+      <div class="runlog" data-screen="init">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
     </div>
   </div>
-  <div class="gb open"><div class="gbin">
-    <span class="gbn" style="flex:none">Nobody has checked the built screen against the design yet.</span>
-    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="init">Matches the design</button>
-    <span class="gor">or</span>
-    <input class="why input" required
-      placeholder="Which is wrong — the build or the design? One sentence.">
-    <button class="btn no" data-act="reject" data-gate="screen" data-screen="init">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>372c62cfaa59</code></span></div></div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">built screen matches the approved design — pinned to <code>draft 372c62cfaa59</code></span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-gate="screen" data-screen="init">Un-approve</button></div></div>
 </section>
 
 <script>
@@ -6682,7 +6851,7 @@ ins { color:var(--koke); text-decoration:none; }
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
   // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
-  const WAITING = [1,2,5]
+  const WAITING = []
   for (const b of document.querySelectorAll('.nextw')) {
     if (WAITING.length < 2) { b.hidden = true; continue }
     b.addEventListener('click', () => {

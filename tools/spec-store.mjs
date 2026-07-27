@@ -4,7 +4,7 @@
 // approval could be written against one value and compared against another, and staleness would
 // be quietly wrong — which is the single failure this whole product cannot have.
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -57,15 +57,20 @@ export function parsePrd (text) {
 
 // Playwright writes one report for the whole run; the board needs it per screen. Tests live at
 // spec/<screen>/test.spec.ts, so the directory IS the screen — no registry to keep in sync.
-export function readResults () {
-  const p = join(SPEC, '_results.json')
-  if (!existsSync(p)) return {}
+export const RESULTS = join(SPEC, '_results.json')
+export const RESULTS_INDEX = join(SPEC, '_results-index.json')
+
+// Parse ONE Playwright JSON report into { screen: {total, failed, tests, ranAt} }. A report only
+// covers the screens that actually ran, which is the whole trap: run one screen and the report
+// mentions only that one.
+export function parseReport (path = RESULTS) {
+  if (!existsSync(path)) return {}
   let report
-  try { report = JSON.parse(readFileSync(p, 'utf8')) } catch { return {} }
+  try { report = JSON.parse(readFileSync(path, 'utf8')) } catch { return {} }
   // WHEN the run happened, so a pass can be checked against what has changed since. Columns 2
   // and 3 both go stale when their source moves; column 4 used to stay green forever, which made
   // it the one cell on the board allowed to be confidently out of date.
-  const ranAt = statSync(p).mtimeMs
+  const ranAt = statSync(path).mtimeMs
   const byScreen = {}
   const walk = suite => {
     for (const spec of suite.specs || []) {
@@ -92,6 +97,34 @@ export function readResults () {
   for (const s of report.suites || []) walk(s)
   for (const k of Object.keys(byScreen)) byScreen[k].ranAt = ranAt
   return byScreen
+}
+
+// The persistent per-screen results, folded ACROSS runs. A single report replaces the whole file,
+// so a scoped run of one screen — which the board offers on every row, and which a test here also
+// does — would erase every other screen's result and leave the E2E column lying that nothing was
+// ever proven. The index keeps each screen's latest result and a report only overwrites the
+// screens it actually contains. This is the source of truth the board reads.
+export function foldByScreen (fresh) {
+  const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
+  for (const [screen, r] of Object.entries(fresh)) index[screen] = r
+  // drop screens whose directory is gone — a deleted screen should not haunt the column
+  for (const screen of Object.keys(index)) if (!existsSync(join(SPEC, screen))) delete index[screen]
+  // temp-then-rename: two runs can fold at once (a board-started run while the suite runs), and a
+  // half-written index is worse than a stale one
+  const tmp = RESULTS_INDEX + '.' + process.pid + '.tmp'
+  writeFileSync(tmp, JSON.stringify(index, null, 2) + '\n')
+  renameSync(tmp, RESULTS_INDEX)
+  return index
+}
+
+export const foldResults = (reportPath = RESULTS) => foldByScreen(parseReport(reportPath))
+
+export function readResults () {
+  if (existsSync(RESULTS_INDEX)) {
+    try { return JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) } catch { /* fall through */ }
+  }
+  // before the first fold, the raw report is all there is
+  return parseReport()
 }
 
 // Newest source file for a screen. If anything it proves has changed since the run, the result

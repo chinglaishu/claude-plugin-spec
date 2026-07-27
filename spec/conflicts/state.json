@@ -5,5 +5,8 @@
       "againstPrd": "ade3db95f8b7",
       "at": "2026-07-27T02:42:57.354Z"
     }
-  ]
+  ],
+  "draftApprovedAgainstPrd": "ade3db95f8b7",
+  "approvedPrdText": "---\nscreen: conflicts\narea: Core\ntitle: Conflicts\nroute: /conflicts\n---\n\n## R1 — A conflict is one fact stated two incompatible ways\n\nNot a gap, not a TODO, not a missing test. Two requirements that cannot both be true — a\nnav with five items on one screen and four on another, two different defaults for the same\nfield. Anything looser fills the list with noise and you stop opening it.\n\n## R2 — Both positions are shown in full, with where each came from\n\nSide by side, each naming its screen and requirement. You are picking a winner, so you have\nto be able to read both without leaving.\n\n## R3 — You pick which side is canon\n\nThe tool never picks. Choosing a side is a requirement decision, and a tool that guesses one\nsilently is the thing this whole product exists to stop.\n\n## R4 — Resolving dispatches the rewrite of the losing side\n\nBoth PRD files end up agreeing, and every screen downstream of the loser goes stale so its\ndraft and screen get revisited.\n\n## R5 — Decisions survive a rescan\n\nA resolution is keyed by the content of the conflict, not its position in a list, so\nrescanning does not resurrect something you already settled.\n",
+  "screenApprovedAgainstDraft": "01123c80f66f"
 }

@@ -119,6 +119,18 @@ function prdBody (s) {
 // trust a number — you could not read WHICH seven, when they ran, or what a failure actually said.
 function e2ePanel (s) {
   if (!s.run) {
+    // A test that exists but has never run needs a way to BE run from here — otherwise the only
+    // way to prove a fresh screen is the board-wide "Run all", and a per-screen Run that vanishes
+    // exactly when there is nothing yet to show is the button you needed most.
+    if (s.cells.e2e === 'unrun') {
+      return `<div class="dtp">
+        <div class="dtl lbl dth2">4 · E2E ${chip(s.cells.e2e)}
+          <button class="btn sm runbtn" data-run="${esc(s.name)}">Run<span class="kbd">r</span></button></div>
+        <div class="e2e"><div class="ph big">never run · <code>spec/${esc(s.name)}/test.spec.ts</code></div>
+          <div class="runlog" data-screen="${esc(s.name)}"><div class="lbl">recent runs</div>
+            <div class="runrows">loading…</div></div></div>
+      </div>`
+    }
     if (s.cells.e2e !== 'missing' && s.cells.e2e !== 'waiting') return ''
     return `<div class="dtp">
       <div class="dtl lbl">4 · E2E</div>

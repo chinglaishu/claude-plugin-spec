@@ -59,6 +59,23 @@ test('R4 — a second job is refused while one runs, not queued silently', async
   expect(await second.text()).toMatch(/in progress/i)
 })
 
+test('running one screen leaves every other screen\'s E2E result standing', async ({ page, request }) => {
+  // The board offers a per-screen Run on every row. A run writes a report covering only the
+  // screens that ran, and the board reads a persistent index it is folded INTO — so a board-only
+  // run must update board and leave conflicts, init and the rest exactly as they were. Replacing
+  // the index instead of folding is the bug that made one Run blank the whole E2E column.
+  await idle(request)
+  const r = await request.post('/api/run', { data: { screen: 'board' } })
+  expect(r.ok()).toBeTruthy()
+  await idle(request)
+
+  await page.goto('/')
+  const conflicts = page.locator('.row:has(.nm:text-is("Conflicts"))')
+  // conflicts did not run, yet its result is still on the board — not blanked to "never run"
+  await expect(conflicts.locator('.runs')).toContainText(/passing/i)
+  await expect(conflicts.locator('.runs')).not.toContainText(/never run/i)
+})
+
 test('R5 — cancel stops the job, and cancelling nothing is refused not crashed', async ({ request }) => {
   await idle(request)
   const started = await request.post('/api/run', { data: { screen: 'board' } })

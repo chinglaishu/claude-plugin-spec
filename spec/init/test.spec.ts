@@ -62,9 +62,14 @@ test('R1 — start mode saves the command it will run', async ({ page }) => {
   expect(config()!.startCommand).toBe('npm run dev')
 })
 
-test('R3 — a crawled PRD is marked a guess and cannot skip gate A', async ({ page }) => {
+test('R3 — a crawled PRD is marked a guess and cannot skip gate A', async ({ page, request }) => {
   const dir = seedGuess('storefront', 'Storefront')
   try {
+    // wait for the file-watcher to rebuild the board with the new row before navigating — writing
+    // the file and reading the page are two processes, and the rebuild is a debounced child build,
+    // so polling the served HTML is what makes this deterministic instead of a race under load
+    await expect.poll(async () => (await (await request.get('/')).text()).includes('Storefront'),
+      { timeout: 15000, message: 'board never rebuilt to include the crawled row' }).toBe(true)
     await page.goto('/')
     const row = page.locator('.row', { hasText: 'Storefront' })
     await expect(row).toHaveCount(1)

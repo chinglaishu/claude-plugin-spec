@@ -31,7 +31,16 @@ export default defineConfig({
   // is a race — and it showed up exactly as you would fear: green alone, red in the suite.
   fullyParallel: false,
   workers: 1,
-  reporter: [['json', { outputFile: 'spec/_results.json' }], ['list']],
+  // Three reporters. The JSON report is for humans and debugging; a board-started run points it at
+  // its own file so a scoped run does not clobber the suite's. The custom reporter folds each run's
+  // results into spec/_results-index.json — the per-screen source of truth the board reads, where a
+  // scoped run updates one screen and leaves the rest standing. It must be a reporter, not a
+  // teardown: Playwright writes the JSON file only after globalTeardown.
+  reporter: [
+    ['json', { outputFile: process.env.BOARD_RESULTS || 'spec/_results.json' }],
+    ['list'],
+    ['./spec/_results-reporter.mjs']
+  ],
   use: {
     baseURL,
     // Screenshots feed gate B, where the question is "did this change on purpose". Animation and

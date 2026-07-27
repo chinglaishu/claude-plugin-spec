@@ -10,9 +10,9 @@ import { readFileSync, writeFileSync, existsSync, statSync, watch } from 'node:f
 import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname } from 'node:path'
 import {
-  ROOT, SPEC, readScreen, readState, writeState, readResults, allScreens,
+  ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
-  CRAWL, readConfig, writeConfig, readCrawl
+  CRAWL, readConfig, writeConfig, readCrawl, parseReport
 } from './spec-store.mjs'
 
 const PORT = Number(process.env.PORT || 4173)
@@ -417,9 +417,15 @@ function startRun (screen) {
   if (screen) args.push(join('spec', screen, 'test.spec.ts'))
 
   const started = Date.now()
+  // A run started BY the board writes to its OWN report file. Scoped to one screen it would
+  // otherwise overwrite spec/_results.json — the file a concurrent full run (or the suite itself)
+  // is also writing — and erase every other screen's result. It folds into the per-screen index
+  // on close instead, so a one-screen run updates one screen and leaves the rest standing.
+  const report = join(SPEC, '_run-report.json')
   // detached for the same reason the agent jobs are: npx is a launcher, playwright is the thing
   // actually running, and cancelling has to reach the browser it started.
-  const child = spawn('npx', args, { cwd: ROOT, detached: true, env: { ...process.env, FORCE_COLOR: '0' } })
+  const child = spawn('npx', args,
+    { cwd: ROOT, detached: true, env: { ...process.env, FORCE_COLOR: '0', BOARD_RESULTS: report } })
   running = { screen: screen || 'all', started, child, kind: 'tests' }
   push('run', { state: 'started', screen: running.screen })
 
@@ -432,8 +438,11 @@ function startRun (screen) {
   child.stderr.on('data', feed)
 
   child.on('close', code => {
-    const results = readResults()
-    const totals = Object.values(results).reduce(
+    // the run's own reporter has already folded its results into the per-screen index by now; here
+    // we only need this run's totals for the run-log, read from the report it wrote
+    let fresh = {}
+    try { fresh = parseReport(report) } catch { /* no report — the run never produced one */ }
+    const totals = Object.values(fresh).reduce(
       (a, r) => ({ total: a.total + r.total, failed: a.failed + r.failed }), { total: 0, failed: 0 })
     const entry = {
       at: new Date(started).toISOString(),
@@ -717,7 +726,7 @@ watch(SPEC, { recursive: true }, (_e, name) => {
   // Re-triggering on those would make watch mode chase its own tail forever, so they redraw the
   // board but are never a reason to run. A conflicts scan is the same: it changes what you have
   // to decide, never what the tests would say.
-  const noRun = /_results\.json$|_runs\.json$|_state-snapshot|_dir-snapshot|_conflicts\.json$|_config\.json$|_crawl\.json$|screen\.png$|crawl\.png$/.test(name)
+  const noRun = /_results\.json$|_results-index\.json$|_run-report\.json$|_runs\.json$|_state-snapshot|_dir-snapshot|_conflicts\.json$|_config\.json$|_crawl\.json$|screen\.png$|crawl\.png$/.test(name)
   rebuild()
   if (noRun) return
 
