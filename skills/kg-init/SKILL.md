@@ -30,10 +30,6 @@ npm install
 npm run board          # serves THIS project's board on http://localhost:4173 (empty at first)
 ```
 
-```bash
-npm run board          # serves on http://localhost:4173
-```
-
 Open it in the user's **real browser** over `http://localhost` — `file://` URLs do not work, and the
 gates need the server to record a decision. On a fresh project the board is empty, which is the honest
 starting point, not a failure.
