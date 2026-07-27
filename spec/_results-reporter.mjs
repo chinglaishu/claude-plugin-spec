@@ -7,13 +7,75 @@ import { foldByScreen } from '../tools/spec-store.mjs'
 // and the assertions it made (expect). Hook and fixture noise is dropped. Capped so one test
 // cannot bloat the record.
 const STEP_NOISE = /^(Create (context|page|request context|browser context)|Launch browser|Close (context|page)|Fixture |Worker )/
+
+// A Playwright step title reads like code — `Expect "toHaveCount" locator('.row')`. Turn it into a
+// sentence a person can read. Generic, because this tool runs in other people's repos: it works
+// off the matcher names and locator shapes, not any one project's selectors.
+const MATCH = {
+  toBeVisible: 'is visible', toBeHidden: 'is hidden', toBeAttached: 'is on the page',
+  toHaveCount: 'has the expected number', toContainText: 'contains the expected text',
+  toHaveText: 'reads the expected text', toHaveValue: 'has the expected value',
+  toBeEnabled: 'is enabled', toBeDisabled: 'is disabled', toBeEditable: 'can be edited',
+  toBeChecked: 'is ticked', toBeFocused: 'has focus', toHaveAttribute: 'has the expected attribute',
+  toHaveClass: 'has the expected class', toHaveURL: 'is at the expected address',
+  toBeGreaterThan: 'is more than expected', toBeGreaterThanOrEqual: 'is at least the expected',
+  toBeLessThan: 'is fewer than expected', toBeLessThanOrEqual: 'is at most the expected',
+  toBe: 'is what we expect', toEqual: 'equals what we expect', toMatch: 'matches the pattern',
+  toHaveProperty: 'has the expected property', toBeTruthy: 'is set', toBeNull: 'is empty',
+  toPass: 'eventually holds', toBeOK: 'succeeded'
+}
+
+function prettyTarget (loc) {
+  let m
+  if ((m = loc.match(/getByRole\((['"])(.*?)\1(?:.*?name:\s*(['"])(.*?)\3)?/))) {
+    return 'the ' + m[2] + (m[4] ? ' “' + m[4] + '”' : '')
+  }
+  if ((m = loc.match(/getByText\((['"])(.*?)\1/))) return 'the text “' + m[2] + '”'
+  if ((m = loc.match(/getBy(?:Label|Placeholder)\((['"])(.*?)\1/))) return 'the field “' + m[2] + '”'
+  if ((m = loc.match(/getByTestId\((['"])(.*?)\1/))) return 'the “' + m[2] + '”'
+  if ((m = loc.match(/locator\((['"])(.*?)\1\)/))) return 'the “' + m[2] + '”'
+  return loc.replace(/\)\.(first|last|nth)\([^)]*\)/g, ')').slice(0, 70)
+}
+
+function humanize (cat, title) {
+  if (cat === 'test.step') return title // the author's own words — already a sentence
+  let m
+  if (cat === 'expect') {
+    if (!(m = title.match(/Expect "([^"]+)"\s*(.*)/))) return title
+    const phrase = MATCH[m[1]] || ('passes ' + m[1])
+    const tgt = m[2] ? prettyTarget(m[2]) : ''
+    return tgt ? 'Check ' + tgt + ' ' + phrase : 'Check the result ' + phrase
+  }
+  if ((m = title.match(/^Navigate to "?([^"]*)"?/))) return 'Open ' + m[1]
+  if (/^Reload/.test(title)) return 'Reload the page'
+  if ((m = title.match(/^Go (back|forward)/))) return 'Go ' + m[1]
+  if ((m = title.match(/^Double click (.+)/))) return 'Double-click ' + prettyTarget(m[1])
+  if ((m = title.match(/^Click (.+)/))) return 'Click ' + prettyTarget(m[1])
+  if ((m = title.match(/^(?:Fill|Type) (.+)/))) return 'Type into ' + prettyTarget(m[1])
+  if ((m = title.match(/^Press (.+)/))) return 'Press ' + m[1]
+  if ((m = title.match(/^Check (.+)/))) return 'Tick ' + prettyTarget(m[1])
+  if ((m = title.match(/^Hover (.+)/))) return 'Hover over ' + prettyTarget(m[1])
+  if (/^Wait for load state/.test(title)) return 'Wait for the page to load'
+  if (/^Wait for navigation/.test(title)) return 'Wait for the page to change'
+  if (/^Wait for (timeout|\d)/.test(title)) return 'Pause briefly'
+  if ((m = title.match(/^Wait for (?:selector )?(.+)/))) return 'Wait for ' + prettyTarget(m[1])
+  if ((m = title.match(/^Query count (.+)/))) return 'Count ' + prettyTarget(m[1])
+  if ((m = title.match(/^Bounding box (.+)/))) return 'Measure where ' + prettyTarget(m[1]) + ' is'
+  if ((m = title.match(/^Get attribute (.+)/))) return 'Read an attribute of ' + prettyTarget(m[1])
+  if ((m = title.match(/^(GET|POST|PUT|DELETE|PATCH) "?([^"\s]*)"?/))) return m[1] + ' request to ' + m[2]
+  if (/^Evaluate/.test(title)) return 'Run a script on the page'
+  if (/^Screenshot/.test(title)) return 'Take a screenshot'
+  if ((m = title.match(/^Wait for (.+)/))) return 'Wait for ' + m[1]
+  return title
+}
+
 function flattenSteps (steps, depth = 0, out = []) {
   for (const s of steps || []) {
     if (out.length >= 80) break
     const title = String(s.title || '')
     // fixture/context setup is framework plumbing, not a step of the test
     const keep = ['test.step', 'pw:api', 'expect'].includes(s.category) && !STEP_NOISE.test(title)
-    if (keep) out.push({ title: title.slice(0, 140), cat: s.category, depth, ok: !s.error })
+    if (keep) out.push({ label: humanize(s.category, title).slice(0, 160), cat: s.category, depth, ok: !s.error })
     if (s.steps?.length) flattenSteps(s.steps, keep && s.category === 'test.step' ? depth + 1 : depth, out)
   }
   return out

@@ -490,13 +490,17 @@ export function build () {
     font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); }
   .stepstog:hover { color:var(--ink-2); }
   .stepslist { list-style:none; margin:var(--s2) 0 0; padding:0; }
-  .stepslist li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-xs);
-    color:var(--ink-3); padding:2px 0; line-height:1.5; }
+  /* the humanised step reads as a sentence; a leading tick marks a check, a dot marks an action,
+     and a named step (the author's own words) stands out as the beat it is */
+  .stepslist li { font-size:var(--t-xs); color:var(--ink-3); padding:2px 0; line-height:1.5; }
+  .stepslist li:before { display:inline-block; width:14px; color:var(--ink-4); }
+  .stepslist li.scat-pwapi:before { content:"·"; }
+  .stepslist li.scat-expect { color:var(--koke); }
+  .stepslist li.scat-expect:before { content:"✓"; color:var(--koke); }
+  .stepslist li.scat-teststep { color:var(--ink); margin-top:var(--s2); }
+  .stepslist li.scat-teststep:before { content:"▸"; color:var(--ai); }
   .stepslist li.sf { color:var(--bengara); }
-  .scat { flex:none; width:34px; font-family:var(--mono); font-size:var(--t-micro);
-    text-transform:uppercase; letter-spacing:.04em; color:var(--ink-4); }
-  .scat-expect { color:var(--koke); }
-  .scat-teststep { color:var(--ai); }
+  .stepslist li.sf:before { content:"✕"; color:var(--bengara); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
   .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
@@ -1542,10 +1546,9 @@ ${detail}
         slot.innerHTML =
           '<button class="stepstog" aria-expanded="false">▸ ' + steps.length + ' steps</button>' +
           '<ol class="stepslist" hidden>' + steps.map(s =>
-            '<li class="' + (s.ok ? '' : 'sf') + '" style="margin-left:' + (s.depth * 14) + 'px">' +
-            '<span class="scat scat-' + eh(s.cat.replace(/[^a-z]/gi, '')) + '">' +
-            (s.cat === 'expect' ? 'check' : s.cat === 'test.step' ? 'step' : 'do') + '</span>' +
-            eh(s.title) + '</li>').join('') + '</ol>'
+            '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) + (s.ok ? '' : ' sf') +
+            '" style="margin-left:' + (s.depth * 14) + 'px">' +
+            eh(s.label || '') + '</li>').join('') + '</ol>'
       }
     }
   }
