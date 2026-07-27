@@ -6,54 +6,54 @@
       {
         "title": "R1 — one row per screen, never one per requirement",
         "ok": true,
-        "ms": 169,
+        "ms": 175,
         "error": null,
         "line": 11
       },
       {
         "title": "R2 — four cells, left to right, in workflow order",
         "ok": true,
-        "ms": 145,
+        "ms": 150,
         "error": null,
         "line": 19
       },
       {
         "title": "R3 — the draft cell renders the wireframe itself, not a word for it",
         "ok": true,
-        "ms": 153,
+        "ms": 158,
         "error": null,
         "line": 28
       },
       {
         "title": "R4 — cell state is computed, and approving changes it",
         "ok": true,
-        "ms": 743,
+        "ms": 718,
         "error": null,
         "line": 35
       },
       {
         "title": "R7 — screens are grouped into named areas, never paginated",
         "ok": true,
-        "ms": 144,
+        "ms": 149,
         "error": null,
         "line": 50
       },
       {
         "title": "R8 — filter by whose turn it is, and search requirement text",
         "ok": true,
-        "ms": 238,
+        "ms": 237,
         "error": null,
         "line": 57
       },
       {
         "title": "R6 — the header counts agree with the rows beneath them",
         "ok": true,
-        "ms": 211,
+        "ms": 245,
         "error": null,
         "line": 70
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   },
   "conflicts": {
     "total": 5,
@@ -62,40 +62,40 @@
       {
         "title": "R2 — both positions are shown in full, each naming where it came from",
         "ok": true,
-        "ms": 135,
+        "ms": 140,
         "error": null,
         "line": 48
       },
       {
         "title": "R3 — the tool never picks: resolving is refused until you choose a side",
         "ok": true,
-        "ms": 209,
+        "ms": 206,
         "error": null,
         "line": 62
       },
       {
         "title": "R4 — resolving records which side lost, and offers the rewrite of that file",
         "ok": true,
-        "ms": 317,
+        "ms": 318,
         "error": null,
         "line": 76
       },
       {
         "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
         "ok": true,
-        "ms": 347,
+        "ms": 348,
         "error": null,
         "line": 97
       },
       {
         "title": "R5 — undo puts a settled conflict back, and the scanner is never asked to pick",
         "ok": true,
-        "ms": 410,
+        "ms": 441,
         "error": null,
         "line": 126
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   },
   "dispatch": {
     "total": 4,
@@ -104,21 +104,21 @@
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 4376,
+        "ms": 4409,
         "error": null,
         "line": 27
       },
       {
         "title": "R4 — a second job is refused while one runs, not queued silently",
         "ok": true,
-        "ms": 244,
+        "ms": 261,
         "error": null,
         "line": 49
       },
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 4048,
+        "ms": 4039,
         "error": null,
         "line": 62
       },
@@ -130,7 +130,7 @@
         "line": 79
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   },
   "gate-draft-review": {
     "total": 5,
@@ -139,40 +139,40 @@
       {
         "title": "R1 — PRD and wireframe are visible side by side",
         "ok": true,
-        "ms": 229,
+        "ms": 224,
         "error": null,
         "line": 13
       },
       {
         "title": "R3 — approving pins the PRD hash, and the bar says which",
         "ok": true,
-        "ms": 194,
+        "ms": 189,
         "error": null,
         "line": 29
       },
       {
         "title": "R4 — rejecting requires a reason; an empty one is refused",
         "ok": true,
-        "ms": 60,
+        "ms": 73,
         "error": null,
         "line": 42
       },
       {
         "title": "R5 — the gate opens by itself when the PRD moves",
         "ok": true,
-        "ms": 246,
+        "ms": 242,
         "error": null,
         "line": 50
       },
       {
         "title": "the detail view has its own address and survives a reload",
         "ok": true,
-        "ms": 322,
+        "ms": 324,
         "error": null,
         "line": 63
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   },
   "gate-screen-review": {
     "total": 4,
@@ -188,26 +188,26 @@
       {
         "title": "R4 — approving pins the draft hash the screen was checked against",
         "ok": true,
-        "ms": 353,
+        "ms": 356,
         "error": null,
         "line": 28
       },
       {
         "title": "R5 — rejecting has to name which side is wrong",
         "ok": true,
-        "ms": 101,
+        "ms": 106,
         "error": null,
         "line": 41
       },
       {
         "title": "R2 — a screen with no screenshot has no gate B to open",
         "ok": true,
-        "ms": 244,
+        "ms": 236,
         "error": null,
         "line": 57
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   },
   "init": {
     "total": 5,
@@ -216,39 +216,39 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 345,
+        "ms": 348,
         "error": null,
         "line": 30
       },
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 263,
+        "ms": 284,
         "error": null,
         "line": 55
       },
       {
         "title": "R3 — a crawled PRD is marked a guess and cannot skip gate A",
         "ok": true,
-        "ms": 5366,
+        "ms": 5343,
         "error": null,
         "line": 75
       },
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 142,
+        "ms": 146,
         "error": null,
         "line": 97
       },
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 234,
+        "ms": 232,
         "error": null,
         "line": 107
       }
     ],
-    "ranAt": 1785127960077
+    "ranAt": 1785132021481
   }
 }

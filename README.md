@@ -1,4 +1,4 @@
-# plugin-spec
+# specboard
 
 **A visualised spec-driven development board.**
 
@@ -34,7 +34,7 @@ You approve meaning. The agent does everything else and never picks a side of a 
 ```
 
 ```bash
-/plugin install plugin-spec@plugin-spec
+/plugin install specboard@specboard
 ```
 
 Then, in the project you want a board for, run the **`kg-init`** skill:

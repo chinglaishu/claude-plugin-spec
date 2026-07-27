@@ -1,4 +1,4 @@
-# plugin-spec — a visualised spec-driven development board
+# specboard — a visualised spec-driven development board
 
 One HTML page shows every screen in a project as a **row of four columns**, left to right in the
 order you work them:

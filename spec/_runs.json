@@ -1,5 +1,149 @@
 [
   {
+    "at": "2026-07-27T06:00:12.955Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T06:00:08.935Z",
+    "screen": "board",
+    "ms": 3611,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T06:00:08.825Z",
+    "screen": "board",
+    "ms": 9,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T06:00:04.437Z",
+    "screen": "board",
+    "ms": 3748,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:59:54.714Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:59:50.653Z",
+    "screen": "board",
+    "ms": 3696,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:59:50.536Z",
+    "screen": "board",
+    "ms": 7,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:59:46.184Z",
+    "screen": "board",
+    "ms": 3833,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:59:36.304Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:59:32.259Z",
+    "screen": "board",
+    "ms": 3665,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:59:32.147Z",
+    "screen": "board",
+    "ms": 6,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:59:27.761Z",
+    "screen": "board",
+    "ms": 3891,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:58:32.272Z",
+    "screen": "board",
+    "ms": 2,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:58:28.238Z",
+    "screen": "board",
+    "ms": 3649,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:58:28.126Z",
+    "screen": "board",
+    "ms": 6,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:58:23.255Z",
+    "screen": "board",
+    "ms": 4323,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T05:55:50.203Z",
+    "screen": "all",
+    "ms": 34548,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T05:55:45.265Z",
+    "screen": "board",
+    "ms": 4487,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
     "at": "2026-07-27T04:52:31.548Z",
     "screen": "board",
     "ms": 2,
@@ -11,150 +155,6 @@
     "at": "2026-07-27T04:52:27.520Z",
     "screen": "board",
     "ms": 3608,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:52:27.400Z",
-    "screen": "board",
-    "ms": 6,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:52:23.016Z",
-    "screen": "board",
-    "ms": 3666,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:52:13.537Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:52:09.508Z",
-    "screen": "board",
-    "ms": 3553,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:52:09.388Z",
-    "screen": "board",
-    "ms": 5,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:52:04.984Z",
-    "screen": "board",
-    "ms": 3683,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:51:50.246Z",
-    "screen": "board",
-    "ms": 4,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:51:46.216Z",
-    "screen": "board",
-    "ms": 3579,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:51:46.103Z",
-    "screen": "board",
-    "ms": 7,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:51:41.704Z",
-    "screen": "board",
-    "ms": 3764,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:49:29.460Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:49:25.371Z",
-    "screen": "board",
-    "ms": 3725,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:49:25.251Z",
-    "screen": "board",
-    "ms": 5,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:49:20.864Z",
-    "screen": "board",
-    "ms": 3722,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:49:11.303Z",
-    "screen": "board",
-    "ms": 2,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:49:07.263Z",
-    "screen": "board",
-    "ms": 3516,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:49:07.145Z",
-    "screen": "board",
-    "ms": 5,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:49:02.784Z",
-    "screen": "board",
-    "ms": 3799,
     "total": 7,
     "failed": 0,
     "ok": true

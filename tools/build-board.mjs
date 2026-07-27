@@ -294,7 +294,7 @@ export function build () {
   const html = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Spec board — plugin-spec</title>
+<title>specboard</title>
 <style>${designCss()}</style>
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
@@ -603,8 +603,8 @@ export function build () {
 </style>
 
 <div class="top">
-  <div class="brand"><span class="logo"></span>Spec board</div>
-  <span class="crumb">plugin-spec · dogfooding itself</span>
+  <div class="brand"><span class="logo"></span>specboard</div>
+  <span class="crumb">specboard · dogfooding itself</span>
   <span class="grow"></span>
   <div class="seg" id="filt">
     <button data-f="all" class="on">All</button>

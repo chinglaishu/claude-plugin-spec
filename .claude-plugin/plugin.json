@@ -1,8 +1,9 @@
 {
   "$comment": [
-    "Name kept as `plugin-spec` for now. It reads as 'a specification for plugins', which is not what",
-    "this is — a visualised spec-driven development board. Renaming is a CEO decision, cheap while the",
-    "repo is private and unpublished and permanent the moment someone installs it.",
+    "Renamed `plugin-spec` → `specboard` (CEO, on the pivot). The old name read as 'a specification for",
+    "plugins', which this is not. The GitHub repo is still claude-plugin-spec — a plugin rename does not",
+    "rename the repo, so `/plugin marketplace add chinglaishu/claude-plugin-spec` is unchanged; only the",
+    "marketplace and plugin names became `specboard`, so installs are `specboard@specboard`.",
     "",
     "The `hooks` key is gone because v1's briefing hook was deleted in the pivot to the board. `skills`",
     "is loaded by CONVENTION from skills/ — do not list it here. Naming it registers it a second time and",
@@ -10,7 +11,7 @@
     "with `claude --plugin-dir . plugin list` — the only thing that reads this file; nothing in the",
     "repo's own tests can catch a mistake here."
   ],
-  "name": "plugin-spec",
+  "name": "specboard",
   "version": "0.2.0",
   "description": "A visualised spec-driven development board: every screen as PRD → wireframe → screenshot → test, staleness derived rather than tracked, and two human gates — is this what I meant, and did you build it.",
   "author": {

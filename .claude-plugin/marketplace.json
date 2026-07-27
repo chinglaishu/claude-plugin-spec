@@ -1,14 +1,14 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "plugin-spec",
-  "description": "The plugin-spec marketplace — a visualised spec-driven development board built from your own codebase.",
+  "name": "specboard",
+  "description": "The specboard marketplace — a visualised spec-driven development board built from your own codebase.",
   "owner": {
     "name": "fumia",
     "email": "fumia@fumia.io"
   },
   "plugins": [
     {
-      "name": "plugin-spec",
+      "name": "specboard",
       "version": "0.2.0",
       "source": "./",
       "description": "A visualised spec-driven development board. Every screen is a row — PRD → wireframe → screenshot → test — and staleness is derived, never tracked: edit the requirements and the wireframe goes stale, change the wireframe and the screenshot goes stale. Two human gates decide is-this-what-I-meant and did-you-build-it; contradictions across requirements are surfaced for you to adjudicate.",

@@ -1,5 +1,5 @@
 {
-  "name": "plugin-spec",
+  "name": "specboard",
   "private": true,
   "type": "module",
   "scripts": {
