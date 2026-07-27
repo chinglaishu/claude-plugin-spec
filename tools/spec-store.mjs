@@ -32,6 +32,15 @@ export function writeJson (path, value) {
   writeFileSync(tmp, JSON.stringify(value, null, 2) + '\n')
   renameSync(tmp, path)
 }
+// Same temp-then-rename for text — prd.md is read by readScreen while the server rewrites it (the
+// only edit the server ever makes to a PRD: stripping the `guess` flag when a document-mode screen
+// is accepted). A torn PRD would misparse its frontmatter, which is the requirement going briefly
+// false — the one thing this store cannot allow.
+export function writeText (path, text) {
+  const tmp = `${path}.${process.pid}.tmp`
+  writeFileSync(tmp, text)
+  renameSync(tmp, path)
+}
 export const esc = s => String(s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
@@ -199,24 +208,42 @@ export function readScreen (name, results = null) {
   const lastRejection = rejections[rejections.length - 1]
   const rejected = lastRejection && lastRejection.againstPrd === prdHash
 
-  const draft = !hasDraft ? 'missing'
-    : rejected ? 'rejected'
-      : !state.draftApprovedAgainstPrd ? 'review'
-        : state.draftApprovedAgainstPrd !== prdHash ? 'stale' : 'ok'
+  // Two modes, decided per screen by whether a wireframe exists. DESIGN mode (has a draft) is the
+  // greenfield loop: PRD → wireframe → build → test, with gate A on the draft and gate B on the
+  // build. DOCUMENT mode (no draft) is for a screen that ALREADY exists — kg-init crawls it into a
+  // PRD + the current screen + a test, and drawing a wireframe of a finished screen only to "build"
+  // it would be circular. A no-draft screen only reads as document mode once it is POPULATED (a
+  // screen or a test exists); a no-draft screen with neither is a greenfield screen nobody has
+  // started yet, and it must read exactly as it always has — the invariant this split cannot break.
+  const populated = hasShot || hasTest
 
-  const screen = !hasDraft ? 'waiting'
-    : !hasShot ? 'missing'
-      : !state.screenApprovedAgainstDraft ? 'review'
-        : state.screenApprovedAgainstDraft !== draftHash ? 'stale' : 'ok'
+  const draft = hasDraft
+    ? (rejected ? 'rejected'
+        : !state.draftApprovedAgainstPrd ? 'review'
+          : state.draftApprovedAgainstPrd !== prdHash ? 'stale' : 'ok')
+    // no wireframe: 'nodraft' is a non-blocking "existing screen, add one to redesign" — never a
+    // gate. Only greenfield (nothing built yet) still reads 'missing', i.e. "draw one to start".
+    : populated ? 'nodraft' : 'missing'
+
+  const screen = hasDraft
+    ? (!hasShot ? 'missing'
+        : !state.screenApprovedAgainstDraft ? 'review'
+          : state.screenApprovedAgainstDraft !== draftHash ? 'stale' : 'ok')
+    // document mode has no gate B — there is no approved design to compare a build against, so the
+    // screen is simply the current one, and its truth IS the passing test in column 4.
+    : hasShot ? 'current' : 'waiting'
 
   // A test that exists but has never run proves nothing, so it is not a pass — it is "never run".
   const run = (results || readResults())[name]
   const ranBeforeEdit = run && run.ranAt < newestSource(dir)
-  const e2e = !hasDraft ? 'waiting'
-    : !hasTest ? 'missing'
-      : !run ? 'unrun'
-        : run.failed ? 'fail'
-          : ranBeforeEdit ? 'ranstale' : 'pass'
+  // E2E is identical in both modes once a test exists; the only thing the draft ever gated here was
+  // whether the screen had STARTED, and a document-mode screen has (it is a finished screen). So a
+  // missing test reads 'missing' when there is something to test against (a draft, or a built
+  // screen) and 'waiting' only on a bare greenfield screen with nothing yet.
+  const e2e = !hasTest ? (hasDraft || populated ? 'missing' : 'waiting')
+    : !run ? 'unrun'
+      : run.failed ? 'fail'
+        : ranBeforeEdit ? 'ranstale' : 'pass'
 
   // What you approved AGAINST, not just its fingerprint. A hash can tell you something moved; it
   // can never tell you what. Gate A asks "is this still what you meant" — unanswerable without

@@ -12,7 +12,7 @@ import { join, normalize, extname } from 'node:path'
 import {
   ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
-  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson
+  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson, writeText
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
@@ -537,6 +537,18 @@ function applyGate ({ screen, gate, act, why }) {
   if (!s) throw new Error(`no such screen: ${screen}`)
   const state = readState(screen)
 
+  if (gate === 'prd') {
+    // DOCUMENT mode's only gate. There is no wireframe here and no hash-staleness pin on the PRD —
+    // the source of truth is simply the PRD once it stops being a guess. Accepting a crawled guess
+    // strips the `guess` flag and NOTHING else: the server never edits a requirement's prose, only
+    // this one state marker. No pin is written, so nothing here can later go "stale".
+    if (act !== 'accept') throw new Error(`unknown act: ${act}`)
+    if (!s.guess) throw new Error('nothing to accept — this PRD is not a guess')
+    writeText(join(SPEC, screen, 'prd.md'), s.prdText.replace(/^guess:[^\n]*\n/m, ''))
+    build()
+    return readState(screen)
+  }
+
   if (gate === 'draft') {
     if (act === 'approve') {
       state.draftApprovedAgainstPrd = s.prdHash
@@ -574,6 +586,12 @@ function applyGate ({ screen, gate, act, why }) {
       delete state.draftRejection
     } else throw new Error(`unknown act: ${act}`)
   } else if (gate === 'screen') {
+    // Gate B compares the built screen against the APPROVED DESIGN. A document-mode screen has no
+    // wireframe, so there is nothing to compare against and no gate B to open — approving one would
+    // pin against a null draft hash, a meaningless pin. Refuse it rather than record a lie.
+    if (!existsSync(join(SPEC, screen, 'draft.html'))) {
+      throw new Error('no wireframe — this screen has no gate B; its test is what proves it')
+    }
     if (act === 'approve') { state.screenApprovedAgainstDraft = s.draftHash; delete state.screenRejections }
     else if (act === 'unapprove') delete state.screenApprovedAgainstDraft
     else if (act === 'reject') {

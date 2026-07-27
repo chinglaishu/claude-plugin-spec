@@ -23,7 +23,13 @@ const CHIP = {
   pass: ['pass', 'ok', 'dot'],
   fail: ['fail', 'bad', 'mark o'],
   unrun: ['never run', 'gone', 'mark o'],
-  ranstale: ['passed, then you edited', 'stale', 'mark h']
+  ranstale: ['passed, then you edited', 'stale', 'mark h'],
+  // document mode. 'nodraft' is a NON-BLOCKING absence — an existing screen simply has no wireframe,
+  // so it wears the neutral dashed 'gone' look, never a red/attention tone. 'current' is the live
+  // screen in a screen cell with no gate B; a distinct muted 'live' tone so it never reads as an
+  // approval (green) it did not earn — its proof is the test in column 4, not a human gate.
+  nodraft: ['no wireframe', 'gone', 'mark n'],
+  current: ['current screen', 'live', 'dot']
 }
 
 const chip = st => {
@@ -56,7 +62,9 @@ const row = (s, i) => `
   </div>
   ${cell(s, 'draft', s.draftHtml
     ? `<div class="frame"><iframe scrolling="no" srcdoc="${esc(s.draftHtml)}"></iframe></div>`
-    : '<span class="ph">no draft</span>')}
+    : s.cells.draft === 'nodraft'
+      ? blank('no wireframe', 'this screen already exists — add one to redesign it')
+      : '<span class="ph">no draft</span>')}
   ${cell(s, 'screen', s.hasShot
     ? `<div class="shot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>`
     : blank('not built', s.cells.draft === 'ok'
@@ -210,6 +218,22 @@ function gateBBar (s) {
 function gateBar (s) {
   const wrap = (cls, inner) => `<div class="gb ${cls}"><div class="gbin">${inner}</div></div>`
   const st = s.cells.draft
+  // DOCUMENT mode: no wireframe, so no gate A on a draft and no gate B on a build. The PRD is the
+  // source of truth, and the one decision is whether a crawled GUESS is accepted as canon. There is
+  // no hash-pinning here — once accepted, editing the PRD makes the TEST stale, not this bar.
+  if (st === 'nodraft') {
+    if (s.guess) {
+      return wrap('open', `
+        <span class="gbn" style="flex:none">These requirements were read off the running app — a guess. Correct the PRD if it is wrong, then accept it as the source of truth.</span>
+        <span class="grow"></span>
+        <button class="btn ok" data-act="accept" data-gate="prd" data-screen="${esc(s.name)}">Accept these requirements</button>`)
+    }
+    return wrap('ok', `
+      ${chip('ok')}
+      <span class="gbn">requirements accepted — this screen is documented. Edit the PRD to change what it should do, and its test goes stale until you re-run it.</span>
+      <span class="grow"></span>
+      <button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button>`)
+  }
   if (st === 'missing') return wrap('', '<span class="gbn">No draft yet — nothing to approve.</span>')
   if (st === 'ok') {
     // gate A is settled, so the open question moves downstream to gate B
@@ -279,8 +303,12 @@ export function build () {
     ${chip(s.cells.draft)}
     <span class="gbn">${s.reqs.length} requirements · <code>spec/${esc(s.name)}/</code></span>
     <span class="grow"></span>
-    <a class="btn" href="spec/${esc(s.name)}/draft.html" target="_blank">Open draft full size ↗</a>
-    <button class="btn edit" data-path="spec/${esc(s.name)}/draft.html">Edit the draft</button>
+    ${s.draftHtml
+      ? `<a class="btn" href="spec/${esc(s.name)}/draft.html" target="_blank">Open draft full size ↗</a>
+    <button class="btn edit" data-path="spec/${esc(s.name)}/draft.html">Edit the draft</button>`
+      : s.cells.draft === 'nodraft'
+        ? `<button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button>`
+        : ''}
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -292,7 +320,11 @@ export function build () {
       </div>
       <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div>${s.draftHtml
         ? `<div class="bigframe"><iframe srcdoc="${esc(s.draftHtml)}"></iframe></div>`
-        : '<div class="ph big">no draft yet</div>'}</div>
+        : s.cells.draft === 'nodraft'
+          ? `<div class="ph big" style="flex-direction:column;gap:var(--s3)">
+              <div>no wireframe — this screen already exists</div>
+              <button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button></div>`
+          : '<div class="ph big">no draft yet</div>'}</div>
       ${s.hasShot ? `<div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
         <div class="bigshot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>
@@ -311,6 +343,11 @@ export function build () {
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
   :root { --gcols:minmax(300px,1.15fr) 1fr 1fr 1fr; }
+  /* Hide the whole wireframe column — a per-user board preference, remembered in localStorage.
+     Column 2 carries data-col="draft" in both the sticky header and every row, so one selector
+     drops it everywhere; the grid falls to three tracks so PRD, Screen and E2E stay aligned. */
+  .hide-wf .colhs, .hide-wf .row { grid-template-columns:minmax(300px,1.5fr) 1fr 1fr; }
+  .hide-wf [data-col="draft"] { display:none; }
   body { width:auto; }
   .wrap { max-width:1760px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
   .ph { font-size:var(--t-sm); color:var(--ink-4); }
@@ -409,6 +446,10 @@ export function build () {
   .cell.c-gone { background:transparent; border-style:dashed; }
   .cell.c-rev { border-color:var(--ai-line); }
   .cell.c-stale { border-color:var(--bengara-line); }
+  /* document mode: the current screen sits in a normal solid cell (it is real content, not an
+     absence), and its chip is a muted 'live' tone — present, but never the green of an approval. */
+  .chip.live { background:var(--wash); color:var(--ink-3); }
+  .chip.live .dot { background:var(--ink-3); }
   .cell.act { cursor:pointer; }
   .cell.act:hover { border-color:var(--ink); box-shadow:var(--sh-md); }
   .cellh { flex:none; padding:var(--s2) var(--s2) 7px; }
@@ -696,13 +737,14 @@ export function build () {
       <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
       <button class="btn sm" id="runall">Run all tests</button>
       <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
+      <button class="btn sm gh" id="wftoggle">Hide wireframes</button>
       <button class="btn sm gh" id="toggle-all">Collapse all</button>
     </div>
   </div>
 
   <div class="colhs">
     <div class="lbl flow">1 · PRD — the source of truth</div>
-    <div class="lbl flow">2 · Draft — the wireframe</div>
+    <div class="lbl flow" data-col="draft">2 · Draft — the wireframe</div>
     <div class="lbl flow">3 · Screen — what got built</div>
     <div class="lbl">4 · E2E — what proves it</div>
   </div>
@@ -939,6 +981,25 @@ ${detail}
     })
     e.target.textContent = shut ? 'Expand all' : 'Collapse all'
   })
+
+  // Hide/show the whole wireframe column, board-wide, remembered across reloads. This is a viewing
+  // PREFERENCE, not spec state — it lives in localStorage and never on disk, so it cannot change
+  // anything the board derives. A document-mode board with no wireframes anywhere is the case this
+  // most helps: the column is then all "no wireframe" placeholders and folding it away is pure gain.
+  const wfBtn = document.getElementById('wftoggle')
+  const WF_KEY = 'board-hide-wireframes'
+  const wfHidden = () => { try { return localStorage.getItem(WF_KEY) === '1' } catch (e) { return false } }
+  function applyWf () {
+    const hide = wfHidden()
+    document.body.classList.toggle('hide-wf', hide)
+    wfBtn.textContent = hide ? 'Show wireframes' : 'Hide wireframes'
+    safeFit()
+  }
+  wfBtn.addEventListener('click', () => {
+    try { localStorage.setItem(WF_KEY, wfHidden() ? '0' : '1') } catch (e) { /* storage denied — session only */ }
+    applyWf()
+  })
+  applyWf()
 
   // detail + routing -----------------------------------------------------
   // Every detail view has an address. Without one a refresh dumps you back on the board, the
