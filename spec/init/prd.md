@@ -18,7 +18,15 @@ is actually on the page. The board is populated on day one instead of empty.
 ## R3 — A crawled PRD is marked as a guess
 
 It is a proposal for you to correct, never canon, and it is visibly different from a PRD you
-wrote. The draft and screen cells stay unapproved so the loop still starts at gate A.
+wrote. A crawled screen lands in document mode — the guessed PRD, the current screen, and a test
+that proves it, with no wireframe — so the one gate here is accepting the requirements as canon,
+not a draft review.
+
+*Corrected 2026-07-27: this said "the draft and screen cells stay unapproved so the loop starts at
+gate A." That was the greenfield-only model. An existing screen already exists, so it is documented
+(PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code
+grew a second mode and the spec had to follow; the meaning the CEO owns — a crawl is a guess to be
+corrected, never canon — is unchanged.*
 
 ## R4 — An empty project is the same flow with nothing found
 

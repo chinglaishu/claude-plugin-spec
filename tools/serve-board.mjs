@@ -333,6 +333,36 @@ function crawlDraftPrompt (routes) {
   ].join('\n')
 }
 
+// Phase three of a brownfield crawl: having guessed a PRD per route, author the E2E test that proves
+// each one — a CHARACTERIZATION test against the running app, which also shoots screen.png. This is
+// what makes a crawled row land as PRD + current screen + passing test with NO wireframe (document
+// mode), keeping column 3 a byproduct of column 4 rather than a copy of crawl.png. It follows the
+// kg-e2e skill; the model reads it there rather than having the whole convention inlined here.
+function crawlTestPrompt (screens, cfg) {
+  const base = cfg.baseUrl || '<the app base URL from spec/_config.json>'
+  const list = screens.map(s =>
+    `- spec/${s.name}/test.spec.ts  — proves spec/${s.name}/prd.md, screen at ${base}${s.route || '/' + s.name}` +
+    ` (evidence: spec/${s.name}/crawl.png)`).join('\n')
+  return [
+    'A crawl has drafted a guessed PRD for each screen below. Author the E2E test that proves each',
+    'PRD and, as a byproduct, shoots its screen.png — a CHARACTERIZATION test that locks in the',
+    'running app\'s CURRENT behaviour as the baseline. Follow the kg-e2e skill.',
+    '',
+    'For each screen write spec/<screen>/test.spec.ts:',
+    '- import { test, expect } from \'../_base\'',
+    `- navigate to the REAL running app: page.goto('${base}' + the screen's route (an absolute URL)`,
+    '- one test per requirement in that screen\'s prd.md, asserting the behaviour it names — never',
+    '  merely that the page loaded (a test that passes with the requirement deleted is not a test)',
+    '- the LAST test shoots the screenshot: await page.screenshot({ path: \'spec/<screen>/screen.png\', fullPage: false })',
+    '  — column 3 is this byproduct, never captured any other way',
+    'Read spec/<screen>/crawl.png to see what the screen looks like.',
+    '',
+    list,
+    '',
+    'Write only those test.spec.ts files. Change nothing else. Do not run anything. Do not explain.'
+  ].join('\n')
+}
+
 function startCrawl () {
   if (running) throw new Error('a job is already in progress')
   const cfg = readConfig()
@@ -377,13 +407,51 @@ function startCrawl () {
     drafter.stderr.on('data', feed)
     drafter.on('error', err => push('run', { state: 'line', line: `could not start claude: ${err.message}` }))
     drafter.on('close', () => {
-      const added = allScreens().filter(s => !before.has(s.name)).length
-      const note = added
-        ? `crawled ${manifest.routes.length} route(s) · ${added} new guessed row(s) — correct them at gate A`
-        : (running && running.cancelled ? 'cancelled — partial crawl left in place'
+      const newScreens = allScreens().filter(s => !before.has(s.name))
+      if (!newScreens.length) {
+        finishCrawl(started, false, running && running.cancelled ? 'cancelled — partial crawl left in place'
           : /401|OAuth|authenticate/i.test(transcript) ? 'crawled, but claude is not authenticated — sign in and rerun to draft'
             : 'crawled, but no rows were drafted')
-      finishCrawl(started, added > 0, note)
+        return
+      }
+      if (running && running.cancelled) { finishCrawl(started, true, 'cancelled — partial crawl left in place'); return }
+
+      // Phase three: author a characterization test per new screen, so each lands as a DOCUMENT-mode
+      // row (PRD + current screen + test, no wireframe) rather than a bare guessed PRD. Same panel,
+      // same job — chained so Cancel still reaches whatever child is live.
+      push('run', { state: 'line', line: `drafting ${newScreens.length} characterization test(s)…` })
+      const tester = spawn('claude', ['-p', crawlTestPrompt(newScreens, cfg), '--permission-mode', 'acceptEdits'],
+        { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
+      running.child = tester
+      tester.stdout.on('data', feed)
+      tester.stderr.on('data', feed)
+      tester.on('error', err => push('run', { state: 'line', line: `could not start claude: ${err.message}` }))
+      tester.on('close', () => {
+        if (running && running.cancelled) { finishCrawl(started, true, 'cancelled — partial crawl left in place'); return }
+        const specs = newScreens
+          .map(s => `spec/${s.name}/test.spec.ts`)
+          .filter(f => existsSync(join(ROOT, f)))
+        if (!specs.length) {
+          finishCrawl(started, true, `crawled ${manifest.routes.length} route(s) · ${newScreens.length} documented (PRD only — no test authored; accept them at the PRD gate)`)
+          return
+        }
+
+        // Phase four: run those tests. This produces each screen.png (column 3, a byproduct) and the
+        // suite's own reporter folds the results into the per-screen index (column 4). The board
+        // server is reused by the run (reuseExistingServer); the tests hit the REAL app, not it.
+        push('run', { state: 'line', line: `running ${specs.length} new test(s)…` })
+        const runner = spawn('npx', ['playwright', 'test', '--config', 'playwright.board.ts', ...specs],
+          { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
+        running.child = runner
+        runner.stdout.on('data', feed)
+        runner.stderr.on('data', feed)
+        runner.on('error', err => push('run', { state: 'line', line: `could not start playwright: ${err.message}` }))
+        runner.on('close', () => {
+          const proven = allScreens().filter(s => !before.has(s.name) && s.cells.e2e === 'pass').length
+          finishCrawl(started, true,
+            `crawled ${manifest.routes.length} route(s) · ${newScreens.length} documented, ${proven} with a passing test — accept the requirements at the PRD gate`)
+        })
+      })
     })
   })
 }

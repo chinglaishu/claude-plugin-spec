@@ -49,13 +49,42 @@ Open `#init`. It asks only what cannot be guessed — how to reach the app:
 - The **frontend URL** (what has routes — this is what the crawl visits) and, optionally, which routes
   matter and a sign-in script.
 
-## 3. Crawl the app into rows
+## 3. Two flows, because a project is either finished or greenfield
 
-Crawl visits each route, screenshots it, and drafts a **guessed** `prd.md` per new route. A crawled PRD
-is marked `guess: true`: it is a proposal for the CEO to correct, never canon, and its draft and screen
-cells stay unapproved so the loop still starts at **gate A**. Rerunning finds new routes without
-touching a screen the CEO has already worked. Nothing found is the greenfield case — the same flow, no
-rows, and a prompt to write the first PRD by hand.
+A screen is in one of two modes, decided per-screen by whether it has a wireframe (`draft.html`). The
+init flow picks which one a project starts in.
+
+### Existing app → DOCUMENT mode (crawl)
+
+Crawl visits each route and, per new route, **drafts a guessed `prd.md`**, then **authors a
+characterization `test.spec.ts`** that proves that PRD against the running app and **shoots
+`screen.png`**, then **runs it**. A crawled row therefore lands as **PRD (a guess) + the current
+screen + a passing test, with no wireframe** — because the screen already exists, so drawing a
+wireframe of it only to "build" it would be circular.
+
+- The PRD is marked `guess: true` — a proposal read off the page, never canon. Correct it if it is
+  wrong; the one gate here is **Accept these requirements**, which makes the PRD the source of truth.
+  There is **no gate A and no gate B** in document mode: there is no wireframe to approve a design
+  against, and column 3 is simply the current screen, proven by the test in column 4.
+- `screen.png` is always the **test's byproduct**, never a copy of `crawl.png` — `crawl.png` stays the
+  evidence used to write the PRD and test, shown only in the Init found-table.
+- Maintenance stays spec-driven: edit the PRD and its test goes stale ("run it again"); update the
+  test to the corrected PRD, and a failure against the app is then a real bug surfaced.
+
+Rerunning finds new routes without touching a screen the CEO has already worked.
+
+### New project (or a new screen) → DESIGN mode
+
+Nothing to crawl is the **greenfield** case: no rows, and a prompt to write the first PRD by hand. From
+a PRD you run the design loop — **PRD → wireframe → build → test** — with **gate A** (draft-vs-PRD) and
+**gate B** (screen-vs-draft). This is unchanged from how the board has always worked. Authoring the
+test is the `kg-e2e` skill.
+
+### Redesigning an existing (document-mode) screen
+
+To change a finished screen, **add a `draft.html`** to it — from the board, the row's "Add a wireframe
+to redesign" affordance dispatches one. That flips that one screen into design mode, and gate A and
+gate B appear: you are now approving a new design and then the build against it.
 
 ## 4. Find the contradictions already in the requirements
 

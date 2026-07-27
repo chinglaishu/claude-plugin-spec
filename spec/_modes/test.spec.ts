@@ -20,6 +20,18 @@ test.afterEach(() => {
   if (removed) build()
 })
 
+// The server's file-watcher rebuilds board.html asynchronously, and a rebuild it began before this
+// test's fixture landed can finish late and overwrite the fresh board with a stale one — so the very
+// first paint can be missing the row we just created. Retry the navigation until the board has
+// SETTLED with what this test made, exactly as the init spec does. This is not papering over a bug:
+// it is the same settle a real browser rides out via the live-reload after the next rebuild tick.
+async function settleAt (page: any, url: string, ready: any) {
+  await expect(async () => {
+    await page.goto(url)
+    await expect(ready).toBeVisible()
+  }).toPass({ timeout: 15000 })
+}
+
 // The two-mode state machine. A screen is DOCUMENT mode when it has no wireframe but is populated
 // (a screen/test exist) — an existing app kg-init crawled — and DESIGN mode when it has a wireframe.
 // A no-draft screen that is NOT populated is greenfield and must read exactly as it does today.
@@ -118,9 +130,8 @@ test('design mode — a drafted screen is unchanged (review until gate A)', asyn
 // ── the board renders both modes ──────────────────────────────────────────
 test('renders — a document row shows no-wireframe + current screen, and the verdict bar accepts the PRD', async ({ page }) => {
   const name = makeDocumentScreen('probe-doc-render', { guess: true })
-  await page.goto('/')
   const rowLoc = page.locator('.row', { hasText: name })
-  await expect(rowLoc).toBeVisible()
+  await settleAt(page, '/', rowLoc)
   // column 2 is the non-blocking "existing screen, no wireframe, add one to redesign" state
   const draftCell = rowLoc.locator('[data-col="draft"]')
   await expect(draftCell).toContainText(/no wireframe/i)
@@ -129,19 +140,24 @@ test('renders — a document row shows no-wireframe + current screen, and the ve
   await expect(rowLoc.locator('[data-col="screen"] img')).toHaveAttribute('src', /screen\.png/)
 
   // the verdict bar approves the PRD, and there is no gate B anywhere
-  await page.goto('/#/' + name)
   const dt = page.locator('.dt:not([hidden])')
-  const bar = dt.locator('.gb')
-  await expect(bar.locator('[data-act="accept"][data-gate="prd"]')).toHaveCount(1)
+  await settleAt(page, '/#/' + name, dt.locator('.gb [data-act="accept"][data-gate="prd"]'))
   await expect(dt.locator('[data-gate="screen"]')).toHaveCount(0)
 })
 
 test('renders — accepting from the board strips the guess', async ({ page }) => {
   const name = makeDocumentScreen('probe-doc-accept-ui', { guess: true })
-  await page.goto('/#/' + name)
   const bar = page.locator('.dt:not([hidden]) .gb')
-  await bar.locator('[data-act="accept"][data-gate="prd"]').click()
-  await page.waitForLoadState('load')
+  const acceptBtn = bar.locator('[data-act="accept"][data-gate="prd"]')
+  await settleAt(page, '/#/' + name, acceptBtn)
+  // applyGate is synchronous on the server (it strips the flag and rebuilds before it responds), so
+  // waiting for the POST response is the deterministic signal the strip is done — waitForLoadState
+  // races the click's own async fetch-then-reload and can read the PRD before the server touched it.
+  const [resp] = await Promise.all([
+    page.waitForResponse(r => r.url().includes('/api/gate') && r.request().method() === 'POST'),
+    acceptBtn.click()
+  ])
+  expect(resp.ok()).toBe(true)
   expect(readScreen(name)!.guess).toBe(false)
 })
 
@@ -154,10 +170,9 @@ test('flip — adding a wireframe turns a document screen into a design-mode one
   expect(s.cells.draft).toBe('review')   // gate A now open (draft vs PRD)
   expect(s.cells.screen).toBe('review')  // gate B now open (built shot vs the new draft)
 
-  await page.goto('/#/' + name)
   const dt = page.locator('.dt:not([hidden])')
   // gate A verdict bar is back, and it is the DRAFT gate, not the PRD accept
-  await expect(dt.locator('.gb [data-act="approve"][data-screen="' + name + '"]')).toHaveCount(1)
+  await settleAt(page, '/#/' + name, dt.locator('.gb [data-act="approve"][data-screen="' + name + '"]'))
   await expect(dt.locator('.gb [data-act="accept"]')).toHaveCount(0)
 })
 

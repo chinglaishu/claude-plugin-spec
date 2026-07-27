@@ -4,11 +4,10 @@
 // spec/_design.css the drafts link, and adds nothing but layout — it is one of the screens this
 // tool tracks, so it has no business owning a second design system.
 
-import { writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  ROOT, CANVAS_W, CANVAS_H, esc, designCss, allScreens, sortedAreas, isWaiting
+  ROOT, CANVAS_W, CANVAS_H, esc, designCss, allScreens, sortedAreas, isWaiting, writeText
 } from './spec-store.mjs'
 
 // label · chip tone · mark shape. The mark is redundant with the tone on purpose: status has to
@@ -1735,7 +1734,12 @@ ${detail}
     }
   }
 
-  writeFileSync(join(ROOT, 'board.html'), html)
+  // Atomic write — temp then rename. The server's file-watcher and a board-started run can both
+  // rebuild at once, and a plain writeFileSync truncates-then-fills, so a reader mid-write (the
+  // server serving the page, a test's goto) can get a half-written board and render a broken page.
+  // Rename is atomic within a filesystem, so a reader sees either the whole old board or the whole
+  // new one — the same guarantee the JSON writes have always had, for the same reason.
+  writeText(join(ROOT, 'board.html'), html)
   return { screens: screens.length, areas: areas.length, yourTurn, reqs: screens.reduce((n, s) => n + s.reqs.length, 0) }
 }
 
