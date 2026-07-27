@@ -63,11 +63,11 @@ const row = (s, i) => `
       ? 'ready to build — the design is approved'
       : 'waits for gate A'))}
   ${cell(s, 'e2e', ['pass', 'fail', 'ranstale'].includes(s.cells.e2e)
-    ? `<div class="runs"><div class="tk ${s.cells.e2e}">${s.cells.e2e === 'fail' ? '✕' : s.cells.e2e === 'ranstale' ? '!' : '✓'}</div>
-       <div class="ms">${s.run.total - s.run.failed} of ${s.run.total} passing</div>
-       ${s.cells.e2e === 'ranstale' ? '<div class="ms">run it again</div>' : ''}</div>`
+    ? `<div class="runs"><div class="runsh"><span class="tk ${s.cells.e2e}">${s.cells.e2e === 'fail' ? '✕' : s.cells.e2e === 'ranstale' ? '!' : '✓'}</span>
+       <span class="ms">${s.run.total - s.run.failed} of ${s.run.total} passing${s.cells.e2e === 'ranstale' ? ' · stale' : ''}</span></div>
+       <ul class="e2emini">${s.run.tests.map(t => `<li class="${t.ok ? 'p' : 'f'}"><span class="mark ${t.ok ? '' : 'o'}"></span><span class="tt">${esc(t.title)}</span></li>`).join('')}</ul></div>`
     : blank(s.cells.e2e === 'unrun' ? 'never run' : 'no test',
-      s.cells.e2e === 'unrun' ? 'npm run e2e'
+      s.cells.e2e === 'unrun' ? 'open it and press Run'
         : s.cells.screen === 'ok' || s.hasShot ? 'ready for a test'
           : 'waits for the screen'))}
 </div>`
@@ -117,6 +117,15 @@ function prdBody (s) {
 
 // Column 4 in the detail view. The board could only ever say "7 of 7 passing", which asks you to
 // trust a number — you could not read WHICH seven, when they ran, or what a failure actually said.
+// The run controls shown wherever a screen can be run — the detail view now, not just the home
+// header. Run, the same run held in the background, and watch (re-run this screen when its files
+// change), so you are not sent back to the board to reach any of them.
+const runControls = name => `<span class="runctl">
+  <button class="btn sm runbtn" data-run="${esc(name)}">Run<span class="kbd">r</span></button>
+  <button class="btn sm gh runbg" data-run="${esc(name)}">Background</button>
+  <label class="watchtog sm"><input type="checkbox" class="dwatch"> watch</label>
+</span>`
+
 function e2ePanel (s) {
   if (!s.run) {
     // A test that exists but has never run needs a way to BE run from here — otherwise the only
@@ -124,8 +133,8 @@ function e2ePanel (s) {
     // exactly when there is nothing yet to show is the button you needed most.
     if (s.cells.e2e === 'unrun') {
       return `<div class="dtp">
-        <div class="dtl lbl dth2">4 · E2E ${chip(s.cells.e2e)}
-          <button class="btn sm runbtn" data-run="${esc(s.name)}">Run<span class="kbd">r</span></button></div>
+        <div class="dtl dth2"><span class="lbl">4 · E2E</span>${chip(s.cells.e2e)}</div>
+        <div class="runbar">${runControls(s.name)}</div>
         <div class="e2e"><div class="ph big">never run · <code>spec/${esc(s.name)}/test.spec.ts</code></div>
           <div class="runlog" data-screen="${esc(s.name)}"><div class="lbl">recent runs</div>
             <div class="runrows">loading…</div></div></div>
@@ -139,8 +148,8 @@ function e2ePanel (s) {
   }
   const ranAt = new Date(s.run.ranAt).toISOString().replace('T', ' ').slice(0, 16)
   return `<div class="dtp">
-    <div class="dtl lbl dth2">4 · E2E ${chip(s.cells.e2e)}
-      <button class="btn sm runbtn" data-run="${esc(s.name)}">Run<span class="kbd">r</span></button></div>
+    <div class="dtl dth2"><span class="lbl">4 · E2E</span>${chip(s.cells.e2e)}</div>
+    <div class="runbar">${runControls(s.name)}</div>
     <div class="e2e">
       <div class="e2emeta">
         <span>last run <b>${ranAt}</b></span>
@@ -296,13 +305,23 @@ export function build () {
   .ph.big { display:flex; align-items:center; justify-content:center; height:320px; }
   .shot { position:absolute; inset:0; overflow:hidden; background:var(--wash); }
   .shot img { width:100%; display:block; }
-  .runs { display:flex; flex-direction:column; align-items:center; gap:var(--s2); }
-  .runs .tk { width:34px; height:34px; border-radius:50%; display:flex; align-items:center;
-    justify-content:center; font-size:16px; }
+  .runs { align-self:stretch; width:100%; display:flex; flex-direction:column; gap:var(--s2);
+    padding:var(--s2) var(--s3); overflow:hidden; }
+  .runsh { display:flex; align-items:center; gap:var(--s2); flex:none; }
+  .runs .tk { width:20px; height:20px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:11px; flex:none; }
   .runs .tk.pass { background:var(--koke-tint); color:var(--koke); }
   .runs .tk.fail { background:var(--bengara-tint); color:var(--bengara); }
   .runs .tk.ranstale { background:var(--yamabuki-tint); color:var(--yamabuki); }
-  .runs .ms { font-size:var(--t-xs); color:var(--ink-4); font-family:var(--mono); }
+  .runs .ms { font-size:var(--t-xs); color:var(--ink-3); }
+  /* the E2E cell shows WHAT was proven, not just a count — the same list the detail view opens,
+     compact, so the home board answers "which behaviours are green" without a click */
+  .e2emini { list-style:none; margin:0; padding:0; overflow:auto; flex:1; min-height:0; }
+  .e2emini li { display:flex; align-items:baseline; gap:var(--s2); font-size:var(--t-xs);
+    color:var(--ink-3); padding:2px 0; line-height:1.4; }
+  .e2emini li .tt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .e2emini li.p .mark { color:var(--koke); } .e2emini li.f .mark { color:var(--bengara); }
+  .e2emini li .mark { position:relative; top:2px; flex:none; }
   .blank { text-align:center; padding:0 var(--s4); }
   .blank .b1 { font-size:var(--t-md); color:var(--ink-3); margin-bottom:5px; }
   .blank .b2 { font-size:var(--t-xs); color:var(--ink-4); }
@@ -321,6 +340,11 @@ export function build () {
   .colhs { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
     position:sticky; top:0; z-index:5; background:var(--canvas);
     padding:var(--s5) 0 var(--s2); }
+  /* the columns ARE a sequence — PRD becomes a draft becomes a screen becomes a test — so the
+     header says so with an arrow sitting in the gap to the next column */
+  .colhs .lbl.flow { position:relative; }
+  .colhs .lbl.flow:after { content:"→"; position:absolute; right:-13px; top:0;
+    color:var(--ink-4); font-size:var(--t-sm); }
 
   .grp { margin-bottom:var(--s2); }
   .grph { display:flex; align-items:center; gap:var(--s3); padding:var(--s6) 0 var(--s3); }
@@ -332,7 +356,14 @@ export function build () {
   .grp.shut .rows { display:none; }
   .rows { display:flex; flex-direction:column; gap:var(--s3); }
 
-  .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3); }
+  /* The four cells are ONE row and the eye has to read them together — PRD, then wireframe, then
+     screen, then test. Hovering any part binds the whole row: a faint band behind it and every
+     cell's border lifting at once, so the group is unmistakable. */
+  .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
+    padding:var(--s2); margin:0 calc(var(--s2) * -1); border-radius:var(--r-md);
+    transition:background .12s; align-items:stretch; }
+  .row:hover { background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair); }
+  .row:hover .c1, .row:hover .cell { border-color:var(--hair-2); }
   .row.gone { display:none; }
   .c1 { background:var(--paper); border:1px solid var(--hair); padding:var(--s4);
     border-radius:var(--r-md); cursor:pointer;
@@ -394,13 +425,24 @@ export function build () {
   .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
     max-width:1760px; margin:0 auto; height:100%; align-items:stretch; }
   .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
-  .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(240px,.8fr) 1fr 1fr minmax(260px,.8fr); }
+  /* the E2E column carries a control row (Run · Background · watch) and a test list, so it earns
+     more width than the other three when all four are present */
+  .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(220px,.72fr) .95fr .95fr minmax(330px,1.05fr); }
   .dtp { display:flex; flex-direction:column; min-height:0; }
   .dtp > .dtl { flex:none; }
   .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:auto; flex:1; min-height:0; }
   .bigshot { background:var(--wash); }
   .bigshot img { width:100%; display:block; }
 
+  /* the run controls get their own row under the E2E label — a narrow column cannot hold Run,
+     Background and watch on the same line as a heading without wrapping into a mess */
+  .runbar { display:flex; padding:var(--s2) var(--s4); border-bottom:1px solid var(--hair);
+    background:var(--paper); }
+  .runctl { display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+    text-transform:none; letter-spacing:normal; }
+  .watchtog.sm { font-size:var(--t-xs); text-transform:none; letter-spacing:normal; }
+  .dth2 { flex-wrap:nowrap; }
+  .dth2 .lbl { flex:none; white-space:nowrap; }
   .e2e { padding:var(--s3) var(--s4) var(--s4); }
   .e2emeta { font-size:var(--t-sm); color:var(--ink-4); padding-bottom:var(--s3);
     border-bottom:1px solid var(--hair); margin-bottom:var(--s2); display:flex;
@@ -598,9 +640,9 @@ export function build () {
   </div>
 
   <div class="colhs">
-    <div class="lbl">1 · PRD — the source of truth</div>
-    <div class="lbl">2 · Draft — the wireframe</div>
-    <div class="lbl">3 · Screen — what got built</div>
+    <div class="lbl flow">1 · PRD — the source of truth</div>
+    <div class="lbl flow">2 · Draft — the wireframe</div>
+    <div class="lbl flow">3 · Screen — what got built</div>
     <div class="lbl">4 · E2E — what proves it</div>
   </div>
 
@@ -1274,6 +1316,14 @@ ${detail}
   document.getElementById('runall').addEventListener('click', () => runTests(null))
   for (const b of document.querySelectorAll('.runbtn'))
     b.addEventListener('click', () => runTests(b.dataset.run))
+  // Run in background from the detail view: start the run, then drop the panel. The run keeps
+  // going and the header chip stays lit so it is never a job you forget is happening.
+  for (const b of document.querySelectorAll('.runbg'))
+    b.addEventListener('click', async () => { await runTests(b.dataset.run); panel.hidden = true })
+  // Watch, per screen, from the detail view — one global switch, mirrored on every copy so it
+  // never disagrees with itself. Ticking it re-runs this screen whenever its files change.
+  for (const w of document.querySelectorAll('.dwatch'))
+    w.addEventListener('change', () => setWatch(w.checked))
   document.getElementById('rpclose').addEventListener('click', () => {
     panel.hidden = true
     // a finished run changed the board, so leaving the panel is the moment to show it
@@ -1288,23 +1338,35 @@ ${detail}
     runflag.hidden = !on
     document.getElementById('runall').disabled = on
   }
+  // A run you sent to the background is still yours to watch — clicking the header chip brings the
+  // panel back up. Without this a backgrounded run was a job you could see was happening and could
+  // never open again.
+  runflag.style.cursor = 'pointer'
+  runflag.title = 'show the running job'
+  runflag.addEventListener('click', () => { panel.hidden = false })
 
   // Watch: re-run the moment a PRD, draft or spec changes, so the E2E column stops being the one
-  // cell you have to remember to refresh by hand.
+  // cell you have to remember to refresh by hand. One switch, mirrored onto every copy — the
+  // header checkbox and each detail view's — so they never disagree about whether watch is on.
   const watchBox = document.getElementById('watch')
-  watchBox.addEventListener('change', async () => {
+  function syncWatch (on) {
+    watchBox.checked = on
+    for (const w of document.querySelectorAll('.dwatch')) w.checked = on
+  }
+  async function setWatch (on) {
+    syncWatch(on)
     await fetch('/api/watch', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ on: watchBox.checked })
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ on })
     }).catch(() => {})
-  })
+  }
+  watchBox.addEventListener('change', () => setWatch(watchBox.checked))
 
   // recent runs, fetched rather than baked in — the board is rebuilt by a run, so a run log
   // written into the HTML would always be one run behind itself
   async function loadRuns () {
     let data
     try { data = await (await fetch('/api/runs')).json() } catch (e) { return }
-    watchBox.checked = !!data.watch
+    syncWatch(!!data.watch)
     setRunning(!!data.running)
     for (const box of document.querySelectorAll('.runlog')) {
       const mine = data.runs.filter(r => r.screen === box.dataset.screen || r.screen === 'all').slice(0, 5)

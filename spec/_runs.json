@@ -1,5 +1,37 @@
 [
   {
+    "at": "2026-07-27T04:36:17.388Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T04:36:13.380Z",
+    "screen": "board",
+    "ms": 3601,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T04:36:13.265Z",
+    "screen": "board",
+    "ms": 8,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T04:36:08.381Z",
+    "screen": "board",
+    "ms": 4223,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
     "at": "2026-07-27T04:20:43.614Z",
     "screen": "board",
     "ms": 2,
@@ -123,38 +155,6 @@
     "at": "2026-07-27T04:15:08.301Z",
     "screen": "board",
     "ms": 3899,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:14:58.255Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:14:54.199Z",
-    "screen": "board",
-    "ms": 3694,
-    "total": 7,
-    "failed": 0,
-    "ok": true
-  },
-  {
-    "at": "2026-07-27T04:14:54.085Z",
-    "screen": "board",
-    "ms": 7,
-    "total": 7,
-    "failed": 0,
-    "ok": false
-  },
-  {
-    "at": "2026-07-27T04:14:49.718Z",
-    "screen": "board",
-    "ms": 3776,
     "total": 7,
     "failed": 0,
     "ok": true
