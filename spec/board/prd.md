@@ -58,3 +58,15 @@ only reason to have a board rather than a list.
 Three filters — everything, waiting on you, not started — plus a search that matches screen
 names, routes and the text of every requirement inside them. A group with no matching rows
 hides itself rather than sitting empty.
+
+## R9 — A screen with no wireframe reads in document mode, not as unstarted
+
+A screen that already exists — crawled from a running app — has a PRD, the current screen and a
+test, but no wireframe. Its draft cell is a non-blocking "no wireframe, add one to redesign", never
+missing; its screen cell is the current screen, proven by its test, with no gate B to approve; and
+the one gate is accepting the PRD. So a cell can also be nodraft or current — the states of the mode
+where the work is keeping a finished screen true rather than building a new one.
+
+*Added 2026-07-27: the board grew a second mode. R4's five states describe the design pipeline —
+building a new screen; these two describe documenting an existing one, and are split out rather than
+folded into R4 so each requirement is about one mode. Proven by the mode fixtures in spec/_modes.*
