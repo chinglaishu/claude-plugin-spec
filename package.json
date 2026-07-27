@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "board": "node tools/serve-board.mjs",
+    "board:build": "node tools/build-board.mjs",
+    "e2e": "playwright test --config=playwright.board.ts",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build": "tsx src/build.ts",

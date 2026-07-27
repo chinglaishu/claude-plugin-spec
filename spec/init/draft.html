@@ -1,0 +1,171 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Init</title>
+<link rel="stylesheet" href="../_design.css">
+<style>
+  .steps { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+  .step { display:flex; align-items:center; gap:8px; font-size:var(--t-md); color:var(--mute); }
+  .step .n { width:21px; height:21px; border-radius:50%; border:1px solid var(--line2);
+    display:flex; align-items:center; justify-content:center; font-size:var(--t-xs); }
+  .step.on { color:var(--ink); } .step.on .n { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+  .step.done .n { background:var(--ok-bg); border-color:var(--ok-line); color:var(--ok); }
+  .rail { flex:1; height:1px; background:var(--line); max-width:44px; }
+
+  .two { display:grid; grid-template-columns:430px 1fr; gap:18px; align-items:start; }
+  .fld { margin-bottom:17px; }
+  .fld .l { font-size:var(--t-md); margin-bottom:6px; }
+  .fld .h { font-size:var(--t-xs); color:var(--mute); margin-top:6px; }
+  .fld .h.warn { color:var(--warn); }
+
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:var(--t-micro); letter-spacing:.09em; text-transform:uppercase;
+    color:var(--mute); font-weight:400; padding:10px 14px; border-bottom:1px solid var(--line); }
+  td { padding:10px 14px; border-bottom:1px solid var(--line); font-size:var(--t-md); vertical-align:middle; }
+  tr:last-child td { border-bottom:0; }
+  .thumb { width:64px; height:42px; border:1px solid var(--line2); border-radius:var(--r-sm);
+    background:linear-gradient(var(--paper),var(--wash)); overflow:hidden; padding:5px 6px; }
+  .tb { height:4px; border-radius:var(--r-sm); background:var(--line); margin-bottom:3px; }
+  .rt { font-family:var(--mono); font-size:var(--t-sm); }
+  .gd { font-size:var(--t-sm); color:var(--dim); }
+  .foot { display:flex; align-items:center; gap:10px; margin-top:20px; }
+</style>
+
+<div class="top">
+  <div class="brand"><div class="logo"></div>Spec board</div>
+  <span class="crumb">setting up <span class="mono">~/work/shop</span></span>
+  <div class="spacer"></div>
+  <button class="btn sm gh">Cancel</button>
+</div>
+
+<div class="page">
+  <div class="steps">
+    <div class="step done"><span class="n">✓</span>How to run it</div><div class="rail"></div>
+    <div class="step on"><span class="n">2</span>What was found</div><div class="rail"></div>
+    <div class="step"><span class="n">3</span>Build the board</div>
+  </div>
+
+  <div class="two">
+    <div>
+      <div class="card pad">
+        <div class="fld">
+          <div class="l">How do I start your app?</div>
+          <div class="input">npm run dev</div>
+          <div class="h">run from <span class="mono">~/work/shop</span></div>
+        </div>
+        <div class="fld">
+          <div class="l">What URL does it serve on?</div>
+          <div class="input">http://localhost:3000</div>
+          <div class="h">responded in 1.8s</div>
+        </div>
+        <div class="fld">
+          <div class="l">Which routes matter?</div>
+          <div class="input ph">leave blank to crawl from the root</div>
+          <div class="h warn">guessing any of these wrong builds a complete, confident, wrong board</div>
+        </div>
+        <div class="sep" style="margin:4px 0 16px"></div>
+        <div class="fld" style="margin-bottom:0">
+          <div class="l">Sign-in, if screens need it</div>
+          <div class="input ph">a script that leaves the app logged in</div>
+          <div class="h">optional — 2 routes redirected to /login</div>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn pri">Build the board — 4 screens</button>
+        <button class="btn">Skip the crawl</button>
+      </div>
+      <div class="muted" style="font-size:var(--t-xs);margin-top:11px">
+        Nothing found is the greenfield case — same flow, no rows, and a prompt to write the first PRD.
+      </div>
+    </div>
+
+    <div class="card">
+      <header>
+        <span class="lbl">found · each becomes one row</span>
+        <div class="spacer"></div>
+        <span class="chip"><span class="dot"></span>crawled 5 routes in 22s</span>
+      </header>
+      <table>
+        <tr><th style="width:30px"></th><th style="width:70px">shot</th><th>route</th><th>PRD</th><th>status</th></tr>
+        <tr>
+          <td><span class="check on"></span></td>
+          <td><div class="thumb"><div class="tb" style="width:60%"></div><div class="tb"></div><div class="tb" style="width:40%"></div></div></td>
+          <td><span class="rt">/</span><div class="gd">Storefront</div></td>
+          <td><span class="chip stale">a guess · 6 reqs</span></td>
+          <td class="gd">new</td>
+        </tr>
+        <tr>
+          <td><span class="check on"></span></td>
+          <td><div class="thumb"><div class="tb" style="width:45%"></div><div class="tb" style="width:80%"></div><div class="tb"></div></div></td>
+          <td><span class="rt">/product/:id</span><div class="gd">Product detail</div></td>
+          <td><span class="chip stale">a guess · 8 reqs</span></td>
+          <td class="gd">new</td>
+        </tr>
+        <tr>
+          <td><span class="check on"></span></td>
+          <td><div class="thumb"><div class="tb" style="width:70%"></div><div class="tb" style="width:55%"></div></div></td>
+          <td><span class="rt">/cart</span><div class="gd">Cart</div></td>
+          <td><span class="chip stale">a guess · 5 reqs</span></td>
+          <td class="gd">new</td>
+        </tr>
+        <tr>
+          <td><span class="check on"></span></td>
+          <td><div class="thumb"><div class="tb" style="width:35%"></div><div class="tb" style="width:65%"></div><div class="tb" style="width:50%"></div></div></td>
+          <td><span class="rt">/checkout</span><div class="gd">Checkout</div></td>
+          <td><span class="chip stale">a guess · 9 reqs</span></td>
+          <td class="gd">new</td>
+        </tr>
+        <tr>
+          <td><span class="check"></span></td>
+          <td><div class="thumb"><div class="tb" style="width:50%"></div><div class="tb"></div></div></td>
+          <td><span class="rt">/account</span><div class="gd">Account</div></td>
+          <td><span class="chip ok">yours · 4 reqs</span></td>
+          <td class="gd">already on board</td>
+        </tr>
+      </table>
+      <div style="padding:13px 16px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center">
+        <span class="chip stale">a guess</span>
+        <span class="gd">Read off the page, never canon. Every crawled screen starts unapproved,
+          so the loop still begins at gate A.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // R1 says ask only what cannot be guessed — so the count on the button has to react to what
+  // you actually ticked, or the screen is asking a question it then ignores.
+  const $ = s => document.querySelector(s)
+  const $$ = s => [...document.querySelectorAll(s)]
+  const go = $('.foot .btn.pri')
+  const recount = () => {
+    const n = $$('.routes .check.on').length
+    go.textContent = n ? 'Build the board — ' + n + ' screen' + (n === 1 ? '' : 's') : 'Build an empty board'
+    go.classList.toggle('pri', n > 0)
+  }
+  for (const r of $$('.routes .r')) {
+    const c = r.querySelector('.check')
+    r.style.cursor = 'pointer'
+    r.addEventListener('click', () => { c.classList.toggle('on'); recount() })
+  }
+  recount()
+
+  const steps = $$('.step')
+  const setStep = n => steps.forEach((s, i) => {
+    s.classList.toggle('on', i === n); s.classList.toggle('done', i < n)
+    s.querySelector('.n').textContent = i < n ? '✓' : String(i + 1)
+  })
+  steps.forEach((s, i) => { s.style.cursor = 'pointer'; s.addEventListener('click', () => setStep(i)) })
+
+  go.addEventListener('click', () => {
+    setStep(2)
+    $('.two').innerHTML = '<div class="card pad" style="grid-column:1/-1;text-align:center">' +
+      '<div style="font-size:var(--t-lg);margin-bottom:6px">Board built</div>' +
+      '<div class="muted" style="font-size:var(--t-sm);margin-bottom:14px">' +
+      $$('.routes .check.on').length + ' screens · every PRD a guess · every draft unapproved,' +
+      ' so the loop starts at gate A</div>' +
+      '<a class="btn pri" href="/">Open the board →</a></div>'
+  })
+  $$('.foot .btn')[1].addEventListener('click', () => {
+    $$('.routes .check').forEach(c => c.classList.remove('on')); recount()
+  })
+</script>

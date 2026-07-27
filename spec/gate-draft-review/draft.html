@@ -1,0 +1,173 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Gate A — draft review</title>
+<link rel="stylesheet" href="../_design.css">
+<style>
+  .ask { display:flex; align-items:baseline; gap:10px; }
+  .ask h1 { font-size:var(--t-xl); }
+  .ask .q { font-size:var(--t-md); color:var(--dim); }
+  .split { display:grid; grid-template-columns:470px 1fr; gap:16px; align-items:start; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:var(--rc); overflow:hidden; }
+  .panel > header { display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+    padding:var(--s3) var(--s4); border-bottom:1px solid var(--line); }
+  .body { padding:4px 18px 16px; height:606px; overflow:hidden; }
+
+  .req { padding:13px 0; border-bottom:1px solid var(--line); }
+  .req:last-child { border-bottom:0; }
+  .req .h { display:flex; gap:8px; align-items:baseline; margin-bottom:5px; }
+  .req .id { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); width:20px; flex:none; }
+  .req .t { font-size:var(--t-md); }
+  .req p { margin:0; font-size:var(--t-sm); line-height:1.65; color:var(--dim); padding-left:28px; }
+  .req.moved { background:var(--bengara-tint); margin:0 -18px; padding:13px 18px;
+    border-left:3px solid var(--warn-line); border-bottom:1px solid var(--line); }
+  .req.moved .t { color:var(--warn); }
+  del { background:var(--bad-bg); color:var(--bad); text-decoration:line-through; padding:0 2px; border-radius:var(--r-sm); }
+  ins { background:var(--ok-bg); color:var(--ok); text-decoration:none; padding:0 2px; border-radius:var(--r-sm); }
+  .unchanged { padding:11px 0 0 28px; font-size:var(--t-sm); color:var(--mute); }
+
+  .stage { padding:18px; background:var(--sunk); height:606px; }
+  .art { background:var(--card); border:1px solid var(--line2); border-radius:var(--r-md); height:100%;
+    padding:14px 16px; overflow:hidden; }
+  .arttop { display:flex; align-items:center; gap:9px; padding-bottom:11px; border-bottom:1px solid var(--line); margin-bottom:13px; }
+  .sq { width:16px; height:16px; border-radius:var(--r-sm); background:var(--ink); }
+  .cols { display:grid; grid-template-columns:1.1fr 1fr 1fr 1fr; gap:9px; }
+  .bar { height:8px; border-radius:var(--r-sm); background:var(--line); margin-bottom:7px; }
+  .bar.d { background:var(--line2); }
+  .tile { border:1px solid var(--line); border-radius:var(--r-sm); height:96px; background:var(--sunk); }
+  .tile.hi { border-color:var(--acc-line); background:var(--acc-bg); }
+
+  .actions { position:sticky; bottom:0; display:flex; align-items:center; gap:10px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--rc);
+    padding:12px 16px; margin-top:16px; }
+  .why { flex:1; }
+  .pin { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); }
+</style>
+
+<div class="top">
+  <a class="btn sm gh" href="/">← Board</a>
+  <div class="brand" style="font-size:14px">Gate A</div>
+  <span class="crumb">board · <span class="mono">spec/board/</span></span>
+  <div class="spacer"></div>
+  <span class="muted" style="font-size:var(--t-sm)">1 of 4 waiting on you</span>
+  <button class="btn sm">Next →</button>
+</div>
+
+<div class="page">
+  <div class="ask" style="margin-bottom:16px">
+    <h1>Is this what I meant?</h1>
+    <span class="q">The PRD moved after this draft was approved. Two requirements changed.</span>
+  </div>
+
+  <div class="split">
+    <div class="panel">
+      <header>
+        <div><span class="lbl">1 · PRD</span></div>
+        <div class="hdseg seg">
+          <span data-v="all">All 6</span><span class="on" data-v="changed">Changed 2</span>
+        </div>
+      </header>
+      <div class="body">
+        <div class="req moved">
+          <div class="h"><span class="id">R4</span><span class="t"><del>Four states</del> <ins>Five states</ins>, and they are computed</span></div>
+          <p>Each cell is missing, waiting, <ins>needs-review,</ins> stale, or ok. Nothing is typed in by
+            hand: the state is the stored approval hash compared against the current content hash.</p>
+        </div>
+        <div class="req moved">
+          <div class="h"><span class="id">R5</span><span class="t">A red cell is a button</span></div>
+          <p><ins>Clicking a cell that is missing or stale dispatches the job that would fix it.</ins>
+            The board is where the work starts, not a report you read before going somewhere else to work.</p>
+        </div>
+        <div class="req">
+          <div class="h"><span class="id">R1</span><span class="t">One row per screen</span></div>
+          <p>Every screen in the project is one row, carrying its name and how many requirements its
+            PRD holds. Requirements are never their own rows.</p>
+        </div>
+        <div class="req">
+          <div class="h"><span class="id">R2</span><span class="t">Four cells, left to right</span></div>
+          <p>PRD, draft, screen, E2E — in that order, always. The order is the workflow.</p>
+        </div>
+        <div class="unchanged">R3, R6 unchanged since you approved this draft</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header>
+        <div><span class="lbl">2 · Draft</span></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="pin">draft.html · 4f2a91c</span>
+          <button class="btn sm gh">Open full size ↗</button>
+        </div>
+      </header>
+      <div class="stage">
+        <div class="art">
+          <div class="arttop"><div class="sq"></div><strong style="font-weight:500;font-size:var(--t-md)">Spec board</strong>
+            <div class="spacer"></div><span class="chip">6 screens</span><span class="chip rev">4 waiting on you</span></div>
+          <div class="cols" style="margin-bottom:11px">
+            <div class="lbl">1 · PRD</div><div class="lbl">2 · Draft</div><div class="lbl">3 · Screen</div><div class="lbl">4 · E2E</div>
+          </div>
+          <div class="cols" style="margin-bottom:11px">
+            <div><div class="bar" style="width:70%"></div><div class="bar d" style="width:88%"></div><div class="bar" style="width:60%"></div></div>
+            <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+          </div>
+          <div class="cols" style="margin-bottom:11px">
+            <div><div class="bar" style="width:56%"></div><div class="bar d" style="width:80%"></div><div class="bar" style="width:66%"></div></div>
+            <div class="tile hi"></div><div class="tile"></div><div class="tile"></div>
+          </div>
+          <div class="cols">
+            <div><div class="bar" style="width:64%"></div><div class="bar d" style="width:74%"></div></div>
+            <div class="tile"></div><div class="tile"></div><div class="tile"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn ok">Looks right</button>
+    <span class="gor">or</span>
+    <input class="why input" placeholder="Say what is wrong — one sentence, saved with the rejection">
+    <button class="btn no">Send it back<span class="kbd">↵</span></button>
+    <span class="pin">approving pins prd.md · a91c7f2</span>
+  </div>
+</div>
+
+<script>
+  // The two verdicts do different things and the difference is the point: approving is one
+  // click, rejecting is not allowed to be — it needs the sentence, or the redraft is a re-guess.
+  const $ = s => document.querySelector(s)
+  const bar = $('.actions')
+  const why = $('.why')
+  const done = (msg, tone) => {
+    bar.innerHTML = '<span class="chip ' + tone + '"><span class="dot"></span>' + msg + '</span>' +
+      '<div class="spacer"></div><button class="btn" id="undo">Undo</button>' +
+      '<button class="btn pri">Next waiting →</button>'
+    $('#undo').addEventListener('click', () => location.reload())
+  }
+  $('.actions .btn.ok').addEventListener('click', () =>
+    done('approved — pinned against prd.md · a91c7f2', 'ok'))
+  $('.actions .btn.no').addEventListener('click', () => {
+    const text = why.value.trim()
+    if (!text) {
+      why.focus()
+      why.placeholder = 'Say what is wrong — this sentence goes to the redraft'
+      why.style.borderColor = 'var(--bengara)'
+      return
+    }
+    done('sent back — "' + text + '"', 'bad')
+  })
+  // Enter sends it back too — you have just typed the whole decision.
+  why.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); $('.actions .btn.no').click() }
+  })
+  // Show only what moved, or everything. Re-reading six requirements to find the two that
+  // changed is the reason people stop opening review queues.
+  for (const s of document.querySelectorAll('.hdseg span')) s.addEventListener('click', () => {
+    document.querySelectorAll('.hdseg span').forEach(x => x.classList.toggle('on', x === s))
+    const only = s.dataset.v === 'changed'
+    document.querySelectorAll('.req:not(.moved)').forEach(r => { r.hidden = only })
+    document.querySelector('.unchanged').hidden = !only
+  })
+  // Default to what MOVED. R2 exists because re-reading six requirements to find the two that
+  // changed is exactly how a review queue stops getting opened.
+  document.querySelector('.hdseg .on').click()
+</script>

@@ -1,0 +1,26 @@
+[
+  {
+    "at": "2026-07-27T02:47:24.270Z",
+    "screen": "board",
+    "ms": 4401,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T02:32:02.142Z",
+    "screen": "board",
+    "ms": 9236,
+    "total": 7,
+    "failed": 1,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T02:30:19.504Z",
+    "screen": "board",
+    "ms": 9424,
+    "total": 7,
+    "failed": 1,
+    "ok": false
+  }
+]

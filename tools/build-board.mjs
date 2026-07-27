@@ -1,0 +1,952 @@
+// Renders spec/<screen>/ into one self-contained board.html.
+//
+// Reading and state live in spec-store.mjs; this file only draws. The board inlines the SAME
+// spec/_design.css the drafts link, and adds nothing but layout — it is one of the screens this
+// tool tracks, so it has no business owning a second design system.
+
+import { writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import {
+  ROOT, CANVAS_W, CANVAS_H, esc, designCss, allScreens, sortedAreas, isWaiting
+} from './spec-store.mjs'
+
+// label · chip tone · mark shape. The mark is redundant with the tone on purpose: status has to
+// survive greyscale and low vision, so hue is never the only thing carrying it.
+const CHIP = {
+  ok: ['approved', 'ok', 'dot'],
+  review: ['needs review', 'rev', 'dot'],
+  stale: ['PRD moved', 'stale', 'mark h'],
+  rejected: ['you sent it back', 'bad', 'mark o'],
+  missing: ['not started', 'gone', 'mark n'],
+  waiting: ['waits', 'gone', 'mark n'],
+  pass: ['pass', 'ok', 'dot'],
+  fail: ['fail', 'bad', 'mark o'],
+  unrun: ['never run', 'gone', 'mark o'],
+  ranstale: ['passed, then you edited', 'stale', 'mark h']
+}
+
+const chip = st => {
+  const [label, tone, mark] = CHIP[st] || [st, 'gone', 'mark n']
+  return `<span class="chip ${tone}"><span class="${mark}"></span>${label}</span>`
+}
+
+function cell (s, col, inner) {
+  const st = s.cells[col]
+  const tone = (CHIP[st] || [])[1] || 'gone'
+  // Only the DRAFT cell is clickable, because gate A is the only gate that exists. A cell that
+  // opens something unrelated to the column you clicked teaches you not to trust any of them.
+  const act = col === 'draft' && ['stale', 'review', 'rejected'].includes(st)
+  // The chip sits ABOVE the artwork, never on it. A status badge floating over a hi-fi draft
+  // covers the part of the design it is making a claim about.
+  return `<div class="cell c-${tone}${act ? ' act' : ''}" data-screen="${esc(s.name)}" data-col="${col}">
+    <div class="cellh">${chip(st)}</div>
+    <div class="cellb">${inner}</div>
+  </div>`
+}
+
+const row = (s, i) => `
+<div class="row" data-i="${i}" data-area="${esc(s.area)}"
+     data-waiting="${isWaiting(s) ? 1 : 0}" data-started="${s.cells.draft === 'missing' ? 0 : 1}"
+     data-q="${esc((s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase())}">
+  <div class="c1">
+    <div class="nm">${esc(s.title)}</div>
+    <div class="meta">${s.reqs.length} requirements${s.route ? ` · <code>${esc(s.route)}</code>` : ''}</div>
+    <ul class="reqs">${s.reqs.slice(0, 6).map(r => `<li><span class="rq">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span></li>`).join('')}${s.reqs.length > 6 ? `<li class="more">+${s.reqs.length - 6} more</li>` : ''}</ul>
+  </div>
+  ${cell(s, 'draft', s.draftHtml
+    ? `<div class="frame"><iframe scrolling="no" srcdoc="${esc(s.draftHtml)}"></iframe></div>`
+    : '<span class="ph">no draft</span>')}
+  ${cell(s, 'screen', s.hasShot
+    ? `<div class="shot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>`
+    : blank('not built', s.cells.draft === 'ok'
+      ? 'ready to build — the design is approved'
+      : 'waits for gate A'))}
+  ${cell(s, 'e2e', ['pass', 'fail', 'ranstale'].includes(s.cells.e2e)
+    ? `<div class="runs"><div class="tk ${s.cells.e2e}">${s.cells.e2e === 'fail' ? '✕' : s.cells.e2e === 'ranstale' ? '!' : '✓'}</div>
+       <div class="ms">${s.run.total - s.run.failed} of ${s.run.total} passing</div>
+       ${s.cells.e2e === 'ranstale' ? '<div class="ms">run it again</div>' : ''}</div>`
+    : blank(s.cells.e2e === 'unrun' ? 'never run' : 'no test',
+      s.cells.e2e === 'unrun' ? 'npm run e2e'
+        : s.cells.screen === 'ok' || s.hasShot ? 'ready for a test'
+          : 'waits for the screen'))}
+</div>`
+
+// An empty cell is half the board on a young project. Saying WHAT HAS TO HAPPEN FIRST turns that
+// space into the answer to "so what do I do next" — the question an empty cell otherwise raises
+// and refuses to answer.
+const blank = (what, next) => `<div class="blank"><div class="b1">${what}</div>
+  <div class="b2">${next}</div></div>`
+
+// Only the requirements that MOVED, by default. Re-reading eight requirements to find the two
+// that changed is precisely how a review queue stops getting opened — so when we know what moved,
+// the rest starts collapsed and one click brings it back.
+const prdFilter = s => {
+  const d = s.diff
+  if (!d) return ''
+  const n = d.changed.length + d.added.length + d.removed.length
+  if (!n) return ''
+  return `<div class="seg pseg">
+    <span data-v="changed" class="on">Changed ${n}</span><span data-v="all">All ${s.reqs.length}</span>
+  </div>`
+}
+
+const para = t => t.split(/\n\s*\n/)
+  .map(p => `<p>${esc(p.replace(/\n/g, ' ')).replace(/\*(.+?)\*/g, '<em>$1</em>')}</p>`).join('')
+
+function prdBody (s) {
+  const d = s.diff
+  const mark = r => !d ? '' : d.added.includes(r.id) ? 'added' : d.changed.includes(r.id) ? 'moved' : ''
+  // changed first, in their original order — you should not have to hunt down the page for them
+  const ordered = d ? [...s.reqs].sort((a, b) => (mark(b) ? 1 : 0) - (mark(a) ? 1 : 0)) : s.reqs
+  const arts = ordered.map(r => {
+    const m = mark(r)
+    const was = d && d.was[r.id]
+    const title = was && was.title !== r.title
+      ? `<del>${esc(was.title)}</del> <ins>${esc(r.title)}</ins>`
+      : esc(r.title)
+    return `<article class="${m}"${m ? '' : ' data-unchanged="1"'}>
+      <h3><span class="rid">${esc(r.id)}</span><span>${title}</span>${m ? `<span class="chip ${m === 'added' ? 'rev' : 'stale'}">${m === 'added' ? 'new' : 'reworded'}</span>` : ''}</h3>
+      ${para(r.body)}</article>`
+  }).join('')
+  const gone = d && d.removed.length
+    ? `<article class="removed"><h3><span class="rid"></span><span>${d.removed.map(id => esc(id)).join(', ')} deleted since you approved this</span></h3></article>`
+    : ''
+  return arts + gone
+}
+
+// Column 4 in the detail view. The board could only ever say "7 of 7 passing", which asks you to
+// trust a number — you could not read WHICH seven, when they ran, or what a failure actually said.
+function e2ePanel (s) {
+  if (!s.run) {
+    if (s.cells.e2e !== 'missing' && s.cells.e2e !== 'waiting') return ''
+    return `<div class="dtp">
+      <div class="dtl lbl">4 · E2E</div>
+      <div class="ph big">no test yet · <code>spec/${esc(s.name)}/test.spec.ts</code></div>
+    </div>`
+  }
+  const ranAt = new Date(s.run.ranAt).toISOString().replace('T', ' ').slice(0, 16)
+  return `<div class="dtp">
+    <div class="dtl lbl dth2">4 · E2E ${chip(s.cells.e2e)}
+      <button class="btn sm runbtn" data-run="${esc(s.name)}">Run<span class="kbd">r</span></button></div>
+    <div class="e2e">
+      <div class="e2emeta">
+        <span>last run <b>${ranAt}</b></span>
+        ${s.cells.e2e === 'ranstale' ? '<span class="warn">you have edited this screen since — run it again</span>' : ''}
+        <div class="path"><code>spec/${esc(s.name)}/test.spec.ts</code></div>
+      </div>
+      ${s.run.tests.map(t => `<article class="tst ${t.ok ? 'p' : 'f'}">
+        <div class="th"><span class="mark ${t.ok ? '' : 'o'}"></span>
+          <span class="tt">${esc(t.title)}</span><span class="ms">${t.ms}ms</span></div>
+        ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
+      </article>`).join('')}
+      <div class="runlog" data-screen="${esc(s.name)}">
+        <div class="lbl">recent runs</div>
+        <div class="runrows">loading…</div>
+      </div>
+    </div>
+  </div>`
+}
+
+// Gate B: the approved design against what actually got built. It can only exist once a test has
+// produced a screenshot — which is why column 3 is a byproduct of column 4 and never its own step.
+function gateBBar (s) {
+  const wrap = (cls, inner) => `<div class="gb ${cls}"><div class="gbin">${inner}</div></div>`
+  const st = s.cells.screen
+  if (st === 'ok') {
+    return wrap('ok', `
+      ${chip('ok')}
+      <span class="gbn">built screen matches the approved design — pinned to <code>draft ${s.draftHash}</code></span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-gate="screen" data-screen="${esc(s.name)}">Un-approve</button>`)
+  }
+  const why = st === 'stale'
+    ? 'The design moved after you approved this screen.'
+    : 'Nobody has checked the built screen against the design yet.'
+  return wrap('open', `
+    <span class="gbn" style="flex:none">${why}</span>
+    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="${esc(s.name)}">Matches the design</button>
+    <span class="gor">or</span>
+    <input class="why input" required
+      placeholder="Which is wrong — the build or the design? One sentence.">
+    <button class="btn no" data-act="reject" data-gate="screen" data-screen="${esc(s.name)}">Send it back<span class="kbd">↵</span></button>
+    <span class="gbn" style="flex:none">pins <code>${s.draftHash}</code></span>`)
+}
+
+// Gate A lives in the detail view: PRD on the left, the draft on the right, approve underneath.
+function gateBar (s) {
+  const wrap = (cls, inner) => `<div class="gb ${cls}"><div class="gbin">${inner}</div></div>`
+  const st = s.cells.draft
+  if (st === 'missing') return wrap('', '<span class="gbn">No draft yet — nothing to approve.</span>')
+  if (st === 'ok') {
+    // gate A is settled, so the open question moves downstream to gate B
+    if (s.hasShot) return gateBBar(s)
+    return wrap('ok', `
+      ${chip('ok')}
+      <span class="gbn">design approved against <code>prd.md · ${s.state.draftApprovedAgainstPrd}</code> — build the screen next</span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-screen="${esc(s.name)}">Un-approve</button>`)
+  }
+  if (st === 'rejected') {
+    // The sentence is the whole point of rejecting. Showing it back is what makes saying no feel
+    // like a decision that landed rather than a button that did nothing visible.
+    const why = s.rejections[s.rejections.length - 1].why
+    const earlier = s.rejections.length - 1
+    return wrap('bad', `
+      ${chip('rejected')}
+      <span class="gbw">${why ? esc(why) : 'No reason given.'}</span>
+      ${earlier ? `<span class="gbn">+ ${earlier} earlier — all of them go to the redraft</span>` : ''}
+      <span class="grow"></span>
+      <span class="grow"></span>
+      <button class="btn pri" data-dispatch="${esc(s.name)}">Redraft it →</button>
+      <button class="btn" data-act="unreject" data-screen="${esc(s.name)}">Take it back</button>`)
+  }
+  const why = st === 'stale'
+    ? 'The PRD moved after you approved this draft.'
+    : 'Nobody has said yes to this draft yet.'
+  // Two paths, in reading order, each ending in its own button. The reason field used to sit
+  // AFTER the verdict buttons, so you typed into a box and then hunted backwards for the control
+  // that sent it — which is where a half-written rejection gets abandoned.
+  return wrap('open', `
+    <span class="gbn" style="flex:none">${why}</span>
+    <button class="btn ok" data-act="approve" data-screen="${esc(s.name)}">Looks right</button>
+    <span class="gor">or</span>
+    <input class="why input" required
+      placeholder="Say what is wrong — one sentence, saved with the rejection">
+    <button class="btn no" data-act="reject" data-screen="${esc(s.name)}">Send it back<span class="kbd">↵</span></button>
+    <span class="gbn" style="flex:none">pins <code>${s.prdHash}</code></span>`)
+}
+
+export function build () {
+  const screens = allScreens()
+  const areas = sortedAreas(screens)
+  const count = (col, ...states) => screens.filter(s => states.includes(s.cells[col])).length
+  // The one number that says whether it is your turn: gates open, first looks and re-looks alike.
+  const yourTurn = screens.filter(isWaiting).length
+
+  const groups = areas.map(a => {
+    const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
+    const waiting = inArea.filter(x => isWaiting(x.s)).length
+    return `
+<section class="grp" data-area="${esc(a)}">
+  <div class="grph">
+    <button class="tw" aria-label="collapse">—</button>
+    <h2>${esc(a)}</h2>
+    <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
+    ${waiting ? `<span class="gwait"><span class="dot"></span>${waiting} waiting</span>` : ''}
+  </div>
+  <div class="rows">${inArea.map(x => row(x.s, x.i)).join('')}</div>
+</section>`
+  }).join('')
+
+  const detail = screens.map((s, i) => `
+<section class="dt" data-i="${i}" hidden>
+  <div class="dth">
+    <h2>${esc(s.title)}</h2>
+    ${chip(s.cells.draft)}
+    <span class="gbn">${s.reqs.length} requirements · <code>spec/${esc(s.name)}/</code></span>
+    <span class="grow"></span>
+    <a class="btn" href="spec/${esc(s.name)}/draft.html" target="_blank">Open draft full size ↗</a>
+    <button class="btn edit" data-path="spec/${esc(s.name)}/draft.html">Edit the draft</button>
+    <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll">
+    <div class="dtb">
+      <div class="dtp">
+        <div class="dtl lbl dth2">1 · PRD${prdFilter(s)}</div>
+        <div class="prd">${prdBody(s)}</div>
+      </div>
+      <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div>${s.draftHtml
+        ? `<div class="bigframe"><iframe srcdoc="${esc(s.draftHtml)}"></iframe></div>`
+        : '<div class="ph big">no draft yet</div>'}</div>
+      ${s.hasShot ? `<div class="dtp">
+        <div class="dtl lbl">3 · Screen — shot by the last test run</div>
+        <div class="bigshot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>
+      </div>` : ''}
+      ${e2ePanel(s)}
+    </div>
+  </div>
+  ${gateBar(s)}
+</section>`).join('')
+
+  const html = `<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spec board — plugin-spec</title>
+<style>${designCss()}</style>
+<style>
+  /* board layout only — every colour, size and space above comes from spec/_design.css */
+  :root { --gcols:minmax(300px,1.15fr) 1fr 1fr 1fr; }
+  body { width:auto; }
+  .wrap { max-width:1760px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
+  .ph { font-size:var(--t-sm); color:var(--ink-4); }
+  .ph.big { display:flex; align-items:center; justify-content:center; height:320px; }
+  .shot { position:absolute; inset:0; overflow:hidden; background:var(--wash); }
+  .shot img { width:100%; display:block; }
+  .runs { display:flex; flex-direction:column; align-items:center; gap:var(--s2); }
+  .runs .tk { width:34px; height:34px; border-radius:50%; display:flex; align-items:center;
+    justify-content:center; font-size:16px; }
+  .runs .tk.pass { background:var(--koke-tint); color:var(--koke); }
+  .runs .tk.fail { background:var(--bengara-tint); color:var(--bengara); }
+  .runs .tk.ranstale { background:var(--yamabuki-tint); color:var(--yamabuki); }
+  .runs .ms { font-size:var(--t-xs); color:var(--ink-4); font-family:var(--mono); }
+  .blank { text-align:center; padding:0 var(--s4); }
+  .blank .b1 { font-size:var(--t-md); color:var(--ink-3); margin-bottom:5px; }
+  .blank .b2 { font-size:var(--t-xs); color:var(--ink-4); }
+
+  .stats { display:flex; align-items:baseline; padding-bottom:var(--s4);
+    border-bottom:1px solid var(--hair); margin-bottom:var(--s2); }
+  .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
+  .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
+    border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
+    margin-bottom:var(--s4); font-size:var(--t-sm); color:var(--koke); }
+  .qwrap { position:relative; display:inline-flex; align-items:center; }
+  .qx { position:absolute; right:6px; border:0; background:transparent; cursor:pointer;
+    color:var(--ink-4); font-size:var(--t-sm); padding:2px 4px; line-height:1; display:none; }
+  .qwrap.has .qx { display:block; }
+
+  .colhs { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
+    position:sticky; top:0; z-index:5; background:var(--canvas);
+    padding:var(--s5) 0 var(--s2); }
+
+  .grp { margin-bottom:var(--s2); }
+  .grph { display:flex; align-items:center; gap:var(--s3); padding:var(--s6) 0 var(--s3); }
+  .gc { font-size:var(--t-sm); color:var(--ink-4); }
+  /* a group count is a cue, not a badge — repeated once per area, a filled chip became noise */
+  .gwait { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm); color:var(--ai); }
+  .tw { border:0; background:transparent; color:var(--ink-4); cursor:pointer;
+    font-size:var(--t-sm); padding:0; width:12px; line-height:1; }
+  .grp.shut .rows { display:none; }
+  .rows { display:flex; flex-direction:column; gap:var(--s3); }
+
+  .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3); }
+  .row.gone { display:none; }
+  .c1 { background:var(--paper); border:1px solid var(--hair); padding:var(--s4);
+    border-radius:var(--r-md); cursor:pointer;
+    transition:border-color .12s, box-shadow .12s, transform .12s; }
+  /* the lift is the affordance — it is how a row says "this is a thing you can open" without
+     needing a button drawn on it */
+  .c1:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
+  .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
+  .meta { font-size:var(--t-sm); color:var(--ink-4); margin:2px 0 var(--s4); }
+  .reqs { list-style:none; margin:0; padding:0; }
+  .reqs li { display:flex; gap:var(--s2); font-size:var(--t-sm); color:var(--ink-2); padding:3px 0; }
+  /* ellipsis on the TEXT, not the flex row — a flex item clips mid-word without it, which
+     reads as a rendering fault rather than a deliberate truncation */
+  .reqs li .rt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+  .reqs li .rq { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+    width:18px; flex:none; padding-top:2px; }
+  .reqs .more { color:var(--ink-4); padding-left:26px; }
+
+  .cell { border:1px solid var(--hair); background:var(--paper); border-radius:var(--r-md);
+    min-height:var(--cellh,200px); overflow:hidden; display:flex; flex-direction:column;
+    transition:border-color .12s, box-shadow .12s; }
+  .cell.c-gone { background:transparent; border-style:dashed; }
+  .cell.c-rev { border-color:var(--ai-line); }
+  .cell.c-stale { border-color:var(--bengara-line); }
+  .cell.act { cursor:pointer; }
+  .cell.act:hover { border-color:var(--ink); box-shadow:var(--sh-md); }
+  .cellh { flex:none; padding:var(--s2) var(--s2) 7px; }
+  .cellb { position:relative; flex:1; overflow:hidden; display:flex;
+    align-items:center; justify-content:center; }
+  .frame { position:relative; width:100%; overflow:hidden; }
+  /* A thumbnail is a picture of a screen, not the screen. Live controls inside a 26%-scale
+     preview means clicking a row lands on some button in the prototype instead of opening the
+     row — the prototype is interactive in the detail view, where it is legible enough to use. */
+  .frame iframe { width:${CANVAS_W}px; border:0; transform-origin:top left; display:block;
+    pointer-events:none; }
+  /* a cut-off thumbnail says so — a hard edge reads as "that was the end of the screen" */
+  .frame.cropped:after { content:""; position:absolute; left:0; right:0; bottom:0; height:40px;
+    background:linear-gradient(rgba(253,252,249,0), var(--paper)); }
+  .frame.cropped:before { content:"continues"; position:absolute; right:var(--s2); bottom:3px;
+    z-index:2; font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-4); }
+
+  /* Header, body, footer — a real app layout. The gate bar used to be sticky INSIDE the scroll,
+     so it floated over the requirement text behind it and read as a broken row. A verdict bar
+     belongs to the window, not to the document it is scrolling past. */
+  .dt { position:fixed; inset:0; background:var(--canvas); z-index:20;
+    display:flex; flex-direction:column; }
+  /* An author display declaration beats the hidden attribute's UA display:none. Without this
+     every detail view renders at once, stacked, and you see whichever is last in the DOM — which
+     looks like the router picking the wrong screen rather than none of them being hidden. */
+  .dt[hidden] { display:none; }
+  .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
+    width:100%; max-width:1760px; margin:0 auto; padding:var(--s4) var(--s6);
+    border-bottom:1px solid var(--hair); background:var(--paper); }
+  /* Each column scrolls on its own. The PRD is a long read; the draft and the screen are single
+     images. Scrolling them as one block meant reading requirement six scrolled both pictures off
+     the screen — so the one comparison the whole view exists for became impossible to hold. */
+  .dtscroll { flex:1; overflow:hidden; padding:var(--s5) var(--s6) var(--s5); }
+  .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
+    max-width:1760px; margin:0 auto; height:100%; align-items:stretch; }
+  .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
+  .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(240px,.8fr) 1fr 1fr minmax(260px,.8fr); }
+  .dtp { display:flex; flex-direction:column; min-height:0; }
+  .dtp > .dtl { flex:none; }
+  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:auto; flex:1; min-height:0; }
+  .bigshot { background:var(--wash); }
+  .bigshot img { width:100%; display:block; }
+
+  .e2e { padding:var(--s3) var(--s4) var(--s4); }
+  .e2emeta { font-size:var(--t-sm); color:var(--ink-4); padding-bottom:var(--s3);
+    border-bottom:1px solid var(--hair); margin-bottom:var(--s2); display:flex;
+    flex-direction:column; gap:3px; }
+  .e2emeta b { color:var(--ink-2); font-weight:400; }
+  .e2emeta .warn { color:var(--bengara); }
+  .tst { padding:var(--s3) 0; border-bottom:1px solid var(--hair); }
+  .tst:last-child { border-bottom:0; }
+  .tst .th { display:flex; align-items:baseline; gap:var(--s2); }
+  .tst .mark { position:relative; top:1px; }
+  .tst.p .mark { color:var(--koke); } .tst.f .mark { color:var(--bengara); }
+  .tst .tt { flex:1; font-size:var(--t-sm); color:var(--ink-2); }
+  .tst .ms { font-size:var(--t-micro); color:var(--ink-4); font-family:var(--mono); }
+  .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
+    font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
+  .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
+    border-radius:var(--r-md); }
+  .dtl { padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); }
+  .prd { padding:0 var(--s5) var(--s4); }
+  .prd article { padding:var(--s4) 0; border-bottom:1px solid var(--hair); }
+  .prd article:last-child { border-bottom:0; }
+  .prd article.moved, .prd article.added { background:var(--bengara-tint); margin:0 calc(var(--s5) * -1);
+    padding:var(--s4) var(--s5); border-left:3px solid var(--bengara-line); }
+  .prd article.added { background:var(--ai-tint); border-left-color:var(--ai-line); }
+  .prd article.removed { color:var(--ink-4); font-size:var(--t-sm); }
+  .prd h3 { display:flex; gap:var(--s2); margin:0 0 var(--s2); align-items:baseline; }
+  .prd h3 .chip { margin-left:auto; }
+  .dth2 { display:flex; align-items:center; gap:var(--s3); }
+  .pseg { margin-left:auto; }
+  .pseg span { padding:3px var(--s2); font-size:var(--t-xs); }
+  .rid { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+    width:20px; flex:none; padding-top:3px; }
+  .prd p { margin:0 0 var(--s2) 28px; font-size:var(--t-sm); line-height:1.75; color:var(--ink-2); }
+  .prd em { color:var(--ink-4); font-style:normal; font-size:var(--t-xs); }
+  .bigframe { overflow:hidden; position:relative; }
+  .bigframe iframe { width:${CANVAS_W}px; height:${CANVAS_H}px; border:0; transform-origin:top left; }
+
+  /* The verdict must never be below the fold. A gate whose buttons you have to go looking for
+     is a gate that gets skipped, and skipping it is the failure this product exists to prevent. */
+  .gb { flex:none; display:flex; align-items:center; gap:var(--s3);
+    background:var(--paper); border-top:1px solid var(--hair);
+    padding:var(--s3) var(--s6); box-shadow:var(--sh-md); }
+  .gb > * { max-width:100%; }
+  .gbin { display:flex; align-items:center; gap:var(--s3); width:100%;
+    max-width:1760px; margin:0 auto; }
+  .gb.open { border-top:2px solid var(--ai); }
+  .gb.ok { border-top:2px solid var(--koke); }
+  .gb.bad { border-top:2px solid var(--bengara); background:var(--bengara-tint); }
+  .gbn { font-size:var(--t-sm); color:var(--ink-4); }
+  .gbw { font-size:var(--t-md); color:var(--bengara); }
+  .why { flex:1; min-width:220px; }
+  .gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+  .kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+    border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+  /* a shortcut hint has to be legible on whatever the button is painted — inherit, don't guess */
+  .btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+  /* every screenshot is clickable — thumbnails render at a third of real size, and gate B's
+     question cannot honestly be answered from a thumbnail */
+  .shot img, .bigshot img { cursor:zoom-in; }
+  .lb { position:fixed; inset:0; z-index:80; background:rgba(28,27,24,.86);
+    display:flex; flex-direction:column; }
+  .lb[hidden] { display:none; }
+  .lbbar { flex:none; display:flex; align-items:center; gap:var(--s3);
+    padding:var(--s3) var(--s5); border-bottom:1px solid rgba(255,255,255,.14); }
+  .lbcap { color:#f4f1ea; font-size:var(--t-sm); }
+  .lbbar .btn { background:transparent; border-color:rgba(255,255,255,.35); color:#f4f1ea; }
+  .lbbar .btn:hover { border-color:#f4f1ea; }
+  .lbstage { flex:1; overflow:auto; display:flex; align-items:flex-start;
+    justify-content:center; padding:var(--s5); cursor:zoom-out; }
+  .lbstage img { max-width:100%; max-height:100%; object-fit:contain;
+    background:var(--paper); box-shadow:var(--sh-lg); }
+  .lbstage.actual { align-items:flex-start; }
+  .lbstage.actual img { max-width:none; max-height:none; }
+
+  .runpanel { position:fixed; right:var(--s5); bottom:var(--s5); z-index:70; width:600px;
+    max-width:calc(100vw - 48px); background:var(--paper); border:1px solid var(--hair-2);
+    border-radius:var(--r-lg); box-shadow:var(--sh-lg); overflow:hidden; }
+  .runpanel[hidden] { display:none; }
+  .rph { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-bottom:1px solid var(--hair); font-size:var(--t-sm); }
+  .rplog { margin:0; padding:var(--s3) var(--s4); height:260px; overflow:auto;
+    font:var(--t-xs)/1.75 var(--mono); color:var(--ink-2); background:var(--canvas);
+    white-space:pre-wrap; }
+  .runlog { margin-top:var(--s4); padding-top:var(--s3); border-top:1px solid var(--hair); }
+  .runrow { display:flex; align-items:center; gap:var(--s2); padding:4px 0;
+    font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
+  .runrow .rr-s { color:var(--ink-4); }
+  .runrow .ms { margin-left:auto; color:var(--ink-4); }
+  .watchtog { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm);
+    color:var(--ink-3); cursor:pointer; }
+  .watchtog input { accent-color:var(--ai); width:13px; height:13px; }
+  .toast { position:fixed; left:50%; bottom:var(--s5); transform:translateX(-50%); z-index:60;
+    background:var(--ink); color:var(--paper); padding:var(--s3) var(--s4);
+    font-size:var(--t-sm); max-width:70vw; border-radius:var(--r); box-shadow:var(--sh-lg); }
+  .kbd { border-radius:3px; }
+  /* the sticky column header only earns a shadow once content is actually running under it */
+  .colhs.stuck { box-shadow:var(--sh-sm); }
+</style>
+
+<div class="top">
+  <div class="brand"><span class="logo"></span>Spec board</div>
+  <span class="crumb">plugin-spec · dogfooding itself</span>
+  <span class="grow"></span>
+  <div class="seg" id="filt">
+    <button data-f="all" class="on">All</button>
+    <button data-f="waiting">Waiting on you</button>
+    <button data-f="new">Not started</button>
+  </div>
+  <span class="qwrap"><input id="q" class="input" style="width:250px"
+    placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
+  <span id="shown" class="gbn" style="min-width:64px"></span>
+</div>
+
+<div class="wrap">
+  ${yourTurn === 0 && screens.length ? `<div class="clear">
+    <span class="chip ok"><span class="dot"></span>queue clear</span>
+    Nothing is waiting on you.
+    ${count('screen', 'missing') ? `${count('screen', 'missing')} screen${count('screen', 'missing') === 1 ? '' : 's'} still to build.` : ''}
+    ${count('e2e', 'ranstale') ? `${count('e2e', 'ranstale')} test result${count('e2e', 'ranstale') === 1 ? '' : 's'} predate your latest edit — <code>npm run e2e</code>.` : ''}
+    ${!count('screen', 'missing') && !count('e2e', 'ranstale') ? 'Every screen is built, approved and proven.' : ''}
+  </div>` : ''}
+  <div class="stats">
+    <span class="stat"><b>${screens.length}</b> screens</span>
+    <span class="stat"><b>${count('draft', 'ok', 'stale', 'review')}</b> drafted</span>
+    <span class="stat"><b>${count('screen', 'ok', 'stale', 'review')}</b> built</span>
+    <span class="stat"><b>${count('e2e', 'pass')}</b> tested</span>
+    <span class="stat hot"><b>${yourTurn}</b> waiting on you</span>
+    <span class="grow"></span>
+    <span class="chip run" id="runflag" hidden><span class="dot"></span>tests running</span>
+    <button class="btn sm" id="runall">Run all tests</button>
+    <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
+    <button class="btn sm gh" id="toggle-all">Collapse all</button>
+  </div>
+
+  <div class="colhs">
+    <div class="lbl">1 · PRD — the source of truth</div>
+    <div class="lbl">2 · Draft — the wireframe</div>
+    <div class="lbl">3 · Screen — what got built</div>
+    <div class="lbl">4 · E2E — what proves it</div>
+  </div>
+
+  ${groups}
+  <div class="none" id="none">Nothing matches.</div>
+</div>
+
+<div class="runpanel" id="runpanel" hidden>
+  <div class="rph"><span class="chip run" id="rpchip"><span class="dot"></span>running</span>
+    <span id="rptitle">tests</span><span class="grow"></span>
+    <button class="btn sm gh" id="rpbg">Run in background</button>
+    <button class="btn sm gh" id="rpclose">Close</button></div>
+  <pre class="rplog" id="rplog"></pre>
+</div>
+
+<div class="lb" id="lb" hidden>
+  <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
+    <button class="btn sm" id="lbzoom">Actual size</button>
+    <button class="btn sm gh" id="lbclose">Close<span class="kbd">esc</span></button></div>
+  <div class="lbstage" id="lbstage"><img id="lbimg" alt=""></div>
+</div>
+${detail}
+
+<script>
+  // Drafts are authored at ${CANVAS_W}px and shown scaled, so a thumbnail is the real artifact
+  // rather than a picture of one — it cannot drift from the file it came from.
+  // A thumbnail is for RECOGNISING a screen, not reading it — that is what the detail view is
+  // for. Sized to full height the board draft alone made a 430px row, so barely one row fitted
+  // on screen and scanning forty of them would be impossible.
+  const W = ${CANVAS_W}, FALLBACK_H = ${CANVAS_H}, THUMB_MAX = 280
+  // Drafts vary in length — the board draft is 1481px, init is 729px. A fixed canvas height
+  // silently cropped the tall ones, which is the board breaking its own R3 on its own row.
+  // Measure each draft instead; srcdoc iframes are same-origin so the height is readable.
+  function fit () {
+    for (const f of document.querySelectorAll('.frame, .bigframe')) {
+      if (!f.clientWidth) continue
+      const fr = f.querySelector('iframe')
+      // documentElement is null for an srcdoc iframe that has not parsed yet. Reading through it
+      // threw on the very first fit(), and because this runs at the top of the script it took
+      // every listener below it with it — filters, search, the detail view, the gate buttons.
+      // Layout measurement must never be able to disarm the page.
+      const doc = fr.contentDocument
+      const h = doc?.documentElement?.scrollHeight || FALLBACK_H
+      const s = f.clientWidth / W
+      fr.style.height = h + 'px'
+      fr.style.transform = 'scale(' + s + ')'
+      if (f.classList.contains('bigframe')) { f.style.height = (h * s) + 'px'; continue }
+      // In a cell the thumbnail is capped so one long screen cannot push every other row off
+      // the page — and when it IS cut, the cell says so rather than pretending that was the end.
+      const full = h * s
+      const shown = Math.min(full, THUMB_MAX)
+      f.style.height = shown + 'px'
+      const cell = f.closest('.cell')
+      if (cell) cell.style.height = (shown + 31) + 'px'
+      f.classList.toggle('cropped', full > shown + 2)
+    }
+  }
+  // Belt and braces: nothing about sizing a picture is worth breaking the whole board over.
+  const safeFit = () => { try { fit() } catch (err) { console.error('fit', err) } }
+  const colhs = document.querySelector('.colhs')
+  addEventListener('scroll', () => colhs.classList.toggle('stuck', scrollY > 8), { passive: true })
+  addEventListener('resize', safeFit)
+  for (const fr of document.querySelectorAll('iframe')) fr.addEventListener('load', safeFit)
+  safeFit(); setTimeout(safeFit, 60)
+
+  // filtering ------------------------------------------------------------
+  let mode = 'all'
+  const q = document.getElementById('q')
+  function apply () {
+    const term = q.value.trim().toLowerCase()
+    let shown = 0
+    for (const r of document.querySelectorAll('.row')) {
+      const ok = (mode === 'all' || (mode === 'waiting' && r.dataset.waiting === '1')
+        || (mode === 'new' && r.dataset.started === '0'))
+        && (!term || r.dataset.q.includes(term))
+      r.classList.toggle('gone', !ok); if (ok) shown++
+    }
+    for (const g of document.querySelectorAll('.grp'))
+      g.style.display = g.querySelectorAll('.row:not(.gone)').length ? '' : 'none'
+    document.getElementById('none').style.display = shown ? 'none' : 'block'
+    // Say how much is hidden. A filtered board that looks like the whole board is how you
+    // conclude a screen does not exist when it is one click away.
+    const tot = document.querySelectorAll('.row').length
+    document.getElementById('shown').textContent = shown === tot ? '' : shown + ' of ' + tot
+    document.querySelector('.qwrap').classList.toggle('has', !!term)
+    // "Nothing matches" is wrong when a filter is the reason — name which one it was.
+    document.getElementById('none').textContent = term
+      ? 'Nothing matches “' + term + '”.'
+      : mode === 'waiting' ? 'Nothing is waiting on you.'
+        : mode === 'new' ? 'Every screen has a draft.' : 'Nothing matches.'
+    safeFit()
+  }
+  q.addEventListener('input', apply)
+  document.getElementById('qx').addEventListener('click', () => { q.value = ''; apply(); q.focus() })
+  for (const b of document.querySelectorAll('#filt button'))
+    b.addEventListener('click', () => {
+      mode = b.dataset.f
+      document.querySelectorAll('#filt button').forEach(x => x.classList.toggle('on', x === b))
+      apply()
+    })
+  for (const t of document.querySelectorAll('.tw'))
+    t.addEventListener('click', () => {
+      const g = t.closest('.grp'); g.classList.toggle('shut')
+      t.textContent = g.classList.contains('shut') ? '+' : '—'
+    })
+  document.getElementById('toggle-all').addEventListener('click', e => {
+    const shut = e.target.textContent.startsWith('Collapse')
+    document.querySelectorAll('.grp').forEach(g => {
+      g.classList.toggle('shut', shut)
+      g.querySelector('.tw').textContent = shut ? '+' : '—'
+    })
+    e.target.textContent = shut ? 'Expand all' : 'Collapse all'
+  })
+
+  // detail + routing -----------------------------------------------------
+  // Every detail view has an address. Without one a refresh dumps you back on the board, the
+  // back button leaves the page entirely, and a screen cannot be linked to anyone.
+  const SCREENS = ${JSON.stringify(screens.map(s => s.name))}
+  const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+  const show = i => { closeAll(); document.querySelector('.dt[data-i="' + i + '"]').hidden = false; safeFit() }
+  const open = (i, push = true) => {
+    show(i)
+    if (push) history.pushState({ i }, '', '#/' + SCREENS[i])
+  }
+  const route = () => {
+    const name = decodeURIComponent(location.hash.replace(/^#\\//, ''))
+    const i = SCREENS.indexOf(name)
+    if (i >= 0) show(i); else closeAll()
+  }
+  // Both: popstate covers back/forward, hashchange covers a URL typed or pasted into the bar of
+  // an already-open board — that is a same-document navigation and never reloads the page.
+  addEventListener('popstate', route)
+  addEventListener('hashchange', route)
+
+  for (const c of document.querySelectorAll('.c1'))
+    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
+  for (const c of document.querySelectorAll('.cell.act'))
+    c.addEventListener('click', () => open(c.closest('.row').dataset.i))
+  for (const b of document.querySelectorAll('.close'))
+    b.addEventListener('click', () => { closeAll(); history.pushState(null, '', location.pathname) })
+
+  // Show only what moved, by default, wherever we know what moved.
+  for (const seg of document.querySelectorAll('.pseg')) {
+    const apply2 = () => {
+      const only = seg.querySelector('.on').dataset.v === 'changed'
+      seg.closest('.dtp').querySelectorAll('.prd article[data-unchanged]')
+        .forEach(a => { a.hidden = only })
+    }
+    for (const s of seg.querySelectorAll('span')) s.addEventListener('click', () => {
+      seg.querySelectorAll('span').forEach(x => x.classList.toggle('on', x === s))
+      apply2()
+    })
+    apply2()
+  }
+
+  // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
+  // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
+  const WAITING = ${JSON.stringify(screens.map((s, i) => (isWaiting(s) ? i : -1)).filter(i => i >= 0))}
+  for (const b of document.querySelectorAll('.nextw')) {
+    if (WAITING.length < 2) { b.hidden = true; continue }
+    b.addEventListener('click', () => {
+      const here = Number(b.dataset.i)
+      const next = WAITING.find(i => i > here) ?? WAITING[0]
+      document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+      open(next)
+      scrollTo(0, 0)
+    })
+  }
+  addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return
+    if (e.key === 'Escape') {
+      if (!document.getElementById('lb').hidden) { document.getElementById('lb').hidden = true; return }
+      if (!document.getElementById('runpanel').hidden) { document.getElementById('rpclose').click(); return }
+      closeAll(); history.pushState(null, '', location.pathname)
+    }
+    const openDt = [...document.querySelectorAll('.dt')].find(d => !d.hidden)
+    if (openDt && (e.key === 'j' || e.key === 'ArrowRight')) openDt.querySelector('.nextw').click()
+    if (openDt && e.key === 'r') { const b = openDt.querySelector('.runbtn'); if (b) b.click() }
+  })
+
+  // gate actions ---------------------------------------------------------
+  // These POST to the board server. Opened as a plain file the board still renders; it just
+  // cannot record a decision, and says so rather than silently doing nothing.
+  function toast (msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg
+    document.body.appendChild(t); setTimeout(() => t.remove(), 5000)
+  }
+  // The escape hatch: the draft is a plain HTML file, and the watcher already rebuilds on save.
+  // So "edit it yourself" is a real answer today — it just was not discoverable from the board.
+  for (const b of document.querySelectorAll('.edit')) {
+    b.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(b.dataset.path) } catch (e) { /* clipboard denied */ }
+      toast(b.dataset.path + ' — path copied. Edit it and the board reloads the moment you save.')
+    })
+  }
+
+  // You have just typed the entire decision. Making you then find and hit a button is a step
+  // that exists for no reason, and it is where a half-written rejection gets abandoned.
+  for (const w of document.querySelectorAll('.gb .why')) {
+    w.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return
+      e.preventDefault()
+      w.closest('.gb').querySelector('[data-act="reject"]').click()
+    })
+  }
+
+  for (const b of document.querySelectorAll('[data-act]')) {
+    b.addEventListener('click', async () => {
+      const box = b.closest('.gb')
+      const why = box.querySelector('.why')
+      // Ask before the request, not after it fails — the sentence IS the rejection.
+      if (b.dataset.act === 'reject' && !why.value.trim()) {
+        why.focus()
+        why.placeholder = 'Say what is wrong — this is what the redraft gets'
+        why.style.borderColor = 'var(--bengara)'
+        return
+      }
+      try {
+        const res = await fetch('/api/gate', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            screen: b.dataset.screen, gate: b.dataset.gate || 'draft', act: b.dataset.act,
+            why: why ? why.value : ''
+          })
+        })
+        if (!res.ok) throw new Error((await res.text()).slice(0, 120))
+        // Stay on the screen you just judged. Jumping to the next one on its own takes the pace
+        // out of your hands and hides the result of what you just did — you never see the cell
+        // turn green, so you cannot tell an approval from a misclick. The hash already points at
+        // this screen, so a plain reload lands you back on it showing the new state, and moving
+        // on is a button you press when you are ready.
+        location.reload()
+      } catch (err) {
+        toast('Decisions need the board server — run  npm run board  (' + err.message + ')')
+      }
+    })
+  }
+
+  route()
+
+  // running the suite ----------------------------------------------------
+  const panel = document.getElementById('runpanel')
+  const rplog = document.getElementById('rplog')
+  const rpchip = document.getElementById('rpchip')
+  let runDone = false
+
+  async function runTests (screen) {
+    rplog.textContent = ''
+    runDone = false
+    rpchip.className = 'chip run'
+    rpchip.innerHTML = '<span class="dot"></span>running'
+    document.getElementById('rptitle').textContent = screen ? screen + ' · test.spec.ts' : 'all tests'
+    panel.hidden = false
+    try {
+      const res = await fetch('/api/run', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ screen })
+      })
+      if (!res.ok) throw new Error((await res.text()).slice(0, 120))
+    } catch (err) {
+      rpchip.className = 'chip bad'; rpchip.textContent = 'refused'
+      rplog.textContent = err.message
+      runDone = true
+    }
+  }
+  // Dispatch reuses the run panel wholesale — a job is a job, and a second panel would be a
+  // second place to look for "is something happening".
+  async function dispatch (screen) {
+    rplog.textContent = ''
+    runDone = false
+    rpchip.className = 'chip run'
+    rpchip.innerHTML = '<span class="dot"></span>redrafting'
+    document.getElementById('rptitle').textContent = screen + ' · draft.html'
+    panel.hidden = false
+    try {
+      const res = await fetch('/api/dispatch', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ screen })
+      })
+      if (!res.ok) throw new Error((await res.text()).slice(0, 160))
+    } catch (err) {
+      rpchip.className = 'chip bad'; rpchip.textContent = 'refused'
+      rplog.textContent = err.message
+      runDone = true
+    }
+  }
+  for (const b of document.querySelectorAll('[data-dispatch]'))
+    b.addEventListener('click', () => dispatch(b.dataset.dispatch))
+
+  document.getElementById('runall').addEventListener('click', () => runTests(null))
+  for (const b of document.querySelectorAll('.runbtn'))
+    b.addEventListener('click', () => runTests(b.dataset.run))
+  document.getElementById('rpclose').addEventListener('click', () => {
+    panel.hidden = true
+    // a finished run changed the board, so leaving the panel is the moment to show it
+    if (runDone) location.reload()
+  })
+  // Background is not a different run — it is the same run without the window. The header chip
+  // keeps it visible, because a job you cannot see is a job you start twice.
+  document.getElementById('rpbg').addEventListener('click', () => { panel.hidden = true })
+
+  const runflag = document.getElementById('runflag')
+  const setRunning = on => {
+    runflag.hidden = !on
+    document.getElementById('runall').disabled = on
+  }
+
+  // Watch: re-run the moment a PRD, draft or spec changes, so the E2E column stops being the one
+  // cell you have to remember to refresh by hand.
+  const watchBox = document.getElementById('watch')
+  watchBox.addEventListener('change', async () => {
+    await fetch('/api/watch', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ on: watchBox.checked })
+    }).catch(() => {})
+  })
+
+  // recent runs, fetched rather than baked in — the board is rebuilt by a run, so a run log
+  // written into the HTML would always be one run behind itself
+  async function loadRuns () {
+    let data
+    try { data = await (await fetch('/api/runs')).json() } catch (e) { return }
+    watchBox.checked = !!data.watch
+    setRunning(!!data.running)
+    for (const box of document.querySelectorAll('.runlog')) {
+      const mine = data.runs.filter(r => r.screen === box.dataset.screen || r.screen === 'all').slice(0, 5)
+      box.querySelector('.runrows').innerHTML = mine.length
+        ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
+            (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
+            '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
+            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>').join('')
+        : '<div class="runrow ms">no runs recorded yet</div>'
+    }
+  }
+  loadRuns()
+
+  // lightbox -------------------------------------------------------------
+  // Screenshots are the evidence gate B rests on, and they render at a third of their real size.
+  // A judgement about whether the build matches the design cannot be made from a thumbnail.
+  const lb = document.getElementById('lb')
+  const lbimg = document.getElementById('lbimg')
+  const lbstage = document.getElementById('lbstage')
+  const openLb = (src, cap) => {
+    lbimg.src = src
+    document.getElementById('lbcap').textContent = cap
+    lbstage.classList.remove('actual')
+    document.getElementById('lbzoom').textContent = 'Actual size'
+    lb.hidden = false
+  }
+  document.addEventListener('click', e => {
+    const img = e.target.closest('.shot img, .bigshot img')
+    if (!img) return
+    openLb(img.src, img.alt || 'screenshot')
+  })
+  document.getElementById('lbzoom').addEventListener('click', e => {
+    const on = lbstage.classList.toggle('actual')
+    e.target.textContent = on ? 'Fit to window' : 'Actual size'
+  })
+  const closeLb = () => { lb.hidden = true }
+  document.getElementById('lbclose').addEventListener('click', closeLb)
+  lbstage.addEventListener('click', e => { if (e.target === lbstage) closeLb() })
+
+  // live reload ----------------------------------------------------------
+  // A self-reloading page cannot be driven. Under automation a gate POST would notify this very
+  // page, which would reload mid-test and abort the navigation the test had just started —
+  // net::ERR_ABORTED, five specs failing at random. An automated driver does its own reloading.
+  // The trade is explicit: live reload is therefore not covered by the suite.
+  const live = !navigator.webdriver && !location.search.includes('nolive')
+  try {
+    if (!live) throw new Error('automation — live reload off')
+    const es = new EventSource('/api/live')
+    // A reload mid-run would kill the panel you are watching, so hold it until the run finishes.
+    es.addEventListener('change', () => { if (!panel.hidden && !runDone) return; location.reload() })
+    es.addEventListener('run', e => {
+      const d = JSON.parse(e.data)
+      if (d.state === 'started') {
+        setRunning(true)
+        // watch mode starts runs nobody clicked — show what is happening without stealing focus
+        if (panel.hidden) { rplog.textContent = ''; runDone = false }
+        document.getElementById('rptitle').textContent =
+          (d.screen === 'all' ? 'all tests' : d.screen + ' · test.spec.ts')
+      } else if (d.state === 'line') {
+        rplog.textContent += d.line + '\\n'
+        rplog.scrollTop = rplog.scrollHeight
+      } else if (d.state === 'done') {
+        runDone = true
+        setRunning(false)
+        // finished while you were not watching — bring the board up to date on its own
+        if (panel.hidden) { loadRuns(); setTimeout(() => location.reload(), 300); return }
+        rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
+        rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
+        rplog.textContent += '\\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +
+          ' · ' + Math.round(d.ms / 100) / 10 + 's\\n'
+        rplog.scrollTop = rplog.scrollHeight
+        loadRuns()
+      }
+    })
+  } catch (e) { /* served statically — no live reload, everything else still works */ }
+</script>
+`
+
+  // The board's script is written INSIDE a template literal, so an unescaped \n or backtick in
+  // the emitted JS silently becomes real whitespace and breaks the whole file — which disables
+  // every listener on the page while the board still renders perfectly. That has now shipped a
+  // dead page twice. Parse it before writing; a build that cannot produce working JS must fail
+  // loudly rather than hand over something that merely looks right.
+  const script = html.match(/<script>([\s\S]*)<\/script>/)
+  if (script) {
+    try {
+      new Function(script[1])
+    } catch (err) {
+      throw new Error(`board.html script does not parse — refusing to write it: ${err.message}`)
+    }
+  }
+
+  writeFileSync(join(ROOT, 'board.html'), html)
+  return { screens: screens.length, areas: areas.length, yourTurn, reqs: screens.reduce((n, s) => n + s.reqs.length, 0) }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const r = build()
+  console.log(`board.html — ${r.screens} screens in ${r.areas} areas, ${r.reqs} requirements, ${r.yourTurn} waiting`)
+}

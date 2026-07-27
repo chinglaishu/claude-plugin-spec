@@ -1,0 +1,401 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Board — plugin-spec</title>
+<link rel="stylesheet" href="../_design.css">
+<style>
+  /* Interactive draft. Fake data, no backend, no routing — but every control works, because
+     "is this what I meant" is unanswerable about a click you cannot make. */
+  .grid { display:grid; grid-template-columns:320px repeat(3,1fr); gap:11px; }
+  .colh { display:flex; align-items:baseline; gap:7px; padding:0 3px 4px; }
+  .colh .n { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); }
+  .colh .t { font-size:var(--t-sm); color:var(--dim); }
+  .colh .s { font-size:var(--t-xs); color:var(--mute); margin-left:auto; }
+
+  .grph { display:flex; align-items:center; gap:9px; padding:15px 3px 7px; cursor:pointer; }
+  .grph h2 { font-size:var(--t-md); }
+  .grph .tw { color:var(--mute); font-size:var(--t-xs); transition:transform .12s; }
+  .grp.shut .tw { transform:rotate(-90deg); }
+  .grp.shut .rows { display:none; }
+  .rows { display:flex; flex-direction:column; gap:11px; }
+  .grp.hide, .row.hide { display:none; }
+
+  .row { display:grid; grid-template-columns:320px repeat(3,1fr); gap:11px; }
+  .c1 { background:var(--card); border:1px solid var(--line); border-radius:var(--rc);
+    padding:12px 14px; cursor:pointer; transition:border-color .12s; }
+  .c1:hover { border-color:var(--line3); }
+  .c1 .h { display:flex; align-items:baseline; gap:8px; }
+  .c1 .nm { font-size:var(--t-lg); }
+  .c1 .rt { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); margin-left:auto; }
+  .c1 .mt { font-size:var(--t-xs); color:var(--mute); margin:1px 0 8px; }
+  .rq { display:flex; gap:7px; font-size:var(--t-sm); color:var(--dim); padding:2px 0; }
+  .rq .id { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); width:17px; flex:none; padding-top:2px; }
+  .rq .tx { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .more { font-size:var(--t-xs); color:var(--mute); padding:3px 0 0 24px; }
+
+  .cell { position:relative; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--rc); height:166px; overflow:hidden; transition:border-color .12s; }
+  .cell.gone { background:transparent; border-style:dashed; border-color:var(--line2);
+    display:flex; align-items:center; justify-content:center; }
+  .cell.rev { border-color:var(--acc-line); } .cell.stale { border-color:var(--warn-line); }
+  .cell .chip { position:absolute; top:8px; left:8px; z-index:3; }
+  .cell .act { position:absolute; right:8px; bottom:8px; z-index:3; opacity:0; transition:opacity .12s; }
+  .cell:hover .act { opacity:1; }
+  .cell.rev .act, .cell.stale .act { opacity:1; }
+  .empty { text-align:center; } .empty .e1 { font-size:var(--t-sm); color:var(--mute); margin-bottom:8px; }
+
+  .mini { position:absolute; inset:24px 11px 11px; }
+  .w { background:var(--paper); border:1px solid var(--line); border-radius:var(--r-sm); height:100%; padding:8px 9px; overflow:hidden; }
+  .bar { height:7px; border-radius:var(--r-sm); background:var(--line); margin-bottom:6px; }
+  .bar.d { background:var(--line2); } .bar.k { background:var(--hair-2); }
+  .cols2 { display:flex; gap:6px; } .cols2 > div { flex:1; }
+  .blk { border:1px solid var(--line); border-radius:var(--r-sm); height:24px; margin-bottom:5px; background:var(--sunk); }
+  .shot { position:absolute; inset:24px 11px 11px; border:1px solid var(--line2); border-radius:var(--r-sm);
+    background:linear-gradient(var(--paper),var(--wash)); padding:9px 10px; }
+  .pass { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:5px; }
+  .tk { width:28px; height:28px; border-radius:50%; background:var(--ok-bg); color:var(--ok);
+    display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .ms { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); }
+
+  .none { display:none; padding:44px 0; text-align:center; color:var(--mute); font-size:var(--t-md); }
+  .foot { display:flex; align-items:center; gap:12px; margin-top:22px; padding-top:13px;
+    border-top:1px solid var(--line); font-size:var(--t-xs); color:var(--mute); }
+
+  .sheet { position:absolute; left:0; right:0; top:0; z-index:20; display:none; }
+  .sheet.on { display:block; }
+  .scrim { position:absolute; inset:0; background:rgba(28,27,24,.10); }
+  .box { position:relative; width:660px; margin:70px auto; background:var(--card);
+    border:1px solid var(--line2); border-radius:var(--r-lg); box-shadow:var(--sh-lg); overflow:hidden; }
+  .box .bh { display:flex; align-items:center; gap:10px; padding:13px 17px; border-bottom:1px solid var(--line); }
+  .box .bb { padding:17px; }
+  .box .bf { display:flex; gap:9px; align-items:center; padding:12px 17px; border-top:1px solid var(--line); }
+</style>
+
+<div class="top">
+  <div class="brand"><div class="logo"></div>Spec board</div>
+  <span class="crumb">plugin-spec</span>
+  <div class="spacer"></div>
+  <div class="seg" id="filt">
+    <span class="on" data-f="all">All</span><span data-f="waiting">Waiting on you</span><span data-f="new">Not started</span>
+  </div>
+  <input class="input" id="q" style="width:230px" placeholder="Search screens and requirements">
+  <button class="btn sm" id="conf">Conflicts <span class="chip stale" style="margin-left:5px">2</span></button>
+  <button class="btn sm pri">+ Screen</button>
+</div>
+
+<div class="page" style="position:relative">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+    <div class="stat"><b>6</b> screens</div>
+    <div class="stat"><b>6</b> drafted</div>
+    <div class="stat"><b>2</b> built</div>
+    <div class="stat"><b>1</b> tested</div>
+    <div class="stat hot"><b id="turn">4</b> waiting on you</div>
+    <div class="spacer"></div>
+    <button class="btn sm gh" id="collapse">Collapse all</button>
+  </div>
+
+  <div class="grid">
+    <div class="colh"><span class="n">1</span><span class="t">PRD — the source of truth</span></div>
+    <div class="colh"><span class="n">2</span><span class="t">Draft</span><span class="s">gate A</span></div>
+    <div class="colh"><span class="n">3</span><span class="t">Screen</span><span class="s">gate B</span></div>
+    <div class="colh"><span class="n">4</span><span class="t">E2E</span><span class="s">automatic</span></div>
+  </div>
+
+  <section class="grp" data-area="Core">
+    <div class="grph"><span class="tw">▾</span><h2>Core</h2><span class="gc">2 screens</span>
+      <span class="chip rev gwait">2 waiting on you</span></div>
+    <div class="rows">
+
+      <div class="row" data-wait="1" data-new="0" data-q="conflicts /conflicts one fact two ways positions canon rescan">
+        <div class="c1">
+          <div class="h"><span class="nm">Conflicts</span><span class="rt">/conflicts</span></div>
+          <div class="mt">5 requirements · edited 3 days ago</div>
+          <div class="rq"><span class="id">R1</span><span class="tx">A conflict is one fact stated two ways</span></div>
+          <div class="rq"><span class="id">R2</span><span class="tx">Both positions shown in full</span></div>
+          <div class="rq"><span class="id">R3</span><span class="tx">You pick which side is canon</span></div>
+          <div class="more">+2 more</div>
+        </div>
+        <div class="cell"><span class="chip ok"><span class="dot"></span>ok</span>
+          <button class="btn sm act" data-open="gate-a">Reopen gate A</button>
+          <div class="mini"><div class="w"><div class="bar" style="width:38%"></div>
+            <div class="blk"></div><div class="blk"></div><div class="bar d" style="width:60%"></div></div></div>
+        </div>
+        <div class="cell"><span class="chip ok"><span class="dot"></span>ok</span>
+          <button class="btn sm act" data-open="gate-b">Reopen gate B</button>
+          <div class="shot"><div class="bar k" style="width:32%"></div>
+            <div class="cols2"><div><div class="blk"></div></div><div><div class="blk"></div></div></div>
+            <div class="bar" style="width:74%"></div></div>
+        </div>
+        <div class="cell"><span class="chip ok"><span class="dot"></span>pass</span>
+          <button class="btn sm act" data-open="run">Run again</button>
+          <div class="pass"><div class="tk">✓</div><div class="ms">4 steps · 1.9s</div></div>
+        </div>
+      </div>
+
+      <div class="row" data-wait="1" data-new="0" data-q="board / one row per screen five states red cell button areas filter">
+        <div class="c1">
+          <div class="h"><span class="nm">Board</span><span class="rt">/</span></div>
+          <div class="mt">8 requirements · edited 4 minutes ago</div>
+          <div class="rq"><span class="id">R4</span><span class="tx">Five states, and they are computed</span></div>
+          <div class="rq"><span class="id">R7</span><span class="tx">Grouped into areas, never paginated</span></div>
+          <div class="rq"><span class="id">R8</span><span class="tx">Filter by whose turn, search requirements</span></div>
+          <div class="more">+5 more</div>
+        </div>
+        <div class="cell stale"><span class="chip stale"><span class="dot"></span>stale</span>
+          <button class="btn sm pri act" data-open="gate-a">Review changes</button>
+          <div class="mini"><div class="w"><div class="bar" style="width:44%"></div>
+            <div class="cols2"><div><div class="blk"></div><div class="blk"></div></div>
+              <div><div class="blk"></div><div class="blk"></div></div></div>
+            <div class="bar d" style="width:70%"></div></div></div>
+        </div>
+        <div class="cell"><span class="chip ok"><span class="dot"></span>ok</span>
+          <button class="btn sm act" data-open="gate-b">Reopen gate B</button>
+          <div class="shot"><div class="bar k" style="width:40%"></div>
+            <div class="cols2"><div><div class="blk"></div></div><div><div class="blk"></div></div>
+              <div><div class="blk"></div></div></div><div class="bar" style="width:66%"></div></div>
+        </div>
+        <div class="cell stale"><span class="chip stale"><span class="dot"></span>stale</span>
+          <button class="btn sm act" data-open="run">Recheck</button>
+          <div class="pass"><div class="tk" style="background:var(--warn-bg);color:var(--warn)">!</div>
+            <div class="ms">passed against older PRD</div></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="grp" data-area="Gates">
+    <div class="grph"><span class="tw">▾</span><h2>Gates</h2><span class="gc">2 screens</span>
+      <span class="chip rev gwait">2 waiting on you</span></div>
+    <div class="rows">
+
+      <div class="row" data-wait="1" data-new="0" data-q="gate a draft review prd wireframe side by side highlighted pins hash">
+        <div class="c1">
+          <div class="h"><span class="nm">Gate A — draft review</span><span class="rt">/gate/draft</span></div>
+          <div class="mt">5 requirements · new</div>
+          <div class="rq"><span class="id">R1</span><span class="tx">PRD and wireframe, side by side</span></div>
+          <div class="rq"><span class="id">R2</span><span class="tx">Only requirements that moved are highlighted</span></div>
+          <div class="rq"><span class="id">R3</span><span class="tx">Approving pins the PRD hash</span></div>
+          <div class="more">+2 more</div>
+        </div>
+        <div class="cell rev"><span class="chip rev"><span class="dot"></span>needs review</span>
+          <button class="btn sm pri act" data-open="gate-a">Open gate A</button>
+          <div class="mini"><div class="w"><div class="cols2">
+            <div><div class="bar" style="width:80%"></div><div class="bar" style="width:64%"></div>
+              <div class="bar d" style="width:72%"></div><div class="bar" style="width:50%"></div></div>
+            <div><div class="blk" style="height:58px"></div></div></div></div></div>
+        </div>
+        <div class="cell gone"><div class="empty"><div class="e1">not built</div>
+          <button class="btn sm" data-open="run">Build this screen</button></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the screen</div></div></div>
+      </div>
+
+      <div class="row" data-wait="1" data-new="1" data-q="gate b screen review screenshot pixels identical before after">
+        <div class="c1">
+          <div class="h"><span class="nm">Gate B — screen review</span><span class="rt">/gate/screen</span></div>
+          <div class="mt">5 requirements · new</div>
+          <div class="rq"><span class="id">R1</span><span class="tx">Wireframe and screenshot, side by side</span></div>
+          <div class="rq"><span class="id">R2</span><span class="tx">Unchanged pixels never open the gate</span></div>
+          <div class="rq"><span class="id">R3</span><span class="tx">Previous and current both shown</span></div>
+          <div class="more">+2 more</div>
+        </div>
+        <div class="cell gone"><div class="empty"><div class="e1">no draft</div>
+          <button class="btn sm pri" data-open="run">Draft the wireframe</button></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the draft</div></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the draft</div></div></div>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="grp" data-area="Running">
+    <div class="grph"><span class="tw">▾</span><h2>Running</h2><span class="gc">1 screen</span></div>
+    <div class="rows">
+      <div class="row" data-wait="0" data-new="0" data-q="dispatch panel job log cancel refused queued streaming">
+        <div class="c1">
+          <div class="h"><span class="nm">Dispatch panel</span><span class="rt">/run/:job</span></div>
+          <div class="mt">5 requirements · edited yesterday</div>
+          <div class="rq"><span class="id">R2</span><span class="tx">The work is visible while it runs</span></div>
+          <div class="rq"><span class="id">R4</span><span class="tx">One job per screen at a time</span></div>
+          <div class="rq"><span class="id">R5</span><span class="tx">Cancel actually stops it</span></div>
+          <div class="more">+2 more</div>
+        </div>
+        <div class="cell"><span class="chip ok"><span class="dot"></span>ok</span>
+          <button class="btn sm act" data-open="gate-a">Reopen gate A</button>
+          <div class="mini"><div class="w"><div class="bar" style="width:50%"></div>
+            <div class="blk" style="height:44px"></div><div class="bar d" style="width:66%"></div></div></div>
+        </div>
+        <div class="cell gone"><div class="empty"><div class="e1">not built</div>
+          <button class="btn sm" data-open="run">Build this screen</button></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the screen</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grp" data-area="Setup">
+    <div class="grph"><span class="tw">▾</span><h2>Setup</h2><span class="gc">1 screen</span></div>
+    <div class="rows">
+      <div class="row" data-wait="0" data-new="1" data-q="init crawl routes guess greenfield rerun settled">
+        <div class="c1">
+          <div class="h"><span class="nm">Init</span><span class="rt">/init</span></div>
+          <div class="mt">5 requirements · new</div>
+          <div class="rq"><span class="id">R1</span><span class="tx">Asks what cannot be guessed, nothing else</span></div>
+          <div class="rq"><span class="id">R2</span><span class="tx">An existing app is crawled into rows</span></div>
+          <div class="rq"><span class="id">R3</span><span class="tx">A crawled PRD is marked as a guess</span></div>
+          <div class="more">+2 more</div>
+        </div>
+        <div class="cell gone"><div class="empty"><div class="e1">no draft</div>
+          <button class="btn sm pri" data-open="run">Draft the wireframe</button></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the draft</div></div></div>
+        <div class="cell gone"><div class="empty"><div class="e1">waits for the draft</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="none" id="none">Nothing matches. Clear the search or switch back to All.</div>
+
+  <div class="foot">
+    <span>Every cell computed from file hashes · rebuilt 12s ago</span>
+    <div class="spacer"></div>
+    <span>spec/ · 6 screens · 33 requirements</span>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="scrim"></div>
+    <div class="box">
+      <div class="bh"><span class="chip rev" id="sk">gate A</span><strong style="font-weight:500" id="st">Gate A — Board</strong>
+        <div class="spacer"></div><button class="btn sm gh" id="sx">✕</button></div>
+      <div class="bb" id="sb"></div>
+      <div class="bf" id="sf"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s)
+  const $$ = s => [...document.querySelectorAll(s)]
+
+  let mode = 'all'
+  function apply () {
+    const term = $('#q').value.trim().toLowerCase()
+    let shown = 0
+    for (const r of $$('.row')) {
+      const ok = (mode === 'all' || (mode === 'waiting' && r.dataset.wait === '1')
+        || (mode === 'new' && r.dataset.new === '1')) && (!term || r.dataset.q.includes(term))
+      r.classList.toggle('hide', !ok); if (ok) shown++
+    }
+    for (const g of $$('.grp')) g.classList.toggle('hide', !g.querySelectorAll('.row:not(.hide)').length)
+    $('#none').style.display = shown ? 'none' : 'block'
+  }
+  $('#q').addEventListener('input', apply)
+  for (const s of $$('#filt span')) s.addEventListener('click', () => {
+    mode = s.dataset.f
+    $$('#filt span').forEach(x => x.classList.toggle('on', x === s))
+    apply()
+  })
+  for (const h of $$('.grph')) h.addEventListener('click', () => h.closest('.grp').classList.toggle('shut'))
+  $('#collapse').addEventListener('click', e => {
+    const shut = e.target.textContent.startsWith('Collapse')
+    $$('.grp').forEach(g => g.classList.toggle('shut', shut))
+    e.target.textContent = shut ? 'Expand all' : 'Collapse all'
+  })
+
+  // Clicking a cell is what starts work — so in the draft, clicking a cell has to actually
+  // do something, or gate A cannot tell you whether the interaction is right.
+  const L = { line: 'height:7px;border-radius:var(--r-sm);background:var(--hair);margin-bottom:6px' }
+  const VIEWS = {
+    'gate-a': {
+      kind: 'gate A', tone: 'rev', title: 'Gate A — is this what I meant?',
+      body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div><div class="lbl" style="margin-bottom:8px">1 · PRD <span class="chip stale">2 changed</span></div>
+          <div style="border-left:3px solid var(--bengara-line);background:var(--bengara-tint);padding:8px 10px;margin-bottom:9px">
+            <div style="font-size:var(--t-sm);margin-bottom:5px">R7 — Grouped into areas</div>
+            <div style="${L.line};width:88%"></div><div style="${L.line};width:64%"></div></div>
+          <div style="padding:0 0 0 3px"><div style="font-size:var(--t-sm);margin-bottom:5px">R1 — One row per screen</div>
+            <div style="${L.line};width:80%"></div></div></div>
+        <div><div class="lbl" style="margin-bottom:8px">2 · Draft</div>
+          <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--sunk);height:150px"></div></div>
+      </div>`,
+      foot: `<button class="btn ok" data-resolve="ok">Looks right</button>
+        <span class="gor">or</span>
+        <div class="input ph" style="flex:1">Say what is wrong — one sentence</div>
+        <button class="btn no" data-resolve="no">Send it back<span class="kbd">↵</span></button>`
+    },
+    'gate-b': {
+      kind: 'gate B', tone: 'rev', title: 'Gate B — did you build it?',
+      body: `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div><div class="lbl" style="margin-bottom:8px">2 · Draft — approved</div>
+          <div style="border:1px solid var(--line);border-radius:var(--r-sm);background:var(--sunk);height:150px"></div></div>
+        <div><div class="lbl" style="margin-bottom:8px">3 · Screen — this run</div>
+          <div style="border:1px solid var(--bad-line);border-radius:var(--r-sm);background:var(--bad-bg);height:150px"></div></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:9px;align-items:center">
+        <div class="seg"><span class="on">Side by side</span><span>Overlay</span><span>Difference</span></div>
+        <span class="muted" style="font-size:var(--t-sm)">1 region differs · 4.2% of pixels</span></div>`,
+      foot: `<button class="btn ok" data-resolve="ok">Matches the design</button>
+        <button class="btn no" data-resolve="no">Build missed the design</button>
+        <button class="btn no" data-resolve="no">Design was wrong</button>`
+    },
+    run: {
+      kind: 'running', tone: 'rev', title: 'Draft the wireframe — Init',
+      body: `<div style="font:12px/1.95 var(--mono);color:var(--dim)">
+        <div>0:02 &nbsp;read spec/init/prd.md — 5 requirements</div>
+        <div>0:09 &nbsp;read 2 approved drafts for the house style</div>
+        <div>0:21 &nbsp;write spec/init/draft.html — 148 lines</div>
+        <div>0:38 &nbsp;<span style="color:var(--ok)">✓</span> renders at 1280 — no overflow</div>
+        <div style="color:var(--ink)">1:04 &nbsp;checking every requirement is visible<span
+          style="display:inline-block;width:7px;height:12px;background:var(--ink);vertical-align:-2px"></span></div></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+        <span class="lbl">drafting</span>
+        <div style="flex:1;height:5px;border-radius:var(--r-sm);background:var(--dim-bg);overflow:hidden">
+          <i style="display:block;height:100%;width:62%;background:var(--acc)"></i></div>
+        <span class="muted" style="font-size:var(--t-sm)">4 of 5 requirements placed</span></div>`,
+      foot: `<button class="btn" id="cancel">Cancel</button>
+        <button class="btn gh">Run in background</button>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:var(--t-sm)">gate A opens here when this finishes</span>`
+    },
+    conflicts: {
+      kind: '2 open', tone: 'stale', title: 'Conflicts',
+      body: `<div style="border:1px solid var(--warn-line);border-radius:var(--r-sm);overflow:hidden">
+        <div style="padding:11px 14px;background:var(--wash);border-bottom:1px solid var(--line);font-size:var(--t-md)">
+          How many states a board cell can be in</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr">
+          <div style="padding:13px 15px;background:var(--acc-bg)">
+            <div class="mono" style="font-size:var(--t-xs);color:var(--mute);margin-bottom:7px">spec/board/prd.md · R4</div>
+            <div style="font-size:var(--t-sm)">missing, waiting, needs-review, stale, ok</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:9px;color:var(--acc);font-size:var(--t-sm)">
+              <span class="radio on"></span>This is canon</div></div>
+          <div style="padding:13px 15px;border-left:1px solid var(--line)">
+            <div class="mono" style="font-size:var(--t-xs);color:var(--mute);margin-bottom:7px">spec/init/prd.md · R3</div>
+            <div style="font-size:var(--t-sm)">…stay <b style="font-weight:500">unapproved</b> so the loop starts at gate A</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:9px;color:var(--dim);font-size:var(--t-sm)">
+              <span class="radio"></span>This is canon</div></div></div></div>`,
+      foot: `<button class="btn pri" data-resolve="ok">Resolve — rewrite the loser</button>
+        <div class="input ph" style="flex:1">Note — carried into the rewrite job</div>
+        <span class="muted" style="font-size:var(--t-xs)">makes 3 screens stale</span>`
+    }
+  }
+
+  function openSheet (key) {
+    const v = VIEWS[key]; if (!v) return
+    $('#sk').textContent = v.kind
+    $('#sk').className = 'chip ' + v.tone
+    $('#st').textContent = v.title
+    $('#sb').innerHTML = v.body
+    $('#sf').innerHTML = v.foot
+    $('#sheet').classList.add('on')
+    for (const b of $$('#sf [data-resolve], #sf #cancel'))
+      b.addEventListener('click', () => $('#sheet').classList.remove('on'))
+    for (const g of $$('#sb .seg span')) g.addEventListener('click', () => {
+      $$('#sb .seg span').forEach(x => x.classList.toggle('on', x === g))
+    })
+  }
+  for (const b of $$('[data-open]'))
+    b.addEventListener('click', e => { e.stopPropagation(); openSheet(b.dataset.open) })
+  $('#conf').addEventListener('click', () => openSheet('conflicts'))
+  $('#sx').addEventListener('click', () => $('#sheet').classList.remove('on'))
+  $('.scrim').addEventListener('click', () => $('#sheet').classList.remove('on'))
+  for (const c of $$('.c1')) c.addEventListener('click', () => openSheet('gate-a'))
+  addEventListener('keydown', e => { if (e.key === 'Escape') $('#sheet').classList.remove('on') })
+</script>

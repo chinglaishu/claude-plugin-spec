@@ -1,0 +1,52 @@
+import { defineConfig } from '@playwright/test'
+
+// Tests live NEXT TO the screen they prove — spec/<screen>/test.spec.ts — because that is the
+// only arrangement where a screen with no test is visibly a screen with no test. A central
+// tests/ directory lets coverage rot silently; here the gap is a hole in the row.
+//
+// Each spec writes spec/<screen>/screen.png. That is deliberate: column 3 of the board is a
+// BYPRODUCT of column 4, never a separate capture step. A screenshot that no test produced is a
+// picture of something nobody checked.
+
+// WHERE TO POINT THE TESTS. A project usually already has a dev server running on a port it
+// chose, and starting a second one is how you end up testing a stale copy on the wrong port.
+//   BOARD_URL   — drive an ALREADY-RUNNING site; nothing is started or stopped for you
+//   BOARD_PORT  — same board server, different port (default 4173)
+// With BOARD_URL set we deliberately do not manage the server at all: something you did not
+// start is something you must not kill.
+const PORT = process.env.BOARD_PORT || '4173'
+const EXTERNAL = process.env.BOARD_URL
+const baseURL = EXTERNAL || `http://localhost:${PORT}`
+
+export default defineConfig({
+  testDir: './spec',
+  testMatch: '*/test.spec.ts',
+  // Your approvals are not test fixtures. The specs drive real gates, so they write real state —
+  // snapshot it before and restore it after, or running the suite quietly approves screens you
+  // never reviewed and the board starts lying about exactly what it exists to be honest about.
+  globalSetup: './spec/_state-guard.ts',
+  globalTeardown: './spec/_state-guard-teardown.ts',
+  // ONE worker, not just serial-within-a-file. Every spec drives the same server and the same
+  // spec/*/state.json on disk, so approving in one file while another asserts the board's counts
+  // is a race — and it showed up exactly as you would fear: green alone, red in the suite.
+  fullyParallel: false,
+  workers: 1,
+  reporter: [['json', { outputFile: 'spec/_results.json' }], ['list']],
+  use: {
+    baseURL,
+    // Screenshots feed gate B, where the question is "did this change on purpose". Animation and
+    // a moving caret both change pixels without anything changing, so both are pinned off.
+    viewport: { width: 1440, height: 900 },
+    trace: 'off'
+  },
+  ...(EXTERNAL ? {} : {
+    webServer: {
+      command: `node tools/serve-board.mjs`,
+      env: { PORT },
+      url: baseURL,
+      // reuse whatever is already listening — the common case is that you left npm run board up
+      reuseExistingServer: true,
+      timeout: 20000
+    }
+  })
+})

@@ -1,0 +1,157 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Gate B — screen review</title>
+<link rel="stylesheet" href="../_design.css">
+<style>
+  .ask { display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
+  .ask h1 { font-size:var(--t-xl); }
+  .ask .q { font-size:var(--t-md); color:var(--dim); }
+  .split { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:var(--rc); overflow:hidden; }
+  .panel > header { display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+    padding:var(--s3) var(--s4); border-bottom:1px solid var(--line); }
+  .stage { padding:16px; background:var(--sunk); height:432px; }
+  .art { background:var(--card); border:1px solid var(--line2); border-radius:var(--r-md); height:100%;
+    padding:13px 15px; overflow:hidden; }
+  .art.shot { background:linear-gradient(var(--paper),var(--paper)); }
+  .arttop { display:flex; align-items:center; gap:8px; padding-bottom:10px;
+    border-bottom:1px solid var(--line); margin-bottom:12px; }
+  .sq { width:15px; height:15px; border-radius:var(--r-sm); background:var(--ink); }
+  .cols { display:grid; grid-template-columns:1.1fr 1fr 1fr 1fr; gap:8px; margin-bottom:10px; }
+  .bar { height:8px; border-radius:var(--r-sm); background:var(--line); margin-bottom:6px; }
+  .bar.d { background:var(--line2); }
+  .tile { border:1px solid var(--line); border-radius:var(--r-sm); height:74px; background:var(--sunk); }
+  .tile.off { border-color:var(--bad-line); background:var(--bad-bg); }
+
+  .diffbar { display:flex; align-items:center; gap:10px; margin:16px 0 12px; }
+  .strip { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .th { background:var(--card); border:1px solid var(--line); border-radius:var(--rc); overflow:hidden; }
+  .th .cap { display:flex; align-items:center; gap:8px; padding:9px 13px; border-bottom:1px solid var(--line); }
+  .th .img { height:112px; background:var(--sunk); position:relative; }
+  .th .img.now:after { content:""; position:absolute; left:14%; top:26%; width:34%; height:38%;
+    border:2px solid var(--bad); border-radius:var(--r-sm); background:rgba(141,74,56,.09); }
+  .actions { display:flex; align-items:center; gap:10px; background:var(--card);
+    border:1px solid var(--line); border-radius:var(--rc); padding:12px 16px; margin-top:16px; }
+  .pin { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); }
+</style>
+
+<div class="top">
+  <a class="btn sm gh" href="/">← Board</a>
+  <div class="brand" style="font-size:14px">Gate B</div>
+  <span class="crumb">conflicts · <span class="mono">spec/conflicts/</span></span>
+  <div class="spacer"></div>
+  <span class="muted" style="font-size:var(--t-sm)">3 of 4 waiting on you</span>
+  <button class="btn sm">Next →</button>
+</div>
+
+<div class="page">
+  <div class="ask">
+    <h1>Did you build it?</h1>
+    <span class="q">The screenshot changed on the last E2E run. Identical pixels never open this gate.</span>
+  </div>
+
+  <div class="split">
+    <div class="panel">
+      <header><span class="lbl">2 · Draft — approved</span>
+        <span class="pin">4f2a91c · 6 days ago</span></header>
+      <div class="stage">
+        <div class="art">
+          <div class="arttop"><div class="sq"></div><strong style="font-weight:500;font-size:var(--t-sm)">Conflicts</strong>
+            <div class="spacer"></div><span class="chip">2 open</span></div>
+          <div class="cols"><div class="lbl">position a</div><div class="lbl">position b</div><div></div><div></div></div>
+          <div class="cols"><div class="tile"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+          <div class="bar" style="width:52%"></div>
+          <div class="bar d" style="width:78%"></div>
+          <div class="bar" style="width:40%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <header><span class="lbl">3 · Screen — this run</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="chip bad"><span class="dot"></span>changed</span>
+          <span class="pin">run #142 · 2 min ago</span>
+        </div>
+      </header>
+      <div class="stage">
+        <div class="art shot">
+          <div class="arttop"><div class="sq"></div><strong style="font-weight:500;font-size:var(--t-sm)">Conflicts</strong>
+            <div class="spacer"></div><span class="chip">2 open</span></div>
+          <div class="cols"><div class="lbl">position a</div><div class="lbl">position b</div><div></div><div></div></div>
+          <div class="cols"><div class="tile off"></div><div class="tile"></div><div class="tile"></div><div class="tile"></div></div>
+          <div class="bar" style="width:52%"></div>
+          <div class="bar d" style="width:35%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="diffbar">
+    <div class="seg"><span class="on">Side by side</span><span>Overlay</span><span>Difference</span></div>
+    <span class="muted" style="font-size:var(--t-sm)">1 region differs · 4.2% of pixels</span>
+    <div class="spacer"></div>
+    <button class="btn sm gh">Open the run trace ↗</button>
+  </div>
+
+  <div class="strip">
+    <div class="th">
+      <div class="cap"><span class="lbl">previously approved</span><div class="spacer"></div>
+        <span class="pin">run #138</span></div>
+      <div class="img"></div>
+    </div>
+    <div class="th">
+      <div class="cap"><span class="lbl">this run</span><div class="spacer"></div>
+        <span class="chip bad">1 region</span></div>
+      <div class="img now"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn ok">Matches the design</button>
+    <button class="btn no">Build missed the design</button>
+    <button class="btn no">Design was wrong</button>
+    <div class="spacer"></div>
+    <span class="pin">approving pins draft 4f2a91c + shot 8c3d05e</span>
+  </div>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s)
+  const $$ = s => [...document.querySelectorAll(s)]
+  const left = $$('.panel')[0], right = $$('.panel')[1]
+
+  // Side-by-side answers "what are they", overlay answers "did it move", difference answers
+  // "by how much". One static pair of pictures answers only the first.
+  for (const s of $$('.diffbar .seg span')) s.addEventListener('click', () => {
+    $$('.diffbar .seg span').forEach(x => x.classList.toggle('on', x === s))
+    const mode = s.textContent.trim().toLowerCase()
+    const split = $('.split')
+    if (mode === 'side by side') {
+      split.style.gridTemplateColumns = '1fr 1fr'
+      left.style.display = ''; right.style.opacity = ''; right.style.mixBlendMode = ''
+      right.style.position = ''; left.style.position = ''
+    } else {
+      split.style.gridTemplateColumns = '1fr'
+      split.style.position = 'relative'
+      left.style.display = 'none'
+      right.style.opacity = mode === 'overlay' ? '.55' : '1'
+      right.style.mixBlendMode = mode === 'difference' ? 'difference' : ''
+    }
+  })
+
+  const bar = $('.actions')
+  const verdict = (msg, tone, next) => {
+    bar.innerHTML = '<span class="chip ' + tone + '"><span class="dot"></span>' + msg + '</span>' +
+      '<span class="muted" style="font-size:var(--t-sm)">' + next + '</span>' +
+      '<div class="spacer"></div><button class="btn" id="undo">Undo</button>'
+    $('#undo').addEventListener('click', () => location.reload())
+  }
+  const [ok, buildWrong, designWrong] = $$('.actions .btn')
+  ok.addEventListener('click', () => verdict('approved', 'ok',
+    'pinned against draft 4f2a91c + shot 8c3d05e'))
+  buildWrong.addEventListener('click', () => verdict('sent back to the build', 'bad',
+    'the screen gets rebuilt against the approved design — the design is untouched'))
+  designWrong.addEventListener('click', () => verdict('design reopened', 'stale',
+    'the draft goes back to gate A — this screenshot becomes the reference'))
+</script>
