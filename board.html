@@ -614,13 +614,13 @@ ins { color:var(--koke); text-decoration:none; }
   <div class="clear">
     <span class="chip ok"><span class="dot"></span>queue clear</span>
     Nothing is waiting on you.
+    3 screens still to build.
     
     
-    Every screen is built, approved and proven.
   </div>
   <div class="stats">
-    <span class="stat"><b>6</b> screens</span>
-    <span class="stat"><b>6</b> drafted</span>
+    <span class="stat"><b>9</b> screens</span>
+    <span class="stat"><b>9</b> drafted</span>
     <span class="stat"><b>6</b> built</span>
     <span class="stat"><b>6</b> tested</span>
     <span class="stat hot"><b>0</b> waiting on you</span>
@@ -645,7 +645,7 @@ ins { color:var(--koke); text-decoration:none; }
   <div class="grph">
     <button class="tw" aria-label="collapse">—</button>
     <h2>Core</h2>
-    <span class="gc">2 screens</span>
+    <span class="gc">5 screens</span>
     
   </div>
   <div class="rows">
@@ -1302,7 +1302,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="board" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=fd5d7d76324d" alt="Board as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=2b65e70e164b" alt="Board as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="board" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -1780,13 +1780,796 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="conflicts" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=ecd68f93f2f6" alt="Conflicts as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=9012ffa96ea5" alt="Conflicts as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="conflicts" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
     <div class="cellb"><div class="runs"><div class="runsh"><span class="tk pass">✓</span>
        <span class="ms">5 of 5 passing</span></div>
        <ul class="e2emini"><li class="p"><span class="mark "></span><span class="tt">R2 — both positions are shown in full, each naming where it came from</span></li><li class="p"><span class="mark "></span><span class="tt">R3 — the tool never picks: resolving is refused until you choose a side</span></li><li class="p"><span class="mark "></span><span class="tt">R4 — resolving records which side lost, and offers the rewrite of that file</span></li><li class="p"><span class="mark "></span><span class="tt">R5 — a decision survives a rescan that reorders and swaps the sides</span></li><li class="p"><span class="mark "></span><span class="tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span></li></ul></div></div>
+  </div>
+</div>
+<div class="row" data-i="6" data-area="Core"
+     data-waiting="0" data-started="1"
+     data-q="probe-flow /probe-flow a requirement so the prd cell is not empty">
+  <div class="c1">
+    <div class="nm">probe-flow</div>
+    <div class="meta">1 requirements · <code>/probe-flow</code></div>
+    <ul class="reqs"><li><span class="rq">R1</span><span class="rt">A requirement so the PRD cell is not empty</span></li></ul>
+  </div>
+  <div class="cell c-ok" data-screen="probe-flow" data-col="draft">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="frame"><iframe scrolling="no" srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-flow&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-flow" data-col="screen">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">not built</div>
+  <div class="b2">ready to build — the design is approved</div></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-flow" data-col="e2e">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">no test</div>
+  <div class="b2">waits for the screen</div></div></div>
+  </div>
+</div>
+<div class="row" data-i="7" data-area="Core"
+     data-waiting="0" data-started="1"
+     data-q="probe-unbuilt-a /probe-unbuilt-a a requirement so the prd cell is not empty">
+  <div class="c1">
+    <div class="nm">probe-unbuilt-a</div>
+    <div class="meta">1 requirements · <code>/probe-unbuilt-a</code></div>
+    <ul class="reqs"><li><span class="rq">R1</span><span class="rt">A requirement so the PRD cell is not empty</span></li></ul>
+  </div>
+  <div class="cell c-ok" data-screen="probe-unbuilt-a" data-col="draft">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="frame"><iframe scrolling="no" srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-unbuilt-a&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-unbuilt-a" data-col="screen">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">not built</div>
+  <div class="b2">ready to build — the design is approved</div></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-unbuilt-a" data-col="e2e">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">no test</div>
+  <div class="b2">waits for the screen</div></div></div>
+  </div>
+</div>
+<div class="row" data-i="8" data-area="Core"
+     data-waiting="0" data-started="1"
+     data-q="probe-unbuilt-b /probe-unbuilt-b a requirement so the prd cell is not empty">
+  <div class="c1">
+    <div class="nm">probe-unbuilt-b</div>
+    <div class="meta">1 requirements · <code>/probe-unbuilt-b</code></div>
+    <ul class="reqs"><li><span class="rq">R1</span><span class="rt">A requirement so the PRD cell is not empty</span></li></ul>
+  </div>
+  <div class="cell c-ok" data-screen="probe-unbuilt-b" data-col="draft">
+    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+    <div class="cellb"><div class="frame"><iframe scrolling="no" srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-unbuilt-b&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-unbuilt-b" data-col="screen">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">not built</div>
+  <div class="b2">ready to build — the design is approved</div></div></div>
+  </div>
+  <div class="cell c-gone" data-screen="probe-unbuilt-b" data-col="e2e">
+    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">no test</div>
+  <div class="b2">waits for the screen</div></div></div>
   </div>
 </div></div>
 </section>
@@ -2223,7 +3006,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=8fab75c157dd" alt="Gate A — draft review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=c125d603b63d" alt="Gate A — draft review as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -2641,7 +3424,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=0c3a386241e4" alt="Gate B — screen review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=9f5af0ac51ba" alt="Gate B — screen review as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -3061,7 +3844,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="dispatch" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=54febe39b3e6" alt="Dispatch panel as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=4ad5e72b6420" alt="Dispatch panel as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="dispatch" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -4327,7 +5110,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/board/screen.png?h=fd5d7d76324d" alt="Board as built"></div>
+        <div class="bigshot"><img src="spec/board/screen.png?h=2b65e70e164b" alt="Board as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -4341,14 +5124,14 @@ ins { color:var(--koke); text-decoration:none; }
 </span></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 08:48</b></span>
+        <span>last run <b>2026-07-27 08:57</b></span>
         <span class="tcnote">7 test cases — each an independent check; a case may hold several steps</span>
         
         <div class="path"><code>spec/board/test.spec.ts</code></div>
       </div>
       <article class="tst p" data-title="R1 — one row per screen, never one per requirement">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">194ms</span>
+          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">320ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R1 — one row per screen, never one per requirement"
               title="run only this test">Run</button>
@@ -4360,7 +5143,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R1 — one row per screen, never one per requirement"></div>
       </article><article class="tst p" data-title="R2 — four cells, left to right, in workflow order">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">155ms</span>
+          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">508ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R2 — four cells, left to right, in workflow order"
               title="run only this test">Run</button>
@@ -4372,7 +5155,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R2 — four cells, left to right, in workflow order"></div>
       </article><article class="tst p" data-title="R3 — the draft cell renders the wireframe itself, not a word for it">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">160ms</span>
+          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">282ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R3 — the draft cell renders the wireframe itself, not a word for it"
               title="run only this test">Run</button>
@@ -4384,7 +5167,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R3 — the draft cell renders the wireframe itself, not a word for it"></div>
       </article><article class="tst p" data-title="R4 — cell state is computed, and approving changes it">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">813ms</span>
+          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">936ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R4 — cell state is computed, and approving changes it"
               title="run only this test">Run</button>
@@ -4396,7 +5179,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R4 — cell state is computed, and approving changes it"></div>
       </article><article class="tst p" data-title="R7 — screens are grouped into named areas, never paginated">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">209ms</span>
+          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">271ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R7 — screens are grouped into named areas, never paginated"
               title="run only this test">Run</button>
@@ -4408,7 +5191,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R7 — screens are grouped into named areas, never paginated"></div>
       </article><article class="tst p" data-title="R8 — filter by whose turn it is, and search requirement text">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">239ms</span>
+          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">356ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R8 — filter by whose turn it is, and search requirement text"
               title="run only this test">Run</button>
@@ -4420,7 +5203,7 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="tstshots" data-title="R8 — filter by whose turn it is, and search requirement text"></div>
       </article><article class="tst p" data-title="R6 — the header counts agree with the rows beneath them">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">247ms</span>
+          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">365ms</span>
           <span class="tacts">
             <button class="btn sm gh runone" data-run="board" data-grep="R6 — the header counts agree with the rows beneath them"
               title="run only this test">Run</button>
@@ -4930,7 +5713,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/conflicts/screen.png?h=ecd68f93f2f6" alt="Conflicts as built"></div>
+        <div class="bigshot"><img src="spec/conflicts/screen.png?h=9012ffa96ea5" alt="Conflicts as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -5442,7 +6225,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/dispatch/screen.png?h=54febe39b3e6" alt="Dispatch panel as built"></div>
+        <div class="bigshot"><img src="spec/dispatch/screen.png?h=4ad5e72b6420" alt="Dispatch panel as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -5965,7 +6748,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=8fab75c157dd" alt="Gate A — draft review as built"></div>
+        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=c125d603b63d" alt="Gate A — draft review as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -6496,7 +7279,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=0c3a386241e4" alt="Gate B — screen review as built"></div>
+        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=9f5af0ac51ba" alt="Gate B — screen review as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl dth2"><span class="lbl">4 · E2E</span><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -7111,6 +7894,819 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grow"></span>
       <button class="btn" data-act="unapprove" data-gate="screen" data-screen="init">Un-approve</button></div></div>
 </section>
+<section class="dt" data-i="6" hidden>
+  <div class="dth">
+    <h2>probe-flow</h2>
+    <span class="chip ok"><span class="dot"></span>approved</span>
+    <span class="gbn">1 requirements · <code>spec/probe-flow/</code></span>
+    <span class="grow"></span>
+    <a class="btn" href="spec/probe-flow/draft.html" target="_blank">Open draft full size ↗</a>
+    <button class="btn edit" data-path="spec/probe-flow/draft.html">Edit the draft</button>
+    <button class="btn turn nextw" data-i="6">Next waiting →<span class="kbd">j</span></button>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll">
+    <div class="dtb">
+      <div class="dtp">
+        <div class="dtl lbl dth2">1 · PRD</div>
+        <div class="prd"><article class="" data-unchanged="1">
+      <h3><span class="rid">R1</span><span>A requirement so the PRD cell is not empty</span></h3>
+      <p>One behaviour, so this reads as a real screen.</p></article></div>
+      </div>
+      <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div><div class="bigframe"><iframe srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-flow&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+      
+      <div class="dtp">
+      <div class="dtl lbl">4 · E2E</div>
+      <div class="ph big">no test yet · <code>spec/probe-flow/test.spec.ts</code></div>
+    </div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">design approved against <code>prd.md · 6bb3d22330b3</code> — build the screen next</span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-screen="probe-flow">Un-approve</button></div></div>
+</section>
+<section class="dt" data-i="7" hidden>
+  <div class="dth">
+    <h2>probe-unbuilt-a</h2>
+    <span class="chip ok"><span class="dot"></span>approved</span>
+    <span class="gbn">1 requirements · <code>spec/probe-unbuilt-a/</code></span>
+    <span class="grow"></span>
+    <a class="btn" href="spec/probe-unbuilt-a/draft.html" target="_blank">Open draft full size ↗</a>
+    <button class="btn edit" data-path="spec/probe-unbuilt-a/draft.html">Edit the draft</button>
+    <button class="btn turn nextw" data-i="7">Next waiting →<span class="kbd">j</span></button>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll">
+    <div class="dtb">
+      <div class="dtp">
+        <div class="dtl lbl dth2">1 · PRD</div>
+        <div class="prd"><article class="" data-unchanged="1">
+      <h3><span class="rid">R1</span><span>A requirement so the PRD cell is not empty</span></h3>
+      <p>One behaviour, so this reads as a real screen.</p></article></div>
+      </div>
+      <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div><div class="bigframe"><iframe srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-unbuilt-a&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+      
+      <div class="dtp">
+      <div class="dtl lbl">4 · E2E</div>
+      <div class="ph big">no test yet · <code>spec/probe-unbuilt-a/test.spec.ts</code></div>
+    </div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">design approved against <code>prd.md · 521c48156bfc</code> — build the screen next</span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-screen="probe-unbuilt-a">Un-approve</button></div></div>
+</section>
+<section class="dt" data-i="8" hidden>
+  <div class="dth">
+    <h2>probe-unbuilt-b</h2>
+    <span class="chip ok"><span class="dot"></span>approved</span>
+    <span class="gbn">1 requirements · <code>spec/probe-unbuilt-b/</code></span>
+    <span class="grow"></span>
+    <a class="btn" href="spec/probe-unbuilt-b/draft.html" target="_blank">Open draft full size ↗</a>
+    <button class="btn edit" data-path="spec/probe-unbuilt-b/draft.html">Edit the draft</button>
+    <button class="btn turn nextw" data-i="8">Next waiting →<span class="kbd">j</span></button>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll">
+    <div class="dtb">
+      <div class="dtp">
+        <div class="dtl lbl dth2">1 · PRD</div>
+        <div class="prd"><article class="" data-unchanged="1">
+      <h3><span class="rid">R1</span><span>A requirement so the PRD cell is not empty</span></h3>
+      <p>One behaviour, so this reads as a real screen.</p></article></div>
+      </div>
+      <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div><div class="bigframe"><iframe srcdoc="&lt;!doctype html&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;style&gt;/* Design system — 和 · hairline, unhurried, low-saturation.
+ *
+ * ONE file for the whole tool: the drafts link it relatively, and the generated board inlines
+ * it. A design system kept in two places is a design system that drifts, and this product exists
+ * to stop exactly that.
+ *
+ * Four rules the rest follows from:
+ *
+ *   TRADITIONAL DYES, NOT UI COLOURS. 藍 indigo, 弁柄 iron-oxide red, 苔 moss, 墨 ink, on 生成り
+ *   unbleached paper. Every one sits under ~25% saturation, so the page reads as neutral until
+ *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
+ *   dashboard ever built and it makes this look like all of them.
+ *
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. &quot;Your turn&quot; is INVERTED — solid indigo, paper text —
+ *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
+ *
+ *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
+ *   radius, no fill that exists only to make an edge.
+ *
+ *   間 MA. Space is structure, not leftover padding. Everything sits on a 4px scale, and the
+ *   large steps get used more freely than feels comfortable.
+ *
+ * Canvas is 1280px wide — the width every draft is authored and scaled against. */
+
+:root {
+  /* 墨 sumi — ink, and the ash scale under it.
+     Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
+     2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
+     read is not restraint. Every value below now passes AA on both --paper and --canvas, which
+     compresses the scale — and a shorter grey scale is the more minimal answer anyway. */
+  --sumi:#1c1b18; --ink:#1c1b18;
+  --ink-2:#46443f; --dim:#46443f;
+  --ink-3:#5f5d56; --mute:#5f5d56;
+  --ink-4:#6e6b64;
+
+  /* 生成り kinari — unbleached paper */
+  --paper:#fdfcf9;  --card:#fdfcf9;
+  --canvas:#f4f1ea; --bg:#f4f1ea;
+  --wash:#eae6dc;   --sunk:#eae6dc; --dim-bg:#eae6dc;
+
+  --hair:#e2ddd1;   --line:#e2ddd1;
+  --hair-2:#cdc7b8; --line2:#cdc7b8;
+  --line3:#a8a59c;
+
+  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  --ai:#2f4a63; --acc:#2f4a63;
+  --ai-tint:#e6eaee; --acc-bg:#e6eaee;
+  --ai-line:#b9c4ce; --acc-line:#b9c4ce;
+
+  /* 弁柄 bengara — iron oxide. A re-look: something you already settled has moved. */
+  --bengara:#8d4a38; --bad:#8d4a38; --warn:#8d4a38;
+  --bengara-tint:#f2e8e4; --bad-bg:#f2e8e4; --warn-bg:#f2e8e4;
+  --bengara-line:#d8c0b6; --bad-line:#d8c0b6; --warn-line:#d8c0b6;
+
+  /* 苔 koke — moss. Settled, approved, passing. */
+  --koke:#4d5c37; --ok:#4d5c37;
+  --koke-tint:#eaece1; --ok-bg:#eaece1;
+  --koke-line:#bcc4a8; --ok-line:#bcc4a8;
+
+  /* 山吹 yamabuki — gold. In flight: a job running, a step in progress. Nothing is wrong and
+     nothing is settled, which is a third thing and used to look identical to &quot;your turn&quot;. */
+  --yamabuki:#8a6412;
+  --yamabuki-tint:#f6eeda;
+  --yamabuki-line:#dfc98c;
+
+  /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
+     active segment, the checkbox, the focus ring, AND the &quot;your turn&quot; chip — so colour told you
+     something was interactive and never which thing it was. Now hue means one thing each:
+     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
+     山吹 gold = running · 墨 ink = the neutral primary action.
+     An action is coloured by the STATE IT PRODUCES, so &quot;Looks right&quot; is the green of approved. */
+
+  /* 間 ma — 4px scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* radius — softness in proportion to how much you TOUCH the thing.
+     Controls you press get it most; surfaces get less; anything meeting the viewport edge or
+     separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
+     looks like a mistake. */
+  --r-sm:4px;   /* chips, checks, small marks */
+  --r:6px;      /* buttons, inputs, segmented controls */
+  --r-md:10px;  /* cards, cells, panels */
+  --r-lg:14px;  /* sheets and modals */
+  --rc:10px;    /* legacy alias used by the drafts */
+
+  /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
+     header with content running under it. Never on in-flow cards; a page where every card floats
+     is a page with no hierarchy at all. Warm-tinted, because a neutral black shadow on washi
+     goes grey and dirty. */
+  --sh-sm:0 1px 2px rgba(28,27,24,.05);
+  --sh-md:0 2px 8px rgba(28,27,24,.07), 0 1px 2px rgba(28,27,24,.05);
+  --sh-lg:0 14px 36px rgba(28,27,24,.14), 0 2px 6px rgba(28,27,24,.06);
+
+  /* type — one family, six sizes, two weights */
+  --sans:&quot;Helvetica Neue&quot;,Inter,system-ui,-apple-system,&quot;Segoe UI&quot;,sans-serif;
+  --mono:&quot;SF Mono&quot;,ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+
+* { box-sizing:border-box; }
+/* The hidden attribute only carries a UA display:none, which ANY author display beats. Half this
+   file sets display on things you would want to hide — .btn and .seg and .chip are inline-flex,
+   .card &gt; header is flex — so `el.hidden = true` silently did nothing to most of them. The board
+   already carried a one-off .dt[hidden] patch after every detail view rendered at once, stacked;
+   that was this bug, and it belongs here rather than being rediscovered per component. */
+[hidden] { display:none !important; }
+body {
+  margin:0; width:1280px; background:var(--canvas); color:var(--ink);
+  font:400 var(--t-md)/1.55 var(--sans);
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+h1,h2,h3 { margin:0; font-weight:400; letter-spacing:-.02em; }
+h1 { font-size:var(--t-xl); } h2 { font-size:var(--t-lg); } h3 { font-size:var(--t-md); }
+code, .mono { font-family:var(--mono); font-size:.88em; letter-spacing:-.01em; }
+b, strong { font-weight:500; }
+del { color:var(--bengara); text-decoration:line-through; }
+ins { color:var(--koke); text-decoration:none; }
+
+/* the one label style — small, tracked wide, upper */
+.lbl { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.muted { color:var(--ink-4); } .dim { color:var(--ink-2); }
+.spacer, .grow { flex:1; }
+.sep { height:1px; background:var(--hair); }
+
+/* chrome ------------------------------------------------------------------
+   One rule separates chrome from page. No fill change, no shadow. */
+.top { display:flex; align-items:center; gap:var(--s4); padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair); background:var(--paper); }
+.brand { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-lg); letter-spacing:-.02em; }
+.logo { width:13px; height:13px; background:var(--ai); }
+.crumb { font-size:var(--t-sm); color:var(--ink-4); }
+.page { padding:var(--s6) var(--s6) var(--s8); }
+
+/* controls ---------------------------------------------------------------- */
+.btn { display:inline-flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+  background:var(--paper); color:var(--ink); border-radius:var(--r); padding:var(--s2) var(--s4);
+  font:400 var(--t-sm)/1.3 var(--sans); cursor:pointer; text-decoration:none;
+  transition:border-color .12s, background .12s, color .12s, box-shadow .12s; }
+.btn:hover { border-color:var(--ink); }
+/* neutral primary — the default &quot;do the main thing&quot; */
+.btn.pri { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.btn.pri:hover { background:var(--ink-2); border-color:var(--ink-2); }
+/* affirmative — wears the colour of the state it creates */
+.btn.ok { background:var(--koke); border-color:var(--koke); color:var(--paper); }
+.btn.ok:hover { background:#3f4c2c; border-color:#3f4c2c; }
+/* send back — outlined, not filled: it is not the destructive-looking option, it is the honest one */
+.btn.no { border-color:var(--bengara-line); color:var(--bengara); background:var(--bengara-tint); }
+.btn.no:hover { border-color:var(--bengara); }
+/* attention — used where the app is asking YOU for something */
+.btn.turn { background:var(--ai); border-color:var(--ai); color:var(--paper); }
+.btn.turn:hover { background:#253c51; border-color:#253c51; }
+.btn.sm { padding:5px var(--s3); font-size:var(--t-xs); }
+.btn.gh { border-color:transparent; background:transparent; color:var(--ink-3); }
+.btn.gh:hover { border-color:var(--hair-2); color:var(--ink); }
+.btn[disabled] { color:var(--ink-4); border-color:var(--hair); cursor:default; }
+
+.seg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r);
+  overflow:hidden; }
+.seg span, .seg button { padding:5px var(--s3); font:400 var(--t-sm)/1.4 var(--sans);
+  color:var(--ink-3); border:0; border-right:1px solid var(--hair-2); background:transparent;
+  cursor:pointer; text-transform:none; letter-spacing:0; }
+.seg span:last-child, .seg button:last-child { border-right:0; }
+.seg .on, .seg button.on { background:var(--ai); color:var(--paper); }
+
+/* A full border, not an underline. An underline-only input in a toolbar reads as a caption until
+   you happen to click it — the box is what says &quot;you can type here&quot;. */
+.input { width:100%; border:1px solid var(--hair-2); background:var(--paper);
+  padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink);
+  border-radius:var(--r); transition:border-color .12s, box-shadow .12s; }
+.input:focus { outline:0; border-color:var(--ai); box-shadow:0 0 0 3px var(--ai-tint); }
+.input.ph { color:var(--ink-4); }
+.input::placeholder { color:var(--ink-4); }
+.radio { width:12px; height:12px; border:1px solid var(--hair-2); border-radius:50%; flex:none; }
+.radio.on { border:4px solid var(--ai); }
+.check { width:12px; height:12px; border:1px solid var(--hair-2); flex:none; border-radius:3px; }
+.check.on { background:var(--ai); border-color:var(--ai); }
+
+/* status ------------------------------------------------------------------
+   Read by weight of ink first, hue second. */
+.chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); line-height:1.4;
+  padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+  white-space:nowrap; text-transform:none; letter-spacing:0; border-radius:var(--r-sm); }
+/* ALL status chips are tints. An inverted chip was reserved for &quot;your turn&quot;, which reads well
+   when one row in twenty needs you and falls apart the moment most of them do — and most of them
+   needing you is the normal state of a young board. A dozen solid blocks compete, so none of
+   them is emphasis any more. Inversion is now spent on exactly ONE element per screen: the
+   summary count in the header. Status is told by hue and by the mark, quietly, in place. */
+.chip.ok    { background:var(--koke-tint); color:var(--koke);
+              box-shadow:inset 0 0 0 1px var(--koke-line); }
+.chip.rev   { background:var(--ai-tint); color:var(--ai);
+              box-shadow:inset 0 0 0 1px var(--ai-line); }
+.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+              box-shadow:inset 0 0 0 1px var(--bengara-line); }
+/* the deliberate exception, for the one place a count must carry the whole page */
+.chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
+.chip.bad   { background:var(--bengara); color:var(--paper); }
+.chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
+.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+              box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+
+/* the mark: a 6px square whose FILL carries the state, so status survives greyscale,
+   low vision, and a black-and-white print */
+.dot, .mark { width:6px; height:6px; flex:none; background:currentColor; }
+.mark.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+.mark.h { background:linear-gradient(135deg,currentColor 50%,transparent 50%);
+  box-shadow:inset 0 0 0 1px currentColor; }
+.mark.n { height:1px; }
+
+/* surfaces ---------------------------------------------------------------- */
+.card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
+  overflow:hidden; }
+.card &gt; header { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+  border-bottom:1px solid var(--hair); }
+.pad { padding:var(--s4); }
+.well { background:var(--wash); }
+
+.stat { display:inline-flex; align-items:baseline; gap:6px; padding:var(--s2) 0;
+  font-size:var(--t-sm); color:var(--ink-3); }
+.stat + .stat { margin-left:var(--s5); }
+.stat b { font-weight:400; font-size:var(--t-lg); color:var(--ink); letter-spacing:-.03em; }
+/* the one number allowed to shout, and it shouts by inverting */
+.stat.hot { background:var(--ai); color:var(--paper); padding:var(--s2) var(--s3);
+  border-radius:var(--r); }
+
+/* keyboard hints, and the &quot;or&quot; that separates two paths in a decision bar */
+.kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
+  border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
+.btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
+.gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
+
+/* the only true elevation in the system — things that actually float over the page */
+.sheet, .modal, .popover { border-radius:var(--r-lg); box-shadow:var(--sh-lg);
+  background:var(--paper); border:1px solid var(--hair-2); }
+.stat.hot b { color:var(--paper); }
+&lt;/style&gt;&lt;div class=&quot;page&quot;&gt;&lt;h1&gt;probe-unbuilt-b&lt;/h1&gt;&lt;button class=&quot;btn&quot;&gt;a control&lt;/button&gt;&lt;/div&gt;"></iframe></div></div>
+      
+      <div class="dtp">
+      <div class="dtl lbl">4 · E2E</div>
+      <div class="ph big">no test yet · <code>spec/probe-unbuilt-b/test.spec.ts</code></div>
+    </div>
+    </div>
+  </div>
+  <div class="gb ok"><div class="gbin">
+      <span class="chip ok"><span class="dot"></span>approved</span>
+      <span class="gbn">design approved against <code>prd.md · 059602aad728</code> — build the screen next</span>
+      <span class="grow"></span>
+      <button class="btn" data-act="unapprove" data-screen="probe-unbuilt-b">Un-approve</button></div></div>
+</section>
 
 <script>
   // Drafts are authored at 1280px and shown scaled, so a thumbnail is the real artifact
@@ -7206,7 +8802,7 @@ ins { color:var(--koke); text-decoration:none; }
   // detail + routing -----------------------------------------------------
   // Every detail view has an address. Without one a refresh dumps you back on the board, the
   // back button leaves the page entirely, and a screen cannot be linked to anyone.
-  const SCREENS = ["board","conflicts","dispatch","gate-draft-review","gate-screen-review","init"]
+  const SCREENS = ["board","conflicts","dispatch","gate-draft-review","gate-screen-review","init","probe-flow","probe-unbuilt-a","probe-unbuilt-b"]
   const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
   const show = i => { closeAll(); document.querySelector('.dt[data-i="' + i + '"]').hidden = false; safeFit() }
   const open = (i, push = true) => {

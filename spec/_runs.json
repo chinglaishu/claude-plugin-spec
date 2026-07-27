@@ -1,5 +1,727 @@
 [
   {
+    "at": "2026-07-27T08:57:31.298Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785142651298",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:57:26.205Z",
+    "screen": "board",
+    "ms": 4836,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785142646205",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.reqs li”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result is fewer than expected",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result equals what we expect",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” passes not toBeEmpty",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "POST request to /api/gate",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Reload the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "POST request to /api/gate",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Reload the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.grp” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.grph h2” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the button has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Type into the “#q”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “#shown” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#qx”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#filt [data-f=\"new\"]”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “#none” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785142646205/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142646205/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#filt [data-f=\"all\"]”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:57:26.077Z",
+    "screen": "board",
+    "ms": 12,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785142646077",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:57:20.706Z",
+    "screen": "board",
+    "ms": 4767,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785142640706",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.reqs li”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result is fewer than expected",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result equals what we expect",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row” passes not toBeEmpty",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "POST request to /api/gate",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Reload the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "POST request to /api/gate",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Reload the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.grp” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.grph h2” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the button has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Type into the “#q”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “#shown” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#qx”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#filt [data-f=\"new\"]”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “.row:not(.gone)” has the expected number",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the “#none” reads the expected text",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785142640706/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785142640706/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "label": "Open /",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Wait for the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Click the “#filt [data-f=\"all\"]”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Count the “.row”",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Check the result passes toContain",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
     "at": "2026-07-27T08:48:10.231Z",
     "screen": "board",
     "ms": 3,
@@ -3495,728 +4217,6 @@
           "spec/_runs/1785141471352/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
         ],
         "video": "spec/_runs/1785141471352/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#filt [data-f=\"all\"]')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Screenshot",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:36:20.497Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785141380497",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:36:15.479Z",
-    "screen": "board",
-    "ms": 4617,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785141375479",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.reqs li')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toBeLessThan\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Evaluate locator('.colhs .lbl')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toEqual\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "POST \"/api/gate\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Reload",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "POST \"/api/gate\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Reload",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.grp')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Fill \"canon\" locator('#q')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('#shown')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#qx')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#filt [data-f=\"new\"]')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('#none')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785141375479/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141375479/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#filt [data-f=\"all\"]')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Screenshot",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:36:15.351Z",
-    "screen": "board",
-    "ms": 12,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785141375351",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:36:09.950Z",
-    "screen": "board",
-    "ms": 4636,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785141369950",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.reqs li')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Query count locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toBeLessThan\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Evaluate locator('.colhs .lbl')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toEqual\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toContain\"",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "POST \"/api/gate\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Reload",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "POST \"/api/gate\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Reload",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.grp')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "steps": [
-          {
-            "title": "Navigate to \"/\"",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Wait for selector locator('.row')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Fill \"canon\" locator('#q')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('#shown')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#qx')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Click locator('#filt [data-f=\"new\"]')",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          },
-          {
-            "title": "Expect \"toHaveText\" locator('#none')",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true
-          }
-        ]
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785141369950/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785141369950/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
         "steps": [
           {
             "title": "Navigate to \"/\"",
