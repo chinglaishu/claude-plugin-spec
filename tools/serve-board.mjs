@@ -14,6 +14,7 @@ import {
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson
 } from './spec-store.mjs'
+import { shipToGit, shipToBucket } from './ship-record.mjs'
 
 const PORT = Number(process.env.PORT || 4173)
 
@@ -481,13 +482,26 @@ function startRun (screen, opts = {}) {
   child.stdout.on('data', feed)
   child.stderr.on('data', feed)
 
-  child.on('close', code => {
+  child.on('close', async code => {
     // the run's own reporter has already folded its results into the per-screen index by now; here
     // we only need this run's totals for the run-log, read from the report it wrote
     let fresh = {}
     try { fresh = parseReport(report) } catch { /* no report — the run never produced one */ }
     const totals = Object.values(fresh).reduce(
       (a, r) => ({ total: a.total + r.total, failed: a.failed + r.failed }), { total: 0, failed: 0 })
+    let shotsByTest = collectRecord(recordDir)
+    // Ship the record where Setup says, if anywhere but local. Best effort: a failure records the
+    // reason on the run and keeps the local copy, and never touches the verdict.
+    let archive = null
+    const store = readConfig().storage || { where: 'local' }
+    if (store.where === 'git' && Object.keys(shotsByTest).length) {
+      archive = { where: 'git', ...shipToGit(recordDir, runId, store.gitBranch, ROOT, !!store.push) }
+    } else if (store.where === 'bucket' && Object.keys(shotsByTest).length) {
+      const r = await shipToBucket(recordDir, runId, shotsByTest, store.bucketUrl, ROOT)
+      archive = { where: 'bucket', ok: r.ok, error: r.error, count: r.count }
+      // point the board at the bucket copies, which outlive the local prune
+      if (r.ok) shotsByTest = r.shotsByTest
+    }
     const entry = {
       at: new Date(started).toISOString(),
       screen: running.screen,
@@ -497,7 +511,8 @@ function startRun (screen, opts = {}) {
       runId,
       // what each test SAW, keyed by title — the record is only useful if it can be looked at,
       // and only trustworthy if you can tell which test it belongs to
-      shotsByTest: collectRecord(recordDir)
+      shotsByTest,
+      archive
     }
     recordRun(entry)
     running = null

@@ -283,8 +283,9 @@ export const DEFAULT_CONFIG = {
   // how long a watchable run pauses between actions, so a person can actually follow it
   stepDelayMs: 300,
   // where a run's screenshots and videos are kept. 'local' = spec/_runs/ in this repo (default).
-  // 'git' = committed to a branch of this repo. A bucket = a base URL uploads are pushed to.
-  storage: { where: 'local', gitBranch: '', bucketUrl: '' }
+  // 'git' = committed to a branch of this repo (pushed to origin only if push:true). A bucket = a
+  // base URL uploads are PUT to.
+  storage: { where: 'local', gitBranch: '', push: false, bucketUrl: '' }
 }
 
 export function readConfig () {
@@ -311,6 +312,7 @@ export function writeConfig (cfg) {
     storage: {
       where: ['local', 'git', 'bucket'].includes(cfg.storage?.where) ? cfg.storage.where : 'local',
       gitBranch: str(cfg.storage?.gitBranch, 120).trim(),
+      push: !!cfg.storage?.push,
       bucketUrl: str(cfg.storage?.bucketUrl, 400).trim()
     }
   }

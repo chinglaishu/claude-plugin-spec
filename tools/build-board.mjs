@@ -558,6 +558,7 @@ export function build () {
     font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
   .runrow .rr-s { color:var(--ink-4); }
   .runrow .ms { margin-left:auto; color:var(--ink-4); }
+  .runrow .rr-arch { color:var(--ink-4); font-family:var(--mono); font-size:var(--t-micro); }
   /* what THIS test saw — its own shots, under its own row, each zoomable */
   .tstshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:var(--s2) 0 0 14px; }
   .tstshots:empty { display:none; }
@@ -788,7 +789,9 @@ export function build () {
               <button data-store="local" class="on">In this repo</button><button data-store="git">Git branch</button><button data-store="bucket">Bucket URL</button>
             </div>
             <input class="input" id="initgitbranch" placeholder="branch name, e.g. spec-shots" style="margin-top:8px" hidden>
-            <input class="input" id="initbucket" placeholder="https://…  a base URL uploads are pushed to" style="margin-top:8px" hidden>
+            <label class="watchtog sm" id="initpushwrap" style="margin-top:8px" hidden>
+              <input type="checkbox" id="initpush"> also push to origin (an outward action)</label>
+            <input class="input" id="initbucket" placeholder="https://…  a base URL uploads are PUT to" style="margin-top:8px" hidden>
             <div class="h" id="initstorehint">Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine.</div>
           </div>
         </div>
@@ -1233,13 +1236,14 @@ ${detail}
     b.addEventListener('click', () => setInitMode(b.dataset.mode))
 
   const storeHints = {
-    local: 'Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine. Fully working.',
-    git: 'Would commit each run\\'s shots to this branch, shareable and versioned. Preference saved — upload not wired yet.',
-    bucket: 'Would push shots to this base URL, for shots that outlive the repo. Preference saved — upload not wired yet.'
+    local: 'Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine.',
+    git: 'Each run\\'s shots are committed to this branch in an isolated worktree (your working tree is untouched). It stays local unless you tick push.',
+    bucket: 'Each run\\'s shots are PUT to this base URL (base/runId/name) and the board loads them from there, so they outlive the local prune. The endpoint must accept the PUT.'
   }
   function setStore (w) {
     for (const b of document.querySelectorAll('#initstore button')) b.classList.toggle('on', b.dataset.store === w)
     document.getElementById('initgitbranch').hidden = w !== 'git'
+    document.getElementById('initpushwrap').hidden = w !== 'git'
     document.getElementById('initbucket').hidden = w !== 'bucket'
     document.getElementById('initstorehint').textContent = storeHints[w] || storeHints.local
   }
@@ -1261,6 +1265,7 @@ ${detail}
     const st = cfg.storage || { where: 'local' }
     setStore(st.where || 'local')
     document.getElementById('initgitbranch').value = st.gitBranch || ''
+    document.getElementById('initpush').checked = !!st.push
     document.getElementById('initbucket').value = st.bucketUrl || ''
   }
 
@@ -1306,6 +1311,7 @@ ${detail}
       storage: {
         where: storeWhere(),
         gitBranch: document.getElementById('initgitbranch').value,
+        push: document.getElementById('initpush').checked,
         bucketUrl: document.getElementById('initbucket').value
       }
     }
@@ -1467,6 +1473,22 @@ ${detail}
 
   // recent runs, fetched rather than baked in — the board is rebuilt by a run, so a run log
   // written into the HTML would always be one run behind itself
+  // Where a run's record went, if anywhere but local — said plainly, success or failure, because a
+  // storage option that silently does nothing is worse than not offering it.
+  function archiveNote (a) {
+    if (!a) return ''
+    if (a.where === 'git') {
+      return a.ok
+        ? '→ git ' + eh(a.branch) + ' @ ' + eh(a.sha) +
+          (a.requestedPush ? (a.pushed ? ' (pushed)' : ' (push failed)') : ' (committed locally)')
+        : '→ git failed: ' + eh(a.error || 'unknown')
+    }
+    if (a.where === 'bucket') {
+      return a.ok ? '→ bucket · ' + (a.count || 0) + ' file(s)' : '→ bucket failed: ' + eh(a.error || 'unknown')
+    }
+    return ''
+  }
+
   async function loadRuns () {
     let data
     try { data = await (await fetch('/api/runs')).json() } catch (e) { return }
@@ -1479,7 +1501,8 @@ ${detail}
         ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
             (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
             '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
-            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>').join('')
+            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span>' +
+            (r.archive ? '<span class="rr-arch">' + archiveNote(r.archive) + '</span>' : '') + '</div>').join('')
         : '<div class="runrow ms">no runs recorded yet</div>'
 
       // The RECORD, shown UNDER each test — what THAT test saw, not a heap of images under all of

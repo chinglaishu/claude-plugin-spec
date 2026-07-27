@@ -6,7 +6,7 @@
       {
         "title": "R1 — one row per screen, never one per requirement",
         "ok": true,
-        "ms": 173,
+        "ms": 185,
         "error": null,
         "line": 11,
         "steps": []
@@ -14,7 +14,7 @@
       {
         "title": "R2 — four cells, left to right, in workflow order",
         "ok": true,
-        "ms": 150,
+        "ms": 173,
         "error": null,
         "line": 19,
         "steps": []
@@ -22,7 +22,7 @@
       {
         "title": "R3 — the draft cell renders the wireframe itself, not a word for it",
         "ok": true,
-        "ms": 155,
+        "ms": 166,
         "error": null,
         "line": 28,
         "steps": []
@@ -30,7 +30,7 @@
       {
         "title": "R4 — cell state is computed, and approving changes it",
         "ok": true,
-        "ms": 821,
+        "ms": 817,
         "error": null,
         "line": 35,
         "steps": []
@@ -38,7 +38,7 @@
       {
         "title": "R7 — screens are grouped into named areas, never paginated",
         "ok": true,
-        "ms": 201,
+        "ms": 207,
         "error": null,
         "line": 50,
         "steps": []
@@ -46,7 +46,7 @@
       {
         "title": "R8 — filter by whose turn it is, and search requirement text",
         "ok": true,
-        "ms": 254,
+        "ms": 328,
         "error": null,
         "line": 57,
         "steps": []
@@ -54,13 +54,13 @@
       {
         "title": "R6 — the header counts agree with the rows beneath them",
         "ok": true,
-        "ms": 211,
+        "ms": 224,
         "error": null,
         "line": 70,
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   },
   "conflicts": {
     "total": 5,
@@ -69,7 +69,7 @@
       {
         "title": "R2 — both positions are shown in full, each naming where it came from",
         "ok": true,
-        "ms": 138,
+        "ms": 145,
         "error": null,
         "line": 48,
         "steps": []
@@ -77,7 +77,7 @@
       {
         "title": "R3 — the tool never picks: resolving is refused until you choose a side",
         "ok": true,
-        "ms": 209,
+        "ms": 213,
         "error": null,
         "line": 62,
         "steps": []
@@ -85,7 +85,7 @@
       {
         "title": "R4 — resolving records which side lost, and offers the rewrite of that file",
         "ok": true,
-        "ms": 318,
+        "ms": 321,
         "error": null,
         "line": 76,
         "steps": []
@@ -93,7 +93,7 @@
       {
         "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
         "ok": true,
-        "ms": 348,
+        "ms": 344,
         "error": null,
         "line": 97,
         "steps": []
@@ -107,7 +107,7 @@
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   },
   "dispatch": {
     "total": 4,
@@ -116,7 +116,7 @@
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 5355,
+        "ms": 5372,
         "error": null,
         "line": 27,
         "steps": []
@@ -124,7 +124,7 @@
       {
         "title": "R4 — a second job is refused while one runs, not queued silently",
         "ok": true,
-        "ms": 267,
+        "ms": 256,
         "error": null,
         "line": 49,
         "steps": []
@@ -132,7 +132,7 @@
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 5091,
+        "ms": 5047,
         "error": null,
         "line": 67,
         "steps": []
@@ -140,13 +140,13 @@
       {
         "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
         "ok": true,
-        "ms": 63,
+        "ms": 68,
         "error": null,
         "line": 84,
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   },
   "gate-draft-review": {
     "total": 6,
@@ -155,7 +155,7 @@
       {
         "title": "R1 — PRD and wireframe are visible side by side",
         "ok": true,
-        "ms": 248,
+        "ms": 241,
         "error": null,
         "line": 13,
         "steps": []
@@ -163,7 +163,7 @@
       {
         "title": "R3 — approving pins the PRD hash, and the bar says which",
         "ok": true,
-        "ms": 208,
+        "ms": 204,
         "error": null,
         "line": 29,
         "steps": []
@@ -171,7 +171,7 @@
       {
         "title": "R4 — rejecting requires a reason; an empty one is refused",
         "ok": true,
-        "ms": 56,
+        "ms": 60,
         "error": null,
         "line": 42,
         "steps": []
@@ -179,7 +179,7 @@
       {
         "title": "R5 — the gate opens by itself when the PRD moves",
         "ok": true,
-        "ms": 271,
+        "ms": 257,
         "error": null,
         "line": 50,
         "steps": []
@@ -187,7 +187,7 @@
       {
         "title": "the full gate-A loop — open, read, approve, confirm",
         "ok": true,
-        "ms": 542,
+        "ms": 505,
         "error": null,
         "line": 67,
         "steps": [
@@ -200,13 +200,13 @@
       {
         "title": "the detail view has its own address and survives a reload",
         "ok": true,
-        "ms": 431,
+        "ms": 365,
         "error": null,
         "line": 93,
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   },
   "gate-screen-review": {
     "total": 4,
@@ -215,7 +215,7 @@
       {
         "title": "R1 — the approved design and the built screen are shown side by side",
         "ok": true,
-        "ms": 406,
+        "ms": 246,
         "error": null,
         "line": 8,
         "steps": []
@@ -223,7 +223,7 @@
       {
         "title": "R4 — approving pins the draft hash the screen was checked against",
         "ok": true,
-        "ms": 468,
+        "ms": 407,
         "error": null,
         "line": 28,
         "steps": []
@@ -231,7 +231,7 @@
       {
         "title": "R5 — rejecting has to name which side is wrong",
         "ok": true,
-        "ms": 196,
+        "ms": 157,
         "error": null,
         "line": 41,
         "steps": []
@@ -239,13 +239,13 @@
       {
         "title": "R2 — a screen with no screenshot has no gate B to open",
         "ok": true,
-        "ms": 393,
+        "ms": 259,
         "error": null,
         "line": 57,
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   },
   "init": {
     "total": 5,
@@ -254,7 +254,7 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 400,
+        "ms": 375,
         "error": null,
         "line": 30,
         "steps": []
@@ -262,7 +262,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 288,
+        "ms": 291,
         "error": null,
         "line": 55,
         "steps": []
@@ -270,7 +270,7 @@
       {
         "title": "R3 — a crawled PRD is marked a guess and cannot skip gate A",
         "ok": true,
-        "ms": 169,
+        "ms": 5393,
         "error": null,
         "line": 75,
         "steps": []
@@ -278,7 +278,7 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 173,
+        "ms": 169,
         "error": null,
         "line": 97,
         "steps": []
@@ -286,12 +286,12 @@
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 227,
+        "ms": 251,
         "error": null,
         "line": 107,
         "steps": []
       }
     ],
-    "ranAt": 1785138270481
+    "ranAt": 1785139890743
   }
 }

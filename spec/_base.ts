@@ -1,30 +1,35 @@
 import { test as base, expect } from '@playwright/test'
+import type { BrowserContext, Page } from '@playwright/test'
 
 export { expect }
 
-// One browser window for the WHOLE run, when the board asks to watch it (BOARD_ONE_WINDOW).
+// One browser window, held OPEN for the whole run, when the board asks to watch it
+// (BOARD_ONE_WINDOW).
 //
-// Playwright gives each test its own BrowserContext, and in a headed browser a context is a
-// window — so a watched run flashed a window open and shut between every test case, which is
-// exactly what you do not want when you are trying to follow along. Making the CONTEXT
-// worker-scoped keeps one window open for the run; each test still gets its own fresh page (a tab)
-// inside it, so per-test isolation is untouched — the only thing shared is the window.
+// Playwright gives each test its own context and page, and in a headed browser that means a window
+// opening and closing around every test. Two things were tried and rejected: sharing only the
+// context still let the per-test page close, and closing the last page of a context closes its
+// window; sharing the page itself broke tests that were written to start from a fresh one.
 //
-// Off by default. A plain `npm run e2e` and the deterministic board runs keep a context per test,
-// so nothing about the suite's isolation changes; this only shapes what a person sees while
-// watching.
-// Playwright forbids re-scoping the built-in `context`, so we make our OWN worker-scoped context
-// and give each test a fresh page inside it. `page` keeps its normal per-test scope — only its
-// factory changes, from "new context + page" to "new page in the shared window". One window for
-// the run, isolation per test.
+// So: a worker-scoped context, and a worker-scoped KEEPALIVE page that opens once and never
+// closes. The keepalive holds the window open for the whole run, while each test still gets its
+// own fresh page (a tab) in that same window — full per-test isolation, one window that never
+// blinks out. Only for watching; the deterministic suite never sets BOARD_ONE_WINDOW.
 export const test = process.env.BOARD_ONE_WINDOW
-  ? base.extend<{}, { _sharedContext: import('@playwright/test').BrowserContext }>({
+  ? base.extend<{ page: Page }, { _sharedContext: BrowserContext, _keepalive: Page }>({
       _sharedContext: [async ({ browser }, use) => {
         const context = await browser.newContext()
         await use(context)
         await context.close()
       }, { scope: 'worker' }],
-      page: async ({ _sharedContext }, use) => {
+      // a single page that stays open the whole run, so the window always has at least one tab and
+      // therefore never closes between tests
+      _keepalive: [async ({ _sharedContext }, use) => {
+        const page = await _sharedContext.newPage()
+        await use(page)
+      }, { scope: 'worker' }],
+      // each test still gets its own page in the shared window — isolation kept, window kept
+      page: async ({ _sharedContext, _keepalive }, use) => {
         const page = await _sharedContext.newPage()
         await use(page)
         await page.close()
