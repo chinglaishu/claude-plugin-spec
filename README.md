@@ -29,24 +29,55 @@ You approve meaning. The agent does everything else and never picks a side of a 
 
 ## Install
 
-```bash
+**Requirements:** [Claude Code](https://claude.com/claude-code) and Node 20+.
+
+specboard is a Claude Code plugin, published as a marketplace-of-one from this repo. Install it in two
+steps: add the marketplace, then install the plugin.
+
+### In Claude Code (the `/plugin` slash command)
+
+Type these into the Claude Code chat prompt — the terminal `claude` REPL, the desktop or web app, or an
+IDE extension (not a shell):
+
+```
 /plugin marketplace add chinglaishu/claude-plugin-spec
 ```
-
-```bash
+```
 /plugin install specboard@specboard
 ```
 
-Then, in the project you want a board for, run the **`kg-init`** skill:
+### From a plain terminal (the `claude plugin` CLI)
+
+Equivalent, if you'd rather stay in a shell:
+
+```bash
+claude plugin marketplace add chinglaishu/claude-plugin-spec
+claude plugin install specboard@specboard
+```
+
+Either way you can check it landed with `claude plugin list` — you want `specboard@specboard ✔ enabled`.
+The plugin's skills (`kg-init`, `kg-staff`) become available the **next** time Claude Code starts.
+
+### Set it up on your project
+
+In a fresh Claude Code session **inside the project you want a board for**, say:
 
 ```
 Use the kg-init skill to set this project up.
 ```
 
-> **If you set it up by hand, do this first.** The plugin ships source, not `node_modules`:
+`kg-init` scaffolds specboard's tools into your repo (it never overwrites your files or copies
+specboard's own screens), installs the two dev dependencies, starts the board, and points you at the
+**Set up → Crawl** flow so your app's routes become the first rows. That's it — you now have a board.
+
+> Prefer to skip the plugin entirely and scaffold by hand? Clone the repo and run the scaffolder into
+> your project:
 >
 > ```bash
-> npm install --prefix "${CLAUDE_PLUGIN_ROOT}"
+> git clone https://github.com/chinglaishu/claude-plugin-spec /tmp/specboard
+> node /tmp/specboard/tools/scaffold.mjs .   # run from your project root
+> npm install
+> npm run board
 > ```
 
 ## Using the board
