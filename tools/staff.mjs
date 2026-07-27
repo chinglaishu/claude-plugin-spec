@@ -7,6 +7,7 @@
 //   node tools/staff.mjs                 — every screen, one line each: what governs it, what is open
 //   node tools/staff.mjs <screen>        — the full briefing for one screen
 //   node tools/staff.mjs --file <path>   — which screen(s) govern a source file (needs `governs:` in a PRD)
+//   node tools/staff.mjs --stale         — the AFTER-a-change worklist: every screen a change left un-settled
 
 import { allScreens, readScreen, readConflicts } from './spec-store.mjs'
 
@@ -112,6 +113,42 @@ function list () {
   return L.join('\n')
 }
 
+// --stale — the worklist you run AFTER a change, where `list()` is what you read before one. A change
+// to one screen ripples: it can leave a sibling's PRD contradicting yours, or a sibling's test still
+// asserting the old behaviour — a false green. This prints every screen that is not fully SETTLED and
+// PROVEN, with the concrete reason for each, so "what did my change break" is a checklist and not a
+// hunt. Every line is work; a stale test still asserting old behaviour is a lie the board is telling.
+function stale () {
+  const screens = allScreens()
+  const { findings } = readConflicts()
+  const openBy = new Set(findings.filter(f => f.status === 'open')
+    .flatMap(f => [f.a?.source, f.b?.source]).map(s => String(s || '').split('/')[1]))
+  const rows = []
+  for (const s of screens) {
+    const why = []
+    if (!s.reqs.length) why.push('⛔ ungoverned — no requirement exists; nothing downstream can be trusted')
+    if (s.guess) why.push('⚠ PRD is a guess — the CEO must correct and approve it at gate A')
+    if (['review', 'stale', 'rejected'].includes(s.cells.draft)) why.push(`2 · Draft:  ${cellWord[s.cells.draft]}`)
+    if (['review', 'stale'].includes(s.cells.screen)) why.push(`3 · Screen: ${cellWord[s.cells.screen]}`)
+    if (['unrun', 'fail', 'ranstale'].includes(s.cells.e2e)) why.push(`4 · E2E:    ${cellWord[s.cells.e2e]}`)
+    if (openBy.has(s.name)) why.push('⚖ open contradiction touching this screen — the CEO picks canon, you must not')
+    if (why.length) rows.push({ name: s.name, why })
+  }
+  if (!rows.length) {
+    return 'Nothing is stale — everything is governed, approved and proven.'
+  }
+  const L = [`# What your change may have left stale — ${rows.length} screen(s) not settled and proven`, '']
+  for (const r of rows) {
+    L.push(`- ${r.name}`)
+    for (const w of r.why) L.push(`    ${w}`)
+  }
+  L.push('')
+  L.push('Work every item your change left stale — a test still asserting the old behaviour is a false green.')
+  L.push('If clearing one needs a requirement decision (picking canon, changing what a REQ means, approving')
+  L.push('a gate), STOP and ask the CEO — never decide it yourself.')
+  return L.join('\n')
+}
+
 // which screens declare they govern a source file, via `governs:` globs in their PRD frontmatter
 function byFile (path) {
   const rx = g => new RegExp('^' + g.trim().replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -127,5 +164,6 @@ function byFile (path) {
 
 const [, , a, b] = process.argv
 if (a === '--file') console.log(byFile(b || ''))
+else if (a === '--stale') console.log(stale())
 else if (a) console.log(briefing(a))
 else console.log(list())

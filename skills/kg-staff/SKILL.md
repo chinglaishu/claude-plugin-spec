@@ -47,6 +47,30 @@ Everything else, decide and move.
    wrong, fix the requirement and say why — conforming a doc silently to the code is how a requirement
    quietly becomes false.
 
+## 4. After the change, close the loop — your edit rippled
+
+A change to one screen is never local. It can leave a sibling's PRD contradicting the one you just
+edited, or a sibling's test still asserting the behaviour you just changed — a false green the board
+cannot catch on its own. Before you call the work done:
+
+1. **Run the changed screen's test to green — then run the whole suite.** `npm run e2e`. A change to
+   shared behaviour breaks a *sibling's* test, and only running everything catches it; a green on the
+   one screen you touched says nothing about the ones you did not.
+2. **Re-run the conflict scan.** Your new requirement text may now contradict another feature's PRD.
+   Trigger it from the board's **Scan** action (`POST /api/scan`) — it re-reads every PRD and surfaces
+   any new contradiction for the CEO to settle. (It is an agent job: it needs a valid `claude` login
+   and takes minutes.)
+3. **Run the stale worklist and clear every item your edit caused.**
+   ```bash
+   node tools/staff.mjs --stale     # every screen no longer settled and proven, with the reason
+   ```
+   A stale test still asserting the old behaviour is a false green — do not leave it. Re-run, re-shoot,
+   re-draft until nothing on the list traces back to your change.
+4. **If clearing an item needs a requirement decision, stop and escalate.** Picking the canonical side
+   of a conflict, changing what a requirement *means*, or approving a gate are the CEO's — never decide
+   one to make the list go quiet. These are the same three stops as section 2; they do not stop
+   applying just because you are nearly done.
+
 ## Why this exists
 
 A board nobody consults before coding is an expensive lint. The board makes the truth *visible*; this
