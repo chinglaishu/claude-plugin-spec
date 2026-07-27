@@ -50,26 +50,12 @@ const RUNS = join(SPEC, '_runs.json')
 const RUNDIR = join(SPEC, '_runs')
 const readRuns = () => existsSync(RUNS) ? JSON.parse(readFileSync(RUNS, 'utf8')) : []
 
-// Every image and video Playwright captured during one run, as paths the board can actually load.
-// Playwright nests them a directory deep per test, so this walks rather than lists.
+// The run's record, keyed by TEST so the board can show a test's own shots under that test — not
+// a heap of images nobody can attribute. The reporter writes this manifest; here we only read it.
 function collectRecord (dir) {
-  const out = []
-  const walk = d => {
-    for (const e of (existsSync(d) ? readdirSync(d, { withFileTypes: true }) : [])) {
-      const p = join(d, e.name)
-      if (e.isDirectory()) { walk(p); continue }
-      if (!/\.(png|webm)$/i.test(e.name)) continue
-      out.push({
-        // relative to the repo root, which is exactly what the static server serves
-        src: p.slice(ROOT.length + 1),
-        // the per-test folder name is the most human label available for a raw artifact
-        label: (p.split('/').slice(-2, -1)[0] || '').replace(/-/g, ' ').slice(0, 80),
-        video: /\.webm$/i.test(e.name)
-      })
-    }
-  }
-  walk(dir)
-  return out.slice(0, 60)
+  const manifest = join(dir, 'shots.json')
+  if (!existsSync(manifest)) return {}
+  try { return JSON.parse(readFileSync(manifest, 'utf8')) } catch { return {} }
 }
 
 function recordRun (entry) {
@@ -450,6 +436,8 @@ function startRun (screen, opts = {}) {
   // Headed: the browser opens and you watch the test drive the app. This is what "watch it run"
   // means to a person — the file-watcher that re-runs on save is a different feature entirely.
   if (opts.headed) args.push('--headed')
+  // A headed run is paced so you can follow it — the delay comes from Setup, not a magic number.
+  const slowMo = opts.headed ? readConfig().stepDelayMs : 0
 
   const started = Date.now()
   // A run started BY the board writes to its OWN report file. Scoped to one screen it would
@@ -474,6 +462,10 @@ function startRun (screen, opts = {}) {
       FORCE_COLOR: '0',
       BOARD_RESULTS: report,
       BOARD_RECORD: recordDir,
+      ...(slowMo ? { BOARD_SLOWMO: String(slowMo) } : {}),
+      // watching means ONE window that runs through every case — not a window flashing open and
+      // shut between them
+      ...(opts.headed ? { BOARD_ONE_WINDOW: '1' } : {}),
       // a filtered run reports on a subset, so the index must merge rather than replace
       ...(grep ? { BOARD_PARTIAL: '1' } : {})
     }
@@ -503,8 +495,9 @@ function startRun (screen, opts = {}) {
       ...totals,
       ok: code === 0,
       runId,
-      // what the test SAW, as served paths — the record is only useful if it can be looked at
-      shots: collectRecord(recordDir)
+      // what each test SAW, keyed by title — the record is only useful if it can be looked at,
+      // and only trustworthy if you can tell which test it belongs to
+      shotsByTest: collectRecord(recordDir)
     }
     recordRun(entry)
     running = null

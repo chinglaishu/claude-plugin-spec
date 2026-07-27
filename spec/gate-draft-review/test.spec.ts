@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../_base'
 import { makeUnbuiltScreen } from '../_fixture'
 
 // Gate A is the detail view of the board: PRD on the left, draft on the right, verdict beneath.
@@ -58,6 +58,36 @@ test('R5 — the gate opens by itself when the PRD moves', async ({ page, reques
 
   // put it back the way we found it
   await request.post('/api/gate', { data: { screen: 'conflicts', gate: 'draft', act: 'approve' } })
+})
+
+// A MULTI-STEP test case. Each test() above proves one requirement and is its own case; this one
+// walks the whole gate-A loop as a sequence of named steps, so the difference is visible on the
+// board: a test case can be one assertion or a small story, and the steps below are the story.
+// (Watch it run with a step delay set in Setup to see each step land.)
+test('the full gate-A loop — open, read, approve, confirm', async ({ page, request }) => {
+  const name = await makeUnbuiltScreen(request, 'probe-flow')
+  // the fixture leaves gate A approved; this test walks the loop FROM the open state, so reopen it
+  await request.post('/api/gate', { data: { screen: name, gate: 'draft', act: 'unapprove' } })
+
+  await test.step('open the screen from its address', async () => {
+    await page.goto('/#/' + name)
+    await expect(page.locator('.dt:not([hidden])')).toBeVisible()
+  })
+
+  await test.step('the verdict bar is open, asking for a yes', async () => {
+    await expect(page.locator('.dt:not([hidden]) .gb')).toContainText('Nobody has said yes')
+  })
+
+  await test.step('approve the draft', async () => {
+    await page.locator('.dt:not([hidden]) [data-act="approve"]').click()
+    await page.waitForLoadState('load')
+  })
+
+  await test.step('the bar now says approved and names the pinned PRD', async () => {
+    const bar = page.locator('.dt:not([hidden]) .gb')
+    await expect(bar).toContainText('design approved against')
+    await expect(bar.locator('code')).toHaveText(/^prd\.md · [0-9a-f]{12}$/)
+  })
 })
 
 test('the detail view has its own address and survives a reload', async ({ page }) => {

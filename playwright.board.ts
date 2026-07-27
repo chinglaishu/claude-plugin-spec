@@ -53,7 +53,11 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: 'off',
     screenshot: process.env.BOARD_RECORD ? 'on' : 'off',
-    video: process.env.BOARD_RECORD ? 'on' : 'off'
+    video: process.env.BOARD_RECORD ? 'on' : 'off',
+    // A watchable run pauses between actions so a person can follow along — the board sets
+    // BOARD_SLOWMO from the Setup page's "time between steps". Zero (or unset) on a normal run,
+    // because slowing a headless suite down helps no one.
+    launchOptions: { slowMo: Number(process.env.BOARD_SLOWMO) || 0 }
   },
   ...(EXTERNAL ? {} : {
     webServer: {

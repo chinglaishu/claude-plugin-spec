@@ -1,954 +1,632 @@
 [
   {
-    "at": "2026-07-27T06:25:39.977Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785133539977",
-    "shots": []
-  },
-  {
-    "at": "2026-07-27T06:25:34.900Z",
-    "screen": "board",
-    "ms": 4828,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133534900",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133534900/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133534900/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:25:34.768Z",
-    "screen": "board",
-    "ms": 12,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785133534768",
-    "shots": []
-  },
-  {
-    "at": "2026-07-27T06:25:29.381Z",
-    "screen": "board",
-    "ms": 4646,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133529381",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133529381/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133529381/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:25:19.223Z",
+    "at": "2026-07-27T07:40:35.099Z",
     "screen": "board",
     "ms": 2,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133519223",
-    "shots": []
+    "runId": "1785138035099",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:25:14.111Z",
+    "at": "2026-07-27T07:40:30.065Z",
     "screen": "board",
-    "ms": 4549,
+    "ms": 4329,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133514111",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133514111/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785138030065",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133514111/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785138030065/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138030065/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
   },
   {
-    "at": "2026-07-27T06:25:13.968Z",
+    "at": "2026-07-27T07:40:29.942Z",
     "screen": "board",
-    "ms": 13,
+    "ms": 11,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133513968",
-    "shots": []
+    "runId": "1785138029942",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:25:08.536Z",
+    "at": "2026-07-27T07:40:24.539Z",
     "screen": "board",
-    "ms": 4643,
+    "ms": 4614,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133508536",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133508536/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785138024539",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133508536/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785138024539/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785138024539/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
   },
   {
-    "at": "2026-07-27T06:24:58.369Z",
+    "at": "2026-07-27T07:40:00.189Z",
     "screen": "board",
-    "ms": 3,
+    "ms": 4,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133498369",
-    "shots": []
+    "runId": "1785138000189",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:24:53.358Z",
+    "at": "2026-07-27T07:39:55.148Z",
     "screen": "board",
-    "ms": 4555,
+    "ms": 4535,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133493358",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133493358/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785137995148",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133493358/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137995148/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137995148/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
   },
   {
-    "at": "2026-07-27T06:24:53.218Z",
+    "at": "2026-07-27T07:39:55.024Z",
     "screen": "board",
     "ms": 10,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133493218",
-    "shots": []
+    "runId": "1785137995024",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:24:47.198Z",
+    "at": "2026-07-27T07:39:50.126Z",
     "screen": "board",
-    "ms": 5251,
+    "ms": 4490,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133487198",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133487198/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785137990126",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133487198/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137990126/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137990126/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
   },
   {
-    "at": "2026-07-27T06:22:56.542Z",
+    "at": "2026-07-27T07:39:46.760Z",
     "screen": "board",
-    "ms": 17716,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133376542",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133376542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133376542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:22:47.068Z",
-    "screen": "board",
-    "ms": 2640,
-    "total": 1,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133367068",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133367068/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133367068/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:20:51.974Z",
-    "screen": "conflicts",
-    "ms": 4735,
-    "total": 5,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133251974",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/test-finished-1.png",
-        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/video.webm",
-        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/test-finished-1.png",
-        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/video.webm",
-        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/test-finished-1.png",
-        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/video.webm",
-        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/test-finished-1.png",
-        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/video.webm",
-        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/test-finished-1.png",
-        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133251974/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/video.webm",
-        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:19:24.262Z",
-    "screen": "conflicts",
-    "ms": 4186,
-    "total": 5,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785133164262",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/test-finished-1.png",
-        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/video.webm",
-        "label": "conflicts test R2 — both p c6bb6 h naming where it came from",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/test-finished-1.png",
-        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/video.webm",
-        "label": "conflicts test R3 — the to 74843 sed until you choose a side",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/test-finished-1.png",
-        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/video.webm",
-        "label": "conflicts test R4 — resolv c2543 rs the rewrite of that file",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/test-finished-1.png",
-        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/video.webm",
-        "label": "conflicts test R5 — a deci b51a7 eorders and swaps the sides",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/test-finished-1.png",
-        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133164262/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/video.webm",
-        "label": "conflicts test R5 — undo p cc2d3 nner is never asked to pick",
-        "video": true
-      }
-    ]
-  },
-  {
-    "at": "2026-07-27T06:19:06.536Z",
-    "screen": "board",
-    "ms": 17,
+    "ms": 4,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133146536",
-    "shots": []
+    "runId": "1785137986760",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:19:01.406Z",
+    "at": "2026-07-27T07:39:41.672Z",
     "screen": "board",
-    "ms": 4856,
+    "ms": 4415,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133141406",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133141406/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785137981672",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133141406/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137981672/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137981672/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
   },
   {
-    "at": "2026-07-27T06:19:01.115Z",
+    "at": "2026-07-27T07:39:41.416Z",
     "screen": "board",
-    "ms": 77,
+    "ms": 109,
     "total": 7,
     "failed": 0,
     "ok": false,
-    "runId": "1785133141115",
-    "shots": []
+    "runId": "1785137981416",
+    "shotsByTest": {}
   },
   {
-    "at": "2026-07-27T06:18:55.166Z",
+    "at": "2026-07-27T07:39:36.542Z",
     "screen": "board",
-    "ms": 5178,
+    "ms": 4407,
     "total": 7,
     "failed": 0,
     "ok": true,
-    "runId": "1785133135166",
-    "shots": [
-      {
-        "src": "spec/_runs/1785133135166/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": false
+    "runId": "1785137976542",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
-        "label": "board test R1 — one row per screen never one per requirement",
-        "video": true
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": false
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
-        "label": "board test R2 — four cells left to right in workflow order",
-        "video": true
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": false
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
-        "label": "board test R3 — the draft  68ad2 me itself not a word for it",
-        "video": true
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
       },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
-        "label": "board test R4 — cell state e8d44 ed and approving changes it",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
-        "label": "board test R6 — the header 2bee1  with the rows beneath them",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
-        "label": "board test R7 — screens ar dc3b1 named areas never paginated",
-        "video": true
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": false
-      },
-      {
-        "src": "spec/_runs/1785133135166/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
-        "label": "board test R8 — filter by  7437e and search requirement text",
-        "video": true
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137976542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137976542/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
       }
-    ]
+    }
+  },
+  {
+    "at": "2026-07-27T07:39:33.182Z",
+    "screen": "board",
+    "ms": 4,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785137973182",
+    "shotsByTest": {}
+  },
+  {
+    "at": "2026-07-27T07:39:28.144Z",
+    "screen": "board",
+    "ms": 4335,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785137968144",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137968144/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137968144/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
+      }
+    }
+  },
+  {
+    "at": "2026-07-27T07:39:27.886Z",
+    "screen": "board",
+    "ms": 109,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785137967886",
+    "shotsByTest": {}
+  },
+  {
+    "at": "2026-07-27T07:39:23.010Z",
+    "screen": "board",
+    "ms": 4454,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785137963010",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137963010/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137963010/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
+      }
+    }
+  },
+  {
+    "at": "2026-07-27T07:39:19.637Z",
+    "screen": "board",
+    "ms": 4,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785137959637",
+    "shotsByTest": {}
+  },
+  {
+    "at": "2026-07-27T07:39:14.591Z",
+    "screen": "board",
+    "ms": 4357,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785137954591",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137954591/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137954591/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
+      }
+    }
+  },
+  {
+    "at": "2026-07-27T07:39:14.333Z",
+    "screen": "board",
+    "ms": 109,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785137954333",
+    "shotsByTest": {}
+  },
+  {
+    "at": "2026-07-27T07:39:09.460Z",
+    "screen": "board",
+    "ms": 4420,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785137949460",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785137949460/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785137949460/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
+      }
+    }
   }
 ]

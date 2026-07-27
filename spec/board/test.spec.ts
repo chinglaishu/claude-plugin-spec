@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../_base'
 
 // One test per requirement it proves. A spec that asserts the page "loaded" would pass with every
 // requirement deleted, which makes it a smoke alarm with the battery out.

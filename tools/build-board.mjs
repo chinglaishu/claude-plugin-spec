@@ -123,7 +123,8 @@ function prdBody (s) {
 const runControls = name => `<span class="runctl">
   <button class="btn sm runbtn" data-run="${esc(name)}">Run<span class="kbd">r</span></button>
   <button class="btn sm headed" data-run="${esc(name)}">Watch it run ↗</button>
-  <button class="btn sm gh runbg" data-run="${esc(name)}">Background</button>
+  <button class="btn sm gh runbg" data-run="${esc(name)}"
+    title="run without the panel — the header chip stays lit and tells you the result when it is done">Background</button>
   <label class="watchtog sm" title="re-run this screen whenever its files change">
     <input type="checkbox" class="dwatch"> re-run on save</label>
 </span>`
@@ -155,10 +156,11 @@ function e2ePanel (s) {
     <div class="e2e">
       <div class="e2emeta">
         <span>last run <b>${ranAt}</b></span>
+        <span class="tcnote">${s.run.total} test case${s.run.total === 1 ? '' : 's'} — each an independent check; a case may hold several steps</span>
         ${s.cells.e2e === 'ranstale' ? '<span class="warn">you have edited this screen since — run it again</span>' : ''}
         <div class="path"><code>spec/${esc(s.name)}/test.spec.ts</code></div>
       </div>
-      ${s.run.tests.map(t => `<article class="tst ${t.ok ? 'p' : 'f'}">
+      ${s.run.tests.map(t => `<article class="tst ${t.ok ? 'p' : 'f'}" data-title="${esc(t.title)}">
         <div class="th"><span class="mark ${t.ok ? '' : 'o'}"></span>
           <span class="tt">${esc(t.title)}</span><span class="ms">${t.ms}ms</span>
           <span class="tacts">
@@ -167,7 +169,9 @@ function e2ePanel (s) {
             <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
               data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
           </span></div>
+        ${t.steps && t.steps.length ? `<ol class="tsteps">${t.steps.map(st => `<li>${esc(st)}</li>`).join('')}</ol>` : ''}
         ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
+        <div class="tstshots" data-title="${esc(t.title)}"></div>
       </article>`).join('')}
       <div class="runlog" data-screen="${esc(s.name)}">
         <div class="lbl">recent runs</div>
@@ -475,6 +479,10 @@ export function build () {
   .tst.p .mark { color:var(--koke); } .tst.f .mark { color:var(--bengara); }
   .tst .tt { flex:1; font-size:var(--t-sm); color:var(--ink-2); }
   .tst .ms { font-size:var(--t-micro); color:var(--ink-4); font-family:var(--mono); }
+  /* the steps INSIDE a test case, when it has them — so a case that is a small story reads as one */
+  .tsteps { margin:var(--s2) 0 0 20px; padding:0; }
+  .tsteps li { font-size:var(--t-xs); color:var(--ink-3); line-height:1.7; }
+  .tcnote { color:var(--ink-4); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
   .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
@@ -550,17 +558,15 @@ export function build () {
     font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
   .runrow .rr-s { color:var(--ink-4); }
   .runrow .ms { margin-left:auto; color:var(--ink-4); }
-  /* what the run SAW — thumbnails of everything the test captured, each one zoomable */
-  .recshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px;
-    padding:0 0 var(--s3) 14px; }
-  .recshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
+  /* what THIS test saw — its own shots, under its own row, each zoomable */
+  .tstshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:var(--s2) 0 0 14px; }
+  .tstshots:empty { display:none; }
+  .tstshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
     border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--wash); display:block; }
-  .recshots img:hover { border-color:var(--ink); }
-  .recmore { font-size:var(--t-xs); color:var(--ink-4); font-family:var(--mono); }
-  .recvids { display:inline-flex; gap:4px; margin-left:var(--s2); }
-  .recvids a { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
-    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:2px 5px; }
-  .recvids a:hover { border-color:var(--ink); color:var(--ink); }
+  .tstshots img:hover { border-color:var(--ink); }
+  .tstshots .recvid { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
+    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:3px 6px; }
+  .tstshots .recvid:hover { border-color:var(--ink); color:var(--ink); }
   /* per-test run controls appear on the row you are pointing at, so five tests do not become ten
      competing buttons */
   .tacts { display:inline-flex; gap:4px; margin-left:var(--s2); opacity:0; transition:opacity .12s; }
@@ -667,7 +673,7 @@ export function build () {
     <span class="stat"><b>${count('e2e', 'pass')}</b> tested</span>
     <span class="stat hot"><b>${yourTurn}</b> waiting on you</span>
     <span class="grow"></span>
-    <span class="chip run" id="runflag" hidden><span class="dot"></span>tests running</span>
+    <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
     <button class="btn sm" id="runall">Run all tests</button>
     <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
     <button class="btn sm gh" id="toggle-all">Collapse all</button>
@@ -764,9 +770,26 @@ export function build () {
             <textarea class="input" id="initroutes" rows="4" placeholder="/  (one per line — leave blank to crawl from the root)"></textarea>
             <div class="h warn">Guessing any of these wrong builds a complete, confident, wrong board.</div>
           </div>
-          <div class="fld" style="margin-bottom:0">
+          <div class="fld">
             <div class="l">Sign-in, if screens need it <span class="gbn">optional</span></div>
             <textarea class="input" id="initsignin" rows="3" placeholder="a script against the page object that leaves the app logged in"></textarea>
+          </div>
+          <div class="sep" style="margin:var(--s2) 0 var(--s4)"></div>
+          <div class="fld">
+            <div class="l">Pace of a watchable run</div>
+            <div style="display:flex;align-items:center;gap:var(--s3)">
+              <input class="input" id="initstepdelay" type="number" min="0" max="5000" step="50" style="width:110px" placeholder="300">
+              <span class="gbn">ms between each step, so you can follow along</span>
+            </div>
+          </div>
+          <div class="fld" style="margin-bottom:0">
+            <div class="l">Where to keep run screenshots &amp; video</div>
+            <div class="seg" id="initstore">
+              <button data-store="local" class="on">In this repo</button><button data-store="git">Git branch</button><button data-store="bucket">Bucket URL</button>
+            </div>
+            <input class="input" id="initgitbranch" placeholder="branch name, e.g. spec-shots" style="margin-top:8px" hidden>
+            <input class="input" id="initbucket" placeholder="https://…  a base URL uploads are pushed to" style="margin-top:8px" hidden>
+            <div class="h" id="initstorehint">Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine.</div>
           </div>
         </div>
         <div class="initfoot">
@@ -1209,6 +1232,21 @@ ${detail}
   for (const b of document.querySelectorAll('#initmode button'))
     b.addEventListener('click', () => setInitMode(b.dataset.mode))
 
+  const storeHints = {
+    local: 'Kept under spec/_runs/ and pruned with the run log — nothing leaves your machine. Fully working.',
+    git: 'Would commit each run\\'s shots to this branch, shareable and versioned. Preference saved — upload not wired yet.',
+    bucket: 'Would push shots to this base URL, for shots that outlive the repo. Preference saved — upload not wired yet.'
+  }
+  function setStore (w) {
+    for (const b of document.querySelectorAll('#initstore button')) b.classList.toggle('on', b.dataset.store === w)
+    document.getElementById('initgitbranch').hidden = w !== 'git'
+    document.getElementById('initbucket').hidden = w !== 'bucket'
+    document.getElementById('initstorehint').textContent = storeHints[w] || storeHints.local
+  }
+  for (const b of document.querySelectorAll('#initstore button'))
+    b.addEventListener('click', () => setStore(b.dataset.store))
+  const storeWhere = () => document.querySelector('#initstore .on').dataset.store
+
   async function loadConfig () {
     let cfg
     try { cfg = await (await fetch('/api/config')).json() } catch (e) { return }
@@ -1219,6 +1257,11 @@ ${detail}
     document.getElementById('initurl').value = cfg.baseUrl || ''
     document.getElementById('initroutes').value = (cfg.routes || []).join('\\n')
     document.getElementById('initsignin').value = cfg.signIn || ''
+    document.getElementById('initstepdelay').value = cfg.stepDelayMs == null ? 300 : cfg.stepDelayMs
+    const st = cfg.storage || { where: 'local' }
+    setStore(st.where || 'local')
+    document.getElementById('initgitbranch').value = st.gitBranch || ''
+    document.getElementById('initbucket').value = st.bucketUrl || ''
   }
 
   function foundRow (r) {
@@ -1258,7 +1301,13 @@ ${detail}
       frontendCommand: document.getElementById('initfrontendcmd').value,
       baseUrl: document.getElementById('initurl').value,
       routes: document.getElementById('initroutes').value,
-      signIn: document.getElementById('initsignin').value
+      signIn: document.getElementById('initsignin').value,
+      stepDelayMs: Number(document.getElementById('initstepdelay').value),
+      storage: {
+        where: storeWhere(),
+        gitBranch: document.getElementById('initgitbranch').value,
+        bucketUrl: document.getElementById('initbucket').value
+      }
     }
     const r = await fetch('/api/config', {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
@@ -1397,7 +1446,7 @@ ${detail}
   // panel back up. Without this a backgrounded run was a job you could see was happening and could
   // never open again.
   runflag.style.cursor = 'pointer'
-  runflag.title = 'show the running job'
+  runflag.title = 'a job is running in the background — click to open its panel'
   runflag.addEventListener('click', () => { panel.hidden = false })
 
   // Watch: re-run the moment a PRD, draft or spec changes, so the E2E column stops being the one
@@ -1424,33 +1473,27 @@ ${detail}
     syncWatch(!!data.watch)
     setRunning(!!data.running)
     for (const box of document.querySelectorAll('.runlog')) {
-      const mine = data.runs.filter(r => r.screen === box.dataset.screen || r.screen === 'all').slice(0, 5)
+      const screen = box.dataset.screen
+      const mine = data.runs.filter(r => r.screen === screen || r.screen === 'all').slice(0, 5)
       box.querySelector('.runrows').innerHTML = mine.length
-        ? mine.map(r => {
-            // The RECORD of the run, not just its verdict: what the test actually saw, as images
-            // you can open. A number alone asks you to trust it.
-            const shots = (r.shots || []).filter(s => !s.video)
-            const vids = (r.shots || []).filter(s => s.video)
-            return '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
-              (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
-              '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
-              (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>' +
-              (shots.length || vids.length
-                ? '<div class="recshots">' +
-                    shots.slice(0, 8).map(s =>
-                      '<img src="' + s.src + '" alt="' + s.label + '" title="' + s.label + '" loading="lazy">').join('') +
-                    (shots.length > 8 ? '<span class="recmore">+' + (shots.length - 8) + '</span>' : '') +
-                    // one line for the recordings, not one button per artifact — twelve identical
-                    // links is noise standing where the evidence should be
-                    (vids.length
-                      ? '<span class="recvids">' + vids.map((s, i) =>
-                          '<a href="' + s.src + '" target="_blank" title="' + s.label + '">▶&nbsp;' + (i + 1) + '</a>').join('') +
-                        '</span>'
-                      : '') +
-                  '</div>'
-                : '')
-          }).join('')
+        ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
+            (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
+            '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
+            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span></div>').join('')
         : '<div class="runrow ms">no runs recorded yet</div>'
+
+      // The RECORD, shown UNDER each test — what THAT test saw, not a heap of images under all of
+      // them. Take the newest run that recorded this screen and carries a per-test manifest.
+      const rec = data.runs.find(r => (r.screen === screen || r.screen === 'all') &&
+        r.shotsByTest && Object.keys(r.shotsByTest).length)
+      const panel = box.closest('.e2e')
+      for (const slot of panel.querySelectorAll('.tstshots')) {
+        const one = rec && rec.shotsByTest[slot.dataset.title]
+        slot.innerHTML = one
+          ? (one.shots || []).map(src => '<img src="' + src + '" loading="lazy" alt="what this test saw">').join('') +
+            (one.video ? '<a class="recvid" href="' + one.video + '" target="_blank">▶ recording</a>' : '')
+          : ''
+      }
     }
   }
   loadRuns()
@@ -1527,9 +1570,17 @@ ${detail}
         // a crawl changes what the init "what was found" table should show
         loadConflicts()
         if (!document.getElementById('initview').hidden) loadCrawl()
-        // finished while you were not watching — bring the board up to date on its own, unless a
-        // driver is in charge of its own navigation
-        if (panel.hidden) { loadRuns(); if (!automation) setTimeout(() => location.reload(), 300); return }
+        // Finished while you were NOT watching (backgrounded). Do not just silently refresh — say
+        // what happened, so a background run is a thing you get told the result of rather than a
+        // thing that quietly changed the board while you looked away.
+        if (panel.hidden) {
+          loadRuns()
+          const label = (d.screen === 'all' ? 'all tests' : (d.screen || 'run')) + ' — ' + (d.note ||
+            ((d.total - d.failed) + ' of ' + d.total + (d.ok ? ' passed' : ' — some failed')))
+          toast('Background job done · ' + label + ' · click the running chip to see it')
+          if (!automation) setTimeout(() => location.reload(), 1800)
+          return
+        }
         rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
         rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
         rplog.textContent += '\\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +

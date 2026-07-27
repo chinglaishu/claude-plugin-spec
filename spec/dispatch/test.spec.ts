@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../_base'
 
 // The dispatch panel IS the run panel — a job is a job, whether it is Claude redrafting a
 // wireframe or Playwright running a suite. Testing it with a real Claude redraft is impossible
@@ -51,6 +51,11 @@ test('R4 — a second job is refused while one runs, not queued silently', async
   await page.goto('/#/board')
   await page.locator('.dt[data-i="0"] .runbtn').first().click()
   await expect(page.locator('#runpanel #rpchip')).toContainText('running')
+  // The panel says "running" the instant you click — that is client-side optimism. Wait for the
+  // SERVER to actually hold the run before racing a second one at it, or the two /api/run calls
+  // (the button's own and this test's) land in an undefined order and either could be the winner.
+  await expect.poll(async () => (await request.get('/api/runs').then((r: any) => r.json())).running,
+    { timeout: 30000 }).not.toBeNull()
 
   // Two agents editing one wireframe is a corrupted file. The guard is one singleton across every
   // job kind — a redraft, a scan, a run all refuse each other — proven here with a run.

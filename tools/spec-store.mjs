@@ -279,7 +279,12 @@ export const CONFIG = join(SPEC, '_config.json')
 export const DEFAULT_CONFIG = {
   mode: 'attach', baseUrl: '',
   backendCommand: '', backendUrl: '', frontendCommand: '',
-  routes: [], signIn: ''
+  routes: [], signIn: '',
+  // how long a watchable run pauses between actions, so a person can actually follow it
+  stepDelayMs: 300,
+  // where a run's screenshots and videos are kept. 'local' = spec/_runs/ in this repo (default).
+  // 'git' = committed to a branch of this repo. A bucket = a base URL uploads are pushed to.
+  storage: { where: 'local', gitBranch: '', bucketUrl: '' }
 }
 
 export function readConfig () {
@@ -300,7 +305,14 @@ export function writeConfig (cfg) {
     // one route per line or comma; blank means "crawl from the root"
     routes: (Array.isArray(cfg.routes) ? cfg.routes : String(cfg.routes || '').split(/[\n,]/))
       .map(r => String(r).trim()).filter(Boolean).slice(0, 200),
-    signIn: str(cfg.signIn, 4000)
+    signIn: str(cfg.signIn, 4000),
+    // clamped: 0 means "as fast as it can", and a giant value would hang a watch forever
+    stepDelayMs: Math.max(0, Math.min(5000, Number(cfg.stepDelayMs) || 0)) || (cfg.stepDelayMs === 0 ? 0 : 300),
+    storage: {
+      where: ['local', 'git', 'bucket'].includes(cfg.storage?.where) ? cfg.storage.where : 'local',
+      gitBranch: str(cfg.storage?.gitBranch, 120).trim(),
+      bucketUrl: str(cfg.storage?.bucketUrl, 400).trim()
+    }
   }
   writeJson(CONFIG, clean)
   return clean

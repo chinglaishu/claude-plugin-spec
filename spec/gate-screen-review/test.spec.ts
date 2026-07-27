@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '../_base'
 import { makeUnbuiltScreen } from '../_fixture'
 
 // Gate B only exists once a screenshot exists, and a screenshot only exists because a test made
