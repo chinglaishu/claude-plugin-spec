@@ -1,5 +1,53 @@
 [
   {
+    "at": "2026-07-27T03:52:25.032Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T03:52:24.953Z",
+    "screen": "board",
+    "ms": 7,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T03:52:20.597Z",
+    "screen": "board",
+    "ms": 3779,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
+    "at": "2026-07-27T03:48:18.526Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T03:48:18.446Z",
+    "screen": "board",
+    "ms": 7,
+    "total": 7,
+    "failed": 0,
+    "ok": false
+  },
+  {
+    "at": "2026-07-27T03:48:14.096Z",
+    "screen": "board",
+    "ms": 3763,
+    "total": 7,
+    "failed": 0,
+    "ok": true
+  },
+  {
     "at": "2026-07-27T03:34:07.144Z",
     "screen": "board",
     "ms": 4,

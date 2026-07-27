@@ -12,14 +12,21 @@ const SPEC = dirname(fileURLToPath(import.meta.url))
 // The conflict files are the same kind of thing as an approval pin: a record of a decision a
 // human made. The conflicts specs seed a known findings file and settle it, so without these two
 // here a test run would wipe a real scan and leave behind a resolution nobody chose.
-const TOOL_STATE = ['_conflicts.json', '_conflict-decisions.json']
+const TOOL_STATE = ['_conflicts.json', '_conflict-decisions.json', '_config.json', '_crawl.json']
+
+const screenDirs = () => readdirSync(SPEC)
+  .filter(n => !n.startsWith('_') && statSync(join(SPEC, n)).isDirectory())
 
 const files = () => [
-  ...readdirSync(SPEC)
-    .filter(n => !n.startsWith('_') && statSync(join(SPEC, n)).isDirectory())
-    .map(n => join(SPEC, n, 'state.json')),
+  ...screenDirs().map(n => join(SPEC, n, 'state.json')),
   ...TOOL_STATE.map(n => join(SPEC, n))
 ]
+
+// The set of screens that existed before the run, so any row a crawl creates during it can be
+// removed after. The init spec crawls the board's own server and materialises new rows; without
+// this they survive the run and the board gains screens nobody wrote — the mirror image of the
+// conflict-fixture leak, and just as much a lie about what the project contains.
+const DIRSNAP = join(SPEC, `_dir-snapshot.${process.pid}.json`)
 
 // PER PROCESS, not one shared file. The board can run the suite while a suite is already running
 // — the dispatch spec drives a real sub-run through the panel to prove it streams — and two
@@ -36,9 +43,15 @@ export async function saveState () {
   const snap: Record<string, string | null> = {}
   for (const f of files()) snap[f] = existsSync(f) ? readFileSync(f, 'utf8') : null
   writeFileSync(SNAPSHOT, JSON.stringify(snap))
+  writeFileSync(DIRSNAP, JSON.stringify(screenDirs()))
 }
 
 export async function restoreState () {
+  if (existsSync(DIRSNAP)) {
+    const before = new Set(JSON.parse(readFileSync(DIRSNAP, 'utf8')))
+    for (const n of screenDirs()) if (!before.has(n)) rmSync(join(SPEC, n), { recursive: true, force: true })
+    rmSync(DIRSNAP)
+  }
   if (!existsSync(SNAPSHOT)) return
   const snap = JSON.parse(readFileSync(SNAPSHOT, 'utf8'))
   for (const [f, body] of Object.entries(snap)) {

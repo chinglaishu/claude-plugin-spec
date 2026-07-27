@@ -177,11 +177,18 @@ export function readScreen (name, results = null) {
     was: wasById
   }
 
+  // A crawled PRD is a GUESS read off the running page, never canon (init R3). It is a proposal
+  // for the CEO to correct, so it must look different from a PRD a human wrote and it must not let
+  // the loop skip gate A. The flag lives in frontmatter because it travels with the document — the
+  // first time the CEO edits and means it, they delete the line, and the guess becomes theirs.
+  const guess = /^(1|true|yes)$/i.test(String(fm.guess || ''))
+
   return {
     name,
     area: fm.area || 'Other',
     title: fm.title || name,
     route: fm.route || '',
+    guess,
     reqs,
     prdText,
     diff,
@@ -196,6 +203,71 @@ export function readScreen (name, results = null) {
     state,
     cells: { prd: reqs.length ? 'ok' : 'missing', draft, screen, e2e }
   }
+}
+
+// config -------------------------------------------------------------------
+// How to reach the project's own app so it can be crawled. The one thing the tool cannot derive
+// from the tree — a wrong guess here builds a complete, confident, wrong board (init R1) — so it
+// is asked once and kept.
+export const CONFIG = join(SPEC, '_config.json')
+
+// Two ways to reach an app, and the CEO asked for both. "attach" points at a dev server that is
+// ALREADY running — starting a second one is how you end up crawling a stale copy on the wrong
+// port. "start" runs a command and waits for the URL to answer.
+export const DEFAULT_CONFIG = { mode: 'attach', startCommand: '', baseUrl: '', routes: [], signIn: '' }
+
+export function readConfig () {
+  if (!existsSync(CONFIG)) return { ...DEFAULT_CONFIG }
+  try { return { ...DEFAULT_CONFIG, ...JSON.parse(readFileSync(CONFIG, 'utf8')) } }
+  catch { return { ...DEFAULT_CONFIG } }
+}
+
+export function writeConfig (cfg) {
+  const mode = cfg.mode === 'start' ? 'start' : 'attach'
+  const clean = {
+    mode,
+    startCommand: String(cfg.startCommand || '').slice(0, 400),
+    baseUrl: String(cfg.baseUrl || '').trim().slice(0, 400),
+    // one route per line or comma; blank means "crawl from the root"
+    routes: (Array.isArray(cfg.routes) ? cfg.routes : String(cfg.routes || '').split(/[\n,]/))
+      .map(r => String(r).trim()).filter(Boolean).slice(0, 200),
+    signIn: String(cfg.signIn || '').slice(0, 4000)
+  }
+  writeFileSync(CONFIG, JSON.stringify(clean, null, 2) + '\n')
+  return clean
+}
+
+// A route becomes a directory name. '/product/:id' has to survive as something a filesystem and a
+// URL hash both accept, and two different routes must never collapse to one folder.
+export const slugify = route => {
+  const s = String(route || '').replace(/^https?:\/\/[^/]+/, '').replace(/[?#].*$/, '')
+    .replace(/^\/+|\/+$/g, '').replace(/:/g, '').replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').toLowerCase()
+  return s || 'root'
+}
+
+// The crawl manifest — what the last crawl found, for the Init "what was found" table. Derived,
+// overwritten each crawl, belongs to no screen.
+export const CRAWL = join(SPEC, '_crawl.json')
+
+// Whether a route already has a screen on the board. Rerunning must find NEW routes without
+// touching settled ones (init R5), so this is the line between "create a guessed row" and "leave
+// the CEO's work alone" — and it is drawn by the route's slug, not by list position, so the same
+// route is the same screen across crawls.
+export const routeExists = route => existsSync(join(SPEC, slugify(route), 'prd.md'))
+
+export function readCrawl () {
+  const raw = existsSync(CRAWL) ? JSON.parse(readFileSync(CRAWL, 'utf8')) : { crawledAt: null, routes: [] }
+  const routes = (raw.routes || []).map(r => {
+    const route = typeof r === 'string' ? r : r.route
+    const slug = slugify(route)
+    const exists = existsSync(join(SPEC, slug, 'prd.md'))
+    // a row already on the board keeps its own PRD — a crawl never overwrites it, and if that PRD
+    // is the CEO's (not a guess) it is settled work the crawl must leave completely alone
+    const mine = exists && !readScreen(slug)?.guess
+    return { ...(typeof r === 'string' ? {} : r), route, slug, exists, mine }
+  })
+  return { crawledAt: raw.crawledAt || null, ranAt: raw.crawledAt || null, routes }
 }
 
 // conflicts ----------------------------------------------------------------
@@ -267,6 +339,10 @@ export const isWaiting = s =>
   // It used to fall out of the queue entirely, because every other cell correctly reported
   // "waits", and the row sat on the board being silently ignored.
   s.cells.prd === 'missing' ||
+  // A guessed PRD is waiting on you too: the crawl read it off the page and you have to correct
+  // it before it can be trusted. Left out of the queue it would sit there looking done while
+  // being nobody's actual requirement.
+  s.guess ||
   ['review', 'stale'].includes(s.cells.draft) || ['review', 'stale'].includes(s.cells.screen)
 
 export function sortedAreas (screens) {

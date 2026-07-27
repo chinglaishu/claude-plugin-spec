@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { makeUnbuiltScreen } from '../_fixture'
 
 // Gate B only exists once a screenshot exists, and a screenshot only exists because a test made
 // one. These specs therefore depend on spec/board/screen.png having been produced by the board
@@ -54,8 +55,10 @@ test('R5 — rejecting has to name which side is wrong', async ({ request }) => 
 })
 
 test('R2 — a screen with no screenshot has no gate B to open', async ({ page, request }) => {
-  await request.post('/api/gate', { data: { screen: 'init', gate: 'draft', act: 'approve' } })
-  await page.goto('/#/init')
+  // stand up our own drafted-but-unbuilt screen: every real screen is built now, so this
+  // precondition has to be made, not borrowed from whatever happens to be unfinished
+  const name = await makeUnbuiltScreen(request, 'probe-unbuilt-b')
+  await page.goto('/#/' + name)
   const dt = page.locator('.dt:not([hidden])')
   // no screenshot means no "3 · Screen" panel at all, so there is nothing for gate B to compare
   await expect(dt.locator('.dtp', { hasText: '3 · Screen' })).toHaveCount(0)

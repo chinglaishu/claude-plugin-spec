@@ -50,8 +50,8 @@ const row = (s, i) => `
      data-waiting="${isWaiting(s) ? 1 : 0}" data-started="${s.cells.draft === 'missing' ? 0 : 1}"
      data-q="${esc((s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase())}">
   <div class="c1">
-    <div class="nm">${esc(s.title)}</div>
-    <div class="meta">${s.reqs.length} requirements${s.route ? ` · <code>${esc(s.route)}</code>` : ''}</div>
+    <div class="nm">${esc(s.title)}${s.guess ? '<span class="chip stale gmark"><span class="mark h"></span>a guess</span>' : ''}</div>
+    <div class="meta">${s.reqs.length} requirements${s.route ? ` · <code>${esc(s.route)}</code>` : ''}${s.guess ? ' · <span class="gdim">crawled — correct it</span>' : ''}</div>
     <ul class="reqs">${s.reqs.slice(0, 6).map(r => `<li><span class="rq">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span></li>`).join('')}${s.reqs.length > 6 ? `<li class="more">+${s.reqs.length - 6} more</li>` : ''}</ul>
   </div>
   ${cell(s, 'draft', s.draftHtml
@@ -522,6 +522,30 @@ export function build () {
   .srow .w { color:var(--ink); }
   .cfempty { text-align:center; padding:var(--s8) var(--s4); color:var(--ink-3);
     font-size:var(--t-md); line-height:1.9; }
+  .gmark { margin-left:var(--s2); vertical-align:middle; }
+  .gdim { color:var(--bengara); }
+
+  /* init ----------------------------------------------------------------- */
+  .initwrap { max-width:1120px; margin:0 auto; display:grid;
+    grid-template-columns:minmax(360px,440px) 1fr; gap:var(--s5); align-items:start; }
+  .initcol .fld { margin-bottom:var(--s4); }
+  .initcol .fld:last-child { margin-bottom:0; }
+  .initcol .fld .l { font-size:var(--t-md); margin-bottom:var(--s2); display:flex; gap:var(--s2); align-items:baseline; }
+  .initcol .fld .h { font-size:var(--t-xs); color:var(--ink-4); margin-top:var(--s2); }
+  .initcol .fld .h.warn { color:var(--bengara); }
+  .initcol textarea.input { resize:vertical; font-family:var(--mono); line-height:1.6; }
+  .initfoot { display:flex; align-items:center; gap:var(--s3); margin-top:var(--s4); }
+  .initnote { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-top:1px solid var(--hair); }
+  .frow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-top:1px solid var(--hair); font-size:var(--t-sm); }
+  .frow:first-child { border-top:0; }
+  .frow .fthumb { width:60px; height:40px; flex:none; border:1px solid var(--hair-2);
+    border-radius:var(--r-sm); background:var(--wash); overflow:hidden; }
+  .frow .fthumb img { width:100%; display:block; }
+  .frow .frt { font-family:var(--mono); font-size:var(--t-sm); }
+  .frow .fname { color:var(--ink-4); font-size:var(--t-xs); }
+  .frow .fst { margin-left:auto; color:var(--ink-4); font-size:var(--t-xs); }
 </style>
 
 <div class="top">
@@ -537,6 +561,7 @@ export function build () {
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
   <span id="shown" class="gbn" style="min-width:64px"></span>
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
+  <button class="btn sm" id="initbtn">Set up</button>
 </div>
 
 <div class="wrap">
@@ -604,6 +629,71 @@ export function build () {
       <div id="cfopen"></div>
       <div id="cfsettled" hidden></div>
       <div class="cfempty" id="cfempty" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- Init is a tool view too (#init): how to reach the project's app, and what a crawl of it
+     found. A project that arrives with code and no specs starts here, so the board is populated on
+     day one instead of being an empty page nobody knows how to fill. -->
+<section class="dt" id="initview" hidden>
+  <div class="dth">
+    <h2>Set up the board</h2>
+    <span class="gbn">point at your app, then crawl it into rows</span>
+    <span class="grow"></span>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll cfscroll">
+    <div class="initwrap">
+      <div class="initcol">
+        <div class="card pad">
+          <div class="fld">
+            <div class="l">How do we reach your app?</div>
+            <div class="seg" id="initmode">
+              <button data-mode="attach" class="on">It's already running</button><button data-mode="start">Start it for me</button>
+            </div>
+            <div class="h">Pointing at a server you already have running is safer than starting a second one on the wrong port.</div>
+          </div>
+          <div class="fld" id="initstartfld" hidden>
+            <div class="l">How do I start it?</div>
+            <input class="input" id="initstart" placeholder="npm run dev">
+          </div>
+          <div class="fld">
+            <div class="l">What URL does it serve on?</div>
+            <input class="input" id="initurl" placeholder="http://localhost:3000">
+          </div>
+          <div class="fld">
+            <div class="l">Which routes matter?</div>
+            <textarea class="input" id="initroutes" rows="4" placeholder="/  (one per line — leave blank to crawl from the root)"></textarea>
+            <div class="h warn">Guessing any of these wrong builds a complete, confident, wrong board.</div>
+          </div>
+          <div class="fld" style="margin-bottom:0">
+            <div class="l">Sign-in, if screens need it <span class="gbn">optional</span></div>
+            <textarea class="input" id="initsignin" rows="3" placeholder="a script against the page object that leaves the app logged in"></textarea>
+          </div>
+        </div>
+        <div class="initfoot">
+          <button class="btn" id="initsave">Save setup</button>
+          <button class="btn pri" id="initcrawl">Crawl the app →</button>
+          <span class="gbn" id="initsaved" hidden>saved</span>
+        </div>
+      </div>
+
+      <div class="initcol">
+        <div class="card">
+          <header>
+            <span class="lbl">what a crawl found · each becomes one row</span>
+            <span class="grow"></span>
+            <span class="gbn" id="initwhen"></span>
+          </header>
+          <div id="initfound"></div>
+          <div class="cfempty" id="initempty" hidden></div>
+          <div class="initnote">
+            <span class="chip stale"><span class="mark h"></span>a guess</span>
+            <span class="gbn">Read off the page, never canon. Every crawled screen starts unapproved, so the loop still begins at gate A.</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -725,6 +815,12 @@ ${detail}
       closeAll()
       document.getElementById('cfview').hidden = false
       loadConflicts()
+      return
+    }
+    if (location.hash === '#init') {
+      closeAll()
+      document.getElementById('initview').hidden = false
+      loadConfig(); loadCrawl()
       return
     }
     const name = decodeURIComponent(location.hash.replace(/^#\\//, ''))
@@ -1002,6 +1098,94 @@ ${detail}
   // once at startup regardless of the current route.
   loadConflicts()
 
+  // init -----------------------------------------------------------------
+  const initview = document.getElementById('initview')
+  const initMode = () => document.querySelector('#initmode .on').dataset.mode
+  function setInitMode (m) {
+    for (const b of document.querySelectorAll('#initmode button')) b.classList.toggle('on', b.dataset.mode === m)
+    document.getElementById('initstartfld').hidden = m !== 'start'
+  }
+  for (const b of document.querySelectorAll('#initmode button'))
+    b.addEventListener('click', () => setInitMode(b.dataset.mode))
+
+  async function loadConfig () {
+    let cfg
+    try { cfg = await (await fetch('/api/config')).json() } catch (e) { return }
+    setInitMode(cfg.mode || 'attach')
+    document.getElementById('initstart').value = cfg.startCommand || ''
+    document.getElementById('initurl').value = cfg.baseUrl || ''
+    document.getElementById('initroutes').value = (cfg.routes || []).join('\\n')
+    document.getElementById('initsignin').value = cfg.signIn || ''
+  }
+
+  function foundRow (r) {
+    // 'yours' — a real PRD the CEO wrote — is never touched; a guessed row already on the board is
+    // still a guess; a route with no screen yet is new. R5: rerunning leaves settled work alone.
+    const state = r.mine ? 'yours' : r.exists ? 'a guess, already on board' : 'new'
+    const thumb = r.exists || r.slug
+      ? '<div class="fthumb"><img src="spec/' + eh(r.slug) + '/crawl.png" onerror="this.style.display=\\'none\\'" alt=""></div>'
+      : '<div class="fthumb"></div>'
+    return '<div class="frow" data-slug="' + eh(r.slug) + '">' + thumb +
+      '<div><div class="frt">' + eh(r.route) + '</div>' +
+      (r.title ? '<div class="fname">' + eh(r.title) + '</div>' : '') + '</div>' +
+      '<span class="fst">' + state + '</span></div>'
+  }
+
+  async function loadCrawl () {
+    let data
+    try { data = await (await fetch('/api/crawl')).json() } catch (e) { return }
+    const found = document.getElementById('initfound')
+    const empty = document.getElementById('initempty')
+    found.innerHTML = data.routes.map(foundRow).join('')
+    // never-crawled and crawled-found-nothing are different answers. Only the second is greenfield
+    // — the same flow with a zero result, and it says what to do next rather than looking broken.
+    const greenfield = !!data.crawledAt && !data.routes.length
+    empty.hidden = data.routes.length > 0
+    empty.innerHTML = greenfield
+      ? 'Nothing was found to crawl.<br>That is the greenfield case — <b>write the first PRD</b> and the board grows from there.'
+      : 'No crawl has run yet.<br>Point at your app on the left, then <b>Crawl the app</b>.'
+    document.getElementById('initwhen').textContent = data.crawledAt ? 'crawled ' + when(data.crawledAt) : ''
+  }
+
+  async function saveConfig () {
+    const body = {
+      mode: initMode(),
+      startCommand: document.getElementById('initstart').value,
+      baseUrl: document.getElementById('initurl').value,
+      routes: document.getElementById('initroutes').value,
+      signIn: document.getElementById('initsignin').value
+    }
+    const r = await fetch('/api/config', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+    })
+    if (!r.ok) throw new Error((await r.text()).slice(0, 160))
+    return r.json()
+  }
+
+  document.getElementById('initsave').addEventListener('click', async () => {
+    try {
+      await saveConfig()
+      const saved = document.getElementById('initsaved')
+      saved.hidden = false; setTimeout(() => { saved.hidden = true }, 2000)
+    } catch (err) { toast(err.message) }
+  })
+
+  document.getElementById('initcrawl').addEventListener('click', async () => {
+    // save first, so the crawl reads exactly what is on screen, then run the real job in the panel
+    try { await saveConfig() } catch (err) { toast(err.message); return }
+    openPanel('crawling', 'the app')
+    try {
+      const r = await fetch('/api/crawl', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+      })
+      if (!r.ok) throw new Error((await r.text()).slice(0, 160))
+    } catch (err) { panelRefused(err.message) }
+  })
+
+  document.getElementById('initbtn').addEventListener('click', () => {
+    history.pushState(null, '', '#init'); route()
+  })
+
   route()
 
   // running the suite ----------------------------------------------------
@@ -1154,6 +1338,8 @@ ${detail}
       // reload there would throw away a sentence you were half way through typing, so it refreshes
       // in place instead — the one view on the board that owns its own state.
       if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
+      // init holds a half-filled form too — refresh the found table in place, never reload it out
+      if (!document.getElementById('initview').hidden) { loadCrawl(); return }
       location.reload()
     })
     es.addEventListener('run', e => {
@@ -1171,8 +1357,10 @@ ${detail}
         runDone = true
         setRunning(false)
         document.getElementById('rpcancel').disabled = true
-        // a scan or a rewrite changes what is waiting on you — the header count has to follow
+        // a scan or a rewrite changes what is waiting on you — the header count has to follow;
+        // a crawl changes what the init "what was found" table should show
         loadConflicts()
+        if (!document.getElementById('initview').hidden) loadCrawl()
         // finished while you were not watching — bring the board up to date on its own, unless a
         // driver is in charge of its own navigation
         if (panel.hidden) { loadRuns(); if (!automation) setTimeout(() => location.reload(), 300); return }

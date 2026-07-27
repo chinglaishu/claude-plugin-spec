@@ -488,6 +488,30 @@ ins { color:var(--koke); text-decoration:none; }
   .srow .w { color:var(--ink); }
   .cfempty { text-align:center; padding:var(--s8) var(--s4); color:var(--ink-3);
     font-size:var(--t-md); line-height:1.9; }
+  .gmark { margin-left:var(--s2); vertical-align:middle; }
+  .gdim { color:var(--bengara); }
+
+  /* init ----------------------------------------------------------------- */
+  .initwrap { max-width:1120px; margin:0 auto; display:grid;
+    grid-template-columns:minmax(360px,440px) 1fr; gap:var(--s5); align-items:start; }
+  .initcol .fld { margin-bottom:var(--s4); }
+  .initcol .fld:last-child { margin-bottom:0; }
+  .initcol .fld .l { font-size:var(--t-md); margin-bottom:var(--s2); display:flex; gap:var(--s2); align-items:baseline; }
+  .initcol .fld .h { font-size:var(--t-xs); color:var(--ink-4); margin-top:var(--s2); }
+  .initcol .fld .h.warn { color:var(--bengara); }
+  .initcol textarea.input { resize:vertical; font-family:var(--mono); line-height:1.6; }
+  .initfoot { display:flex; align-items:center; gap:var(--s3); margin-top:var(--s4); }
+  .initnote { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-top:1px solid var(--hair); }
+  .frow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-top:1px solid var(--hair); font-size:var(--t-sm); }
+  .frow:first-child { border-top:0; }
+  .frow .fthumb { width:60px; height:40px; flex:none; border:1px solid var(--hair-2);
+    border-radius:var(--r-sm); background:var(--wash); overflow:hidden; }
+  .frow .fthumb img { width:100%; display:block; }
+  .frow .frt { font-family:var(--mono); font-size:var(--t-sm); }
+  .frow .fname { color:var(--ink-4); font-size:var(--t-xs); }
+  .frow .fst { margin-left:auto; color:var(--ink-4); font-size:var(--t-xs); }
 </style>
 
 <div class="top">
@@ -503,6 +527,7 @@ ins { color:var(--koke); text-decoration:none; }
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
   <span id="shown" class="gbn" style="min-width:64px"></span>
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
+  <button class="btn sm" id="initbtn">Set up</button>
 </div>
 
 <div class="wrap">
@@ -510,9 +535,9 @@ ins { color:var(--koke); text-decoration:none; }
   <div class="stats">
     <span class="stat"><b>6</b> screens</span>
     <span class="stat"><b>6</b> drafted</span>
-    <span class="stat"><b>5</b> built</span>
+    <span class="stat"><b>6</b> built</span>
     <span class="stat"><b>1</b> tested</span>
-    <span class="stat hot"><b>2</b> waiting on you</span>
+    <span class="stat hot"><b>3</b> waiting on you</span>
     <span class="grow"></span>
     <span class="chip run" id="runflag" hidden><span class="dot"></span>tests running</span>
     <button class="btn sm" id="runall">Run all tests</button>
@@ -1189,7 +1214,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="board" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=00bd25d9eb47" alt="Board as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/board/screen.png?h=54c1cf7e416f" alt="Board as built"></div></div>
   </div>
   <div class="cell c-ok" data-screen="board" data-col="e2e">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>pass</span></div>
@@ -1206,8 +1231,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="meta">5 requirements · <code>/conflicts</code></div>
     <ul class="reqs"><li><span class="rq">R1</span><span class="rt">A conflict is one fact stated two incompatible ways</span></li><li><span class="rq">R2</span><span class="rt">Both positions are shown in full, with where each came from</span></li><li><span class="rq">R3</span><span class="rt">You pick which side is canon</span></li><li><span class="rq">R4</span><span class="rt">Resolving dispatches the rewrite of the losing side</span></li><li><span class="rq">R5</span><span class="rt">Decisions survive a rescan</span></li></ul>
   </div>
-  <div class="cell c-ok" data-screen="conflicts" data-col="draft">
-    <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
+  <div class="cell c-rev act" data-screen="conflicts" data-col="draft">
+    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
     <div class="cellb"><div class="frame"><iframe scrolling="no" srcdoc="&lt;!doctype html&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
 &lt;title&gt;Conflicts&lt;/title&gt;
@@ -1667,7 +1692,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-rev" data-screen="conflicts" data-col="screen">
     <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=d94fda8f6945" alt="Conflicts as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/conflicts/screen.png?h=ffb21fe7b444" alt="Conflicts as built"></div></div>
   </div>
   <div class="cell c-gone" data-screen="conflicts" data-col="e2e">
     <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
@@ -2109,7 +2134,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-draft-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=fd9249b87bfd" alt="Gate A — draft review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-draft-review/screen.png?h=df0f6b2159c9" alt="Gate A — draft review as built"></div></div>
   </div>
   <div class="cell c-gone" data-screen="gate-draft-review" data-col="e2e">
     <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
@@ -2526,7 +2551,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-ok" data-screen="gate-screen-review" data-col="screen">
     <div class="cellh"><span class="chip ok"><span class="dot"></span>approved</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=65e846ce04c7" alt="Gate B — screen review as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/gate-screen-review/screen.png?h=bc3db0ec6092" alt="Gate B — screen review as built"></div></div>
   </div>
   <div class="cell c-gone" data-screen="gate-screen-review" data-col="e2e">
     <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
@@ -2945,7 +2970,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cell c-rev" data-screen="dispatch" data-col="screen">
     <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
-    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=8fbac6a6faa4" alt="Dispatch panel as built"></div></div>
+    <div class="cellb"><div class="shot"><img src="spec/dispatch/screen.png?h=515662e809c1" alt="Dispatch panel as built"></div></div>
   </div>
   <div class="cell c-gone" data-screen="dispatch" data-col="e2e">
     <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
@@ -2959,11 +2984,11 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Setup</h2>
     <span class="gc">1 screen</span>
-    
+    <span class="gwait"><span class="dot"></span>1 waiting</span>
   </div>
   <div class="rows">
 <div class="row" data-i="5" data-area="Setup"
-     data-waiting="0" data-started="1"
+     data-waiting="1" data-started="1"
      data-q="init /init asks for what cannot be guessed, and nothing else an existing app is crawled into rows a crawled prd is marked as a guess an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
   <div class="c1">
     <div class="nm">Init</div>
@@ -3383,15 +3408,14 @@ ins { color:var(--koke); text-decoration:none; }
 &lt;/script&gt;
 "></iframe></div></div>
   </div>
-  <div class="cell c-gone" data-screen="init" data-col="screen">
-    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">not built</div>
-  <div class="b2">ready to build — the design is approved</div></div></div>
+  <div class="cell c-rev" data-screen="init" data-col="screen">
+    <div class="cellh"><span class="chip rev"><span class="dot"></span>needs review</span></div>
+    <div class="cellb"><div class="shot"><img src="spec/init/screen.png?h=2972b8627522" alt="Init as built"></div></div>
   </div>
   <div class="cell c-gone" data-screen="init" data-col="e2e">
-    <div class="cellh"><span class="chip gone"><span class="mark n"></span>not started</span></div>
-    <div class="cellb"><div class="blank"><div class="b1">no test</div>
-  <div class="b2">waits for the screen</div></div></div>
+    <div class="cellh"><span class="chip gone"><span class="mark o"></span>never run</span></div>
+    <div class="cellb"><div class="blank"><div class="b1">never run</div>
+  <div class="b2">npm run e2e</div></div></div>
   </div>
 </div></div>
 </section>
@@ -3431,6 +3455,71 @@ ins { color:var(--koke); text-decoration:none; }
       <div id="cfopen"></div>
       <div id="cfsettled" hidden></div>
       <div class="cfempty" id="cfempty" hidden></div>
+    </div>
+  </div>
+</section>
+
+<!-- Init is a tool view too (#init): how to reach the project's app, and what a crawl of it
+     found. A project that arrives with code and no specs starts here, so the board is populated on
+     day one instead of being an empty page nobody knows how to fill. -->
+<section class="dt" id="initview" hidden>
+  <div class="dth">
+    <h2>Set up the board</h2>
+    <span class="gbn">point at your app, then crawl it into rows</span>
+    <span class="grow"></span>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll cfscroll">
+    <div class="initwrap">
+      <div class="initcol">
+        <div class="card pad">
+          <div class="fld">
+            <div class="l">How do we reach your app?</div>
+            <div class="seg" id="initmode">
+              <button data-mode="attach" class="on">It's already running</button><button data-mode="start">Start it for me</button>
+            </div>
+            <div class="h">Pointing at a server you already have running is safer than starting a second one on the wrong port.</div>
+          </div>
+          <div class="fld" id="initstartfld" hidden>
+            <div class="l">How do I start it?</div>
+            <input class="input" id="initstart" placeholder="npm run dev">
+          </div>
+          <div class="fld">
+            <div class="l">What URL does it serve on?</div>
+            <input class="input" id="initurl" placeholder="http://localhost:3000">
+          </div>
+          <div class="fld">
+            <div class="l">Which routes matter?</div>
+            <textarea class="input" id="initroutes" rows="4" placeholder="/  (one per line — leave blank to crawl from the root)"></textarea>
+            <div class="h warn">Guessing any of these wrong builds a complete, confident, wrong board.</div>
+          </div>
+          <div class="fld" style="margin-bottom:0">
+            <div class="l">Sign-in, if screens need it <span class="gbn">optional</span></div>
+            <textarea class="input" id="initsignin" rows="3" placeholder="a script against the page object that leaves the app logged in"></textarea>
+          </div>
+        </div>
+        <div class="initfoot">
+          <button class="btn" id="initsave">Save setup</button>
+          <button class="btn pri" id="initcrawl">Crawl the app →</button>
+          <span class="gbn" id="initsaved" hidden>saved</span>
+        </div>
+      </div>
+
+      <div class="initcol">
+        <div class="card">
+          <header>
+            <span class="lbl">what a crawl found · each becomes one row</span>
+            <span class="grow"></span>
+            <span class="gbn" id="initwhen"></span>
+          </header>
+          <div id="initfound"></div>
+          <div class="cfempty" id="initempty" hidden></div>
+          <div class="initnote">
+            <span class="chip stale"><span class="mark h"></span>a guess</span>
+            <span class="gbn">Read off the page, never canon. Every crawled screen starts unapproved, so the loop still begins at gate A.</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -4117,44 +4206,44 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/board/screen.png?h=00bd25d9eb47" alt="Board as built"></div>
+        <div class="bigshot"><img src="spec/board/screen.png?h=54c1cf7e416f" alt="Board as built"></div>
       </div>
       <div class="dtp">
     <div class="dtl lbl dth2">4 · E2E <span class="chip ok"><span class="dot"></span>pass</span>
       <button class="btn sm runbtn" data-run="board">Run<span class="kbd">r</span></button></div>
     <div class="e2e">
       <div class="e2emeta">
-        <span>last run <b>2026-07-27 03:34</b></span>
+        <span>last run <b>2026-07-27 03:52</b></span>
         
         <div class="path"><code>spec/board/test.spec.ts</code></div>
       </div>
       <article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">235ms</span></div>
+          <span class="tt">R1 — one row per screen, never one per requirement</span><span class="ms">215ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">160ms</span></div>
+          <span class="tt">R2 — four cells, left to right, in workflow order</span><span class="ms">149ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">185ms</span></div>
+          <span class="tt">R3 — the draft cell renders the wireframe itself, not a word for it</span><span class="ms">157ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">779ms</span></div>
+          <span class="tt">R4 — cell state is computed, and approving changes it</span><span class="ms">766ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">154ms</span></div>
+          <span class="tt">R7 — screens are grouped into named areas, never paginated</span><span class="ms">150ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">265ms</span></div>
+          <span class="tt">R8 — filter by whose turn it is, and search requirement text</span><span class="ms">238ms</span></div>
         
       </article><article class="tst p">
         <div class="th"><span class="mark "></span>
-          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">249ms</span></div>
+          <span class="tt">R6 — the header counts agree with the rows beneath them</span><span class="ms">258ms</span></div>
         
       </article>
       <div class="runlog" data-screen="board">
@@ -4174,7 +4263,7 @@ ins { color:var(--koke); text-decoration:none; }
 <section class="dt" data-i="1" hidden>
   <div class="dth">
     <h2>Conflicts</h2>
-    <span class="chip ok"><span class="dot"></span>approved</span>
+    <span class="chip rev"><span class="dot"></span>needs review</span>
     <span class="gbn">5 requirements · <code>spec/conflicts/</code></span>
     <span class="grow"></span>
     <a class="btn" href="spec/conflicts/draft.html" target="_blank">Open draft full size ↗</a>
@@ -4656,19 +4745,19 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/conflicts/screen.png?h=d94fda8f6945" alt="Conflicts as built"></div>
+        <div class="bigshot"><img src="spec/conflicts/screen.png?h=ffb21fe7b444" alt="Conflicts as built"></div>
       </div>
       
     </div>
   </div>
   <div class="gb open"><div class="gbin">
-    <span class="gbn" style="flex:none">Nobody has checked the built screen against the design yet.</span>
-    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="conflicts">Matches the design</button>
+    <span class="gbn" style="flex:none">Nobody has said yes to this draft yet.</span>
+    <button class="btn ok" data-act="approve" data-screen="conflicts">Looks right</button>
     <span class="gor">or</span>
     <input class="why input" required
-      placeholder="Which is wrong — the build or the design? One sentence.">
-    <button class="btn no" data-act="reject" data-gate="screen" data-screen="conflicts">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>01123c80f66f</code></span></div></div>
+      placeholder="Say what is wrong — one sentence, saved with the rejection">
+    <button class="btn no" data-act="reject" data-screen="conflicts">Send it back<span class="kbd">↵</span></button>
+    <span class="gbn" style="flex:none">pins <code>ade3db95f8b7</code></span></div></div>
 </section>
 <section class="dt" data-i="2" hidden>
   <div class="dth">
@@ -5088,7 +5177,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/dispatch/screen.png?h=8fbac6a6faa4" alt="Dispatch panel as built"></div>
+        <div class="bigshot"><img src="spec/dispatch/screen.png?h=515662e809c1" alt="Dispatch panel as built"></div>
       </div>
       
     </div>
@@ -5543,7 +5632,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=fd9249b87bfd" alt="Gate A — draft review as built"></div>
+        <div class="bigshot"><img src="spec/gate-draft-review/screen.png?h=df0f6b2159c9" alt="Gate A — draft review as built"></div>
       </div>
       
     </div>
@@ -5979,7 +6068,7 @@ ins { color:var(--koke); text-decoration:none; }
 "></iframe></div></div>
       <div class="dtp">
         <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=65e846ce04c7" alt="Gate B — screen review as built"></div>
+        <div class="bigshot"><img src="spec/gate-screen-review/screen.png?h=bc3db0ec6092" alt="Gate B — screen review as built"></div>
       </div>
       
     </div>
@@ -6427,18 +6516,21 @@ ins { color:var(--koke); text-decoration:none; }
   })
 &lt;/script&gt;
 "></iframe></div></div>
-      
       <div class="dtp">
-      <div class="dtl lbl">4 · E2E</div>
-      <div class="ph big">no test yet · <code>spec/init/test.spec.ts</code></div>
-    </div>
+        <div class="dtl lbl">3 · Screen — shot by the last test run</div>
+        <div class="bigshot"><img src="spec/init/screen.png?h=2972b8627522" alt="Init as built"></div>
+      </div>
+      
     </div>
   </div>
-  <div class="gb ok"><div class="gbin">
-      <span class="chip ok"><span class="dot"></span>approved</span>
-      <span class="gbn">design approved against <code>prd.md · a48dd3934ff1</code> — build the screen next</span>
-      <span class="grow"></span>
-      <button class="btn" data-act="unapprove" data-screen="init">Un-approve</button></div></div>
+  <div class="gb open"><div class="gbin">
+    <span class="gbn" style="flex:none">Nobody has checked the built screen against the design yet.</span>
+    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="init">Matches the design</button>
+    <span class="gor">or</span>
+    <input class="why input" required
+      placeholder="Which is wrong — the build or the design? One sentence.">
+    <button class="btn no" data-act="reject" data-gate="screen" data-screen="init">Send it back<span class="kbd">↵</span></button>
+    <span class="gbn" style="flex:none">pins <code>372c62cfaa59</code></span></div></div>
 </section>
 
 <script>
@@ -6552,6 +6644,12 @@ ins { color:var(--koke); text-decoration:none; }
       loadConflicts()
       return
     }
+    if (location.hash === '#init') {
+      closeAll()
+      document.getElementById('initview').hidden = false
+      loadConfig(); loadCrawl()
+      return
+    }
     const name = decodeURIComponent(location.hash.replace(/^#\//, ''))
     const i = SCREENS.indexOf(name)
     if (i >= 0) show(i); else closeAll()
@@ -6584,7 +6682,7 @@ ins { color:var(--koke); text-decoration:none; }
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
   // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
-  const WAITING = [1,2]
+  const WAITING = [1,2,5]
   for (const b of document.querySelectorAll('.nextw')) {
     if (WAITING.length < 2) { b.hidden = true; continue }
     b.addEventListener('click', () => {
@@ -6827,6 +6925,94 @@ ins { color:var(--koke); text-decoration:none; }
   // once at startup regardless of the current route.
   loadConflicts()
 
+  // init -----------------------------------------------------------------
+  const initview = document.getElementById('initview')
+  const initMode = () => document.querySelector('#initmode .on').dataset.mode
+  function setInitMode (m) {
+    for (const b of document.querySelectorAll('#initmode button')) b.classList.toggle('on', b.dataset.mode === m)
+    document.getElementById('initstartfld').hidden = m !== 'start'
+  }
+  for (const b of document.querySelectorAll('#initmode button'))
+    b.addEventListener('click', () => setInitMode(b.dataset.mode))
+
+  async function loadConfig () {
+    let cfg
+    try { cfg = await (await fetch('/api/config')).json() } catch (e) { return }
+    setInitMode(cfg.mode || 'attach')
+    document.getElementById('initstart').value = cfg.startCommand || ''
+    document.getElementById('initurl').value = cfg.baseUrl || ''
+    document.getElementById('initroutes').value = (cfg.routes || []).join('\n')
+    document.getElementById('initsignin').value = cfg.signIn || ''
+  }
+
+  function foundRow (r) {
+    // 'yours' — a real PRD the CEO wrote — is never touched; a guessed row already on the board is
+    // still a guess; a route with no screen yet is new. R5: rerunning leaves settled work alone.
+    const state = r.mine ? 'yours' : r.exists ? 'a guess, already on board' : 'new'
+    const thumb = r.exists || r.slug
+      ? '<div class="fthumb"><img src="spec/' + eh(r.slug) + '/crawl.png" onerror="this.style.display=\'none\'" alt=""></div>'
+      : '<div class="fthumb"></div>'
+    return '<div class="frow" data-slug="' + eh(r.slug) + '">' + thumb +
+      '<div><div class="frt">' + eh(r.route) + '</div>' +
+      (r.title ? '<div class="fname">' + eh(r.title) + '</div>' : '') + '</div>' +
+      '<span class="fst">' + state + '</span></div>'
+  }
+
+  async function loadCrawl () {
+    let data
+    try { data = await (await fetch('/api/crawl')).json() } catch (e) { return }
+    const found = document.getElementById('initfound')
+    const empty = document.getElementById('initempty')
+    found.innerHTML = data.routes.map(foundRow).join('')
+    // never-crawled and crawled-found-nothing are different answers. Only the second is greenfield
+    // — the same flow with a zero result, and it says what to do next rather than looking broken.
+    const greenfield = !!data.crawledAt && !data.routes.length
+    empty.hidden = data.routes.length > 0
+    empty.innerHTML = greenfield
+      ? 'Nothing was found to crawl.<br>That is the greenfield case — <b>write the first PRD</b> and the board grows from there.'
+      : 'No crawl has run yet.<br>Point at your app on the left, then <b>Crawl the app</b>.'
+    document.getElementById('initwhen').textContent = data.crawledAt ? 'crawled ' + when(data.crawledAt) : ''
+  }
+
+  async function saveConfig () {
+    const body = {
+      mode: initMode(),
+      startCommand: document.getElementById('initstart').value,
+      baseUrl: document.getElementById('initurl').value,
+      routes: document.getElementById('initroutes').value,
+      signIn: document.getElementById('initsignin').value
+    }
+    const r = await fetch('/api/config', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body)
+    })
+    if (!r.ok) throw new Error((await r.text()).slice(0, 160))
+    return r.json()
+  }
+
+  document.getElementById('initsave').addEventListener('click', async () => {
+    try {
+      await saveConfig()
+      const saved = document.getElementById('initsaved')
+      saved.hidden = false; setTimeout(() => { saved.hidden = true }, 2000)
+    } catch (err) { toast(err.message) }
+  })
+
+  document.getElementById('initcrawl').addEventListener('click', async () => {
+    // save first, so the crawl reads exactly what is on screen, then run the real job in the panel
+    try { await saveConfig() } catch (err) { toast(err.message); return }
+    openPanel('crawling', 'the app')
+    try {
+      const r = await fetch('/api/crawl', {
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}'
+      })
+      if (!r.ok) throw new Error((await r.text()).slice(0, 160))
+    } catch (err) { panelRefused(err.message) }
+  })
+
+  document.getElementById('initbtn').addEventListener('click', () => {
+    history.pushState(null, '', '#init'); route()
+  })
+
   route()
 
   // running the suite ----------------------------------------------------
@@ -6979,6 +7165,8 @@ ins { color:var(--koke); text-decoration:none; }
       // reload there would throw away a sentence you were half way through typing, so it refreshes
       // in place instead — the one view on the board that owns its own state.
       if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
+      // init holds a half-filled form too — refresh the found table in place, never reload it out
+      if (!document.getElementById('initview').hidden) { loadCrawl(); return }
       location.reload()
     })
     es.addEventListener('run', e => {
@@ -6996,8 +7184,10 @@ ins { color:var(--koke); text-decoration:none; }
         runDone = true
         setRunning(false)
         document.getElementById('rpcancel').disabled = true
-        // a scan or a rewrite changes what is waiting on you — the header count has to follow
+        // a scan or a rewrite changes what is waiting on you — the header count has to follow;
+        // a crawl changes what the init "what was found" table should show
         loadConflicts()
+        if (!document.getElementById('initview').hidden) loadCrawl()
         // finished while you were not watching — bring the board up to date on its own, unless a
         // driver is in charge of its own navigation
         if (panel.hidden) { loadRuns(); if (!automation) setTimeout(() => location.reload(), 300); return }

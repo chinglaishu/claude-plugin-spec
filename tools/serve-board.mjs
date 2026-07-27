@@ -11,7 +11,8 @@ import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname } from 'node:path'
 import {
   ROOT, SPEC, readScreen, readState, writeState, readResults, allScreens,
-  CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile
+  CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
+  CRAWL, readConfig, writeConfig, readCrawl
 } from './spec-store.mjs'
 
 const PORT = Number(process.env.PORT || 4173)
@@ -279,6 +280,106 @@ function startRewrite (key) {
   })
 }
 
+// The crawl: visit the project's own app, screenshot each route, then draft a guessed PRD per NEW
+// route. It is a real browser plus a Claude job, so like the redraft it lives OUTSIDE the
+// deterministic suite. Two phases in one job: tools/crawl.mjs drives the browser and writes the
+// manifest + crawl.png; then Claude drafts a guessed prd.md for every route not already on the
+// board. Rerunning touches nothing settled — the crawler writes the manifest, the drafting skips
+// any route whose screen already exists.
+function crawlDraftPrompt (routes) {
+  const targets = routes.filter(r => !r.exists)
+  const list = targets.map(r =>
+    `- route ${r.route} → spec/${r.slug}/prd.md` +
+    (r.title ? ` (page title: ${r.title})` : '') +
+    (r.headings ? `\n  headings on the page: ${r.headings}` : '')).join('\n')
+  return [
+    'A crawl visited this project\'s running app and captured each route. For every route below,',
+    'write a GUESSED product requirement document at the given path, reading the requirements off',
+    'what the page appears to do. Each file must start with this frontmatter, guess included:',
+    '',
+    '---',
+    'screen: <slug>',
+    'area: Crawled',
+    'title: <a short human name for the screen>',
+    'route: <the route>',
+    'guess: true',
+    '---',
+    '',
+    'Then `## R1 — <title>` blocks, one per behaviour you can infer from the page. The `guess: true`',
+    'line is not optional: this is a proposal for the CEO to correct, never canon. Do not remove it,',
+    'and do not approve anything.',
+    '',
+    'The screenshot for each route is at spec/<slug>/crawl.png if you need to look.',
+    '',
+    'Routes to draft (skip any file that already exists — its screen is already on the board):',
+    list,
+    '',
+    'Write only those prd.md files. Change nothing else. Do not explain.'
+  ].join('\n')
+}
+
+function startCrawl () {
+  if (running) throw new Error('a job is already in progress')
+  const cfg = readConfig()
+  if (!cfg.baseUrl && cfg.mode === 'attach') throw new Error('set the app URL first — nothing to crawl')
+
+  const started = Date.now()
+  let transcript = ''
+  // Phase one is the browser. It is detached so Cancel can reach chromium and any app it started.
+  const crawler = spawn(process.execPath, [join(ROOT, 'tools/crawl.mjs')],
+    { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
+  running = { screen: 'crawl', started, child: crawler, kind: 'crawl' }
+  push('run', { state: 'started', screen: 'crawl', kind: 'crawl' })
+
+  const feed = buf => {
+    transcript += String(buf)
+    for (const line of String(buf).split('\n'))
+      if (line.trim()) push('run', { state: 'line', line: line.replace(/\[[0-9;]*m/g, '').slice(0, 300) })
+  }
+  crawler.stdout.on('data', feed)
+  crawler.stderr.on('data', feed)
+  crawler.on('error', err => push('run', { state: 'line', line: `could not start the crawler: ${err.message}` }))
+
+  crawler.on('close', () => {
+    if (running && running.cancelled) { finishCrawl(started, false, 'cancelled — partial crawl left in place'); return }
+    const manifest = readCrawl()
+    if (!manifest.routes.length) {
+      // greenfield: nothing to draft, and that is a valid, complete answer
+      finishCrawl(started, true, 'nothing found — greenfield: write the first PRD')
+      return
+    }
+    const toDraft = manifest.routes.filter(r => !r.exists)
+    if (!toDraft.length) { finishCrawl(started, true, `${manifest.routes.length} route(s), all already on the board`); return }
+
+    // Phase two: Claude drafts a guessed PRD per new route. The browser is done; hand the same
+    // job's panel to the drafter so it reads as one continuous crawl.
+    push('run', { state: 'line', line: `drafting ${toDraft.length} guessed PRD(s)…` })
+    const before = new Set(allScreens().map(s => s.name))
+    const drafter = spawn('claude', ['-p', crawlDraftPrompt(manifest.routes), '--permission-mode', 'acceptEdits'],
+      { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
+    running.child = drafter
+    drafter.stdout.on('data', feed)
+    drafter.stderr.on('data', feed)
+    drafter.on('error', err => push('run', { state: 'line', line: `could not start claude: ${err.message}` }))
+    drafter.on('close', () => {
+      const added = allScreens().filter(s => !before.has(s.name)).length
+      const note = added
+        ? `crawled ${manifest.routes.length} route(s) · ${added} new guessed row(s) — correct them at gate A`
+        : (running && running.cancelled ? 'cancelled — partial crawl left in place'
+          : /401|OAuth|authenticate/i.test(transcript) ? 'crawled, but claude is not authenticated — sign in and rerun to draft'
+            : 'crawled, but no rows were drafted')
+      finishCrawl(started, added > 0, note)
+    })
+  })
+}
+
+function finishCrawl (started, ok, note) {
+  running = null
+  try { build() } catch (err) { console.error(String(err.stderr || err)) }
+  push('run', { state: 'done', kind: 'crawl', screen: 'crawl', ms: Date.now() - started, ok, total: 1, failed: ok ? 0 : 1, note })
+  notify()
+}
+
 // Recording the decision. Keyed by content so a rescan cannot resurrect it, and it stores the
 // two sides it was made about — a decision you cannot read back is not a record of anything.
 function decideConflict ({ key, canon, note, undo }) {
@@ -517,6 +618,36 @@ const server = createServer(async (req, res) => {
     return
   }
 
+  if (url.pathname === '/api/config') {
+    if (req.method === 'POST') {
+      try {
+        const cfg = writeConfig(JSON.parse(await readBody(req) || '{}'))
+        build(); notify()
+        res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(cfg))
+      } catch (err) {
+        res.writeHead(400, { 'content-type': 'text/plain' }); res.end(err.message)
+      }
+      return
+    }
+    res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(readConfig()))
+    return
+  }
+
+  if (url.pathname === '/api/crawl') {
+    if (req.method === 'POST') {
+      try {
+        startCrawl()
+        res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"started":true}')
+      } catch (err) {
+        res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)
+      }
+      return
+    }
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ ...readCrawl(), config: readConfig(), running: running ? running.kind : null }))
+    return
+  }
+
   if (url.pathname === '/api/watch' && req.method === 'POST') {
     const { on } = JSON.parse(await readBody(req) || '{}')
     watchOn = !!on
@@ -580,12 +711,13 @@ let watchPending = null
 watch(SPEC, { recursive: true }, (_e, name) => {
   // Files the tool writes about its own decisions. They already rebuild and notify on their own
   // path, and reacting to them here would have the server answering its own writes.
-  if (!name || name.endsWith('state.json') || name.endsWith('_conflict-decisions.json')) return
+  if (!name || name.endsWith('state.json') || name.endsWith('_conflict-decisions.json') ||
+    name.includes('_state-snapshot') || name.includes('_dir-snapshot')) return
   // A run WRITES into spec/ — the report, the run log, the screenshots, the guard's snapshot.
   // Re-triggering on those would make watch mode chase its own tail forever, so they redraw the
   // board but are never a reason to run. A conflicts scan is the same: it changes what you have
   // to decide, never what the tests would say.
-  const noRun = /_results\.json$|_runs\.json$|_state-snapshot\.json$|_conflicts\.json$|screen\.png$/.test(name)
+  const noRun = /_results\.json$|_runs\.json$|_state-snapshot|_dir-snapshot|_conflicts\.json$|_config\.json$|_crawl\.json$|screen\.png$|crawl\.png$/.test(name)
   rebuild()
   if (noRun) return
 

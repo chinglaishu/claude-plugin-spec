@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { makeUnbuiltScreen } from '../_fixture'
 
 // Gate A is the detail view of the board: PRD on the left, draft on the right, verdict beneath.
 
@@ -26,12 +27,11 @@ test('R1 — PRD and wireframe are visible side by side', async ({ page }) => {
 })
 
 test('R3 — approving pins the PRD hash, and the bar says which', async ({ page, request }) => {
-  // establish the precondition rather than inheriting it — this used to pass or fail on whatever
-  // the previous spec left on disk
-  await request.post('/api/gate', { data: { screen: 'init', gate: 'draft', act: 'approve' } })
-  // a screen with no screenshot yet, so gate A still holds the bar — once a screen is built,
-  // gate B takes the floor, which is the correct handoff and tested in gate-screen-review
-  await page.goto('/#/init')
+  // establish the precondition rather than inheriting it — stand up a drafted-but-unbuilt screen,
+  // because on this board every real screen is built now and gate A only holds the bar until a
+  // build exists, after which gate B takes the floor (tested in gate-screen-review)
+  const name = await makeUnbuiltScreen(request, 'probe-unbuilt-a')
+  await page.goto('/#/' + name)
   const bar = page.locator('.dt:not([hidden]) .gb')
   await expect(bar).toBeVisible()
   await expect(bar).toContainText('design approved against')
