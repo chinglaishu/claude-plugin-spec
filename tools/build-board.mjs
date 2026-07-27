@@ -169,8 +169,8 @@ function e2ePanel (s) {
             <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
               data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
           </span></div>
-        ${t.steps && t.steps.length ? `<ol class="tsteps">${t.steps.map(st => `<li>${esc(st)}</li>`).join('')}</ol>` : ''}
         ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
+        <div class="tststeps" data-title="${esc(t.title)}"></div>
         <div class="tstshots" data-title="${esc(t.title)}"></div>
       </article>`).join('')}
       <div class="runlog" data-screen="${esc(s.name)}">
@@ -340,6 +340,9 @@ export function build () {
 
   .stats { display:flex; align-items:baseline; padding-bottom:var(--s4);
     border-bottom:1px solid var(--hair); margin-bottom:var(--s2); }
+  /* the stat NUMBERS align on their baseline (that is why .stats is baseline), but the controls on
+     the right are boxes, not text — they line up on their centres, in their own group */
+  .statsactions { display:flex; align-items:center; gap:var(--s3); align-self:center; }
   .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
   .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
     border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
@@ -479,10 +482,21 @@ export function build () {
   .tst.p .mark { color:var(--koke); } .tst.f .mark { color:var(--bengara); }
   .tst .tt { flex:1; font-size:var(--t-sm); color:var(--ink-2); }
   .tst .ms { font-size:var(--t-micro); color:var(--ink-4); font-family:var(--mono); }
-  /* the steps INSIDE a test case, when it has them — so a case that is a small story reads as one */
-  .tsteps { margin:var(--s2) 0 0 20px; padding:0; }
-  .tsteps li { font-size:var(--t-xs); color:var(--ink-3); line-height:1.7; }
   .tcnote { color:var(--ink-4); }
+  /* the detail steps of a case — every action and check, collapsed behind a toggle */
+  .tststeps { margin:var(--s2) 0 0 14px; }
+  .tststeps:empty { display:none; }
+  .stepstog { border:0; background:transparent; cursor:pointer; padding:0;
+    font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); }
+  .stepstog:hover { color:var(--ink-2); }
+  .stepslist { list-style:none; margin:var(--s2) 0 0; padding:0; }
+  .stepslist li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-xs);
+    color:var(--ink-3); padding:2px 0; line-height:1.5; }
+  .stepslist li.sf { color:var(--bengara); }
+  .scat { flex:none; width:34px; font-family:var(--mono); font-size:var(--t-micro);
+    text-transform:uppercase; letter-spacing:.04em; color:var(--ink-4); }
+  .scat-expect { color:var(--koke); }
+  .scat-teststep { color:var(--ai); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
   .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
@@ -674,10 +688,12 @@ export function build () {
     <span class="stat"><b>${count('e2e', 'pass')}</b> tested</span>
     <span class="stat hot"><b>${yourTurn}</b> waiting on you</span>
     <span class="grow"></span>
-    <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
-    <button class="btn sm" id="runall">Run all tests</button>
-    <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
-    <button class="btn sm gh" id="toggle-all">Collapse all</button>
+    <div class="statsactions">
+      <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
+      <button class="btn sm" id="runall">Run all tests</button>
+      <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
+      <button class="btn sm gh" id="toggle-all">Collapse all</button>
+    </div>
   </div>
 
   <div class="colhs">
@@ -1517,6 +1533,20 @@ ${detail}
             (one.video ? '<a class="recvid" href="' + one.video + '" target="_blank">▶ recording</a>' : '')
           : ''
       }
+      // The DETAIL STEPS of each case, collapsed behind a toggle — every action and check the test
+      // ran, in order, indented under its named steps. Expand to see exactly what a case did.
+      for (const slot of panel.querySelectorAll('.tststeps')) {
+        const one = rec && rec.shotsByTest[slot.dataset.title]
+        const steps = (one && one.steps) || []
+        if (!steps.length) { slot.innerHTML = ''; continue }
+        slot.innerHTML =
+          '<button class="stepstog" aria-expanded="false">▸ ' + steps.length + ' steps</button>' +
+          '<ol class="stepslist" hidden>' + steps.map(s =>
+            '<li class="' + (s.ok ? '' : 'sf') + '" style="margin-left:' + (s.depth * 14) + 'px">' +
+            '<span class="scat scat-' + eh(s.cat.replace(/[^a-z]/gi, '')) + '">' +
+            (s.cat === 'expect' ? 'check' : s.cat === 'test.step' ? 'step' : 'do') + '</span>' +
+            eh(s.title) + '</li>').join('') + '</ol>'
+      }
     }
   }
   loadRuns()
@@ -1542,6 +1572,17 @@ ${detail}
     if (!img || !img.src || img.closest('.lb')) return
     e.stopPropagation()
     openLb(img.src, img.alt || 'screenshot')
+  })
+
+  // expand/collapse a test case's detail steps
+  document.addEventListener('click', e => {
+    const tog = e.target.closest('.stepstog')
+    if (!tog) return
+    const list = tog.nextElementSibling
+    const show = list.hidden
+    list.hidden = !show
+    tog.setAttribute('aria-expanded', String(show))
+    tog.textContent = (show ? '▾ ' : '▸ ') + list.querySelectorAll('li').length + ' steps'
   })
   document.getElementById('lbzoom').addEventListener('click', e => {
     const on = lbstage.classList.toggle('actual')

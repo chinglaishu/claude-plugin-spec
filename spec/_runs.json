@@ -1,5 +1,3475 @@
 [
   {
+    "at": "2026-07-27T08:36:20.497Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141380497",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:36:15.479Z",
+    "screen": "board",
+    "ms": 4617,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141375479",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141375479/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141375479/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:36:15.351Z",
+    "screen": "board",
+    "ms": 12,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141375351",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:36:09.950Z",
+    "screen": "board",
+    "ms": 4636,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141369950",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141369950/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141369950/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:59.000Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141359000",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:53.929Z",
+    "screen": "board",
+    "ms": 4576,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141353929",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141353929/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141353929/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:53.801Z",
+    "screen": "board",
+    "ms": 12,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141353801",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:48.372Z",
+    "screen": "board",
+    "ms": 4641,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141348372",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141348372/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141348372/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:37.644Z",
+    "screen": "board",
+    "ms": 3,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141337644",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:32.617Z",
+    "screen": "board",
+    "ms": 4566,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141332617",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141332617/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141332617/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:32.487Z",
+    "screen": "board",
+    "ms": 13,
+    "total": 7,
+    "failed": 0,
+    "ok": false,
+    "runId": "1785141332487",
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:35:27.101Z",
+    "screen": "board",
+    "ms": 4822,
+    "total": 7,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141327101",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.reqs li')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeLessThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Evaluate locator('.colhs .lbl')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row').first().locator('.frame iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"not toBeEmpty\" locator('.row').first().locator('.frame iframe').contentFrame().locator('body')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.row[data-i=\"0\"] .cell[data-col=\"draft\"] .chip')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.grp')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.grph h2').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" getByRole('button', { name: /next page|page \\d/i })",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Fill \"canon\" locator('#q')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#shown')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#qx')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"new\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.row:not(.gone)')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('#none')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785141327101/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141327101/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('#filt [data-f=\"all\"]')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:32:58.600Z",
+    "screen": "gate-draft-review",
+    "ms": 5180,
+    "total": 6,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141178600",
+    "shotsByTest": {
+      "R1 — PRD and wireframe are visible side by side": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.dt[data-i=\"0\"]').locator('.dtp')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThanOrEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1).locator('iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — approving pins the PRD hash, and the bar says which": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-unbuilt-a\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — rejecting requires a reason; an empty one is refused": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBe\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R5 — the gate opens by itself when the PRD moves": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/conflicts\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"approve\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"reject\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "the full gate-A loop — open, read, approve, confirm": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "open the screen from its address",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-flow\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden])')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the verdict bar is open, asking for a yes",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "approve the draft",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.dt:not([hidden]) [data-act=\"approve\"]')",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Wait for load state \"load\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the bar now says approved and names the pinned PRD",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          }
+        ]
+      },
+      "the detail view has its own address and survives a reload": {
+        "shots": [
+          "spec/_runs/1785141178600/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141178600/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:32:26.888Z",
+    "screen": "gate-draft-review",
+    "ms": 5377,
+    "total": 6,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141146888",
+    "shotsByTest": {
+      "R1 — PRD and wireframe are visible side by side": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/video.webm",
+        "steps": [
+          {
+            "title": "Launch browser",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.dt[data-i=\"0\"]').locator('.dtp')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThanOrEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1).locator('iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — approving pins the PRD hash, and the bar says which": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-unbuilt-a\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — rejecting requires a reason; an empty one is refused": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBe\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R5 — the gate opens by itself when the PRD moves": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/conflicts\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"approve\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"reject\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "the full gate-A loop — open, read, approve, confirm": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/video.webm",
+        "steps": [
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "open the screen from its address",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-flow\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden])')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the verdict bar is open, asking for a yes",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "approve the draft",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.dt:not([hidden]) [data-act=\"approve\"]')",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Wait for load state \"load\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the bar now says approved and names the pinned PRD",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "the detail view has its own address and survives a reload": {
+        "shots": [
+          "spec/_runs/1785141146888/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141146888/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/video.webm",
+        "steps": [
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:31:45.366Z",
+    "screen": "gate-draft-review",
+    "ms": 5365,
+    "total": 6,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785141105366",
+    "shotsByTest": {
+      "R1 — PRD and wireframe are visible side by side": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-R1--1a59d-me-are-visible-side-by-side/video.webm",
+        "steps": [
+          {
+            "title": "Launch browser",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Query count locator('.dt[data-i=\"0\"]').locator('.dtp')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThanOrEqual\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').first()",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Bounding box locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1)",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeGreaterThan\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveCount\" locator('.dt[data-i=\"0\"]').locator('.dtp').nth(1).locator('iframe')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R3 — approving pins the PRD hash, and the bar says which": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-R3--744a6-hash-and-the-bar-says-which/video.webm",
+        "steps": [
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create request context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-unbuilt-a\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R4 — rejecting requires a reason; an empty one is refused": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-R4--65134-son-an-empty-one-is-refused/video.webm",
+        "steps": [
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create request context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBe\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "R5 — the gate opens by itself when the PRD moves": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-R5--17195-y-itself-when-the-PRD-moves/video.webm",
+        "steps": [
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create request context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/conflicts\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"approve\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden]) .gb').locator('[data-act=\"reject\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "the full gate-A loop — open, read, approve, confirm": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-the-2c411-—-open-read-approve-confirm/video.webm",
+        "steps": [
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create request context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "POST \"/api/gate\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "open the screen from its address",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/#/probe-flow\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt:not([hidden])')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the verdict bar is open, asking for a yes",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "approve the draft",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.dt:not([hidden]) [data-act=\"approve\"]')",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Wait for load state \"load\"",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "the bar now says approved and names the pinned PRD",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContainText\" locator('.dt:not([hidden]) .gb')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toHaveText\" locator('.dt:not([hidden]) .gb').locator('code')",
+            "cat": "expect",
+            "depth": 1,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      },
+      "the detail view has its own address and survives a reload": {
+        "shots": [
+          "spec/_runs/1785141105366/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785141105366/gate-draft-review-test-the-e1974-dress-and-survives-a-reload/video.webm",
+        "steps": [
+          {
+            "title": "Create context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Create page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Navigate to \"/\"",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Wait for selector locator('.row')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Click locator('.row[data-i=\"0\"] .c1')",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toContain\"",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Reload",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Expect \"toBeVisible\" locator('.dt[data-i=\"0\"]')",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Screenshot",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          },
+          {
+            "title": "Close context",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:27:44.934Z",
+    "screen": "init",
+    "ms": 7222,
+    "total": 1,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785140864934",
+    "shotsByTest": {
+      "R1 — the form persists what cannot be guessed, and reads it back": {
+        "shots": [
+          "spec/_runs/1785140864934/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/test-finished-1.png",
+          "spec/_runs/1785140864934/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/test-finished-2.png"
+        ],
+        "video": null
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:23:59.395Z",
+    "screen": "board",
+    "ms": 6665,
+    "total": 1,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785140639395",
+    "shotsByTest": {
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785140639395/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
+          "spec/_runs/1785140639395/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-2.png"
+        ],
+        "video": null
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:23:48.795Z",
+    "screen": "board",
+    "ms": 3404,
+    "total": 1,
+    "failed": 0,
+    "ok": true,
+    "runId": "1785140628795",
+    "shotsByTest": {
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785140628795/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1785140628795/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-07-27T08:23:24.156Z",
+    "screen": "board",
+    "ms": 17274,
+    "total": 7,
+    "failed": 1,
+    "ok": false,
+    "runId": "1785140604156",
+    "shotsByTest": {
+      "R1 — one row per screen, never one per requirement": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-2.png"
+        ],
+        "video": null
+      },
+      "R2 — four cells, left to right, in workflow order": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-2.png"
+        ],
+        "video": null
+      },
+      "R3 — the draft cell renders the wireframe itself, not a word for it": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-2.png"
+        ],
+        "video": null
+      },
+      "R4 — cell state is computed, and approving changes it": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-failed-1.png"
+        ],
+        "video": null
+      },
+      "R7 — screens are grouped into named areas, never paginated": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-2.png"
+        ],
+        "video": null
+      },
+      "R8 — filter by whose turn it is, and search requirement text": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-2.png"
+        ],
+        "video": null
+      },
+      "R6 — the header counts agree with the rows beneath them": {
+        "shots": [
+          "spec/_runs/1785140604156/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
+          "spec/_runs/1785140604156/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-2.png"
+        ],
+        "video": null
+      }
+    },
+    "archive": null
+  },
+  {
     "at": "2026-07-27T08:11:21.325Z",
     "screen": "board",
     "ms": 2,
@@ -9,679 +3479,5 @@
     "runId": "1785139881325",
     "shotsByTest": {},
     "archive": null
-  },
-  {
-    "at": "2026-07-27T08:11:16.298Z",
-    "screen": "board",
-    "ms": 4572,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139876298",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139876298/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139876298/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:11:16.171Z",
-    "screen": "board",
-    "ms": 13,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139876171",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:11:10.790Z",
-    "screen": "board",
-    "ms": 4754,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139870790",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139870790/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139870790/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:54.819Z",
-    "screen": "board",
-    "ms": 2,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139854819",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:49.743Z",
-    "screen": "board",
-    "ms": 4473,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139849743",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139849743/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139849743/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:49.621Z",
-    "screen": "board",
-    "ms": 11,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139849621",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:44.220Z",
-    "screen": "board",
-    "ms": 4610,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139844220",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139844220/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139844220/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:28.256Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139828256",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:23.243Z",
-    "screen": "board",
-    "ms": 4535,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139823243",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139823243/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139823243/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:23.108Z",
-    "screen": "board",
-    "ms": 15,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139823108",
-    "shotsByTest": {},
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:10:17.704Z",
-    "screen": "board",
-    "ms": 4666,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139817704",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R1-—-one-row-per-screen-never-one-per-requirement/video.webm"
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R2-—-four-cells-left-to-right-in-workflow-order/video.webm"
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/video.webm"
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/video.webm"
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/video.webm"
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R8-—-filter-by--7437e-and-search-requirement-text/video.webm"
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139817704/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139817704/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/video.webm"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-07-27T08:09:36.293Z",
-    "screen": "init",
-    "ms": 9005,
-    "total": 5,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139776293",
-    "shotsByTest": {
-      "R1 — the form persists what cannot be guessed, and reads it back": {
-        "shots": [
-          "spec/_runs/1785139776293/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139776293/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/video.webm"
-      },
-      "R1 — start mode saves backend and frontend, in order": {
-        "shots": [
-          "spec/_runs/1785139776293/init-test-R1-—-start-mode--b5944-ckend-and-frontend-in-order/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139776293/init-test-R1-—-start-mode--b5944-ckend-and-frontend-in-order/video.webm"
-      },
-      "R3 — a crawled PRD is marked a guess and cannot skip gate A": {
-        "shots": [
-          "spec/_runs/1785139776293/init-test-R3-—-a-crawled-P-7eee7-uess-and-cannot-skip-gate-A/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139776293/init-test-R3-—-a-crawled-P-7eee7-uess-and-cannot-skip-gate-A/video.webm"
-      },
-      "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD": {
-        "shots": [
-          "spec/_runs/1785139776293/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139776293/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/video.webm"
-      },
-      "R5 — rerunning marks new routes new and leaves a settled row alone": {
-        "shots": [
-          "spec/_runs/1785139776293/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139776293/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/video.webm"
-      }
-    },
-    "archive": {
-      "where": "git",
-      "ok": true,
-      "branch": "specboard-shots-test",
-      "sha": "7f12f89d3380",
-      "requestedPush": false,
-      "pushed": false,
-      "pushError": null
-    }
-  },
-  {
-    "at": "2026-07-27T08:09:30.860Z",
-    "screen": "conflicts",
-    "ms": 5149,
-    "total": 5,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139770860",
-    "shotsByTest": {
-      "R2 — both positions are shown in full, each naming where it came from": {
-        "shots": [
-          "http://localhost:5288/1785139770860/test-finished-1.png"
-        ],
-        "video": "http://localhost:5288/1785139770860/video.webm"
-      },
-      "R3 — the tool never picks: resolving is refused until you choose a side": {
-        "shots": [
-          "http://localhost:5288/1785139770860/test-finished-1.png"
-        ],
-        "video": "http://localhost:5288/1785139770860/video.webm"
-      },
-      "R4 — resolving records which side lost, and offers the rewrite of that file": {
-        "shots": [
-          "http://localhost:5288/1785139770860/test-finished-1.png"
-        ],
-        "video": "http://localhost:5288/1785139770860/video.webm"
-      },
-      "R5 — a decision survives a rescan that reorders and swaps the sides": {
-        "shots": [
-          "http://localhost:5288/1785139770860/test-finished-1.png"
-        ],
-        "video": "http://localhost:5288/1785139770860/video.webm"
-      },
-      "R5 — undo puts a settled conflict back, and the scanner is never asked to pick": {
-        "shots": [
-          "http://localhost:5288/1785139770860/test-finished-1.png"
-        ],
-        "video": "http://localhost:5288/1785139770860/video.webm"
-      }
-    },
-    "archive": {
-      "where": "bucket",
-      "ok": true,
-      "count": 10
-    }
-  },
-  {
-    "at": "2026-07-27T08:06:51.785Z",
-    "screen": "conflicts",
-    "ms": 7809,
-    "total": 5,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139611785",
-    "shotsByTest": {
-      "R2 — both positions are shown in full, each naming where it came from": {
-        "shots": [
-          "spec/_runs/1785139611785/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139611785/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/video.webm"
-      },
-      "R3 — the tool never picks: resolving is refused until you choose a side": {
-        "shots": [
-          "spec/_runs/1785139611785/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139611785/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/video.webm"
-      },
-      "R4 — resolving records which side lost, and offers the rewrite of that file": {
-        "shots": [
-          "spec/_runs/1785139611785/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139611785/conflicts-test-R4-—-resolv-c2543-rs-the-rewrite-of-that-file/video.webm"
-      },
-      "R5 — a decision survives a rescan that reorders and swaps the sides": {
-        "shots": [
-          "spec/_runs/1785139611785/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139611785/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/video.webm"
-      },
-      "R5 — undo puts a settled conflict back, and the scanner is never asked to pick": {
-        "shots": [
-          "spec/_runs/1785139611785/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/test-finished-1.png"
-        ],
-        "video": "spec/_runs/1785139611785/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/video.webm"
-      }
-    },
-    "archive": {
-      "where": "git",
-      "ok": true,
-      "branch": "specboard-shots-test",
-      "sha": "026cf96aae69",
-      "pushed": false,
-      "hasOrigin": true
-    }
-  },
-  {
-    "at": "2026-07-27T08:03:06.883Z",
-    "screen": "board",
-    "ms": 4,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139386883",
-    "shotsByTest": {}
-  },
-  {
-    "at": "2026-07-27T08:03:01.824Z",
-    "screen": "board",
-    "ms": 4760,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139381824",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139381824/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-          "spec/_runs/1785139381824/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-2.png"
-        ],
-        "video": null
-      }
-    }
-  },
-  {
-    "at": "2026-07-27T08:03:01.563Z",
-    "screen": "board",
-    "ms": 111,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139381563",
-    "shotsByTest": {}
-  },
-  {
-    "at": "2026-07-27T08:02:56.659Z",
-    "screen": "board",
-    "ms": 4240,
-    "total": 7,
-    "failed": 0,
-    "ok": true,
-    "runId": "1785139376659",
-    "shotsByTest": {
-      "R1 — one row per screen, never one per requirement": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R1-—-one-row-per-screen-never-one-per-requirement/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R2 — four cells, left to right, in workflow order": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R2-—-four-cells-left-to-right-in-workflow-order/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R3 — the draft cell renders the wireframe itself, not a word for it": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R3-—-the-draft--68ad2-me-itself-not-a-word-for-it/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R4 — cell state is computed, and approving changes it": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R4-—-cell-state-e8d44-ed-and-approving-changes-it/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R7 — screens are grouped into named areas, never paginated": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R7-—-screens-ar-dc3b1-named-areas-never-paginated/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R8 — filter by whose turn it is, and search requirement text": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R8-—-filter-by--7437e-and-search-requirement-text/test-finished-2.png"
-        ],
-        "video": null
-      },
-      "R6 — the header counts agree with the rows beneath them": {
-        "shots": [
-          "spec/_runs/1785139376659/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-1.png",
-          "spec/_runs/1785139376659/board-test-R6-—-the-header-2bee1--with-the-rows-beneath-them/test-finished-2.png"
-        ],
-        "video": null
-      }
-    }
-  },
-  {
-    "at": "2026-07-27T08:01:14.844Z",
-    "screen": "board",
-    "ms": 3,
-    "total": 7,
-    "failed": 0,
-    "ok": false,
-    "runId": "1785139274844",
-    "shotsByTest": {}
   }
 ]
