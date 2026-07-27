@@ -666,13 +666,22 @@ export function build () {
             </div>
             <div class="h">Pointing at a server you already have running is safer than starting a second one on the wrong port.</div>
           </div>
-          <div class="fld" id="initstartfld" hidden>
-            <div class="l">How do I start it?</div>
-            <input class="input" id="initstart" placeholder="npm run dev">
+          <div id="initstartfld" hidden>
+            <div class="fld">
+              <div class="l">Backend / API, if there is one <span class="gbn">optional</span></div>
+              <input class="input" id="initbackendcmd" placeholder="npm run api">
+              <input class="input" id="initbackendurl" placeholder="ready when this URL answers — http://localhost:8000/health" style="margin-top:8px">
+              <div class="h">Started first and waited for, so the frontend is never crawled before its API is up.</div>
+            </div>
+            <div class="fld">
+              <div class="l">Frontend</div>
+              <input class="input" id="initfrontendcmd" placeholder="npm run dev">
+            </div>
           </div>
           <div class="fld">
-            <div class="l">What URL does it serve on?</div>
+            <div class="l">What URL does the frontend serve on?</div>
             <input class="input" id="initurl" placeholder="http://localhost:3000">
+            <div class="h">The page with routes — this is what the crawl visits.</div>
           </div>
           <div class="fld">
             <div class="l">Which routes matter?</div>
@@ -1124,7 +1133,9 @@ ${detail}
     let cfg
     try { cfg = await (await fetch('/api/config')).json() } catch (e) { return }
     setInitMode(cfg.mode || 'attach')
-    document.getElementById('initstart').value = cfg.startCommand || ''
+    document.getElementById('initbackendcmd').value = cfg.backendCommand || ''
+    document.getElementById('initbackendurl').value = cfg.backendUrl || ''
+    document.getElementById('initfrontendcmd').value = cfg.frontendCommand || ''
     document.getElementById('initurl').value = cfg.baseUrl || ''
     document.getElementById('initroutes').value = (cfg.routes || []).join('\\n')
     document.getElementById('initsignin').value = cfg.signIn || ''
@@ -1162,7 +1173,9 @@ ${detail}
   async function saveConfig () {
     const body = {
       mode: initMode(),
-      startCommand: document.getElementById('initstart').value,
+      backendCommand: document.getElementById('initbackendcmd').value,
+      backendUrl: document.getElementById('initbackendurl').value,
+      frontendCommand: document.getElementById('initfrontendcmd').value,
       baseUrl: document.getElementById('initurl').value,
       routes: document.getElementById('initroutes').value,
       signIn: document.getElementById('initsignin').value

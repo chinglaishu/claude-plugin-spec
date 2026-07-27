@@ -246,8 +246,18 @@ export const CONFIG = join(SPEC, '_config.json')
 
 // Two ways to reach an app, and the CEO asked for both. "attach" points at a dev server that is
 // ALREADY running — starting a second one is how you end up crawling a stale copy on the wrong
-// port. "start" runs a command and waits for the URL to answer.
-export const DEFAULT_CONFIG = { mode: 'attach', startCommand: '', baseUrl: '', routes: [], signIn: '' }
+// port. "start" runs the servers itself.
+//
+// A web app is often two servers, not one: an API and a frontend. If the crawl hits the frontend
+// before the API is serving, it reads requirements off broken pages — a confident, wrong board,
+// exactly what R1 warns of. So start mode runs the backend FIRST, waits for it to answer, and only
+// then starts the frontend. baseUrl is always the FRONTEND — the thing that has routes to crawl;
+// backendUrl is a readiness gate, never a crawl root.
+export const DEFAULT_CONFIG = {
+  mode: 'attach', baseUrl: '',
+  backendCommand: '', backendUrl: '', frontendCommand: '',
+  routes: [], signIn: ''
+}
 
 export function readConfig () {
   if (!existsSync(CONFIG)) return { ...DEFAULT_CONFIG }
@@ -257,14 +267,17 @@ export function readConfig () {
 
 export function writeConfig (cfg) {
   const mode = cfg.mode === 'start' ? 'start' : 'attach'
+  const str = (v, n = 400) => String(v || '').slice(0, n)
   const clean = {
     mode,
-    startCommand: String(cfg.startCommand || '').slice(0, 400),
-    baseUrl: String(cfg.baseUrl || '').trim().slice(0, 400),
+    baseUrl: str(cfg.baseUrl).trim(),
+    backendCommand: str(cfg.backendCommand),
+    backendUrl: str(cfg.backendUrl).trim(),
+    frontendCommand: str(cfg.frontendCommand),
     // one route per line or comma; blank means "crawl from the root"
     routes: (Array.isArray(cfg.routes) ? cfg.routes : String(cfg.routes || '').split(/[\n,]/))
       .map(r => String(r).trim()).filter(Boolean).slice(0, 200),
-    signIn: String(cfg.signIn || '').slice(0, 4000)
+    signIn: str(cfg.signIn, 4000)
   }
   writeFileSync(CONFIG, JSON.stringify(clean, null, 2) + '\n')
   return clean

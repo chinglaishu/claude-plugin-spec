@@ -52,14 +52,24 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
   await expect(page.locator('#initroutes')).toHaveValue(/\/cart/)
 })
 
-test('R1 — start mode saves the command it will run', async ({ page }) => {
+test('R1 — start mode saves backend and frontend, in order', async ({ page }) => {
+  // Many apps need the API up before the frontend serves real pages, so a crawl that hits the
+  // frontend first reads requirements off broken pages — a confident, wrong board. Init asks for
+  // the two servers separately, and the crawler starts the backend and waits for it first.
   await page.goto('/#init')
   await page.locator('#initmode [data-mode="start"]').click()
-  await page.locator('#initstart').fill('npm run dev')
+  await page.locator('#initbackendcmd').fill('npm run api')
+  await page.locator('#initbackendurl').fill('http://localhost:8000/health')
+  await page.locator('#initfrontendcmd').fill('npm run dev')
   await page.locator('#initurl').fill('http://localhost:5173')
   await page.locator('#initsave').click()
   await expect.poll(() => config()?.mode).toBe('start')
-  expect(config()!.startCommand).toBe('npm run dev')
+  const c = config()!
+  expect(c.backendCommand).toBe('npm run api')
+  expect(c.backendUrl).toBe('http://localhost:8000/health')
+  expect(c.frontendCommand).toBe('npm run dev')
+  // the frontend URL is the one the crawl targets — backend readiness is a gate, not a crawl root
+  expect(c.baseUrl).toBe('http://localhost:5173')
 })
 
 test('R3 — a crawled PRD is marked a guess and cannot skip gate A', async ({ page, request }) => {

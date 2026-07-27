@@ -27,19 +27,36 @@ async function waitForUrl (url, ms = 30000) {
 async function main () {
   const cfg = readConfig()
   const base = cfg.baseUrl.replace(/\/+$/, '')
-  if (!base) { log('no app URL configured — nothing to crawl'); writeManifest([]); return }
+  if (!base) { log('no frontend URL configured — nothing to crawl'); writeManifest([]); return }
 
-  // start mode: run the command, wait for the URL, and stop it when we are done. attach mode:
-  // the server is already up and is not ours to start or kill.
-  let app = null
-  if (cfg.mode === 'start' && cfg.startCommand) {
-    log(`starting the app: ${cfg.startCommand}`)
-    app = spawn(cfg.startCommand, { cwd: ROOT, shell: true, detached: true, stdio: 'ignore' })
+  // start mode: bring the servers up ourselves, in order. The backend goes first and we WAIT for
+  // it — a frontend crawled before its API is serving reads requirements off broken pages. attach
+  // mode: everything is already up and is not ours to start or kill.
+  const started = []
+  const startAll = async () => {
+    if (cfg.mode !== 'start') return true
+    if (cfg.backendCommand) {
+      log(`starting the backend: ${cfg.backendCommand}`)
+      started.push(spawn(cfg.backendCommand, { cwd: ROOT, shell: true, detached: true, stdio: 'ignore' }))
+      if (cfg.backendUrl) {
+        log(`waiting for the backend at ${cfg.backendUrl}…`)
+        if (!await waitForUrl(cfg.backendUrl)) { log('the backend never answered — check its command or URL'); return false }
+        log('backend is up')
+      }
+    }
+    if (cfg.frontendCommand) {
+      log(`starting the frontend: ${cfg.frontendCommand}`)
+      started.push(spawn(cfg.frontendCommand, { cwd: ROOT, shell: true, detached: true, stdio: 'ignore' }))
+    }
+    return true
   }
+  const stopAll = () => { for (const p of started) { try { process.kill(-p.pid) } catch { /* gone */ } } }
+
+  if (!await startAll()) { stopAll(); writeManifest([]); return }
   const up = await waitForUrl(base)
   if (!up) {
-    log(`the app never answered at ${base} — check the URL or the start command`)
-    if (app) { try { process.kill(-app.pid) } catch { /* gone */ } }
+    log(`the frontend never answered at ${base} — check the URL or the frontend command`)
+    stopAll()
     writeManifest([])
     return
   }
@@ -83,7 +100,7 @@ async function main () {
   }
 
   await browser.close()
-  if (app) { try { process.kill(-app.pid) } catch { /* gone */ } }
+  stopAll()
   writeManifest(found)
   log(`crawl complete — ${found.length} route(s), ${found.filter(r => !r.exists).length} new`)
 }
