@@ -239,12 +239,18 @@ export function readScreen (name, results = null) {
   // first time the CEO edits and means it, they delete the line, and the guess becomes theirs.
   const guess = /^(1|true|yes)$/i.test(String(fm.guess || ''))
 
+  // Optional: which source files this screen governs, as globs, so the staff briefing can answer
+  // "what governs the file I am about to edit?" — the bridge from a route on the board to the code
+  // that implements it. Comma- or space-separated in frontmatter.
+  const governs = String(fm.governs || '').split(/[,\s]+/).map(g => g.trim()).filter(Boolean)
+
   return {
     name,
     area: fm.area || 'Other',
     title: fm.title || name,
     route: fm.route || '',
     guess,
+    governs,
     reqs,
     prdText,
     diff,
