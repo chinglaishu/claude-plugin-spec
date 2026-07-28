@@ -82,10 +82,16 @@ test('R3 — a crawled screen lands as a document-mode row: a guess, accepted no
     // document mode: no wireframe, and the CURRENT screen is shown — not the greenfield "not started"
     await expect(row.locator('.cell[data-col="draft"]')).toContainText(/no wireframe/i)
     await expect(row.locator('.cell[data-col="screen"] img')).toHaveCount(1)
-    // the one gate is accepting the requirements — never a draft/gate-A review
-    await page.goto('/#/' + name)
+    // the one gate is accepting the requirements — never a draft/gate-A review. Retry the detail nav:
+    // right after the fixture lands, the watcher can briefly rebuild the board stale (no storefront in
+    // its SCREENS list yet), so re-goto until the detail actually shows this screen's accept bar — the
+    // same settle the _modes specs ride out, and the same one a real browser gets via live-reload.
     const bar = page.locator('.dt:not([hidden]) .gb')
-    await expect(bar.locator('[data-act="accept"][data-gate="prd"]')).toHaveCount(1)
+    const acceptBtn = bar.locator('[data-act="accept"][data-gate="prd"]')
+    await expect(async () => {
+      await page.goto('/#/' + name)
+      await expect(acceptBtn).toBeVisible()
+    }).toPass({ timeout: 15000 })
     await expect(bar.locator('[data-gate="screen"]')).toHaveCount(0)
   } finally {
     rmSync(join(SPEC, name), { recursive: true, force: true })
