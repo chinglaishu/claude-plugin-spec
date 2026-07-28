@@ -6,7 +6,8 @@
     "board": "node --watch tools/serve-board.mjs",
     "board:build": "node tools/build-board.mjs",
     "staff": "node tools/staff.mjs",
-    "e2e": "playwright test --config=playwright.board.ts"
+    "e2e": "playwright test --config=playwright.board.ts",
+    "test:tools": "node --test tools/*.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.0",

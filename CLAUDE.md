@@ -58,9 +58,17 @@ tools/spec-store.mjs         reads/derives everything. THE authority on cell sta
 tools/build-board.mjs        renders board.html. Draws only — no reading logic.
 tools/serve-board.mjs        server: static allowlist, gates, runs, dispatch, scan, crawl, SSE, watch
 tools/crawl.mjs              the Init crawler (a real browser + Claude job, outside the suite)
+tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
+tools/scaffold.mjs           vendors the skeleton into a project (kg-init) and writes spec/_specboard.json
+tools/update.mjs             brings a scaffolded project to a new release (kg-update); test-first in tools/update.test.mjs
 playwright.board.ts          testDir ./spec, testMatch */test.spec.ts, workers:1
 board.html                   generated artifact — never edit by hand
 ```
+
+A scaffolded project records its release in `spec/_specboard.json`. `kg-update` compares that
+base against the project's current files and the new release, so an untouched file is updated but a
+locally-edited one is kept and the new version dropped beside it as `<file>.new` to merge — never a
+blind overwrite. `tools/update.test.mjs` (`npm run test:tools`) proves that decision table.
 
 Commands:
 

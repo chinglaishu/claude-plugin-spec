@@ -12,6 +12,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { FILES, SCRIPTS, DEV, MANIFEST, buildManifest } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -23,17 +24,9 @@ if (DEST === SRC) {
   process.exit(1)
 }
 
-// The skeleton: the tools, the shared test harness, the design system, the Playwright config. NOT
-// spec/<screen>/ — those are the target's own screens.
-const FILES = [
-  'tools/spec-store.mjs', 'tools/build-board.mjs', 'tools/serve-board.mjs',
-  'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs',
-  'playwright.board.ts',
-  'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
-  'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
-  // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
-  'spec/_auth.setup.ts'
-]
+// The skeleton (FILES), the run scripts (SCRIPTS) and the dev deps (DEV) live in _skeleton.mjs, the
+// one list update.mjs also reads — so scaffold and update can never disagree about what a project is
+// made of. NOT spec/<screen>/ — those are the target's own screens.
 
 const copied = []; const skipped = []
 for (const rel of FILES) {
@@ -45,7 +38,9 @@ for (const rel of FILES) {
   copied.push(rel)
 }
 
-// spec/.gitignore — the transient run state never belongs in git
+// spec/.gitignore — the transient run state never belongs in git. NOT _specboard.json: that is a
+// committable record of which release the project runs. The backup dirs and .new files an update
+// leaves behind ARE transient recovery/merge scratch, so they are ignored.
 const gi = join(DEST, 'spec/.gitignore')
 if (!existsSync(gi) || force) {
   writeFileSync(gi, [
@@ -56,19 +51,27 @@ if (!existsSync(gi) || force) {
   ].join('\n'))
   copied.push('spec/.gitignore')
 }
-
-// package.json — add the run scripts and the two dev deps without disturbing what is already there
-const SCRIPTS = {
-  // --watch so the board restarts itself when its own code (serve-board.mjs / spec-store.mjs) is
-  // updated — e.g. when you re-vendor a new specboard version. Node watches only the server's import
-  // graph, so it reacts to CODE changes, never to spec/ data (the board's own live-reload owns that).
-  // A user should never have to hand-restart a server the tool started for them. Needs Node 18+.
-  board: 'node --watch tools/serve-board.mjs',
-  'board:build': 'node tools/build-board.mjs',
-  staff: 'node tools/staff.mjs',
-  e2e: 'playwright test --config=playwright.board.ts'
+// The repo-root .gitignore gets the update scratch (a backup dir and .new files live at the paths
+// they shadow, anywhere in the tree). Appended, never clobbered.
+const rootGi = join(DEST, '.gitignore')
+const IGNORE = ['.specboard-backup-*/', '*.new']
+const existing = existsSync(rootGi) ? readFileSync(rootGi, 'utf8') : ''
+const missing = IGNORE.filter(p => !existing.split('\n').includes(p))
+if (missing.length) {
+  writeFileSync(rootGi, existing + (existing && !existing.endsWith('\n') ? '\n' : '') +
+    '# specboard update scratch\n' + missing.join('\n') + '\n')
 }
-const DEV = { '@playwright/test': '^1.62.0', '@types/node': '^22.0.0' }
+
+// The version manifest — the base-of-record update.mjs compares against. Written on every scaffold
+// (and --force re-vendor), so a freshly scaffolded project is immediately update-ready. Records the
+// hashes of the files AS SHIPPED, which is exactly what buildManifest(SRC) computes.
+if (!existsSync(join(DEST, MANIFEST)) || force) {
+  writeFileSync(join(DEST, MANIFEST), JSON.stringify(buildManifest(SRC), null, 2) + '\n')
+  copied.push(MANIFEST)
+}
+
+// package.json — add the run scripts and the two dev deps without disturbing what is already there.
+// SCRIPTS and DEV come from _skeleton.mjs.
 const pkgPath = join(DEST, 'package.json')
 const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, 'utf8')) : { name: 'my-specboard', private: true }
 if (!pkg.type) pkg.type = 'module'
