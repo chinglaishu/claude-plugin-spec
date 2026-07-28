@@ -12,7 +12,7 @@
     "repo's own tests can catch a mistake here."
   ],
   "name": "specboard",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A visualised spec-driven development board: every screen as PRD → wireframe → screenshot → test, staleness derived rather than tracked, and two human gates — is this what I meant, and did you build it.",
   "author": {
     "name": "fumia"
