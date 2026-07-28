@@ -21,6 +21,12 @@ const baseURL = EXTERNAL || `http://localhost:${PORT}`
 export default defineConfig({
   testDir: './spec',
   testMatch: '*/test.spec.ts',
+  // Real apps are data-heavy: a list waits on an API, a chart on a query. Playwright's default 5s
+  // expect timeout is too tight for that and shows up as the worst kind of flake — green alone, red
+  // in the suite. Give assertions room, and the whole test a generous ceiling, so a slow-but-correct
+  // screen is not failed for being slow. (specboard's own specs are fast; this only bounds the wait.)
+  expect: { timeout: 15000 },
+  timeout: 60000,
   // Your approvals are not test fixtures. The specs drive real gates, so they write real state —
   // snapshot it before and restore it after, or running the suite quietly approves screens you
   // never reviewed and the board starts lying about exactly what it exists to be honest about.
@@ -62,7 +68,8 @@ export default defineConfig({
   ...(EXTERNAL ? {} : {
     webServer: {
       command: `node tools/serve-board.mjs`,
-      env: { PORT },
+      // BOARD_PORT is the one port knob everywhere; the server reads it (falling back to PORT)
+      env: { BOARD_PORT: PORT },
       url: baseURL,
       // reuse whatever is already listening — the common case is that you left npm run board up
       reuseExistingServer: true,

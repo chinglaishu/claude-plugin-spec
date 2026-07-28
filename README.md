@@ -83,8 +83,13 @@ specboard's own screens), installs the two dev dependencies, starts the board, a
 ## Using the board
 
 ```bash
-npm run board          # serves on http://localhost:4173
+npm run board                    # serves on http://localhost:4173
+BOARD_PORT=5000 npm run board    # …or any port — set this if 4173 is taken
 ```
+
+`BOARD_PORT` is the one port knob: `npm run board`, the test suite (`playwright.board.ts`) and this
+README all read it. Set it when the default **4173 collides** — e.g. you are running specboard's own
+dev board on 4173 while working on a vendored copy in another project.
 
 Open it in a real browser over `http://localhost` (not `file://` — the gates need the server to record
 a decision).

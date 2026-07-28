@@ -16,7 +16,10 @@ import {
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
-const PORT = Number(process.env.PORT || 4173)
+// BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
+// PORT is still honoured as a fallback (some hosts inject it), and 4173 is the default — override it
+// when this vendored board would otherwise collide with specboard's own dev board on the same port.
+const PORT = Number(process.env.BOARD_PORT || process.env.PORT || 4173)
 
 // The builder runs as a CHILD PROCESS, not an import. Node caches ES modules for the life of the
 // process, so an imported build() keeps rendering with the code it was started with — and since
