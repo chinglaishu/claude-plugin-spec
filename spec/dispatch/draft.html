@@ -100,9 +100,8 @@
 
     <div class="pf">
       <button class="btn">Cancel</button>
-      <button class="btn gh">Run in background</button>
       <div class="spacer"></div>
-      <span class="muted" style="font-size:var(--t-sm)">gate A opens here when this finishes</span>
+      <span class="muted" style="font-size:var(--t-sm)">stays open when it finishes — no background run · gate A opens here</span>
     </div>
   </div>
 
@@ -132,7 +131,7 @@
     pf.innerHTML = '<button class="btn pri">Open gate A →</button>' +
       '<button class="btn" id="again">Run again</button>' +
       '<div class="spacer"></div><span class="muted" style="font-size:var(--t-sm)">' +
-      'spec/init/draft.html written · 148 lines</span>'
+      'spec/init/draft.html written · 148 lines · full log kept above</span>'
     $('#again').addEventListener('click', () => location.reload())
   }
   lines.forEach(l => { l.style.transition = 'opacity .2s' })

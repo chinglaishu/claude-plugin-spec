@@ -85,6 +85,17 @@ genuinely interactive (every control does something visible).
 
 ## Traps that have already cost hours — do not rediscover them
 
+- **The job slot is global, and a spec that starts runs will wait for itself.** The board puts every
+  run it starts in one slot, so `dispatch`'s own spec — which proves the panel *by* starting runs —
+  hung at a blank browser window until a run could **nest** inside the run driving it. A nested run
+  must NAME its parent runId (the page passes `?runid=`, the test reads it off `BOARD_RECORD`), so a
+  person clicking Run twice is still refused, and nesting is bounded so a suite cannot recurse.
+  For the same reason **cancel can name its target**: an unnamed cancel stops whatever holds the
+  slot, which once made the suite kill the run that was executing it.
+- **Per-case records must be recorded by CLI runs too, and folded, never replaced.** A record read
+  out of "the newest run" blanks every case that run did not cover, and a reporter that only records
+  when the BOARD started the run leaves `npm run e2e` contributing nothing — both showed up as "only
+  the test I clicked has steps". Screenshots stay board-only; steps and logs are always recorded.
 - **`board.html`'s script is emitted inside a JS template literal.** An unescaped `\n` or a backtick
   becomes literal whitespace and silently breaks every listener while the page still renders.
   `build()` parses the emitted script with `new Function()` and refuses to write a broken board —

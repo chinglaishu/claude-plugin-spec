@@ -1,6 +1,14 @@
 import { writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { join, relative } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
+
+// The commit each run ran against, so a case that went red can be tied to the change that did it.
+// Read once per run; empty outside a git repo, which this tool must keep working in.
+const COMMIT = (() => {
+  try { return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim() }
+  catch { return '' }
+})()
 
 // Walk the step tree into a flat, ordered, indented list of the meaningful steps — the named
 // steps a test author wrote (test.step), the actions Playwright took (pw:api, e.g. goto/click),
@@ -111,6 +119,28 @@ export default class ResultsIndexReporter {
       totalMs += ms
       const error = ok ? null
         : String((test.results || []).find(r => r.error)?.error?.message || '').slice(0, 400)
+      // R8: each case keeps its OWN log — a self-contained record leading with what the case was and
+      // how it ended, then anything it printed and the FULL (untruncated) failure. "which one, and
+      // what did it actually say" is answerable from the case itself, not a folded pass/fail. The
+      // committed index keeps only the short `error` headline; this full text lives in the per-run
+      // record, pruned with the run, exactly like the steps.
+      const stdout = (test.results || []).flatMap(r => r.stdout || []).map(String).join('')
+      const stderr = (test.results || []).flatMap(r => r.stderr || []).map(String).join('')
+      const errFull = (test.results || []).map(r => r.error).filter(Boolean)
+        .map(e => String(e.message || '') + (e.stack ? '\n' + String(e.stack) : '')).join('\n\n')
+      const caseLogFull = [
+        test.title,
+        (ok ? '✓ passed' : '✗ failed') + ' · ' + ms + 'ms',
+        stdout && '\n--- stdout ---\n' + stdout,
+        stderr && '\n--- stderr ---\n' + stderr,
+        errFull && '\n--- error ---\n' + errFull
+      ].filter(Boolean).join('\n')
+      // Bounded, and it SAYS when it cut. Every case of every run now keeps a log, so an unbounded
+      // one would grow the run log without limit; a silent truncation would be worse than the cap,
+      // because a log that stops mid-error reads like the error stopped there.
+      const caseLog = caseLogFull.length > 8000
+        ? caseLogFull.slice(0, 8000) + '\n\n… truncated at 8000 characters'
+        : caseLogFull
       const prev = byScreen[screen]
       byScreen[screen] = {
         total: (prev?.total || 0) + 1,
@@ -121,14 +151,24 @@ export default class ResultsIndexReporter {
       // the images and video Playwright captured for THIS test, as repo-relative paths the static
       // server can load (the reporter runs with cwd = repo root)
       const atts = (test.results || []).flatMap(r => r.attachments || [])
-      const shots = atts.filter(a => /\.png$/i.test(a.path || '')).map(a => relative(process.cwd(), a.path))
+      // The LAST page only. A watched run keeps one window open for the whole suite by holding a
+      // keepalive page that is never driven anywhere; Playwright screenshots every page in the
+      // context, so that blank page was being filed under "what this test saw" ahead of the real
+      // one. The page a test actually worked in is the last one it opened.
+      const allShots = atts.filter(a => /\.png$/i.test(a.path || '')).map(a => relative(process.cwd(), a.path))
+      const shots = allShots.slice(-1)
       const video = atts.find(a => /\.webm$/i.test(a.path || ''))
       // The DETAIL STEPS of the case — every action and check Playwright ran, in order and nested,
       // so a test case can be expanded to see exactly what it did. Verbose, so it lives in the
       // per-run record (pruned with the run), never in the committed index.
       const steps = flattenSteps((test.results || []).slice(-1)[0]?.steps)
-      if (shots.length || video || steps.length) {
-        shotsByTest[test.title] = { shots, video: video ? relative(process.cwd(), video.path) : null, steps }
+      // Always record the case — every case now carries at least its own log, even one with no shots,
+      // no video and no steps, so "each test case has its own record" holds for every case.
+      shotsByTest[test.title] = {
+        shots, video: video ? relative(process.cwd(), video.path) : null, steps, log: caseLog,
+        // What a log needs to be worth keeping ten of: when it ran, how long it took, whether it
+        // passed, and the commit it ran against — so a case going red can be tied to a change.
+        at: new Date(ranAt).toISOString(), ms, ok, commit: COMMIT
       }
     }
     if (Object.keys(byScreen).length) {
@@ -156,7 +196,14 @@ export default class ResultsIndexReporter {
             failed,
             ok: failed === 0,
             runId: String(ranAt),
-            shotsByTest: {},
+            // The per-case records, from a CLI run too. This used to be {}, which meant a case only
+            // ever had steps and a log if the BOARD happened to have run it — so running the whole
+            // suite the normal way left every case blank, and a screen showed detail for the one
+            // case somebody had clicked Run on. Screenshots genuinely do not exist here (they are
+            // only captured for a board-started run, which is what asks for a record directory), so
+            // this carries the steps and the log and no pictures.
+            shotsByTest: Object.fromEntries(Object.entries(shotsByTest)
+              .map(([t, v]) => [t, { ...v, shots: [], video: null }])),
             archive: null
           })
         } catch (err) { console.error('run-history record failed:', err) }

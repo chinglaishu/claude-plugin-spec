@@ -125,13 +125,13 @@ function prdBody (s) {
 // Column 4 in the detail view. The board could only ever say "7 of 7 passing", which asks you to
 // trust a number — you could not read WHICH seven, when they ran, or what a failure actually said.
 // The run controls shown wherever a screen can be run — the detail view now, not just the home
-// header. Run, the same run held in the background, and watch (re-run this screen when its files
-// change), so you are not sent back to the board to reach any of them.
+// header. Run, and watch (re-run this screen in a real browser window you can follow), plus the
+// re-run-on-save switch, so you are not sent back to the board to reach any of them. There is no
+// "Background": a run stays in the panel until you dismiss it (dispatch R7), so nothing needs to be
+// hidden behind a chip.
 const runControls = name => `<span class="runctl">
   <button class="btn sm runbtn" data-run="${esc(name)}">Run<span class="kbd">r</span></button>
   <button class="btn sm headed" data-run="${esc(name)}">Watch it run ↗</button>
-  <button class="btn sm gh runbg" data-run="${esc(name)}"
-    title="run without the panel — the header chip stays lit and tells you the result when it is done">Background</button>
   <label class="watchtog sm" title="re-run this screen whenever its files change">
     <input type="checkbox" class="dwatch"> re-run on save</label>
 </span>`
@@ -178,6 +178,7 @@ function e2ePanel (s) {
           </span></div>
         ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
         <div class="tststeps" data-title="${esc(t.title)}"></div>
+        <div class="tstlog" data-title="${esc(t.title)}"></div>
         <div class="tstshots" data-title="${esc(t.title)}"></div>
       </article>`).join('')}
       <div class="runlog" data-screen="${esc(s.name)}">
@@ -374,11 +375,24 @@ export function build () {
   .blank .b1 { font-size:var(--t-md); color:var(--ink-3); margin-bottom:5px; }
   .blank .b2 { font-size:var(--t-xs); color:var(--ink-4); }
 
-  .stats { display:flex; align-items:baseline; padding-bottom:var(--s4);
-    border-bottom:1px solid var(--hair); margin-bottom:var(--s2); }
-  /* the stat NUMBERS align on their baseline (that is why .stats is baseline), but the controls on
-     the right are boxes, not text — they line up on their centres, in their own group */
-  .statsactions { display:flex; align-items:center; gap:var(--s3); align-self:center; }
+  /* the settings menu — the two view toggles (wireframes, collapse-all) live in a gear the same
+     height as the Conflicts / Set up buttons beside it, instead of on their own header row */
+  .setwrap { position:relative; display:inline-flex; }
+  .gear { padding-left:7px; padding-right:7px; color:var(--ink-3); }
+  .gear svg { display:block; }
+  .gear[aria-expanded="true"] { border-color:var(--hair-2); background:var(--wash); color:var(--ink); }
+  .setmenu { position:absolute; top:calc(100% + 6px); right:0; z-index:30; min-width:186px;
+    display:flex; flex-direction:column; gap:2px; padding:var(--s2);
+    background:var(--paper); border:1px solid var(--hair-2); border-radius:var(--r-md);
+    box-shadow:var(--sh-lg); }
+  .setmenu[hidden] { display:none; }
+  .setitem { display:flex; align-items:center; width:100%; text-align:left; border:0;
+    background:transparent; cursor:pointer; color:var(--ink-2); border-radius:var(--r-sm);
+    padding:var(--s2) var(--s3); font:400 var(--t-sm)/1.4 var(--sans); }
+  .setitem:hover { background:var(--wash); color:var(--ink); }
+  /* the Conflicts count badge sits INSIDE its button; its taller line-box would push that button
+     past Set up and the gear, so pin the badge to the text line and the three controls line up */
+  .top .btn .chip { padding-top:0; padding-bottom:0; line-height:1.3; }
   .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
   .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
     border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
@@ -490,8 +504,8 @@ export function build () {
   .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
     max-width:1760px; margin:0 auto; align-items:start; }
   .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
-  /* the E2E column carries a control row (Run · Background · watch) and a test list, so it earns
-     more width than the other three when all four are present */
+  /* the E2E column carries a control row (Run · Watch · re-run-on-save) and a test list, so it
+     earns more width than the other three when all four are present */
   .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(220px,.72fr) .95fr .95fr minmax(330px,1.05fr); }
   .dtp { display:flex; flex-direction:column; min-height:0; }
   .dtp > .dtl { flex:none; }
@@ -501,7 +515,7 @@ export function build () {
   .bigshot img { width:100%; display:block; }
 
   /* the run controls get their own row under the E2E label — a narrow column cannot hold Run,
-     Background and watch on the same line as a heading without wrapping into a mess */
+     Watch and re-run-on-save on the same line as a heading without wrapping into a mess */
   .runbar { display:flex; padding:var(--s2) var(--s4); border-bottom:1px solid var(--hair);
     background:var(--paper); }
   .runctl { display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
@@ -543,6 +557,23 @@ export function build () {
   .stepslist li.sf:before { content:"✕"; color:var(--bengara); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
+  /* the case's OWN log, collapsed behind a native disclosure — the whole thing it printed, kept from
+     the latest run, so a failure can be read here without running it again (dispatch R8) */
+  .tstlog { margin:var(--s2) 0 0 14px; }
+  .tstlog:empty { display:none; }
+  .tstlog summary { font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); cursor:pointer; }
+  .tstlog summary:hover { color:var(--ink-2); }
+  .tstlog pre { margin:var(--s2) 0 0; padding:var(--s2) var(--s3); background:var(--sunk);
+    border:1px solid var(--hair); border-radius:var(--r-sm); max-height:280px; overflow:auto;
+    font:var(--t-xs)/1.6 var(--mono); color:var(--ink-3); white-space:pre-wrap; }
+  /* the case's last ten runs, newest first — each headed with when, how long, and on what commit */
+  .lghist { list-style:none; margin:var(--s2) 0 0; padding:0; }
+  .lghist li { padding:var(--s2) 0 0; border-top:1px solid var(--hair); margin-top:var(--s2); }
+  .lghist li:first-child { border-top:0; margin-top:0; padding-top:0; }
+  .lghist .lgh { display:flex; align-items:baseline; gap:var(--s2);
+    font:var(--t-xs)/1.5 var(--mono); color:var(--ink-4); }
+  .lghist .lgh .mark { color:var(--koke); }
+  .lghist .lgh .mark.o { color:var(--bengara); }
   .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
     border-radius:var(--r-md); }
   .dtl { padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); }
@@ -709,16 +740,19 @@ export function build () {
   <div class="brand"><span class="logo"></span>specboard</div>
   <span class="crumb">specboard · dogfooding itself</span>
   <span class="grow"></span>
-  <div class="seg" id="filt">
-    <button data-f="all" class="on">All</button>
-    <button data-f="waiting">Waiting on you</button>
-    <button data-f="new">Not started</button>
-  </div>
+  <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
+  <span id="shown" class="gbn" style="min-width:64px;text-align:right"></span>
   <span class="qwrap"><input id="q" class="input" style="width:250px"
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
-  <span id="shown" class="gbn" style="min-width:64px"></span>
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
+  <div class="setwrap">
+    <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+    <div class="setmenu" id="setmenu" hidden>
+      <button class="setitem" id="wftoggle">Hide wireframes</button>
+      <button class="setitem" id="toggle-all">Collapse all</button>
+    </div>
+  </div>
 </div>
 
 <div class="wrap">
@@ -729,22 +763,6 @@ export function build () {
     ${count('e2e', 'ranstale') ? `${count('e2e', 'ranstale')} test result${count('e2e', 'ranstale') === 1 ? '' : 's'} predate your latest edit — <code>npm run e2e</code>.` : ''}
     ${!count('screen', 'missing') && !count('e2e', 'ranstale') ? 'Every screen is built, approved and proven.' : ''}
   </div>` : ''}
-  <div class="stats">
-    <span class="stat"><b>${screens.length}</b> screens</span>
-    <span class="stat"><b>${count('draft', 'ok', 'stale', 'review')}</b> drafted</span>
-    <span class="stat"><b>${count('screen', 'ok', 'stale', 'review')}</b> built</span>
-    <span class="stat"><b>${count('e2e', 'pass')}</b> tested</span>
-    <span class="stat hot"><b>${yourTurn}</b> waiting on you</span>
-    <span class="grow"></span>
-    <div class="statsactions">
-      <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
-      <button class="btn sm" id="runall">Run all tests</button>
-      <label class="watchtog"><input type="checkbox" id="watch"> watch</label>
-      <button class="btn sm gh" id="wftoggle">Hide wireframes</button>
-      <button class="btn sm gh" id="toggle-all">Collapse all</button>
-    </div>
-  </div>
-
   <div class="colhs">
     <div class="lbl flow">1 · PRD — the source of truth</div>
     <div class="lbl flow" data-col="draft">2 · Draft — the wireframe</div>
@@ -760,7 +778,6 @@ export function build () {
   <div class="rph"><span class="chip run" id="rpchip"><span class="dot"></span>running</span>
     <span id="rptitle">tests</span><span class="grow"></span>
     <button class="btn sm" id="rpcancel">Cancel</button>
-    <button class="btn sm gh" id="rpbg">Run in background</button>
     <button class="btn sm gh" id="rpclose">Close</button></div>
   <pre class="rplog" id="rplog"></pre>
 </div>
@@ -936,41 +953,32 @@ ${detail}
   for (const fr of document.querySelectorAll('iframe')) fr.addEventListener('load', safeFit)
   safeFit(); setTimeout(safeFit, 60)
 
-  // filtering ------------------------------------------------------------
-  let mode = 'all'
+  // search ---------------------------------------------------------------
+  // The whose-turn filter toggle was removed; search across requirement text is the only way to
+  // narrow the board now. Per-group "N waiting" cues and the queue-clear banner still say whose turn
+  // it is, so nothing about "is it my turn" was lost — only the button that filtered the whole page.
   const q = document.getElementById('q')
   function apply () {
     const term = q.value.trim().toLowerCase()
     let shown = 0
     for (const r of document.querySelectorAll('.row')) {
-      const ok = (mode === 'all' || (mode === 'waiting' && r.dataset.waiting === '1')
-        || (mode === 'new' && r.dataset.started === '0'))
-        && (!term || r.dataset.q.includes(term))
+      const ok = !term || r.dataset.q.includes(term)
       r.classList.toggle('gone', !ok); if (ok) shown++
     }
     for (const g of document.querySelectorAll('.grp'))
       g.style.display = g.querySelectorAll('.row:not(.gone)').length ? '' : 'none'
     document.getElementById('none').style.display = shown ? 'none' : 'block'
     // Say how much is hidden. A filtered board that looks like the whole board is how you
-    // conclude a screen does not exist when it is one click away.
+    // conclude a screen does not exist when it is one search away.
     const tot = document.querySelectorAll('.row').length
     document.getElementById('shown').textContent = shown === tot ? '' : shown + ' of ' + tot
     document.querySelector('.qwrap').classList.toggle('has', !!term)
-    // "Nothing matches" is wrong when a filter is the reason — name which one it was.
     document.getElementById('none').textContent = term
-      ? 'Nothing matches “' + term + '”.'
-      : mode === 'waiting' ? 'Nothing is waiting on you.'
-        : mode === 'new' ? 'Every screen has a draft.' : 'Nothing matches.'
+      ? 'Nothing matches “' + term + '”.' : 'Nothing matches.'
     safeFit()
   }
   q.addEventListener('input', apply)
   document.getElementById('qx').addEventListener('click', () => { q.value = ''; apply(); q.focus() })
-  for (const b of document.querySelectorAll('#filt button'))
-    b.addEventListener('click', () => {
-      mode = b.dataset.f
-      document.querySelectorAll('#filt button').forEach(x => x.classList.toggle('on', x === b))
-      apply()
-    })
   for (const t of document.querySelectorAll('.tw'))
     t.addEventListener('click', () => {
       const g = t.closest('.grp'); g.classList.toggle('shut')
@@ -1005,6 +1013,22 @@ ${detail}
     applyWf()
   })
   applyWf()
+
+  // Settings menu — a gear in the top bar holding the view toggles (wireframes, collapse-all) that
+  // used to sit on their own row. Opens on click, closes on a click outside or Escape. The toggles
+  // keep their own ids and listeners above; this only shows and hides the sheet they now live in,
+  // and it stays open while you flip a toggle so the label change is visible and reversible.
+  const setbtn = document.getElementById('setbtn')
+  const setmenu = document.getElementById('setmenu')
+  const setMenu = open => {
+    setmenu.hidden = !open
+    setbtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+  }
+  setbtn.addEventListener('click', e => { e.stopPropagation(); setMenu(setmenu.hidden) })
+  document.addEventListener('click', e => {
+    if (!setmenu.hidden && !e.target.closest('.setwrap')) setMenu(false)
+  })
+  addEventListener('keydown', e => { if (e.key === 'Escape' && !setmenu.hidden) setMenu(false) })
 
   // detail + routing -----------------------------------------------------
   // Every detail view has an address. Without one a refresh dumps you back on the board, the
@@ -1439,6 +1463,11 @@ ${detail}
   const rplog = document.getElementById('rplog')
   const rpchip = document.getElementById('rpchip')
   let runDone = false
+  // The run this PAGE is being driven by, if any. A spec proving the run panel opens the board with
+  // ?runid=<its own run> so the Run it clicks can nest inside that run instead of being refused by
+  // it (dispatch R4). A person's browser carries no runid, so a person clicking Run twice is still
+  // refused — which is the whole point of the slot.
+  const PARENT = new URLSearchParams(location.search).get('runid') || ''
 
   // ONE panel for every kind of job — tests, a redraft, a scan, a PRD rewrite. A job is a job,
   // and a second panel would be a second place to look for "is something actually happening".
@@ -1451,12 +1480,25 @@ ${detail}
     document.getElementById('rpcancel').disabled = false
     panel.hidden = false
   }
-  function panelRefused (msg) {
+  // A refusal has to be ACTIONABLE. "A run is already in progress" states that you cannot start and
+  // says nothing about how to get out of it — and it used to disable Cancel too, which removed the
+  // one control that would clear the block. So: name the job that is in the way, say the two ways
+  // out, and leave Cancel live, because cancelling that job IS the way out (dispatch R4).
+  async function panelRefused (msg) {
     rpchip.className = 'chip bad'
     rpchip.textContent = 'refused'
-    rplog.textContent = msg
+    let busy = ''
+    if (/in progress/i.test(msg)) {
+      try { busy = (await (await fetch('/api/runs')).json()).running || '' } catch (e) { busy = '' }
+    }
+    rplog.textContent = busy
+      ? busy + ' is already running — one job at a time, so this one was refused.\\n\\n' +
+        'To clear it: press Cancel to stop that job, or wait for it to finish and run this again.\\n' +
+        'Its output keeps streaming below.\\n\\n'
+      : msg
     runDone = true
-    document.getElementById('rpcancel').disabled = true
+    // only meaningful while something is actually running — cancelling nothing is refused anyway
+    document.getElementById('rpcancel').disabled = !busy
   }
 
   async function runTests (screen, opts) {
@@ -1472,7 +1514,7 @@ ${detail}
     try {
       const res = await fetch('/api/run', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ screen, grep: o.grep, headed: !!o.headed })
+        body: JSON.stringify({ screen, grep: o.grep, headed: !!o.headed, parent: PARENT })
       })
       if (!res.ok) throw new Error((await res.text()).slice(0, 120))
     } catch (err) { panelRefused(err.message) }
@@ -1500,13 +1542,8 @@ ${detail}
   for (const b of document.querySelectorAll('[data-dispatch]'))
     b.addEventListener('click', () => dispatch(b.dataset.dispatch))
 
-  document.getElementById('runall').addEventListener('click', () => runTests(null))
   for (const b of document.querySelectorAll('.runbtn'))
     b.addEventListener('click', () => runTests(b.dataset.run))
-  // Run in background from the detail view: start the run, then drop the panel. The run keeps
-  // going and the header chip stays lit so it is never a job you forget is happening.
-  for (const b of document.querySelectorAll('.runbg'))
-    b.addEventListener('click', async () => { await runTests(b.dataset.run); panel.hidden = true })
   // Watch it run: a real browser window opens and drives the app in front of you. This is what
   // people mean by watching a test — the re-run-on-save switch is a different thing entirely.
   for (const b of document.querySelectorAll('.headed'))
@@ -1522,31 +1559,24 @@ ${detail}
     w.addEventListener('change', () => setWatch(w.checked))
   document.getElementById('rpclose').addEventListener('click', () => {
     panel.hidden = true
-    // a finished run changed the board, so leaving the panel is the moment to show it
+    // R7: the panel is dismissed only here, by hand. A finished run changed the board, so leaving
+    // the panel is the moment to show it — but nothing closes the panel on your behalf.
     if (runDone) location.reload()
   })
-  // Background is not a different run — it is the same run without the window. The header chip
-  // keeps it visible, because a job you cannot see is a job you start twice.
-  document.getElementById('rpbg').addEventListener('click', () => { panel.hidden = true })
 
   const runflag = document.getElementById('runflag')
-  const setRunning = on => {
-    runflag.hidden = !on
-    document.getElementById('runall').disabled = on
-  }
-  // A run you sent to the background is still yours to watch — clicking the header chip brings the
-  // panel back up. Without this a backgrounded run was a job you could see was happening and could
-  // never open again.
+  // A run lights this chip. Watch mode starts runs nobody clicked, so the chip is also the way back
+  // into a run that is streaming with the panel closed — clicking it opens the panel.
+  const setRunning = on => { runflag.hidden = !on }
   runflag.style.cursor = 'pointer'
-  runflag.title = 'a job is running in the background — click to open its panel'
+  runflag.title = 'a run is in progress — click to open its panel'
   runflag.addEventListener('click', () => { panel.hidden = false })
 
   // Watch: re-run the moment a PRD, draft or spec changes, so the E2E column stops being the one
-  // cell you have to remember to refresh by hand. One switch, mirrored onto every copy — the
-  // header checkbox and each detail view's — so they never disagree about whether watch is on.
-  const watchBox = document.getElementById('watch')
+  // cell you have to remember to refresh by hand. One switch, mirrored onto every per-screen copy in
+  // the detail views, so they never disagree about whether watch is on. (The old board-wide header
+  // watch checkbox was removed; watch now lives only where a single screen is run.)
   function syncWatch (on) {
-    watchBox.checked = on
     for (const w of document.querySelectorAll('.dwatch')) w.checked = on
   }
   async function setWatch (on) {
@@ -1555,7 +1585,6 @@ ${detail}
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ on })
     }).catch(() => {})
   }
-  watchBox.addEventListener('change', () => setWatch(watchBox.checked))
 
   // recent runs, fetched rather than baked in — the board is rebuilt by a run, so a run log
   // written into the HTML would always be one run behind itself
@@ -1586,27 +1615,48 @@ ${detail}
       box.querySelector('.runrows').innerHTML = mine.length
         ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
             (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
-            '</span><span class="rr-s">' + r.screen + '</span><span class="ms">' +
+            // WHICH case, when the run was scoped to one — "board 1/1" twice tells you nothing
+            '</span><span class="rr-s">' + r.screen + (r.grep ? ' · ' + eh(r.grep) : '') +
+            '</span><span class="ms">' +
             (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span>' +
             (r.archive ? '<span class="rr-arch">' + archiveNote(r.archive) + '</span>' : '') + '</div>').join('')
         : '<div class="runrow ms">no runs recorded yet</div>'
 
       // The RECORD, shown UNDER each test — what THAT test saw, not a heap of images under all of
-      // them. Take the newest run that recorded this screen and carries a per-test manifest.
-      const rec = data.runs.find(r => (r.screen === screen || r.screen === 'all') &&
-        r.shotsByTest && Object.keys(r.shotsByTest).length)
+      // them. FOLDED across runs, never read out of a single one: a run filtered to one test records
+      // only that test, so taking every case's record from "the newest run" strips the steps and the
+      // log off every case that run did not include. Walk newest to oldest and let each case keep the
+      // newest record that actually covers IT (dispatch R8) — the same fold the results index needs,
+      // for the same reason.
+      // HISTORY, not just the newest: each case collects its last ten runs, newest first, so a red
+      // case can be read against when it started failing and which commit it ran on. rec[title][0]
+      // is the newest, which is what the steps and the shots come from.
+      const rec = {}
+      for (const r of data.runs) {
+        if (r.screen !== screen && r.screen !== 'all') continue
+        for (const title of Object.keys(r.shotsByTest || {})) {
+          if (!rec[title]) rec[title] = []
+          if (rec[title].length < 10) rec[title].push(r.shotsByTest[title])
+        }
+      }
       const panel = box.closest('.e2e')
       for (const slot of panel.querySelectorAll('.tstshots')) {
-        const one = rec && rec.shotsByTest[slot.dataset.title]
+        const one = (rec[slot.dataset.title] || [])[0]
         slot.innerHTML = one
           ? (one.shots || []).map(src => '<img src="' + src + '" loading="lazy" alt="what this test saw">').join('') +
             (one.video ? '<a class="recvid" href="' + one.video + '" target="_blank">▶ recording</a>' : '')
           : ''
+        // A picture that no longer exists is worse than no picture: the record is pruned with its
+        // run, so a shot can outlive its file and render as a broken-image icon captioned "what
+        // this test saw". Show nothing rather than a lie about evidence.
+        for (const img of slot.querySelectorAll('img')) {
+          img.addEventListener('error', () => img.remove())
+        }
       }
       // The DETAIL STEPS of each case, collapsed behind a toggle — every action and check the test
       // ran, in order, indented under its named steps. Expand to see exactly what a case did.
       for (const slot of panel.querySelectorAll('.tststeps')) {
-        const one = rec && rec.shotsByTest[slot.dataset.title]
+        const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
         if (!steps.length) { slot.innerHTML = ''; continue }
         slot.innerHTML =
@@ -1615,6 +1665,23 @@ ${detail}
             '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) + (s.ok ? '' : ' sf') +
             '" style="margin-left:' + (s.depth * 14) + 'px">' +
             eh(s.label || '') + '</li>').join('') + '</ol>'
+      }
+      // The case's own LOG HISTORY — its last ten runs, newest first, each headed with when it ran,
+      // how long it took and the commit it ran against. One log says whether it passes today; ten
+      // say when it started failing and which commit did it (dispatch R8).
+      for (const slot of panel.querySelectorAll('.tstlog')) {
+        const hist = (rec[slot.dataset.title] || []).filter(h => h && h.log)
+        if (!hist.length) { slot.innerHTML = ''; continue }
+        const runs = hist.map(h => {
+          const when = h.at ? String(h.at).replace('T', ' ').slice(0, 16) : 'unknown time'
+          const took = h.ms != null ? Math.round(h.ms) + 'ms' : ''
+          const sha = h.commit ? ' · ' + eh(h.commit) : ''
+          const mark = h.ok === false ? 'o' : ''
+          return '<li><div class="lgh"><span class="mark ' + mark + '"></span>' +
+            eh(when) + ' · ' + eh(took) + sha + '</div><pre>' + eh(h.log) + '</pre></li>'
+        }).join('')
+        slot.innerHTML = '<details class="logbox"><summary>full log · last ' + hist.length +
+          ' run' + (hist.length === 1 ? '' : 's') + '</summary><ol class="lghist">' + runs + '</ol></details>'
       }
     }
   }
@@ -1679,7 +1746,9 @@ ${detail}
     let changePending = null
     es.addEventListener('change', () => {
       if (automation) return
-      if (!panel.hidden && !runDone) return
+      // R7: an OPEN run panel is never reloaded away — not while a run streams into it, and not once
+      // it has finished. The log stays there to read; the board refreshes when you close the panel.
+      if (!panel.hidden) return
       clearTimeout(changePending)
       changePending = setTimeout(() => {
         // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
@@ -1710,17 +1779,9 @@ ${detail}
         // a crawl changes what the init "what was found" table should show
         loadConflicts()
         if (!document.getElementById('initview').hidden) loadCrawl()
-        // Finished while you were NOT watching (backgrounded). Do not just silently refresh — say
-        // what happened, so a background run is a thing you get told the result of rather than a
-        // thing that quietly changed the board while you looked away.
-        if (panel.hidden) {
-          loadRuns()
-          const label = (d.screen === 'all' ? 'all tests' : (d.screen || 'run')) + ' — ' + (d.note ||
-            ((d.total - d.failed) + ' of ' + d.total + (d.ok ? ' passed' : ' — some failed')))
-          toast('Background job done · ' + label + ' · click the running chip to see it')
-          if (!automation) setTimeout(() => location.reload(), 1800)
-          return
-        }
+        // A watch-mode run finishes with the panel still closed (nobody opened it). The board's own
+        // rebuild fires a change event that refreshes it, so there is nothing to reload here — and
+        // there is no longer any "background" run to announce.
         rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
         rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
         rplog.textContent += '\\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +

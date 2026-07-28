@@ -35,7 +35,8 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png',
-  '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webm': 'video/webm'
+  '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webm': 'video/webm',
+  '.log': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8'
 }
 
 const clients = new Set()
@@ -49,6 +50,9 @@ const notify = () => push('change', 1)
 // state.json files is the same race that made the suite flaky — refused, not queued, so you find
 // out immediately instead of wondering why the results look interleaved.
 let running = null
+// The runs a nested run is standing on. Bounded to one entry, so "a run may nest" can never become
+// "a suite runs itself forever". `running` is always the INNERMOST job; finishing pops back.
+const runStack = []
 let watchOn = false
 
 const RUNDIR = join(SPEC, '_runs')
@@ -160,8 +164,13 @@ function runJob ({ kind, label, prompt, changed, onDone, failNote }) {
 // helpers, npx has playwright — and signalling only the leader leaves them running while the
 // board reports the job stopped. Partial work is deliberately left on disk: seeing how far it
 // got is the reason you cancelled rather than waited.
-function cancelJob () {
+// `runId` is optional and means "cancel this job, or nothing". Unnamed, cancel stops whatever holds
+// the slot — which is what the panel's Cancel button wants. Named, it refuses unless it is really
+// that job: a run asking to cancel the job it started must not silently kill the run it is nested
+// in when that job has already finished. (It did: the suite cancelled itself and died mid-run.)
+function cancelJob (runId) {
   if (!running) throw new Error('nothing is running')
+  if (runId && runId !== running.runId) throw new Error('nothing is running by that name')
   const { child } = running
   running.cancelled = true
   push('run', { state: 'line', line: '— cancelled —' })
@@ -497,7 +506,20 @@ function decideConflict ({ key, canon, note, undo }) {
 }
 
 function startRun (screen, opts = {}) {
-  if (running) throw new Error('a run is already in progress')
+  // R4: the slot is global, and a person's second job is refused. The ONE exception is the run that
+  // is already holding the slot asking to nest — a spec that proves the run panel has to start a run
+  // to have anything to prove, and without this the dispatch row is the only row the board cannot
+  // run (it would wait for the slot its own run is holding, which is the blank-browser hang).
+  // The caller must NAME the run it is nested in, so a person clicking Run twice is still refused,
+  // and nesting stops at one level so a suite that runs itself cannot recurse.
+  if (running) {
+    const parent = String(opts.parent || '')
+    // Bounded, not unlimited: a chain this short cannot recurse, and it leaves room for the case
+    // that matters — the board runs a spec (1) which starts a run of its own (2).
+    const mayNest = parent && parent === running.runId && runStack.length < 2
+    if (!mayNest) throw new Error('a run is already in progress')
+    runStack.push(running)
+  }
   const args = ['playwright', 'test', '--config=playwright.board.ts']
   // the only interpolated value, and it is checked against real directories before it is used
   if (screen) args.push(join('spec', screen, 'test.spec.ts'))
@@ -512,11 +534,6 @@ function startRun (screen, opts = {}) {
   const slowMo = opts.headed ? readConfig().stepDelayMs : 0
 
   const started = Date.now()
-  // A run started BY the board writes to its OWN report file. Scoped to one screen it would
-  // otherwise overwrite spec/_results.json — the file a concurrent full run (or the suite itself)
-  // is also writing — and erase every other screen's result. It folds into the per-screen index
-  // on close instead, so a one-screen run updates one screen and leaves the rest standing.
-  const report = join(SPEC, '_run-report.json')
   // The RECORD of this run: every screenshot and video Playwright captures while it drives the
   // app, kept per run so "what did the test actually see" is answerable afterwards rather than
   // only while you happened to be watching. Lives under spec/ because that is the only tree the
@@ -524,6 +541,14 @@ function startRun (screen, opts = {}) {
   const runId = String(started)
   const recordDir = join(RUNDIR, runId)
   mkdirSync(recordDir, { recursive: true })
+  // A run started BY the board writes to its OWN report file. Scoped to one screen it would
+  // otherwise overwrite spec/_results.json — the file a concurrent full run (or the suite itself)
+  // is also writing — and erase every other screen's result. It folds into the per-screen index
+  // on close instead, so a one-screen run updates one screen and leaves the rest standing.
+  // PER RUN, inside the run's own record: a nested run and the run it is nested in are both live at
+  // once, and one shared report file would have each overwriting the other's results. Living in the
+  // record dir also means it is pruned with the run rather than left behind in spec/.
+  const report = join(recordDir, 'report.json')
   // detached for the same reason the agent jobs are: npx is a launcher, playwright is the thing
   // actually running, and cancelling has to reach the browser it started.
   const child = spawn('npx', args, {
@@ -542,10 +567,18 @@ function startRun (screen, opts = {}) {
       ...(grep ? { BOARD_PARTIAL: '1' } : {})
     }
   })
-  running = { screen: screen || 'all', started, child, kind: 'tests', runId }
-  push('run', { state: 'started', screen: running.screen })
+  // Captured, not read off `running` at close: with nesting there can be two live runs, and the
+  // slot holds the innermost — so a run must name itself from a local, never from the global.
+  const myScreen = screen || 'all'
+  running = { screen: myScreen, started, child, kind: 'tests', runId }
+  push('run', { state: 'started', screen: myScreen })
 
+  // R6: keep the WHOLE log, not just the lines that scrolled past. Accumulate every byte the run
+  // printed; on close it is written beside the run's other artifacts so it can be read back in full
+  // long after the panel that streamed it is gone.
+  let log = ''
   const feed = buf => {
+    log += String(buf)
     for (const line of String(buf).split('\n')) {
       if (line.trim()) push('run', { state: 'line', line: line.replace(/\[[0-9;]*m/g, '').slice(0, 300) })
     }
@@ -560,6 +593,9 @@ function startRun (screen, opts = {}) {
     try { fresh = parseReport(report) } catch { /* no report — the run never produced one */ }
     const totals = Object.values(fresh).reduce(
       (a, r) => ({ total: a.total + r.total, failed: a.failed + r.failed }), { total: 0, failed: 0 })
+    // R6: write the whole log into this run's own record dir, so the prune that caps the run log
+    // takes it away with everything else the run produced. FORCE_COLOR=0 already keeps it clean.
+    try { writeFileSync(join(recordDir, 'run.log'), log.replace(/\x1b\[[0-9;]*m/g, '')) } catch { /* best effort: a missing log never fails a run */ }
     let shotsByTest = collectRecord(recordDir)
     // Ship the record where Setup says, if anywhere but local. Best effort: a failure records the
     // reason on the run and keeps the local copy, and never touches the verdict.
@@ -575,7 +611,10 @@ function startRun (screen, opts = {}) {
     }
     const entry = {
       at: new Date(started).toISOString(),
-      screen: running.screen,
+      screen: myScreen,
+      // WHICH case, when the run was scoped to one. "board 1/1" twice over says nothing about which
+      // two tests those were, and a run log you cannot read back is a run log nobody consults.
+      grep: grep || null,
       ms: Date.now() - started,
       ...totals,
       ok: code === 0,
@@ -586,7 +625,10 @@ function startRun (screen, opts = {}) {
       archive
     }
     recordRun(entry)
-    running = null
+    // Pop, don't blank: a nested run finishing hands the slot back to the run it was nested in,
+    // which is still going. Blanking here would free the slot while a run was live and let a person
+    // start a second job alongside it — the exact thing the slot exists to refuse.
+    running = runStack.pop() || null
     try { build() } catch (err) { console.error(String(err.stderr || err)) }
     push('run', { state: 'done', ...entry })
     notify()
@@ -710,9 +752,12 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/run' && req.method === 'POST') {
     try {
-      const { screen, grep, headed } = JSON.parse(await readBody(req) || '{}')
+      const { screen, grep, headed, parent } = JSON.parse(await readBody(req) || '{}')
       if (screen && !allScreens().some(s => s.name === screen)) throw new Error(`no such screen: ${screen}`)
-      startRun(screen || null, { grep, headed })
+      // `parent` is how a run asks to nest inside itself (R4). It is checked against the runId the
+      // server itself issued, so naming someone else's run — or guessing — refuses like any other
+      // second job.
+      startRun(screen || null, { grep, headed, parent })
       res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"started":true}')
     } catch (err) {
       res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)
@@ -735,7 +780,8 @@ const server = createServer(async (req, res) => {
   // ten seconds in that you rejected the wrong screen should not cost the other four.
   if (url.pathname === '/api/cancel' && req.method === 'POST') {
     try {
-      const what = cancelJob()
+      const { runId: cancelId } = JSON.parse(await readBody(req) || '{}')
+      const what = cancelJob(cancelId)
       res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify({ cancelled: what }))
     } catch (err) {
       res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)
@@ -823,7 +869,15 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/runs') {
     res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ runs: readRuns(), running: running ? running.screen : null, watch: watchOn }))
+    // runningId names WHICH run holds the slot. A run asking whether the board is free has to be
+    // able to tell "something else is in the way" from "the thing in the way is me" — without it,
+    // a spec started by the board waits for itself forever (R4).
+    res.end(JSON.stringify({
+      runs: readRuns(),
+      running: running ? running.screen : null,
+      runningId: running ? running.runId : null,
+      watch: watchOn
+    }))
     return
   }
 
@@ -882,7 +936,7 @@ watch(SPEC, { recursive: true }, (_e, name) => {
   // Re-triggering on those would make watch mode chase its own tail forever, so they redraw the
   // board but are never a reason to run. A conflicts scan is the same: it changes what you have
   // to decide, never what the tests would say.
-  const noRun = /_results\.json$|_results-index\.json$|_run-report\.json$|_runs\.json$|_state-snapshot|_dir-snapshot|_conflicts\.json$|_config\.json$|_crawl\.json$|screen\.png$|crawl\.png$/.test(name)
+  const noRun = /_results\.json$|_results-index\.json$|_run-report\.json$|_runs\.json$|_runs\/|_state-snapshot|_dir-snapshot|_conflicts\.json$|_config\.json$|_crawl\.json$|screen\.png$|crawl\.png$/.test(name)
   rebuild()
   if (noRun) return
 
