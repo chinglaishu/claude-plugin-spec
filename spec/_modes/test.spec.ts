@@ -209,7 +209,11 @@ test('toggle — the wireframe column hides and shows board-wide, and the choice
   await page.reload()
   await expect(page.locator('.colhs [data-col="draft"]')).toBeHidden()
   await expect(page.locator('#wftoggle')).toContainText(/show/i)
+  // the hidden state is applied to the ROOT element, set BEFORE the body renders — so a board that
+  // live-reloads on every change never flashes the wireframe column back (the "it resets" report).
+  expect(await page.evaluate(() => document.documentElement.classList.contains('hide-wf'))).toBe(true)
 
   // put it back so nothing about this test leaks into a later one in the same context
   await page.locator('#wftoggle').click()
+  expect(await page.evaluate(() => document.documentElement.classList.contains('hide-wf'))).toBe(false)
 })

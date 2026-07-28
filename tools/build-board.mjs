@@ -700,6 +700,10 @@ export function build () {
   .frow .fname { color:var(--ink-4); font-size:var(--t-xs); }
   .frow .fst { margin-left:auto; color:var(--ink-4); font-size:var(--t-xs); }
 </style>
+<!-- Apply the hide-wireframes preference to the ROOT element BEFORE the body renders, so a board that
+     live-reloads on every change never flashes the wireframe column back into view. The end-of-body
+     script keeps it in sync; this one just wins the first paint. -->
+<script>try{if(localStorage.getItem('board-hide-wireframes')==='1')document.documentElement.classList.add('hide-wf')}catch(e){}</script>
 
 <div class="top">
   <div class="brand"><span class="logo"></span>specboard</div>
@@ -990,7 +994,9 @@ ${detail}
   const wfHidden = () => { try { return localStorage.getItem(WF_KEY) === '1' } catch (e) { return false } }
   function applyWf () {
     const hide = wfHidden()
-    document.body.classList.toggle('hide-wf', hide)
+    // the ROOT element, not body — the head script sets it there before render to avoid a flash, and
+    // both must agree on where the class lives or a reload would un-hide until this ran
+    document.documentElement.classList.toggle('hide-wf', hide)
     wfBtn.textContent = hide ? 'Show wireframes' : 'Hide wireframes'
     safeFit()
   }
@@ -1725,10 +1731,11 @@ ${detail}
   // every listener on the page while the board still renders perfectly. That has now shipped a
   // dead page twice. Parse it before writing; a build that cannot produce working JS must fail
   // loudly rather than hand over something that merely looks right.
-  const script = html.match(/<script>([\s\S]*)<\/script>/)
-  if (script) {
+  // Validate EVERY emitted script, non-greedily — there are two now (the early head script and the
+  // main one), and a greedy match would splice them together with the HTML between and fail to parse.
+  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
     try {
-      new Function(script[1])
+      new Function(m[1])
     } catch (err) {
       throw new Error(`board.html script does not parse — refusing to write it: ${err.message}`)
     }
