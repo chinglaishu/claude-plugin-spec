@@ -1673,16 +1673,23 @@ ${detail}
     const es = new EventSource('/api/live')
     // A reload mid-run would kill the panel you are watching, so hold it until the run finishes —
     // and never self-navigate under automation, which does its own reloading.
+    // DEBOUNCED: a test run, a crawl or a rapid series of edits writes MANY files in a burst, and
+    // reloading on each one makes the board flicker as though it is refreshing forever (the reported
+    // "infinite refresh"). Coalesce a burst into ONE reaction once the writes go quiet.
+    let changePending = null
     es.addEventListener('change', () => {
       if (automation) return
       if (!panel.hidden && !runDone) return
-      // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
-      // reload there would throw away a sentence you were half way through typing, so it refreshes
-      // in place instead — the one view on the board that owns its own state.
-      if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
-      // init holds a half-filled form too — refresh the found table in place, never reload it out
-      if (!document.getElementById('initview').hidden) { loadCrawl(); return }
-      location.reload()
+      clearTimeout(changePending)
+      changePending = setTimeout(() => {
+        // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
+        // reload there would throw away a sentence you were half way through typing, so it refreshes
+        // in place instead — the one view on the board that owns its own state.
+        if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
+        // init holds a half-filled form too — refresh the found table in place, never reload it out
+        if (!document.getElementById('initview').hidden) { loadCrawl(); return }
+        location.reload()
+      }, 800)
     })
     es.addEventListener('run', e => {
       const d = JSON.parse(e.data)
