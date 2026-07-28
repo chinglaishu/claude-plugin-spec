@@ -109,8 +109,10 @@ if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
     console.log('  CONFLICTS — your edits kept, new version written alongside; merge then delete the .new:')
     for (const c of rep.conflicts) console.log(`    ${c.file}   (new → ${c.new})`)
   }
-  if (!dryRun) console.log(rep.hasConflicts
-    ? '\nPartial: rebuild + restart the board AFTER merging the conflicts above.'
-    : '\nDone. Rebuild board.html and restart the board to run the new code.')
+  const changedFiles = rep.added.length + rep.updated.length
+  if (!dryRun) console.log(
+    rep.hasConflicts ? '\nPartial: rebuild + restart the board AFTER merging the conflicts above.'
+      : changedFiles ? '\nDone. Rebuild board.html and restart the board to run the new code.'
+        : '\nDone — no board files changed (only the manifest). Nothing to rebuild or restart.')
   process.exit(rep.hasConflicts ? 2 : 0)
 }
