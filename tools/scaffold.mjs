@@ -59,7 +59,11 @@ if (!existsSync(gi) || force) {
 
 // package.json — add the run scripts and the two dev deps without disturbing what is already there
 const SCRIPTS = {
-  board: 'node tools/serve-board.mjs',
+  // --watch so the board restarts itself when its own code (serve-board.mjs / spec-store.mjs) is
+  // updated — e.g. when you re-vendor a new specboard version. Node watches only the server's import
+  // graph, so it reacts to CODE changes, never to spec/ data (the board's own live-reload owns that).
+  // A user should never have to hand-restart a server the tool started for them. Needs Node 18+.
+  board: 'node --watch tools/serve-board.mjs',
   'board:build': 'node tools/build-board.mjs',
   staff: 'node tools/staff.mjs',
   e2e: 'playwright test --config=playwright.board.ts'

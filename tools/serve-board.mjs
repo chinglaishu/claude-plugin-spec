@@ -896,12 +896,13 @@ watch(SPEC, { recursive: true }, (_e, name) => {
 })
 
 // Rendering picks up tools/ changes for free via the child process. Gate logic does not — it is
-// imported — so say so plainly instead of letting an edit appear to do nothing.
+// imported — so it needs a fresh process. `npm run board` runs under `node --watch`, which restarts
+// on exactly these files, so the note only matters if you launched the server some other way.
 watch(join(ROOT, 'tools'), (_e, name) => {
   if (!name || !name.endsWith('.mjs')) return
   rebuild()
   if (name === 'spec-store.mjs' || name === 'serve-board.mjs') {
-    console.log(`\n  ${name} changed — restart  npm run board  for gate logic to take effect\n`)
+    console.log(`\n  ${name} changed — npm run board (node --watch) restarts to apply it; a plain node run needs a manual restart\n`)
   }
 })
 

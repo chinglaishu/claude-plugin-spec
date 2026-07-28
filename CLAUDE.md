@@ -91,7 +91,9 @@ genuinely interactive (every control does something visible).
   **keep that guard**, and write `\\n` and avoid backticks in emitted strings.
 - **The server must not import the builder.** `build()` runs as a **child process**; Node's module
   cache would otherwise overwrite fresh output with stale code. Editing `tools/spec-store.mjs` or
-  `serve-board.mjs` still needs a server restart; editing `build-board.mjs` does not.
+  `serve-board.mjs` needs a fresh server process — but `npm run board` runs under `node --watch`, so it
+  restarts itself on exactly those files; only a plain `node tools/serve-board.mjs` (e.g. the
+  Playwright webServer) needs a manual restart. Editing `build-board.mjs` never does.
 - **The static server is an allowlist, not a traversal guard** — only `board.html` and `spec/**` are
   reachable. This plugin runs inside other people's repos; it once served `.git/config`. Keep it so.
 - **Same-document hash navigation does not reload.** Going from `/` to `#/board` fires `hashchange`,

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "board": "node tools/serve-board.mjs",
+    "board": "node --watch tools/serve-board.mjs",
     "board:build": "node tools/build-board.mjs",
     "staff": "node tools/staff.mjs",
     "e2e": "playwright test --config=playwright.board.ts"
