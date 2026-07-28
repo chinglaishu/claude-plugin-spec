@@ -21,6 +21,12 @@ other way.
    the app, it is a smoke alarm with the battery out. Assert the *behaviour the requirement names* —
    the text that must appear, the control that must work, the state that must change — not that "the
    page loaded."
+3. **Assert on DATA, not chrome.** A real app's frame — nav, headings, an empty table — paints
+   instantly, so a test that checks a heading passes *before the list has loaded*. Push the assertion
+   onto content that only exists once the API resolved: a real table row, a grid cell, an API-derived
+   number. Wait for it first with `waitForContent(locator)` from `_base`, then assert. This is the
+   single most common way a guessed characterization test becomes a false green — the screen "passes"
+   without its data ever arriving, and the screenshot catches an empty shell.
 
 Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3). When a test breaks after a
 change, first find which of the two — the test or the code — is wrong, before editing either.
@@ -63,6 +69,22 @@ test('R2 — <the behaviour R2 names>', async ({ page }) => {
   behaviour as the baseline. The guessed PRD gives that baseline meaning: when the CEO corrects the
   PRD to say the behaviour *should* differ, you update the test to the corrected PRD — and its
   failing against the current app is then a real bug surfaced, which is the point.
+
+## Authenticating (document mode against a real app)
+
+A real app is usually behind a login, and a document-mode test must reach screens that require it. You
+do **not** log in inside each test. Instead, put a `signIn` script in `spec/_config.json` (Setup →
+sign-in), and the harness runs it **once** in a `setup` project that saves the session; every screen
+test then runs in the `screens` project already authenticated (`dependencies:['setup']`, reusing the
+saved `storageState`). So the test just navigates to its route and asserts — it starts logged in.
+
+Two things that will cost you an afternoon otherwise:
+
+- **The signIn script must TYPE, never `page.fill()`.** Controlled React inputs (react-hook-form and
+  most component libraries) ignore `fill()`'s programmatic value and submit an **empty** form with no
+  error — you sit on `/login` wondering why. Use `pressSequentially`, or click the field then `type`.
+- **The login screen itself is bespoke.** Once signed in, `/login` redirects away, so the crawl can
+  never reach it and it can't be a document-mode screen. Write its PRD and test by hand.
 
 ## Run it and read the result
 

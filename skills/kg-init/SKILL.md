@@ -66,6 +66,16 @@ wireframe of it only to "build" it would be circular.
   evidence used to write the PRD and test, shown only in the Init found-table.
 - Maintenance stays spec-driven: edit the PRD and its test goes stale ("run it again"); update the
   test to the corrected PRD, and a failure against the app is then a real bug surfaced.
+- **Coverage is not automatic.** The crawl link-follows a couple of levels from the root, so it finds
+  nav-reachable pages — but **not** entity-scoped routes with a concrete id (`/portfolio/42/scenario`)
+  unless the app links to one, and **not** features reached by a *click* rather than a link (wizards,
+  modals, sub-tabs behind a button). List those in **Setup → routes**, which always wins over
+  discovery — otherwise the board only ever documents the top nav.
+- **If the app needs a login,** give a `signIn` script in **Setup → sign-in**. The crawl runs it
+  first so pages behind auth are reachable, and document-mode tests reuse the session automatically
+  (see `kg-e2e`). The script must **type** into fields, never `fill()` (controlled inputs submit
+  empty). The login screen itself redirects away once you are in, so it can't be crawled — write it by
+  hand.
 
 Rerunning finds new routes without touching a screen the CEO has already worked.
 

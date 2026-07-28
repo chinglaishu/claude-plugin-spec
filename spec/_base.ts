@@ -1,7 +1,18 @@
 import { test as base, expect } from '@playwright/test'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Page, Locator } from '@playwright/test'
 
 export { expect }
+
+// Wait for DATA, not just the shell. A real app's chrome (nav, headers, empty table) paints instantly;
+// the rows, the chart, the numbers arrive after an API call. A test that asserts the page "loaded"
+// passes BEFORE that data exists — the smoke-alarm-with-the-battery-out this project warns about, and
+// exactly what a guessed characterization test falls into by default. Await a real content locator (a
+// table row, a grid cell, an API-derived value) before asserting on it, so the test proves the screen
+// actually works rather than that it merely rendered its frame. kg-e2e says to assert on THIS, not the
+// chrome. Example:  await waitForContent(page.getByRole('row'));  await expect(page.getByRole('row')).toHaveCount(...)
+export async function waitForContent (locator: Locator, opts: { timeout?: number } = {}) {
+  await expect(locator.first()).toBeVisible({ timeout: opts.timeout ?? 15000 })
+}
 
 // One browser window, held OPEN for the whole run, when the board asks to watch it
 // (BOARD_ONE_WINDOW).
