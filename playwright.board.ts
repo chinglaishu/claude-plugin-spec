@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { readFileSync, existsSync } from 'node:fs'
 
 // Tests live NEXT TO the screen they prove — spec/<screen>/test.spec.ts — because that is the
 // only arrangement where a screen with no test is visibly a screen with no test. A central
@@ -18,6 +19,20 @@ const PORT = process.env.BOARD_PORT || '4173'
 const EXTERNAL = process.env.BOARD_URL
 const baseURL = EXTERNAL || `http://localhost:${PORT}`
 
+// AUTH, only when the target needs it. Document-mode tests hit the REAL app, which is usually behind
+// a login. When spec/_config.json carries a signIn script, split the run into a 'setup' project that
+// signs in once and saves the session, and a 'screens' project that reuses it — so every test starts
+// authenticated. With NO signIn (specboard's own suite, or any unauthenticated target) there are no
+// projects and the suite runs as a single default one, exactly as before — this must stay invisible
+// to the no-auth case, which is why it is a spread, not an always-on projects list.
+const STORAGE = './spec/_auth-state.json'
+const signIn = (() => {
+  try {
+    const p = './spec/_config.json'
+    return existsSync(p) ? String(JSON.parse(readFileSync(p, 'utf8')).signIn || '').trim() : ''
+  } catch { return '' }
+})()
+
 export default defineConfig({
   testDir: './spec',
   testMatch: '*/test.spec.ts',
@@ -27,6 +42,15 @@ export default defineConfig({
   // screen is not failed for being slow. (specboard's own specs are fast; this only bounds the wait.)
   expect: { timeout: 15000 },
   timeout: 60000,
+  // Present only when the target has a signIn. The setup project authenticates and saves the session;
+  // the screens project reuses it. testMatch on setup is the auth file only; screens keeps the normal
+  // per-screen match. Absent signIn this whole key is gone and the default single project runs.
+  ...(signIn ? {
+    projects: [
+      { name: 'setup', testMatch: /_auth\.setup\.ts$/ },
+      { name: 'screens', testMatch: '*/test.spec.ts', dependencies: ['setup'], use: { storageState: STORAGE } }
+    ]
+  } : {}),
   // Your approvals are not test fixtures. The specs drive real gates, so they write real state —
   // snapshot it before and restore it after, or running the suite quietly approves screens you
   // never reviewed and the board starts lying about exactly what it exists to be honest about.

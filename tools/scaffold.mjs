@@ -30,7 +30,9 @@ const FILES = [
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
-  'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs'
+  'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
+  // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
+  'spec/_auth.setup.ts'
 ]
 
 const copied = []; const skipped = []
@@ -48,7 +50,9 @@ const gi = join(DEST, 'spec/.gitignore')
 if (!existsSync(gi) || force) {
   writeFileSync(gi, [
     '_state-snapshot.*.json', '_dir-snapshot.*.json', '_run-report.json', '_runs/',
-    '_conflicts.json', '_conflict-decisions.json', '_config.json', '_crawl.json', 'crawl.png', ''
+    '_conflicts.json', '_conflict-decisions.json', '_config.json', '_crawl.json', 'crawl.png',
+    // the saved authenticated session — real tokens, never committed
+    '_auth-state.json', ''
   ].join('\n'))
   copied.push('spec/.gitignore')
 }
