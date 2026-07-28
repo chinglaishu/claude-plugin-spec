@@ -80,6 +80,18 @@ export function parsePrd (text) {
 export const RESULTS = join(SPEC, '_results.json')
 export const RESULTS_INDEX = join(SPEC, '_results-index.json')
 
+// The board's "recent runs" log. Every run appends one capped entry — a board-started run from the
+// server (rich, with per-test shots) and an external run (a plain `npm run e2e`, the crawl's own test
+// run) from the reporter (a summary). Shared so both write the same shape to the same capped file,
+// and neither a CLI run nor a crawl leaves the log empty the way it used to.
+export const RUNS = join(SPEC, '_runs.json')
+export const readRuns = () => existsSync(RUNS) ? JSON.parse(readFileSync(RUNS, 'utf8')) : []
+export function recordRunEntry (entry, cap = 20) {
+  const runs = [entry, ...readRuns()].slice(0, cap)
+  writeJson(RUNS, runs)
+  return runs
+}
+
 // Parse ONE Playwright JSON report into { screen: {total, failed, tests, ranAt} }. A report only
 // covers the screens that actually ran, which is the whole trap: run one screen and the report
 // mentions only that one.

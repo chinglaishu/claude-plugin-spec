@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { foldByScreen } from '../tools/spec-store.mjs'
+import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 
 // Walk the step tree into a flat, ordered, indented list of the meaningful steps — the named
 // steps a test author wrote (test.step), the actions Playwright took (pw:api, e.g. goto/click),
@@ -97,6 +97,7 @@ export default class ResultsIndexReporter {
     if (!this.suite) return
     const byScreen = {}
     const shotsByTest = {}
+    let totalMs = 0
     // a stable stamp for "when this run happened", so a pass can later be checked against what has
     // changed since — reporters run in a normal node process, so the clock is available here
     const ranAt = Date.now()
@@ -107,6 +108,7 @@ export default class ResultsIndexReporter {
       const screen = rel.split('/')[0]
       const ok = test.outcome() === 'expected' || test.outcome() === 'flaky'
       const ms = Math.round((test.results || []).reduce((n, r) => n + (r.duration || 0), 0))
+      totalMs += ms
       const error = ok ? null
         : String((test.results || []).find(r => r.error)?.error?.message || '').slice(0, 400)
       const prev = byScreen[screen]
@@ -134,6 +136,31 @@ export default class ResultsIndexReporter {
       // report describes only the tests that ran, and the rest must keep their existing results.
       const partial = !!process.env.BOARD_PARTIAL
       try { foldByScreen(byScreen, { partial }) } catch (err) { console.error('results-index fold failed:', err) }
+
+      // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
+      // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so
+      // recording here too would double it. A plain `npm run e2e` or the crawl's own test run sets no
+      // BOARD_RECORD, and without this their runs never appear in the log at all — which is exactly the
+      // "the run record is not saved" gap. `_`-prefixed pseudo-screens (e.g. the auth setup file) are
+      // not real rows, so they never name the run.
+      if (!process.env.BOARD_RECORD) {
+        const screens = Object.keys(byScreen).filter(s => !s.startsWith('_'))
+        const total = Object.values(byScreen).reduce((n, r) => n + r.total, 0)
+        const failed = Object.values(byScreen).reduce((n, r) => n + r.failed, 0)
+        try {
+          recordRunEntry({
+            at: new Date(ranAt).toISOString(),
+            screen: screens.length === 1 ? screens[0] : 'all',
+            ms: totalMs,
+            total,
+            failed,
+            ok: failed === 0,
+            runId: String(ranAt),
+            shotsByTest: {},
+            archive: null
+          })
+        } catch (err) { console.error('run-history record failed:', err) }
+      }
     }
     // The manifest lives in the run's own record directory, so it is pruned with the run it
     // describes and never outlives its images.

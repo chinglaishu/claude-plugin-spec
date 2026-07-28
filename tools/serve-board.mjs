@@ -12,7 +12,8 @@ import { join, normalize, extname } from 'node:path'
 import {
   ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
-  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson, writeText
+  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson, writeText,
+  RUNS, readRuns, recordRunEntry
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
@@ -50,9 +51,9 @@ const notify = () => push('change', 1)
 let running = null
 let watchOn = false
 
-const RUNS = join(SPEC, '_runs.json')
 const RUNDIR = join(SPEC, '_runs')
-const readRuns = () => existsSync(RUNS) ? JSON.parse(readFileSync(RUNS, 'utf8')) : []
+// RUNS / readRuns / recordRunEntry live in spec-store now, shared with the reporter so a CLI or crawl
+// run records into the same "recent runs" log a board-started run does.
 
 // The run's record, keyed by TEST so the board can show a test's own shots under that test — not
 // a heap of images nobody can attribute. The reporter writes this manifest; here we only read it.
@@ -66,12 +67,11 @@ function recordRun (entry) {
   // A capped log, not a growing one. Twenty runs is enough to see a pattern and small enough that
   // nobody has to remember to prune it — and the artifacts of a run that falls off the end go with
   // it, or the record directory grows without limit.
-  const runs = [entry, ...readRuns()].slice(0, 20)
+  const runs = recordRunEntry(entry)
   const keep = new Set(runs.map(r => r.runId).filter(Boolean))
   for (const name of (existsSync(RUNDIR) ? readdirSync(RUNDIR) : [])) {
     if (!keep.has(name)) rmSync(join(RUNDIR, name), { recursive: true, force: true })
   }
-  writeJson(RUNS, runs)
 }
 
 // The redraft prompt is assembled HERE, from files, not from anything the browser sends. The only
