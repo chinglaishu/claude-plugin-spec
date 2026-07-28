@@ -24,6 +24,17 @@ async function waitForUrl (url, ms = 30000) {
   return false
 }
 
+// Load the DOM, then a BOUNDED settle — never wait for the network to fall idle. A real app with a
+// persistent connection (SSE, a websocket, polling) NEVER reaches networkidle, so a networkidle goto
+// times every route out and the crawl finds nothing. So: wait for the document, then race a short
+// networkidle against a cap and swallow it, then a fixed pause so data-driven content has a moment to
+// paint before the screenshot.
+async function settle (page, pause = 1500) {
+  await page.waitForLoadState('networkidle', { timeout: 2500 }).catch(() => {})
+  await sleep(pause)
+}
+const goto = (page, url) => page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 })
+
 async function main () {
   const cfg = readConfig()
   const base = cfg.baseUrl.replace(/\/+$/, '')
@@ -64,8 +75,13 @@ async function main () {
   const browser = await chromium.launch()
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
-  // sign-in, if the app needs it: the CEO's script runs against the live page before crawling, so
-  // routes behind auth are reachable. It is their code, run verbatim — the tool adds nothing to it.
+  // sign-in, if the app needs it: the CEO's script runs against the live page BEFORE crawling, so
+  // routes behind auth are reachable. It is their code, run verbatim. Two things bite here:
+  //  - the script must TYPE into fields (pressSequentially, or click + type), never page.fill():
+  //    controlled React inputs (react-hook-form and friends) ignore fill()'s programmatic value and
+  //    submit EMPTY, landing you back on /login with no error. kg-e2e says the same for the tests.
+  //  - once signed in, /login itself redirects away and cannot be crawled. An auth screen is
+  //    inherently bespoke — document it by hand rather than expecting the crawl to reach it.
   if (cfg.signIn && cfg.signIn.trim()) {
     try { await new Function('page', 'base', `return (async()=>{${cfg.signIn}})()`)(page, base) }
     catch (e) { log(`sign-in script threw (continuing unauthenticated): ${e.message}`) }
@@ -82,7 +98,8 @@ async function main () {
   for (const route of routes) {
     const slug = slugify(route)
     try {
-      await page.goto(base + route, { waitUntil: 'networkidle', timeout: 20000 })
+      await goto(page, base + route)
+      await settle(page)
     } catch (e) {
       log(`skip ${route} — ${e.message.split('\n')[0]}`); continue
     }
@@ -111,21 +128,39 @@ const normalise = r => {
   return s.length > 1 ? s.replace(/\/+$/, '') : s
 }
 
-async function discover (page, base) {
-  try {
-    await page.goto(base + '/', { waitUntil: 'networkidle', timeout: 20000 })
-  } catch { return ['/'] }
-  const hrefs = await page.evaluate(() => [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')))
+// Discover routes by following same-origin links, BFS to a small depth. One hop from the root only
+// ever finds the TOP NAV; a real app hides most of itself a click deeper — an entity list links to
+// entity pages, a section to its sub-tabs. So we go two levels by default, capped, because a guess
+// the CEO must correct is worth more when there are a few dozen than a few hundred.
+//
+// What this CANNOT find: entity-scoped routes with a concrete id (/thing/42/scenario) unless the app
+// links to one, and features reached by a CLICK rather than a link (wizards, modals, sub-tabs behind
+// a button). Those are inherently bespoke — list them in Setup → routes, which always wins over
+// discovery. The kg-init skill calls this out.
+async function discover (page, base, { depth = 2, cap = 60 } = {}) {
   const origin = new URL(base).origin
-  const routes = new Set(['/'])
-  for (const h of hrefs) {
-    if (!h || h.startsWith('#') || h.startsWith('mailto:')) continue
-    try {
-      const u = new URL(h, base)
-      if (u.origin === origin) routes.add(u.pathname)
-    } catch { /* not a URL */ }
+  const seen = new Set(['/'])
+  let frontier = ['/']
+  for (let d = 0; d < depth && seen.size < cap; d++) {
+    const next = []
+    for (const route of frontier) {
+      if (seen.size >= cap) break
+      try { await goto(page, base + route); await settle(page, 800) } catch { continue }
+      const hrefs = await page.evaluate(() =>
+        [...document.querySelectorAll('a[href]')].map(a => a.getAttribute('href')))
+      for (const h of hrefs) {
+        if (!h || h.startsWith('#') || h.startsWith('mailto:')) continue
+        try {
+          const u = new URL(h, base)
+          if (u.origin !== origin || seen.has(u.pathname)) continue
+          seen.add(u.pathname); next.push(u.pathname)
+          if (seen.size >= cap) break
+        } catch { /* not a URL */ }
+      }
+    }
+    frontier = next
   }
-  return [...routes]
+  return [...seen]
 }
 
 function writeManifest (routes) {
