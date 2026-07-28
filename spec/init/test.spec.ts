@@ -73,6 +73,7 @@ test('R3 — a crawled screen lands as a document-mode row: a guess, accepted no
   try {
     const row = page.locator('.row', { hasText: name })
     await expect(async () => {
+      build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/')
       await expect(row).toHaveCount(1)
     }).toPass({ timeout: 15000 })
@@ -89,6 +90,7 @@ test('R3 — a crawled screen lands as a document-mode row: a guess, accepted no
     const bar = page.locator('.dt:not([hidden]) .gb')
     const acceptBtn = bar.locator('[data-act="accept"][data-gate="prd"]')
     await expect(async () => {
+      build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/#/' + name)
       await expect(acceptBtn).toBeVisible()
     }).toPass({ timeout: 15000 })

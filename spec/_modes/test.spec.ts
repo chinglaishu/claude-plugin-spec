@@ -27,6 +27,11 @@ test.afterEach(() => {
 // it is the same settle a real browser rides out via the live-reload after the next rebuild tick.
 async function settleAt (page: any, url: string, ready: any) {
   await expect(async () => {
+    // Re-assert the correct board on every retry. The server's watcher can stale-overwrite board.html
+    // (a rebuild it began before the fixture landed, finishing late) and then, with no further file
+    // events, never correct it — so goto alone can wait forever on a board that will not change. A
+    // fresh in-process build is the last writer once the file events have settled.
+    build()
     await page.goto(url)
     await expect(ready).toBeVisible()
   }).toPass({ timeout: 15000 })
