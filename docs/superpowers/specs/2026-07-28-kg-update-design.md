@@ -17,7 +17,8 @@ each target project. Updating the plugin updates only the skills, never a projec
 There is also no record of *what version a project was scaffolded from*, so nothing can tell "you
 edited this file" apart from "this file is just old".
 
-This was hit for real: dojostack sat on 0.4.2, and bringing it to 0.5.0 was hand-surgery — diff every
+This was hit for real: a scaffolded project sat on an older release, and bringing it forward was
+hand-surgery — diff every
 vendored file against cached releases, copy the clean ones, graft local edits back onto the changed
 one, rebuild, and restart the server. `kg-update` makes that a command.
 
@@ -103,7 +104,7 @@ conflicts remain, so the skill knows the update needs a merge before it is compl
 **Backups:** each file the tool overwrites or conflicts on is copied first to
 `.specboard-backup-<oldversion>/<path>` in the target, so any update is fully reversible.
 
-### Manifest-less projects (existing scaffolds, e.g. dojostack)
+### Manifest-less projects (existing scaffolds)
 
 The tool requires a base; a project scaffolded before the manifest existed has none. The **skill**
 establishes it: it matches each vendored file's current hash against the hashes of the plugin's
@@ -119,7 +120,7 @@ treated as conflicts (conservative — nothing is overwritten without a known ba
 3. If they are equal → report "already on `<ver>`" and stop.
 4. Run `tools/update.mjs` against the project (with the base).
 5. Report the outcome. For each **conflict**, offer to merge it: read the project file and the
-   `.new`, graft the local edits onto the new version (exactly the dojostack `build-board.mjs`
+   `.new`, graft the local edits onto the new version (e.g. a locally-edited `build-board.mjs`
    graft), then delete the `.new`. A conflict the user declines to merge is left as `.new` with a
    clear note.
 6. Rebuild `board.html` (`node tools/build-board.mjs`). If `build-board.mjs` is itself an unmerged

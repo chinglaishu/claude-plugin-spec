@@ -77,6 +77,30 @@ wireframe of it only to "build" it would be circular.
   empty). The login screen itself redirects away once you are in, so it can't be crawled — write it by
   hand.
 
+#### The PRD must be DETAILED — drive the screen, don't skim it
+
+A crawl that reads the page shell writes a shallow PRD ("the workspace opens", "it has a year basis"),
+and kg-e2e then writes a shallow test — a board that looks finished while proving almost nothing.
+Depth comes from DRIVING the real screen, not reading it. Whether the crawler produces the first draft
+or you correct it, characterize each screen with a **drive-and-discover pass** (an on-the-fly script:
+authenticate, navigate, wait for data, then explore — write it, run it, read it, discard it):
+
+- **Harvest every `data-testid`** on the page — real apps are usually instrumented with them, and they
+  become the PRD's named elements and kg-e2e's most stable selectors.
+- **Name every metric/tile, table (its columns), chart, and control** (buttons, toggles, selects,
+  search, sliders) with its label.
+- **Note read-only vs editable** state (a "locked" indicator? a separate draft/edit surface?), and any
+  modal or notice that overlays the screen.
+- **Probe the primary interactions** — move a control and see which number changes, open a menu and
+  read its options, follow a cross-page link — and write the observed EFFECT into the PRD ("saving
+  here commits the change, and another page then reflects it"), not just "there is a save button".
+
+**PRD rubric:** a screen's PRD is under-specified if a competent tester could not, from it alone, list
+every number, control and flow to check. One requirement per meaningful behaviour, each naming the
+concrete elements (put their testids in a comment). Keep `guess: true` — it is still the CEO's to
+correct — but make the guess *rich*, not a two-line summary. kg-e2e then turns that detail into a
+test that asserts real data and behaviour.
+
 Rerunning finds new routes without touching a screen the CEO has already worked.
 
 ### New project (or a new screen) → DESIGN mode

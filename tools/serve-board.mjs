@@ -313,16 +313,32 @@ function startRewrite (key) {
 // manifest + crawl.png; then Claude drafts a guessed prd.md for every route not already on the
 // board. Rerunning touches nothing settled — the crawler writes the manifest, the drafting skips
 // any route whose screen already exists.
-function crawlDraftPrompt (routes) {
+function crawlDraftPrompt (routes, cfg = {}) {
+  const base = cfg.baseUrl || '<the app base URL from spec/_config.json>'
   const targets = routes.filter(r => !r.exists)
   const list = targets.map(r =>
     `- route ${r.route} → spec/${r.slug}/prd.md` +
     (r.title ? ` (page title: ${r.title})` : '') +
     (r.headings ? `\n  headings on the page: ${r.headings}` : '')).join('\n')
   return [
-    'A crawl visited this project\'s running app and captured each route. For every route below,',
-    'write a GUESSED product requirement document at the given path, reading the requirements off',
-    'what the page appears to do. Each file must start with this frontmatter, guess included:',
+    'A crawl visited this project\'s running app and captured each route. For every route below, write',
+    'a GUESSED but DETAILED product requirement document at the given path. Read the kg-init skill\'s',
+    '"drive the screen, don\'t skim it" section first: the PRD must be detailed enough that a tester',
+    'could list every number, control and flow to check from it alone — a two-line summary is a failure.',
+    '',
+    `DRIVE the screen, do not infer from its shell. The running app is at ${base}. For each route, open`,
+    `${base}<route> and explore it (reuse the saved login session; a signIn is in spec/_config.json):`,
+    '- harvest every data-testid on the page (metrics, grids, charts, panels) and name them in the PRD;',
+    '- name every metric/tile (and that it carries a value), table (its columns), chart, and control',
+    '  (buttons, toggles, selects, search, sliders) with its label;',
+    '- note read-only vs editable state (a lock indicator? a separate draft/edit surface?) and any',
+    '  modal or notice that overlays the screen;',
+    '- probe the primary interactions (move a lever, open a menu, follow a cross-page link) and write',
+    '  the OBSERVED EFFECT into the PRD, not just that a control exists.',
+    'If you cannot reach the live app, spec/<slug>/crawl.png is the captured screenshot — but a PRD',
+    'from a screenshot alone will be shallow; prefer driving the app.',
+    '',
+    'Each file must start with this frontmatter, guess included:',
     '',
     '---',
     'screen: <slug>',
@@ -332,11 +348,9 @@ function crawlDraftPrompt (routes) {
     'guess: true',
     '---',
     '',
-    'Then `## R1 — <title>` blocks, one per behaviour you can infer from the page. The `guess: true`',
-    'line is not optional: this is a proposal for the CEO to correct, never canon. Do not remove it,',
-    'and do not approve anything.',
-    '',
-    'The screenshot for each route is at spec/<slug>/crawl.png if you need to look.',
+    'Then `## R<n> — <behaviour>` blocks — ONE per meaningful behaviour, each naming the concrete',
+    'elements (put their data-testids in an HTML comment). The `guess: true` line is not optional: this',
+    'is a proposal for the CEO to correct, never canon. Do not remove it, and do not approve anything.',
     '',
     'Routes to draft (skip any file that already exists — its screen is already on the board):',
     list,
@@ -412,7 +426,7 @@ function startCrawl () {
     // job's panel to the drafter so it reads as one continuous crawl.
     push('run', { state: 'line', line: `drafting ${toDraft.length} guessed PRD(s)…` })
     const before = new Set(allScreens().map(s => s.name))
-    const drafter = spawn('claude', ['-p', crawlDraftPrompt(manifest.routes), '--permission-mode', 'acceptEdits'],
+    const drafter = spawn('claude', ['-p', crawlDraftPrompt(manifest.routes, cfg), '--permission-mode', 'acceptEdits'],
       { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
     running.child = drafter
     drafter.stdout.on('data', feed)

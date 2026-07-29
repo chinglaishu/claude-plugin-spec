@@ -12,7 +12,7 @@ column 3. Column 3 is therefore always a *byproduct* of a passing test, never a 
 hand. That is the invariant the whole board rests on; do not break it by writing a screenshot any
 other way.
 
-## The two rules that make it a test and not a decoration
+## The rules that make it a test and not a decoration
 
 1. **Write the failing assertion first, and watch it go red.** A test written after the code can only
    confirm what the code already does. Run it, see it fail for the reason you expect, then make it
@@ -27,6 +27,14 @@ other way.
    number. Wait for it first with `waitForContent(locator)` from `_base`, then assert. This is the
    single most common way a guessed characterization test becomes a false green — the screen "passes"
    without its data ever arriving, and the screenshot catches an empty shell.
+4. **Assert that something DID happen — and beware occlusion.** `toBeVisible()` checks only that an
+   element is not `display:none`; it does NOT check whether a modal or overlay covers it. So a test
+   built from presence/absence checks can pass while the page is stuck behind a popup — asserting DOM
+   the user cannot reach, with the screenshot capturing the popup, not the screen. Dismiss transient
+   notices first (click their "Got it"/close, then assert they are gone), and prefer proving a real
+   OUTCOME — a lever moves a number, a search narrows a list, a save shows up elsewhere — an effect a
+   frozen page cannot fake. Ask of every assertion: "would this still pass if the page were frozen
+   behind an overlay?" If yes, it is not proving anything happened.
 
 Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3). When a test breaks after a
 change, first find which of the two — the test or the code — is wrong, before editing either.
@@ -85,6 +93,52 @@ Two things that will cost you an afternoon otherwise:
   error — you sit on `/login` wondering why. Use `pressSequentially`, or click the field then `type`.
 - **The login screen itself is bespoke.** Once signed in, `/login` redirects away, so the crawl can
   never reach it and it can't be a document-mode screen. Write its PRD and test by hand.
+
+## Comprehensive, not shallow — depth over count
+
+A screen's test proves the screen works, not that it painted. One "the heading is visible" case per
+requirement is the shallow trap that makes a board look finished while proving almost nothing. Write a
+FEW deep cases instead:
+
+- **The surface renders REAL data** — every metric/tile carries a value (a digit, money, a %), the
+  grid/list is populated with rows, the chart is present, the controls exist. Wait for the data (see
+  traps) before asserting.
+- **A core interaction changes an outcome** — drive the primary lever/toggle and assert its *effect*,
+  not merely that the control exists.
+- **A cross-page effect**, where the screen has one — a change here shows up there.
+
+Two or three cases that exercise the screen's real behaviour beat ten that each check a label.
+
+## Traps against a real running app
+
+Each of these has produced a false green or lost an afternoon — handle them by default:
+
+- **Wait for DATA, not the shell — generously.** The frame paints instantly; the numbers arrive after
+  an API call, and a heavy app can take 20–30s on a cold run. Gate each screen on a real value (a
+  metric containing a digit or money) and a populated list BEFORE asserting anything else.
+- **Controlled inputs must be TYPED, and VERIFIED.** `fill()` races react-hook-form/controlled state
+  and drops the leading keystrokes — a wrong value, silently. Use `pressSequentially`, then read the
+  value back and retype if it came up short. (The same trap as sign-in; it also bites search boxes.)
+- **Virtualized grids:** rows often carry `role=row` with NO `role=grid` ancestor, so
+  `getByRole('row')` finds none — target the attribute, `locator('[data-testid=grid] [role=row]')`.
+  And do NOT assert the row-node count falls on a filter: virtualization keeps nodes, so that is a
+  flaky claim.
+- **Accessible names can include hidden helper text.** A control showing a short visible label may
+  have an accessible name that also contains a tooltip or description, so `{name:'<label>',
+  exact:true}` finds nothing — match the distinctive visible text instead.
+- **Read-only surfaces intercept clicks.** A locked/read-only form group swallows a scripted click;
+  assert presence there, and prove the interaction on the editable surface.
+- **Prefer `data-testid`.** Real apps are usually instrumented with testids; they are the most stable
+  selectors — harvest the app's own testids while exploring and use them over text/role.
+
+## Stateful and cross-page flows (edit → run → apply → verify elsewhere)
+
+The most valuable tests span pages — edit here, apply, verify the effect there. But "apply" usually
+PERSISTS: a test that applies on every run mutates real data non-idempotently. The only safe
+repeatable shape is **create a throwaway draft/scenario → act → verify → discard** (or a reset). If no
+discard path exists, do NOT write a test that corrupts data on every run — document the gap in the PRD
+and cover what you safely can. A test that mutates production state to go green is worse than an
+honest empty cell.
 
 ## Run it and read the result
 
