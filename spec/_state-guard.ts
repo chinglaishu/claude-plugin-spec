@@ -1,4 +1,5 @@
 import { readdirSync, existsSync, readFileSync, writeFileSync, statSync, rmSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -61,4 +62,48 @@ export async function restoreState () {
   rmSync(SNAPSHOT)
 }
 
-export default saveState
+// GOLDEN-DATA SEED HOOK. A data-driven screen can only assert EXACT values (this tile reads 12,340;
+// this filter lists exactly these items) if the data is deterministic — so a project seeds a
+// dedicated "golden" fixture once, before the suite, and asserts it thereafter. This runs that seed,
+// and is a NO-OP for any project without one, so unauthenticated / no-golden-data targets — and
+// specboard's own suite — are unaffected.
+//
+// Precedence, and WHY: a `seed:e2e` npm script wins over spec/_seed.ts. The scaffold vendors
+// spec/_seed.ts as an inert stub into EVERY project, so "does _seed.ts exist" is always true; were the
+// stub to take precedence, a project whose seed lives in another toolchain (a `seed:e2e` script
+// calling a backend seeder, say) would be silently shadowed by the do-nothing stub. So: run the
+// explicit script if the project declared one; otherwise run spec/_seed.ts (the stub, or the
+// project's edit of it). A project uses exactly one of the two.
+async function runSeed () {
+  const root = join(SPEC, '..')
+  let script = ''
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+    script = String(pkg.scripts?.['seed:e2e'] || '').trim()
+  } catch { /* no package.json, or unreadable — that is fine; fall through to _seed.ts */ }
+
+  if (script) {
+    // The project owns HOW its seed runs (node, tsx, a call into a backend seeder, another language);
+    // we only trigger it. A failed seed must FAIL setup — a suite that asserts golden values against
+    // an unseeded app is worse than an honest red at the gate.
+    const r = spawnSync('npm', ['run', 'seed:e2e'], { cwd: root, stdio: 'inherit' })
+    if (r.status !== 0) throw new Error(`seed:e2e exited ${r.status ?? r.signal} — golden data not seeded`)
+    return
+  }
+
+  // spec/_seed.ts is TypeScript, so Playwright's own loader — already active in this process — is what
+  // makes it runnable; a `node spec/_seed.ts` subprocess could not. Import it and call its default.
+  if (existsSync(join(SPEC, '_seed.ts'))) {
+    const mod: any = await import('./_seed.ts')
+    const fn = mod?.default ?? mod?.seed
+    if (typeof fn === 'function') await fn()
+  }
+}
+
+// globalSetup: seed the golden data (if any), THEN snapshot the gate state. Seeding first means a
+// broken seed fails the run before we bother snapshotting; the snapshot/restore is unaffected by the
+// seed either way, because the seed touches the APP's own data store, never spec/*/state.json.
+export default async function globalSetup () {
+  await runSeed()
+  await saveState()
+}

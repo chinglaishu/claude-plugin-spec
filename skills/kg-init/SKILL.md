@@ -101,6 +101,14 @@ concrete elements (put their testids in a comment). Keep `guess: true` — it is
 correct — but make the guess *rich*, not a two-line summary. kg-e2e then turns that detail into a
 test that asserts real data and behaviour.
 
+**For a data-driven screen, name the expected VALUES, not just the fields.** If the screen's point is
+computed numbers (totals, a chart, a grid that recomputes on a filter), a PRD that says "shows a total"
+is still shallow — say *which* total, for *which* input. Live data drifts, so write the PRD against a
+**golden fixture** (a seeded entity with fixed inputs, targeted by a stable id) and have its test
+**seed + assert exact values** (`spec/<screen>/golden.json`) rather than reading whatever is live. See
+kg-e2e's "Deterministic golden data" section for the seed hook (`spec/_seed.ts` / a `seed:e2e` script)
+and the `golden.json` format.
+
 Rerunning finds new routes without touching a screen the CEO has already worked.
 
 ### New project (or a new screen) → DESIGN mode

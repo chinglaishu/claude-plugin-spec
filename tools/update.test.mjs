@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { updateProject } from './update.mjs'
+import { FILES } from './_skeleton.mjs'
 
 const h = s => createHash('sha256').update(s).digest('hex')
 const w = (root, rel, body) => {
@@ -86,6 +87,25 @@ test('missing file → added', () => {
   assert.deepEqual(rep.added, ['a.mjs'])
   assert.equal(read(dest, 'a.mjs'), 'NEW')
   assert.equal(manifest(dest).files['a.mjs'], h('NEW'))
+})
+
+test('the golden-data seed template is part of the skeleton', () => {
+  // Part 2 of the golden-data work depends on this: a project scaffolded before _seed.ts existed must
+  // GAIN it on update, and it only can if the file is one of the tracked skeleton FILES. If this ever
+  // regresses, `kg-update` would silently never deliver the seed hook and golden tests could not run.
+  assert.ok(FILES.includes('spec/_seed.ts'), 'spec/_seed.ts must be a vendored skeleton file')
+})
+
+test('a project without the seed template GAINS it on update (added)', () => {
+  // The exact path a manifest-less older project takes: the new release carries spec/_seed.ts, the
+  // project has none, so it is ADDED and recorded — the harness gains the seed hook.
+  const { src, dest } = scratch()
+  w(src, 'spec/_seed.ts', 'export default async function seed(){}')
+  const base = { version: '1.0.0', files: {} }
+  const rep = updateProject({ dest, src, base, files: ['spec/_seed.ts'] })
+  assert.deepEqual(rep.added, ['spec/_seed.ts'])
+  assert.ok(existsSync(join(dest, 'spec/_seed.ts')), 'the seed template lands in the project')
+  assert.equal(manifest(dest).files['spec/_seed.ts'], h('export default async function seed(){}'))
 })
 
 test('a clean run (no conflicts) bumps the manifest version', () => {

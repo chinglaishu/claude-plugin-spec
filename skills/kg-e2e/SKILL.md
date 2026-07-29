@@ -109,6 +109,55 @@ FEW deep cases instead:
 
 Two or three cases that exercise the screen's real behaviour beat ten that each check a label.
 
+## Deterministic golden data — assert EXACT values, not live ones
+
+A data-driven screen invites the worst false green of all: a test that reads *whatever data is live*.
+"The first row's total is 12,340" passes today and goes red the moment anyone edits that row — the
+number drifted, nothing broke — and "there are some rows" (rule 2) proves almost nothing. The fix is
+to make the data itself deterministic, so the test can name the exact values it expects:
+
+- **Seed a dedicated golden fixture — never target "the first entity."** Add a known entity with
+  FIXED inputs (a stable id/name, e.g. `e2e-golden`) through the *project's own* migration/seeder — its
+  factories know the invariants raw SQL would miss. Target that entity **by its stable id**, so the
+  test is pinned to data it controls, not to whatever happens to sort first.
+- **Record the expected values in `spec/<screen>/golden.json`, and assert them.** A per-screen file of
+  expected observable values, keyed **per state** — per selected filter/period/tab: which items/rows
+  are shown, and the exact number each tile/cell holds. Generate it *once* by driving the seeded app
+  and reading the values off; commit it; assert it thereafter. Now a change in the app's computation
+  fails the test with a concrete diff (`expected 12,340, got 12,900`) — exactly the signal you want.
+- **Idempotent seed, draft-scoped mutation.** The seed must be safe to run on every suite (upsert by
+  the stable id; seeding twice == once) and touch ONLY the golden fixture. For a mutating flow (edit →
+  run → apply), act on a **throwaway draft/scenario** and reset by re-seeding or discarding the draft —
+  never mutate the canonical golden inputs to go green (rule 3; it also makes the next run's "before"
+  value a lie).
+
+### Where the seed runs
+
+Put the seed where the vendored harness runs it once, before any test:
+
+- **`spec/_seed.ts`** — an idempotent default-export function; `globalSetup` imports and calls it
+  before the suite (Playwright's own loader runs the TypeScript). The scaffold ships it as an inert
+  no-op stub, so a project with no golden data is unaffected.
+- **or a `seed:e2e` npm script**, which *takes precedence* over `_seed.ts` — use it when your seed
+  lives in another toolchain (a backend seeder, another language). The harness runs `npm run seed:e2e`
+  before the suite and **fails setup** if it errors (a suite asserting golden values against an
+  unseeded app is worse than an honest red at the gate).
+
+A rough `golden.json` shape — states as keys, each naming the items shown and the numbers to assert;
+for a mutating flow, record BOTH sides of the change you drive:
+
+```jsonc
+{
+  "filterA": { "items": ["Alpha", "Bravo", "Charlie"], "total": 12340 },
+  "filterB": { "items": ["Alpha", "Delta"],            "total":  8060 },
+  "afterEdit": { "changed": "Bravo", "total_before": 12340, "total_after": 13100 }
+}
+```
+
+The test reads `golden.json`, drives the seeded screen, and asserts each state's exact items and
+numbers — including the *before → after* of the interaction — so the run PROVES the computation, not
+merely that the grid has rows.
+
 ## Traps against a real running app
 
 Each of these has produced a false green or lost an afternoon — handle them by default:

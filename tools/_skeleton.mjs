@@ -16,7 +16,10 @@ export const FILES = [
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
   // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
-  'spec/_auth.setup.ts'
+  'spec/_auth.setup.ts',
+  // the optional golden-data seed — an inert no-op stub until a project fills it in; the globalSetup
+  // in _state-guard.ts runs it (or a `seed:e2e` script) before the suite. See the kg-e2e skill.
+  'spec/_seed.ts'
 ]
 
 // The run scripts a scaffolded project gets. `board` runs under --watch so it restarts when its own
