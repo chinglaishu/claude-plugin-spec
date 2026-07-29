@@ -687,6 +687,11 @@ const howView = () => `<section class="dt" id="howview" hidden>
   <div class="dtscroll cfscroll">
     <div class="howwrap">
 
+      <!-- The overview (#howoverview): intro, the row, the two lanes, the four COLLAPSED skill summary
+           cards, and the project's own skills. Shown at #howitworks; hidden wholesale while a single
+           skill's flowchart is shown at #howitworks/<skillId>. -->
+      <div id="howoverview">
+
       <div class="intro">
         <h1>How specboard works</h1>
         <p>Every screen in a project is one <b>row of four columns</b> —
@@ -716,9 +721,9 @@ const howView = () => `<section class="dt" id="howview" hidden>
         <div class="lanes">${WORKFLOW.lanes.map(howLane).join('')}</div>
       </div>
 
-      <!-- Progressive disclosure: by default the four skills are COLLAPSED to one compact summary each
-           (#skilllist). Clicking a summary opens only that skill's already-baked flowchart (#skilldetail)
-           with a "← Skills" back control; the panels stay in the DOM, a client toggle just shows one. -->
+      <!-- The four skills, COLLAPSED to one compact summary each. Clicking a summary NAVIGATES to
+           #howitworks/<skillId> (history.pushState + route), which swaps this whole overview for the
+           focused #skilldetail page below. The summaries stay put; nothing toggles in place. -->
       <div class="sect">
         <div class="sect-head"><span class="lbl">the four skills</span>
           <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
@@ -728,21 +733,6 @@ const howView = () => `<section class="dt" id="howview" hidden>
             where a job runs, and where it <b>stops for you</b>. Pick one to see its flow drawn out.</p>
           <div class="skill-summaries">${howSkillSummaries()}</div>
         </div>
-
-        <div class="skill-detail" id="skilldetail" hidden>
-          <div class="skill-detail-head">
-            <button class="btn sm skill-back" id="skillback" type="button">← Skills</button>
-            <div class="flow-legend legend">
-              <span class="chip"><span class="mk o"></span>step / artifact</span>
-              <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
-              <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
-              <span class="chip run"><span class="mk"></span>running — a job in flight</span>
-              <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
-              <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
-            </div>
-          </div>
-          <div class="skill-flows">${howFlowcharts()}</div>
-        </div>
       </div>
 
       <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
@@ -751,6 +741,26 @@ const howView = () => `<section class="dt" id="howview" hidden>
         <div class="sect-head"><span class="lbl">this project</span>
           <h2>Skills &amp; agents this project has added</h2><span class="rule"></span></div>
         <div id="howskills"></div>
+      </div>
+
+      </div><!-- /#howoverview -->
+
+      <!-- One skill's flowchart as a focused detail PAGE, shown at #howitworks/<skillId>. The panels
+           are all baked into the DOM (howFlowcharts); the router gives the routed one .open and hides
+           #howoverview. "← How does it work" / Esc / browser Back all return to the #howitworks overview. -->
+      <div class="skill-detail" id="skilldetail" hidden>
+        <div class="skill-detail-head">
+          <button class="btn sm skill-back" id="skillback" type="button">← How does it work</button>
+          <div class="flow-legend legend">
+            <span class="chip"><span class="mk o"></span>step / artifact</span>
+            <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
+            <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
+            <span class="chip run"><span class="mk"></span>running — a job in flight</span>
+            <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
+            <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
+          </div>
+        </div>
+        <div class="skill-flows">${howFlowcharts()}</div>
       </div>
 
     </div>
@@ -1738,6 +1748,8 @@ ${detail}
   // Every detail view has an address. Without one a refresh dumps you back on the board, the
   // back button leaves the page entirely, and a screen cannot be linked to anyone.
   const SCREENS = ${JSON.stringify(screens.map(s => s.name))}
+  // The skills that have a baked flowchart page at #howitworks/<id>; an unknown id falls back to overview.
+  const SKILL_IDS = ${JSON.stringify(HOW_FLOWS.map(f => f.id))}
   const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
   const show = i => { closeAll(); document.querySelector('.dt[data-i="' + i + '"]').hidden = false; safeFit() }
   const open = (i, push = true) => {
@@ -1760,12 +1772,17 @@ ${detail}
       loadConfig(); loadCrawl()
       return
     }
-    // #howitworks (no slash) — a view of the whole method, not a row, same as #conflicts / #init.
-    if (location.hash === '#howitworks') {
+    // #howitworks — the method overview; #howitworks/<skillId> — one skill's flowchart, focused. A
+    // slash route here is its OWN thing, distinct from the #/<screen> routes handled below.
+    if (location.hash === '#howitworks' || location.hash.indexOf('#howitworks/') === 0) {
       closeAll()
       document.getElementById('howview').hidden = false
-      skillReset()
       loadHow()
+      const skillId = location.hash.indexOf('#howitworks/') === 0
+        ? decodeURIComponent(location.hash.slice('#howitworks/'.length)) : ''
+      // A known skill id opens its focused detail page; the bare route and any unknown id show overview.
+      if (skillId && SKILL_IDS.indexOf(skillId) >= 0) skillShow(skillId)
+      else skillReset()
       return
     }
     const name = decodeURIComponent(location.hash.replace(/^#\\//, ''))
@@ -1820,8 +1837,8 @@ ${detail}
     if (e.key === 'Escape') {
       if (!document.getElementById('lb').hidden) { document.getElementById('lb').hidden = true; return }
       if (!document.getElementById('runpanel').hidden) { document.getElementById('rpclose').click(); return }
-      // in how-it-works, Esc first steps back from an open skill flow to the summary list
-      if (!document.getElementById('howview').hidden && !document.getElementById('skilldetail').hidden) { skillReset(); return }
+      // on a skill detail page, Esc first steps back to the #howitworks overview (real history back)
+      if (!document.getElementById('howview').hidden && !document.getElementById('skilldetail').hidden) { history.back(); return }
       closeAll(); history.pushState(null, '', location.pathname)
     }
     const openDt = [...document.querySelectorAll('.dt')].find(d => !d.hidden)
@@ -2194,34 +2211,38 @@ ${detail}
     sect.hidden = false
   }
 
-  // Progressive disclosure for the four skill flowcharts. The panels are already baked into the DOM
-  // (howFlowcharts) and hidden by CSS; this only toggles which one carries .open, and swaps the
-  // summary list for the focused detail. Emitted in the template literal, so: + concatenation, no
-  // backticks, and no unescaped newlines.
+  // The four skill flowcharts are URL-driven pages under #howitworks/<skillId>. The router calls these
+  // view updaters; they never touch history themselves. The panels are all baked into the DOM
+  // (howFlowcharts) and hidden by CSS — showing one just gives it .open and hides the whole overview.
+  // Emitted in the template literal, so: + concatenation, no backticks, and no unescaped newlines.
   function skillShow (id) {
     const panels = document.querySelectorAll('#howview .flow-panel')
     for (let i = 0; i < panels.length; i++) {
       panels[i].classList.toggle('open', panels[i].getAttribute('data-skill') === id)
     }
-    document.getElementById('skilllist').hidden = true
+    document.getElementById('howoverview').hidden = true
     document.getElementById('skilldetail').hidden = false
     const back = document.getElementById('skillback')
     if (back) back.focus()
   }
   function skillReset () {
     const detail = document.getElementById('skilldetail')
-    const list = document.getElementById('skilllist')
+    const overview = document.getElementById('howoverview')
     if (detail) detail.hidden = true
-    if (list) list.hidden = false
+    if (overview) overview.hidden = false
     const open = document.querySelectorAll('#howview .flow-panel.open')
     for (let i = 0; i < open.length; i++) open[i].classList.remove('open')
   }
+  // Clicking a summary NAVIGATES (pushState + route), so it lands in real history; browser Back then
+  // returns to the overview. The back control and Esc both step back the same way.
   const skillCards = document.querySelectorAll('#howview .skill-summary')
   for (let i = 0; i < skillCards.length; i++) {
-    skillCards[i].addEventListener('click', function () { skillShow(this.getAttribute('data-skill')) })
+    skillCards[i].addEventListener('click', function () {
+      history.pushState(null, '', '#howitworks/' + encodeURIComponent(this.getAttribute('data-skill'))); route()
+    })
   }
   const skillBackBtn = document.getElementById('skillback')
-  if (skillBackBtn) skillBackBtn.addEventListener('click', skillReset)
+  if (skillBackBtn) skillBackBtn.addEventListener('click', function () { history.back() })
 
   document.getElementById('howbtn').addEventListener('click', () => {
     history.pushState(null, '', '#howitworks'); route()
