@@ -723,10 +723,7 @@ ins { color:var(--koke); text-decoration:none; }
     letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin-bottom:var(--s3); }
   #howview .loop { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
 
-  /* skills cards — fetched live, grouped by source */
-  #howview .howgroup { margin-bottom:var(--s5); }
-  #howview .howgroup:last-child { margin-bottom:0; }
-  #howview .howgroup > .lbl { display:block; margin-bottom:var(--s3); }
+  /* project skills/agents — the ONE live group, fetched (the four specboard skills are the flowcharts) */
   #howview .skills { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s4); }
   #howview .scard { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
     padding:var(--s4); display:flex; flex-direction:column; gap:6px; }
@@ -735,6 +732,100 @@ ins { color:var(--koke); text-decoration:none; }
   #howview .scard p { color:var(--ink-2); font-size:var(--t-sm); }
   #howview .scard .when { margin-top:auto; padding-top:var(--s2); border-top:1px solid var(--hair);
     font-size:var(--t-xs); color:var(--ink-4); }
+
+  /* the four skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
+     #howview so its diagram-only classes never touch the board's globals, and it borrows the same
+     design tokens. Colours ride shape + hue + label together, never hue alone. */
+  #howview .flow-lead { max-width:900px; margin-top:var(--s3); color:var(--ink-2); font-size:var(--t-md); }
+  #howview .flow-lead b { color:var(--ink); }
+  #howview .flow-legend { margin-top:var(--s4); margin-bottom:var(--s5); }
+  #howview .skill-flows { display:flex; flex-direction:column; }
+  #howview .flow-panel { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    overflow:hidden; margin-bottom:var(--s5); }
+  #howview .flow-panel:last-child { margin-bottom:0; }
+  #howview .p-head { display:flex; align-items:center; gap:var(--s3); padding:var(--s4) var(--s5);
+    border-bottom:1px solid var(--hair); background:var(--canvas); }
+  #howview .p-id { display:flex; align-items:baseline; gap:var(--s3); }
+  #howview .p-num { width:20px; height:20px; flex:none; display:inline-flex; align-items:center;
+    justify-content:center; border:1px solid var(--hair-2); border-radius:50%; font-size:var(--t-xs);
+    color:var(--ink-3); position:relative; top:3px; }
+  #howview .p-head h3 { font-size:var(--t-lg); color:var(--ink); }
+  #howview .p-tag { font-size:var(--t-sm); color:var(--ink-3); }
+  #howview .p-when { margin-left:auto; font-size:var(--t-xs); color:var(--ink-4); letter-spacing:.02em; }
+  #howview .p-diagram { padding:var(--s5) var(--s5) var(--s6); }
+  /* the SVG is authored at 1216 wide; scale it to the column so the diagram never scrolls sideways */
+  #howview .p-diagram svg { display:block; width:100%; height:auto; max-width:100%; }
+
+  /* connectors */
+  #howview .edge { fill:none; stroke:var(--line3); stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
+  #howview .dia-shape { fill:var(--ai-tint); stroke:var(--ai); stroke-width:1.5; }
+  #howview .jdot { fill:var(--paper); stroke:var(--line3); stroke-width:1.3; }
+
+  /* node bodies (inside foreignObject) */
+  #howview .nb { width:100%; height:100%; border-radius:var(--r); padding:var(--s2) var(--s3);
+    display:flex; flex-direction:column; justify-content:center; gap:3px; overflow:hidden; }
+  #howview .nb.step { background:var(--paper); border:1px solid var(--hair-2); }
+  #howview .nb-title { font-size:var(--t-sm); line-height:1.28; color:var(--ink); letter-spacing:-.01em; }
+  #howview .nb-title.ai { color:var(--ai); }
+  #howview .nb-note { font-size:var(--t-xs); color:var(--ink-3); line-height:1.3; }
+  #howview .nb-foot { display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin-top:1px; }
+  #howview .flow-panel .tag { display:inline-flex; align-items:center; font-size:var(--t-micro);
+    color:var(--ink-2); background:var(--wash); border-radius:var(--r-sm); padding:1px 6px; letter-spacing:-.01em; }
+  #howview .schip { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-micro);
+    padding:1px 6px; border-radius:var(--r-sm); letter-spacing:.01em; }
+  #howview .schip .mk { width:6px; height:6px; }
+  #howview .schip.s-running { background:var(--yamabuki-tint); color:var(--yamabuki); box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+  #howview .schip.s-settled { background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  #howview .schip.s-relook { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  #howview .schip.s-redfail { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  /* left bar carries the hue, redundant with the chip so hue never rides alone */
+  #howview .nb.s-running { border-left:3px solid var(--yamabuki); }
+  #howview .nb.s-settled { border-left:3px solid var(--koke); }
+  #howview .nb.s-relook { border-left:3px solid var(--bengara); }
+  #howview .nb.s-redfail { border-left:3px solid var(--bengara); }
+
+  /* gate node — the human decision point, a tint (never a second inverted element) */
+  #howview .nb.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
+  #howview .glbl { display:flex; align-items:center; gap:6px; font-size:var(--t-micro); letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ai); }
+  #howview .glbl .dia { width:8px; height:8px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  #howview .cmp { font-size:var(--t-micro); color:var(--ai); opacity:.85; }
+
+  /* diamond text */
+  #howview .nb.dbody { align-items:center; text-align:center; justify-content:center; gap:2px; padding:0; background:transparent; }
+  #howview .dkick { display:flex; align-items:center; gap:5px; font-size:9.5px; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ai); opacity:.85; }
+  #howview .dkick .ddia { width:6px; height:6px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  #howview .nb.dbody .nb-title { text-align:center; font-size:var(--t-sm); }
+
+  /* per-file rows inside the kg-update node (scoped tight so the board's global .frow never bleeds in) */
+  #howview .frows { display:flex; flex-direction:column; gap:4px; margin-top:2px; }
+  #howview .nb .frow { display:flex; align-items:center; gap:7px; padding:0; border-top:0;
+    font-size:var(--t-xs); color:var(--ink-2); line-height:1.25; }
+  #howview .fmk { width:8px; height:8px; flex:none; border-radius:2px; }
+  #howview .fmk.s-added { background:transparent; box-shadow:inset 0 0 0 1px var(--line3); }
+  #howview .fmk.s-updated { background:var(--ai-tint); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .fmk.s-settled { background:var(--koke); }
+  #howview .fmk.s-relook { background:var(--bengara); }
+  #howview .ftxt { letter-spacing:-.01em; }
+
+  /* phase captions floating where no connector runs */
+  #howview .cap { display:flex; align-items:center; gap:7px; font-size:var(--t-micro); letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ink-3); white-space:nowrap; height:100%; }
+  #howview .cap.center { justify-content:center; }
+  #howview .cap.left { justify-content:flex-start; }
+  #howview .cap.right { justify-content:flex-end; }
+
+  /* branch labels riding the arrows */
+  #howview .fo-lbl { overflow:visible; }
+  #howview .blwrap { display:flex; align-items:center; justify-content:center; height:100%; }
+  #howview .blabel { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-micro); line-height:1.15;
+    padding:2px 7px; border-radius:var(--r-sm); white-space:nowrap;
+    background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .blabel .bdia { width:6px; height:6px; background:currentColor; transform:rotate(45deg); flex:none; }
+  #howview .blabel.no { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  #howview .blabel.plain { background:var(--wash); color:var(--ink-2); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  #howview .bl-sub { color:inherit; opacity:.7; font-size:10px; margin-left:2px; }
 </style>
 <!-- Apply the hide-wireframes preference to the ROOT element BEFORE the body renders, so a board that
      live-reloads on every change never flashes the wireframe column back into view. The end-of-body
@@ -3758,9 +3849,9 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </section>
 
-<!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The
-     intro, spine and lanes are baked; the skills cards are fetched from /api/capabilities so they
-     reflect an edited SKILL.md and any skills/agents the project has added. -->
+<!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The intro,
+     spine, lanes and the four skill flowcharts are baked; only a project's own added skills/agents are
+     fetched from /api/capabilities and shown as cards below. -->
 <section class="dt" id="howview" hidden>
   <div class="dth">
     <h2>How does it work</h2>
@@ -3841,9 +3932,472 @@ ins { color:var(--koke); text-decoration:none; }
       </div>
 
       <div class="sect">
-        <div class="sect-head"><span class="lbl">the skills</span>
-          <h2>Each column of work is driven by one skill</h2><span class="rule"></span></div>
-        <div id="howskills"><div class="ph">loading…</div></div>
+        <div class="sect-head"><span class="lbl">the four skills</span>
+          <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
+        <p class="flow-lead">Each skill is a small procedure with real forks in it — where it branches,
+          where a job runs, and where it <b>stops for you</b>. Rectangles are steps, indigo diamonds are
+          decisions, and the tinted bars are the places a human must approve. Follow the arrows; the
+          <b>yes / no</b> branches are labelled.</p>
+        <div class="flow-legend legend">
+          <span class="chip"><span class="mk o"></span>step / artifact</span>
+          <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
+          <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
+          <span class="chip run"><span class="mk"></span>running — a job in flight</span>
+          <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
+          <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
+        </div>
+        <div class="skill-flows"><section class="flow-panel">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">1</span><h3 class="mono">kg-init</h3>
+        <span class="p-tag">scaffold the board + stand up the first rows</span></div>
+      <span class="p-when">once · when a project has no board yet</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 1188" width="1216" height="1188" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-1" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 100" marker-end="url(#ah-1)"/>
+<path class="edge" d="M608 154 L608 184" marker-end="url(#ah-1)"/>
+<path class="edge" d="M608 238 L608 274" marker-end="url(#ah-1)"/>
+<path class="edge" d="M504 332 L300 332 L300 456" marker-end="url(#ah-1)"/><foreignObject x="284" y="291" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes · already built<span class="bl-sub">→ DOCUMENT mode</span></span></div></foreignObject>
+<path class="edge" d="M712 332 L916 332 L916 456" marker-end="url(#ah-1)"/><foreignObject x="756" y="291" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no · greenfield<span class="bl-sub">→ DESIGN mode</span></span></div></foreignObject>
+<path class="edge" d="M300 510 L300 544" marker-end="url(#ah-1)"/>
+<path class="edge" d="M300 602 L300 640" marker-end="url(#ah-1)"/>
+<path class="edge" d="M300 708 L300 742" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 510 L916 540" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 594 L916 624" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 692 L916 726" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 780 L916 810" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 878 L916 912" marker-end="url(#ah-1)"/>
+<path class="edge" d="M300 800 L300 990 L608 990 L608 1016" marker-end="url(#ah-1)"/>
+<path class="edge" d="M916 970 L916 990 L608 990 L608 1016" marker-end="url(#ah-1)"/>
+<path class="edge" d="M608 1070 L608 1100" marker-end="url(#ah-1)"/></g>
+        <g class="caps"></g>
+        <g class="nodes"><foreignObject x="482" y="16" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Scaffold specboard into the repo</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">vendors tools/ + spec/</span></div>
+  </div></foreignObject>
+<foreignObject x="482" y="100" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Install deps · start the board</div>
+    
+    
+    
+  </div></foreignObject>
+<foreignObject x="482" y="184" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Open Init · point at the app</div>
+    
+    
+    
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,274 712,332 608,390 504,332"/>
+      <foreignObject x="526.88" y="296.04" width="162.24" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">App already exists?</div>
+  </div></foreignObject>
+<foreignObject x="193" y="456" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Crawl the running app</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">real browser</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="193" y="544" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Guessed PRDs</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">prd.md · guess</span></div>
+  </div></foreignObject>
+<foreignObject x="175" y="640" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">Accept the requirements</div>
+    <div class="cmp mono">guess → approved</div>
+  </div></foreignObject>
+<foreignObject x="193" y="742" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Characterization test</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">kg-e2e</span></div>
+  </div></foreignObject>
+<foreignObject x="809" y="456" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Write the first PRD</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">prd.md</span></div>
+  </div></foreignObject>
+<foreignObject x="809" y="540" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Draw the wireframe</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">draft.html · 1280px</span></div>
+  </div></foreignObject>
+<foreignObject x="791" y="624" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">Gate A · is this what I meant?</div>
+    <div class="cmp mono">prd.md ↔ draft.html</div>
+  </div></foreignObject>
+<foreignObject x="809" y="726" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Build the screen</div>
+    
+    
+    
+  </div></foreignObject>
+<foreignObject x="791" y="810" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">Gate B · did you build it?</div>
+    <div class="cmp mono">draft.html ↔ screen.png</div>
+  </div></foreignObject>
+<foreignObject x="809" y="912" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Prove it</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">kg-e2e → screen.png</span></div>
+  </div></foreignObject>
+<foreignObject x="501" y="1016" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Conflicts scan</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">cross-screen</span></div>
+  </div></foreignObject>
+<foreignObject x="472" y="1100" width="272" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">CEO adjudicates conflicts</div>
+    
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section>
+<section class="flow-panel">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">2</span><h3 class="mono">kg-e2e</h3>
+        <span class="p-tag">author the proving test — red first, then real</span></div>
+      <span class="p-when">per screen · writes column 4, shoots column 3</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 1112" width="1216" height="1112" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-2" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 100" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 154 L608 190" marker-end="url(#ah-2)"/>
+<path class="edge" d="M492 248 L492 336 L578 336 L578 372" marker-end="url(#ah-2)"/><foreignObject x="372" y="307" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>design<span class="bl-sub">drive draft route</span></span></div></foreignObject>
+<path class="edge" d="M724 248 L724 336 L638 336 L638 372" marker-end="url(#ah-2)"/><foreignObject x="668" y="307" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>document<span class="bl-sub">drive live app</span></span></div></foreignObject>
+<path class="edge" d="M608 434 L608 470" marker-end="url(#ah-2)"/>
+<path class="edge" d="M712 528 L916 528 L916 654" marker-end="url(#ah-2)"/><foreignObject x="726" y="490" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes<span class="bl-sub">data-driven</span></span></div></foreignObject>
+<path class="edge" d="M504 528 L300 528 L300 654" marker-end="url(#ah-2)"/><foreignObject x="314" y="500" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
+<path class="edge" d="M916 712 L916 750" marker-end="url(#ah-2)"/>
+<path class="edge" d="M916 804 L916 834" marker-end="url(#ah-2)"/>
+<path class="edge" d="M916 888 L916 916 L608 916 L608 942" marker-end="url(#ah-2)"/>
+<path class="edge" d="M300 708 L300 916 L608 916 L608 942" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 1000 L608 1032" marker-end="url(#ah-2)"/></g>
+        <g class="caps"></g>
+        <g class="nodes"><foreignObject x="464" y="16" width="288" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Write the FAILING assertion first</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">test.spec.ts</span></div>
+  </div></foreignObject>
+<foreignObject x="501" y="100" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-redfail">
+    <div class="nb-title">Watch it go RED</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-redfail"><span class="mk "></span>must fail</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,190 724,248 608,306 492,248"/>
+      <foreignObject x="517.52" y="212.04" width="180.96" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Design- or document-mode screen?</div>
+  </div></foreignObject>
+<foreignObject x="450" y="372" width="316" height="62"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Assert on DATA, not chrome</div>
+    <div class="nb-note">wait for content — prove something DID happen</div>
+    
+    
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,470 712,528 608,586 504,528"/>
+      <foreignObject x="526.88" y="492.04" width="162.24" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Data-driven screen?</div>
+  </div></foreignObject>
+<foreignObject x="800" y="654" width="232" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Seed golden data</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">_seed.ts · seed:e2e</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="809" y="750" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Record golden.json</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">golden.json</span></div>
+  </div></foreignObject>
+<foreignObject x="809" y="834" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Assert EXACT values</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<foreignObject x="193" y="654" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Assert behaviour</div>
+    
+    
+    
+  </div></foreignObject>
+<foreignObject x="479" y="942" width="258" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Make it pass — never weaken</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<foreignObject x="472" y="1032" width="272" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Shoots screen.png</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">column 3 · byproduct</span></div>
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section>
+<section class="flow-panel">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">3</span><h3 class="mono">kg-staff</h3>
+        <span class="p-tag">the change discipline — before you touch a screen</span></div>
+      <span class="p-when">before every change · stop &amp; ask in 3 cases</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 1364" width="1216" height="1364" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-3" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 104" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 228 L608 274 L170 274 L170 316" marker-end="url(#ah-3)"/><foreignObject x="301" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>ungoverned</span></div></foreignObject>
+<path class="edge" d="M608 228 L608 274 L462 274 L462 316" marker-end="url(#ah-3)"/><foreignObject x="447" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>unapproved guess</span></div></foreignObject>
+<path class="edge" d="M608 228 L608 274 L754 274 L754 316" marker-end="url(#ah-3)"/><foreignObject x="593" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>open contradiction</span></div></foreignObject>
+<path class="edge" d="M608 228 L608 274 L1046 274 L1046 316" marker-end="url(#ah-3)"/><foreignObject x="739" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>else — governed</span></div></foreignObject>
+<path class="edge" d="M170 402 L170 452 L460 452 L460 480" marker-end="url(#ah-3)"/>
+<path class="edge" d="M462 402 L462 480" marker-end="url(#ah-3)"/>
+<path class="edge" d="M754 402 L754 480" marker-end="url(#ah-3)"/>
+<path class="edge" d="M1046 402 L1046 452 L756 452 L756 480" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 546 L608 584" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 638 L608 668" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 722 L608 752" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 806 L608 836" marker-end="url(#ah-3)"/>
+<path class="edge" d="M708 892 L795 892" marker-end="url(#ah-3)"/><foreignObject x="674" y="879" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
+<path class="edge" d="M608 948 L608 984" marker-end="url(#ah-3)"/><foreignObject x="520" y="957" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
+<path class="edge" d="M916 925 L916 966 L608 966 L608 984" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 994 L608 1028" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 1082 L608 1112" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 1166 L608 1196" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 1250 L608 1280" marker-end="url(#ah-3)"/></g>
+        <g class="caps"><foreignObject x="468" y="452" width="280" height="28"><div xmlns="http://www.w3.org/1999/xhtml" class="cap center">CHANGE ORDER — requirement leads</div></foreignObject>
+<foreignObject x="120" y="1000" width="320" height="28"><div xmlns="http://www.w3.org/1999/xhtml" class="cap left">CLOSE THE LOOP — run outward</div></foreignObject></g>
+        <g class="nodes"><foreignObject x="472" y="16" width="272" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Read what governs the screen</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">staff briefing</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,104 728,166 608,228 488,166"/>
+      <foreignObject x="514.4" y="127.56" width="187.20000000000002" height="76.88"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Which case is the screen in?</div>
+  </div></foreignObject>
+<foreignObject x="53" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">Ask CEO for a requirement</div>
+    
+  </div></foreignObject>
+<foreignObject x="345" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">CEO corrects + approves</div>
+    <div class="cmp mono">Gate A</div>
+  </div></foreignObject>
+<foreignObject x="637" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">CEO picks the canonical side</div>
+    
+  </div></foreignObject>
+<foreignObject x="940" y="316" width="212" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Governed &amp; settled</div>
+    <div class="nb-note">proceed</div>
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<foreignObject x="458" y="480" width="300" height="66"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">1 · Requirement FIRST</div>
+    <div class="cmp mono">you own meaning</div>
+  </div></foreignObject>
+<foreignObject x="491" y="584" width="234" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">2 · Write the failing test</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">watch it go red</span></div>
+  </div></foreignObject>
+<foreignObject x="491" y="668" width="234" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">3 · Make it pass</div>
+    <div class="nb-note">never weaken</div>
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<foreignObject x="481" y="752" width="254" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">4 · Correct the doc in place</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">reason attached</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,836 708,892 608,948 508,892"/>
+      <foreignObject x="530" y="857.28" width="156" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Golden data?</div>
+  </div></foreignObject>
+<foreignObject x="795" y="859" width="242" height="66"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">Update golden values</div>
+    <div class="cmp mono">you own the values</div>
+  </div></foreignObject>
+<circle class="jdot" cx="608" cy="989" r="4.5"/>
+<foreignObject x="478" y="1028" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Run the screen's test</div>
+    
+    
+    
+  </div></foreignObject>
+<foreignObject x="478" y="1112" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Run the whole suite</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="478" y="1196" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Conflict rescan</div>
+    
+    
+    
+  </div></foreignObject>
+<foreignObject x="478" y="1280" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Clear the stale worklist</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section>
+<section class="flow-panel">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">4</span><h3 class="mono">kg-update</h3>
+        <span class="p-tag">adopt a new release without clobbering your edits</span></div>
+      <span class="p-when">after the plugin updates · restart on new code</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 1168" width="1216" height="1168" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-4" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 104" marker-end="url(#ah-4)"/>
+<path class="edge" d="M506 160 L357 160" marker-end="url(#ah-4)"/><foreignObject x="344" y="137" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no<span class="bl-sub">up to date</span></span></div></foreignObject>
+<path class="edge" d="M608 216 L608 268" marker-end="url(#ah-4)"/><foreignObject x="520" y="231" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
+<path class="edge" d="M710 326 L814 326" marker-end="url(#ah-4)"/><foreignObject x="672" y="303" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no<span class="bl-sub">no manifest</span></span></div></foreignObject>
+<path class="edge" d="M608 384 L608 468" marker-end="url(#ah-4)"/><foreignObject x="520" y="405" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes<span class="bl-sub">has manifest</span></span></div></foreignObject>
+<path class="edge" d="M950 362 L950 440 L608 440 L608 468" marker-end="url(#ah-4)"/>
+<path class="edge" d="M608 646 L608 704" marker-end="url(#ah-4)"/>
+<path class="edge" d="M710 760 L834 760" marker-end="url(#ah-4)"/><foreignObject x="684" y="747" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
+<path class="edge" d="M950 787 L950 817" marker-end="url(#ah-4)"/>
+<path class="edge" d="M950 871 L950 888 L608 888 L608 902" marker-end="url(#ah-4)"/>
+<path class="edge" d="M608 816 L608 902" marker-end="url(#ah-4)"/><foreignObject x="520" y="865" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
+<path class="edge" d="M608 956 L608 986" marker-end="url(#ah-4)"/>
+<path class="edge" d="M608 1040 L608 1070" marker-end="url(#ah-4)"/></g>
+        <g class="caps"></g>
+        <g class="nodes"><foreignObject x="468" y="16" width="280" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Compare versions</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">plugin vs _specboard.json</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,104 710,160 608,216 506,160"/>
+      <foreignObject x="528.44" y="125.28" width="159.12" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Update due?</div>
+  </div></foreignObject>
+<foreignObject x="143" y="134" width="214" height="52"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Already current — done</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,268 710,326 608,384 506,326"/>
+      <foreignObject x="528.44" y="290.04" width="159.12" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Has a manifest?</div>
+  </div></foreignObject>
+<foreignObject x="814" y="290" width="272" height="72"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Score cached releases</div>
+    <div class="nb-note">--from-dir &lt;closest base&gt;</div>
+    
+    
+  </div></foreignObject>
+<foreignObject x="416" y="468" width="384" height="178"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Update runs — per file</div>
+    
+    <div class="frows"><div class="frow"><span class="fmk s-added"></span><span class="ftxt">added — new file dropped in</span></div><div class="frow"><span class="fmk s-updated"></span><span class="ftxt">updated — untouched file refreshed</span></div><div class="frow"><span class="fmk s-settled"></span><span class="ftxt">your local edit kept</span></div><div class="frow"><span class="fmk s-relook"></span><span class="ftxt">CONFLICT → written as &lt;file&gt;.new</span></div></div>
+    
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,704 710,760 608,816 506,760"/>
+      <foreignObject x="528.44" y="725.28" width="159.12" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">Conflicts?</div>
+  </div></foreignObject>
+<foreignObject x="834" y="733" width="232" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-relook">
+    <div class="nb-title">Merge each .new by graft</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-relook"><span class="mk "></span>re-look</span></div>
+  </div></foreignObject>
+<foreignObject x="843" y="817" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Delete .new</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject>
+<foreignObject x="493" y="902" width="230" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Rebuild board.html</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="481" y="986" width="254" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Restart the board</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">detached · own port</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="466" y="1070" width="284" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Verify live server on new code</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section></div>
+      </div>
+
+      <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
+           loadHow and shown here, so this section only appears once there is something to show. -->
+      <div class="sect" id="howprojsect" hidden>
+        <div class="sect-head"><span class="lbl">this project</span>
+          <h2>Skills &amp; agents this project has added</h2><span class="rule"></span></div>
+        <div id="howskills"></div>
       </div>
 
     </div>
@@ -7985,42 +8539,27 @@ ins { color:var(--koke); text-decoration:none; }
   })
 
   // how does it work -----------------------------------------------------
-  // Everything on this view except the skills cards is baked at build time. The cards are fetched so
-  // they stay true to what is on disk — an edited SKILL.md, or skills/agents the project has added —
-  // and are grouped by source with a kind badge. Emitted inside the template literal, so: string
-  // concatenation only, \n for a newline, and no backticks (see the conflicts note above).
-  const HOW_WHEN = {
-    'kg-init': 'once, when you start', 'kg-e2e': 'per screen · column 4',
-    'kg-staff': 'before every change', 'kg-update': 'on each release'
-  }
+  // The four specboard skills are baked as flowcharts at build time. Only what the PROJECT adds under
+  // .claude/ is live: loadHow fetches /api/capabilities and renders that project's own skills & agents
+  // as cards below the flowcharts. Emitted inside the template literal, so: string concatenation only,
+  // \n for a newline, and no backticks (see the conflicts note above).
   function scardHtml (c) {
-    const when = HOW_WHEN[c.name] || (c.kind === 'agent' ? 'a project agent' : 'a project skill')
+    const when = c.kind === 'agent' ? 'a project agent' : 'a project skill'
     return '<div class="scard"><span class="stag">' + eh(c.kind || 'skill') + '</span>' +
       '<h3>' + eh(c.name) + '</h3><p>' + eh(c.description) + '</p>' +
       '<div class="when">' + eh(when) + '</div></div>'
   }
-  function howGroup (label, cards) {
-    if (!cards.length) return ''
-    return '<div class="howgroup"><span class="lbl">' + eh(label) + '</span>' +
-      '<div class="skills">' + cards.map(scardHtml).join('') + '</div></div>'
-  }
   async function loadHow () {
+    const sect = document.getElementById('howprojsect')
     const box = document.getElementById('howskills')
     let data
-    try { data = await (await fetch('/api/capabilities')).json() } catch (e) {
-      box.innerHTML = '<div class="ph">The skills list needs the board server — run  npm run board.</div>'
-      return
-    }
-    const caps = data.capabilities || []
-    const sb = caps.filter(c => c.source === 'specboard')
-    const proj = caps.filter(c => c.source === 'project')
-    let html = howGroup('specboard skills', sb) + howGroup('this project\'s skills & agents', proj)
-    if (!html) {
-      html = '<div class="ph">' + (data.specboard && data.specboard.available
-        ? 'No skills found under the specboard plugin.'
-        : 'The specboard plugin could not be located, so its skills are not listed.') + '</div>'
-    }
-    box.innerHTML = html
+    // The flowcharts are baked and always shown; only the project cards need the server. A failed or
+    // empty fetch just leaves this optional section hidden rather than surfacing an error on the page.
+    try { data = await (await fetch('/api/capabilities')).json() } catch (e) { sect.hidden = true; return }
+    const proj = (data.capabilities || []).filter(c => c.source === 'project')
+    if (!proj.length) { sect.hidden = true; return }
+    box.innerHTML = '<div class="skills">' + proj.map(scardHtml).join('') + '</div>'
+    sect.hidden = false
   }
 
   document.getElementById('howbtn').addEventListener('click', () => {
@@ -8328,8 +8867,8 @@ ins { color:var(--koke); text-decoration:none; }
         if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
         // init holds a half-filled form too — refresh the found table in place, never reload it out
         if (!document.getElementById('initview').hidden) { loadCrawl(); return }
-        // how-it-works only ever needs its skills cards refreshed — an edited SKILL.md, say — and a
-        // full reload would drop you back on the board, so refresh in place like the other tool views
+        // how-it-works only ever needs its project cards refreshed — a project added a skill, say — and
+        // a full reload would drop you back on the board, so refresh in place like the other tool views
         if (!document.getElementById('howview').hidden) { loadHow(); return }
         location.reload()
       }, 800)

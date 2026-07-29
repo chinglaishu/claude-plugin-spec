@@ -274,10 +274,10 @@ function gateBar (s) {
     <span class="gbn" style="flex:none">pins <code>${s.prdHash}</code></span>`)
 }
 
-// The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, and the two
-// lanes (greenfield DESIGN, brownfield DOCUMENT) — so it is baked here at build time from one
-// WORKFLOW object rather than fetched. Only the skills cards are live (loadHow reads
-// /api/capabilities), because those generalise to whatever a project adds under .claude/.
+// The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, the two lanes
+// (greenfield DESIGN, brownfield DOCUMENT), and the four skills drawn as flowcharts (howFlowcharts,
+// below) — so it is all baked here at build time rather than fetched. Only a PROJECT's own added
+// skills/agents are live (loadHow reads /api/capabilities), because those cannot be known ahead of time.
 const WORKFLOW = {
   spine: [
     { num: '1 · PRD', h: 'Requirements', file: 'prd.md' },
@@ -362,6 +362,311 @@ const howSpineCol = c => c.gate
   : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
         <div class="file">${c.file}</div></div>`
 
+// The four skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
+// time from the definitions below rather than fetched. The node/edge geometry and the SVG chevron
+// connectors are computed HERE, in Node, and emitted as static svg/html; nothing is laid out in the
+// browser. Diagram language: rectangle = step · indigo diamond = decision · tinted bar = CEO gate ·
+// open-chevron connectors carry yes/no branch pills. All hues come from the inlined design tokens.
+// (Ported from the approved skills-flow mockup + its deterministic geometry generator.) This whole
+// block is plain module-level JS — it produces a STRING that howView() interpolates, so its own
+// template literals never touch the outer board literal.
+const HOW_W = 1216, HOW_Cx = 608, HOW_Lx = 300, HOW_Rx = 916
+const XH = 'xmlns="http://www.w3.org/1999/xhtml"'
+const HOW_MARK = { running: '', settled: '', relook: '', redfail: '' }
+const HOW_STATEW = { running: 'runs a job', settled: 'settled', relook: 're-look', redfail: 'must fail' }
+
+function fbox (n) {
+  const w = n.w, h = n.h, x = n.cx - w / 2, y = n.top
+  return { x, y, w, h, cx: n.cx, cy: y + h / 2, right: x + w, bottom: y + h, top: y, left: x }
+}
+function fanchor (n, side) {
+  const b = fbox(n)
+  if (side === 'top') return { x: b.cx, y: b.top }
+  if (side === 'bottom') return { x: b.cx, y: b.bottom }
+  if (side === 'left') return { x: b.left, y: b.cy }
+  if (side === 'right') return { x: b.right, y: b.cy }
+  throw new Error('side ' + side)
+}
+const fpolyPath = pts => 'M' + pts.map(p => `${p.x} ${p.y}`).join(' L')
+
+function fStepBody (n) {
+  const cls = ['nb', 'step', n.state ? 's-' + n.state : ''].filter(Boolean).join(' ')
+  const tags = (n.tags || []).map(t => `<span class="tag mono">${esc(t)}</span>`).join('')
+  const chip = n.state
+    ? `<span class="schip s-${n.state}"><span class="mk ${HOW_MARK[n.state] || ''}"></span>${HOW_STATEW[n.state]}</span>`
+    : ''
+  const note = n.note ? `<div class="nb-note">${esc(n.note)}</div>` : ''
+  const rows = (n.rows || [])
+    .map(r => `<div class="frow"><span class="fmk s-${r.s}"></span><span class="ftxt">${esc(r.t)}</span></div>`)
+    .join('')
+  return `<div ${XH} class="${cls}">
+    <div class="nb-title">${esc(n.title)}</div>
+    ${note}
+    ${rows ? `<div class="frows">${rows}</div>` : ''}
+    ${tags || chip ? `<div class="nb-foot">${tags}${chip}</div>` : ''}
+  </div>`
+}
+function fGateBody (n) {
+  const cmp = n.cmp ? `<div class="cmp mono">${esc(n.cmp)}</div>` : ''
+  return `<div ${XH} class="nb gate">
+    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="nb-title ai">${esc(n.title)}</div>
+    ${cmp}
+  </div>`
+}
+function fDiaText (n) {
+  return `<div ${XH} class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">${esc(n.title)}</div>
+  </div>`
+}
+const fCapBody = c => `<div ${XH} class="cap ${c.align || 'center'}">${esc(c.text)}</div>`
+function fBlabelBody (l) {
+  const sub = l.sub ? `<span class="bl-sub">${esc(l.sub)}</span>` : ''
+  const tone = l.no ? 'no' : l.plain ? 'plain' : 'yes'
+  return `<div ${XH} class="blwrap"><span class="blabel ${tone}"><span class="bdia"></span>${esc(l.t)}${sub}</span></div>`
+}
+
+function fRenderNode (n) {
+  const b = fbox(n)
+  if (n.type === 'junction') return `<circle class="jdot" cx="${b.cx}" cy="${b.cy}" r="4.5"/>`
+  if (n.type === 'diamond') {
+    const pts = `${b.cx},${b.top} ${b.right},${b.cy} ${b.cx},${b.bottom} ${b.left},${b.cy}`
+    const fw = n.w * 0.78, fh = n.h * 0.62
+    const fx = b.cx - fw / 2, fy = b.cy - fh / 2
+    return `<polygon class="dia-shape" points="${pts}"/>
+      <foreignObject x="${fx}" y="${fy}" width="${fw}" height="${fh}">${fDiaText(n)}</foreignObject>`
+  }
+  const body = n.type === 'gate' ? fGateBody(n) : fStepBody(n)
+  return `<foreignObject x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}">${body}</foreignObject>`
+}
+function fRenderEdge (e, nodes) {
+  const from = nodes.find(n => n.id === e.from)
+  const to = nodes.find(n => n.id === e.to)
+  const a = e.aPt || fanchor(from, e.fromSide)
+  const b = e.bPt || fanchor(to, e.toSide)
+  let pts
+  const mid = e.my != null ? e.my : (a.y + b.y) / 2
+  switch (e.route) {
+    case 'v': pts = a.x === b.x ? [a, b] : [a, { x: a.x, y: mid }, { x: b.x, y: mid }, b]; break
+    case 'h': pts = [a, b]; break
+    case 'hv': pts = [a, { x: b.x, y: a.y }, b]; break
+    case 'vh': pts = [a, { x: a.x, y: b.y }, b]; break
+    case 'vhv': pts = [a, { x: a.x, y: mid }, { x: b.x, y: mid }, b]; break
+    default: pts = [a, b]
+  }
+  const svg = `<path class="edge" d="${fpolyPath(pts)}" marker-end="url(#ah)"/>`
+  let lbl = ''
+  if (e.label) {
+    let lx, ly
+    if (e.label.pos) { [lx, ly] = e.label.pos } else if (e.route === 'hv' || e.route === 'h') { lx = (a.x + b.x) / 2; ly = a.y - 15 } else { lx = a.x; ly = (a.y + mid) / 2 }
+    const w = 176, h = e.label.sub ? 46 : 26
+    lbl = `<foreignObject x="${lx - w / 2}" y="${ly - h / 2}" width="${w}" height="${h}" class="fo-lbl">${fBlabelBody(e.label)}</foreignObject>`
+  }
+  return svg + lbl
+}
+// Each SVG carries a unique marker id (ah-<n>) so four inline <defs> markers never collide.
+function fRenderFlow (f, idx) {
+  const mk = 'ah-' + (idx + 1)
+  const edges = f.edges.map(e => fRenderEdge(e, f.nodes).replace(/url\(#ah\)/g, `url(#${mk})`)).join('\n')
+  const nodes = f.nodes.map(fRenderNode).join('\n')
+  const caps = (f.captions || [])
+    .map(c => `<foreignObject x="${c.x}" y="${c.top}" width="${c.w}" height="28">${fCapBody(c)}</foreignObject>`)
+    .join('\n')
+  return `<section class="flow-panel">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">${idx + 1}</span><h3 class="mono">${esc(f.id)}</h3>
+        <span class="p-tag">${esc(f.tagline)}</span></div>
+      <span class="p-when">${esc(f.when)}</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 ${HOW_W} ${f.height}" width="${HOW_W}" height="${f.height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="${mk}" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges">${edges}</g>
+        <g class="caps">${caps}</g>
+        <g class="nodes">${nodes}</g>
+      </svg>
+    </div>
+  </section>`
+}
+
+const HOW_FLOWS = [
+  {
+    id: 'kg-init',
+    tagline: 'scaffold the board + stand up the first rows',
+    when: 'once · when a project has no board yet',
+    height: 1188,
+    nodes: [
+      { id: 's1', type: 'step', cx: HOW_Cx, top: 16, w: 252, h: 54, title: 'Scaffold specboard into the repo', tags: ['vendors tools/ + spec/'] },
+      { id: 's2', type: 'step', cx: HOW_Cx, top: 100, w: 252, h: 54, title: 'Install deps · start the board' },
+      { id: 's3', type: 'step', cx: HOW_Cx, top: 184, w: 252, h: 54, title: 'Open Init · point at the app' },
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 274, w: 208, h: 116, title: 'App already exists?' },
+      { id: 'l1', type: 'step', cx: HOW_Lx, top: 456, w: 214, h: 54, title: 'Crawl the running app', state: 'running', tags: ['real browser'] },
+      { id: 'l2', type: 'step', cx: HOW_Lx, top: 544, w: 214, h: 58, title: 'Guessed PRDs', tags: ['prd.md · guess'] },
+      { id: 'l3', type: 'gate', cx: HOW_Lx, top: 640, w: 250, h: 68, title: 'Accept the requirements', cmp: 'guess → approved' },
+      { id: 'l4', type: 'step', cx: HOW_Lx, top: 742, w: 214, h: 58, title: 'Characterization test', tags: ['kg-e2e'] },
+      { id: 'r1', type: 'step', cx: HOW_Rx, top: 456, w: 214, h: 54, title: 'Write the first PRD', tags: ['prd.md'] },
+      { id: 'r2', type: 'step', cx: HOW_Rx, top: 540, w: 214, h: 54, title: 'Draw the wireframe', tags: ['draft.html · 1280px'] },
+      { id: 'r3', type: 'gate', cx: HOW_Rx, top: 624, w: 250, h: 68, title: 'Gate A · is this what I meant?', cmp: 'prd.md ↔ draft.html' },
+      { id: 'r4', type: 'step', cx: HOW_Rx, top: 726, w: 214, h: 54, title: 'Build the screen' },
+      { id: 'r5', type: 'gate', cx: HOW_Rx, top: 810, w: 250, h: 68, title: 'Gate B · did you build it?', cmp: 'draft.html ↔ screen.png' },
+      { id: 'r6', type: 'step', cx: HOW_Rx, top: 912, w: 214, h: 58, title: 'Prove it', tags: ['kg-e2e → screen.png'] },
+      { id: 'm1', type: 'step', cx: HOW_Cx, top: 1016, w: 214, h: 54, title: 'Conflicts scan', tags: ['cross-screen'] },
+      { id: 'm2', type: 'gate', cx: HOW_Cx, top: 1100, w: 272, h: 68, title: 'CEO adjudicates conflicts' }
+    ],
+    captions: [],
+    edges: [
+      { from: 's1', fromSide: 'bottom', to: 's2', toSide: 'top', route: 'v' },
+      { from: 's2', fromSide: 'bottom', to: 's3', toSide: 'top', route: 'v' },
+      { from: 's3', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
+      { from: 'd1', fromSide: 'left', to: 'l1', toSide: 'top', route: 'hv', label: { t: 'yes · already built', sub: '→ DOCUMENT mode', pos: [372, 314] } },
+      { from: 'd1', fromSide: 'right', to: 'r1', toSide: 'top', route: 'hv', label: { t: 'no · greenfield', sub: '→ DESIGN mode', no: true, pos: [844, 314] } },
+      { from: 'l1', fromSide: 'bottom', to: 'l2', toSide: 'top', route: 'v' },
+      { from: 'l2', fromSide: 'bottom', to: 'l3', toSide: 'top', route: 'v' },
+      { from: 'l3', fromSide: 'bottom', to: 'l4', toSide: 'top', route: 'v' },
+      { from: 'r1', fromSide: 'bottom', to: 'r2', toSide: 'top', route: 'v' },
+      { from: 'r2', fromSide: 'bottom', to: 'r3', toSide: 'top', route: 'v' },
+      { from: 'r3', fromSide: 'bottom', to: 'r4', toSide: 'top', route: 'v' },
+      { from: 'r4', fromSide: 'bottom', to: 'r5', toSide: 'top', route: 'v' },
+      { from: 'r5', fromSide: 'bottom', to: 'r6', toSide: 'top', route: 'v' },
+      { from: 'l4', fromSide: 'bottom', to: 'm1', toSide: 'top', route: 'vhv', my: 990 },
+      { from: 'r6', fromSide: 'bottom', to: 'm1', toSide: 'top', route: 'vhv', my: 990 },
+      { from: 'm1', fromSide: 'bottom', to: 'm2', toSide: 'top', route: 'v' }
+    ]
+  },
+  {
+    id: 'kg-e2e',
+    tagline: 'author the proving test — red first, then real',
+    when: 'per screen · writes column 4, shoots column 3',
+    height: 1112,
+    nodes: [
+      { id: 'e1', type: 'step', cx: HOW_Cx, top: 16, w: 288, h: 54, title: 'Write the FAILING assertion first', tags: ['test.spec.ts'] },
+      { id: 'e2', type: 'step', cx: HOW_Cx, top: 100, w: 214, h: 54, title: 'Watch it go RED', state: 'redfail' },
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 190, w: 232, h: 116, title: 'Design- or document-mode screen?' },
+      { id: 'e3', type: 'step', cx: HOW_Cx, top: 372, w: 316, h: 62, title: 'Assert on DATA, not chrome', note: 'wait for content — prove something DID happen' },
+      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 470, w: 208, h: 116, title: 'Data-driven screen?' },
+      { id: 'f1', type: 'step', cx: HOW_Rx, top: 654, w: 232, h: 58, title: 'Seed golden data', state: 'running', tags: ['_seed.ts · seed:e2e'] },
+      { id: 'f2', type: 'step', cx: HOW_Rx, top: 750, w: 214, h: 54, title: 'Record golden.json', tags: ['golden.json'] },
+      { id: 'f3', type: 'step', cx: HOW_Rx, top: 834, w: 214, h: 54, title: 'Assert EXACT values', state: 'settled' },
+      { id: 'g1', type: 'step', cx: HOW_Lx, top: 654, w: 214, h: 54, title: 'Assert behaviour' },
+      { id: 'e4', type: 'step', cx: HOW_Cx, top: 942, w: 258, h: 58, title: 'Make it pass — never weaken', state: 'settled' },
+      { id: 'e5', type: 'step', cx: HOW_Cx, top: 1032, w: 272, h: 58, title: 'Shoots screen.png', tags: ['column 3 · byproduct'] }
+    ],
+    edges: [
+      { from: 'e1', fromSide: 'bottom', to: 'e2', toSide: 'top', route: 'v' },
+      { from: 'e2', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
+      { from: 'd1', fromSide: 'left', to: 'e3', toSide: 'top', route: 'vhv', bPt: { x: 578, y: 372 }, my: 336, label: { t: 'design', sub: 'drive draft route', plain: true, pos: [460, 330] } },
+      { from: 'd1', fromSide: 'right', to: 'e3', toSide: 'top', route: 'vhv', bPt: { x: 638, y: 372 }, my: 336, label: { t: 'document', sub: 'drive live app', plain: true, pos: [756, 330] } },
+      { from: 'e3', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v' },
+      { from: 'd2', fromSide: 'right', to: 'f1', toSide: 'top', route: 'hv', label: { t: 'yes', sub: 'data-driven' } },
+      { from: 'd2', fromSide: 'left', to: 'g1', toSide: 'top', route: 'hv', label: { t: 'no', no: true } },
+      { from: 'f1', fromSide: 'bottom', to: 'f2', toSide: 'top', route: 'v' },
+      { from: 'f2', fromSide: 'bottom', to: 'f3', toSide: 'top', route: 'v' },
+      { from: 'f3', fromSide: 'bottom', to: 'e4', toSide: 'top', route: 'vhv', my: 916 },
+      { from: 'g1', fromSide: 'bottom', to: 'e4', toSide: 'top', route: 'vhv', my: 916 },
+      { from: 'e4', fromSide: 'bottom', to: 'e5', toSide: 'top', route: 'v' }
+    ]
+  },
+  {
+    id: 'kg-staff',
+    tagline: 'the change discipline — before you touch a screen',
+    when: 'before every change · stop & ask in 3 cases',
+    height: 1364,
+    nodes: [
+      { id: 'st1', type: 'step', cx: HOW_Cx, top: 16, w: 272, h: 54, title: 'Read what governs the screen', tags: ['staff briefing'] },
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 124, title: 'Which case is the screen in?' },
+      { id: 'a1', type: 'gate', cx: 170, top: 316, w: 234, h: 86, title: 'Ask CEO for a requirement' },
+      { id: 'a2', type: 'gate', cx: 462, top: 316, w: 234, h: 86, title: 'CEO corrects + approves', cmp: 'Gate A' },
+      { id: 'a3', type: 'gate', cx: 754, top: 316, w: 234, h: 86, title: 'CEO picks the canonical side' },
+      { id: 'a4', type: 'step', cx: 1046, top: 316, w: 212, h: 86, title: 'Governed & settled', state: 'settled', note: 'proceed' },
+      { id: 'o1', type: 'gate', cx: HOW_Cx, top: 480, w: 300, h: 66, title: '1 · Requirement FIRST', cmp: 'you own meaning' },
+      { id: 'o2', type: 'step', cx: HOW_Cx, top: 584, w: 234, h: 54, title: '2 · Write the failing test', tags: ['watch it go red'] },
+      { id: 'o3', type: 'step', cx: HOW_Cx, top: 668, w: 234, h: 54, title: '3 · Make it pass', state: 'settled', note: 'never weaken' },
+      { id: 'o4', type: 'step', cx: HOW_Cx, top: 752, w: 254, h: 54, title: '4 · Correct the doc in place', tags: ['reason attached'] },
+      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 836, w: 200, h: 112, title: 'Golden data?' },
+      { id: 'o5', type: 'gate', cx: HOW_Rx, top: 859, w: 242, h: 66, title: 'Update golden values', cmp: 'you own the values' },
+      { id: 'jb', type: 'junction', cx: HOW_Cx, top: 984, w: 10, h: 10 },
+      { id: 'cl1', type: 'step', cx: HOW_Cx, top: 1028, w: 260, h: 54, title: "Run the screen's test" },
+      { id: 'cl2', type: 'step', cx: HOW_Cx, top: 1112, w: 260, h: 54, title: 'Run the whole suite', state: 'running' },
+      { id: 'cl3', type: 'step', cx: HOW_Cx, top: 1196, w: 260, h: 54, title: 'Conflict rescan' },
+      { id: 'cl4', type: 'step', cx: HOW_Cx, top: 1280, w: 260, h: 54, title: 'Clear the stale worklist', state: 'settled' }
+    ],
+    captions: [
+      { x: 468, top: 452, w: 280, text: 'CHANGE ORDER — requirement leads', align: 'center' },
+      { x: 120, top: 1000, w: 320, text: 'CLOSE THE LOOP — run outward', align: 'left' }
+    ],
+    edges: [
+      { from: 'st1', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
+      { from: 'd1', fromSide: 'bottom', to: 'a1', toSide: 'top', route: 'vhv', my: 274, label: { t: 'ungoverned', plain: true, pos: [389, 260] } },
+      { from: 'd1', fromSide: 'bottom', to: 'a2', toSide: 'top', route: 'vhv', my: 274, label: { t: 'unapproved guess', plain: true, pos: [535, 260] } },
+      { from: 'd1', fromSide: 'bottom', to: 'a3', toSide: 'top', route: 'vhv', my: 274, label: { t: 'open contradiction', plain: true, pos: [681, 260] } },
+      { from: 'd1', fromSide: 'bottom', to: 'a4', toSide: 'top', route: 'vhv', my: 274, label: { t: 'else — governed', plain: true, pos: [827, 260] } },
+      { from: 'a1', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'vhv', my: 452, bPt: { x: 460, y: 480 } },
+      { from: 'a2', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'v', bPt: { x: 462, y: 480 } },
+      { from: 'a3', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'v', bPt: { x: 754, y: 480 } },
+      { from: 'a4', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'vhv', my: 452, bPt: { x: 756, y: 480 } },
+      { from: 'o1', fromSide: 'bottom', to: 'o2', toSide: 'top', route: 'v' },
+      { from: 'o2', fromSide: 'bottom', to: 'o3', toSide: 'top', route: 'v' },
+      { from: 'o3', fromSide: 'bottom', to: 'o4', toSide: 'top', route: 'v' },
+      { from: 'o4', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v' },
+      { from: 'd2', fromSide: 'right', to: 'o5', toSide: 'left', route: 'h', label: { t: 'yes', pos: [762, 892] } },
+      { from: 'd2', fromSide: 'bottom', to: 'jb', toSide: 'top', route: 'v', label: { t: 'no', no: true, pos: [608, 970] } },
+      { from: 'o5', fromSide: 'bottom', to: 'jb', toSide: 'top', route: 'vhv', my: 966 },
+      { from: 'jb', fromSide: 'bottom', to: 'cl1', toSide: 'top', route: 'v' },
+      { from: 'cl1', fromSide: 'bottom', to: 'cl2', toSide: 'top', route: 'v' },
+      { from: 'cl2', fromSide: 'bottom', to: 'cl3', toSide: 'top', route: 'v' },
+      { from: 'cl3', fromSide: 'bottom', to: 'cl4', toSide: 'top', route: 'v' }
+    ]
+  },
+  {
+    id: 'kg-update',
+    tagline: 'adopt a new release without clobbering your edits',
+    when: 'after the plugin updates · restart on new code',
+    height: 1168,
+    nodes: [
+      { id: 'u1', type: 'step', cx: HOW_Cx, top: 16, w: 280, h: 54, title: 'Compare versions', tags: ['plugin vs _specboard.json'] },
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 204, h: 112, title: 'Update due?' },
+      { id: 'tc', type: 'step', cx: 250, top: 134, w: 214, h: 52, title: 'Already current — done', state: 'settled' },
+      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 268, w: 204, h: 116, title: 'Has a manifest?' },
+      { id: 'sm', type: 'step', cx: 950, top: 290, w: 272, h: 72, title: 'Score cached releases', note: '--from-dir <closest base>' },
+      { id: 'ur', type: 'step', cx: HOW_Cx, top: 468, w: 384, h: 178, title: 'Update runs — per file',
+        rows: [
+          { s: 'added', t: 'added — new file dropped in' },
+          { s: 'updated', t: 'updated — untouched file refreshed' },
+          { s: 'settled', t: 'your local edit kept' },
+          { s: 'relook', t: 'CONFLICT → written as <file>.new' }
+        ] },
+      { id: 'd3', type: 'diamond', cx: HOW_Cx, top: 704, w: 204, h: 112, title: 'Conflicts?' },
+      { id: 'mg1', type: 'step', cx: 950, top: 733, w: 232, h: 54, title: 'Merge each .new by graft', state: 'relook' },
+      { id: 'mg2', type: 'step', cx: 950, top: 817, w: 214, h: 54, title: 'Delete .new', state: 'settled' },
+      { id: 'ur2', type: 'step', cx: HOW_Cx, top: 902, w: 230, h: 54, title: 'Rebuild board.html', state: 'running' },
+      { id: 'ur3', type: 'step', cx: HOW_Cx, top: 986, w: 254, h: 54, title: 'Restart the board', state: 'running', tags: ['detached · own port'] },
+      { id: 'ur4', type: 'step', cx: HOW_Cx, top: 1070, w: 284, h: 58, title: 'Verify live server on new code', state: 'settled' }
+    ],
+    edges: [
+      { from: 'u1', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
+      { from: 'd1', fromSide: 'left', to: 'tc', toSide: 'right', route: 'h', label: { t: 'no', sub: 'up to date', no: true, pos: [432, 160] } },
+      { from: 'd1', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v', label: { t: 'yes', pos: [608, 244] } },
+      { from: 'd2', fromSide: 'right', to: 'sm', toSide: 'left', route: 'h', label: { t: 'no', sub: 'no manifest', no: true, pos: [760, 326] } },
+      { from: 'd2', fromSide: 'bottom', to: 'ur', toSide: 'top', route: 'v', label: { t: 'yes', sub: 'has manifest', pos: [608, 428] } },
+      { from: 'sm', fromSide: 'bottom', to: 'ur', toSide: 'top', route: 'vhv', my: 440 },
+      { from: 'ur', fromSide: 'bottom', to: 'd3', toSide: 'top', route: 'v' },
+      { from: 'd3', fromSide: 'right', to: 'mg1', toSide: 'left', route: 'h', label: { t: 'yes', pos: [772, 760] } },
+      { from: 'mg1', fromSide: 'bottom', to: 'mg2', toSide: 'top', route: 'v' },
+      { from: 'mg2', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'vhv', my: 888 },
+      { from: 'd3', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'v', label: { t: 'no', no: true, pos: [608, 878] } },
+      { from: 'ur2', fromSide: 'bottom', to: 'ur3', toSide: 'top', route: 'v' },
+      { from: 'ur3', fromSide: 'bottom', to: 'ur4', toSide: 'top', route: 'v' }
+    ]
+  }
+]
+
+const howFlowcharts = () => HOW_FLOWS.map(fRenderFlow).join('\n')
+
 const howView = () => `<section class="dt" id="howview" hidden>
   <div class="dth">
     <h2>How does it work</h2>
@@ -402,9 +707,29 @@ const howView = () => `<section class="dt" id="howview" hidden>
       </div>
 
       <div class="sect">
-        <div class="sect-head"><span class="lbl">the skills</span>
-          <h2>Each column of work is driven by one skill</h2><span class="rule"></span></div>
-        <div id="howskills"><div class="ph">loading…</div></div>
+        <div class="sect-head"><span class="lbl">the four skills</span>
+          <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
+        <p class="flow-lead">Each skill is a small procedure with real forks in it — where it branches,
+          where a job runs, and where it <b>stops for you</b>. Rectangles are steps, indigo diamonds are
+          decisions, and the tinted bars are the places a human must approve. Follow the arrows; the
+          <b>yes / no</b> branches are labelled.</p>
+        <div class="flow-legend legend">
+          <span class="chip"><span class="mk o"></span>step / artifact</span>
+          <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
+          <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
+          <span class="chip run"><span class="mk"></span>running — a job in flight</span>
+          <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
+          <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
+        </div>
+        <div class="skill-flows">${howFlowcharts()}</div>
+      </div>
+
+      <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
+           loadHow and shown here, so this section only appears once there is something to show. -->
+      <div class="sect" id="howprojsect" hidden>
+        <div class="sect-head"><span class="lbl">this project</span>
+          <h2>Skills &amp; agents this project has added</h2><span class="rule"></span></div>
+        <div id="howskills"></div>
       </div>
 
     </div>
@@ -959,10 +1284,7 @@ export function build () {
     letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin-bottom:var(--s3); }
   #howview .loop { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
 
-  /* skills cards — fetched live, grouped by source */
-  #howview .howgroup { margin-bottom:var(--s5); }
-  #howview .howgroup:last-child { margin-bottom:0; }
-  #howview .howgroup > .lbl { display:block; margin-bottom:var(--s3); }
+  /* project skills/agents — the ONE live group, fetched (the four specboard skills are the flowcharts) */
   #howview .skills { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s4); }
   #howview .scard { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
     padding:var(--s4); display:flex; flex-direction:column; gap:6px; }
@@ -971,6 +1293,100 @@ export function build () {
   #howview .scard p { color:var(--ink-2); font-size:var(--t-sm); }
   #howview .scard .when { margin-top:auto; padding-top:var(--s2); border-top:1px solid var(--hair);
     font-size:var(--t-xs); color:var(--ink-4); }
+
+  /* the four skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
+     #howview so its diagram-only classes never touch the board's globals, and it borrows the same
+     design tokens. Colours ride shape + hue + label together, never hue alone. */
+  #howview .flow-lead { max-width:900px; margin-top:var(--s3); color:var(--ink-2); font-size:var(--t-md); }
+  #howview .flow-lead b { color:var(--ink); }
+  #howview .flow-legend { margin-top:var(--s4); margin-bottom:var(--s5); }
+  #howview .skill-flows { display:flex; flex-direction:column; }
+  #howview .flow-panel { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    overflow:hidden; margin-bottom:var(--s5); }
+  #howview .flow-panel:last-child { margin-bottom:0; }
+  #howview .p-head { display:flex; align-items:center; gap:var(--s3); padding:var(--s4) var(--s5);
+    border-bottom:1px solid var(--hair); background:var(--canvas); }
+  #howview .p-id { display:flex; align-items:baseline; gap:var(--s3); }
+  #howview .p-num { width:20px; height:20px; flex:none; display:inline-flex; align-items:center;
+    justify-content:center; border:1px solid var(--hair-2); border-radius:50%; font-size:var(--t-xs);
+    color:var(--ink-3); position:relative; top:3px; }
+  #howview .p-head h3 { font-size:var(--t-lg); color:var(--ink); }
+  #howview .p-tag { font-size:var(--t-sm); color:var(--ink-3); }
+  #howview .p-when { margin-left:auto; font-size:var(--t-xs); color:var(--ink-4); letter-spacing:.02em; }
+  #howview .p-diagram { padding:var(--s5) var(--s5) var(--s6); }
+  /* the SVG is authored at 1216 wide; scale it to the column so the diagram never scrolls sideways */
+  #howview .p-diagram svg { display:block; width:100%; height:auto; max-width:100%; }
+
+  /* connectors */
+  #howview .edge { fill:none; stroke:var(--line3); stroke-width:1.3; stroke-linecap:round; stroke-linejoin:round; }
+  #howview .dia-shape { fill:var(--ai-tint); stroke:var(--ai); stroke-width:1.5; }
+  #howview .jdot { fill:var(--paper); stroke:var(--line3); stroke-width:1.3; }
+
+  /* node bodies (inside foreignObject) */
+  #howview .nb { width:100%; height:100%; border-radius:var(--r); padding:var(--s2) var(--s3);
+    display:flex; flex-direction:column; justify-content:center; gap:3px; overflow:hidden; }
+  #howview .nb.step { background:var(--paper); border:1px solid var(--hair-2); }
+  #howview .nb-title { font-size:var(--t-sm); line-height:1.28; color:var(--ink); letter-spacing:-.01em; }
+  #howview .nb-title.ai { color:var(--ai); }
+  #howview .nb-note { font-size:var(--t-xs); color:var(--ink-3); line-height:1.3; }
+  #howview .nb-foot { display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin-top:1px; }
+  #howview .flow-panel .tag { display:inline-flex; align-items:center; font-size:var(--t-micro);
+    color:var(--ink-2); background:var(--wash); border-radius:var(--r-sm); padding:1px 6px; letter-spacing:-.01em; }
+  #howview .schip { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-micro);
+    padding:1px 6px; border-radius:var(--r-sm); letter-spacing:.01em; }
+  #howview .schip .mk { width:6px; height:6px; }
+  #howview .schip.s-running { background:var(--yamabuki-tint); color:var(--yamabuki); box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+  #howview .schip.s-settled { background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  #howview .schip.s-relook { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  #howview .schip.s-redfail { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  /* left bar carries the hue, redundant with the chip so hue never rides alone */
+  #howview .nb.s-running { border-left:3px solid var(--yamabuki); }
+  #howview .nb.s-settled { border-left:3px solid var(--koke); }
+  #howview .nb.s-relook { border-left:3px solid var(--bengara); }
+  #howview .nb.s-redfail { border-left:3px solid var(--bengara); }
+
+  /* gate node — the human decision point, a tint (never a second inverted element) */
+  #howview .nb.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
+  #howview .glbl { display:flex; align-items:center; gap:6px; font-size:var(--t-micro); letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ai); }
+  #howview .glbl .dia { width:8px; height:8px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  #howview .cmp { font-size:var(--t-micro); color:var(--ai); opacity:.85; }
+
+  /* diamond text */
+  #howview .nb.dbody { align-items:center; text-align:center; justify-content:center; gap:2px; padding:0; background:transparent; }
+  #howview .dkick { display:flex; align-items:center; gap:5px; font-size:9.5px; letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ai); opacity:.85; }
+  #howview .dkick .ddia { width:6px; height:6px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  #howview .nb.dbody .nb-title { text-align:center; font-size:var(--t-sm); }
+
+  /* per-file rows inside the kg-update node (scoped tight so the board's global .frow never bleeds in) */
+  #howview .frows { display:flex; flex-direction:column; gap:4px; margin-top:2px; }
+  #howview .nb .frow { display:flex; align-items:center; gap:7px; padding:0; border-top:0;
+    font-size:var(--t-xs); color:var(--ink-2); line-height:1.25; }
+  #howview .fmk { width:8px; height:8px; flex:none; border-radius:2px; }
+  #howview .fmk.s-added { background:transparent; box-shadow:inset 0 0 0 1px var(--line3); }
+  #howview .fmk.s-updated { background:var(--ai-tint); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .fmk.s-settled { background:var(--koke); }
+  #howview .fmk.s-relook { background:var(--bengara); }
+  #howview .ftxt { letter-spacing:-.01em; }
+
+  /* phase captions floating where no connector runs */
+  #howview .cap { display:flex; align-items:center; gap:7px; font-size:var(--t-micro); letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ink-3); white-space:nowrap; height:100%; }
+  #howview .cap.center { justify-content:center; }
+  #howview .cap.left { justify-content:flex-start; }
+  #howview .cap.right { justify-content:flex-end; }
+
+  /* branch labels riding the arrows */
+  #howview .fo-lbl { overflow:visible; }
+  #howview .blwrap { display:flex; align-items:center; justify-content:center; height:100%; }
+  #howview .blabel { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-micro); line-height:1.15;
+    padding:2px 7px; border-radius:var(--r-sm); white-space:nowrap;
+    background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .blabel .bdia { width:6px; height:6px; background:currentColor; transform:rotate(45deg); flex:none; }
+  #howview .blabel.no { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  #howview .blabel.plain { background:var(--wash); color:var(--ink-2); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  #howview .bl-sub { color:inherit; opacity:.7; font-size:10px; margin-left:2px; }
 </style>
 <!-- Apply the hide-wireframes preference to the ROOT element BEFORE the body renders, so a board that
      live-reloads on every change never flashes the wireframe column back into view. The end-of-body
@@ -1145,9 +1561,9 @@ export function build () {
   </div>
 </section>
 
-<!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The
-     intro, spine and lanes are baked; the skills cards are fetched from /api/capabilities so they
-     reflect an edited SKILL.md and any skills/agents the project has added. -->
+<!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The intro,
+     spine, lanes and the four skill flowcharts are baked; only a project's own added skills/agents are
+     fetched from /api/capabilities and shown as cards below. -->
 ${howView()}
 
 <div class="lb" id="lb" hidden>
@@ -1711,42 +2127,27 @@ ${detail}
   })
 
   // how does it work -----------------------------------------------------
-  // Everything on this view except the skills cards is baked at build time. The cards are fetched so
-  // they stay true to what is on disk — an edited SKILL.md, or skills/agents the project has added —
-  // and are grouped by source with a kind badge. Emitted inside the template literal, so: string
-  // concatenation only, \\n for a newline, and no backticks (see the conflicts note above).
-  const HOW_WHEN = {
-    'kg-init': 'once, when you start', 'kg-e2e': 'per screen · column 4',
-    'kg-staff': 'before every change', 'kg-update': 'on each release'
-  }
+  // The four specboard skills are baked as flowcharts at build time. Only what the PROJECT adds under
+  // .claude/ is live: loadHow fetches /api/capabilities and renders that project's own skills & agents
+  // as cards below the flowcharts. Emitted inside the template literal, so: string concatenation only,
+  // \\n for a newline, and no backticks (see the conflicts note above).
   function scardHtml (c) {
-    const when = HOW_WHEN[c.name] || (c.kind === 'agent' ? 'a project agent' : 'a project skill')
+    const when = c.kind === 'agent' ? 'a project agent' : 'a project skill'
     return '<div class="scard"><span class="stag">' + eh(c.kind || 'skill') + '</span>' +
       '<h3>' + eh(c.name) + '</h3><p>' + eh(c.description) + '</p>' +
       '<div class="when">' + eh(when) + '</div></div>'
   }
-  function howGroup (label, cards) {
-    if (!cards.length) return ''
-    return '<div class="howgroup"><span class="lbl">' + eh(label) + '</span>' +
-      '<div class="skills">' + cards.map(scardHtml).join('') + '</div></div>'
-  }
   async function loadHow () {
+    const sect = document.getElementById('howprojsect')
     const box = document.getElementById('howskills')
     let data
-    try { data = await (await fetch('/api/capabilities')).json() } catch (e) {
-      box.innerHTML = '<div class="ph">The skills list needs the board server — run  npm run board.</div>'
-      return
-    }
-    const caps = data.capabilities || []
-    const sb = caps.filter(c => c.source === 'specboard')
-    const proj = caps.filter(c => c.source === 'project')
-    let html = howGroup('specboard skills', sb) + howGroup('this project\\'s skills & agents', proj)
-    if (!html) {
-      html = '<div class="ph">' + (data.specboard && data.specboard.available
-        ? 'No skills found under the specboard plugin.'
-        : 'The specboard plugin could not be located, so its skills are not listed.') + '</div>'
-    }
-    box.innerHTML = html
+    // The flowcharts are baked and always shown; only the project cards need the server. A failed or
+    // empty fetch just leaves this optional section hidden rather than surfacing an error on the page.
+    try { data = await (await fetch('/api/capabilities')).json() } catch (e) { sect.hidden = true; return }
+    const proj = (data.capabilities || []).filter(c => c.source === 'project')
+    if (!proj.length) { sect.hidden = true; return }
+    box.innerHTML = '<div class="skills">' + proj.map(scardHtml).join('') + '</div>'
+    sect.hidden = false
   }
 
   document.getElementById('howbtn').addEventListener('click', () => {
@@ -2054,8 +2455,8 @@ ${detail}
         if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
         // init holds a half-filled form too — refresh the found table in place, never reload it out
         if (!document.getElementById('initview').hidden) { loadCrawl(); return }
-        // how-it-works only ever needs its skills cards refreshed — an edited SKILL.md, say — and a
-        // full reload would drop you back on the board, so refresh in place like the other tool views
+        // how-it-works only ever needs its project cards refreshed — a project added a skill, say — and
+        // a full reload would drop you back on the board, so refresh in place like the other tool views
         if (!document.getElementById('howview').hidden) { loadHow(); return }
         location.reload()
       }, 800)
