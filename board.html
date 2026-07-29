@@ -294,6 +294,12 @@ ins { color:var(--koke); text-decoration:none; }
   /* the Conflicts count badge sits INSIDE its button; its taller line-box would push that button
      past Set up and the gear, so pin the badge to the text line and the three controls line up */
   .top .btn .chip { padding-top:0; padding-bottom:0; line-height:1.3; }
+  /* update-available affordance — the vendored board updates with a CLICK, never a terminal command.
+     The message is muted (.gbn); the trigger wears .btn.turn ("the app is asking YOU for something"),
+     the single inverted control on the home view. */
+  .updwrap { display:inline-flex; align-items:center; gap:var(--s2); }
+  .updsetup { max-width:1120px; margin:0 auto var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
+  .updsetup.avail { color:var(--ai); }
   .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
   .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
     border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
@@ -860,6 +866,10 @@ ins { color:var(--koke); text-decoration:none; }
   <span id="shown" class="gbn" style="min-width:64px;text-align:right"></span>
   <span class="qwrap"><input id="q" class="input" style="width:250px"
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
+  <span class="updwrap" id="updwrap" hidden>
+    <span class="gbn" id="updmsg"></span>
+    <button class="btn sm turn" id="updbtn">Update</button>
+  </span>
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
   <button class="btn sm" id="howbtn">How does it work</button>
@@ -3787,6 +3797,7 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll cfscroll">
+    <div class="updsetup" id="updsetup" hidden></div>
     <div class="initwrap">
       <div class="initcol">
         <div class="card pad">
@@ -8611,6 +8622,97 @@ ins { color:var(--koke); text-decoration:none; }
   document.getElementById('initbtn').addEventListener('click', () => {
     history.pushState(null, '', '#init'); route()
   })
+
+  // update available -> update -------------------------------------------
+  // The vendored board is brought to a new specboard release with a CLICK, never a terminal command.
+  // /api/update-status reports current vs latest; /api/update runs the plugin's kg-update against this
+  // project, rebuilds board.html, and reports. The board is expected to run under node --watch, so
+  // update.mjs overwriting tools/serve-board.mjs restarts the process — which drops this request's
+  // socket. That is treated as success-in-progress: poll status, then reload onto the new code.
+  // Emitted inside the template literal: string concatenation only, \n for newlines, no backticks.
+  const updwrap = document.getElementById('updwrap')
+  const updbtn = document.getElementById('updbtn')
+  const updmsg = document.getElementById('updmsg')
+  const updsetup = document.getElementById('updsetup')
+  let updBusy = false
+
+  // the .new files a conflicting update wrote alongside your edits, pulled from update.mjs's report
+  function newFilesFrom (report) {
+    const out = []
+    for (const line of String(report || '').split('\n')) {
+      const m = line.match(/new → ([^)]+)/)
+      if (m) out.push(m[1].trim())
+    }
+    return out
+  }
+
+  // The --watch restart drops the socket mid-update. Wait for the new server to answer, then reload
+  // onto the freshly built board running the new code.
+  async function pollUntilBack () {
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 1500))
+      try {
+        const r = await fetch('/api/update-status', { cache: 'no-store' })
+        if (r.ok) { location.reload(); return }
+      } catch (e) { /* still restarting */ }
+    }
+    updmsg.textContent = 'still restarting — reload the page in a moment'
+  }
+
+  async function doUpdate () {
+    if (updBusy) return
+    updBusy = true
+    updbtn.disabled = true
+    updbtn.textContent = 'Updating…'
+    let res
+    try {
+      res = await fetch('/api/update', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+    } catch (e) {
+      // the socket dropped — almost certainly the node --watch restart. Treat as in-progress.
+      updmsg.textContent = 'Updating… reconnecting'
+      pollUntilBack()
+      return
+    }
+    let data = {}
+    try { data = await res.json() } catch (e) { /* non-JSON body */ }
+    if (data.conflicts) {
+      const news = newFilesFrom(data.report)
+      updbtn.textContent = 'Merge needed'
+      updmsg.textContent = 'updated with conflicts to merge: ' + (news.join(', ') || 'see the report')
+      toast('Updated with conflicts to merge — resolve then delete: ' + (news.join(', ') || '(see the update report)'))
+      updBusy = false
+      return
+    }
+    if (data.ok) {
+      updbtn.textContent = 'Updated'
+      updmsg.textContent = 'updated to ' + (data.version || 'the new release') + ' — reloading…'
+      setTimeout(function () { location.reload() }, 1500)
+      return
+    }
+    // a non-zero exit that is not a conflict — surface the report and let them retry
+    updbtn.disabled = false
+    updbtn.textContent = 'Retry update'
+    updmsg.textContent = 'update did not complete'
+    toast('Update did not complete: ' + String(data.report || '').slice(0, 300))
+    updBusy = false
+  }
+
+  if (updbtn) updbtn.addEventListener('click', doUpdate)
+
+  async function loadUpdateStatus () {
+    let s
+    try { s = await (await fetch('/api/update-status', { cache: 'no-store' })).json() } catch (e) { return }
+    const avail = 'specboard ' + s.latest + " available — you're on " + (s.current || '?')
+    if (s.updateAvailable) {
+      updmsg.textContent = avail
+      updwrap.hidden = false
+      if (updsetup) { updsetup.textContent = avail + '. Update from the top bar.'; updsetup.className = 'updsetup avail'; updsetup.hidden = false }
+    } else {
+      updwrap.hidden = true
+      if (updsetup && s.current) { updsetup.textContent = 'specboard ' + s.current + ' — up to date.'; updsetup.className = 'updsetup'; updsetup.hidden = false }
+    }
+  }
+  loadUpdateStatus()
 
   // how does it work -----------------------------------------------------
   // The four specboard skills are baked as flowcharts at build time. Only what the PROJECT adds under

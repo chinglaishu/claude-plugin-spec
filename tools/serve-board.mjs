@@ -872,6 +872,47 @@ function readCapabilities () {
   }
 }
 
+// Where the vendored board stands against the installed plugin. The PROJECT records its own release
+// in spec/_specboard.json (written by scaffold/update); the PLUGIN carries its version in
+// .claude-plugin/plugin.json. An update is offered only when the plugin is strictly newer AND we can
+// actually locate it to update from — so the UI never proposes an update it could not perform, and
+// the source repo (no manifest, current = null) never offers to update itself against itself.
+function updateStatus () {
+  const pluginRoot = resolvePluginRoot(ROOT)
+  const current = projectRelease(ROOT)
+  const latest = pluginRoot
+    ? (readJsonSafe(join(pluginRoot, '.claude-plugin/plugin.json')) || {}).version || null
+    : null
+  const updateAvailable = !!(pluginRoot && current && latest && cmpSemver(latest, current) > 0)
+  return { current: current || null, latest, updateAvailable, pluginRoot: pluginRoot || null }
+}
+
+// Run the plugin's kg-update against THIS project, then rebuild the board. tools/update.mjs is the
+// vendored updater: it uses the project's spec/_specboard.json as its base, keeps files you have
+// edited, and drops a <file>.new beside anything it cannot safely overwrite (exit 2 = conflicts).
+// We deliberately do NOT self-kill or restart: the board is expected to run under `node --watch`, so
+// update.mjs overwriting tools/serve-board.mjs restarts the process on its own — which may drop this
+// very request's socket. That is fine; the page treats a dropped socket as "restarting" and reloads
+// once the new server answers. Best-effort build() here covers the plain-node case that does not
+// restart; when --watch does restart, the fresh server rebuilds on boot anyway.
+function runUpdate () {
+  return new Promise((ok, bad) => {
+    const pluginRoot = resolvePluginRoot(ROOT)
+    if (!pluginRoot) { bad(new Error('cannot locate the specboard plugin to update from')); return }
+    const updater = join(pluginRoot, 'tools/update.mjs')
+    if (!existsSync(updater)) { bad(new Error('the plugin has no updater at ' + updater)); return }
+    let out = ''
+    const child = spawn(process.execPath, [updater, ROOT], { cwd: ROOT, env: { ...process.env, FORCE_COLOR: '0' } })
+    child.stdout.on('data', b => { out += String(b) })
+    child.stderr.on('data', b => { out += String(b) })
+    child.on('error', err => bad(err))
+    child.on('close', code => {
+      try { build() } catch (err) { out += '\n' + String(err.stderr || err) }
+      ok({ ok: code === 0, exit: code, report: out.trim(), conflicts: code === 2, version: projectRelease(ROOT) })
+    })
+  })
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost')
 
@@ -1048,6 +1089,27 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/api/capabilities') {
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(JSON.stringify(readCapabilities()))
+    return
+  }
+
+  // Where the vendored board stands against the installed plugin, and whether an update is offered.
+  // JSON only — like /api/capabilities it answers BEFORE the static allowlist without widening it.
+  if (url.pathname === '/api/update-status') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify(updateStatus()))
+    return
+  }
+
+  // Update this project's vendored board to the installed plugin's release, with a click. Runs the
+  // plugin's kg-update, rebuilds board.html, and reports. Under `node --watch` the update restarts
+  // the server, so this response may never reach the client — that is expected and handled in the page.
+  if (url.pathname === '/api/update' && req.method === 'POST') {
+    try {
+      const out = await runUpdate()
+      res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(out))
+    } catch (err) {
+      res.writeHead(500, { 'content-type': 'text/plain' }); res.end(err.message)
+    }
     return
   }
 
