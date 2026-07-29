@@ -473,7 +473,7 @@ function fRenderFlow (f, idx) {
   const caps = (f.captions || [])
     .map(c => `<foreignObject x="${c.x}" y="${c.top}" width="${c.w}" height="28">${fCapBody(c)}</foreignObject>`)
     .join('\n')
-  return `<section class="flow-panel">
+  return `<section class="flow-panel" data-skill="${esc(f.id)}">
     <header class="p-head">
       <div class="p-id"><span class="p-num">${idx + 1}</span><h3 class="mono">${esc(f.id)}</h3>
         <span class="p-tag">${esc(f.tagline)}</span></div>
@@ -667,6 +667,16 @@ const HOW_FLOWS = [
 
 const howFlowcharts = () => HOW_FLOWS.map(fRenderFlow).join('\n')
 
+// The collapsed default: one compact, clickable summary per skill (name + one-line purpose + a
+// "View flow" affordance). data-skill matches the panel's, so the client toggle opens the right one.
+const howSkillSummaries = () => HOW_FLOWS.map((f, i) =>
+  `<button class="skill-summary" type="button" data-skill="${esc(f.id)}">
+      <span class="ss-num">${i + 1}</span>
+      <span class="ss-main"><span class="ss-name mono">${esc(f.id)}</span><span class="ss-tag">${esc(f.tagline)}</span></span>
+      <span class="ss-when">${esc(f.when)}</span>
+      <span class="ss-go">View flow →</span>
+    </button>`).join('\n')
+
 const howView = () => `<section class="dt" id="howview" hidden>
   <div class="dth">
     <h2>How does it work</h2>
@@ -706,22 +716,33 @@ const howView = () => `<section class="dt" id="howview" hidden>
         <div class="lanes">${WORKFLOW.lanes.map(howLane).join('')}</div>
       </div>
 
+      <!-- Progressive disclosure: by default the four skills are COLLAPSED to one compact summary each
+           (#skilllist). Clicking a summary opens only that skill's already-baked flowchart (#skilldetail)
+           with a "← Skills" back control; the panels stay in the DOM, a client toggle just shows one. -->
       <div class="sect">
         <div class="sect-head"><span class="lbl">the four skills</span>
           <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
-        <p class="flow-lead">Each skill is a small procedure with real forks in it — where it branches,
-          where a job runs, and where it <b>stops for you</b>. Rectangles are steps, indigo diamonds are
-          decisions, and the tinted bars are the places a human must approve. Follow the arrows; the
-          <b>yes / no</b> branches are labelled.</p>
-        <div class="flow-legend legend">
-          <span class="chip"><span class="mk o"></span>step / artifact</span>
-          <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
-          <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
-          <span class="chip run"><span class="mk"></span>running — a job in flight</span>
-          <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
-          <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
+
+        <div class="skill-list" id="skilllist">
+          <p class="flow-lead">Each skill is a small procedure with real forks in it — where it branches,
+            where a job runs, and where it <b>stops for you</b>. Pick one to see its flow drawn out.</p>
+          <div class="skill-summaries">${howSkillSummaries()}</div>
         </div>
-        <div class="skill-flows">${howFlowcharts()}</div>
+
+        <div class="skill-detail" id="skilldetail" hidden>
+          <div class="skill-detail-head">
+            <button class="btn sm skill-back" id="skillback" type="button">← Skills</button>
+            <div class="flow-legend legend">
+              <span class="chip"><span class="mk o"></span>step / artifact</span>
+              <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
+              <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
+              <span class="chip run"><span class="mk"></span>running — a job in flight</span>
+              <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
+              <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
+            </div>
+          </div>
+          <div class="skill-flows">${howFlowcharts()}</div>
+        </div>
       </div>
 
       <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
@@ -1301,6 +1322,26 @@ export function build () {
   #howview .flow-lead b { color:var(--ink); }
   #howview .flow-legend { margin-top:var(--s4); margin-bottom:var(--s5); }
   #howview .skill-flows { display:flex; flex-direction:column; }
+
+  /* progressive disclosure — collapsed summaries by default; one flowchart opens on click */
+  #howview .skill-summaries { display:flex; flex-direction:column; gap:var(--s3); margin-top:var(--s5); }
+  #howview .skill-summary { display:flex; align-items:center; gap:var(--s4); width:100%; text-align:left;
+    border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper); cursor:pointer;
+    padding:var(--s4) var(--s5); font-family:inherit; color:var(--ink); transition:border-color .12s ease; }
+  #howview .skill-summary:hover, #howview .skill-summary:focus-visible { border-color:var(--ai-line); outline:none; }
+  #howview .ss-num { width:22px; height:22px; flex:none; display:inline-flex; align-items:center;
+    justify-content:center; border:1px solid var(--hair-2); border-radius:50%; font-size:var(--t-xs); color:var(--ink-3); }
+  #howview .ss-main { display:flex; flex-direction:column; gap:2px; min-width:0; }
+  #howview .ss-name { font-family:var(--mono); font-size:var(--t-md); color:var(--ink); letter-spacing:-.01em; }
+  #howview .ss-tag { font-size:var(--t-sm); color:var(--ink-2); }
+  #howview .ss-when { margin-left:auto; font-size:var(--t-xs); color:var(--ink-4); letter-spacing:.02em; white-space:nowrap; }
+  #howview .ss-go { flex:none; font-size:var(--t-sm); color:var(--ai); }
+  /* detail — the back control sits inline with the diagram legend; only the .open panel shows */
+  #howview .skill-detail-head { display:flex; align-items:center; gap:var(--s4); flex-wrap:wrap; margin-bottom:var(--s5); }
+  #howview .skill-detail-head .flow-legend { margin:0; }
+  #howview .skill-flows .flow-panel { display:none; }
+  #howview .skill-flows .flow-panel.open { display:block; }
+
   #howview .flow-panel { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
     overflow:hidden; margin-bottom:var(--s5); }
   #howview .flow-panel:last-child { margin-bottom:0; }
@@ -1723,6 +1764,7 @@ ${detail}
     if (location.hash === '#howitworks') {
       closeAll()
       document.getElementById('howview').hidden = false
+      skillReset()
       loadHow()
       return
     }
@@ -1778,6 +1820,8 @@ ${detail}
     if (e.key === 'Escape') {
       if (!document.getElementById('lb').hidden) { document.getElementById('lb').hidden = true; return }
       if (!document.getElementById('runpanel').hidden) { document.getElementById('rpclose').click(); return }
+      // in how-it-works, Esc first steps back from an open skill flow to the summary list
+      if (!document.getElementById('howview').hidden && !document.getElementById('skilldetail').hidden) { skillReset(); return }
       closeAll(); history.pushState(null, '', location.pathname)
     }
     const openDt = [...document.querySelectorAll('.dt')].find(d => !d.hidden)
@@ -2149,6 +2193,35 @@ ${detail}
     box.innerHTML = '<div class="skills">' + proj.map(scardHtml).join('') + '</div>'
     sect.hidden = false
   }
+
+  // Progressive disclosure for the four skill flowcharts. The panels are already baked into the DOM
+  // (howFlowcharts) and hidden by CSS; this only toggles which one carries .open, and swaps the
+  // summary list for the focused detail. Emitted in the template literal, so: + concatenation, no
+  // backticks, and no unescaped newlines.
+  function skillShow (id) {
+    const panels = document.querySelectorAll('#howview .flow-panel')
+    for (let i = 0; i < panels.length; i++) {
+      panels[i].classList.toggle('open', panels[i].getAttribute('data-skill') === id)
+    }
+    document.getElementById('skilllist').hidden = true
+    document.getElementById('skilldetail').hidden = false
+    const back = document.getElementById('skillback')
+    if (back) back.focus()
+  }
+  function skillReset () {
+    const detail = document.getElementById('skilldetail')
+    const list = document.getElementById('skilllist')
+    if (detail) detail.hidden = true
+    if (list) list.hidden = false
+    const open = document.querySelectorAll('#howview .flow-panel.open')
+    for (let i = 0; i < open.length; i++) open[i].classList.remove('open')
+  }
+  const skillCards = document.querySelectorAll('#howview .skill-summary')
+  for (let i = 0; i < skillCards.length; i++) {
+    skillCards[i].addEventListener('click', function () { skillShow(this.getAttribute('data-skill')) })
+  }
+  const skillBackBtn = document.getElementById('skillback')
+  if (skillBackBtn) skillBackBtn.addEventListener('click', skillReset)
 
   document.getElementById('howbtn').addEventListener('click', () => {
     history.pushState(null, '', '#howitworks'); route()
