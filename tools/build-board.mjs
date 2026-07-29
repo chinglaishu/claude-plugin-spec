@@ -274,6 +274,143 @@ function gateBar (s) {
     <span class="gbn" style="flex:none">pins <code>${s.prdHash}</code></span>`)
 }
 
+// The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, and the two
+// lanes (greenfield DESIGN, brownfield DOCUMENT) — so it is baked here at build time from one
+// WORKFLOW object rather than fetched. Only the skills cards are live (loadHow reads
+// /api/capabilities), because those generalise to whatever a project adds under .claude/.
+const WORKFLOW = {
+  spine: [
+    { num: '1 · PRD', h: 'Requirements', file: 'prd.md' },
+    { gate: 'GATE A', h: 'Is this what I meant?', cmp: 'PRD ↔ wireframe' },
+    { num: '2 · DRAFT', h: 'Wireframe', file: 'draft.html' },
+    { gate: 'GATE B', h: 'Did you build it?', cmp: 'wireframe ↔ screenshot' },
+    { num: '3 · SCREEN', h: 'Screenshot', file: 'screen.png' },
+    { num: '4 · E2E', h: 'The proving test', file: 'test.spec.ts' }
+  ],
+  lanes: [
+    {
+      mode: 'New project · greenfield',
+      sub: '<b>DESIGN mode.</b> You write the requirement first, then everything downstream chases it.',
+      steps: [
+        { skill: 'kg-init', file: 'prd.md', h: 'Write the first PRD',
+          p: 'Scaffold the board, then state what the screen must do — the source of truth.' },
+        { gate: true, glbl: 'Gate A · your turn', h: 'Is this what I meant?', cmp: 'prd.md ↔ draft.html',
+          p: 'Only a human approves <b>meaning</b>. Reject sends the wireframe back to the drawing.' },
+        { skill: 'kg-init', file: 'draft.html', h: 'Draw the wireframe',
+          p: 'A hi-fi, clickable draft at exactly 1280px — every control does something visible.' },
+        { gate: true, glbl: 'Gate B · your turn', h: 'Did you build it?', cmp: 'draft.html ↔ screen.png',
+          p: 'You compare the wireframe against the screenshot of what shipped.' },
+        { skill: 'kg-e2e', file: 'test.spec.ts', h: 'Build &amp; prove', arrow: 'the test writes the screenshot',
+          p: 'Write the failing test first, watch it go red, then build until it asserts something real — and it shoots <span class="mono">screen.png</span> as a byproduct.' }
+      ]
+    },
+    {
+      mode: 'Existing project · brownfield',
+      sub: '<b>DOCUMENT mode.</b> The app already runs. You reverse the arrows: capture reality, then keep it honest.',
+      steps: [
+        { skill: 'kg-init', file: 'crawl', h: 'Scaffold &amp; crawl',
+          p: 'Vendor the board into the repo, then drive a real browser over the running app to find its screens.' },
+        { skill: 'kg-init', file: 'prd.md · guess', h: 'Guessed PRDs',
+          p: 'Each crawled screen gets a first-draft requirement, flagged <span class="mono">guess</span> until you confirm the meaning.' },
+        { skill: 'kg-e2e', file: 'test.spec.ts', h: 'Characterization tests',
+          p: 'Pin what the screen <i>currently</i> does, so any later drift shows up as a real failure.' },
+        { skill: 'kg-e2e', file: 'golden data', h: 'Golden data', arrow: 'for data-driven screens',
+          p: 'Freeze a known dataset so the test asserts the real values a screen renders — not just that boxes exist.' }
+      ],
+      band: {
+        label: 'then, before &amp; after every change — forever',
+        steps: [
+          { skill: 'kg-staff', file: 'before any edit', h: 'Run the change discipline',
+            p: 'Find what governs the screen, learn the three times to stop and ask the CEO, and change things in the right order.' },
+          { skill: 'kg-update', file: 'on each release', h: 'Stay current',
+            p: 'Bring the vendored board to a new specboard release — untouched files updated, your edits kept, conflicts dropped beside them to merge.' }
+        ]
+      }
+    }
+  ]
+}
+
+// One drawn SVG connector; a labelled variant carries a note to the side of the line.
+const howArrow = label =>
+  `<div class="arrow${label ? ' lbl-arrow' : ''}"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg>${label ? `<span class="side">${label}</span>` : ''}</div>`
+
+const howNode = st => st.gate
+  ? `<div class="node gate">
+        <div class="ghead"><span class="dia"></span><span class="glbl">${st.glbl}</span></div>
+        <h3>${st.h}</h3><p>${st.p}</p><div class="cmp">${st.cmp}</div></div>`
+  : `<div class="node">
+        <div class="kick"><span class="skill">${st.skill}</span><span class="file">${st.file}</span></div>
+        <h3>${st.h}</h3><p>${st.p}</p></div>`
+
+// Arrows sit BETWEEN nodes — every node after the first gets a preceding connector, labelled if the
+// step names one. The band's own flow is rendered the same way, one level in.
+const howFlow = steps => steps.map((st, i) => (i ? howArrow(st.arrow) : '') + howNode(st)).join('')
+
+const howLane = lane => `<div class="lane">
+      <div class="lane-head"><span class="mode"><span class="mk"></span>${lane.mode}</span></div>
+      <div class="lane-sub">${lane.sub}</div>
+      <div class="flow">${howFlow(lane.steps)}${lane.band ? `
+        <div class="band">
+          <div class="band-lbl"><span class="loop">&#8635;</span> ${lane.band.label}</div>
+          <div class="flow">${howFlow(lane.band.steps)}</div>
+        </div>` : ''}</div>
+    </div>`
+
+const howSpineCol = c => c.gate
+  ? `<div class="col g"><div class="num">${c.gate}</div><h3>${c.h}</h3>
+        <div class="gate-tag"><span class="dia"></span>${c.cmp}</div></div>`
+  : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
+        <div class="file">${c.file}</div></div>`
+
+const howView = () => `<section class="dt" id="howview" hidden>
+  <div class="dth">
+    <h2>How does it work</h2>
+    <span class="gbn">spec-driven development, made visible</span>
+    <span class="grow"></span>
+    <button class="close btn">Close<span class="kbd">esc</span></button>
+  </div>
+  <div class="dtscroll cfscroll">
+    <div class="howwrap">
+
+      <div class="intro">
+        <h1>How specboard works</h1>
+        <p>Every screen in a project is one <b>row of four columns</b> —
+          <span class="spine">PRD</span><span class="arrowtok">→</span><span class="spine">wireframe</span><span class="arrowtok">→</span><span class="spine">screenshot</span><span class="arrowtok">→</span><span class="spine">test</span>.
+          There is no status field anywhere: <b>staleness is derived</b>, by comparing a stored approval
+          hash against the live content. Edit the PRD and the wireframe goes stale; change the wireframe
+          and the screenshot goes stale; touch anything and a green test result goes stale.</p>
+        <span class="gates-badge"><span class="dia"></span>Two human gates guard <b>meaning</b> and <b>the build</b>. Everything else, staff do.</span>
+        <div class="legend">
+          <span class="chip"><span class="mk o"></span>step / artifact</span>
+          <span class="chip rev"><span class="mk d"></span>human gate — your turn</span>
+          <span class="chip ok"><span class="mk"></span>settled — hashes match</span>
+          <span class="chip run"><span class="mk"></span>running — a job in flight</span>
+          <span class="chip stale"><span class="mk"></span>stale — needs a re-look</span>
+        </div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-head"><span class="lbl">the row</span>
+          <h2>Wherever you start, you are filling in the same four columns</h2><span class="rule"></span></div>
+        <div class="spine-banner">${WORKFLOW.spine.map(howSpineCol).join('')}</div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-head"><span class="lbl">two ways in</span>
+          <h2>Greenfield you design forward · brownfield you document what is already there</h2><span class="rule"></span></div>
+        <div class="lanes">${WORKFLOW.lanes.map(howLane).join('')}</div>
+      </div>
+
+      <div class="sect">
+        <div class="sect-head"><span class="lbl">the skills</span>
+          <h2>Each column of work is driven by one skill</h2><span class="rule"></span></div>
+        <div id="howskills"><div class="ph">loading…</div></div>
+      </div>
+
+    </div>
+  </div>
+</section>`
+
 export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
@@ -730,6 +867,110 @@ export function build () {
   .frow .frt { font-family:var(--mono); font-size:var(--t-sm); }
   .frow .fname { color:var(--ink-4); font-size:var(--t-xs); }
   .frow .fst { margin-left:auto; color:var(--ink-4); font-size:var(--t-xs); }
+
+  /* how does it work -----------------------------------------------------
+     A description of the specboard method, scoped under #howview so its own chip/legend/flow styles
+     never leak onto the board's global .chip/.flow/.col — every rule below is tied to this one view.
+     Colours, sizes and radii all come from the inlined _design.css tokens; no raw hex here either. */
+  #howview .howwrap { max-width:1180px; margin:0 auto; padding:var(--s2) 0 var(--s7); }
+  #howview .howwrap :is(h1,h2,h3) { font-weight:400; letter-spacing:-.02em; margin:0; }
+  #howview .howwrap p { margin:0; }
+  #howview .intro { max-width:860px; margin-top:var(--s2); }
+  #howview .intro h1 { font-size:var(--t-xl); margin-bottom:var(--s3); }
+  #howview .intro p { color:var(--ink-2); font-size:var(--t-lg); line-height:1.5; }
+  #howview .intro .spine { color:var(--ink); }
+  #howview .arrowtok { color:var(--ink-4); padding:0 2px; }
+  /* the ONE inverted element on this screen — the concept the whole tool turns on */
+  #howview .gates-badge { display:inline-flex; align-items:center; gap:var(--s2); margin-top:var(--s4);
+    background:var(--ai); color:var(--paper); border-radius:var(--r); padding:6px var(--s3); font-size:var(--t-sm); }
+  #howview .gates-badge .dia { width:8px; height:8px; background:var(--paper); transform:rotate(45deg); flex:none; }
+
+  /* legend — every hue also carries a mark, never colour alone */
+  #howview .legend { display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s5); }
+  #howview .legend .chip { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs);
+    line-height:1.4; padding:3px var(--s2); background:var(--wash); color:var(--ink-3);
+    border-radius:var(--r-sm); white-space:nowrap; box-shadow:none; }
+  #howview .legend .chip.rev { background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .legend .chip.ok { background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line); }
+  #howview .legend .chip.run { background:var(--yamabuki-tint); color:var(--yamabuki); box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
+  #howview .legend .chip.stale { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  #howview .mk { width:6px; height:6px; flex:none; background:currentColor; }
+  #howview .mk.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
+  #howview .mk.d { transform:rotate(45deg); }
+  #howview .mk.n { height:1px; }
+
+  /* section heads */
+  #howview .sect { margin-top:var(--s7); }
+  #howview .sect-head { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+  #howview .sect-head h2 { font-size:var(--t-lg); }
+  #howview .sect-head .lbl { position:relative; top:-1px; }
+  #howview .rule { height:1px; background:var(--hair); flex:1; align-self:center; }
+
+  /* the shared spine banner */
+  #howview .spine-banner { display:flex; align-items:stretch; border:1px solid var(--hair);
+    border-radius:var(--r-md); background:var(--paper); overflow:hidden; margin-bottom:var(--s5); }
+  #howview .col { flex:1; padding:var(--s3) var(--s4); }
+  #howview .col + .col { border-left:1px solid var(--hair); }
+  #howview .col .num { font-size:var(--t-micro); color:var(--ink-4); letter-spacing:.16em; }
+  #howview .col h3 { margin-top:2px; font-size:var(--t-md); }
+  #howview .col .file { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
+  #howview .col.g { background:var(--ai-tint); }
+  #howview .gate-tag { display:inline-flex; align-items:center; gap:5px; margin-top:6px;
+    font-size:var(--t-micro); letter-spacing:.12em; text-transform:uppercase; color:var(--ai); }
+  #howview .gate-tag .dia { width:7px; height:7px; background:var(--ai); transform:rotate(45deg); flex:none; }
+
+  /* two-lane workflow diagram */
+  #howview .lanes { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); }
+  #howview .lane { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    padding:var(--s5) var(--s5) var(--s6); }
+  #howview .lane-head { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s2); }
+  #howview .mode { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink); border:1px solid var(--hair-2);
+    border-radius:var(--r-sm); padding:3px var(--s2); }
+  #howview .mode .mk { background:var(--ink); }
+  #howview .lane-sub { color:var(--ink-3); font-size:var(--t-sm); margin-bottom:var(--s4); }
+  #howview .flow { display:flex; flex-direction:column; align-items:stretch; }
+  #howview .node { border:1px solid var(--hair); border-radius:var(--r); background:var(--paper);
+    padding:var(--s3) var(--s3) var(--s3) var(--s4); position:relative; }
+  #howview .node .kick { display:flex; align-items:center; gap:var(--s2); margin-bottom:3px; flex-wrap:wrap; }
+  #howview .node .skill { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink);
+    background:var(--wash); border-radius:var(--r-sm); padding:1px 6px; }
+  #howview .node .file { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
+  #howview .node h3 { font-size:var(--t-md); }
+  #howview .node p { color:var(--ink-2); font-size:var(--t-sm); margin-top:2px; }
+  #howview .node .mono { font-family:var(--mono); font-size:.9em; }
+  /* the gate node — the human decision point, deliberately unlike a step */
+  #howview .node.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
+  #howview .node.gate .ghead { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
+  #howview .node.gate .glbl { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase; color:var(--ai); }
+  #howview .node.gate .dia { width:9px; height:9px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  #howview .node.gate h3 { color:var(--ai); }
+  #howview .node.gate .cmp { margin-top:6px; font-family:var(--mono); font-size:var(--t-xs); color:var(--ai); }
+  /* the connector between nodes — a real drawn arrow */
+  #howview .arrow { display:flex; justify-content:center; padding:var(--s1) 0; }
+  #howview .arrow svg { display:block; }
+  #howview .arrow .ln, #howview .arrow .hd { stroke:var(--line3); stroke-width:1; fill:none; }
+  #howview .arrow.lbl-arrow { position:relative; }
+  #howview .arrow .side { position:absolute; left:calc(50% + 14px); top:50%; transform:translateY(-50%);
+    font-size:var(--t-micro); color:var(--ink-4); white-space:nowrap; }
+  /* the ongoing-discipline band inside lane 2 */
+  #howview .band { margin-top:var(--s4); padding-top:var(--s4); border-top:1px dashed var(--hair-2); }
+  #howview .band-lbl { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-micro);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); margin-bottom:var(--s3); }
+  #howview .loop { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
+
+  /* skills cards — fetched live, grouped by source */
+  #howview .howgroup { margin-bottom:var(--s5); }
+  #howview .howgroup:last-child { margin-bottom:0; }
+  #howview .howgroup > .lbl { display:block; margin-bottom:var(--s3); }
+  #howview .skills { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s4); }
+  #howview .scard { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    padding:var(--s4); display:flex; flex-direction:column; gap:6px; }
+  #howview .scard .stag { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-4); }
+  #howview .scard h3 { font-family:var(--mono); font-size:var(--t-md); color:var(--ink); letter-spacing:-.01em; }
+  #howview .scard p { color:var(--ink-2); font-size:var(--t-sm); }
+  #howview .scard .when { margin-top:auto; padding-top:var(--s2); border-top:1px solid var(--hair);
+    font-size:var(--t-xs); color:var(--ink-4); }
 </style>
 <!-- Apply the hide-wireframes preference to the ROOT element BEFORE the body renders, so a board that
      live-reloads on every change never flashes the wireframe column back into view. The end-of-body
@@ -746,6 +987,7 @@ export function build () {
     placeholder="Search screens and requirements"><button class="qx" id="qx" aria-label="clear">✕</button></span>
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
+  <button class="btn sm" id="howbtn">How does it work</button>
   <div class="setwrap">
     <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
     <div class="setmenu" id="setmenu" hidden>
@@ -903,6 +1145,11 @@ export function build () {
   </div>
 </section>
 
+<!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The
+     intro, spine and lanes are baked; the skills cards are fetched from /api/capabilities so they
+     reflect an edited SKILL.md and any skills/agents the project has added. -->
+${howView()}
+
 <div class="lb" id="lb" hidden>
   <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
     <button class="btn sm" id="lbzoom">Actual size</button>
@@ -1054,6 +1301,13 @@ ${detail}
       closeAll()
       document.getElementById('initview').hidden = false
       loadConfig(); loadCrawl()
+      return
+    }
+    // #howitworks (no slash) — a view of the whole method, not a row, same as #conflicts / #init.
+    if (location.hash === '#howitworks') {
+      closeAll()
+      document.getElementById('howview').hidden = false
+      loadHow()
       return
     }
     const name = decodeURIComponent(location.hash.replace(/^#\\//, ''))
@@ -1456,6 +1710,49 @@ ${detail}
     history.pushState(null, '', '#init'); route()
   })
 
+  // how does it work -----------------------------------------------------
+  // Everything on this view except the skills cards is baked at build time. The cards are fetched so
+  // they stay true to what is on disk — an edited SKILL.md, or skills/agents the project has added —
+  // and are grouped by source with a kind badge. Emitted inside the template literal, so: string
+  // concatenation only, \\n for a newline, and no backticks (see the conflicts note above).
+  const HOW_WHEN = {
+    'kg-init': 'once, when you start', 'kg-e2e': 'per screen · column 4',
+    'kg-staff': 'before every change', 'kg-update': 'on each release'
+  }
+  function scardHtml (c) {
+    const when = HOW_WHEN[c.name] || (c.kind === 'agent' ? 'a project agent' : 'a project skill')
+    return '<div class="scard"><span class="stag">' + eh(c.kind || 'skill') + '</span>' +
+      '<h3>' + eh(c.name) + '</h3><p>' + eh(c.description) + '</p>' +
+      '<div class="when">' + eh(when) + '</div></div>'
+  }
+  function howGroup (label, cards) {
+    if (!cards.length) return ''
+    return '<div class="howgroup"><span class="lbl">' + eh(label) + '</span>' +
+      '<div class="skills">' + cards.map(scardHtml).join('') + '</div></div>'
+  }
+  async function loadHow () {
+    const box = document.getElementById('howskills')
+    let data
+    try { data = await (await fetch('/api/capabilities')).json() } catch (e) {
+      box.innerHTML = '<div class="ph">The skills list needs the board server — run  npm run board.</div>'
+      return
+    }
+    const caps = data.capabilities || []
+    const sb = caps.filter(c => c.source === 'specboard')
+    const proj = caps.filter(c => c.source === 'project')
+    let html = howGroup('specboard skills', sb) + howGroup('this project\\'s skills & agents', proj)
+    if (!html) {
+      html = '<div class="ph">' + (data.specboard && data.specboard.available
+        ? 'No skills found under the specboard plugin.'
+        : 'The specboard plugin could not be located, so its skills are not listed.') + '</div>'
+    }
+    box.innerHTML = html
+  }
+
+  document.getElementById('howbtn').addEventListener('click', () => {
+    history.pushState(null, '', '#howitworks'); route()
+  })
+
   route()
 
   // running the suite ----------------------------------------------------
@@ -1757,6 +2054,9 @@ ${detail}
         if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
         // init holds a half-filled form too — refresh the found table in place, never reload it out
         if (!document.getElementById('initview').hidden) { loadCrawl(); return }
+        // how-it-works only ever needs its skills cards refreshed — an edited SKILL.md, say — and a
+        // full reload would drop you back on the board, so refresh in place like the other tool views
+        if (!document.getElementById('howview').hidden) { loadHow(); return }
         location.reload()
       }, 800)
     })

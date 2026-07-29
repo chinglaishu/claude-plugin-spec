@@ -8,7 +8,8 @@
 import { createServer } from 'node:http'
 import { readFileSync, writeFileSync, existsSync, statSync, watch, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
-import { join, normalize, extname } from 'node:path'
+import { join, normalize, extname, resolve, dirname, basename } from 'node:path'
+import { homedir } from 'node:os'
 import {
   ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
@@ -742,6 +743,135 @@ function applyGate ({ screen, gate, act, why }) {
   return state
 }
 
+// The skills and agents that drive this board — read from disk at REQUEST time so an edited
+// SKILL.md shows up on the very next page load. This returns parsed frontmatter (name + one-line
+// description), never file bytes, so it does NOT widen the static allowlist. Two roots: the project
+// itself (ROOT) for anything it has added under .claude/, and the specboard PLUGIN for its own
+// vendored skills — which live in different places depending on how the plugin was installed.
+const parseCapFrontmatter = text => {
+  const fm = {}
+  const m = String(text).match(/^---\n([\s\S]*?)\n---/)
+  if (!m) return fm
+  for (const line of m[1].split('\n')) {
+    const i = line.indexOf(': ')
+    if (i < 0) continue
+    const k = line.slice(0, i).trim()
+    if (k) fm[k] = line.slice(i + 2).trim()
+  }
+  return fm
+}
+
+const cmpSemver = (a, b) => {
+  const pa = String(a).split('.').map(Number)
+  const pb = String(b).split('.').map(Number)
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0)
+  return 0
+}
+
+const readJsonSafe = file => {
+  try { return JSON.parse(readFileSync(file, 'utf8')) } catch (e) { return null }
+}
+
+// The release a scaffolded project records — used to pick the matching cached plugin version, and
+// as a version fallback when the plugin folder itself carries no plugin.json.
+const projectRelease = projectRoot => {
+  const j = readJsonSafe(join(projectRoot, 'spec/_specboard.json'))
+  return (j && (j.release || j.version)) || null
+}
+
+// Where specboard's OWN skills live. First hit wins: an explicit override; the dogfood case where
+// this repo IS the plugin; the installed-plugins manifest; then the newest cached copy.
+const resolvePluginRoot = projectRoot => {
+  const p = process.env.CLAUDE_PLUGIN_ROOT
+  if (p && existsSync(p)) return p
+  if (existsSync(join(projectRoot, '.claude-plugin/plugin.json')) && existsSync(join(projectRoot, 'skills'))) {
+    return projectRoot
+  }
+  const home = homedir()
+  const manifest = readJsonSafe(join(home, '.claude/plugins/installed_plugins.json'))
+  if (manifest && manifest.plugins) {
+    const key = Object.keys(manifest.plugins).find(k => /^specboard@/.test(k))
+    const entry = key && manifest.plugins[key] && manifest.plugins[key][0]
+    if (entry && entry.installPath && existsSync(entry.installPath)) return entry.installPath
+  }
+  const cache = join(home, '.claude/plugins/cache/specboard/specboard')
+  try {
+    const vers = readdirSync(cache).filter(v => existsSync(join(cache, v, 'skills')))
+    if (vers.length) {
+      const wanted = projectRelease(projectRoot)
+      if (wanted && vers.includes(wanted)) return join(cache, wanted)
+      return join(cache, vers.sort(cmpSemver)[vers.length - 1])
+    }
+  } catch (e) { /* no cache — unresolved */ }
+  return null
+}
+
+// every **/SKILL.md under a directory (the project may nest its skills)
+const findSkillMd = dir => {
+  const out = []
+  let entries
+  try { entries = readdirSync(dir, { withFileTypes: true }) } catch (e) { return out }
+  for (const e of entries) {
+    const full = join(dir, e.name)
+    if (e.isDirectory()) out.push(...findSkillMd(full))
+    else if (e.isFile() && e.name === 'SKILL.md') out.push(full)
+  }
+  return out
+}
+
+function readCapabilities () {
+  const projectRoot = ROOT
+  const pluginRoot = resolvePluginRoot(projectRoot)
+  const seen = new Set()
+  const caps = []
+  const add = (file, meta) => {
+    const key = resolve(file)
+    if (seen.has(key)) return
+    let text
+    try { text = readFileSync(file, 'utf8') } catch (e) { return }
+    seen.add(key)
+    const fm = parseCapFrontmatter(text)
+    caps.push({
+      name: fm.name || meta.fallback,
+      description: fm.description || '',
+      kind: meta.kind, source: meta.source, path: key
+    })
+  }
+
+  let version = null
+  if (pluginRoot) {
+    version = (readJsonSafe(join(pluginRoot, '.claude-plugin/plugin.json')) || {}).version ||
+      projectRelease(projectRoot) || (basename(pluginRoot).match(/^\d+\.\d+\.\d+$/) ? basename(pluginRoot) : null)
+    const skillsDir = join(pluginRoot, 'skills')
+    try {
+      for (const d of readdirSync(skillsDir, { withFileTypes: true })) {
+        if (!d.isDirectory()) continue
+        const file = join(skillsDir, d.name, 'SKILL.md')
+        if (existsSync(file)) add(file, { kind: 'skill', source: 'specboard', fallback: d.name })
+      }
+    } catch (e) { /* no skills dir — leave specboard caps empty */ }
+  }
+
+  // the project's own additions — skills nested under .claude/skills, agents flat in .claude/agents
+  for (const file of findSkillMd(join(projectRoot, '.claude/skills'))) {
+    add(file, { kind: 'skill', source: 'project', fallback: basename(dirname(file)) })
+  }
+  try {
+    for (const d of readdirSync(join(projectRoot, '.claude/agents'), { withFileTypes: true })) {
+      if (d.isFile() && d.name.endsWith('.md')) {
+        add(join(projectRoot, '.claude/agents', d.name),
+          { kind: 'agent', source: 'project', fallback: d.name.replace(/\.md$/, '') })
+      }
+    }
+  } catch (e) { /* no agents dir */ }
+
+  return {
+    specboard: { available: !!pluginRoot, version, root: pluginRoot },
+    project: { root: projectRoot },
+    capabilities: caps
+  }
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost')
 
@@ -909,6 +1039,15 @@ const server = createServer(async (req, res) => {
       res.writeHead(400, { 'content-type': 'text/plain' })
       res.end(err.message)
     }
+    return
+  }
+
+  // What drives the board — the specboard skills, plus any skills/agents this project has added.
+  // Scanned live so the How-it-works page reflects an edited or added SKILL.md on the next load. It
+  // returns metadata only, so it is safe to answer BEFORE the static allowlist without widening it.
+  if (url.pathname === '/api/capabilities') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify(readCapabilities()))
     return
   }
 
