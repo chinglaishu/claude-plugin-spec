@@ -46,6 +46,13 @@ Everything else, decide and move.
 4. **Correct the doc in place, with the reason attached.** When the code teaches you a requirement was
    wrong, fix the requirement and say why — conforming a doc silently to the code is how a requirement
    quietly becomes false.
+5. **If the screen has golden data, its expected values are part of the change.** A data-driven screen
+   whose test asserts exact seeded values (`spec/<screen>/golden.json`; see kg-e2e) will usually go red
+   when the feature changes those numbers — that red *is* the change being noticed, not a chore to
+   silence. Decide which is wrong, the test or the code (never just re-baseline to go green). If the new
+   numbers are intended: update the seed (`spec/_seed.ts`) when the inputs changed, re-capture
+   `golden.json` against the re-seeded app, and update the values the PRD names. Because those named
+   numbers are requirement *meaning*, that update is the CEO's gate — propose it, don't self-approve it.
 
 ## 4. After the change, close the loop — your edit rippled
 
