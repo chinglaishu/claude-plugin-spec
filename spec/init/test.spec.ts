@@ -65,36 +65,36 @@ test('R1 — start mode saves backend and frontend, in order', async ({ page }) 
   expect(c.baseUrl).toBe('http://localhost:5173')
 })
 
-test('R3 — a crawled screen lands as a document-mode row: a guess, accepted not gate-approved', async ({ page }) => {
-  // A real crawl drafts the PRD, authors a test, and shoots the screen — so the row lands in
-  // DOCUMENT mode. makeDocumentScreen builds exactly that shape (PRD guess + screen.png + test,
-  // no wireframe); it rebuilds the board, so the row is there without waiting on the watcher.
+test('R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate', async ({ page }) => {
+  // A real crawl drafts a guessed PRD, authors a test, and shoots the screen. makeDocumentScreen
+  // builds that shape; it rebuilds the board, so the row is there without waiting on the watcher. In
+  // the two-column model the wireframe is gone: the row is simply a guess waiting on you to accept its
+  // requirements — never a draft/gate-A review, never a "did you build it" gate B.
   const name = makeDocumentScreen('storefront', { guess: true })
   try {
-    const row = page.locator('.row', { hasText: name })
+    const cardLoc = page.locator('#home .card[data-screen="' + name + '"]')
     await expect(async () => {
       build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/')
-      await expect(row).toHaveCount(1)
+      await expect(cardLoc).toHaveCount(1)
     }).toPass({ timeout: 15000 })
     // visibly a guess — different from a PRD the human wrote — and waiting on you to accept it
-    await expect(row.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
-    expect(await row.getAttribute('data-waiting')).toBe('1')
-    // document mode: no wireframe, and the CURRENT screen is shown — not the greenfield "not started"
-    await expect(row.locator('.cell[data-col="draft"]')).toContainText(/no wireframe/i)
-    await expect(row.locator('.cell[data-col="screen"] img')).toHaveCount(1)
+    await expect(cardLoc.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
+    expect(await cardLoc.getAttribute('data-waiting')).toBe('1')
+
     // the one gate is accepting the requirements — never a draft/gate-A review. Retry the detail nav:
     // right after the fixture lands, the watcher can briefly rebuild the board stale (no storefront in
-    // its SCREENS list yet), so re-goto until the detail actually shows this screen's accept bar — the
+    // its SCREENS list yet), so re-goto until the detail actually shows this screen's accept gate — the
     // same settle the _modes specs ride out, and the same one a real browser gets via live-reload.
-    const bar = page.locator('.dt:not([hidden]) .gb')
-    const acceptBtn = bar.locator('[data-act="accept"][data-gate="prd"]')
+    const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+    const acceptBtn = dt.locator('[data-act="accept"][data-gate="prd"]')
     await expect(async () => {
       build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/#/' + name)
       await expect(acceptBtn).toBeVisible()
     }).toPass({ timeout: 15000 })
-    await expect(bar.locator('[data-gate="screen"]')).toHaveCount(0)
+    await expect(dt.locator('.gate')).toHaveCount(1)               // exactly one gate
+    await expect(dt.locator('[data-gate="screen"]')).toHaveCount(0) // no gate B
   } finally {
     rmSync(join(SPEC, name), { recursive: true, force: true })
     build()

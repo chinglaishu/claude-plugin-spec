@@ -1,63 +1,86 @@
 # specboard — a visualised spec-driven development board
 
-One HTML page shows every screen in a project as a **row of four columns**, left to right in the
-order you work them:
+One HTML page shows every screen in a project as two ends only — the requirements, and the tests
+that prove them:
 
-| 1 · PRD | 2 · Draft | 3 · Screen | 4 · E2E |
-|---|---|---|---|
-| the requirements — the source of truth | a hi-fi, clickable wireframe | a screenshot of what got built | the test that proves it |
+| 1 · Requirements | 2 · E2E tests |
+|---|---|
+| the source of truth | the proof, run against the real app |
 
-The product is about **staleness**. Edit the PRD and the draft goes stale; change the draft and the
-screenshot goes stale; edit anything and a green test result goes stale. **There is no status field
-anywhere** — every cell is *derived* by comparing a stored approval hash against the current content
-hash. Two human gates: **gate A** (PRD vs draft — "is this what I meant?") and **gate B** (draft vs
-screenshot — "did you build it?"). The tool **dogfoods itself**: its own six screens are the rows on
-its own board.
+The product is about **drift**, computed and never stored. A requirement is **proven** only while a
+test that *tags* it passed on an assertion that would fail without it; reword the requirement and it
+reads **reworded** (awaiting the human); with no passing assertion it reads **unproven** — honestly
+ungreen. **There is no status field anywhere** — every requirement's state is *derived* from the
+stored accept pin and the folded test coverage against the current tree. **One human gate: accept the
+requirements** ("are these what I meant?"). specboard does **not** own wireframes — a screen may carry
+only an optional external `design:` link, shown as context, never rendered or gated. The tool
+**dogfoods itself**: its own four screens are the cards on its own board.
 
-## You are staff. The human is the CEO.
+## You are staff. The human decides meaning.
 
-The CEO approves requirement **meaning**; you do everything else, and you do not ask permission to
+The human accepts requirement **meaning**; you do everything else, and you do not ask permission to
 work. When a decision is genuinely theirs — a new requirement, changed requirement text, a deleted
 requirement, or picking a canonical side in a conflict — stop and ask. Otherwise decide and move.
-Hand the CEO an **artifact or a diagram plus a recommendation**, never a paragraph of requirement
-prose ([they prefer visual over text]). Be critical and honest: say what is broken and what you did
+Hand the human an **artifact or a diagram plus a recommendation**, never a paragraph of requirement
+prose (they prefer visual over text). Be critical and honest: say what is broken and what you did
 not do. Never take control away from the user (no auto-advancing after a verdict).
 
 ## The rules
 
-1. **Write the failing test first** for any new or changed behaviour, and **watch it go red**.
-   *Exempt:* pure refactors, spikes. A test written after the code can only confirm it.
-2. **Assert something that can fail.** If a test would still pass with the feature deleted, it is
-   not a test.
-3. **Never fake a green.** Columns 3 and 4 are honestly empty for unbuilt screens — keep them that
-   way rather than making the board look finished. Never weaken, skip, or delete a test to go green.
+1. **Write the failing test first** for any new or changed behaviour, **watch it go red**, and **tag
+   the requirement it proves** with `checkReq(id, fn)`. *Exempt:* pure refactors, spikes. A test
+   written after the code can only confirm it.
+2. **Assert something that can fail.** If a test would still pass with the requirement deleted, it is
+   not a test — and it cannot make that requirement *proven*.
+3. **Never fake a green.** A requirement with no passing assertion reads **unproven**; a flow that
+   stops early leaves what it never reached **not-reached** — neither is green, and that honesty is
+   the point. Never weaken, skip, or delete a test to go green.
 4. **When a test breaks after a change, find which of the two is wrong before editing either.**
    Several tests here were *correctly* broken by good changes and needed their assertions fixed;
    several others were genuinely wrong.
-5. **Requirement *semantics* need CEO approval**: a new REQ, changed REQ text, a deleted REQ, or
-   choosing a canonical side. You edit prose; the CEO owns meaning.
+5. **Requirement *semantics* need the human's gate**: a new REQ, changed REQ text, a deleted REQ, or
+   choosing a canonical side. You edit prose; the human owns meaning, and the one gate is accepting
+   the requirements — never accept them on the human's behalf.
 6. **Correct docs in place, with the reason attached.** When the code teaches you a requirement was
    wrong, fix the requirement and say why inline — conforming a doc silently to the code is how a
-   requirement quietly becomes false. (Example: `spec/board/prd.md` R4, corrected from "four
-   states" to five.)
+   requirement quietly becomes false.
 7. **Fix your own defects in the turn you find them.** Do not log them as future work, do not ask.
+
+## How a test proves a requirement
+
+Coverage is **many-to-many, by tag, at assertion granularity**. A test tags the requirement ids it
+covers — qualified (`asset-plan:R5`), so a flow can prove another screen's requirement.
+
+- `checkReq('R5', async () => { /* an assertion that would fail without R5 */ })` runs the assertion
+  inside a `proves R5` step — the step's pass/fail *is* the requirement's proof, and it doubles as
+  human-readable evidence. A bare id (`R5`) means this screen; a qualified one (`x:R3`) another.
+- `coverReqs('a:R5', 'b:R3')` declares up front the full set a flow intends to reach, so a flow that
+  stops early leaves the ones it never got to **not-reached** rather than silently absent.
+
+`spec/_results-reporter.mjs` folds each run's per-requirement pass/fail/not-reached into
+`spec/_results-index.json`; `tools/coverage.mjs` (pure, unit-tested) and `tools/spec-store.mjs`
+derive each requirement's **proven / reworded / unproven** state. Aim for **few comprehensive** tests
+— one flow proving several requirements — but every requirement still needs a real assertion (rule
+2), so "fewer tests" can never buy a false green. A flow's *file* lives in the screen it **starts**
+on; a requirement lists every test that covers it wherever that file lives.
 
 ## Architecture
 
 ```
-spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess])
-spec/<screen>/draft.html     hi-fi clickable wireframe, authored at exactly 1280px wide
-spec/<screen>/screen.png     written BY the test, never by hand
-spec/<screen>/test.spec.ts   Playwright spec for that screen — it produces screen.png
-spec/<screen>/state.json     approval pins + rejection history (the only mutable per-screen state)
-spec/_design.css             ONE design system, linked by drafts, inlined into board.html
-spec/_results-index.json     per-screen test results, folded across runs (the E2E column reads this)
-spec/_conflict-decisions.json  the CEO's adjudicated conflicts, keyed by content
+spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess, design])
+spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq (may also shoot screen.png as a fallback cover)
+spec/<screen>/state.json     the accept pin (approvedPrdText) — the only mutable per-screen state
+spec/_design.css             ONE design system, inlined into board.html
+spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
+spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
+spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
-tools/spec-store.mjs         reads/derives everything. THE authority on cell state.
-tools/build-board.mjs        renders board.html. Draws only — no reading logic.
-tools/serve-board.mjs        server: static allowlist, gates, runs, dispatch, scan, crawl, SSE, watch
-tools/crawl.mjs              the Init crawler (a real browser + Claude job, outside the suite)
+tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/reworded/unproven
+tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
+tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
+tools/serve-board.mjs        server: static allowlist, the accept gate, runs, scan, rewrite, crawl, SSE, watch
+tools/crawl.mjs              the Init crawler (a real browser + Claude job, drafts guessed PRDs, outside the suite)
+tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
 tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
 tools/scaffold.mjs           vendors the skeleton into a project (kg-init) and writes spec/_specboard.json
 tools/update.mjs             brings a scaffolded project to a new release (kg-update); test-first in tools/update.test.mjs
@@ -76,6 +99,7 @@ Commands:
 npm run board          # serve on 4173
 npm run e2e            # the suite
 npm run board:build    # rebuild board.html only
+npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
@@ -85,11 +109,11 @@ moves the board's own port.
 
 `spec/_design.css` is the single source — traditional Japanese dye colours at low saturation on
 unbleached paper. **Never** introduce a raw hex colour, a font size outside the scale, or a radius
-outside the tokens, in a draft or in the board. Hue names a state but never carries it alone (every
-chip also has a mark). Exactly **one** inverted element per screen. An action wears the colour of the
-state it produces. Every text/background pair must pass **WCAG AA (4.5:1)** — re-measure after any
-colour change. A draft links `../_design.css`, is authored at exactly **1280px** wide, and is
-genuinely interactive (every control does something visible).
+outside the tokens, in the board. Hue names a state but never carries it alone (every chip also has a
+mark). **Indigo means one thing only — "your turn"** (a reworded requirement, the open gate); coverage
+tags are **neutral** and tint indigo only on hover to show the many-to-many link. Exactly **one**
+inverted element per screen. An action wears the colour of the state it produces. Every text/background
+pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
 
 ## Traps that have already cost hours — do not rediscover them
 
@@ -103,7 +127,11 @@ genuinely interactive (every control does something visible).
 - **Per-case records must be recorded by CLI runs too, and folded, never replaced.** A record read
   out of "the newest run" blanks every case that run did not cover, and a reporter that only records
   when the BOARD started the run leaves `npm run e2e` contributing nothing — both showed up as "only
-  the test I clicked has steps". Screenshots stay board-only; steps and logs are always recorded.
+  the test I clicked has steps". Screenshots stay board-only; steps, logs and coverage are always recorded.
+- **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
+  `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
+  (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
+  qualified tag (`x:R3`) proves another screen's requirement, so the fold is board-wide, not per-file.
 - **`board.html`'s script is emitted inside a JS template literal.** An unescaped `\n` or a backtick
   becomes literal whitespace and silently breaks every listener while the page still renders.
   `build()` parses the emitted script with `new Function()` and refuses to write a broken board —
@@ -121,29 +149,29 @@ genuinely interactive (every control does something visible).
   drives the panel even under `navigator.webdriver`; the reloads that would abort a Playwright
   navigation are the only thing suppressed.
 - **A per-screen run writes a report covering only that screen.** It is *folded* into
-  `_results-index.json`, never replaced — replacing blanks every other screen's E2E column. The fold
+  `_results-index.json`, never replaced — replacing blanks every other screen's proof. The fold
   is a Playwright reporter (`spec/_results-reporter.mjs`), because Playwright writes its report only
   *after* globalTeardown.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.
-- **Agent jobs (dispatch, scan, rewrite, crawl) need a valid `claude` login and take minutes.** They
-  run detached so Cancel can kill the whole process group. They are real and live **outside** the
+- **Agent jobs (scan, rewrite, crawl) need a valid `claude` login and take minutes.** They run
+  detached so Cancel can kill the whole process group. They are real and live **outside** the
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
-- **Editing `board`'s PRD does not red the suite, but it does leave the live board stale.** `board`'s
-  gate B (the gate-screen specs) only renders once its gate A is `ok`, and the *only* thing that
-  approves board's gate A during a run is `spec/board/test.spec.ts` R4 — which re-pins the *current*
-  PRD hash as part of what it tests. So a change to board's requirements passes the suite (an earlier
-  spec re-approves against the new hash) while the state guard restores the old pin at teardown,
-  leaving the persistent board stale until the CEO approves. Do not read a green suite as "board is
-  settled", and never re-approve board's gate A yourself to make the live board green — that is the
-  CEO's gate.
+- **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`
+  tags its own R1–R10 with `checkReq`; R4 and R8 transiently write **and restore** `spec/board/state.json`
+  to prove the accept transition, and the state guard restores it at teardown too. So editing board's
+  requirements passes the suite while the live board stays honestly **reworded** (awaiting acceptance)
+  until the human accepts — and because the board proves itself, the *first* run after editing
+  `board/test.spec.ts` can lag one run behind (its own coverage folds at that run's end). Never **accept
+  board's requirements yourself** to make the live board green — that is the human's gate.
 
 ## Authored vs measured
 
 **Authored** facts are what behaviour *should* be — a human wrote them, they live in `spec/*/prd.md`,
-they are the SSoT. **Measured** facts are what *is* — cell states, counts, results — derived from the
-tree on every build. **Do not restate a measured fact in a doc**; a copy rots. If it changes when the
-code changes it is measured and belongs in the board, not here. Keep this file rules-and-pointers only.
+they are the SSoT. **Measured** facts are what *is* — requirement states, counts, results — derived
+from the tree on every build. **Do not restate a measured fact in a doc**; a copy rots. If it changes
+when the code changes it is measured and belongs in the board, not here. Keep this file
+rules-and-pointers only.

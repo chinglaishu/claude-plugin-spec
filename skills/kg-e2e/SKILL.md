@@ -1,90 +1,144 @@
 ---
 name: kg-e2e
-description: Use to author the E2E test for a specboard screen — the column-4 spec that proves the PRD and, as a byproduct, shoots column 3's screen.png. Write the failing assertion first and watch it go red. Used standalone when a screen needs its test, and by brownfield kg-init to characterize an existing screen.
+description: Use to author the E2E test that proves a specboard screen's requirements — the right-hand column of the two-column board. The test TAGS each requirement it covers with checkReq/coverReqs and asserts something that would fail without it. Write the failing assertion first and watch it go red. Used standalone when a screen needs its test, and by kg-init to characterize an existing screen.
 ---
 
 # Authoring the test that proves a screen
 
-Column 4 is what turns "we think it works" into "a machine checked." The test lives next to the
-screen it proves — `spec/<screen>/test.spec.ts` — and it does two jobs at once: it **asserts the
-requirements** in that screen's `prd.md`, and it **shoots `spec/<screen>/screen.png`**, which is
-column 3. Column 3 is therefore always a *byproduct* of a passing test, never a picture captured by
-hand. That is the invariant the whole board rests on; do not break it by writing a screenshot any
-other way.
+specboard is two ends: the **requirements** (the source of truth) and the **tests that prove them**
+against the real app. This skill is the second end. The test lives next to the screen it proves —
+`spec/<screen>/test.spec.ts` — and its whole job is to make a requirement's state *earned*: a
+requirement reads **proven** only when a current, passing, assertion-backed test tags it. No test, or
+a test that only paints, and the requirement is **unproven** — honestly, with no status field to fake.
+
+A test does not carry a screenshot column anymore. It still writes `spec/<screen>/screen.png`, but
+only as the **fallback cover** for a run that has no video (a headless CLI run, or a pruned
+recording) — the run's **recording** is the primary evidence, and there is no "did you build it"
+gate to satisfy. Write the screenshot once, at the end; it is a cover frame, not a deliverable.
+
+## How a test proves a requirement — tag it, then assert it
+
+The link between a requirement and its proof lives in the **test**, which tags the requirement ids it
+covers. Two helpers, both imported from `'../_base'`:
+
+- **`checkReq(id, fn)`** runs `fn` inside a `proves <id>` step. The step's pass/fail **is** the
+  requirement's proof — and it doubles as human-readable evidence in the test's step list. Put an
+  assertion inside `fn` that would fail if that requirement were deleted from the app.
+- **`coverReqs(...ids)`** declares, up front, the full set of requirements the flow *intends* to
+  reach. A flow that fails partway leaves the ids it never got to recorded **not-reached** — neither
+  green nor red — instead of silently absent. `"0 of 0 passing"` reads green; not-reached must not.
+
+That yields the three states the board derives per requirement: **pass** (a `proves` step ran and did
+not error), **fail** (it ran and errored), **not-reached** (declared in `coverReqs` but its step
+never ran). The reporter folds these per-requirement into `spec/_results-index.json`, and
+`spec-store` turns them into each requirement's state: **proven / reworded / unproven** (reworded —
+the text changed since the human accepted it — wins over any proof).
+
+**Ids are many-to-many and can be qualified.** One test can prove several requirements; one
+requirement can be proven by several tests. A bare id (`R4`) means *this test's own screen*; a
+qualified id (`asset-plan:R5`) names another screen's requirement. So a flow that edits on one screen
+and checks the effect on a second can prove requirements on **both** — the flow's *file* lives in the
+screen it **starts** on, but its coverage lands wherever it tags. This is exactly the comprehensive
+cross-screen flow the board wants (edit here → assert there), and it is why a test's title should name
+the **flow**, not a single requirement.
+
+**`spec/board/test.spec.ts` is the worked example** — the board proves its own ten requirements this
+way. Read it before writing your first one.
 
 ## The rules that make it a test and not a decoration
 
 1. **Write the failing assertion first, and watch it go red.** A test written after the code can only
    confirm what the code already does. Run it, see it fail for the reason you expect, then make it
    pass. If you cannot make it fail, you have not yet written a test.
-2. **Assert something that can fail.** If the test would still pass with the requirement deleted from
-   the app, it is a smoke alarm with the battery out. Assert the *behaviour the requirement names* —
-   the text that must appear, the control that must work, the state that must change — not that "the
-   page loaded."
+2. **Assert something that can fail.** If the `proves` step would still pass with the requirement
+   deleted from the app, it is a smoke alarm with the battery out. Assert the *behaviour the
+   requirement names* — the text that must appear, the control that must work, the number that must
+   change — not that "the page loaded."
 3. **Assert on DATA, not chrome.** A real app's frame — nav, headings, an empty table — paints
    instantly, so a test that checks a heading passes *before the list has loaded*. Push the assertion
    onto content that only exists once the API resolved: a real table row, a grid cell, an API-derived
    number. Wait for it first with `waitForContent(locator)` from `_base`, then assert. This is the
    single most common way a guessed characterization test becomes a false green — the screen "passes"
-   without its data ever arriving, and the screenshot catches an empty shell.
+   without its data ever arriving.
 4. **Assert that something DID happen — and beware occlusion.** `toBeVisible()` checks only that an
    element is not `display:none`; it does NOT check whether a modal or overlay covers it. So a test
-   built from presence/absence checks can pass while the page is stuck behind a popup — asserting DOM
-   the user cannot reach, with the screenshot capturing the popup, not the screen. Dismiss transient
-   notices first (click their "Got it"/close, then assert they are gone), and prefer proving a real
+   built from presence/absence checks can pass while the page is stuck behind a popup. Dismiss
+   transient notices first (click their close, then assert they are gone), and prefer proving a real
    OUTCOME — a lever moves a number, a search narrows a list, a save shows up elsewhere — an effect a
    frozen page cannot fake. Ask of every assertion: "would this still pass if the page were frozen
    behind an overlay?" If yes, it is not proving anything happened.
 
-Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3). When a test breaks after a
-change, first find which of the two — the test or the code — is wrong, before editing either.
+Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — "fewer tests" never buys
+a false green: every requirement still needs a real assertion that would fail without it. When a test
+breaks after a change, first find which of the two — the test or the code — is wrong, before editing
+either.
 
 ## The shape
 
 ```ts
-import { test, expect } from '../_base'
+import { test, expect, checkReq, coverReqs, waitForContent } from '../_base'
 
-// One test per requirement it proves. Name it by the requirement, so a red result points at the
-// behaviour that broke, not at a file.
-test('R1 — <the behaviour R1 names>', async ({ page }) => {
-  await page.goto('/<route>')            // see "which URL" below
-  // assert the behaviour R1 describes — something that fails if the app stops doing it
-  await expect(page.getByRole('heading', { name: /.../ })).toBeVisible()
-})
+// A FEW comprehensive flows, each proving several requirements. Name the test by the FLOW it runs
+// (what it does), NOT by a single requirement — under many-to-many the tags carry the requirement
+// link, and one flow covers several ids.
+test('editing a line item recomputes the total and carries it to the schedule', async ({ page }) => {
+  // Declare the full set this flow intends to reach, up front. If it fails early, the ids it never
+  // got to are recorded NOT-REACHED — honestly unproven, not green and not red.
+  coverReqs('R3', 'R4', 'tenancy-schedule:R5')
 
-test('R2 — <the behaviour R2 names>', async ({ page }) => {
-  await page.goto('/<route>')
-  // ...
-  // The LAST test to run for a screen shoots column 3. One screenshot per screen is enough.
+  await page.goto('/<route>')                       // see "which URL" below
+
+  // Each checkReq runs its assertion inside a `proves <id>` step; that step's pass/fail IS the proof.
+  // Assert on DATA that only exists once the app really worked.
+  await checkReq('R3', async () => {
+    await waitForContent(page.getByTestId('lineitem-row'))
+    await expect(page.getByTestId('lineitem-row')).toHaveCount(3)
+  })
+
+  await checkReq('R4', async () => {
+    const amount = page.getByTestId('lineitem-amount').first()
+    await amount.click(); await amount.pressSequentially('13100')   // TYPE, never fill() (see traps)
+    await expect(page.getByTestId('schedule-total')).toHaveText('£13,100')  // the EFFECT, not the control
+  })
+
+  // A QUALIFIED id proves another screen's requirement. The flow started here, so its file lives
+  // here — but this coverage lands under tenancy-schedule:R5.
+  await checkReq('tenancy-schedule:R5', async () => {
+    await page.goto('/tenancy-schedule')
+    await expect(page.getByTestId('carried-total')).toHaveText('£13,100')
+  })
+
+  // The fallback COVER for a run with no video. The recording is the primary evidence; this is not a
+  // gate and not a column of its own. One screenshot per screen, at the end, is enough.
   await page.screenshot({ path: 'spec/<screen>/screen.png', fullPage: false })
 })
 ```
 
-- Import `{ test, expect }` from `'../_base'` — never from `@playwright/test` directly; `_base`
-  carries the one-window behaviour a watched run needs.
+- Import `{ test, expect, checkReq, coverReqs }` (and `waitForContent`) from `'../_base'` — never from
+  `@playwright/test` directly; `_base` carries `checkReq`/`coverReqs` and the one-window behaviour a
+  watched run needs.
 - `spec/<screen>/screen.png` is written by exactly one test (usually the last), with
-  `page.screenshot({ path: ..., fullPage: false })`. Do not capture it separately, and do not copy
-  another image into it.
+  `page.screenshot({ path: ..., fullPage: false })`. Do not capture it separately.
 
 ## Which URL a test navigates to
 
-- **A design-mode screen** (you built a wireframe and then the real thing): the test drives whatever
-  you built. For specboard's own screens that is the board on `/`; for a project's own new screen it
-  is that screen's route on the app.
-- **A document-mode / characterization screen** (an existing screen kg-init crawled): navigate the
-  **real running app** at its route, taken from `spec/_config.json` (`baseUrl` + the screen's
-  `route`). The screenshot is then the app as it actually is, and the assertions lock in its current
-  behaviour as the baseline. The guessed PRD gives that baseline meaning: when the human corrects the
-  PRD to say the behaviour *should* differ, you update the test to the corrected PRD — and its
-  failing against the current app is then a real bug surfaced, which is the point.
+- **specboard's own screens** run against the board on `/`.
+- **A project's own screen** — whether you are writing its test fresh, or characterizing an existing
+  screen that kg-init crawled — navigates the **real running app** at its route, taken from
+  `spec/_config.json` (`baseUrl` + the screen's `route`). The recording is then the app as it
+  actually is, and the assertions lock in its current behaviour as the baseline. The guessed PRD gives
+  that baseline meaning: when the human corrects the PRD to say the behaviour *should* differ, you
+  update the test to the corrected PRD — and its failing against the current app is then a real bug
+  surfaced, which is the point.
 
-## Authenticating (document mode against a real app)
+## Authenticating (against a real app)
 
-A real app is usually behind a login, and a document-mode test must reach screens that require it. You
-do **not** log in inside each test. Instead, put a `signIn` script in `spec/_config.json` (Setup →
-sign-in), and the harness runs it **once** in a `setup` project that saves the session; every screen
-test then runs in the `screens` project already authenticated (`dependencies:['setup']`, reusing the
-saved `storageState`). So the test just navigates to its route and asserts — it starts logged in.
+A real app is usually behind a login, and a characterization test must reach screens that require it.
+You do **not** log in inside each test. Instead, put a `signIn` script in `spec/_config.json` (Setup →
+sign-in), and the harness runs it **once** in a `setup` project (`spec/_auth.setup.ts`) that saves the
+session; every screen test then runs in the `screens` project already authenticated
+(`dependencies:['setup']`, reusing the saved `storageState`). So the test just navigates to its route
+and asserts — it starts logged in.
 
 Two things that will cost you an afternoon otherwise:
 
@@ -92,22 +146,25 @@ Two things that will cost you an afternoon otherwise:
   most component libraries) ignore `fill()`'s programmatic value and submit an **empty** form with no
   error — you sit on `/login` wondering why. Use `pressSequentially`, or click the field then `type`.
 - **The login screen itself is bespoke.** Once signed in, `/login` redirects away, so the crawl can
-  never reach it and it can't be a document-mode screen. Write its PRD and test by hand.
+  never reach it and it can't be a characterized screen. Write its PRD and test by hand.
 
 ## Comprehensive, not shallow — depth over count
 
 A screen's test proves the screen works, not that it painted. One "the heading is visible" case per
-requirement is the shallow trap that makes a board look finished while proving almost nothing. Write a
-FEW deep cases instead:
+requirement is the shallow trap that makes a board look finished while proving almost nothing. The
+board's model rewards the opposite: **few tests, each proving more** (R6). Write FEW deep flows:
 
 - **The surface renders REAL data** — every metric/tile carries a value (a digit, money, a %), the
   grid/list is populated with rows, the chart is present, the controls exist. Wait for the data (see
   traps) before asserting.
 - **A core interaction changes an outcome** — drive the primary lever/toggle and assert its *effect*,
   not merely that the control exists.
-- **A cross-page effect**, where the screen has one — a change here shows up there.
+- **A cross-page effect**, where the screen has one — a change here shows up there. Tag both screens'
+  requirements with qualified ids.
 
-Two or three cases that exercise the screen's real behaviour beat ten that each check a label.
+Two or three flows that exercise the screen's real behaviour beat ten that each check a label — but
+each requirement a flow tags still needs an assertion that would fail without it (rule 2). Depth is
+the point; count follows from it.
 
 ## Deterministic golden data — assert EXACT values, not live ones
 
@@ -154,9 +211,9 @@ for a mutating flow, record BOTH sides of the change you drive:
 }
 ```
 
-The test reads `golden.json`, drives the seeded screen, and asserts each state's exact items and
-numbers — including the *before → after* of the interaction — so the run PROVES the computation, not
-merely that the grid has rows.
+The test reads `golden.json`, drives the seeded screen, and — inside its `checkReq` steps — asserts
+each state's exact items and numbers, including the *before → after* of the interaction, so the run
+PROVES the computation, not merely that the grid has rows.
 
 ## Traps against a real running app
 
@@ -182,12 +239,13 @@ Each of these has produced a false green or lost an afternoon — handle them by
 
 ## Stateful and cross-page flows (edit → run → apply → verify elsewhere)
 
-The most valuable tests span pages — edit here, apply, verify the effect there. But "apply" usually
-PERSISTS: a test that applies on every run mutates real data non-idempotently. The only safe
-repeatable shape is **create a throwaway draft/scenario → act → verify → discard** (or a reset). If no
-discard path exists, do NOT write a test that corrupts data on every run — document the gap in the PRD
-and cover what you safely can. A test that mutates production state to go green is worse than an
-honest empty cell.
+The most valuable tests span pages — edit here, apply, verify the effect there — and under
+many-to-many coverage one such flow can prove several requirements across several screens with
+qualified ids. But "apply" usually PERSISTS: a test that applies on every run mutates real data
+non-idempotently. The only safe repeatable shape is **create a throwaway draft/scenario → act →
+verify → discard** (or a reset). If no discard path exists, do NOT write a test that corrupts data on
+every run — document the gap in the PRD and cover what you safely can. A test that mutates production
+state to go green is worse than an honest unproven requirement.
 
 ## Run it and read the result
 
@@ -196,6 +254,7 @@ npm run e2e                         # the whole suite
 npx playwright test --config playwright.board.ts spec/<screen>/test.spec.ts   # just this screen
 ```
 
-A per-screen run folds its result into `spec/_results-index.json` without blanking any other screen's
-column — so running one screen to prove it is safe. Watch the new test fail first; then make it pass;
-then confirm the board's column 4 shows it green and column 3 shows the shot it produced.
+A per-screen run folds its per-requirement coverage into `spec/_results-index.json` without blanking
+any other screen's — so running one screen to prove it is safe. Watch the new assertion fail first;
+then make it pass; then confirm on the board that the requirement now reads **proven** and the test's
+recording shows the end state it proved.

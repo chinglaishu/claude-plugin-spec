@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join, relative } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
+import { coverageFromTest } from '../tools/coverage.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -141,11 +142,21 @@ export default class ResultsIndexReporter {
       const caseLog = caseLogFull.length > 8000
         ? caseLogFull.slice(0, 8000) + '\n\n… truncated at 8000 characters'
         : caseLogFull
+      // Per-requirement coverage (R4/R5): which requirement ids this test tagged, each pass / fail /
+      // not-reached, read from its `proves <id>` steps and `covers` annotation. Bare ids are
+      // qualified to THIS test's screen; a qualified id (`asset-plan:R5`) proves another screen's
+      // requirement. Kept on the committed index (small — ids and a word each), because the board's
+      // left column derives each requirement's proven state from it, folded across every screen.
+      const reqs = coverageFromTest({
+        steps: (test.results || []).slice(-1)[0]?.steps,
+        annotations: test.annotations || [],
+        screen
+      })
       const prev = byScreen[screen]
       byScreen[screen] = {
         total: (prev?.total || 0) + 1,
         failed: (prev?.failed || 0) + (ok ? 0 : 1),
-        tests: [...(prev?.tests || []), { title: test.title, ok, ms, error, line: test.location?.line }],
+        tests: [...(prev?.tests || []), { title: test.title, ok, ms, error, line: test.location?.line, reqs }],
         ranAt
       }
       // the images and video Playwright captured for THIS test, as repo-relative paths the static

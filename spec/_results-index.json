@@ -1,59 +1,110 @@
 {
   "board": {
-    "total": 7,
+    "total": 10,
     "failed": 0,
     "tests": [
       {
-        "title": "R1 — one row per screen, never one per requirement",
-        "ok": true,
-        "ms": 572,
-        "error": null,
-        "line": 11
-      },
-      {
-        "title": "R2 — four cells, left to right, in workflow order",
+        "title": "R1 — home is one CARD per screen: titles + a cover, never a four-column strip",
         "ok": true,
         "ms": 154,
         "error": null,
-        "line": 19
+        "line": 20,
+        "reqs": {
+          "board:R1": "pass"
+        }
       },
       {
-        "title": "R3 — the draft cell renders the wireframe itself, not a word for it",
+        "title": "R2 — the detail is two columns, each scrolling on its own",
         "ok": true,
-        "ms": 164,
+        "ms": 142,
         "error": null,
-        "line": 28
+        "line": 36,
+        "reqs": {
+          "board:R2": "pass"
+        }
       },
       {
-        "title": "R4 — cell state is computed, and approving changes it",
+        "title": "R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement",
         "ok": true,
-        "ms": 831,
+        "ms": 227,
         "error": null,
-        "line": 35
+        "line": 55,
+        "reqs": {
+          "board:R3": "pass"
+        }
       },
       {
-        "title": "R7 — screens are grouped into named areas, never paginated",
+        "title": "R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives",
         "ok": true,
-        "ms": 207,
+        "ms": 216,
         "error": null,
-        "line": 50
+        "line": 76,
+        "reqs": {
+          "board:R4": "pass"
+        }
       },
       {
-        "title": "R8 — filter by whose turn it is, and search requirement text",
+        "title": "R5 — requirements and tests are many-to-many by tag, and the link lights up on hover",
         "ok": true,
-        "ms": 303,
+        "ms": 261,
         "error": null,
-        "line": 57
+        "line": 107,
+        "reqs": {
+          "board:R5": "pass"
+        }
       },
       {
-        "title": "R6 — the header counts agree with the rows beneath them",
+        "title": "R6 — a test declares the coverage it proves; a requirement lists every test that covers it",
         "ok": true,
-        "ms": 241,
+        "ms": 108,
         "error": null,
-        "line": 70
+        "line": 123,
+        "reqs": {
+          "board:R6": "pass"
+        }
+      },
+      {
+        "title": "R7 — an external design link is optional context: shown, never rendered or gated; absent = disabled",
+        "ok": true,
+        "ms": 110,
+        "error": null,
+        "line": 143,
+        "reqs": {
+          "board:R7": "pass"
+        }
+      },
+      {
+        "title": "R8 — ONE human gate: accept the requirements; no gate B, no wireframe",
+        "ok": true,
+        "ms": 221,
+        "error": null,
+        "line": 157,
+        "reqs": {
+          "board:R8": "pass"
+        }
+      },
+      {
+        "title": "R9 — search across requirement text, grouped into areas, a group with no match hides",
+        "ok": true,
+        "ms": 205,
+        "error": null,
+        "line": 176,
+        "reqs": {
+          "board:R9": "pass"
+        }
+      },
+      {
+        "title": "R10 — a test opens to its evidence and can be run; the whole log opens in a floating window",
+        "ok": true,
+        "ms": 197,
+        "error": null,
+        "line": 191,
+        "reqs": {
+          "board:R10": "pass"
+        }
       }
     ],
-    "ranAt": 1785142655570
+    "ranAt": 1785394558362
   },
   "conflicts": {
     "total": 5,
@@ -62,159 +113,148 @@
       {
         "title": "R2 — both positions are shown in full, each naming where it came from",
         "ok": true,
-        "ms": 144,
+        "ms": 89,
         "error": null,
-        "line": 48
+        "line": 48,
+        "reqs": {}
       },
       {
         "title": "R3 — the tool never picks: resolving is refused until you choose a side",
         "ok": true,
-        "ms": 217,
+        "ms": 122,
         "error": null,
-        "line": 62
+        "line": 62,
+        "reqs": {}
       },
       {
         "title": "R4 — resolving records which side lost, and offers the rewrite of that file",
         "ok": true,
-        "ms": 323,
+        "ms": 407,
         "error": null,
-        "line": 76
+        "line": 76,
+        "reqs": {}
       },
       {
         "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
         "ok": true,
-        "ms": 374,
+        "ms": 423,
         "error": null,
-        "line": 97
+        "line": 97,
+        "reqs": {}
       },
       {
         "title": "R5 — undo puts a settled conflict back, and the scanner is never asked to pick",
         "ok": true,
-        "ms": 427,
+        "ms": 548,
         "error": null,
-        "line": 126
+        "line": 126,
+        "reqs": {}
       }
     ],
-    "ranAt": 1785142655570
+    "ranAt": 1785394558362
   },
   "dispatch": {
-    "total": 4,
+    "total": 12,
     "failed": 0,
     "tests": [
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 5376,
+        "ms": 5859,
         "error": null,
-        "line": 27
+        "line": 63,
+        "reqs": {}
       },
       {
-        "title": "R4 — a second job is refused while one runs, not queued silently",
+        "title": "R4 — a person's second run takes over the running one: accepted, not refused",
         "ok": true,
-        "ms": 255,
+        "ms": 116,
         "error": null,
-        "line": 49
+        "line": 85,
+        "reqs": {}
+      },
+      {
+        "title": "R4 — a run may nest inside the run driving it, and nesting is bounded",
+        "ok": true,
+        "ms": 1000,
+        "error": null,
+        "line": 117,
+        "reqs": {}
       },
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 5115,
+        "ms": 5089,
         "error": null,
-        "line": 67
+        "line": 155,
+        "reqs": {}
+      },
+      {
+        "title": "R6/R8 — a run saves its whole log, and records every test case on its own",
+        "ok": true,
+        "ms": 5987,
+        "error": null,
+        "line": 172,
+        "reqs": {}
+      },
+      {
+        "title": "R8 — a run that matched no test is recorded as an error, never 0 of 0 passing",
+        "ok": true,
+        "ms": 2034,
+        "error": null,
+        "line": 201,
+        "reqs": {}
+      },
+      {
+        "title": "R8 — running ONE case leaves every other case's steps and log standing",
+        "ok": true,
+        "ms": 9116,
+        "error": null,
+        "line": 219,
+        "reqs": {}
+      },
+      {
+        "title": "R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it was",
+        "ok": true,
+        "ms": 6035,
+        "error": null,
+        "line": 245,
+        "reqs": {}
+      },
+      {
+        "title": "R8 — EVERY case that has run can expand its steps, not only the one you clicked",
+        "ok": true,
+        "ms": 5506,
+        "error": null,
+        "line": 277,
+        "reqs": {}
+      },
+      {
+        "title": "R7 — the run panel offers no background run",
+        "ok": true,
+        "ms": 99,
+        "error": null,
+        "line": 302,
+        "reqs": {}
+      },
+      {
+        "title": "R7 — the panel and its log stay on screen after the run ends",
+        "ok": true,
+        "ms": 8069,
+        "error": null,
+        "line": 310,
+        "reqs": {}
       },
       {
         "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
         "ok": true,
-        "ms": 69,
+        "ms": 92,
         "error": null,
-        "line": 84
+        "line": 327,
+        "reqs": {}
       }
     ],
-    "ranAt": 1785142655570
-  },
-  "gate-draft-review": {
-    "total": 6,
-    "failed": 0,
-    "tests": [
-      {
-        "title": "R1 — PRD and wireframe are visible side by side",
-        "ok": true,
-        "ms": 236,
-        "error": null,
-        "line": 13
-      },
-      {
-        "title": "R3 — approving pins the PRD hash, and the bar says which",
-        "ok": true,
-        "ms": 200,
-        "error": null,
-        "line": 29
-      },
-      {
-        "title": "R4 — rejecting requires a reason; an empty one is refused",
-        "ok": true,
-        "ms": 60,
-        "error": null,
-        "line": 42
-      },
-      {
-        "title": "R5 — the gate opens by itself when the PRD moves",
-        "ok": true,
-        "ms": 261,
-        "error": null,
-        "line": 50
-      },
-      {
-        "title": "the full gate-A loop — open, read, approve, confirm",
-        "ok": true,
-        "ms": 505,
-        "error": null,
-        "line": 67
-      },
-      {
-        "title": "the detail view has its own address and survives a reload",
-        "ok": true,
-        "ms": 400,
-        "error": null,
-        "line": 93
-      }
-    ],
-    "ranAt": 1785142655570
-  },
-  "gate-screen-review": {
-    "total": 4,
-    "failed": 0,
-    "tests": [
-      {
-        "title": "R1 — the approved design and the built screen are shown side by side",
-        "ok": true,
-        "ms": 239,
-        "error": null,
-        "line": 8
-      },
-      {
-        "title": "R4 — approving pins the draft hash the screen was checked against",
-        "ok": true,
-        "ms": 437,
-        "error": null,
-        "line": 28
-      },
-      {
-        "title": "R5 — rejecting has to name which side is wrong",
-        "ok": true,
-        "ms": 158,
-        "error": null,
-        "line": 41
-      },
-      {
-        "title": "R2 — a screen with no screenshot has no gate B to open",
-        "ok": true,
-        "ms": 267,
-        "error": null,
-        "line": 57
-      }
-    ],
-    "ranAt": 1785142655570
+    "ranAt": 1785394558362
   },
   "init": {
     "total": 5,
@@ -223,39 +263,123 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 378,
+        "ms": 265,
         "error": null,
-        "line": 30
+        "line": 23,
+        "reqs": {}
       },
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 288,
+        "ms": 203,
         "error": null,
-        "line": 55
+        "line": 48,
+        "reqs": {}
       },
       {
-        "title": "R3 — a crawled PRD is marked a guess and cannot skip gate A",
+        "title": "R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate",
         "ok": true,
-        "ms": 176,
+        "ms": 116,
         "error": null,
-        "line": 75
+        "line": 68,
+        "reqs": {}
       },
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 179,
+        "ms": 96,
         "error": null,
-        "line": 97
+        "line": 104,
+        "reqs": {}
       },
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 257,
+        "ms": 159,
         "error": null,
-        "line": 107
+        "line": 114,
+        "reqs": {}
       }
     ],
-    "ranAt": 1785142655570
+    "ranAt": 1785394558362
+  },
+  "_modes": {
+    "total": 9,
+    "failed": 0,
+    "tests": [
+      {
+        "title": "unproven — an accepted requirement with no passing test reads unproven, and is not waiting",
+        "ok": true,
+        "ms": 21,
+        "error": null,
+        "line": 47,
+        "reqs": {}
+      },
+      {
+        "title": "proven — a current passing proof makes a requirement proven",
+        "ok": true,
+        "ms": 5,
+        "error": null,
+        "line": 54,
+        "reqs": {}
+      },
+      {
+        "title": "reworded — editing the requirement after acceptance wins over any proof, and it is waiting",
+        "ok": true,
+        "ms": 6,
+        "error": null,
+        "line": 60,
+        "reqs": {}
+      },
+      {
+        "title": "never accepted / a guess — both are waiting on you to accept the requirements",
+        "ok": true,
+        "ms": 5,
+        "error": null,
+        "line": 69,
+        "reqs": {}
+      },
+      {
+        "title": "accept — pins the current PRD text, clears reworded, and leaves the screen not waiting",
+        "ok": true,
+        "ms": 398,
+        "error": null,
+        "line": 82,
+        "reqs": {}
+      },
+      {
+        "title": "accept — strips a crawl guess flag and pins, without touching a body line that begins \"guess:\"",
+        "ok": true,
+        "ms": 65,
+        "error": null,
+        "line": 97,
+        "reqs": {}
+      },
+      {
+        "title": "accept — refused when there is nothing to accept (already accepted, nothing reworded)",
+        "ok": true,
+        "ms": 7,
+        "error": null,
+        "line": 113,
+        "reqs": {}
+      },
+      {
+        "title": "renders — the detail shows exactly one accept gate, two panes, and no gate B / draft gate",
+        "ok": true,
+        "ms": 444,
+        "error": null,
+        "line": 131,
+        "reqs": {}
+      },
+      {
+        "title": "renders — accepting from the board pins the requirements (the gate is a real wire)",
+        "ok": true,
+        "ms": 224,
+        "error": null,
+        "line": 143,
+        "reqs": {}
+      }
+    ],
+    "ranAt": 1785394558362
   }
 }

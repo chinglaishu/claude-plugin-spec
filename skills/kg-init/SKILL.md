@@ -5,8 +5,10 @@ description: Use when this plugin has just been installed in a project, or when 
 
 # Setting up the spec board on THIS project
 
-The user arrives with a codebase and an AI agent — **nothing else**. No spec, no wireframes, no tests.
-Your job is to get from that to a board they can consult, without demanding they write anything first.
+The user arrives with a codebase and an AI agent — **nothing else**. No spec, no tests. Your job is to
+get from that to a board they can consult, without demanding they write anything first. specboard
+tracks one thing: a project's **requirements** and the **tests that prove them** against the real app.
+Everything below serves that one job.
 
 ## 0. Scaffold specboard into this project — first, always
 
@@ -31,7 +33,7 @@ npm run board          # serves THIS project's board on http://localhost:4173 (e
 ```
 
 Open it in the user's **real browser** over `http://localhost` — `file://` URLs do not work, and the
-gates need the server to record a decision. On a fresh project the board is empty, which is the honest
+gate needs the server to record a decision. On a fresh project the board is empty, which is the honest
 starting point, not a failure.
 
 ## 2. Point it at the app, on the Init page
@@ -45,39 +47,53 @@ Open `#init`. It asks only what cannot be guessed — how to reach the app:
 - The **frontend URL** (what has routes — this is what the crawl visits) and, optionally, which routes
   matter and a sign-in script.
 
-## 3. Two flows, because a project is either finished or greenfield
+All of this persists to `spec/_config.json`, which the crawl and the test harness both read.
 
-A screen is in one of two modes, decided per-screen by whether it has a wireframe (`draft.html`). The
-init flow picks which one a project starts in.
+## 3. Crawl the app → a guessed requirement doc + a proving test per screen
 
-### Existing app → DOCUMENT mode (crawl)
+There is no wireframe step and no design-vs-document branch: specboard does not own designs (see the
+`design:` link below). A screen is documented by its **requirements** and the **tests that prove
+them**, full stop. So the crawl does exactly that, per route it finds:
 
-Crawl visits each route and, per new route, **drafts a guessed `prd.md`**, then **authors a
-characterization `test.spec.ts`** that proves that PRD against the running app and **shoots
-`screen.png`**, then **runs it**. A crawled row therefore lands as **PRD (a guess) + the current
-screen + a passing test, with no wireframe** — because the screen already exists, so drawing a
-wireframe of it only to "build" it would be circular.
+The crawl drives a **real browser** over the running app one route at a time, capturing each page
+(`crawl.png`) and its structure. Then, for every route not already on the board, Claude **drafts a
+guessed `prd.md`**, and kg-e2e authors a **characterization `test.spec.ts`** that proves that PRD
+against the running app and, as a byproduct, records the screen. A crawled row therefore lands as **a
+guessed requirement doc + a passing characterization test** — one card, its requirement titles, and
+the test's recording. No wireframe, because the screen already exists.
 
-- The PRD is marked `guess: true` — a proposal read off the page, never canon. Correct it if it is
-  wrong; the one gate here is **Accept these requirements**, which makes the PRD the source of truth.
-  There is **no gate A and no gate B** in document mode: there is no wireframe to approve a design
-  against, and column 3 is simply the current screen, proven by the test in column 4.
-- `screen.png` is always the **test's byproduct**, never a copy of `crawl.png` — `crawl.png` stays the
-  evidence used to write the PRD and test, shown only in the Init found-table.
-- Maintenance stays spec-driven: edit the PRD and its test goes stale ("run it again"); update the
-  test to the corrected PRD, and a failure against the app is then a real bug surfaced.
+- The PRD is marked `guess: true` — a proposal read off the running app, never canon. Correct it if it
+  is wrong; the **one gate** is **Accept these requirements**, which makes the PRD the source of
+  truth. There is no "did you build it" gate: that question is answered by the assertion-backed tests
+  running against the real app (see `kg-e2e`), automatically, with no status field and no human
+  compare. The only thing waiting on a person is accepting the requirements.
+- Requirements changed since they were accepted read as **reworded** — awaiting re-acceptance. That is
+  the sole human decision on a row.
+- `crawl.png` is the evidence the PRD and test are written from, shown in the Init found-table; the
+  test writes `screen.png` only as a fallback cover for a recording with no video. Neither is a
+  "built screen" to review.
+- Maintenance stays spec-driven: edit the PRD and its test's proof goes stale ("run it again"); update
+  the test to the corrected PRD, and a failure against the app is then a real bug surfaced.
 - **Coverage is not automatic.** The crawl link-follows a couple of levels from the root, so it finds
   nav-reachable pages — but **not** entity-scoped routes with a concrete id (`/portfolio/42/scenario`)
   unless the app links to one, and **not** features reached by a *click* rather than a link (wizards,
   modals, sub-tabs behind a button). List those in **Setup → routes**, which always wins over
   discovery — otherwise the board only ever documents the top nav.
 - **If the app needs a login,** give a `signIn` script in **Setup → sign-in**. The crawl runs it
-  first so pages behind auth are reachable, and document-mode tests reuse the session automatically
+  first so pages behind auth are reachable, and characterization tests reuse the session automatically
   (see `kg-e2e`). The script must **type** into fields, never `fill()` (controlled inputs submit
   empty). The login screen itself redirects away once you are in, so it can't be crawled — write it by
   hand.
 
-#### The PRD must be DETAILED — drive the screen, don't skim it
+### An external design link is optional context, never an artifact
+
+If a screen has a design somewhere else — a Figma / v0 / image URL — record it as an optional
+`design:` line in the PRD frontmatter. specboard shows it as a chip in the detail and links out to it;
+it is **never rendered inside specboard, never gated, and never made stale**. A screen with no link is
+not "unstarted" — it is simply documented by its requirements and tests. Do not try to reproduce or
+approve a design here; that is a different, already-solved job that left the tool.
+
+### The PRD must be DETAILED — drive the screen, don't skim it
 
 A crawl that reads the page shell writes a shallow PRD ("the workspace opens", "it has a year basis"),
 and kg-e2e then writes a shallow test — a board that looks finished while proving almost nothing.
@@ -99,7 +115,7 @@ authenticate, navigate, wait for data, then explore — write it, run it, read i
 every number, control and flow to check. One requirement per meaningful behaviour, each naming the
 concrete elements (put their testids in a comment). Keep `guess: true` — it is still the human's to
 correct — but make the guess *rich*, not a two-line summary. kg-e2e then turns that detail into a
-test that asserts real data and behaviour.
+test that asserts real data and behaviour, tagging each requirement it proves.
 
 **For a data-driven screen, name the expected VALUES, not just the fields.** If the screen's point is
 computed numbers (totals, a chart, a grid that recomputes on a filter), a PRD that says "shows a total"
@@ -111,24 +127,20 @@ and the `golden.json` format.
 
 Rerunning finds new routes without touching a screen the human has already worked.
 
-### New project (or a new screen) → DESIGN mode
+### Nothing to crawl → greenfield
 
-Nothing to crawl is the **greenfield** case: no rows, and a prompt to write the first PRD by hand. From
-a PRD you run the design loop — **PRD → wireframe → build → test** — with **gate A** (draft-vs-PRD) and
-**gate B** (screen-vs-draft). This is unchanged from how the board has always worked. Authoring the
-test is the `kg-e2e` skill.
-
-### Redesigning an existing (document-mode) screen
-
-To change a finished screen, **add a `draft.html`** to it — from the board, the row's "Add a wireframe
-to redesign" affordance dispatches one. That flips that one screen into design mode, and gate A and
-gate B appear: you are now approving a new design and then the build against it.
+An empty found-table is the **greenfield** case: no rows, and a prompt to write the first PRD by hand.
+It is the zero case of the same flow, not a different mode — there is no wireframe loop and no build
+gate. Write a screen's `prd.md` (frontmatter + `## R<n>` blocks, optionally a `design:` link), then
+author its proving test with `kg-e2e`. As soon as the screen exists in the app, its test drives the
+real thing exactly as a crawled one does, and the one gate is still accepting the requirements.
 
 ## 4. Find the contradictions already in the requirements
 
 Once there are a few PRDs, open the **Conflicts** tab and **Rescan**. It reads every `prd.md` and
 surfaces one-fact-stated-two-ways contradictions for the human to adjudicate. **Do not decide on the
-user's behalf** — choosing a canonical side is the human's gate. Surface what you found and ask.
+user's behalf** — choosing a canonical side is the human's, one of the few decisions that is theirs.
+Surface what you found and ask.
 
-Then stop and report: what the board contains, how many rows are still guesses waiting to be corrected,
+Then stop and report: what the board contains, how many rows are still guesses waiting to be accepted,
 and any contradictions the scan found.

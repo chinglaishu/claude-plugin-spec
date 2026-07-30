@@ -1,22 +1,36 @@
-// The staff briefing. An agent about to change a screen runs this FIRST, and it prints what
-// governs that screen — the requirements that are the source of truth, whether they are approved
-// or still a guess, which gates are open, what is actually proven, and any contradiction the human
-// has not yet settled. A board nobody consults before coding is an expensive lint; this is the
-// half that makes an AI MAINTAIN the truth rather than just display it.
+// The staff briefing. An agent about to change a screen runs this FIRST, and it prints what governs
+// that screen — the requirements that are the source of truth, each one proven / reworded / unproven,
+// whether they are accepted or still a crawl guess, what a test actually proves, and any contradiction
+// the human has not yet settled. A board nobody consults before coding is an expensive lint; this is
+// the half that makes an AI MAINTAIN the truth rather than just display it.
 //
 //   node tools/staff.mjs                 — every screen, one line each: what governs it, what is open
 //   node tools/staff.mjs <screen>        — the full briefing for one screen
 //   node tools/staff.mjs --file <path>   — which screen(s) govern a source file (needs `governs:` in a PRD)
 //   node tools/staff.mjs --stale         — the AFTER-a-change worklist: every screen a change left un-settled
 
-import { allScreens, readScreen, readConflicts } from './spec-store.mjs'
+import { allScreens, readScreen, readConflicts, isWaiting } from './spec-store.mjs'
 
-const cellWord = {
-  ok: 'approved', stale: 'STALE — the thing it was approved against has moved',
-  review: 'needs review — nobody has said yes yet', rejected: 'sent back',
-  missing: 'not started', waiting: 'waiting on the step before it',
-  pass: 'passing', fail: 'FAILING', unrun: 'never run — proves nothing yet',
-  ranstale: 'passed, then the screen was edited — run it again'
+// A requirement's computed state (spec-store derives it; it is never typed). Proven needs a CURRENT
+// passing test that TAGS the requirement on an assertion that would fail without it. Reworded (text
+// moved since it was accepted) wins over any proof and is the one thing waiting on a person.
+const stateMark = { proven: '✓', reworded: '✎', unproven: '·' }
+const stateWord = {
+  proven: 'proven — a current passing test asserts it',
+  reworded: 'REWORDED — changed since accepted; re-accept it (the human gate)',
+  unproven: 'unproven — no passing assertion covers it yet'
+}
+const countBy = (reqs, st) => reqs.filter(r => r.state === st).length
+
+// Why the accept gate is open, or that it is closed. The ONE human gate is accepting the
+// requirements: a crawl guess, any reworded requirement, or a screen never accepted all wait on it.
+function gateLine (s) {
+  if (!isWaiting(s)) return 'accepted — nothing waiting on you'
+  if (s.guess) return 'a crawl GUESS — correct any that are wrong, then accept the requirements'
+  const r = countBy(s.reqs, 'reworded')
+  if (r) return `${r} requirement${r === 1 ? '' : 's'} reworded since accepted — re-accept the requirements`
+  if (!s.state.approvedPrdText) return 'never accepted — accept the requirements to make them canon'
+  return 'waiting on you to accept the requirements'
 }
 
 // The findings whose either side lives in this screen's PRD. An OPEN one is a stop sign: the agent
@@ -35,7 +49,7 @@ function briefing (name) {
   L.push(`  spec/${name}/`)
   L.push('')
 
-  // 1 — the requirements, the SSoT
+  // 1 — the requirements, the SSoT, each with its computed proof state
   if (!s.reqs.length) {
     L.push('## ⛔ Ungoverned — no requirement exists for this screen.')
     L.push('STOP. Do not build here. Ask the human for a requirement first — the next person to change')
@@ -43,28 +57,27 @@ function briefing (name) {
   } else {
     L.push(`## Requirements — the source of truth (${s.reqs.length})`)
     if (s.guess) {
-      L.push('⚠ These are a GUESS the crawl read off the running page — NOT canon. Correct them at')
-      L.push('  gate A before you trust a word. A requirement read off an implementation cannot')
-      L.push('  contradict it, so if the code has a bug, this guess records the bug as intent.')
+      L.push('⚠ These are a GUESS the crawl read off the running page — NOT canon. Correct them, then')
+      L.push('  accept the requirements before you trust a word. A requirement read off an implementation')
+      L.push('  cannot contradict it, so if the code has a bug, this guess records the bug as intent.')
     }
     for (const r of s.reqs) {
-      L.push(`- ${r.id} — ${r.title}`)
+      L.push(`- ${r.id} ${stateMark[r.state] || '·'} ${r.state.padEnd(8)} — ${r.title}`)
       if (r.body) L.push(`    ${r.body.split('\n')[0]}`)
     }
   }
   L.push('')
 
-  // 2 — the gates and what is proven
+  // 2 — the one gate, and what the tests prove
   L.push('## Where this screen stands')
-  L.push(`- 1 · PRD:    ${cellWord[s.cells.prd] || s.cells.prd}${s.guess ? ' (a guess)' : ''}`)
-  L.push(`- 2 · Draft:  ${cellWord[s.cells.draft] || s.cells.draft}` +
-    (s.cells.draft === 'ok' ? ` — pinned to prd.md · ${s.state.draftApprovedAgainstPrd}` : ''))
-  L.push(`- 3 · Screen: ${cellWord[s.cells.screen] || s.cells.screen}`)
-  L.push(`- 4 · E2E:    ${cellWord[s.cells.e2e] || s.cells.e2e}` +
-    (s.run ? ` (${s.run.total - s.run.failed}/${s.run.total})` : ''))
-  if (s.rejections?.length) {
-    L.push(`  last sent back: "${s.rejections[s.rejections.length - 1].why}"`)
+  if (s.reqs.length) {
+    L.push(`- Requirements: ${countBy(s.reqs, 'proven')} proven · ` +
+      `${countBy(s.reqs, 'reworded')} reworded · ${countBy(s.reqs, 'unproven')} unproven`)
   }
+  L.push(`- The one gate — accept the requirements: ${gateLine(s)}`)
+  L.push(`- Tests: ${s.run
+    ? `${s.run.total - s.run.failed} of ${s.run.total} passing` + (s.run.failed ? ' — some FAILING' : '')
+    : 'no test has run against this screen yet — nothing is proven'}`)
   L.push('')
 
   // 3 — conflicts touching this screen
@@ -84,10 +97,11 @@ function briefing (name) {
   // 4 — the rules
   L.push('## Before you change this screen')
   L.push('1. Change the REQUIREMENT first, never the code first. Requirement meaning is the human\'s gate.')
-  L.push('2. For new or changed behaviour, write the failing test first and watch it go red.')
-  L.push('3. Never weaken a test to go green, and never approve a gate on the human\'s behalf.')
+  L.push('2. For new or changed behaviour, write the failing test first and watch it go red — and TAG the')
+  L.push('   requirement it proves with checkReq(id, fn) so its proof is assertion-backed.')
+  L.push('3. Never weaken a test to go green, and never accept the requirements on the human\'s behalf.')
   if (!s.reqs.length) L.push('4. There is no requirement here — you cannot proceed. Ask the human.')
-  else if (s.guess) L.push('4. This PRD is a guess — get the human to correct and approve it before building to it.')
+  else if (s.guess) L.push('4. This PRD is a guess — get the human to correct and accept it before building to it.')
   else if (open.length) L.push('4. There is an open contradiction here — the human must pick canon before you build.')
   return L.join('\n')
 }
@@ -103,10 +117,12 @@ function list () {
     if (!s.reqs.length) flags.push('⛔ UNGOVERNED')
     if (s.guess) flags.push('⚠ guess')
     if (openBy.has(s.name)) flags.push('⚖ open conflict')
-    if (['review', 'stale', 'rejected'].includes(s.cells.draft)) flags.push('gate A open')
-    if (['review', 'stale'].includes(s.cells.screen)) flags.push('gate B open')
-    if (['unrun', 'fail', 'ranstale'].includes(s.cells.e2e)) flags.push('not proven')
-    L.push(`- ${s.name.padEnd(20)} ${s.reqs.length} reqs   ${flags.join(' · ') || 'governed, approved, proven'}`)
+    const reworded = countBy(s.reqs, 'reworded')
+    if (reworded) flags.push(`${reworded} to re-accept`)
+    else if (isWaiting(s) && s.reqs.length) flags.push('requirements to accept')
+    const unproven = countBy(s.reqs, 'unproven')
+    if (unproven) flags.push(`${unproven} unproven`)
+    L.push(`- ${s.name.padEnd(20)} ${String(s.reqs.length).padStart(2)} reqs   ${flags.join(' · ') || 'accepted, all proven'}`)
   }
   L.push('')
   L.push('Run  node tools/staff.mjs <screen>  for the full briefing before you change one.')
@@ -127,15 +143,17 @@ function stale () {
   for (const s of screens) {
     const why = []
     if (!s.reqs.length) why.push('⛔ ungoverned — no requirement exists; nothing downstream can be trusted')
-    if (s.guess) why.push('⚠ PRD is a guess — the human must correct and approve it at gate A')
-    if (['review', 'stale', 'rejected'].includes(s.cells.draft)) why.push(`2 · Draft:  ${cellWord[s.cells.draft]}`)
-    if (['review', 'stale'].includes(s.cells.screen)) why.push(`3 · Screen: ${cellWord[s.cells.screen]}`)
-    if (['unrun', 'fail', 'ranstale'].includes(s.cells.e2e)) why.push(`4 · E2E:    ${cellWord[s.cells.e2e]}`)
+    if (s.guess) why.push('⚠ PRD is a guess — the human must correct and accept the requirements')
+    const reworded = s.reqs.filter(r => r.state === 'reworded')
+    if (reworded.length) why.push(`✎ reworded since accepted — ${reworded.map(r => r.id).join(', ')} — re-accept (the human gate)`)
+    const unproven = s.reqs.filter(r => r.state === 'unproven')
+    if (unproven.length) why.push(`· not proven by a test — ${unproven.map(r => r.id).join(', ')} — write or re-run the test that tags it`)
+    if (s.run && s.run.failed) why.push(`✗ ${s.run.failed} test case(s) FAILING`)
     if (openBy.has(s.name)) why.push('⚖ open contradiction touching this screen — the human picks canon, you must not')
     if (why.length) rows.push({ name: s.name, why })
   }
   if (!rows.length) {
-    return 'Nothing is stale — everything is governed, approved and proven.'
+    return 'Nothing is stale — every screen is governed, accepted and proven.'
   }
   const L = [`# What your change may have left stale — ${rows.length} screen(s) not settled and proven`, '']
   for (const r of rows) {
@@ -144,8 +162,8 @@ function stale () {
   }
   L.push('')
   L.push('Work every item your change left stale — a test still asserting the old behaviour is a false green.')
-  L.push('If clearing one needs a requirement decision (picking canon, changing what a REQ means, approving')
-  L.push('a gate), STOP and ask the human — never decide it yourself.')
+  L.push('If clearing one needs a requirement decision (picking canon, changing what a REQ means, accepting')
+  L.push('the requirements), STOP and ask the human — never decide it yourself.')
   return L.join('\n')
 }
 

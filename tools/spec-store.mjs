@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameS
 import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { aggregateCoverage, deriveReqState, qualify } from './coverage.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -195,6 +196,48 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
   .filter(existsSync)
   .reduce((max, f) => Math.max(max, statSync(f).mtimeMs), 0)
 
+// Per-requirement proof state (R4/R5). Every test's tags are aggregated across the WHOLE board — a
+// flow on another screen can prove this screen's requirement, so a requirement lists every test that
+// covers it wherever its FILE lives. A pass counts only while CURRENT, and there are TWO ways a pass
+// stops being current:
+//   1. it predates a change to the test/source that produced it — it describes a screen that no
+//      longer exists (the same honesty column 4 already applies to a whole run); or
+//   2. it predates the current ACCEPTANCE of the requirement — accepting is the act that says "THIS
+//      is the spec now", and the gate only opens on a rework, so a proof from before you accepted
+//      proved the requirements as they stood before. After accepting reworded requirements they read
+//      unproven until re-run (board R4), exactly as after a source edit — accept then re-prove.
+// Reworded (text changed since acceptance) wins over any proof outright. aggregateCoverage is
+// memoised per results object, because allScreens hands every screen the same index and re-folding it
+// once per screen would be wasteful on a large board.
+const _aggCache = new WeakMap()
+function aggFor (results) {
+  const key = results || {}
+  let a = _aggCache.get(key)
+  if (!a) { a = aggregateCoverage(key); _aggCache.set(key, a) }
+  return a
+}
+function enrichReqs (reqs, screen, rewordedIds, results) {
+  const agg = aggFor(results)
+  const srcCache = {}
+  const srcMs = s => (srcCache[s] ??= newestSource(join(SPEC, s)))
+  return reqs.map(r => {
+    const entries = agg[qualify(r.id, screen)] || []
+    const tests = entries.map(e => ({
+      title: e.title,
+      screen: e.screen,
+      status: e.status,
+      // A pass counts only while CURRENT: stale if it predates a change to a source of the screen
+      // that produced it (prd.md / test.spec.ts) — the proof then describes a version that has moved.
+      // Note this ALSO covers a reword-then-accept flow honestly: rewording edits prd.md, so every one
+      // of that screen's proofs goes stale by source and must be re-run — without accepting having to
+      // invalidate a sibling requirement whose text never changed and whose proof is still good.
+      stale: e.status === 'pass' && e.ranAt != null && e.ranAt < srcMs(e.screen)
+    }))
+    const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
+    return { ...r, state: deriveReqState({ reworded: rewordedIds.has(r.id), hasCurrentPass }), tests }
+  })
+}
+
 export const statePath = name => join(SPEC, name, 'state.json')
 
 export function readState (name) {
@@ -263,7 +306,8 @@ export function readScreen (name, results = null) {
     : hasShot ? 'current' : 'waiting'
 
   // A test that exists but has never run proves nothing, so it is not a pass — it is "never run".
-  const run = (results || readResults())[name]
+  const allResults = results || readResults()
+  const run = allResults[name]
   const ranBeforeEdit = run && run.ranAt < newestSource(dir)
   // E2E is identical in both modes once a test exists; the only thing the draft ever gated here was
   // whether the screen had STARTED, and a document-mode screen has (it is a finished screen). So a
@@ -289,6 +333,13 @@ export function readScreen (name, results = null) {
     was: wasById
   }
 
+  // Which requirements are AWAITING the human's gate: changed or newly added since the requirements
+  // were last accepted (R8 — the one gate). Reworded wins over any proof (R4). Before the first
+  // acceptance there is no diff, so nothing is "reworded" yet; state then falls to proven / unproven
+  // by test alone, and the accept gate itself is the server's business (R8).
+  const rewordedIds = new Set(diff ? [...diff.changed, ...diff.added] : [])
+  const reqStates = enrichReqs(reqs, name, rewordedIds, allResults)
+
   // A crawled PRD is a GUESS read off the running page, never canon (init R3). It is a proposal
   // for the CEO to correct, so it must look different from a PRD a human wrote and it must not let
   // the loop skip gate A. The flag lives in frontmatter because it travels with the document — the
@@ -300,14 +351,20 @@ export function readScreen (name, results = null) {
   // that implements it. Comma- or space-separated in frontmatter.
   const governs = String(fm.governs || '').split(/[,\s]+/).map(g => g.trim()).filter(Boolean)
 
+  // Optional external design link (a Figma / v0 / image URL) shown as context in the detail —
+  // never rendered inside specboard, never gated, never made stale (board R7). It is a plain URL in
+  // frontmatter; a screen with none is not "unstarted", it is simply documented by its reqs + tests.
+  const design = String(fm.design || '').trim()
+
   return {
     name,
     area: fm.area || 'Other',
     title: fm.title || name,
     route: fm.route || '',
     guess,
+    design,
     governs,
-    reqs,
+    reqs: reqStates,
     prdText,
     diff,
     rejections,
@@ -477,18 +534,17 @@ export function allScreens () {
     .filter(Boolean)
 }
 
-// "Waiting on you" means a gate is open. A screen you already rejected is waiting on the
-// REDRAFT, not on you, so it must not sit in your queue asking the same question again.
+// "Waiting on you" means the ONE gate is open: accept the requirements (board R8). In the
+// two-column model there is no draft gate and no gate B — the single human decision is whether
+// these requirements are what you meant. A screen is waiting iff:
+//   - it is a crawled GUESS the human has not yet accepted (init R3), or
+//   - any requirement is REWORDED — its text moved since the requirements were accepted (R4/R8), or
+//   - the requirements have NEVER been accepted (no pin at all) while there is a PRD to accept.
+// Everything else — proven, unproven-but-accepted — is the tests' business, not a person's.
 export const isWaiting = s =>
-  // A screen whose PRD is empty is waiting on YOU hardest of all — nothing downstream can start.
-  // It used to fall out of the queue entirely, because every other cell correctly reported
-  // "waits", and the row sat on the board being silently ignored.
-  s.cells.prd === 'missing' ||
-  // A guessed PRD is waiting on you too: the crawl read it off the page and you have to correct
-  // it before it can be trusted. Left out of the queue it would sit there looking done while
-  // being nobody's actual requirement.
   s.guess ||
-  ['review', 'stale'].includes(s.cells.draft) || ['review', 'stale'].includes(s.cells.screen)
+  s.reqs.some(r => r.state === 'reworded') ||
+  (s.reqs.length > 0 && !s.state.approvedPrdText)
 
 export function sortedAreas (screens) {
   return [...new Set(screens.map(s => s.area))].sort((a, b) => {

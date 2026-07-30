@@ -23,6 +23,13 @@ const SELF_RUN = (process.env.BOARD_RECORD || '').replace(/\/+$/, '').split('/')
 // refused by the very run executing the spec, and every test here hangs at a blank page (R4).
 const BOARD = SELF_RUN ? '/?runid=' + SELF_RUN + '#/board' : '/#/board'
 
+// Two of the board's OWN test titles — any real board case works as "a fast, deterministic run to
+// drive the panel". Kept in sync with spec/board/test.spec.ts; they are safe cases (no state writes).
+const B_R1 = 'R1 — home is one CARD per screen: titles + a cover, never a four-column strip'
+const B_R2 = 'R2 — the detail is two columns, each scrolling on its own'
+// Open a collapsed test row so its steps / log machinery (inside the .tbody) becomes visible.
+const openCase = async (loc: any) => { await loc.locator('.th').click() }
+
 // Starting a run FROM this test process, named as nested inside the run executing this spec — the
 // same thing the page does with ?runid=. From a CLI run SELF_RUN is empty, the slot is free, and
 // this is an ordinary run; from the board it is the nesting R4 allows. Without it, every test here
@@ -155,11 +162,11 @@ test('running one screen leaves every other screen\'s E2E result standing', asyn
   expect(r.ok()).toBeTruthy()
   await idle(request)
 
-  await page.goto('/')
-  const conflicts = page.locator('.row:has(.nm:text-is("Conflicts"))')
-  // conflicts did not run, yet its result is still on the board — not blanked to "never run"
-  await expect(conflicts.locator('.runs')).toContainText(/passing/i)
-  await expect(conflicts.locator('.runs')).not.toContainText(/never run/i)
+  // conflicts did not run, yet its E2E tests are STILL on the board — folded across runs, never
+  // blanked. Replacing the index instead of folding is the bug that made one Run empty every other
+  // screen's column; here it would leave conflicts' test list empty.
+  await page.goto('/#/conflicts')
+  await expect(page.locator('.dt[data-screen="conflicts"]:not([hidden]) .testpane .test').first()).toBeVisible()
 })
 
 test('R6/R8 — a run saves its whole log, and records every test case on its own', async ({ request }) => {
@@ -178,8 +185,8 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   const log = await logRes.text()
   // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
   // failure could be read back long after the panel that showed it live is gone
-  expect(log).toContain('one row per screen')
-  expect(log).toContain('four cells')
+  expect(log).toContain('home is one CARD per screen')
+  expect(log).toContain('the detail is two columns')
   expect(log.length).toBeGreaterThan(200)
 
   // R8: each case keeps its OWN record — a self-contained log leading with what it was and how it
@@ -219,16 +226,18 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   await idle(request)
 
   // now a run scoped to ONE case — its record covers that case and nothing else
-  const one = await startRun(request, { screen: 'board', grep: 'R1 — one row per screen' })
+  const one = await startRun(request, { screen: 'board', grep: B_R1 })
   expect(one.ok()).toBeTruthy()
   await idle(request)
 
   await page.goto('/#/board')
-  // the case that DID run keeps its record, of course
-  const ran = page.locator('.tst', { hasText: 'R1 — one row per screen' }).first()
+  // the case that DID run keeps its record, of course (open it — the machinery lives in the .tbody)
+  const ran = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R1 }).first()
+  await openCase(ran)
   await expect(ran.locator('.tststeps .stepstog')).toBeVisible()
   // and so does a case the filtered run never touched — this is the bit that was being blanked
-  const untouched = page.locator('.tst', { hasText: 'R2 — four cells' }).first()
+  const untouched = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R2 }).first()
+  await openCase(untouched)
   await expect(untouched.locator('.tststeps .stepstog'), 'every case can still expand its steps').toBeVisible()
   await expect(untouched.locator('.tstlog summary'), 'every case still has its own log').toBeVisible()
 })
@@ -239,7 +248,7 @@ test('R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it 
   // time, the duration and the commit. And a run scoped to one case has to say WHICH case: a list of
   // "board 1/1 · 1/1" is a list of runs nobody can tell apart.
   await idle(request)
-  const title = 'R2 — four cells, left to right, in workflow order'
+  const title = B_R2
   for (let i = 0; i < 2; i++) {
     const r = await startRun(request, { screen: 'board', grep: title })
     expect(r.ok()).toBeTruthy()
@@ -247,7 +256,8 @@ test('R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it 
   }
 
   await page.goto('/#/board')
-  const one = page.locator('.tst', { hasText: title }).first()
+  const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
+  await openCase(one)
   const log = one.locator('.tstlog')
   // MORE THAN ONE run of this case is kept — the history, not just the newest. Not an exact count:
   // earlier full runs of this screen covered this case too, and they legitimately count.
@@ -261,7 +271,7 @@ test('R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it 
     .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
 
   // and the recent-runs list names the case the run covered
-  await expect(page.locator('.runlog .runrow').first()).toContainText('four cells')
+  await expect(page.locator('.runlog .runrow').first()).toContainText('two columns')
 })
 
 test('R8 — EVERY case that has run can expand its steps, not only the one you clicked', async ({ page, request }) => {
@@ -274,13 +284,14 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   await idle(request)
 
   await page.goto('/#/board')
-  // the OPEN detail view only — every screen's panel is in the DOM, so an unscoped .tst would also
+  // the OPEN detail view only — every screen's panel is in the DOM, so an unscoped .test would also
   // pick up screens this run never touched
-  const cases = page.locator('.dt:visible .tst')
+  const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')
   const n = await cases.count()
   expect(n, 'the screen has several cases').toBeGreaterThan(3)
   for (let i = 0; i < n; i++) {
     const title = await cases.nth(i).locator('.tt').textContent()
+    await openCase(cases.nth(i))   // the machinery lives in the collapsed .tbody
     await expect(cases.nth(i).locator('.tststeps .stepstog'),
       'case can expand its steps: ' + title).toBeVisible()
     await expect(cases.nth(i).locator('.tstlog summary'),

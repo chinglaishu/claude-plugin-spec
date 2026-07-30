@@ -32,6 +32,25 @@ const build = () =>
   execFileSync(process.execPath, [join(ROOT, 'tools/build-board.mjs')], { cwd: ROOT })
     .toString().trim()
 
+// board.html is a generated static file. Every gate POST rebuilds it before it responds, and the
+// file-watcher rebuilds on any spec change — EXCEPT state.json, which is deliberately excluded (it is
+// written on the server's own gate path, which already rebuilds, and reacting to it in the watcher
+// would double every rebuild). But a test — or a second tool — can write a state.json DIRECTLY, and
+// then a plain page load would serve a board that predates the pin. So on a GET for board.html, if any
+// state.json is newer than board.html, rebuild synchronously first. Narrow to state.json only, so the
+// hot path stays cheap and this never fires for changes the watcher already caught.
+const BOARD_HTML = join(ROOT, 'board.html')
+function boardStaleAgainstState () {
+  if (!existsSync(BOARD_HTML)) return true
+  const bt = statSync(BOARD_HTML).mtimeMs
+  for (const n of readdirSync(SPEC)) {
+    if (n.startsWith('_')) continue
+    const p = join(SPEC, n, 'state.json')
+    try { if (existsSync(p) && statSync(p).mtimeMs > bt) return true } catch { /* raced deletion */ }
+  }
+  return false
+}
+
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -77,37 +96,6 @@ function recordRun (entry) {
   for (const name of (existsSync(RUNDIR) ? readdirSync(RUNDIR) : [])) {
     if (!keep.has(name)) rmSync(join(RUNDIR, name), { recursive: true, force: true })
   }
-}
-
-// The redraft prompt is assembled HERE, from files, not from anything the browser sends. The only
-// user text that reaches it is the rejection sentences you already typed and which are already on
-// disk — so a page cannot smuggle instructions into an agent that has edit permission.
-function redraftPrompt (s) {
-  const houseStyle = allScreens()
-    .find(x => x.name !== s.name && x.cells.draft === 'ok' && x.draftHtml)
-  const why = (s.rejections || []).map((r, i) => `${i + 1}. ${r.why}`).join('\n')
-
-  return [
-    `Rewrite exactly one file: spec/${s.name}/draft.html`,
-    'It is a hi-fi, clickable wireframe — fake data, no backend, but every control must actually work.',
-    '',
-    '## The requirements it has to satisfy',
-    s.prdText,
-    '',
-    s.draftHtml ? `## The current draft (rewrite this)\n\n${s.draftHtml.slice(0, 12000)}` : '## There is no draft yet — create one.',
-    '',
-    why ? `## Why it was sent back — address EVERY point, including the earlier ones\n\n${why}` : '',
-    '',
-    '## House rules',
-    '- Link the shared system with <link rel="stylesheet" href="../_design.css"> and use ONLY its tokens.',
-    '  Never introduce a raw hex colour, a new font size, or a radius outside --r-sm/--r/--r-md/--r-lg.',
-    '- Author at exactly 1280px wide. Keep the page under about 940px tall so it thumbnails whole.',
-    '- No network requests of any kind. No external images or scripts.',
-    '- Every button, toggle, field and tab must do something visible when clicked.',
-    houseStyle ? `- Match the house style of spec/${houseStyle.name}/draft.html.` : '',
-    '',
-    'Write the file and stop. Do not touch any other file, do not run tests, do not explain.'
-  ].filter(Boolean).join('\n')
 }
 
 // A generic agent job. Everything the board asks Claude to do is this shape: build a prompt from
@@ -249,30 +237,6 @@ function startScan () {
       const { open, settled } = readConflicts()
       return `${open.length} open contradiction${open.length === 1 ? '' : 's'}` +
         (settled.length ? ` · ${settled.length} already settled, kept by content` : '')
-    }
-  })
-}
-
-function startDispatch (screenName) {
-  const s = readScreen(screenName)
-  if (!s) throw new Error(`no such screen: ${screenName}`)
-  runJob({
-    kind: 'redraft',
-    label: screenName,
-    prompt: redraftPrompt(s),
-    failNote: 'the draft did not change',
-    changed: () => {
-      const after = readScreen(screenName)
-      return after && after.draftHash !== s.draftHash
-    },
-    onDone: () => {
-      const st = readState(screenName)
-      // a fresh draft answers the old objections — the gate reopens on its own merits
-      delete st.draftRejections
-      delete st.draftRejection
-      delete st.draftApprovedAgainstPrd
-      writeState(screenName, st)
-      return 'draft rewritten — gate A is open again'
     }
   })
 }
@@ -710,81 +674,32 @@ function applyGate ({ screen, gate, act, why }) {
   const state = readState(screen)
 
   if (gate === 'prd') {
-    // DOCUMENT mode's only gate. There is no wireframe here and no hash-staleness pin on the PRD —
-    // the source of truth is simply the PRD once it stops being a guess. Accepting a crawled guess
-    // strips the `guess` flag and NOTHING else: the server never edits a requirement's prose, only
-    // this one state marker. No pin is written, so nothing here can later go "stale".
+    // The ONE gate of the two-column model (board R8): accept the requirements. Accepting PINS the
+    // current PRD text as the accepted source of truth, so every requirement re-derives to proven /
+    // unproven from its tests and nothing reads "reworded" until the text moves again. If the PRD is
+    // a crawled GUESS it also strips the `guess` frontmatter flag — the server never touches a
+    // requirement's PROSE, only that one marker and the pin. There is no draft gate and no gate B.
     if (act !== 'accept') throw new Error(`unknown act: ${act}`)
-    if (!s.guess) throw new Error('nothing to accept — this PRD is not a guess')
+    const rewordedNow = (s.reqs || []).some(r => r.state === 'reworded')
+    const waiting = s.guess || rewordedNow || !state.approvedPrdText
+    if (!waiting) throw new Error('nothing to accept — the requirements are already accepted')
     // Strip the flag from the FRONTMATTER block only — scope the edit to the opening `---…---` fence
     // so a requirement's PROSE is never touched, not even a body line that happens to begin "guess:".
-    const stripped = s.prdText.replace(/^(---\n[\s\S]*?\n---\n)/,
-      block => block.replace(/^guess:[^\n]*\n/m, ''))
-    writeText(join(SPEC, screen, 'prd.md'), stripped)
+    let text = s.prdText
+    if (s.guess) {
+      text = text.replace(/^(---\n[\s\S]*?\n---\n)/, block => block.replace(/^guess:[^\n]*\n/m, ''))
+      writeText(join(SPEC, screen, 'prd.md'), text)
+    }
+    // Pin what was accepted — the TEXT, so a later diff can say exactly which requirement moved.
+    state.approvedPrdText = text
+    writeState(screen, state)
     build()
     return readState(screen)
   }
 
-  if (gate === 'draft') {
-    if (act === 'approve') {
-      state.draftApprovedAgainstPrd = s.prdHash
-      // The text, not only the hash — this is what the next gate diffs against.
-      state.approvedPrdText = s.prdText
-      // Approving settles the argument, so the history stops being open feedback. It is kept
-      // rather than deleted: what you objected to is the record of why this draft looks like this.
-      if (state.draftRejections) state.draftResolvedRejections = state.draftRejections
-      delete state.draftRejections
-      delete state.draftRejection
-    } else if (act === 'unapprove') {
-      delete state.draftApprovedAgainstPrd
-      delete state.approvedPrdText
-    }
-    else if (act === 'unreject') {
-      // Undo one round, not the whole history — and leave no empty husk behind.
-      const left = (state.draftRejections || []).slice(0, -1)
-      if (left.length) state.draftRejections = left; else delete state.draftRejections
-      delete state.draftRejection
-    }
-    else if (act === 'reject') {
-      // A rejection without a reason is worse than no rejection: it clears the approval, puts the
-      // screen in a state only a redraft can leave, and says nothing about what to change. The
-      // gate A design already refuses this; the API has to refuse it too, or the rule only holds
-      // for people who happen to come through the UI.
-      if (!String(why || '').trim()) throw new Error('a rejection needs a reason')
-      delete state.draftApprovedAgainstPrd
-      // A LIST, not one object. Rejecting twice used to destroy the first sentence, so a redraft
-      // would only ever see your latest complaint and was free to re-introduce the thing you
-      // rejected two rounds ago. Every round of feedback has to survive into the next attempt.
-      state.draftRejections = [
-        ...(state.draftRejections || []),
-        { why: String(why).slice(0, 500), againstPrd: s.prdHash, at: new Date().toISOString() }
-      ]
-      delete state.draftRejection
-    } else throw new Error(`unknown act: ${act}`)
-  } else if (gate === 'screen') {
-    // Gate B compares the built screen against the APPROVED DESIGN. A document-mode screen has no
-    // wireframe, so there is nothing to compare against and no gate B to open — approving one would
-    // pin against a null draft hash, a meaningless pin. Refuse it rather than record a lie.
-    if (!existsSync(join(SPEC, screen, 'draft.html'))) {
-      throw new Error('no wireframe — this screen has no gate B; its test is what proves it')
-    }
-    if (act === 'approve') { state.screenApprovedAgainstDraft = s.draftHash; delete state.screenRejections }
-    else if (act === 'unapprove') delete state.screenApprovedAgainstDraft
-    else if (act === 'reject') {
-      // Same rule as gate A: a rejection with no reason clears an approval and says nothing
-      // about what to change, which is strictly worse than not rejecting at all.
-      if (!String(why || '').trim()) throw new Error('a rejection needs a reason')
-      delete state.screenApprovedAgainstDraft
-      state.screenRejections = [
-        ...(state.screenRejections || []),
-        { why: String(why).slice(0, 500), againstDraft: s.draftHash, at: new Date().toISOString() }
-      ]
-    } else throw new Error(`unknown act: ${act}`)
-  } else throw new Error(`unknown gate: ${gate}`)
-
-  writeState(screen, state)
-  build()
-  return state
+  // The wireframe left the tool: there is no gate A on a draft and no gate B on a build. The only
+  // gate is accepting the requirements, above.
+  throw new Error(`unknown gate: ${gate}`)
 }
 
 // The skills and agents that drive this board — read from disk at REQUEST time so an edited
@@ -994,18 +909,7 @@ const server = createServer(async (req, res) => {
     return
   }
 
-  if (url.pathname === '/api/dispatch' && req.method === 'POST') {
-    try {
-      const { screen } = JSON.parse(await readBody(req) || '{}')
-      startDispatch(screen)
-      res.writeHead(200, { 'content-type': 'application/json' }); res.end('{"started":true}')
-    } catch (err) {
-      res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)
-    }
-    return
-  }
-
-  // A job you cannot stop is a job you have to wait out. A redraft takes minutes, and noticing
+  // A job you cannot stop is a job you have to wait out. A scan or crawl takes minutes, and noticing
   // ten seconds in that you rejected the wrong screen should not cost the other four.
   if (url.pathname === '/api/cancel' && req.method === 'POST') {
     try {
@@ -1166,6 +1070,11 @@ const server = createServer(async (req, res) => {
   if (p === '/') p = '/board.html'
   const rel = normalize(p).replace(/^(\.\.[/\\])+/, '').replace(/^\/+/, '')
   const allowed = rel === 'board.html' || rel.startsWith('spec/')
+  // A direct state.json write (a test, a second tool) never triggers the watcher; rebuild before we
+  // serve so the board a reload sees reflects the current pins, not a version from before them.
+  if (rel === 'board.html' && boardStaleAgainstState()) {
+    try { build() } catch (err) { console.error(String(err.stderr || err)) }
+  }
   const file = join(ROOT, rel)
   if (!allowed || !file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return

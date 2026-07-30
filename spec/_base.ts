@@ -47,3 +47,17 @@ export const test = process.env.BOARD_ONE_WINDOW
       }
     })
   : base
+
+// checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
+// covers (qualified, e.g. `asset-plan:R5`, so a flow can prove another screen's requirement) and
+// asserts each on something that would fail without it. `checkReq(id, fn)` runs one such assertion
+// inside a `proves <id>` step — the step's pass/fail IS the requirement's proof, and it doubles as
+// human-readable evidence. `coverReqs(...)` declares the full set a flow intends to reach, so a flow
+// that stops early leaves the ones it never got to honestly NOT-REACHED (not green, not red) rather
+// than silently absent. The reporter reads the steps and the annotation back out (tools/coverage.mjs).
+export async function checkReq (id: string, fn: () => Promise<void> | void): Promise<void> {
+  await test.step('proves ' + id, async () => { await fn() })
+}
+export function coverReqs (...ids: string[]): void {
+  test.info().annotations.push({ type: 'covers', description: ids.join(' ') })
+}

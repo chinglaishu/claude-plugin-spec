@@ -36,7 +36,7 @@
         "testMatch": [
           "*/test.spec.ts"
         ],
-        "timeout": 30000
+        "timeout": 60000
       }
     ],
     "quiet": false,
@@ -69,27 +69,27 @@
     "webServer": {
       "command": "node tools/serve-board.mjs",
       "env": {
-        "PORT": "4173"
+        "BOARD_PORT": "4271"
       },
-      "url": "http://localhost:4173",
+      "url": "http://localhost:4271",
       "reuseExistingServer": true,
       "timeout": 20000
     }
   },
   "suites": [
     {
-      "title": "board/test.spec.ts",
-      "file": "board/test.spec.ts",
+      "title": "_modes/test.spec.ts",
+      "file": "_modes/test.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "R1 — one row per screen, never one per requirement",
+          "title": "unproven — an accepted requirement with no passing test reads unproven, and is not waiting",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -99,12 +99,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 572,
+                  "duration": 21,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:16.101Z",
+                  "startTime": "2026-07-30T06:55:03.255Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -112,19 +112,304 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-cb4db1a341633f93d9e5",
-          "file": "board/test.spec.ts",
-          "line": 11,
+          "id": "74f4141ad054871aca7f-c4d80346363efb165053",
+          "file": "_modes/test.spec.ts",
+          "line": 47,
           "column": 1
         },
         {
-          "title": "R2 — four cells, left to right, in workflow order",
+          "title": "proven — a current passing proof makes a requirement proven",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.302Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-09e288180395e93b8f58",
+          "file": "_modes/test.spec.ts",
+          "line": 54,
+          "column": 1
+        },
+        {
+          "title": "reworded — editing the requirement after acceptance wins over any proof, and it is waiting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.313Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-b84a3799673f0d84d16b",
+          "file": "_modes/test.spec.ts",
+          "line": 60,
+          "column": 1
+        },
+        {
+          "title": "never accepted / a guess — both are waiting on you to accept the requirements",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.326Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-0fa0ee5cd8fbcf76f039",
+          "file": "_modes/test.spec.ts",
+          "line": 69,
+          "column": 1
+        },
+        {
+          "title": "accept — pins the current PRD text, clears reworded, and leaves the screen not waiting",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 398,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.338Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-0734363a357dfac83010",
+          "file": "_modes/test.spec.ts",
+          "line": 82,
+          "column": 1
+        },
+        {
+          "title": "accept — strips a crawl guess flag and pins, without touching a body line that begins \"guess:\"",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 65,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.740Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-7fbd5db42d677be01aeb",
+          "file": "_modes/test.spec.ts",
+          "line": 97,
+          "column": 1
+        },
+        {
+          "title": "accept — refused when there is nothing to accept (already accepted, nothing reworded)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.810Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-739e7e7417f7a9084441",
+          "file": "_modes/test.spec.ts",
+          "line": 113,
+          "column": 1
+        },
+        {
+          "title": "renders — the detail shows exactly one accept gate, two panes, and no gate B / draft gate",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 444,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:03.821Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-9d3532047dd2f1f57ed0",
+          "file": "_modes/test.spec.ts",
+          "line": 131,
+          "column": 1
+        },
+        {
+          "title": "renders — accepting from the board pins the requirements (the gate is a real wire)",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 224,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:04.564Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-fc3e96b5dc8bf51738ef",
+          "file": "_modes/test.spec.ts",
+          "line": 143,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "board/test.spec.ts",
+      "file": "board/test.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R1 — home is one CARD per screen: titles + a cover, never a four-column strip",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R1"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -138,27 +423,43 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:17.040Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R1",
+                      "duration": 21
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:04.807Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R1"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-ecfd295ae864826c99e6",
+          "id": "a4d8056b74ea4749de01-d874303730dd5e5f8ce1",
           "file": "board/test.spec.ts",
-          "line": 19,
+          "line": 20,
           "column": 1
         },
         {
-          "title": "R3 — the draft cell renders the wireframe itself, not a word for it",
+          "title": "R2 — the detail is two columns, each scrolling on its own",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
-              "annotations": [],
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R2"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -167,32 +468,48 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 164,
+                  "duration": 142,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:17.200Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R2",
+                      "duration": 23
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:04.968Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R2"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-2cb6c357ec3ee7466316",
+          "id": "a4d8056b74ea4749de01-a667f13794799892ef49",
           "file": "board/test.spec.ts",
-          "line": 28,
+          "line": 36,
           "column": 1
         },
         {
-          "title": "R4 — cell state is computed, and approving changes it",
+          "title": "R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
-              "annotations": [],
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R3"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -201,32 +518,48 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 831,
+                  "duration": 227,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:17.371Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R3",
+                      "duration": 83
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:05.118Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R3"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-858104179f53431c61e8",
+          "id": "a4d8056b74ea4749de01-4618ed00d1a100713f49",
           "file": "board/test.spec.ts",
-          "line": 35,
+          "line": 55,
           "column": 1
         },
         {
-          "title": "R7 — screens are grouped into named areas, never paginated",
+          "title": "R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
-              "annotations": [],
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R4"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -235,32 +568,48 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 207,
+                  "duration": 216,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:18.209Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R4",
+                      "duration": 113
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:05.351Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R4"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-b43b2ac2f44d8702b9c8",
+          "id": "a4d8056b74ea4749de01-eee98a68f333db069f41",
           "file": "board/test.spec.ts",
-          "line": 50,
+          "line": 76,
           "column": 1
         },
         {
-          "title": "R8 — filter by whose turn it is, and search requirement text",
+          "title": "R5 — requirements and tests are many-to-many by tag, and the link lights up on hover",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
-              "annotations": [],
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R5"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -269,32 +618,48 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 303,
+                  "duration": 261,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:18.423Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R5",
+                      "duration": 110
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:05.574Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R5"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-1d7bdf1fe9f7cea0d1da",
+          "id": "a4d8056b74ea4749de01-86916ebd7c60c203bcd2",
           "file": "board/test.spec.ts",
-          "line": 57,
+          "line": 107,
           "column": 1
         },
         {
-          "title": "R6 — the header counts agree with the rows beneath them",
+          "title": "R6 — a test declares the coverage it proves; a requirement lists every test that covers it",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
-              "annotations": [],
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R6"
+                }
+              ],
               "expectedStatus": "passed",
               "projectId": "",
               "projectName": "",
@@ -303,22 +668,233 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 241,
+                  "duration": 108,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:18.732Z",
-                  "annotations": [],
+                  "steps": [
+                    {
+                      "title": "proves R6",
+                      "duration": 9
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:05.841Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R6"
+                    }
+                  ],
                   "attachments": []
                 }
               ],
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-e0a9a89957eabb2754a9",
+          "id": "a4d8056b74ea4749de01-21393cff3b1613cd80e6",
           "file": "board/test.spec.ts",
-          "line": 70,
+          "line": 123,
+          "column": 1
+        },
+        {
+          "title": "R7 — an external design link is optional context: shown, never rendered or gated; absent = disabled",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R7"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 110,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R7",
+                      "duration": 10
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:05.956Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R7"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d8056b74ea4749de01-5306fcb22c1b555fb32a",
+          "file": "board/test.spec.ts",
+          "line": 143,
+          "column": 1
+        },
+        {
+          "title": "R8 — ONE human gate: accept the requirements; no gate B, no wireframe",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R8"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 221,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R8",
+                      "duration": 120
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:06.071Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R8"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d8056b74ea4749de01-ee42207ffd9c5538caae",
+          "file": "board/test.spec.ts",
+          "line": 157,
+          "column": 1
+        },
+        {
+          "title": "R9 — search across requirement text, grouped into areas, a group with no match hides",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R9"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 205,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R9",
+                      "duration": 75
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:06.299Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R9"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d8056b74ea4749de01-7fa6db278610b2c9fcf3",
+          "file": "board/test.spec.ts",
+          "line": 176,
+          "column": 1
+        },
+        {
+          "title": "R10 — a test opens to its evidence and can be run; the whole log opens in a floating window",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R10"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 197,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R10",
+                      "duration": 101
+                    }
+                  ],
+                  "startTime": "2026-07-30T06:55:06.510Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R10"
+                    }
+                  ],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a4d8056b74ea4749de01-bc42b0f2ab3e010d02d4",
+          "file": "board/test.spec.ts",
+          "line": 191,
           "column": 1
         }
       ]
@@ -335,7 +911,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -345,12 +921,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 144,
+                  "duration": 89,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:18.994Z",
+                  "startTime": "2026-07-30T06:55:06.720Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -369,7 +945,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -379,12 +955,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 217,
+                  "duration": 122,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:19.143Z",
+                  "startTime": "2026-07-30T06:55:06.815Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -403,7 +979,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -413,12 +989,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 323,
+                  "duration": 407,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:19.366Z",
+                  "startTime": "2026-07-30T06:55:06.943Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -437,7 +1013,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -447,12 +1023,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 374,
+                  "duration": 423,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:19.696Z",
+                  "startTime": "2026-07-30T06:55:07.356Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -471,7 +1047,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -481,12 +1057,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 427,
+                  "duration": 548,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:20.076Z",
+                  "startTime": "2026-07-30T06:55:07.785Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -513,7 +1089,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -523,12 +1099,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5376,
+                  "duration": 5859,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:20.515Z",
+                  "startTime": "2026-07-30T06:55:08.345Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -538,16 +1114,16 @@
           ],
           "id": "b4322de4926762c72732-9090039f9f7c816cedd9",
           "file": "dispatch/test.spec.ts",
-          "line": 27,
+          "line": 63,
           "column": 1
         },
         {
-          "title": "R4 — a second job is refused while one runs, not queued silently",
+          "title": "R4 — a person's second run takes over the running one: accepted, not refused",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -557,12 +1133,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 255,
+                  "duration": 116,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:25.899Z",
+                  "startTime": "2026-07-30T06:55:14.211Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -570,9 +1146,43 @@
               "status": "expected"
             }
           ],
-          "id": "b4322de4926762c72732-841f14fe7e1cea47034e",
+          "id": "b4322de4926762c72732-fdde4cbd32948c2121e1",
           "file": "dispatch/test.spec.ts",
-          "line": 49,
+          "line": 85,
+          "column": 1
+        },
+        {
+          "title": "R4 — a run may nest inside the run driving it, and nesting is bounded",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1000,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:14.340Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-74ead6b52bacfc6717c1",
+          "file": "dispatch/test.spec.ts",
+          "line": 117,
           "column": 1
         },
         {
@@ -581,7 +1191,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -591,12 +1201,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5115,
+                  "duration": 5089,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:26.162Z",
+                  "startTime": "2026-07-30T06:55:15.346Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -606,16 +1216,16 @@
           ],
           "id": "b4322de4926762c72732-85c3c2f0d389af73b44f",
           "file": "dispatch/test.spec.ts",
-          "line": 67,
+          "line": 155,
           "column": 1
         },
         {
-          "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
+          "title": "R6/R8 — a run saves its whole log, and records every test case on its own",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -625,12 +1235,250 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 69,
+                  "duration": 5987,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:31.287Z",
+                  "startTime": "2026-07-30T06:55:20.441Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-a8ff25efd40b6ba0dbe4",
+          "file": "dispatch/test.spec.ts",
+          "line": 172,
+          "column": 1
+        },
+        {
+          "title": "R8 — a run that matched no test is recorded as an error, never 0 of 0 passing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2034,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:26.434Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-cab96b3c54f7663cc581",
+          "file": "dispatch/test.spec.ts",
+          "line": 201,
+          "column": 1
+        },
+        {
+          "title": "R8 — running ONE case leaves every other case's steps and log standing",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9116,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:28.475Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-4552b6c218e68d1655bd",
+          "file": "dispatch/test.spec.ts",
+          "line": 219,
+          "column": 1
+        },
+        {
+          "title": "R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it was",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6035,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:37.598Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-45ac0c9abda7cdc90c23",
+          "file": "dispatch/test.spec.ts",
+          "line": 245,
+          "column": 1
+        },
+        {
+          "title": "R8 — EVERY case that has run can expand its steps, not only the one you clicked",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5506,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:43.638Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-484efddb8142d778d57c",
+          "file": "dispatch/test.spec.ts",
+          "line": 277,
+          "column": 1
+        },
+        {
+          "title": "R7 — the run panel offers no background run",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 99,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:49.151Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-53627675295a33af2f35",
+          "file": "dispatch/test.spec.ts",
+          "line": 302,
+          "column": 1
+        },
+        {
+          "title": "R7 — the panel and its log stay on screen after the run ends",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8069,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:49.256Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b4322de4926762c72732-060aef15eecfbc321259",
+          "file": "dispatch/test.spec.ts",
+          "line": 310,
+          "column": 1
+        },
+        {
+          "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 92,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T06:55:57.333Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -640,381 +1488,7 @@
           ],
           "id": "b4322de4926762c72732-88f0e03ddfdc17969524",
           "file": "dispatch/test.spec.ts",
-          "line": 84,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "gate-draft-review/test.spec.ts",
-      "file": "gate-draft-review/test.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "R1 — PRD and wireframe are visible side by side",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 236,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:31.381Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-9deaf70fa4b2b1e274a4",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 13,
-          "column": 1
-        },
-        {
-          "title": "R3 — approving pins the PRD hash, and the bar says which",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 200,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:31.622Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-4810b59c2bd63f5355ea",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 29,
-          "column": 1
-        },
-        {
-          "title": "R4 — rejecting requires a reason; an empty one is refused",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 60,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:31.829Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-016846a6dcb0192c036a",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 42,
-          "column": 1
-        },
-        {
-          "title": "R5 — the gate opens by itself when the PRD moves",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 261,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:31.896Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-e523ddd83d926c789cbe",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 50,
-          "column": 1
-        },
-        {
-          "title": "the full gate-A loop — open, read, approve, confirm",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 505,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "steps": [
-                    {
-                      "title": "open the screen from its address",
-                      "duration": 108
-                    },
-                    {
-                      "title": "the verdict bar is open, asking for a yes",
-                      "duration": 3
-                    },
-                    {
-                      "title": "approve the draft",
-                      "duration": 33
-                    },
-                    {
-                      "title": "the bar now says approved and names the pinned PRD",
-                      "duration": 196
-                    }
-                  ],
-                  "startTime": "2026-07-27T08:57:32.165Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-a5565128af6609270f32",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 67,
-          "column": 1
-        },
-        {
-          "title": "the detail view has its own address and survives a reload",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 400,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:32.678Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "bd10ed955c4f657cc14c-936600c1d0aabf582d13",
-          "file": "gate-draft-review/test.spec.ts",
-          "line": 93,
-          "column": 1
-        }
-      ]
-    },
-    {
-      "title": "gate-screen-review/test.spec.ts",
-      "file": "gate-screen-review/test.spec.ts",
-      "column": 0,
-      "line": 0,
-      "specs": [
-        {
-          "title": "R1 — the approved design and the built screen are shown side by side",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 239,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:33.090Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-b95ef1f96e5e03e75542",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 8,
-          "column": 1
-        },
-        {
-          "title": "R4 — approving pins the draft hash the screen was checked against",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 437,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:33.335Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-963b21e774887d8fdc8d",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 28,
-          "column": 1
-        },
-        {
-          "title": "R5 — rejecting has to name which side is wrong",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 158,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:33.779Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-0da3347a3256ef26b896",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 41,
-          "column": 1
-        },
-        {
-          "title": "R2 — a screen with no screenshot has no gate B to open",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 30000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 267,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-27T08:57:33.941Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "a5d9d93de2c719dd5f61-fcaeb33c67111ff3cf2e",
-          "file": "gate-screen-review/test.spec.ts",
-          "line": 57,
+          "line": 327,
           "column": 1
         }
       ]
@@ -1031,7 +1505,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -1041,12 +1515,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 378,
+                  "duration": 265,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:34.220Z",
+                  "startTime": "2026-07-30T06:55:57.448Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1056,7 +1530,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-98eed5b60465800dc917",
           "file": "init/test.spec.ts",
-          "line": 30,
+          "line": 23,
           "column": 1
         },
         {
@@ -1065,7 +1539,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -1075,12 +1549,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 288,
+                  "duration": 203,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:34.604Z",
+                  "startTime": "2026-07-30T06:55:57.718Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1090,16 +1564,16 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-a7bd6c25b291e27139ea",
           "file": "init/test.spec.ts",
-          "line": 55,
+          "line": 48,
           "column": 1
         },
         {
-          "title": "R3 — a crawled PRD is marked a guess and cannot skip gate A",
+          "title": "R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate",
           "ok": true,
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -1109,12 +1583,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 176,
+                  "duration": 116,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:34.899Z",
+                  "startTime": "2026-07-30T06:55:57.926Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1122,9 +1596,9 @@
               "status": "expected"
             }
           ],
-          "id": "a3d7ad62b56c3ce6940d-6f3362dbda8f6936d935",
+          "id": "a3d7ad62b56c3ce6940d-0699bf7a7c39ec70fc56",
           "file": "init/test.spec.ts",
-          "line": 75,
+          "line": 68,
           "column": 1
         },
         {
@@ -1133,7 +1607,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -1143,12 +1617,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 179,
+                  "duration": 96,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:35.081Z",
+                  "startTime": "2026-07-30T06:55:58.049Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1158,7 +1632,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-b41ba3b8e290735872a7",
           "file": "init/test.spec.ts",
-          "line": 97,
+          "line": 104,
           "column": 1
         },
         {
@@ -1167,7 +1641,7 @@
           "tags": [],
           "tests": [
             {
-              "timeout": 30000,
+              "timeout": 60000,
               "annotations": [],
               "expectedStatus": "passed",
               "projectId": "",
@@ -1177,12 +1651,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 257,
+                  "duration": 159,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-27T08:57:35.270Z",
+                  "startTime": "2026-07-30T06:55:58.150Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1192,7 +1666,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-07c5f2756c5fc84a7906",
           "file": "init/test.spec.ts",
-          "line": 107,
+          "line": 114,
           "column": 1
         }
       ]
@@ -1200,9 +1674,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-27T08:57:15.066Z",
-    "duration": 20502.36,
-    "expected": 31,
+    "startTime": "2026-07-30T06:55:02.202Z",
+    "duration": 56158.222,
+    "expected": 41,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

@@ -7,95 +7,52 @@
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  ROOT, CANVAS_W, CANVAS_H, esc, designCss, allScreens, sortedAreas, isWaiting, writeText
+  ROOT, esc, designCss, allScreens, sortedAreas, isWaiting, writeText
 } from './spec-store.mjs'
 
-// label · chip tone · mark shape. The mark is redundant with the tone on purpose: status has to
-// survive greyscale and low vision, so hue is never the only thing carrying it.
-const CHIP = {
-  ok: ['approved', 'ok', 'dot'],
-  review: ['needs review', 'rev', 'dot'],
-  stale: ['PRD moved', 'stale', 'mark h'],
-  rejected: ['you sent it back', 'bad', 'mark o'],
-  missing: ['not started', 'gone', 'mark n'],
-  waiting: ['waits', 'gone', 'mark n'],
-  pass: ['pass', 'ok', 'dot'],
-  fail: ['fail', 'bad', 'mark o'],
-  unrun: ['never run', 'gone', 'mark o'],
-  ranstale: ['passed, then you edited', 'stale', 'mark h'],
-  // document mode. 'nodraft' is a NON-BLOCKING absence — an existing screen simply has no wireframe,
-  // so it wears the neutral dashed 'gone' look, never a red/attention tone. 'current' is the live
-  // screen in a screen cell with no gate B; a distinct muted 'live' tone so it never reads as an
-  // approval (green) it did not earn — its proof is the test in column 4, not a human gate.
-  nodraft: ['no wireframe', 'gone', 'mark n'],
-  current: ['current screen', 'live', 'dot']
+// A status chip. Hue names the state; a redundant square mark carries it too, so status survives
+// greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
+// of the square shapes from _design.css (filled · o hollow · h half · n hairline).
+const chip = (tone, mark, label, attrs = '') =>
+  `<span class="chip ${tone}"${attrs ? ' ' + attrs : ''}><span class="${mark}"></span>${label}</span>`
+
+// A requirement's derived state → its header chip (board R4). proven=moss ✓, reworded=iron (your
+// turn to re-accept), unproven=hollow ○ (honestly ungreen, never faked). Title only, no label — the
+// header stays compact; the word lives in the tooltip. NOTE the reworded mark is a plain filled
+// square, NOT the design system's half-fill `mark h`: that class would collide with the requirement
+// header's own `.h` inside the pane (the acceptance test clicks `.req .h`), so hue carries reworded
+// here — exactly as the approved mockup does.
+const REQ_CHIP = {
+  proven: ['ok', 'mark', 'proven'],
+  reworded: ['stale', 'mark', 'reworded since it was accepted'],
+  unproven: ['gone', 'mark o', 'no passing assertion covers this yet']
+}
+const reqChip = state => {
+  const [tone, mark, title] = REQ_CHIP[state] || REQ_CHIP.unproven
+  return `<span class="chip ${tone}" title="${title}"><span class="${mark}"></span></span>`
 }
 
-const chip = st => {
-  const [label, tone, mark] = CHIP[st] || [st, 'gone', 'mark n']
-  return `<span class="chip ${tone}"><span class="${mark}"></span>${label}</span>`
-}
-
-function cell (s, col, inner) {
-  const st = s.cells[col]
-  const tone = (CHIP[st] || [])[1] || 'gone'
-  // Only the DRAFT cell is clickable, because gate A is the only gate that exists. A cell that
-  // opens something unrelated to the column you clicked teaches you not to trust any of them.
-  const act = col === 'draft' && ['stale', 'review', 'rejected'].includes(st)
-  // The chip sits ABOVE the artwork, never on it. A status badge floating over a hi-fi draft
-  // covers the part of the design it is making a claim about.
-  return `<div class="cell c-${tone}${act ? ' act' : ''}" data-screen="${esc(s.name)}" data-col="${col}">
-    <div class="cellh">${chip(st)}</div>
-    <div class="cellb">${inner}</div>
-  </div>`
-}
-
-const row = (s, i) => `
-<div class="row" data-i="${i}" data-area="${esc(s.area)}"
-     data-waiting="${isWaiting(s) ? 1 : 0}" data-started="${s.cells.draft === 'missing' ? 0 : 1}"
-     data-q="${esc((s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase())}">
-  <div class="c1">
-    <div class="nm">${esc(s.title)}${s.guess ? '<span class="chip stale gmark"><span class="mark h"></span>a guess</span>' : ''}</div>
-    <div class="meta">${s.reqs.length} requirements${s.route ? ` · <code>${esc(s.route)}</code>` : ''}${s.guess ? ' · <span class="gdim">crawled — correct it</span>' : ''}</div>
-    <ul class="reqs">${s.reqs.slice(0, 6).map(r => `<li><span class="rq">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span></li>`).join('')}${s.reqs.length > 6 ? `<li class="more">+${s.reqs.length - 6} more</li>` : ''}</ul>
+// Home is one CARD per screen (board R1): its name, a guess chip if the PRD is still a crawl guess,
+// a proven-count chip, the requirement TITLES, and the latest run's recording cover (or the still).
+// There is NO PRD/draft/screen/E2E column strip — the card is titles + cover and nothing else.
+const card = (s, i) => {
+  const M = s.reqs.length
+  const proven = s.reqs.filter(r => r.state === 'proven').length
+  const done = M > 0 && proven === M
+  const q = (s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase()
+  return `
+<div class="card" data-screen="${esc(s.name)}" data-i="${i}"
+     data-waiting="${isWaiting(s) ? 1 : 0}" data-q="${esc(q)}">
+  <div class="cmain">
+    <div class="cd"><span class="nm">${esc(s.title)}</span>
+      ${s.guess ? '<span class="chip stale gmark"><span class="mark h"></span>a guess</span>' : ''}
+      <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span></div>
+    <ul class="rl">${s.reqs.map(r => `<li><span class="id">${esc(r.id)}</span>${esc(r.title)}</li>`).join('')}</ul>
   </div>
-  ${cell(s, 'draft', s.draftHtml
-    ? `<div class="frame"><iframe scrolling="no" srcdoc="${esc(s.draftHtml)}"></iframe></div>`
-    : s.cells.draft === 'nodraft'
-      ? blank('no wireframe', 'this screen already exists — add one to redesign it')
-      : '<span class="ph">no draft</span>')}
-  ${cell(s, 'screen', s.hasShot
-    ? `<div class="shot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>`
-    : blank('not built', s.cells.draft === 'ok'
-      ? 'ready to build — the design is approved'
-      : 'waits for gate A'))}
-  ${cell(s, 'e2e', ['pass', 'fail', 'ranstale'].includes(s.cells.e2e)
-    ? `<div class="runs"><div class="runsh"><span class="tk ${s.cells.e2e}">${s.cells.e2e === 'fail' ? '✕' : s.cells.e2e === 'ranstale' ? '!' : '✓'}</span>
-       <span class="ms">${s.run.total - s.run.failed} of ${s.run.total} passing${s.cells.e2e === 'ranstale' ? ' · stale' : ''}</span></div>
-       <ul class="e2emini">${s.run.tests.map(t => `<li class="${t.ok ? 'p' : 'f'}"><span class="mark ${t.ok ? '' : 'o'}"></span><span class="tt">${esc(t.title)}</span></li>`).join('')}</ul></div>`
-    : blank(s.cells.e2e === 'unrun' ? 'never run' : 'no test',
-      s.cells.e2e === 'unrun' ? 'open it and press Run'
-        : s.cells.screen === 'ok' || s.hasShot ? 'ready for a test'
-          : 'waits for the screen'))}
+  <div class="cshot">${s.hasShot
+    ? `<img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} — latest run">`
+    : '<span class="play">▶</span>'}</div>
 </div>`
-
-// An empty cell is half the board on a young project. Saying WHAT HAS TO HAPPEN FIRST turns that
-// space into the answer to "so what do I do next" — the question an empty cell otherwise raises
-// and refuses to answer.
-const blank = (what, next) => `<div class="blank"><div class="b1">${what}</div>
-  <div class="b2">${next}</div></div>`
-
-// Only the requirements that MOVED, by default. Re-reading eight requirements to find the two
-// that changed is precisely how a review queue stops getting opened — so when we know what moved,
-// the rest starts collapsed and one click brings it back.
-const prdFilter = s => {
-  const d = s.diff
-  if (!d) return ''
-  const n = d.changed.length + d.added.length + d.removed.length
-  if (!n) return ''
-  return `<div class="seg pseg">
-    <span data-v="changed" class="on">Changed ${n}</span><span data-v="all">All ${s.reqs.length}</span>
-  </div>`
 }
 
 // Requirement prose is light markdown: paragraphs, `- ` lists, **bold**, *em*, `code`, plus
@@ -128,177 +85,105 @@ export function renderBody (text) {
   return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
 }
 
-function prdBody (s) {
-  const d = s.diff
-  const mark = r => !d ? '' : d.added.includes(r.id) ? 'added' : d.changed.includes(r.id) ? 'moved' : ''
-  // changed first, in their original order — you should not have to hunt down the page for them
-  const ordered = d ? [...s.reqs].sort((a, b) => (mark(b) ? 1 : 0) - (mark(a) ? 1 : 0)) : s.reqs
-  const arts = ordered.map(r => {
-    const m = mark(r)
-    const was = d && d.was[r.id]
-    const title = was && was.title !== r.title
-      ? `<del>${esc(was.title)}</del> <ins>${esc(r.title)}</ins>`
-      : esc(r.title)
-    return `<article class="${m}"${m ? '' : ' data-unchanged="1"'}>
-      <h3><span class="rid">${esc(r.id)}</span><span>${title}</span>${m ? `<span class="chip ${m === 'added' ? 'rev' : 'stale'}">${m === 'added' ? 'new' : 'reworded'}</span>` : ''}</h3>
-      ${renderBody(r.body)}</article>`
-  }).join('')
-  const gone = d && d.removed.length
-    ? `<article class="removed"><h3><span class="rid"></span><span>${d.removed.map(id => esc(id)).join(', ')} deleted since you approved this</span></h3></article>`
-    : ''
-  return arts + gone
+// The detail's optional external-design link (board R7): a Figma / v0 / image URL, shown as context,
+// NEVER rendered inside specboard and never gated. A screen with a link gets an enabled chip that
+// opens in a new tab; a screen with none gets a disabled chip with a hint — absence is not "unstarted".
+const designChip = s => s.design
+  ? `<a class="chip rev design" data-design="${esc(s.design)}" href="${esc(s.design)}" target="_blank"
+       rel="noopener" title="external design — opens in a new tab, never rendered or gated here">Design ↗</a>`
+  : `<span class="chip gone design" data-design="" aria-disabled="true"
+       title="no external design linked — add a design: URL to the PRD frontmatter to link one">Design</span>`
+
+// The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
+// Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
+const runAll = name =>
+  `<button class="btn pri runbtn" data-run="${esc(name)}">Run all<span class="kbd">r</span></button>`
+
+// LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
+// the long, formatted description collapses behind it and one click on the header reveals the full
+// markdown. An open body ends in a covers line NAMING the tests that prove it, or an honest "no test
+// asserts this yet" when it is unproven (R6). A requirement is never faked green.
+const reqRow = r => {
+  const passing = (r.tests || []).filter(t => t.status === 'pass' && !t.stale)
+  const covers = r.state === 'unproven'
+    ? '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
+    : passing.length
+      ? `<div class="covers">proven by ${passing.map(t => `<span class="ctag">${esc(t.title)}</span>`).join(' ')}</div>`
+      : '<div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div>'
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
+    <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span><span class="chev">›</span></div>
+    <div class="body">${renderBody(r.body)}${covers}</div>
+  </div>`
 }
+const reqPane = s => `<div class="pane reqpane">
+  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
+  ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
+</div>`
 
-// Column 4 in the detail view. The board could only ever say "7 of 7 passing", which asks you to
-// trust a number — you could not read WHICH seven, when they ran, or what a failure actually said.
-// The run controls shown wherever a screen can be run — the detail view now, not just the home
-// header. Run, and watch (re-run this screen in a real browser window you can follow), plus the
-// re-run-on-save switch, so you are not sent back to the board to reach any of them. There is no
-// "Background": a run stays in the panel until you dismiss it (dispatch R7), so nothing needs to be
-// hidden behind a chip.
-const runControls = name => `<span class="runctl">
-  <button class="btn sm runbtn" data-run="${esc(name)}">Run<span class="kbd">r</span></button>
-  <button class="btn sm headed" data-run="${esc(name)}">Watch it run ↗</button>
-  <label class="watchtog sm" title="re-run this screen whenever its files change">
-    <input type="checkbox" class="dwatch"> re-run on save</label>
-</span>`
-
-function e2ePanel (s) {
-  if (!s.run) {
-    // A test that exists but has never run needs a way to BE run from here — otherwise the only
-    // way to prove a fresh screen is the board-wide "Run all", and a per-screen Run that vanishes
-    // exactly when there is nothing yet to show is the button you needed most.
-    if (s.cells.e2e === 'unrun') {
-      return `<div class="dtp">
-        <div class="dtl dth2"><span class="lbl">4 · E2E</span>${chip(s.cells.e2e)}</div>
-        <div class="runbar">${runControls(s.name)}</div>
-        <div class="e2e"><div class="ph big">never run · <code>spec/${esc(s.name)}/test.spec.ts</code></div>
-          <div class="runlog" data-screen="${esc(s.name)}"><div class="lbl">recent runs</div>
-            <div class="runrows">loading…</div></div></div>
-      </div>`
-    }
-    if (s.cells.e2e !== 'missing' && s.cells.e2e !== 'waiting') return ''
-    return `<div class="dtp">
-      <div class="dtl lbl">4 · E2E</div>
-      <div class="ph big">no test yet · <code>spec/${esc(s.name)}/test.spec.ts</code></div>
-    </div>`
-  }
-  const ranAt = new Date(s.run.ranAt).toISOString().replace('T', ' ').slice(0, 16)
-  return `<div class="dtp">
-    <div class="dtl dth2"><span class="lbl">4 · E2E</span>${chip(s.cells.e2e)}</div>
-    <div class="runbar">${runControls(s.name)}</div>
-    <div class="e2e">
-      <div class="e2emeta">
-        <span>last run <b>${ranAt}</b></span>
-        <span class="tcnote">${s.run.total} test case${s.run.total === 1 ? '' : 's'} — each an independent check; a case may hold several steps</span>
-        ${s.cells.e2e === 'ranstale' ? '<span class="warn">you have edited this screen since — run it again</span>' : ''}
-        <div class="path"><code>spec/${esc(s.name)}/test.spec.ts</code></div>
+// RIGHT column (board R3/R5/R10): one test per row, leading with its own FLOW title (prominent),
+// then the coverage TAGS — one neutral chip per requirement it covers — and a status chip. Collapsed;
+// open it for the recording cover, a Run/Watch pair, the fold of steps (scrollable), and the full log
+// which opens in a floating window. The .tststeps / .tstlog / .tstshots / data-title hooks keep the
+// existing run / steps / log machinery working, re-housed into the new row.
+const testRow = (s, t) => {
+  const tags = Object.keys(t.reqs || {}).map(qid => {
+    const rid = qid.includes(':') ? qid.split(':').pop() : qid
+    return `<span class="tag" data-r="${esc(rid)}">${esc(rid)}</span>`
+  }).join('')
+  const status = t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
+  return `<div class="test tst ${t.ok ? 'p' : 'f'}" data-t="${esc(t.title)}" data-title="${esc(t.title)}">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(t.title)}</span><div class="tags">${tags}</div>${status}</div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">${t.ms}ms</span></div>
+        <div class="tsub">${t.ok ? 'passed' : 'failed'} · ${t.ms}ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+        </span>
       </div>
-      ${s.run.tests.map(t => `<article class="tst ${t.ok ? 'p' : 'f'}" data-title="${esc(t.title)}">
-        <div class="th"><span class="mark ${t.ok ? '' : 'o'}"></span>
-          <span class="tt">${esc(t.title)}</span><span class="ms">${t.ms}ms</span>
-          <span class="tacts">
-            <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
-              title="run only this test">Run</button>
-            <button class="btn sm gh runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}"
-              data-headed="1" title="watch only this test run in a browser">Watch ↗</button>
-          </span></div>
-        ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
-        <div class="tststeps" data-title="${esc(t.title)}"></div>
-        <div class="tstlog" data-title="${esc(t.title)}"></div>
-        <div class="tstshots" data-title="${esc(t.title)}"></div>
-      </article>`).join('')}
-      <div class="runlog" data-screen="${esc(s.name)}">
-        <div class="lbl">recent runs</div>
-        <div class="runrows">loading…</div>
-      </div>
+      ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
+      <div class="tstshots" data-title="${esc(t.title)}"></div>
+      <div class="fold"><div class="tststeps" data-title="${esc(t.title)}"></div></div>
+      <div class="tstlog" data-title="${esc(t.title)}"></div>
+      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
     </div>
   </div>`
 }
+const testPane = s => `<div class="pane testpane">
+  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
+  ${s.run && s.run.tests && s.run.tests.length
+    ? s.run.tests.map(t => testRow(s, t)).join('')
+    : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
+  <div class="runlog" data-screen="${esc(s.name)}">
+    <div class="lbl">recent runs</div>
+    <div class="runrows">loading…</div>
+  </div>
+</div>`
 
-// Gate B: the approved design against what actually got built. It can only exist once a test has
-// produced a screenshot — which is why column 3 is a byproduct of column 4 and never its own step.
-function gateBBar (s) {
-  const wrap = (cls, inner) => `<div class="gb ${cls}"><div class="gbin">${inner}</div></div>`
-  const st = s.cells.screen
-  if (st === 'ok') {
-    return wrap('ok', `
-      ${chip('ok')}
-      <span class="gbn">built screen matches the approved design — pinned to <code>draft ${s.draftHash}</code></span>
-      <span class="grow"></span>
-      <button class="btn" data-act="unapprove" data-gate="screen" data-screen="${esc(s.name)}">Un-approve</button>`)
+// The ONE human gate of the two-column model (board R8): accept the requirements. It is open — your
+// turn — whenever the screen is waiting (a crawl guess, a reworded requirement, or a never-accepted
+// PRD). Accepting POSTs to the server, which pins the current PRD text so nothing reads reworded
+// afterward and the gate closes. There is no draft gate and no gate B — the tests answer "did you
+// build it right?" against the real app, automatically.
+const acceptGate = s => {
+  if (!isWaiting(s)) {
+    return `<div class="gate ok">
+      ${chip('ok', 'dot', 'requirements accepted')}
+      <span class="g2">These requirements are the accepted source of truth. Edit the PRD to change what the screen should do, and it reads as needing re-acceptance until you accept again.</span>
+    </div>`
   }
-  const why = st === 'stale'
-    ? 'The design moved after you approved this screen.'
-    : 'Nobody has checked the built screen against the design yet.'
-  return wrap('open', `
-    <span class="gbn" style="flex:none">${why}</span>
-    <button class="btn ok" data-act="approve" data-gate="screen" data-screen="${esc(s.name)}">Matches the design</button>
-    <span class="gor">or</span>
-    <input class="why input" required
-      placeholder="Which is wrong — the build or the design? One sentence.">
-    <button class="btn no" data-act="reject" data-gate="screen" data-screen="${esc(s.name)}">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>${s.draftHash}</code></span>`)
-}
-
-// Gate A lives in the detail view: PRD on the left, the draft on the right, approve underneath.
-function gateBar (s) {
-  const wrap = (cls, inner) => `<div class="gb ${cls}"><div class="gbin">${inner}</div></div>`
-  const st = s.cells.draft
-  // DOCUMENT mode: no wireframe, so no gate A on a draft and no gate B on a build. The PRD is the
-  // source of truth, and the one decision is whether a crawled GUESS is accepted as canon. There is
-  // no hash-pinning here — once accepted, editing the PRD makes the TEST stale, not this bar.
-  if (st === 'nodraft') {
-    if (s.guess) {
-      return wrap('open', `
-        <span class="gbn" style="flex:none">These requirements were read off the running app — a guess. Correct the PRD if it is wrong, then accept it as the source of truth.</span>
-        <span class="grow"></span>
-        <button class="btn ok" data-act="accept" data-gate="prd" data-screen="${esc(s.name)}">Accept these requirements</button>`)
-    }
-    return wrap('ok', `
-      ${chip('ok')}
-      <span class="gbn">requirements accepted — this screen is documented. Edit the PRD to change what it should do, and its test goes stale until you re-run it.</span>
-      <span class="grow"></span>
-      <button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button>`)
-  }
-  if (st === 'missing') return wrap('', '<span class="gbn">No draft yet — nothing to approve.</span>')
-  if (st === 'ok') {
-    // gate A is settled, so the open question moves downstream to gate B
-    if (s.hasShot) return gateBBar(s)
-    return wrap('ok', `
-      ${chip('ok')}
-      <span class="gbn">design approved against <code>prd.md · ${s.state.draftApprovedAgainstPrd}</code> — build the screen next</span>
-      <span class="grow"></span>
-      <button class="btn" data-act="unapprove" data-screen="${esc(s.name)}">Un-approve</button>`)
-  }
-  if (st === 'rejected') {
-    // The sentence is the whole point of rejecting. Showing it back is what makes saying no feel
-    // like a decision that landed rather than a button that did nothing visible.
-    const why = s.rejections[s.rejections.length - 1].why
-    const earlier = s.rejections.length - 1
-    return wrap('bad', `
-      ${chip('rejected')}
-      <span class="gbw">${why ? esc(why) : 'No reason given.'}</span>
-      ${earlier ? `<span class="gbn">+ ${earlier} earlier — all of them go to the redraft</span>` : ''}
-      <span class="grow"></span>
-      <span class="grow"></span>
-      <button class="btn pri" data-dispatch="${esc(s.name)}">Redraft it →</button>
-      <button class="btn" data-act="unreject" data-screen="${esc(s.name)}">Take it back</button>`)
-  }
-  const why = st === 'stale'
-    ? 'The PRD moved after you approved this draft.'
-    : 'Nobody has said yes to this draft yet.'
-  // Two paths, in reading order, each ending in its own button. The reason field used to sit
-  // AFTER the verdict buttons, so you typed into a box and then hunted backwards for the control
-  // that sent it — which is where a half-written rejection gets abandoned.
-  return wrap('open', `
-    <span class="gbn" style="flex:none">${why}</span>
-    <button class="btn ok" data-act="approve" data-screen="${esc(s.name)}">Looks right</button>
-    <span class="gor">or</span>
-    <input class="why input" required
-      placeholder="Say what is wrong — one sentence, saved with the rejection">
-    <button class="btn no" data-act="reject" data-screen="${esc(s.name)}">Send it back<span class="kbd">↵</span></button>
-    <span class="gbn" style="flex:none">pins <code>${s.prdHash}</code></span>`)
+  const why = s.guess
+    ? 'These requirements were read off the running app — a guess. Correct any that are wrong, then accept them as the source of truth.'
+    : (!s.state.approvedPrdText
+        ? 'These requirements have never been accepted. Read them, correct any that are wrong, then accept them as the source of truth.'
+        : 'Requirements changed since they were accepted. Re-read what moved, then accept them again as the source of truth.')
+  return `<div class="gate open">
+    <span class="g1">Gate · your turn</span>
+    <span class="g2">${why}</span>
+    <button class="btn ok" data-act="accept" data-gate="prd" data-screen="${esc(s.name)}" style="flex:none;margin-left:auto">Accept requirements</button>
+  </div>`
 }
 
 // The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, the two lanes
@@ -797,8 +682,7 @@ const howView = () => `<section class="dt" id="howview" hidden>
 export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
-  const count = (col, ...states) => screens.filter(s => states.includes(s.cells[col])).length
-  // The one number that says whether it is your turn: gates open, first looks and re-looks alike.
+  // The one number that says whether it is your turn: how many screens have the accept gate open.
   const yourTurn = screens.filter(isWaiting).length
 
   const groups = areas.map(a => {
@@ -812,47 +696,35 @@ export function build () {
     <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
     ${waiting ? `<span class="gwait"><span class="dot"></span>${waiting} waiting</span>` : ''}
   </div>
-  <div class="rows">${inArea.map(x => row(x.s, x.i)).join('')}</div>
+  <div class="cards">${inArea.map(x => card(x.s, x.i)).join('')}</div>
 </section>`
   }).join('')
 
+  // The detail is two ends only (board R2): the requirements on the left, the tests that prove them
+  // on the right, each pane scrolling on its own. One accept gate above them; a design link and a
+  // Run-all in the bar. data-screen alongside data-i so the router can open it by name.
   const detail = screens.map((s, i) => `
-<section class="dt" data-i="${i}" hidden>
+<section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth">
     <h2>${esc(s.title)}</h2>
-    ${chip(s.cells.draft)}
-    <span class="gbn">${s.reqs.length} requirements · <code>spec/${esc(s.name)}/</code></span>
     <span class="grow"></span>
-    ${s.draftHtml
-      ? `<a class="btn" href="spec/${esc(s.name)}/draft.html" target="_blank">Open draft full size ↗</a>
-    <button class="btn edit" data-path="spec/${esc(s.name)}/draft.html">Edit the draft</button>`
-      : s.cells.draft === 'nodraft'
-        ? `<button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button>`
-        : ''}
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dtb">
-      <div class="dtp">
-        <div class="dtl lbl dth2">1 · PRD${prdFilter(s)}</div>
-        <div class="prd">${prdBody(s)}</div>
-      </div>
-      <div class="dtp"><div class="dtl lbl">2 · Draft — click into it, it is a working prototype</div>${s.draftHtml
-        ? `<div class="bigframe"><iframe srcdoc="${esc(s.draftHtml)}"></iframe></div>`
-        : s.cells.draft === 'nodraft'
-          ? `<div class="ph big" style="flex-direction:column;gap:var(--s3)">
-              <div>no wireframe — this screen already exists</div>
-              <button class="btn" data-dispatch="${esc(s.name)}">Add a wireframe to redesign →</button></div>`
-          : '<div class="ph big">no draft yet</div>'}</div>
-      ${s.hasShot ? `<div class="dtp">
-        <div class="dtl lbl">3 · Screen — shot by the last test run</div>
-        <div class="bigshot"><img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} as built"></div>
-      </div>` : ''}
-      ${e2ePanel(s)}
+    <div class="dbar dbarhook">
+      <span class="t">${esc(s.title)}</span>
+      <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · spec/${esc(s.name)}/</span>
+      <span class="grow"></span>
+      ${designChip(s)}
+      ${runAll(s.name)}
+    </div>
+    ${acceptGate(s)}
+    <div class="cols">
+      ${reqPane(s)}
+      ${testPane(s)}
     </div>
   </div>
-  ${gateBar(s)}
 </section>`).join('')
 
   const html = `<!doctype html>
@@ -862,41 +734,13 @@ export function build () {
 <style>${designCss()}</style>
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
-  :root { --gcols:minmax(300px,1.15fr) 1fr 1fr 1fr; }
-  /* Hide the whole wireframe column — a per-user board preference, remembered in localStorage.
-     Column 2 carries data-col="draft" in both the sticky header and every row, so one selector
-     drops it everywhere; the grid falls to three tracks so PRD, Screen and E2E stay aligned. */
-  .hide-wf .colhs, .hide-wf .row { grid-template-columns:minmax(300px,1.5fr) 1fr 1fr; }
-  .hide-wf [data-col="draft"] { display:none; }
   body { width:auto; }
-  .wrap { max-width:1760px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
-  .ph { font-size:var(--t-sm); color:var(--ink-4); }
-  .ph.big { display:flex; align-items:center; justify-content:center; height:320px; }
-  .shot { position:absolute; inset:0; overflow:hidden; background:var(--wash); }
-  .shot img { width:100%; display:block; }
-  .runs { align-self:stretch; width:100%; display:flex; flex-direction:column; gap:var(--s2);
-    padding:var(--s2) var(--s3); overflow:hidden; }
-  .runsh { display:flex; align-items:center; gap:var(--s2); flex:none; }
-  .runs .tk { width:20px; height:20px; border-radius:50%; display:flex; align-items:center;
-    justify-content:center; font-size:11px; flex:none; }
-  .runs .tk.pass { background:var(--koke-tint); color:var(--koke); }
-  .runs .tk.fail { background:var(--bengara-tint); color:var(--bengara); }
-  .runs .tk.ranstale { background:var(--yamabuki-tint); color:var(--yamabuki); }
-  .runs .ms { font-size:var(--t-xs); color:var(--ink-3); }
-  /* the E2E cell shows WHAT was proven, not just a count — the same list the detail view opens,
-     compact, so the home board answers "which behaviours are green" without a click */
-  .e2emini { list-style:none; margin:0; padding:0; overflow:auto; flex:1; min-height:0; }
-  .e2emini li { display:flex; align-items:baseline; gap:var(--s2); font-size:var(--t-xs);
-    color:var(--ink-3); padding:2px 0; line-height:1.4; }
-  .e2emini li .tt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
-  .e2emini li.p .mark { color:var(--koke); } .e2emini li.f .mark { color:var(--bengara); }
-  .e2emini li .mark { position:relative; top:2px; flex:none; }
-  .blank { text-align:center; padding:0 var(--s4); }
-  .blank .b1 { font-size:var(--t-md); color:var(--ink-3); margin-bottom:5px; }
-  .blank .b2 { font-size:var(--t-xs); color:var(--ink-4); }
+  .wrap { max-width:1200px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
+  .empty { padding:var(--s5) var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
+  .empty code { font-family:var(--mono); }
 
-  /* the settings menu — the two view toggles (wireframes, collapse-all) live in a gear the same
-     height as the Conflicts / Set up buttons beside it, instead of on their own header row */
+  /* the settings menu — the collapse-all toggle lives in a gear the same height as the Conflicts /
+     Set up buttons beside it, instead of on its own header row */
   .setwrap { position:relative; display:inline-flex; }
   .gear { padding-left:7px; padding-right:7px; color:var(--ink-3); }
   .gear svg { display:block; }
@@ -913,12 +757,11 @@ export function build () {
   /* the Conflicts count badge sits INSIDE its button; its taller line-box would push that button
      past Set up and the gear, so pin the badge to the text line and the three controls line up */
   .top .btn .chip { padding-top:0; padding-bottom:0; line-height:1.3; }
-  /* update-available affordance — the vendored board updates with a CLICK, never a terminal command.
-     The message is muted (.gbn); the trigger wears .btn.turn ("the app is asking YOU for something"),
-     the single inverted control on the home view. */
+  /* update-available affordance — the vendored board updates with a CLICK, never a terminal command. */
   .updwrap { display:inline-flex; align-items:center; gap:var(--s2); }
   .updsetup { max-width:1120px; margin:0 auto var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
   .updsetup.avail { color:var(--ai); }
+  .gbn { font-size:var(--t-sm); color:var(--ink-4); }
   .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
   .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
     border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
@@ -928,141 +771,145 @@ export function build () {
     color:var(--ink-4); font-size:var(--t-sm); padding:2px 4px; line-height:1; display:none; }
   .qwrap.has .qx { display:block; }
 
-  .colhs { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
-    position:sticky; top:0; z-index:5; background:var(--canvas);
-    padding:var(--s5) 0 var(--s2); }
-  /* the columns ARE a sequence — PRD becomes a draft becomes a screen becomes a test — so the
-     header says so with an arrow sitting in the gap to the next column */
-  .colhs .lbl.flow { position:relative; }
-  .colhs .lbl.flow:after { content:"→"; position:absolute; right:-13px; top:0;
-    color:var(--ink-4); font-size:var(--t-sm); }
-
+  /* HOME — screens grouped into named areas, one CARD per screen (board R1). No column strip. */
   .grp { margin-bottom:var(--s2); }
+  .grp.gone { display:none; }
   .grph { display:flex; align-items:center; gap:var(--s3); padding:var(--s6) 0 var(--s3); }
   .gc { font-size:var(--t-sm); color:var(--ink-4); }
-  /* a group count is a cue, not a badge — repeated once per area, a filled chip became noise */
   .gwait { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm); color:var(--ai); }
   .tw { border:0; background:transparent; color:var(--ink-4); cursor:pointer;
     font-size:var(--t-sm); padding:0; width:12px; line-height:1; }
-  .grp.shut .rows { display:none; }
-  .rows { display:flex; flex-direction:column; gap:var(--s3); }
-
-  /* The four cells are ONE row and the eye must read them together — PRD, then wireframe, then
-     screen, then test. The row is therefore a CARD that is always visible, not a hover effect: a
-     grouping you can only see by pointing at it does not help you scan forty rows. The cells sit
-     inside it on the same paper, so the band reads as one object; hover only deepens what is
-     already there. The whole row is clickable, so there is no hunting for the one part that opens. */
-  .row { display:grid; grid-template-columns:var(--gcols); gap:var(--s3);
-    padding:var(--s3); margin:0 calc(var(--s3) * -1) var(--s2); border-radius:var(--r-md);
-    background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair);
-    cursor:pointer; align-items:stretch;
-    transition:box-shadow .12s, transform .12s; }
-  .row:hover { box-shadow:inset 0 0 0 1px var(--hair-2), var(--sh-md); }
-  /* on the row's own paper the cells no longer need a fill of their own — a box inside an
-     identical box is the nested look that made four cells read as four separate cards */
-  .row .cell, .row .c1 { background:transparent; }
-  .row.gone { display:none; }
-  .c1 { background:var(--paper); border:1px solid var(--hair); padding:var(--s4);
-    border-radius:var(--r-md); cursor:pointer;
-    transition:border-color .12s, box-shadow .12s, transform .12s; }
-  /* the lift is the affordance — it is how a row says "this is a thing you can open" without
-     needing a button drawn on it */
-  .c1:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
-  .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
-  .meta { font-size:var(--t-sm); color:var(--ink-4); margin:2px 0 var(--s4); }
-  .reqs { list-style:none; margin:0; padding:0; }
-  .reqs li { display:flex; gap:var(--s2); font-size:var(--t-sm); color:var(--ink-2); padding:3px 0; }
-  /* ellipsis on the TEXT, not the flex row — a flex item clips mid-word without it, which
-     reads as a rendering fault rather than a deliberate truncation */
-  .reqs li .rt { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
-  .reqs li .rq { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
-    width:18px; flex:none; padding-top:2px; }
-  .reqs .more { color:var(--ink-4); padding-left:26px; }
-
-  .cell { border:1px solid var(--hair); background:var(--paper); border-radius:var(--r-md);
-    min-height:var(--cellh,200px); overflow:hidden; display:flex; flex-direction:column;
+  .grp.shut .cards { display:none; }
+  .cards { display:flex; flex-direction:column; gap:var(--s4); }
+  .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
+    border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s4) var(--s5); cursor:pointer;
     transition:border-color .12s, box-shadow .12s; }
-  .cell.c-gone { background:transparent; border-style:dashed; }
-  .cell.c-rev { border-color:var(--ai-line); }
-  .cell.c-stale { border-color:var(--bengara-line); }
-  /* document mode: the current screen sits in a normal solid cell (it is real content, not an
-     absence), and its chip is a muted 'live' tone — present, but never the green of an approval. */
-  .chip.live { background:var(--wash); color:var(--ink-3); }
-  .chip.live .dot { background:var(--ink-3); }
-  .cell.act { cursor:pointer; }
-  .cell.act:hover { border-color:var(--ink); box-shadow:var(--sh-md); }
-  .cellh { flex:none; padding:var(--s2) var(--s2) 7px; }
-  .cellb { position:relative; flex:1; overflow:hidden; display:flex;
-    align-items:center; justify-content:center; }
-  .frame { position:relative; width:100%; overflow:hidden; }
-  /* A thumbnail is a picture of a screen, not the screen. Live controls inside a 26%-scale
-     preview means clicking a row lands on some button in the prototype instead of opening the
-     row — the prototype is interactive in the detail view, where it is legible enough to use. */
-  .frame iframe { width:${CANVAS_W}px; border:0; transform-origin:top left; display:block;
-    pointer-events:none; }
-  /* a cut-off thumbnail says so — a hard edge reads as "that was the end of the screen" */
-  .frame.cropped:after { content:""; position:absolute; left:0; right:0; bottom:0; height:40px;
-    background:linear-gradient(rgba(253,252,249,0), var(--paper)); }
-  .frame.cropped:before { content:"continues"; position:absolute; right:var(--s2); bottom:3px;
-    z-index:2; font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase;
-    color:var(--ink-4); }
+  .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
+  .card.gone { display:none; }
+  .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
+  .card .pcount { margin-left:auto; }
+  .rl { list-style:none; display:flex; flex-direction:column; gap:5px; margin:0; padding:0; }
+  .rl li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-sm); color:var(--ink-2); }
+  .rl li .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
+  .cshot { aspect-ratio:16/10; border-radius:var(--r); border:1px solid var(--hair-2); overflow:hidden;
+    background:linear-gradient(135deg,var(--wash),var(--sunk)); position:relative; }
+  .cshot img { width:100%; height:100%; object-fit:cover; object-position:top left; display:block; }
+  .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:18px; color:var(--ink-4); }
 
-  /* Header, body, footer — a real app layout. The gate bar used to be sticky INSIDE the scroll,
-     so it floated over the requirement text behind it and read as a broken row. A verdict bar
-     belongs to the window, not to the document it is scrolling past. */
-  .dt { position:fixed; inset:0; background:var(--canvas); z-index:20;
-    display:flex; flex-direction:column; }
-  /* An author display declaration beats the hidden attribute's UA display:none. Without this
-     every detail view renders at once, stacked, and you see whichever is last in the DOM — which
-     looks like the router picking the wrong screen rather than none of them being hidden. */
+  /* DETAIL — a fixed window: header, the one accept gate, two independently scrolling panes (R2) */
+  .dt { position:fixed; inset:0; background:var(--canvas); z-index:20; display:flex; flex-direction:column; }
+  /* An author display declaration beats the hidden attribute's UA display:none, so a hidden detail
+     really disappears rather than every one stacking. */
   .dt[hidden] { display:none; }
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
-    width:100%; max-width:1760px; margin:0 auto; padding:var(--s4) var(--s6);
+    width:100%; max-width:1200px; margin:0 auto; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
-  /* Each column scrolls on its own. The PRD is a long read; the draft and the screen are single
-     images. Scrolling them as one block meant reading requirement six scrolled both pictures off
-     the screen — so the one comparison the whole view exists for became impossible to hold. */
-  /* ONE scroller for the whole detail view. Four independently scrolling panels meant the wheel
-     only worked while the pointer sat over the exact column you wanted — and over the draft it
-     scrolled the prototype's own document instead of the page. Each panel now sizes to its
-     content and the view scrolls as a page, which is what every hand reaches for. */
-  .dtscroll { flex:1; overflow:auto; padding:var(--s5) var(--s6) var(--s5); }
-  .dtb { display:grid; grid-template-columns:minmax(320px,1fr) 1.35fr; gap:var(--s5);
-    max-width:1760px; margin:0 auto; align-items:start; }
-  .dtb:has(> :nth-child(3)) { grid-template-columns:minmax(260px,.85fr) 1.1fr 1.1fr; }
-  /* the E2E column carries a control row (Run · Watch · re-run-on-save) and a test list, so it
-     earns more width than the other three when all four are present */
-  .dtb:has(> :nth-child(4)) { grid-template-columns:minmax(220px,.72fr) .95fr .95fr minmax(330px,1.05fr); }
-  .dtp { display:flex; flex-direction:column; min-height:0; }
-  .dtp > .dtl { flex:none; }
-  /* content-sized, not scroll-boxed — the page scroller above owns the scrolling now */
-  .dtp > .prd, .dtp > .bigframe, .dtp > .bigshot, .dtp > .e2e { overflow:visible; flex:none; }
-  .bigshot { background:var(--wash); }
-  .bigshot img { width:100%; display:block; }
+  .dtscroll { flex:1; overflow:auto; }
+  .dtscroll > .dbar, .dtscroll > .gate, .dtscroll > .cols {
+    width:100%; max-width:1200px; margin-left:auto; margin-right:auto; }
+  .dtscroll { padding:var(--s5) var(--s6) var(--s5); }
+  .dbar { display:flex; align-items:center; gap:var(--s4); padding:0 var(--s2) var(--s4); }
+  .dbar .t { font-size:var(--t-xl); letter-spacing:-.02em; }
+  .dbar .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
+  .chip.design[aria-disabled="true"] { cursor:default; }
 
-  /* the run controls get their own row under the E2E label — a narrow column cannot hold Run,
-     Watch and re-run-on-save on the same line as a heading without wrapping into a mess */
-  .runbar { display:flex; padding:var(--s2) var(--s4); border-bottom:1px solid var(--hair);
-    background:var(--paper); }
-  .runctl { display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
-    text-transform:none; letter-spacing:normal; }
-  .watchtog.sm { font-size:var(--t-xs); text-transform:none; letter-spacing:normal; }
-  .dth2 { flex-wrap:nowrap; }
-  .dth2 .lbl { flex:none; white-space:nowrap; }
-  .e2e { padding:var(--s3) var(--s4) var(--s4); }
-  .e2emeta { font-size:var(--t-sm); color:var(--ink-4); padding-bottom:var(--s3);
-    border-bottom:1px solid var(--hair); margin-bottom:var(--s2); display:flex;
-    flex-direction:column; gap:3px; }
-  .e2emeta b { color:var(--ink-2); font-weight:400; }
-  .e2emeta .warn { color:var(--bengara); }
-  .tst { padding:var(--s3) 0; border-bottom:1px solid var(--hair); }
-  .tst:last-child { border-bottom:0; }
-  .tst .th { display:flex; align-items:baseline; gap:var(--s2); }
-  .tst .mark { position:relative; top:1px; }
-  .tst.p .mark { color:var(--koke); } .tst.f .mark { color:var(--bengara); }
-  .tst .tt { flex:1; font-size:var(--t-sm); color:var(--ink-2); }
-  .tst .ms { font-size:var(--t-micro); color:var(--ink-4); font-family:var(--mono); }
-  .tcnote { color:var(--ink-4); }
+  /* the ONE gate (board R8) — indigo = your turn; the settled state wears moss */
+  .gate { display:flex; align-items:center; gap:var(--s3); border-radius:var(--r-md);
+    padding:var(--s3) var(--s4); margin-bottom:var(--s4); }
+  .gate.open { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:3px solid var(--ai); }
+  .gate.ok { background:var(--koke-tint); border:1px solid var(--koke-line); border-left:3px solid var(--koke); }
+  .gate .g1 { font-weight:600; color:var(--ai); white-space:nowrap; }
+  .gate .g2 { color:var(--ink-2); font-size:var(--t-sm); }
+
+  /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
+     other, neither scrolls the page, and both headers stay pinned (board R2) */
+  .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
+    height:calc(100vh - 236px); min-height:340px; }
+  .pane { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    overflow-y:auto; overflow-x:hidden; }
+  .pane > h2 { position:sticky; top:0; z-index:2; background:var(--card);
+    font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4);
+    padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
+  .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
+
+  /* requirements — the TITLE until clicked, then the full markdown (board R3) */
+  .req { border-bottom:1px solid var(--hair); }
+  .req:last-child { border-bottom:0; }
+  .req > .h { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); cursor:pointer; }
+  .req > .h:hover { background:var(--wash); }
+  .req.hot > .h { background:var(--ai-tint); }
+  .req .h .chip { padding:3px; }
+  .req .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
+  .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
+  .req .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; }
+  .req.open .chev { transform:rotate(90deg); }
+  .req .body { display:none; padding:0 var(--s4) var(--s4) calc(var(--s4) + 24px + var(--s3));
+    font-size:var(--t-sm); line-height:1.7; color:var(--ink-2); }
+  .req.open .body { display:block; }
+  .req .body p { margin:0 0 var(--s2); }
+  .req .body ul { margin:0 0 var(--s2) var(--s4); padding-left:var(--s3); }
+  .req .body li { margin:0 0 3px; }
+  .req .body strong { color:var(--ink); font-weight:600; }
+  .req .body em { color:var(--ink-4); font-style:normal; }
+  .req .body code { font:var(--t-xs) var(--mono); background:var(--sunk); border:1px solid var(--hair);
+    border-radius:var(--r-sm); padding:1px 5px; }
+  .req .body .cmt { font:var(--t-micro) var(--mono); color:var(--ink-3); background:var(--wash);
+    border-radius:var(--r-sm); padding:0 5px; white-space:pre-wrap; }
+  .covers { margin-top:var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-4);
+    display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .covers .ctag { background:var(--wash); color:var(--ink-3); border-radius:var(--r-sm); padding:1px 6px; }
+  .covers .nocov { color:var(--ink-4); }
+
+  /* a test — collapsible: title + coverage tags + status when closed; open to a recording, run/watch,
+     the fold of steps, and a link to the full log (board R3/R10) */
+  .test { border-bottom:1px solid var(--hair); padding:var(--s3) var(--s4); }
+  .test:last-child { border-bottom:0; }
+  .test.hot { background:var(--ai-tint); }
+  .test > .th { cursor:pointer; }
+  .throw { display:flex; align-items:center; gap:var(--s3); }
+  .test > .th:hover .ttl { color:var(--ai); }
+  .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
+  .test.open .throw .chev { transform:rotate(90deg); }
+  .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
+  .throw .tags { flex:none; }
+  .tbody { display:none; margin-top:var(--s3); }
+  .test.open .tbody { display:block; }
+  .trow2 { display:flex; gap:var(--s4); align-items:center; }
+  .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
+    border:1px solid var(--hair-2); overflow:hidden; cursor:pointer;
+    background:linear-gradient(135deg,var(--wash),var(--sunk)); }
+  .rec .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:20px; color:var(--ink-4); }
+  .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    background:var(--paper); padding:0 5px; border-radius:3px; }
+  .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
+  .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
+  /* coverage refs — quiet, NEUTRAL metadata (indigo is reserved for "your turn"). They tint only
+     when you hover the test, tying it to the requirement on the left. */
+  .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
+    background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
+  .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
+  .test .tacts { opacity:1; margin-left:0; }
+  .loglink { font:var(--t-xs) var(--sans); color:var(--ai); cursor:pointer; display:inline-flex;
+    gap:6px; align-items:center; margin-top:var(--s3); }
+  .loglink:hover { text-decoration:underline; }
+  .fold { margin-top:var(--s3); }
+
+  /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
+     behind it. Close / Esc / a click off the card dismiss it (board R10). */
+  .sheet { display:none; }
+  .sheet.on { display:block; }
+  .sheet .box { position:fixed; z-index:50; top:8vh; left:50%; transform:translateX(-50%);
+    width:720px; max-width:calc(100vw - 48px); max-height:80vh;
+    background:var(--card); border:1px solid var(--hair-2); border-radius:var(--r-lg);
+    box-shadow:var(--sh-lg); display:flex; flex-direction:column; overflow:hidden; }
+  .sheet .bh { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
+    border-bottom:1px solid var(--hair); }
+  .sheet .bh strong { font-size:var(--t-md); }
+  .sheet .bb { padding:var(--s4); overflow:auto; }
+  .sheet .bb:empty:before { content:"No runs recorded for this test yet."; color:var(--ink-4); font-size:var(--t-sm); }
   /* the detail steps of a case — every action and check, collapsed behind a toggle */
   .tststeps { margin:var(--s2) 0 0 14px; }
   .tststeps:empty { display:none; }
@@ -1100,53 +947,6 @@ export function build () {
     font:var(--t-xs)/1.5 var(--mono); color:var(--ink-4); }
   .lghist .lgh .mark { color:var(--koke); }
   .lghist .lgh .mark.o { color:var(--bengara); }
-  .dtp { background:var(--paper); border:1px solid var(--hair); overflow:hidden;
-    border-radius:var(--r-md); }
-  .dtl { padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); }
-  .prd { padding:0 var(--s5) var(--s4); }
-  .prd article { padding:var(--s4) 0; border-bottom:1px solid var(--hair); }
-  .prd article:last-child { border-bottom:0; }
-  .prd article.moved, .prd article.added { background:var(--bengara-tint); margin:0 calc(var(--s5) * -1);
-    padding:var(--s4) var(--s5); border-left:3px solid var(--bengara-line); }
-  .prd article.added { background:var(--ai-tint); border-left-color:var(--ai-line); }
-  .prd article.removed { color:var(--ink-4); font-size:var(--t-sm); }
-  .prd h3 { display:flex; gap:var(--s2); margin:0 0 var(--s2); align-items:baseline; }
-  .prd h3 .chip { margin-left:auto; }
-  .dth2 { display:flex; align-items:center; gap:var(--s3); }
-  .pseg { margin-left:auto; }
-  .pseg span { padding:3px var(--s2); font-size:var(--t-xs); }
-  .rid { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
-    width:20px; flex:none; padding-top:3px; }
-  .prd p { margin:0 0 var(--s2) 28px; font-size:var(--t-sm); line-height:1.75; color:var(--ink-2); }
-  .prd em { color:var(--ink-4); font-style:normal; font-size:var(--t-xs); }
-  .prd ul { margin:0 0 var(--s2) 28px; padding-left:var(--s4); font-size:var(--t-sm);
-    line-height:1.75; color:var(--ink-2); }
-  .prd li { margin:0 0 2px; }
-  .prd strong { font-weight:600; color:var(--ink); }
-  .prd code { font-family:var(--mono); font-size:var(--t-xs); background:var(--sunk);
-    border:1px solid var(--hair); border-radius:var(--r-sm); padding:1px 5px; color:var(--ink-2); }
-  /* An author's <!-- note --> is a hint for the test author, not requirement prose — kept, but
-     visibly secondary so the requirement reads clean. */
-  .prd .cmt { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-3);
-    background:var(--wash); border-radius:var(--r-sm); padding:0 5px; white-space:pre-wrap; }
-  .bigframe { overflow:hidden; position:relative; }
-  .bigframe iframe { width:${CANVAS_W}px; height:${CANVAS_H}px; border:0; transform-origin:top left; }
-
-  /* The verdict must never be below the fold. A gate whose buttons you have to go looking for
-     is a gate that gets skipped, and skipping it is the failure this product exists to prevent. */
-  .gb { flex:none; display:flex; align-items:center; gap:var(--s3);
-    background:var(--paper); border-top:1px solid var(--hair);
-    padding:var(--s3) var(--s6); box-shadow:var(--sh-md); }
-  .gb > * { max-width:100%; }
-  .gbin { display:flex; align-items:center; gap:var(--s3); width:100%;
-    max-width:1760px; margin:0 auto; }
-  .gb.open { border-top:2px solid var(--ai); }
-  .gb.ok { border-top:2px solid var(--koke); }
-  .gb.bad { border-top:2px solid var(--bengara); background:var(--bengara-tint); }
-  .gbn { font-size:var(--t-sm); color:var(--ink-4); }
-  .gbw { font-size:var(--t-md); color:var(--bengara); }
-  .why { flex:1; min-width:220px; }
-  .gor { font-size:var(--t-sm); color:var(--ink-4); flex:none; }
   .kbd { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-4);
     border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
   /* a shortcut hint has to be legible on whatever the button is painted — inherit, don't guess */
@@ -1204,8 +1004,6 @@ export function build () {
     background:var(--ink); color:var(--paper); padding:var(--s3) var(--s4);
     font-size:var(--t-sm); max-width:70vw; border-radius:var(--r); box-shadow:var(--sh-lg); }
   .kbd { border-radius:3px; }
-  /* the sticky column header only earns a shadow once content is actually running under it */
-  .colhs.stuck { box-shadow:var(--sh-sm); }
 
   /* conflicts ------------------------------------------------------------
      Two columns of equal weight, because the question is which of two sentences wins. Anything
@@ -1482,10 +1280,6 @@ export function build () {
   #howview .blabel.plain { background:var(--wash); color:var(--ink-2); box-shadow:inset 0 0 0 1px var(--hair-2); }
   #howview .bl-sub { color:inherit; opacity:.7; font-size:10px; margin-left:2px; }
 </style>
-<!-- Apply the hide-wireframes preference to the ROOT element BEFORE the body renders, so a board that
-     live-reloads on every change never flashes the wireframe column back into view. The end-of-body
-     script keeps it in sync; this one just wins the first paint. -->
-<script>try{if(localStorage.getItem('board-hide-wireframes')==='1')document.documentElement.classList.add('hide-wf')}catch(e){}</script>
 
 <div class="top">
   <div class="brand"><span class="logo"></span>specboard</div>
@@ -1505,7 +1299,6 @@ export function build () {
   <div class="setwrap">
     <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
     <div class="setmenu" id="setmenu" hidden>
-      <button class="setitem" id="wftoggle">Hide wireframes</button>
       <button class="setitem" id="toggle-all">Collapse all</button>
     </div>
   </div>
@@ -1514,19 +1307,11 @@ export function build () {
 <div class="wrap">
   ${yourTurn === 0 && screens.length ? `<div class="clear">
     <span class="chip ok"><span class="dot"></span>queue clear</span>
-    Nothing is waiting on you.
-    ${count('screen', 'missing') ? `${count('screen', 'missing')} screen${count('screen', 'missing') === 1 ? '' : 's'} still to build.` : ''}
-    ${count('e2e', 'ranstale') ? `${count('e2e', 'ranstale')} test result${count('e2e', 'ranstale') === 1 ? '' : 's'} predate your latest edit — <code>npm run e2e</code>.` : ''}
-    ${!count('screen', 'missing') && !count('e2e', 'ranstale') ? 'Every screen is built, approved and proven.' : ''}
+    Nothing is waiting on you — every screen's requirements are accepted. What proves them is up to the tests.
   </div>` : ''}
-  <div class="colhs">
-    <div class="lbl flow">1 · PRD — the source of truth</div>
-    <div class="lbl flow" data-col="draft">2 · Draft — the wireframe</div>
-    <div class="lbl flow">3 · Screen — what got built</div>
-    <div class="lbl">4 · E2E — what proves it</div>
+  <div id="home">
+    ${groups}
   </div>
-
-  ${groups}
   <div class="none" id="none">Nothing matches.</div>
 </div>
 
@@ -1671,49 +1456,23 @@ ${howView()}
     <button class="btn sm gh" id="lbclose">Close<span class="kbd">esc</span></button></div>
   <div class="lbstage" id="lbstage"><img id="lbimg" alt=""></div>
 </div>
+
+<!-- The whole log for a test opens HERE, in ONE floating window (board R10) — never a full-viewport
+     scrim, so the board stays visible behind it. Close / Esc / a click off the card dismiss it. -->
+<div class="sheet" id="logsheet">
+  <div class="box">
+    <div class="bh"><strong id="logtitle">Full log</strong><span class="grow"></span>
+      <button class="btn sm" data-logclose>Close<span class="kbd">esc</span></button></div>
+    <div class="bb" id="logbody"></div>
+  </div>
+</div>
 ${detail}
 
 <script>
-  // Drafts are authored at ${CANVAS_W}px and shown scaled, so a thumbnail is the real artifact
-  // rather than a picture of one — it cannot drift from the file it came from.
-  // A thumbnail is for RECOGNISING a screen, not reading it — that is what the detail view is
-  // for. Sized to full height the board draft alone made a 430px row, so barely one row fitted
-  // on screen and scanning forty of them would be impossible.
-  const W = ${CANVAS_W}, FALLBACK_H = ${CANVAS_H}, THUMB_MAX = 280
-  // Drafts vary in length — the board draft is 1481px, init is 729px. A fixed canvas height
-  // silently cropped the tall ones, which is the board breaking its own R3 on its own row.
-  // Measure each draft instead; srcdoc iframes are same-origin so the height is readable.
-  function fit () {
-    for (const f of document.querySelectorAll('.frame, .bigframe')) {
-      if (!f.clientWidth) continue
-      const fr = f.querySelector('iframe')
-      // documentElement is null for an srcdoc iframe that has not parsed yet. Reading through it
-      // threw on the very first fit(), and because this runs at the top of the script it took
-      // every listener below it with it — filters, search, the detail view, the gate buttons.
-      // Layout measurement must never be able to disarm the page.
-      const doc = fr.contentDocument
-      const h = doc?.documentElement?.scrollHeight || FALLBACK_H
-      const s = f.clientWidth / W
-      fr.style.height = h + 'px'
-      fr.style.transform = 'scale(' + s + ')'
-      if (f.classList.contains('bigframe')) { f.style.height = (h * s) + 'px'; continue }
-      // In a cell the thumbnail is capped so one long screen cannot push every other row off
-      // the page — and when it IS cut, the cell says so rather than pretending that was the end.
-      const full = h * s
-      const shown = Math.min(full, THUMB_MAX)
-      f.style.height = shown + 'px'
-      const cell = f.closest('.cell')
-      if (cell) cell.style.height = (shown + 31) + 'px'
-      f.classList.toggle('cropped', full > shown + 2)
-    }
-  }
-  // Belt and braces: nothing about sizing a picture is worth breaking the whole board over.
-  const safeFit = () => { try { fit() } catch (err) { console.error('fit', err) } }
-  const colhs = document.querySelector('.colhs')
-  addEventListener('scroll', () => colhs.classList.toggle('stuck', scrollY > 8), { passive: true })
-  addEventListener('resize', safeFit)
-  for (const fr of document.querySelectorAll('iframe')) fr.addEventListener('load', safeFit)
-  safeFit(); setTimeout(safeFit, 60)
+  // The wireframe left the tool, so the home has no scaled draft thumbnails and the detail has no
+  // sticky column header — there is nothing to measure and fit. safeFit stays as a harmless no-op so
+  // the search / routing call sites below need no edit.
+  const safeFit = () => {}
 
   // search ---------------------------------------------------------------
   // The whose-turn filter toggle was removed; search across requirement text is the only way to
@@ -1723,21 +1482,23 @@ ${detail}
   function apply () {
     const term = q.value.trim().toLowerCase()
     let shown = 0
-    for (const r of document.querySelectorAll('.row')) {
-      const ok = !term || r.dataset.q.includes(term)
-      r.classList.toggle('gone', !ok); if (ok) shown++
+    // Search matches a card's requirement TITLES, name and route (board R9). A hidden card gets
+    // .gone; a group with no visible card gets .gone too, so it hides rather than sitting empty —
+    // and .card:not(.gone) / .grp:not(.gone) reflect exactly what is on screen.
+    for (const c of document.querySelectorAll('#home .card')) {
+      const ok = !term || c.dataset.q.includes(term)
+      c.classList.toggle('gone', !ok); if (ok) shown++
     }
     for (const g of document.querySelectorAll('.grp'))
-      g.style.display = g.querySelectorAll('.row:not(.gone)').length ? '' : 'none'
+      g.classList.toggle('gone', !g.querySelector('.card:not(.gone)'))
     document.getElementById('none').style.display = shown ? 'none' : 'block'
     // Say how much is hidden. A filtered board that looks like the whole board is how you
     // conclude a screen does not exist when it is one search away.
-    const tot = document.querySelectorAll('.row').length
+    const tot = document.querySelectorAll('#home .card').length
     document.getElementById('shown').textContent = shown === tot ? '' : shown + ' of ' + tot
     document.querySelector('.qwrap').classList.toggle('has', !!term)
     document.getElementById('none').textContent = term
       ? 'Nothing matches “' + term + '”.' : 'Nothing matches.'
-    safeFit()
   }
   q.addEventListener('input', apply)
   document.getElementById('qx').addEventListener('click', () => { q.value = ''; apply(); q.focus() })
@@ -1755,31 +1516,9 @@ ${detail}
     e.target.textContent = shut ? 'Expand all' : 'Collapse all'
   })
 
-  // Hide/show the whole wireframe column, board-wide, remembered across reloads. This is a viewing
-  // PREFERENCE, not spec state — it lives in localStorage and never on disk, so it cannot change
-  // anything the board derives. A document-mode board with no wireframes anywhere is the case this
-  // most helps: the column is then all "no wireframe" placeholders and folding it away is pure gain.
-  const wfBtn = document.getElementById('wftoggle')
-  const WF_KEY = 'board-hide-wireframes'
-  const wfHidden = () => { try { return localStorage.getItem(WF_KEY) === '1' } catch (e) { return false } }
-  function applyWf () {
-    const hide = wfHidden()
-    // the ROOT element, not body — the head script sets it there before render to avoid a flash, and
-    // both must agree on where the class lives or a reload would un-hide until this ran
-    document.documentElement.classList.toggle('hide-wf', hide)
-    wfBtn.textContent = hide ? 'Show wireframes' : 'Hide wireframes'
-    safeFit()
-  }
-  wfBtn.addEventListener('click', () => {
-    try { localStorage.setItem(WF_KEY, wfHidden() ? '0' : '1') } catch (e) { /* storage denied — session only */ }
-    applyWf()
-  })
-  applyWf()
-
-  // Settings menu — a gear in the top bar holding the view toggles (wireframes, collapse-all) that
-  // used to sit on their own row. Opens on click, closes on a click outside or Escape. The toggles
-  // keep their own ids and listeners above; this only shows and hides the sheet they now live in,
-  // and it stays open while you flip a toggle so the label change is visible and reversible.
+  // Settings menu — a gear in the top bar holding the collapse-all toggle that used to sit on its own
+  // row. Opens on click, closes on a click outside or Escape. The toggle keeps its own id and listener
+  // above; this only shows and hides the sheet it now lives in, and it stays open while you flip it.
   const setbtn = document.getElementById('setbtn')
   const setmenu = document.getElementById('setmenu')
   const setMenu = open => {
@@ -1799,7 +1538,21 @@ ${detail}
   // The skills that have a baked flowchart page at #howitworks/<id>; an unknown id falls back to overview.
   const SKILL_IDS = ${JSON.stringify(HOW_FLOWS.map(f => f.id))}
   const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
-  const show = i => { closeAll(); document.querySelector('.dt[data-i="' + i + '"]').hidden = false; safeFit() }
+  const show = i => {
+    closeAll()
+    const dt = document.querySelector('.dt[data-i="' + i + '"]')
+    if (!dt) return
+    dt.hidden = false
+    // Every screen's detail is baked in, so the #reqpane / #testpane ids — and the .dbar class — the
+    // tests address unscoped would not be unique. Carry them on the VISIBLE detail only: strip
+    // everywhere, then set here, so each resolves to exactly one element while this detail is open.
+    document.querySelectorAll('.reqpane, .testpane').forEach(p => { p.removeAttribute('id') })
+    const rp = dt.querySelector('.reqpane'); if (rp) rp.id = 'reqpane'
+    const tp = dt.querySelector('.testpane'); if (tp) tp.id = 'testpane'
+    document.querySelectorAll('.dbarhook').forEach(b => b.classList.remove('dbar'))
+    const bar = dt.querySelector('.dbarhook'); if (bar) bar.classList.add('dbar')
+    safeFit()
+  }
   const open = (i, push = true) => {
     show(i)
     if (push) history.pushState({ i }, '', '#/' + SCREENS[i])
@@ -1842,30 +1595,64 @@ ${detail}
   addEventListener('popstate', route)
   addEventListener('hashchange', route)
 
-  // The WHOLE row opens the screen — every cell in it is about that one screen, so any part of it
-  // is a reasonable place to click. Images are the exception: they open the zoom instead, because
-  // "let me look closer at this screenshot" is a different intent from "open this screen".
-  for (const r of document.querySelectorAll('.row'))
-    r.addEventListener('click', e => {
+  // The WHOLE card opens the screen (board R1) — its whole content is about that one screen. The
+  // cover image is the exception: it opens the zoom, a different intent from "open this screen".
+  for (const c of document.querySelectorAll('#home .card'))
+    c.addEventListener('click', e => {
       if (e.target.closest('img, button, a, input, label')) return
-      open(r.dataset.i)
+      open(c.dataset.i)
     })
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeAll(); history.pushState(null, '', location.pathname) })
 
-  // Show only what moved, by default, wherever we know what moved.
-  for (const seg of document.querySelectorAll('.pseg')) {
-    const apply2 = () => {
-      const only = seg.querySelector('.on').dataset.v === 'changed'
-      seg.closest('.dtp').querySelectorAll('.prd article[data-unchanged]')
-        .forEach(a => { a.hidden = only })
-    }
-    for (const s of seg.querySelectorAll('span')) s.addEventListener('click', () => {
-      seg.querySelectorAll('span').forEach(x => x.classList.toggle('on', x === s))
-      apply2()
+  // A requirement is a title that EXPANDS to its full description (board R3); a test collapses to a
+  // title + tags + status and opens to its evidence (R10). One click on the header toggles either.
+  for (const h of document.querySelectorAll('.req > .h'))
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'))
+  for (const h of document.querySelectorAll('.test > .th'))
+    h.addEventListener('click', () => h.parentElement.classList.toggle('open'))
+
+  // The many-to-many link, lit on hover (board R5): hover a requirement and every test that tags it
+  // lights up; hover a test and every requirement it covers lights up. Leaving clears it. Scoped to
+  // the open detail so a hover never reaches across into a hidden screen's panes.
+  const clearHot = () => document.querySelectorAll('.hot').forEach(e => e.classList.remove('hot'))
+  for (const rq of document.querySelectorAll('.req')) {
+    rq.addEventListener('mouseenter', () => {
+      clearHot(); const r = rq.dataset.r; const pane = rq.closest('.dt')
+      if (pane) pane.querySelectorAll('.test .tag[data-r="' + r + '"]').forEach(t => t.closest('.test').classList.add('hot'))
     })
-    apply2()
+    rq.addEventListener('mouseleave', clearHot)
   }
+  for (const ts of document.querySelectorAll('.test')) {
+    ts.addEventListener('mouseenter', () => {
+      clearHot(); const pane = ts.closest('.dt'); if (!pane) return
+      ts.querySelectorAll('.tag[data-r]').forEach(tag => {
+        const rq = pane.querySelector('.req[data-r="' + tag.dataset.r + '"]'); if (rq) rq.classList.add('hot')
+      })
+    })
+    ts.addEventListener('mouseleave', clearHot)
+  }
+
+  // The full log opens in ONE floating window (board R10), populated from the test's own log history
+  // (the .tstlog the run machinery fills). No full-viewport scrim — the board stays visible behind it.
+  const logsheet = document.getElementById('logsheet')
+  const logbody = document.getElementById('logbody')
+  for (const l of document.querySelectorAll('[data-log]'))
+    l.addEventListener('click', e => {
+      e.stopPropagation()
+      const testEl = l.closest('.test')
+      document.getElementById('logtitle').textContent = 'Full log — ' + (testEl.querySelector('.ttl').textContent || '')
+      const src = testEl.querySelector('.tstlog')
+      logbody.innerHTML = src ? src.innerHTML : ''
+      logsheet.classList.add('on')
+    })
+  for (const b of document.querySelectorAll('[data-logclose]'))
+    b.addEventListener('click', () => logsheet.classList.remove('on'))
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') logsheet.classList.remove('on') })
+  document.addEventListener('click', e => {
+    if (logsheet.classList.contains('on') && !e.target.closest('.box') && !e.target.closest('[data-log]'))
+      logsheet.classList.remove('on')
+  })
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
   // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
@@ -1895,59 +1682,27 @@ ${detail}
   })
 
   // gate actions ---------------------------------------------------------
-  // These POST to the board server. Opened as a plain file the board still renders; it just
-  // cannot record a decision, and says so rather than silently doing nothing.
+  // The ONE gate (board R8): accept the requirements. It POSTs to the board server, which pins the
+  // current PRD text so the reworded state clears and the gate closes. Opened as a plain file the
+  // board still renders; it just cannot record a decision, and says so rather than doing nothing.
   function toast (msg) {
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg
     document.body.appendChild(t); setTimeout(() => t.remove(), 5000)
   }
-  // The escape hatch: the draft is a plain HTML file, and the watcher already rebuilds on save.
-  // So "edit it yourself" is a real answer today — it just was not discoverable from the board.
-  for (const b of document.querySelectorAll('.edit')) {
-    b.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(b.dataset.path) } catch (e) { /* clipboard denied */ }
-      toast(b.dataset.path + ' — path copied. Edit it and the board reloads the moment you save.')
-    })
-  }
 
-  // You have just typed the entire decision. Making you then find and hit a button is a step
-  // that exists for no reason, and it is where a half-written rejection gets abandoned.
-  for (const w of document.querySelectorAll('.gb .why')) {
-    w.addEventListener('keydown', e => {
-      if (e.key !== 'Enter') return
-      e.preventDefault()
-      w.closest('.gb').querySelector('[data-act="reject"]').click()
-    })
-  }
-
-  for (const b of document.querySelectorAll('[data-act]')) {
+  for (const b of document.querySelectorAll('[data-act="accept"]')) {
     b.addEventListener('click', async () => {
-      const box = b.closest('.gb')
-      const why = box.querySelector('.why')
-      // Ask before the request, not after it fails — the sentence IS the rejection.
-      if (b.dataset.act === 'reject' && !why.value.trim()) {
-        why.focus()
-        why.placeholder = 'Say what is wrong — this is what the redraft gets'
-        why.style.borderColor = 'var(--bengara)'
-        return
-      }
       try {
         const res = await fetch('/api/gate', {
           method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            screen: b.dataset.screen, gate: b.dataset.gate || 'draft', act: b.dataset.act,
-            why: why ? why.value : ''
-          })
+          body: JSON.stringify({ screen: b.dataset.screen, gate: b.dataset.gate || 'prd', act: 'accept' })
         })
         if (!res.ok) throw new Error((await res.text()).slice(0, 120))
-        // Stay on the screen you just judged. Jumping to the next one on its own takes the pace
-        // out of your hands and hides the result of what you just did — you never see the cell
-        // turn green, so you cannot tell an approval from a misclick. The hash already points at
-        // this screen, so a plain reload lands you back on it showing the new state, and moving
-        // on is a button you press when you are ready.
+        // Stay on the screen you just accepted — a plain reload lands you back on it showing the
+        // gate closed, so you see the result of what you did rather than being whisked elsewhere.
         location.reload()
       } catch (err) {
-        toast('Decisions need the board server — run  npm run board  (' + err.message + ')')
+        toast('Accepting needs the board server — run  npm run board  (' + err.message + ')')
       }
     })
   }
@@ -2450,19 +2205,8 @@ ${detail}
       if (!res.ok) throw new Error((await res.text()).slice(0, 120))
     } catch (err) { panelRefused(err.message) }
   }
-  async function dispatch (screen) {
-    openPanel('redrafting', screen + ' · draft.html')
-    try {
-      const res = await fetch('/api/dispatch', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ screen })
-      })
-      if (!res.ok) throw new Error((await res.text()).slice(0, 160))
-    } catch (err) { panelRefused(err.message) }
-  }
-
-  // A job you cannot stop is a job you have to sit out. A redraft runs for minutes, so noticing
-  // ten seconds in that you dispatched the wrong screen should cost ten seconds, not four minutes.
+  // A job you cannot stop is a job you have to sit out. A scan or crawl runs for minutes, so noticing
+  // ten seconds in that you started the wrong one should cost ten seconds, not four minutes.
   document.getElementById('rpcancel').addEventListener('click', async () => {
     try {
       const res = await fetch('/api/cancel', { method: 'POST' })
@@ -2470,9 +2214,6 @@ ${detail}
       document.getElementById('rpcancel').disabled = true
     } catch (err) { toast(err.message) }
   })
-  for (const b of document.querySelectorAll('[data-dispatch]'))
-    b.addEventListener('click', () => dispatch(b.dataset.dispatch))
-
   for (const b of document.querySelectorAll('.runbtn'))
     b.addEventListener('click', () => runTests(b.dataset.run))
   // Watch it run: a real browser window opens and drives the app in front of you. This is what
@@ -2574,7 +2315,7 @@ ${detail}
           if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
         }
       }
-      const panel = box.closest('.e2e')
+      const panel = box.closest('.testpane') || box.closest('.pane') || box.parentElement
       for (const slot of panel.querySelectorAll('.tstshots')) {
         const one = (rec[slot.dataset.title] || [])[0]
         slot.innerHTML = one
