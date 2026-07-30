@@ -140,17 +140,15 @@ test('R6 — a test declares the coverage it proves; a requirement lists every t
   })
 })
 
-test('R7 — an external design link is optional context: shown, never rendered or gated; absent = disabled', async ({ page }) => {
+test('R7 — specboard owns no wireframe or design: no design affordance, nothing rendered', async ({ page }) => {
   await coverReqs('R7')
   await openDetail(page)
   await checkReq('R7', async () => {
-    const design = page.locator('.dt[data-screen="board"]:not([hidden]) [data-design]')
-    await expect(design).toHaveCount(1)
-    // board has no design: link, so it is disabled with a hint — never a rendered wireframe, never a gate
-    await expect(design).toHaveAttribute('data-design', '')
-    await expect(design).toHaveAttribute('aria-disabled', 'true')
-    // the wireframe left the tool entirely: no iframe, no draft anywhere in the detail
-    await expect(page.locator('.dt[data-screen="board"]:not([hidden]) iframe')).toHaveCount(0)
+    const detail = page.locator('.dt[data-screen="board"]:not([hidden])')
+    // specboard does not own the design: no design chip, no external-artifact affordance of any kind
+    await expect(detail.locator('[data-design], .chip.design')).toHaveCount(0)
+    // and nothing is rendered inside the tool — no wireframe/design iframe
+    await expect(detail.locator('iframe')).toHaveCount(0)
   })
 })
 

@@ -85,15 +85,6 @@ export function renderBody (text) {
   return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
 }
 
-// The detail's optional external-design link (board R7): a Figma / v0 / image URL, shown as context,
-// NEVER rendered inside specboard and never gated. A screen with a link gets an enabled chip that
-// opens in a new tab; a screen with none gets a disabled chip with a hint — absence is not "unstarted".
-const designChip = s => s.design
-  ? `<a class="chip rev design" data-design="${esc(s.design)}" href="${esc(s.design)}" target="_blank"
-       rel="noopener" title="external design — opens in a new tab, never rendered or gated here">Design ↗</a>`
-  : `<span class="chip gone design" data-design="" aria-disabled="true"
-       title="no external design linked — add a design: URL to the PRD frontmatter to link one">Design</span>`
-
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
@@ -701,8 +692,8 @@ export function build () {
   }).join('')
 
   // The detail is two ends only (board R2): the requirements on the left, the tests that prove them
-  // on the right, each pane scrolling on its own. One accept gate above them; a design link and a
-  // Run-all in the bar. data-screen alongside data-i so the router can open it by name.
+  // on the right, each pane scrolling on its own. One accept gate above them; a Run-all in the bar.
+  // data-screen alongside data-i so the router can open it by name.
   const detail = screens.map((s, i) => `
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth">
@@ -716,7 +707,6 @@ export function build () {
       <span class="t">${esc(s.title)}</span>
       <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · spec/${esc(s.name)}/</span>
       <span class="grow"></span>
-      ${designChip(s)}
       ${runAll(s.name)}
     </div>
     ${acceptGate(s)}
@@ -813,7 +803,6 @@ export function build () {
   .dbar { display:flex; align-items:center; gap:var(--s4); padding:0 var(--s2) var(--s4); }
   .dbar .t { font-size:var(--t-xl); letter-spacing:-.02em; }
   .dbar .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
-  .chip.design[aria-disabled="true"] { cursor:default; }
 
   /* the ONE gate (board R8) — indigo = your turn; the settled state wears moss */
   .gate { display:flex; align-items:center; gap:var(--s3); border-radius:var(--r-md);

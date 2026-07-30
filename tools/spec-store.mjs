@@ -351,18 +351,12 @@ export function readScreen (name, results = null) {
   // that implements it. Comma- or space-separated in frontmatter.
   const governs = String(fm.governs || '').split(/[,\s]+/).map(g => g.trim()).filter(Boolean)
 
-  // Optional external design link (a Figma / v0 / image URL) shown as context in the detail —
-  // never rendered inside specboard, never gated, never made stale (board R7). It is a plain URL in
-  // frontmatter; a screen with none is not "unstarted", it is simply documented by its reqs + tests.
-  const design = String(fm.design || '').trim()
-
   return {
     name,
     area: fm.area || 'Other',
     title: fm.title || name,
     route: fm.route || '',
     guess,
-    design,
     governs,
     reqs: reqStates,
     prdText,

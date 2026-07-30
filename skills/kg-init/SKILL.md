@@ -51,9 +51,9 @@ All of this persists to `spec/_config.json`, which the crawl and the test harnes
 
 ## 3. Crawl the app → a guessed requirement doc + a proving test per screen
 
-There is no wireframe step and no design-vs-document branch: specboard does not own designs (see the
-`design:` link below). A screen is documented by its **requirements** and the **tests that prove
-them**, full stop. So the crawl does exactly that, per route it finds:
+There is no wireframe step and no design-vs-document branch: specboard owns **neither wireframes nor
+designs**. A screen is documented by its **requirements** and the **tests that prove them**, full stop.
+So the crawl does exactly that, per route it finds:
 
 The crawl drives a **real browser** over the running app one route at a time, capturing each page
 (`crawl.png`) and its structure. Then, for every route not already on the board, Claude **drafts a
@@ -84,14 +84,6 @@ the test's recording. No wireframe, because the screen already exists.
   (see `kg-e2e`). The script must **type** into fields, never `fill()` (controlled inputs submit
   empty). The login screen itself redirects away once you are in, so it can't be crawled — write it by
   hand.
-
-### An external design link is optional context, never an artifact
-
-If a screen has a design somewhere else — a Figma / v0 / image URL — record it as an optional
-`design:` line in the PRD frontmatter. specboard shows it as a chip in the detail and links out to it;
-it is **never rendered inside specboard, never gated, and never made stale**. A screen with no link is
-not "unstarted" — it is simply documented by its requirements and tests. Do not try to reproduce or
-approve a design here; that is a different, already-solved job that left the tool.
 
 ### The PRD must be DETAILED — drive the screen, don't skim it
 
@@ -131,8 +123,8 @@ Rerunning finds new routes without touching a screen the human has already worke
 
 An empty found-table is the **greenfield** case: no rows, and a prompt to write the first PRD by hand.
 It is the zero case of the same flow, not a different mode — there is no wireframe loop and no build
-gate. Write a screen's `prd.md` (frontmatter + `## R<n>` blocks, optionally a `design:` link), then
-author its proving test with `kg-e2e`. As soon as the screen exists in the app, its test drives the
+gate. Write a screen's `prd.md` (frontmatter + `## R<n>` blocks), then author its proving test with
+`kg-e2e`. As soon as the screen exists in the app, its test drives the
 real thing exactly as a crawled one does, and the one gate is still accepting the requirements.
 
 ## 4. Find the contradictions already in the requirements

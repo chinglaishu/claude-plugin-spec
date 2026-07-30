@@ -60,13 +60,19 @@ Schedule → assert it reflects, with the right number), not one shallow walk th
 and proves nothing. A test may tag many requirements, but each still needs an assertion that would
 fail without it (R4) — so "fewer tests" can never buy itself a false green.
 
-## R7 — specboard does not own the wireframe
+## R7 — specboard owns neither the wireframe nor the design
 
-Sketching a screen before it exists is a real job, but a different one, and already well served
-elsewhere. specboard tracks requirements and their proof, not designs. A screen may carry an
-**optional external design link** (a Figma / v0 / image URL) shown as context in the detail — never
-rendered inside specboard, never gated, never made stale. A screen with no link is not "unstarted";
-it is simply documented by its requirements and tests.
+Sketching or designing a screen before it exists is a real job, but a different one, and already well
+served elsewhere. specboard tracks requirements and their proof — **nothing else**. It does not render,
+link to, gate, or store a wireframe or a design of any kind; there is no design field, no design chip,
+no external-artifact affordance anywhere. A screen is documented by its requirements and the tests that
+prove them, and a screen with no artifact is not "unstarted" — it is simply defined by what it must do
+and whether that is proven.
+
+*Narrowed 2026-07-30: R7 previously carried an optional external `design:` link shown as a chip in the
+detail. Removed at the human's direction — a link specboard never renders, gates, or stales is still
+one more thing to carry, and the tool is meant to be minimal. The `design:` frontmatter field and the
+Design chip are gone.*
 
 ## R8 — One human gate: accept the requirements
 

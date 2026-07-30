@@ -12,9 +12,9 @@ test that *tags* it passed on an assertion that would fail without it; reword th
 reads **reworded** (awaiting the human); with no passing assertion it reads **unproven** — honestly
 ungreen. **There is no status field anywhere** — every requirement's state is *derived* from the
 stored accept pin and the folded test coverage against the current tree. **One human gate: accept the
-requirements** ("are these what I meant?"). specboard does **not** own wireframes — a screen may carry
-only an optional external `design:` link, shown as context, never rendered or gated. The tool
-**dogfoods itself**: its own four screens are the cards on its own board.
+requirements** ("are these what I meant?"). specboard owns **neither the wireframe nor the design** —
+it tracks requirements and their proof, nothing else (no design field, no external-artifact chip). The
+tool **dogfoods itself**: its own four screens are the cards on its own board.
 
 ## You are staff. The human decides meaning.
 
@@ -67,7 +67,7 @@ on; a requirement lists every test that covers it wherever that file lives.
 ## Architecture
 
 ```
-spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess, design])
+spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess])
 spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq (may also shoot screen.png as a fallback cover)
 spec/<screen>/state.json     the accept pin (approvedPrdText) — the only mutable per-screen state
 spec/_design.css             ONE design system, inlined into board.html
