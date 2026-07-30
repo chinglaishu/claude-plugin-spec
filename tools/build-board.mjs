@@ -821,10 +821,12 @@ export function build () {
 
   /* a test — collapsible: title + coverage tags + status when closed; open to a recording, run/watch,
      the fold of steps, and a link to the full log (board R3/R10) */
-  .test { border-bottom:1px solid var(--hair); padding:var(--s3) var(--s4); }
+  /* padding lives on .th (not .test) so the hover/hot background fills the WHOLE row edge-to-edge,
+     exactly like the requirement side — not just the inner text. */
+  .test { border-bottom:1px solid var(--hair); }
   .test:last-child { border-bottom:0; }
   .test.hot > .th { background:var(--ai-tint); }
-  .test > .th { cursor:pointer; }
+  .test > .th { cursor:pointer; padding:var(--s3) var(--s4); }
   .throw { display:flex; align-items:center; gap:var(--s3); }
   /* hover the item → grey; its linked item(s) → blue (.hot). Same both directions, reqs ↔ tests. */
   .test > .th:hover { background:var(--wash); }
@@ -832,7 +834,7 @@ export function build () {
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
   .throw .tags { flex:none; }
-  .tbody { display:none; margin-top:var(--s3); }
+  .tbody { display:none; padding:0 var(--s4) var(--s3); }
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
   .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
