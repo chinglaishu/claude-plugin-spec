@@ -102,7 +102,7 @@ const reqRow = r => {
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
-  <h2>1 · Requirements</h2>
+  <h2>Requirements</h2>
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
@@ -138,7 +138,7 @@ const testRow = (s, t) => {
   </div>`
 }
 const testPane = s => `<div class="pane testpane">
-  <h2>2 · E2E tests</h2>
+  <h2>E2E tests</h2>
   ${s.run && s.run.tests && s.run.tests.length
     ? s.run.tests.map(t => testRow(s, t)).join('')
     : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
@@ -792,11 +792,12 @@ export function build () {
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
 
   /* requirements — the TITLE until clicked, then the full markdown (board R3) */
-  .req { border-bottom:1px solid var(--hair); }
+  /* highlight the WHOLE item (header + expanded body), and fade it in/out */
+  .req { border-bottom:1px solid var(--hair); transition:background-color .16s ease; }
   .req:last-child { border-bottom:0; }
   .req > .h { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); cursor:pointer; }
-  .req > .h:hover { background:var(--wash); }
-  .req.hot > .h { background:var(--ai-tint); }
+  .req:hover { background:var(--wash); }
+  .req.hot { background:var(--ai-tint); }
   .req .h .chip { padding:3px; }
   .req .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
   .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -823,13 +824,14 @@ export function build () {
      the fold of steps, and a link to the full log (board R3/R10) */
   /* padding lives on .th (not .test) so the hover/hot background fills the WHOLE row edge-to-edge,
      exactly like the requirement side — not just the inner text. */
-  .test { border-bottom:1px solid var(--hair); }
+  .test { border-bottom:1px solid var(--hair); transition:background-color .16s ease; }
   .test:last-child { border-bottom:0; }
-  .test.hot > .th { background:var(--ai-tint); }
   .test > .th { cursor:pointer; padding:var(--s3) var(--s4); }
   .throw { display:flex; align-items:center; gap:var(--s3); }
-  /* hover the item → grey; its linked item(s) → blue (.hot). Same both directions, reqs ↔ tests. */
-  .test > .th:hover { background:var(--wash); }
+  /* hover the item → grey; its linked item(s) → blue (.hot). The WHOLE item highlights (header +
+     expanded body), full-width, and fades in/out. Same both directions, reqs ↔ tests. */
+  .test:hover { background:var(--wash); }
+  .test.hot { background:var(--ai-tint); }
   .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
