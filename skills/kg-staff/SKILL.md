@@ -19,10 +19,9 @@ node tools/staff.mjs                    # every screen: what governs it, what is
 node tools/staff.mjs --file <path>      # which screen governs a source file (needs `governs:` in a PRD)
 ```
 
-The briefing tells you the screen's **requirements** (the SSoT), each one **proven / reworded /
-unproven**, whether they are **accepted** or still a **guess**, whether the one gate (accepting the
-requirements) is open, and any **contradiction** the human has not settled. Read it before the first
-line of code.
+The briefing tells you the screen's **requirements** (the SSoT), each one **proven / unproven**,
+whether it is still a **guess** to correct, what the tests prove, and any **contradiction** the human
+has not settled. There is no acceptance gate. Read it before the first line of code.
 
 ## 2. Stop and ask the human in exactly three cases
 
@@ -77,7 +76,7 @@ cannot catch on its own. Before you call the work done:
    A stale test still asserting the old behaviour is a false green — do not leave it. Re-run the test
    until nothing on the list traces back to your change.
 4. **If clearing an item needs a requirement decision, stop and escalate.** Picking the canonical side
-   of a conflict, changing what a requirement *means*, or accepting the requirements are the human's —
+   of a conflict, changing what a requirement *means*, or confirming a crawl guess as canon are the human's —
    never decide one to make the list go quiet. These are the same three stops as section 2; they do not
    stop applying just because you are nearly done.
 

@@ -72,10 +72,9 @@ export function aggregateCoverage (index) {
   return agg
 }
 
-// A requirement's state — the three R4 states. `reworded` (text changed since the requirements were
-// accepted) is the human's gate and wins outright. Otherwise proven needs a CURRENT passing proof;
-// anything less (fail, not-reached, a proof that predates a change, no coverage at all) is unproven.
-export function deriveReqState ({ reworded, hasCurrentPass }) {
-  if (reworded) return 'reworded'
+// A requirement's state — the two R4 states. There is no acceptance gate (R8), so there is no
+// "changed since accepted" / reworded state: proven needs a CURRENT passing proof; anything less
+// (fail, not-reached, a proof that predates a change, no coverage at all) is unproven.
+export function deriveReqState ({ hasCurrentPass }) {
   return hasCurrentPass ? 'proven' : 'unproven'
 }

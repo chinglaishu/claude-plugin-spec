@@ -11,9 +11,9 @@ import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname, resolve, dirname, basename } from 'node:path'
 import { homedir } from 'node:os'
 import {
-  ROOT, SPEC, readScreen, readState, writeState, allScreens,
+  ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
-  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson, writeText,
+  CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
   RUNS, readRuns, recordRunEntry, reEscape, runVerdict
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
@@ -666,42 +666,6 @@ function readBody (req) {
   })
 }
 
-// Approving pins the hash of what you approved it AGAINST — not a timestamp, not a boolean.
-// A timestamp cannot tell you whether the thing changed, only that time passed.
-function applyGate ({ screen, gate, act, why }) {
-  const s = readScreen(screen)
-  if (!s) throw new Error(`no such screen: ${screen}`)
-  const state = readState(screen)
-
-  if (gate === 'prd') {
-    // The ONE gate of the two-column model (board R8): accept the requirements. Accepting PINS the
-    // current PRD text as the accepted source of truth, so every requirement re-derives to proven /
-    // unproven from its tests and nothing reads "reworded" until the text moves again. If the PRD is
-    // a crawled GUESS it also strips the `guess` frontmatter flag — the server never touches a
-    // requirement's PROSE, only that one marker and the pin. There is no draft gate and no gate B.
-    if (act !== 'accept') throw new Error(`unknown act: ${act}`)
-    const rewordedNow = (s.reqs || []).some(r => r.state === 'reworded')
-    const waiting = s.guess || rewordedNow || !state.approvedPrdText
-    if (!waiting) throw new Error('nothing to accept — the requirements are already accepted')
-    // Strip the flag from the FRONTMATTER block only — scope the edit to the opening `---…---` fence
-    // so a requirement's PROSE is never touched, not even a body line that happens to begin "guess:".
-    let text = s.prdText
-    if (s.guess) {
-      text = text.replace(/^(---\n[\s\S]*?\n---\n)/, block => block.replace(/^guess:[^\n]*\n/m, ''))
-      writeText(join(SPEC, screen, 'prd.md'), text)
-    }
-    // Pin what was accepted — the TEXT, so a later diff can say exactly which requirement moved.
-    state.approvedPrdText = text
-    writeState(screen, state)
-    build()
-    return readState(screen)
-  }
-
-  // The wireframe left the tool: there is no gate A on a draft and no gate B on a build. The only
-  // gate is accepting the requirements, above.
-  throw new Error(`unknown gate: ${gate}`)
-}
-
 // The skills and agents that drive this board — read from disk at REQUEST time so an edited
 // SKILL.md shows up on the very next page load. This returns parsed frontmatter (name + one-line
 // description), never file bytes, so it does NOT widen the static allowlist. Two roots: the project
@@ -1011,23 +975,6 @@ const server = createServer(async (req, res) => {
       runningId: running ? running.runId : null,
       watch: watchOn
     }))
-    return
-  }
-
-  if (url.pathname === '/api/gate' && req.method === 'POST') {
-    try {
-      const state = applyGate(JSON.parse(await readBody(req)))
-      // state.json is excluded from the file watcher (writing it would rebuild, which rewrites,
-      // which rebuilds…), so a decision has to push its own notification. Without this a second
-      // open board — or the same board after an API call — keeps showing the old verdict and
-      // quietly disagrees with what is on disk.
-      notify()
-      res.writeHead(200, { 'content-type': 'application/json' })
-      res.end(JSON.stringify(state))
-    } catch (err) {
-      res.writeHead(400, { 'content-type': 'text/plain' })
-      res.end(err.message)
-    }
     return
   }
 

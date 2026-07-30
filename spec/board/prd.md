@@ -5,13 +5,13 @@ title: Board
 route: /
 ---
 
-*Redesigned 2026-07-29 (proposed — awaiting the human's gate): specboard's job narrows to the one
-thing only it does — **requirements are the source of truth, tests prove them against the real app,
-and drift is computed**. The wireframe leaves the tool entirely (it was a different, already-solved
-job); with it go gate B, the draft column, the redraft agent and the crawl's draft phase. The
-four-column grid (PRD · draft · screen · E2E) becomes two columns (requirements ↔ the tests that
-prove them), and the two human gates become **one** (accept the requirements). Old R1–R9 described
-the four-column, wireframe-first board; these describe the two-column, requirements↔proof one.*
+*specboard's job is the one thing only it does — **requirements are the source of truth, and tests
+prove them against the real app** at assertion granularity, with drift computed. The board is two
+columns: the requirements, and the tests that prove them. There is **no wireframe** (R7) and **no
+acceptance gate** (R8) — a requirement is canon the moment it is written, and it reads simply proven
+or unproven by its tests. (History: an earlier four-column, wireframe-first board with two human gates
+was narrowed here across 2026-07-29/30 — the wireframe left the tool, and the last gate was removed as
+a rubber-stamp. The per-requirement "Narrowed …" notes below record each step.)*
 
 ## R1 — One card per screen, not a row of cells
 
@@ -40,11 +40,15 @@ requirements, so its title names the *flow* and the tags carry the requirement l
 
 ## R4 — Requirement state is computed and assertion-backed
 
-Each requirement is proven, reworded (stale), or unproven — computed from stored approval hashes
-against current content, never typed. **Proven** means: a test that tags this requirement passed *on
-an assertion that would fail without it*. A long or cross-screen flow records pass / fail /
-**not-reached** per requirement, so a flow that stops early leaves the requirements it never reached
-honestly unproven — not green, and not red. "0 of 0 passing" reads green; not-reached must not.
+Each requirement is **proven** or **unproven** — computed from the tests, never typed. **Proven** means:
+a test that tags this requirement passed *on an assertion that would fail without it*. A long or
+cross-screen flow records pass / fail / **not-reached** per requirement, so a flow that stops early
+leaves the requirements it never reached honestly unproven — not green, and not red. "0 of 0 passing"
+reads green; not-reached must not.
+
+*Narrowed 2026-07-30: this requirement previously carried a third **reworded** state tied to an
+acceptance gate (R8). The gate was removed (see R8), so there is no "changed since accepted" — a
+requirement is simply proven by a current test or it is not.*
 
 ## R5 — Requirements and tests are many-to-many, by tag
 
@@ -74,13 +78,17 @@ detail. Removed at the human's direction — a link specboard never renders, gat
 one more thing to carry, and the tool is meant to be minimal. The `design:` frontmatter field and the
 Design chip are gone.*
 
-## R8 — One human gate: accept the requirements
+## R8 — No acceptance gate: requirements are the source of truth as written
 
-The single human decision is: *are these requirements what I meant?* Accepting a screen's
-requirements is the one gate. There is no "did you build it right?" gate — that question is answered
-by the assertion-backed tests running against the real app (R4), automatically, with no status field
-and no human compare. Requirements changed since they were accepted read as needing re-acceptance;
-that is the only thing waiting on a person.
+There is **no gate**. A requirement is the source of truth the moment you write it — editing the PRD
+*is* the change, and the assertion-backed tests prove it against the real app automatically (R4), with
+no status field and no rubber-stamp. Nothing on the board waits on a human to "accept" a requirement
+it would have accepted anyway.
+
+*Narrowed 2026-07-30: this requirement previously described one human gate — accepting the
+requirements. The human removed it: a decision that is always yes is ceremony, not a gate. Requirement
+state is now just proven / unproven; the "does the build match the intended design?" question moves to
+a separate, interactive wireframe check (planned), not a gate.*
 
 ## R9 — Search across requirement text, grouped into areas
 

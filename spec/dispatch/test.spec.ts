@@ -25,8 +25,8 @@ const BOARD = SELF_RUN ? '/?runid=' + SELF_RUN + '#/board' : '/#/board'
 
 // Two of the board's OWN test titles — any real board case works as "a fast, deterministic run to
 // drive the panel". Kept in sync with spec/board/test.spec.ts; they are safe cases (no state writes).
-const B_R1 = 'R1 — home is one CARD per screen: titles + a cover, never a four-column strip'
-const B_R2 = 'R2 — the detail is two columns, each scrolling on its own'
+const B_R1 = 'Home lists every screen as a card'
+const B_R2 = 'The detail opens as two independent columns'
 // Open a collapsed test row so its steps / log machinery (inside the .tbody) becomes visible.
 const openCase = async (loc: any) => { await loc.locator('.th').click() }
 
@@ -185,8 +185,8 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   const log = await logRes.text()
   // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
   // failure could be read back long after the panel that showed it live is gone
-  expect(log).toContain('home is one CARD per screen')
-  expect(log).toContain('the detail is two columns')
+  expect(log).toContain('Home lists every screen as a card')
+  expect(log).toContain('The detail opens as two independent columns')
   expect(log.length).toBeGreaterThan(200)
 
   // R8: each case keeps its OWN record — a self-contained log leading with what it was and how it
@@ -239,7 +239,12 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   const untouched = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R2 }).first()
   await openCase(untouched)
   await expect(untouched.locator('.tststeps .stepstog'), 'every case can still expand its steps').toBeVisible()
-  await expect(untouched.locator('.tstlog summary'), 'every case still has its own log').toBeVisible()
+  // the whole log now opens in ONE place — the popup (board R10). The inline .tstlog is still FOLDED
+  // for every case (this fold is the bit that was being blanked); its history feeds the popup and its
+  // affordance is the full-log link. Assert the fold reached this untouched case, and the link is there.
+  await expect(untouched.locator('.tstlog .lghist > li').first(),
+    'every case still keeps its own folded log history').toBeAttached()
+  await expect(untouched.locator('.loglink'), 'every case can open its full log in a window').toBeVisible()
 })
 
 test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, request }) => {
@@ -258,10 +263,15 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
   await page.goto('/#/board')
   const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
   await openCase(one)
-  const log = one.locator('.tstlog')
+  // the folded history is recorded into the hidden .tstlog first (loadRuns); THEN the whole log opens
+  // in ONE floating window (board R10), which copies that history in — read it there, where it shows.
+  await expect(one.locator('.tstlog .lghist > li').first()).toBeAttached()
+  await one.locator('.loglink').click()
+  const log = page.locator('#logsheet')
+  await expect(log).toHaveClass(/on/)
   // MORE THAN ONE run of this case is kept — the history, not just the newest. Not an exact count:
   // earlier full runs of this screen covered this case too, and they legitimately count.
-  await expect(log.locator('summary')).toContainText(/last \d+ runs/)
+  await expect(log.locator('.logbox summary')).toContainText(/last \d+ runs/)
   expect(await log.locator('.lghist > li').count(),
     'the case keeps a history, not one entry').toBeGreaterThanOrEqual(2)
   // and it is capped, so a case cannot grow an unbounded wall of logs
@@ -291,8 +301,11 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
     await openCase(cases.nth(i))   // the machinery lives in the collapsed .tbody
     await expect(cases.nth(i).locator('.tststeps .stepstog'),
       'case can expand its steps: ' + title).toBeVisible()
-    await expect(cases.nth(i).locator('.tstlog summary'),
-      'case has its own log: ' + title).toBeVisible()
+    // its log is folded per case (feeds the one full-log popup); assert the record reached this case
+    await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),
+      'case keeps its own folded log history: ' + title).toBeAttached()
+    await expect(cases.nth(i).locator('.loglink'),
+      'case can open its full log in a window: ' + title).toBeVisible()
   }
 })
 

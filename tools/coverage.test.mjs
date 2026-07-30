@@ -1,7 +1,7 @@
 // The coverage foundation: a test proves requirements by tagging them (many-to-many, by qualified
 // id) and asserting each one. These pure functions turn what a run recorded — the `proves <id>`
 // steps it ran and the `covers` tags it declared — into per-requirement pass / fail / not-reached,
-// then roll that up into a requirement's proven / reworded / unproven state. No Playwright, no
+// then roll that up into a requirement's proven / unproven state. No Playwright, no
 // board, no browser (node --test), because the single thing this product cannot get wrong is the
 // derivation of whether a requirement is actually proven.
 
@@ -92,15 +92,11 @@ test('a test with no reqs contributes nothing to the aggregate', () => {
 })
 
 // deriveReqState ------------------------------------------------------------
-test('a reworded requirement is reworded regardless of proof — it awaits the human gate', () => {
-  assert.equal(deriveReqState({ reworded: true, hasCurrentPass: true }), 'reworded')
-  assert.equal(deriveReqState({ reworded: true, hasCurrentPass: false }), 'reworded')
-})
-
+// No acceptance gate (board R8): state is just proven / unproven, computed from the tests.
 test('a current passing proof makes a requirement proven', () => {
-  assert.equal(deriveReqState({ reworded: false, hasCurrentPass: true }), 'proven')
+  assert.equal(deriveReqState({ hasCurrentPass: true }), 'proven')
 })
 
 test('no current passing proof leaves a requirement unproven — fail, not-reached and stale all count', () => {
-  assert.equal(deriveReqState({ reworded: false, hasCurrentPass: false }), 'unproven')
+  assert.equal(deriveReqState({ hasCurrentPass: false }), 'unproven')
 })

@@ -31,8 +31,9 @@ covers. Two helpers, both imported from `'../_base'`:
 That yields the three states the board derives per requirement: **pass** (a `proves` step ran and did
 not error), **fail** (it ran and errored), **not-reached** (declared in `coverReqs` but its step
 never ran). The reporter folds these per-requirement into `spec/_results-index.json`, and
-`spec-store` turns them into each requirement's state: **proven / reworded / unproven** (reworded —
-the text changed since the human accepted it — wins over any proof).
+`spec-store` turns them into each requirement's state: **proven / unproven** — proven when a current
+passing assertion covers it, unproven otherwise. There is no acceptance gate, so there is no third
+"changed since accepted" state.
 
 **Ids are many-to-many and can be qualified.** One test can prove several requirements; one
 requirement can be proven by several tests. A bare id (`R4`) means *this test's own screen*; a

@@ -244,6 +244,13 @@ ins { color:var(--koke); text-decoration:none; }
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
   body { width:auto; }
+  /* The specboard bar heads the LIST (and the tool views); it sticks to the top as you scroll. On a
+     detail PAGE the detail is a full-screen window that covers it, so a detail has exactly ONE header
+     — its own — never two stacked bars. */
+  .top { position:sticky; top:0; z-index:40; }
+  /* while a detail (a full-screen fixed window) is open, the page itself must not scroll — only its
+     two panes do. Set on <html> by the router when a detail opens, cleared when it closes. */
+  html.noscroll { overflow:hidden; }
   .wrap { max-width:1200px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
   .empty { padding:var(--s5) var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
   .empty code { font-family:var(--mono); }
@@ -290,51 +297,49 @@ ins { color:var(--koke); text-decoration:none; }
     font-size:var(--t-sm); padding:0; width:12px; line-height:1; }
   .grp.shut .cards { display:none; }
   .cards { display:flex; flex-direction:column; gap:var(--s4); }
-  .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
+  /* Home cards only — this grid, the pointer cursor and the hover lift are the affordance of an
+     openable row. Scoped to #home so it never leaks onto the plain block .card that _design.css
+     gives the Setup view; an unscoped rule once split that form into two clipped columns. */
+  #home .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
     border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s4) var(--s5); cursor:pointer;
     transition:border-color .12s, box-shadow .12s; }
-  .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
-  .card.gone { display:none; }
-  .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
-  .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
-  .card .pcount { margin-left:auto; }
+  #home .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
+  #home .card.gone { display:none; }
+  #home .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  #home .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
+  #home .card .pcount { margin-left:auto; }
   .rl { list-style:none; display:flex; flex-direction:column; gap:5px; margin:0; padding:0; }
   .rl li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-sm); color:var(--ink-2); }
   .rl li .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
+  .rl li.more { color:var(--ink-4); font-size:var(--t-xs); padding-left:calc(24px + var(--s2)); }
   .cshot { aspect-ratio:16/10; border-radius:var(--r); border:1px solid var(--hair-2); overflow:hidden;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); position:relative; }
   .cshot img { width:100%; height:100%; object-fit:cover; object-position:top left; display:block; }
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:18px; color:var(--ink-4); }
 
-  /* DETAIL — a fixed window: header, the one accept gate, two independently scrolling panes (R2) */
-  .dt { position:fixed; inset:0; background:var(--canvas); z-index:20; display:flex; flex-direction:column; }
+  /* DETAIL — a fixed FULL-SCREEN window that COVERS the specboard bar, so a detail page has exactly
+     ONE header: its own. Below it, R2's two panes each scroll on their own. z-index sits above the
+     top bar (40) and below the log popup (49/50). */
+  .dt { position:fixed; inset:0; background:var(--canvas); z-index:45;
+    display:flex; flex-direction:column; }
   /* An author display declaration beats the hidden attribute's UA display:none, so a hidden detail
      really disappears rather than every one stacking. */
   .dt[hidden] { display:none; }
+  /* the ONE detail header, full-width: title · requirement count · … · Run all · Next waiting · Close */
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
-    width:100%; max-width:1200px; margin:0 auto; padding:var(--s4) var(--s6);
+    width:100%; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
-  .dtscroll { flex:1; overflow:auto; }
-  .dtscroll > .dbar, .dtscroll > .gate, .dtscroll > .cols {
-    width:100%; max-width:1200px; margin-left:auto; margin-right:auto; }
-  .dtscroll { padding:var(--s5) var(--s6) var(--s5); }
-  .dbar { display:flex; align-items:center; gap:var(--s4); padding:0 var(--s2) var(--s4); }
-  .dbar .t { font-size:var(--t-xl); letter-spacing:-.02em; }
-  .dbar .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
-
-  /* the ONE gate (board R8) — indigo = your turn; the settled state wears moss */
-  .gate { display:flex; align-items:center; gap:var(--s3); border-radius:var(--r-md);
-    padding:var(--s3) var(--s4); margin-bottom:var(--s4); }
-  .gate.open { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:3px solid var(--ai); }
-  .gate.ok { background:var(--koke-tint); border:1px solid var(--koke-line); border-left:3px solid var(--koke); }
-  .gate .g1 { font-weight:600; color:var(--ai); white-space:nowrap; }
-  .gate .g2 { color:var(--ink-2); font-size:var(--t-sm); }
+  .dth h2 { font-size:var(--t-xl); letter-spacing:-.02em; }
+  .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
+  .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
+    align-items:center; padding:var(--s5) var(--s6) var(--s5); }
+  .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
 
   /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
      other, neither scrolls the page, and both headers stay pinned (board R2) */
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
-    height:calc(100vh - 236px); min-height:340px; }
+    min-height:340px; }
   .pane { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     overflow-y:auto; overflow-x:hidden; padding-bottom:var(--s6); }
   .pane > h2 { position:sticky; top:0; z-index:2; background:var(--card);
@@ -374,10 +379,11 @@ ins { color:var(--koke); text-decoration:none; }
      the fold of steps, and a link to the full log (board R3/R10) */
   .test { border-bottom:1px solid var(--hair); padding:var(--s3) var(--s4); }
   .test:last-child { border-bottom:0; }
-  .test.hot { background:var(--ai-tint); }
+  .test.hot > .th { background:var(--ai-tint); }
   .test > .th { cursor:pointer; }
   .throw { display:flex; align-items:center; gap:var(--s3); }
-  .test > .th:hover .ttl { color:var(--ai); }
+  /* hover the item → grey; its linked item(s) → blue (.hot). Same both directions, reqs ↔ tests. */
+  .test > .th:hover { background:var(--wash); }
   .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -386,10 +392,13 @@ ins { color:var(--koke); text-decoration:none; }
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
   .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
-    border:1px solid var(--hair-2); overflow:hidden; cursor:pointer;
-    background:linear-gradient(135deg,var(--wash),var(--sunk)); }
+    border:1px solid var(--hair-2); overflow:hidden; cursor:default;
+    background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }
+  /* a still cover is playable ONLY when a run captured a video; otherwise it is honestly a still */
+  .rec.playable { cursor:pointer; }
   .rec .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:20px; color:var(--ink-4); }
+  .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; background:var(--ink); }
   .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
@@ -400,15 +409,21 @@ ins { color:var(--koke); text-decoration:none; }
     background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
   .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
   .test .tacts { opacity:1; margin-left:0; }
+  /* aligned with the steps fold (both indented 14px) so the two read as one list, and NO toggle
+     chevron — it opens a window, it does not expand in place */
   .loglink { font:var(--t-xs) var(--sans); color:var(--ai); cursor:pointer; display:inline-flex;
-    gap:6px; align-items:center; margin-top:var(--s3); }
+    gap:6px; align-items:center; margin:var(--s3) 0 0 14px; }
   .loglink:hover { text-decoration:underline; }
   .fold { margin-top:var(--s3); }
 
   /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
      behind it. Close / Esc / a click off the card dismiss it (board R10). */
   .sheet { display:none; }
-  .sheet.on { display:block; }
+  /* open: a full-viewport scrim dims the board so the popup reads as the foreground, and the .box
+     (below) floats on it as a CARD — never filling the viewport (board R10). A click anywhere on the
+     scrim (off the card) closes it, alongside the Close button and Esc. The scrim wears the ink colour
+     at low alpha, the same overlay tone the lightbox uses. */
+  .sheet.on { display:block; position:fixed; inset:0; z-index:49; background:rgba(28,27,24,.32); }
   .sheet .box { position:fixed; z-index:50; top:8vh; left:50%; transform:translateX(-50%);
     width:720px; max-width:calc(100vw - 48px); max-height:80vh;
     background:var(--card); border:1px solid var(--hair-2); border-radius:var(--r-lg);
@@ -438,13 +453,14 @@ ins { color:var(--koke); text-decoration:none; }
   .stepslist li.sf:before { content:"✕"; color:var(--bengara); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
-  /* the case's OWN log, collapsed behind a native disclosure — the whole thing it printed, kept from
-     the latest run, so a failure can be read here without running it again (dispatch R8) */
-  .tstlog { margin:var(--s2) 0 0 14px; }
-  .tstlog:empty { display:none; }
-  .tstlog summary { font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); cursor:pointer; }
-  .tstlog summary:hover { color:var(--ink-2); }
-  .tstlog pre { margin:var(--s2) 0 0; padding:var(--s2) var(--s3); background:var(--sunk);
+  /* the case's OWN log history is POPULATED but never shown inline — there is ONE full-log
+     affordance, the popup (board R10). loadRuns still fills .tstlog (dispatch R8 folds every case's
+     history into it) and the popup copies its content, so the log lives in exactly one visible place.
+     Its styles hang off .logbox / .lghist so they render inside the popup, where the log is read. */
+  .tstlog { display:none; }
+  .logbox summary { font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); cursor:pointer; }
+  .logbox summary:hover { color:var(--ink-2); }
+  .lghist pre { margin:var(--s2) 0 0; padding:var(--s2) var(--s3); background:var(--sunk);
     border:1px solid var(--hair); border-radius:var(--r-sm); max-height:280px; overflow:auto;
     font:var(--t-xs)/1.6 var(--mono); color:var(--ink-3); white-space:pre-wrap; }
   /* the case's last ten runs, newest first — each headed with when, how long, and on what commit */
@@ -486,15 +502,6 @@ ins { color:var(--koke); text-decoration:none; }
   .rplog { margin:0; padding:var(--s3) var(--s4); height:260px; overflow:auto;
     font:var(--t-xs)/1.75 var(--mono); color:var(--ink-2); background:var(--canvas);
     white-space:pre-wrap; }
-  /* what THIS test saw — its own shots, under its own row, each zoomable */
-  .tstshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:var(--s2) 0 0 14px; }
-  .tstshots:empty { display:none; }
-  .tstshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
-    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--wash); display:block; }
-  .tstshots img:hover { border-color:var(--ink); }
-  .tstshots .recvid { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
-    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:3px 6px; }
-  .tstshots .recvid:hover { border-color:var(--ink); color:var(--ink); }
   /* per-test run controls appear on the row you are pointing at, so five tests do not become ten
      competing buttons */
   .tacts { display:inline-flex; gap:4px; margin-left:var(--s2); opacity:0; transition:opacity .12s; }
@@ -807,7 +814,10 @@ ins { color:var(--koke); text-decoration:none; }
 </div>
 
 <div class="wrap">
-  
+  <div class="clear">
+    <span class="chip ok"><span class="dot"></span>queue clear</span>
+    Nothing is waiting on you — only a crawled guess ever needs a look; everything else is proven or unproven by its tests.
+  </div>
   <div id="home">
     
 <section class="grp" data-area="Core">
@@ -815,18 +825,18 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Core</h2>
     <span class="gc">2 screens</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="cards">
 <div class="card" data-screen="board" data-i="0"
-     data-waiting="1" data-q="board / one card per screen, not a row of cells the detail is two columns, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag few comprehensive tests — but never long-and-shallow specboard owns neither the wireframe nor the design one human gate: accept the requirements search across requirement text, grouped into areas a test opens to its full evidence, and can be run or watched">
+     data-waiting="0" data-q="board / one card per screen, not a row of cells the detail is two columns, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag few comprehensive tests — but never long-and-shallow specboard owns neither the wireframe nor the design no acceptance gate: requirements are the source of truth as written search across requirement text, grouped into areas a test opens to its full evidence, and can be run or watched">
   <div class="cmain">
     <div class="cd"><span class="nm">Board</span>
       
-      <span class="chip gone pcount"><span class="mark o"></span>0 / 10 proven</span></div>
-    <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li><span class="id">R6</span>Few comprehensive tests — but never long-and-shallow</li><li><span class="id">R7</span>specboard owns neither the wireframe nor the design</li><li><span class="id">R8</span>One human gate: accept the requirements</li><li><span class="id">R9</span>Search across requirement text, grouped into areas</li><li><span class="id">R10</span>A test opens to its full evidence, and can be run or watched</li></ul>
+      <span class="chip ok pcount"><span class="mark"></span>10 / 10 proven</span></div>
+    <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 5 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=a4eb468d8b82" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=03475b4929e6" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -836,7 +846,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=cfea7576e36a" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=8094a87afd85" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -844,18 +854,18 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Running</h2>
     <span class="gc">1 screen</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="cards">
 <div class="card" data-screen="dispatch" data-i="2"
-     data-waiting="1" data-q="dispatch panel /run/:job one panel per job, opened by the cell you clicked the work is visible while it runs finishing updates the board without a reload one job at a time; a person's second job takes over, a nested run shares the slot cancel actually stops it the whole log is kept, not just the verdict the panel stays open when the job ends a test run records each case on its own">
+     data-waiting="0" data-q="dispatch panel /run/:job one panel per job, opened by the cell you clicked the work is visible while it runs finishing updates the board without a reload one job at a time; a person's second job takes over, a nested run shares the slot cancel actually stops it the whole log is kept, not just the verdict the panel stays open when the job ends a test run records each case on its own">
   <div class="cmain">
     <div class="cd"><span class="nm">Dispatch panel</span>
       
       <span class="chip gone pcount"><span class="mark o"></span>0 / 8 proven</span></div>
-    <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li><span class="id">R6</span>The whole log is kept, not just the verdict</li><li><span class="id">R7</span>The panel stays open when the job ends</li><li><span class="id">R8</span>A test run records each case on its own</li></ul>
+    <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=333918a2be16" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=8babf72f832b" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -863,18 +873,18 @@ ins { color:var(--koke); text-decoration:none; }
     <button class="tw" aria-label="collapse">—</button>
     <h2>Setup</h2>
     <span class="gc">1 screen</span>
-    <span class="gwait"><span class="dot"></span>1 waiting</span>
+    
   </div>
   <div class="cards">
 <div class="card" data-screen="init" data-i="3"
-     data-waiting="1" data-q="init /init asks for what cannot be guessed, and nothing else an existing app is crawled into rows a crawled prd is marked as a guess an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
+     data-waiting="0" data-q="setup /init asks for what cannot be guessed, and nothing else an existing app is crawled into rows a crawled prd is marked as a guess an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
   <div class="cmain">
-    <div class="cd"><span class="nm">Init</span>
+    <div class="cd"><span class="nm">Setup</span>
       
       <span class="chip gone pcount"><span class="mark o"></span>0 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is crawled into rows</li><li><span class="id">R3</span>A crawled PRD is marked as a guess</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=f431989ac30a" alt="Init — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=c550213ea06b" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>
@@ -917,9 +927,13 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </section>
 
-<!-- Init is a tool view too (#init): how to reach the project's app, and what a crawl of it
+<!-- Setup is a tool view too (#init): how to reach the project's app, and what a crawl of it
      found. A project that arrives with code and no specs starts here, so the board is populated on
-     day one instead of being an empty page nobody knows how to fill. -->
+     day one instead of being an empty page nobody knows how to fill. The hash stays #init — the
+     stored route — while every label the human reads says Setup, to match the Set up button. -->
+<!-- reworded 2026-07-30: the screen's title became "Setup" so it matches the Set up button and
+     header; awaiting the human's accept on the board (never accepted here). -->
+
 <section class="dt" id="initview" hidden>
   <div class="dth">
     <h2>Set up the board</h2>
@@ -1203,7 +1217,7 @@ ins { color:var(--koke); text-decoration:none; }
     
   </div></foreignObject>
 <foreignObject x="482" y="184" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Open Init · point at the app</div>
+    <div class="nb-title">Open Setup · point at the app</div>
     
     
     
@@ -1628,240 +1642,221 @@ ins { color:var(--koke); text-decoration:none; }
 </div>
 
 <section class="dt" data-i="0" data-screen="board" hidden>
-  <div class="dth">
+  <div class="dth dbarhook">
     <h2>Board</h2>
+    <span class="m">10 requirements · spec/board/</span>
     <span class="grow"></span>
+    <button class="btn pri runbtn" data-run="board">Run all<span class="kbd">r</span></button>
     <button class="btn turn nextw" data-i="0">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dbar dbarhook">
-      <span class="t">Board</span>
-      <span class="m">10 requirements · spec/board/</span>
-      <span class="grow"></span>
-      <button class="btn pri runbtn" data-run="board">Run all<span class="kbd">r</span></button>
-    </div>
-    <div class="gate open">
-    <span class="g1">Gate · your turn</span>
-    <span class="g2">Requirements changed since they were accepted. Re-read what moved, then accept them again as the source of truth.</span>
-    <button class="btn ok" data-act="accept" data-gate="prd" data-screen="board" style="flex:none;margin-left:auto">Accept requirements</button>
-  </div>
     <div class="cols">
       <div class="pane reqpane">
-  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
-  <div class="req" data-r="R1" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R1</span><span class="rt">One card per screen, not a row of cells</span><span class="chev">›</span></div>
-    <div class="body"><p>Every screen is one card: its name, its requirement <strong>titles</strong>, and the latest test <strong>recording</strong> (its cover frame as the still). Requirements are never their own rows; the card is titles, and each title's description lives one click away in the detail. There is no PRD / draft / screen / E2E column strip — that grid mostly repeated what the two ends already said.</p><div class="covers">proven by <span class="ctag">R1 — home is one CARD per screen: titles + a cover, never a four-column strip</span></div></div>
-  </div><div class="req" data-r="R2" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R2</span><span class="rt">The detail is two columns, each scrolling on its own</span><span class="chev">›</span></div>
-    <div class="body"><p>Opening a screen shows two columns: the requirements on the left, the E2E tests that prove them on the right. <strong>Each column scrolls independently</strong> — scrolling the tests never moves the requirements, and neither scrolls the page; both headers stay pinned. There is no wireframe column and no built-screen column: the wireframe is not a specboard artifact at all (R7), and a test's evidence (recording, screenshot) lives inside the test (R3, R10).</p><div class="covers">proven by <span class="ctag">R2 — the detail is two columns, each scrolling on its own</span></div></div>
-  </div><div class="req" data-r="R3" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R3</span><span class="rt">A requirement is a title that expands; a test is a title, a recording, and its tags</span><span class="chev">›</span></div>
-    <div class="body"><p>Left column: each requirement shows only its title until clicked, then its full description — real requirements are long and formatted (headings, lists, <code>code</code>, author notes), so the collapse is what keeps the column readable. Right column: each test leads with a <strong>prominent, descriptive title</strong> of the flow it runs — its own name, so it says what the test is <em>for</em> — then its latest <strong>recording</strong> (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a test title just repeating a requirement's, is gone: under many-to-many a test covers several requirements, so its title names the <em>flow</em> and the tags carry the requirement link.</p><div class="covers">proven by <span class="ctag">R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement</span></div></div>
-  </div><div class="req" data-r="R4" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R4</span><span class="rt">Requirement state is computed and assertion-backed</span><span class="chev">›</span></div>
-    <div class="body"><p>Each requirement is proven, reworded (stale), or unproven — computed from stored approval hashes against current content, never typed. <strong>Proven</strong> means: a test that tags this requirement passed <em>on an assertion that would fail without it</em>. A long or cross-screen flow records pass / fail / <strong>not-reached</strong> per requirement, so a flow that stops early leaves the requirements it never reached honestly unproven — not green, and not red. &quot;0 of 0 passing&quot; reads green; not-reached must not.</p><div class="covers">proven by <span class="ctag">R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives</span></div></div>
-  </div><div class="req" data-r="R5" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R5</span><span class="rt">Requirements and tests are many-to-many, by tag</span><span class="chev">›</span></div>
-    <div class="body"><p>One test can prove several requirements; one requirement can be proven by several tests. The link lives in the <strong>test</strong>, which tags the requirement ids it covers — qualified (e.g. <code>asset-plan:R5</code>), so a flow can cover another screen's requirement. A flow's file lives in the screen it <strong>starts</strong> on; coverage is by tag, so a requirement lists every test that covers it, wherever that file lives.</p><div class="covers">proven by <span class="ctag">R5 — requirements and tests are many-to-many by tag, and the link lights up on hover</span></div></div>
-  </div><div class="req" data-r="R6" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R6</span><span class="rt">Few comprehensive tests — but never long-and-shallow</span><span class="chev">›</span></div>
-    <div class="body"><p>The aim is fewer tests each covering more (edit on Asset Plan → assert the value → open Tenancy Schedule → assert it reflects, with the right number), not one shallow walk that touches everything and proves nothing. A test may tag many requirements, but each still needs an assertion that would fail without it (R4) — so &quot;fewer tests&quot; can never buy itself a false green.</p><div class="covers">proven by <span class="ctag">R6 — a test declares the coverage it proves; a requirement lists every test that covers it</span></div></div>
-  </div><div class="req" data-r="R7" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R7</span><span class="rt">specboard owns neither the wireframe nor the design</span><span class="chev">›</span></div>
-    <div class="body"><p>Sketching or designing a screen before it exists is a real job, but a different one, and already well served elsewhere. specboard tracks requirements and their proof — <strong>nothing else</strong>. It does not render, link to, gate, or store a wireframe or a design of any kind; there is no design field, no design chip, no external-artifact affordance anywhere. A screen is documented by its requirements and the tests that prove them, and a screen with no artifact is not &quot;unstarted&quot; — it is simply defined by what it must do and whether that is proven.</p><p><em>Narrowed 2026-07-30: R7 previously carried an optional external <code>design:</code> link shown as a chip in the detail. Removed at the human's direction — a link specboard never renders, gates, or stales is still one more thing to carry, and the tool is meant to be minimal. The <code>design:</code> frontmatter field and the Design chip are gone.</em></p><div class="covers">proven by <span class="ctag">R7 — specboard owns no wireframe or design: no design affordance, nothing rendered</span></div></div>
-  </div><div class="req" data-r="R8" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R8</span><span class="rt">One human gate: accept the requirements</span><span class="chev">›</span></div>
-    <div class="body"><p>The single human decision is: <em>are these requirements what I meant?</em> Accepting a screen's requirements is the one gate. There is no &quot;did you build it right?&quot; gate — that question is answered by the assertion-backed tests running against the real app (R4), automatically, with no status field and no human compare. Requirements changed since they were accepted read as needing re-acceptance; that is the only thing waiting on a person.</p><div class="covers">proven by <span class="ctag">R8 — ONE human gate: accept the requirements; no gate B, no wireframe</span></div></div>
-  </div><div class="req" data-r="R9" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R9</span><span class="rt">Search across requirement text, grouped into areas</span><span class="chev">›</span></div>
-    <div class="body"><p>Search matches screen names, routes and the text of every requirement; a group with no matching card hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order, never paginated — a board you page through can no longer answer &quot;what is the state of everything&quot;.</p><div class="covers">proven by <span class="ctag">R9 — search across requirement text, grouped into areas, a group with no match hides</span></div></div>
-  </div><div class="req" data-r="R10" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R10</span><span class="rt">A test opens to its full evidence, and can be run or watched</span><span class="chev">›</span></div>
-    <div class="body"><p>A test row is not just a verdict. It opens to: its <strong>steps</strong>, each carrying its own pass / fail / not-reached mark, in a list that <strong>scrolls</strong> so fifty steps read as clearly as five; the <strong>whole run log</strong> — the complete process output for that run, including globalSetup / seed output and the untruncated tail, not only that case's bounded stdout (the per-case log alone was the gap that read as &quot;it doesn't show the whole log&quot;); and a record <strong>per run</strong>, each keeping its own <strong>recording</strong> (its cover the last asserted frame — the end state it proved, not the blank first frame), the time, the duration, the commit and the verdict. A still screenshot is kept only as the fallback cover when a run has no video (a headless CLI run, or the recording was pruned) — the recording is the primary artifact, so there is no separate screenshot column. Every test can be <strong>Run</strong> (headless — nothing to watch, it just goes) or <strong>Watched</strong> (a real browser opens and drives the app in front of you). Run and Watch stay wherever a test is shown.</p><div class="covers">proven by <span class="ctag">R10 — a test opens to its evidence and can be run; the whole log opens in a floating window</span></div></div>
+  <h2>1 · Requirements</h2>
+  <div class="req" data-r="R1" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R1</span><span class="rt">One card per screen, not a row of cells</span><span class="chev">›</span></div>
+    <div class="body"><p>Every screen is one card: its name, its requirement <strong>titles</strong>, and the latest test <strong>recording</strong> (its cover frame as the still). Requirements are never their own rows; the card is titles, and each title's description lives one click away in the detail. There is no PRD / draft / screen / E2E column strip — that grid mostly repeated what the two ends already said.</p><div class="covers">proven by <span class="ctag">Home lists every screen as a card</span></div></div>
+  </div><div class="req" data-r="R2" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R2</span><span class="rt">The detail is two columns, each scrolling on its own</span><span class="chev">›</span></div>
+    <div class="body"><p>Opening a screen shows two columns: the requirements on the left, the E2E tests that prove them on the right. <strong>Each column scrolls independently</strong> — scrolling the tests never moves the requirements, and neither scrolls the page; both headers stay pinned. There is no wireframe column and no built-screen column: the wireframe is not a specboard artifact at all (R7), and a test's evidence (recording, screenshot) lives inside the test (R3, R10).</p><div class="covers">proven by <span class="ctag">The detail opens as two independent columns</span></div></div>
+  </div><div class="req" data-r="R3" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R3</span><span class="rt">A requirement is a title that expands; a test is a title, a recording, and its tags</span><span class="chev">›</span></div>
+    <div class="body"><p>Left column: each requirement shows only its title until clicked, then its full description — real requirements are long and formatted (headings, lists, <code>code</code>, author notes), so the collapse is what keeps the column readable. Right column: each test leads with a <strong>prominent, descriptive title</strong> of the flow it runs — its own name, so it says what the test is <em>for</em> — then its latest <strong>recording</strong> (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a test title just repeating a requirement's, is gone: under many-to-many a test covers several requirements, so its title names the <em>flow</em> and the tags carry the requirement link.</p><div class="covers">proven by <span class="ctag">A requirement expands; a test leads with its flow name</span></div></div>
+  </div><div class="req" data-r="R4" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R4</span><span class="rt">Requirement state is computed and assertion-backed</span><span class="chev">›</span></div>
+    <div class="body"><p>Each requirement is <strong>proven</strong> or <strong>unproven</strong> — computed from the tests, never typed. <strong>Proven</strong> means: a test that tags this requirement passed <em>on an assertion that would fail without it</em>. A long or cross-screen flow records pass / fail / <strong>not-reached</strong> per requirement, so a flow that stops early leaves the requirements it never reached honestly unproven — not green, and not red. &quot;0 of 0 passing&quot; reads green; not-reached must not.</p><p><em>Narrowed 2026-07-30: this requirement previously carried a third <strong>reworded</strong> state tied to an acceptance gate (R8). The gate was removed (see R8), so there is no &quot;changed since accepted&quot; — a requirement is simply proven by a current test or it is not.</em></p><div class="covers">proven by <span class="ctag">Requirement state is computed and assertion-backed</span></div></div>
+  </div><div class="req" data-r="R5" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R5</span><span class="rt">Requirements and tests are many-to-many, by tag</span><span class="chev">›</span></div>
+    <div class="body"><p>One test can prove several requirements; one requirement can be proven by several tests. The link lives in the <strong>test</strong>, which tags the requirement ids it covers — qualified (e.g. <code>asset-plan:R5</code>), so a flow can cover another screen's requirement. A flow's file lives in the screen it <strong>starts</strong> on; coverage is by tag, so a requirement lists every test that covers it, wherever that file lives.</p><div class="covers">proven by <span class="ctag">Hovering a test lights up the requirements it covers</span></div></div>
+  </div><div class="req" data-r="R6" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R6</span><span class="rt">Few comprehensive tests — but never long-and-shallow</span><span class="chev">›</span></div>
+    <div class="body"><p>The aim is fewer tests each covering more (edit on Asset Plan → assert the value → open Tenancy Schedule → assert it reflects, with the right number), not one shallow walk that touches everything and proves nothing. A test may tag many requirements, but each still needs an assertion that would fail without it (R4) — so &quot;fewer tests&quot; can never buy itself a false green.</p><div class="covers">proven by <span class="ctag">A requirement names the tests that cover it</span></div></div>
+  </div><div class="req" data-r="R7" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R7</span><span class="rt">specboard owns neither the wireframe nor the design</span><span class="chev">›</span></div>
+    <div class="body"><p>Sketching or designing a screen before it exists is a real job, but a different one, and already well served elsewhere. specboard tracks requirements and their proof — <strong>nothing else</strong>. It does not render, link to, gate, or store a wireframe or a design of any kind; there is no design field, no design chip, no external-artifact affordance anywhere. A screen is documented by its requirements and the tests that prove them, and a screen with no artifact is not &quot;unstarted&quot; — it is simply defined by what it must do and whether that is proven.</p><p><em>Narrowed 2026-07-30: R7 previously carried an optional external <code>design:</code> link shown as a chip in the detail. Removed at the human's direction — a link specboard never renders, gates, or stales is still one more thing to carry, and the tool is meant to be minimal. The <code>design:</code> frontmatter field and the Design chip are gone.</em></p><div class="covers">proven by <span class="ctag">The detail shows no wireframe or design affordance</span></div></div>
+  </div><div class="req" data-r="R8" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R8</span><span class="rt">No acceptance gate: requirements are the source of truth as written</span><span class="chev">›</span></div>
+    <div class="body"><p>There is <strong>no gate</strong>. A requirement is the source of truth the moment you write it — editing the PRD <em>is</em> the change, and the assertion-backed tests prove it against the real app automatically (R4), with no status field and no rubber-stamp. Nothing on the board waits on a human to &quot;accept&quot; a requirement it would have accepted anyway.</p><p><em>Narrowed 2026-07-30: this requirement previously described one human gate — accepting the requirements. The human removed it: a decision that is always yes is ceremony, not a gate. Requirement state is now just proven / unproven; the &quot;does the build match the intended design?&quot; question moves to a separate, interactive wireframe check (planned), not a gate.</em></p><div class="covers">proven by <span class="ctag">No acceptance gate — the detail is the two columns, nothing to accept</span></div></div>
+  </div><div class="req" data-r="R9" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R9</span><span class="rt">Search across requirement text, grouped into areas</span><span class="chev">›</span></div>
+    <div class="body"><p>Search matches screen names, routes and the text of every requirement; a group with no matching card hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order, never paginated — a board you page through can no longer answer &quot;what is the state of everything&quot;.</p><div class="covers">proven by <span class="ctag">Searching requirement text hides groups that miss</span></div></div>
+  </div><div class="req" data-r="R10" data-state="proven">
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R10</span><span class="rt">A test opens to its full evidence, and can be run or watched</span><span class="chev">›</span></div>
+    <div class="body"><p>A test row is not just a verdict. It opens to: its <strong>steps</strong>, each carrying its own pass / fail / not-reached mark, in a list that <strong>scrolls</strong> so fifty steps read as clearly as five; the <strong>whole run log</strong> — the complete process output for that run, including globalSetup / seed output and the untruncated tail, not only that case's bounded stdout (the per-case log alone was the gap that read as &quot;it doesn't show the whole log&quot;); and a record <strong>per run</strong>, each keeping its own <strong>recording</strong> (its cover the last asserted frame — the end state it proved, not the blank first frame), the time, the duration, the commit and the verdict. A still screenshot is kept only as the fallback cover when a run has no video (a headless CLI run, or the recording was pruned) — the recording is the primary artifact, so there is no separate screenshot column. Every test can be <strong>Run</strong> (headless — nothing to watch, it just goes) or <strong>Watched</strong> (a real browser opens and drives the app in front of you). Run and Watch stay wherever a test is shown.</p><div class="covers">proven by <span class="ctag">A test opens to its evidence and the log opens in a window</span></div></div>
   </div>
 </div>
       <div class="pane testpane">
-  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
-  <div class="test tst p" data-t="R1 — home is one CARD per screen: titles + a cover, never a four-column strip" data-title="R1 — home is one CARD per screen: titles + a cover, never a four-column strip">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — home is one CARD per screen: titles + a cover, never a four-column strip</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  <h2>2 · E2E tests</h2>
+  <div class="test tst p" data-t="Home lists every screen as a card" data-title="Home lists every screen as a card">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Home lists every screen as a card</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">144ms</span></div>
-        <div class="tsub">passed · 144ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">156ms</span></div>
+        <div class="tsub">passed · 156ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R1 — home is one CARD per screen: titles + a cover, never a four-column strip" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R1 — home is one CARD per screen: titles + a cover, never a four-column strip" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R1 — home is one CARD per screen: titles + a cover, never a four-column strip"></div>
-      <div class="fold"><div class="tststeps" data-title="R1 — home is one CARD per screen: titles + a cover, never a four-column strip"></div></div>
-      <div class="tstlog" data-title="R1 — home is one CARD per screen: titles + a cover, never a four-column strip"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="Home lists every screen as a card"></div></div>
+      <div class="tstlog" data-title="Home lists every screen as a card"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R2 — the detail is two columns, each scrolling on its own" data-title="R2 — the detail is two columns, each scrolling on its own">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R2 — the detail is two columns, each scrolling on its own</span><div class="tags"><span class="tag" data-r="R2">R2</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="The detail opens as two independent columns" data-title="The detail opens as two independent columns">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail opens as two independent columns</span><div class="tags"><span class="tag" data-r="R2">R2</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">122ms</span></div>
-        <div class="tsub">passed · 122ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">124ms</span></div>
+        <div class="tsub">passed · 124ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R2 — the detail is two columns, each scrolling on its own" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R2 — the detail is two columns, each scrolling on its own" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R2 — the detail is two columns, each scrolling on its own"></div>
-      <div class="fold"><div class="tststeps" data-title="R2 — the detail is two columns, each scrolling on its own"></div></div>
-      <div class="tstlog" data-title="R2 — the detail is two columns, each scrolling on its own"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="The detail opens as two independent columns"></div></div>
+      <div class="tstlog" data-title="The detail opens as two independent columns"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement" data-title="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="A requirement expands; a test leads with its flow name" data-title="A requirement expands; a test leads with its flow name">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement expands; a test leads with its flow name</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">224ms</span></div>
+        <div class="tsub">passed · 224ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="A requirement expands; a test leads with its flow name"></div></div>
+      <div class="tstlog" data-title="A requirement expands; a test leads with its flow name"></div>
+      <div class="loglink" data-log>full log ↗</div>
+    </div>
+  </div><div class="test tst p" data-t="Requirement state is computed and assertion-backed" data-title="Requirement state is computed and assertion-backed">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">455ms</span></div>
+        <div class="tsub">passed · 455ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="Requirement state is computed and assertion-backed"></div></div>
+      <div class="tstlog" data-title="Requirement state is computed and assertion-backed"></div>
+      <div class="loglink" data-log>full log ↗</div>
+    </div>
+  </div><div class="test tst p" data-t="Hovering a test lights up the requirements it covers" data-title="Hovering a test lights up the requirements it covers">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">189ms</span></div>
+        <div class="tsub">passed · 189ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="Hovering a test lights up the requirements it covers"></div></div>
+      <div class="tstlog" data-title="Hovering a test lights up the requirements it covers"></div>
+      <div class="loglink" data-log>full log ↗</div>
+    </div>
+  </div><div class="test tst p" data-t="A requirement names the tests that cover it" data-title="A requirement names the tests that cover it">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement names the tests that cover it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
         <div class="rec"><span class="play">▶</span><span class="lab">198ms</span></div>
         <div class="tsub">passed · 198ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement"></div>
-      <div class="fold"><div class="tststeps" data-title="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement"></div></div>
-      <div class="tstlog" data-title="R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="A requirement names the tests that cover it"></div></div>
+      <div class="tstlog" data-title="A requirement names the tests that cover it"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives" data-title="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="The detail shows no wireframe or design affordance" data-title="The detail shows no wireframe or design affordance">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail shows no wireframe or design affordance</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">215ms</span></div>
-        <div class="tsub">passed · 215ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">99ms</span></div>
+        <div class="tsub">passed · 99ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives"></div>
-      <div class="fold"><div class="tststeps" data-title="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives"></div></div>
-      <div class="tstlog" data-title="R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="The detail shows no wireframe or design affordance"></div></div>
+      <div class="tstlog" data-title="The detail shows no wireframe or design affordance"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover" data-title="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — requirements and tests are many-to-many by tag, and the link lights up on hover</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="No acceptance gate — the detail is the two columns, nothing to accept" data-title="No acceptance gate — the detail is the two columns, nothing to accept">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">243ms</span></div>
-        <div class="tsub">passed · 243ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">118ms</span></div>
+        <div class="tsub">passed · 118ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover"></div>
-      <div class="fold"><div class="tststeps" data-title="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover"></div></div>
-      <div class="tstlog" data-title="R5 — requirements and tests are many-to-many by tag, and the link lights up on hover"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div></div>
+      <div class="tstlog" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R6 — a test declares the coverage it proves; a requirement lists every test that covers it" data-title="R6 — a test declares the coverage it proves; a requirement lists every test that covers it">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R6 — a test declares the coverage it proves; a requirement lists every test that covers it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="Searching requirement text hides groups that miss" data-title="Searching requirement text hides groups that miss">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">107ms</span></div>
-        <div class="tsub">passed · 107ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">163ms</span></div>
+        <div class="tsub">passed · 163ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R6 — a test declares the coverage it proves; a requirement lists every test that covers it" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R6 — a test declares the coverage it proves; a requirement lists every test that covers it" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R6 — a test declares the coverage it proves; a requirement lists every test that covers it"></div>
-      <div class="fold"><div class="tststeps" data-title="R6 — a test declares the coverage it proves; a requirement lists every test that covers it"></div></div>
-      <div class="tstlog" data-title="R6 — a test declares the coverage it proves; a requirement lists every test that covers it"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="Searching requirement text hides groups that miss"></div></div>
+      <div class="tstlog" data-title="Searching requirement text hides groups that miss"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered" data-title="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — specboard owns no wireframe or design: no design affordance, nothing rendered</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="A test opens to its evidence and the log opens in a window" data-title="A test opens to its evidence and the log opens in a window">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">103ms</span></div>
-        <div class="tsub">passed · 103ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">217ms</span></div>
+        <div class="tsub">passed · 217ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered"></div>
-      <div class="fold"><div class="tststeps" data-title="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered"></div></div>
-      <div class="tstlog" data-title="R7 — specboard owns no wireframe or design: no design affordance, nothing rendered"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
-    </div>
-  </div><div class="test tst p" data-t="R8 — ONE human gate: accept the requirements; no gate B, no wireframe" data-title="R8 — ONE human gate: accept the requirements; no gate B, no wireframe">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — ONE human gate: accept the requirements; no gate B, no wireframe</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">226ms</span></div>
-        <div class="tsub">passed · 226ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R8 — ONE human gate: accept the requirements; no gate B, no wireframe" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R8 — ONE human gate: accept the requirements; no gate B, no wireframe" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="tstshots" data-title="R8 — ONE human gate: accept the requirements; no gate B, no wireframe"></div>
-      <div class="fold"><div class="tststeps" data-title="R8 — ONE human gate: accept the requirements; no gate B, no wireframe"></div></div>
-      <div class="tstlog" data-title="R8 — ONE human gate: accept the requirements; no gate B, no wireframe"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
-    </div>
-  </div><div class="test tst p" data-t="R9 — search across requirement text, grouped into areas, a group with no match hides" data-title="R9 — search across requirement text, grouped into areas, a group with no match hides">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R9 — search across requirement text, grouped into areas, a group with no match hides</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">206ms</span></div>
-        <div class="tsub">passed · 206ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R9 — search across requirement text, grouped into areas, a group with no match hides" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R9 — search across requirement text, grouped into areas, a group with no match hides" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="tstshots" data-title="R9 — search across requirement text, grouped into areas, a group with no match hides"></div>
-      <div class="fold"><div class="tststeps" data-title="R9 — search across requirement text, grouped into areas, a group with no match hides"></div></div>
-      <div class="tstlog" data-title="R9 — search across requirement text, grouped into areas, a group with no match hides"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
-    </div>
-  </div><div class="test tst p" data-t="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window" data-title="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R10 — a test opens to its evidence and can be run; the whole log opens in a floating window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">197ms</span></div>
-        <div class="tsub">passed · 197ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="tstshots" data-title="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window"></div>
-      <div class="fold"><div class="tststeps" data-title="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window"></div></div>
-      <div class="tstlog" data-title="R10 — a test opens to its evidence and can be run; the whole log opens in a floating window"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="A test opens to its evidence and the log opens in a window"></div></div>
+      <div class="tstlog" data-title="A test opens to its evidence and the log opens in a window"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -1869,26 +1864,18 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </section>
 <section class="dt" data-i="1" data-screen="conflicts" hidden>
-  <div class="dth">
+  <div class="dth dbarhook">
     <h2>Conflicts</h2>
+    <span class="m">5 requirements · spec/conflicts/</span>
     <span class="grow"></span>
+    <button class="btn pri runbtn" data-run="conflicts">Run all<span class="kbd">r</span></button>
     <button class="btn turn nextw" data-i="1">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dbar dbarhook">
-      <span class="t">Conflicts</span>
-      <span class="m">5 requirements · spec/conflicts/</span>
-      <span class="grow"></span>
-      <button class="btn pri runbtn" data-run="conflicts">Run all<span class="kbd">r</span></button>
-    </div>
-    <div class="gate ok">
-      <span class="chip ok"><span class="dot"></span>requirements accepted</span>
-      <span class="g2">These requirements are the accepted source of truth. Edit the PRD to change what the screen should do, and it reads as needing re-acceptance until you accept again.</span>
-    </div>
     <div class="cols">
       <div class="pane reqpane">
-  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
+  <h2>1 · Requirements</h2>
   <div class="req" data-r="R1" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R1</span><span class="rt">A conflict is one fact stated two incompatible ways</span><span class="chev">›</span></div>
     <div class="body"><p>Not a gap, not a TODO, not a missing test. Two requirements that cannot both be true — a nav with five items on one screen and four on another, two different defaults for the same field. Anything looser fills the list with noise and you stop opening it.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -1907,7 +1894,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
       <div class="pane testpane">
-  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
+  <h2>2 · E2E tests</h2>
   <div class="test tst p" data-t="R2 — both positions are shown in full, each naming where it came from" data-title="R2 — both positions are shown in full, each naming where it came from">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R2 — both positions are shown in full, each naming where it came from</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
@@ -1921,17 +1908,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R2 — both positions are shown in full, each naming where it came from"></div>
       <div class="fold"><div class="tststeps" data-title="R2 — both positions are shown in full, each naming where it came from"></div></div>
       <div class="tstlog" data-title="R2 — both positions are shown in full, each naming where it came from"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R3 — the tool never picks: resolving is refused until you choose a side" data-title="R3 — the tool never picks: resolving is refused until you choose a side">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — the tool never picks: resolving is refused until you choose a side</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">122ms</span></div>
-        <div class="tsub">passed · 122ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">155ms</span></div>
+        <div class="tsub">passed · 155ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side" title="run only this test">Run</button>
@@ -1939,17 +1925,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R3 — the tool never picks: resolving is refused until you choose a side"></div>
       <div class="fold"><div class="tststeps" data-title="R3 — the tool never picks: resolving is refused until you choose a side"></div></div>
       <div class="tstlog" data-title="R3 — the tool never picks: resolving is refused until you choose a side"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — resolving records which side lost, and offers the rewrite of that file" data-title="R4 — resolving records which side lost, and offers the rewrite of that file">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">424ms</span></div>
-        <div class="tsub">passed · 424ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">402ms</span></div>
+        <div class="tsub">passed · 402ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file" title="run only this test">Run</button>
@@ -1957,17 +1942,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R4 — resolving records which side lost, and offers the rewrite of that file"></div>
       <div class="fold"><div class="tststeps" data-title="R4 — resolving records which side lost, and offers the rewrite of that file"></div></div>
       <div class="tstlog" data-title="R4 — resolving records which side lost, and offers the rewrite of that file"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — a decision survives a rescan that reorders and swaps the sides" data-title="R5 — a decision survives a rescan that reorders and swaps the sides">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">423ms</span></div>
-        <div class="tsub">passed · 423ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">439ms</span></div>
+        <div class="tsub">passed · 439ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides" title="run only this test">Run</button>
@@ -1975,17 +1959,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R5 — a decision survives a rescan that reorders and swaps the sides"></div>
       <div class="fold"><div class="tststeps" data-title="R5 — a decision survives a rescan that reorders and swaps the sides"></div></div>
       <div class="tstlog" data-title="R5 — a decision survives a rescan that reorders and swaps the sides"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">533ms</span></div>
-        <div class="tsub">passed · 533ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">891ms</span></div>
+        <div class="tsub">passed · 891ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" title="run only this test">Run</button>
@@ -1993,10 +1976,9 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"></div>
       <div class="fold"><div class="tststeps" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"></div></div>
       <div class="tstlog" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -2004,27 +1986,18 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </section>
 <section class="dt" data-i="2" data-screen="dispatch" hidden>
-  <div class="dth">
+  <div class="dth dbarhook">
     <h2>Dispatch panel</h2>
+    <span class="m">8 requirements · spec/dispatch/</span>
     <span class="grow"></span>
+    <button class="btn pri runbtn" data-run="dispatch">Run all<span class="kbd">r</span></button>
     <button class="btn turn nextw" data-i="2">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dbar dbarhook">
-      <span class="t">Dispatch panel</span>
-      <span class="m">8 requirements · spec/dispatch/</span>
-      <span class="grow"></span>
-      <button class="btn pri runbtn" data-run="dispatch">Run all<span class="kbd">r</span></button>
-    </div>
-    <div class="gate open">
-    <span class="g1">Gate · your turn</span>
-    <span class="g2">Requirements changed since they were accepted. Re-read what moved, then accept them again as the source of truth.</span>
-    <button class="btn ok" data-act="accept" data-gate="prd" data-screen="dispatch" style="flex:none;margin-left:auto">Accept requirements</button>
-  </div>
     <div class="cols">
       <div class="pane reqpane">
-  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
+  <h2>1 · Requirements</h2>
   <div class="req" data-r="R1" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R1</span><span class="rt">One panel per job, opened by the cell you clicked</span><span class="chev">›</span></div>
     <div class="body"><p>The job knows its screen and its column, so nothing has to be typed. &quot;Draft the wireframe for checkout-page&quot; is the whole instruction.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -2034,31 +2007,31 @@ ins { color:var(--koke); text-decoration:none; }
   </div><div class="req" data-r="R3" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R3</span><span class="rt">Finishing updates the board without a reload</span><span class="chev">›</span></div>
     <div class="body"><p>The cell the job was fixing changes state in place. If a gate is now due, it opens.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
-  </div><div class="req" data-r="R4" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R4</span><span class="rt">One job at a time; a person's second job takes over, a nested run shares the slot</span><span class="chev">›</span></div>
-    <div class="body"><p>Only one job runs at a time — two agents editing one wireframe is a corrupted file and a confusing diff. So when a person starts a second job while one is running, the running job is <strong>cancelled and the new one takes its place</strong> — not queued, and no longer bounced with a refusal the person then has to read, Cancel, and re-issue by hand. The cancelled job's partial work is left on disk (R5) and its log stays readable.</p><p>Takeover cancels only the job actually <strong>holding</strong> the slot, never a job it is nested inside. The one exception to &quot;one at a time&quot; is still a run started by the run already going — a spec proving the run panel has to start a run to have anything to prove. Nesting is checked <strong>first</strong> and never triggers a takeover, so a suite that runs itself can never cancel the run executing it: a nested run names the run it is nested in, and nesting is <strong>bounded</strong> to a chain short enough that such a suite stops instead of recursing. A request that names a parent is only ever a nest attempt — mis-named or too deep, it is refused, never a takeover.</p><p><em>Corrected 2026-07-28: this said &quot;one job per SCREEN at a time&quot;, which was never what the code did — the slot has always been global. Worse, it made the dispatch row the one row on the board that could not be run: clicking Run put the run in the slot, and this spec's first act is to wait for that slot to be free, so it waited for itself and timed out at a blank browser window. The nesting exception is what makes the board able to run every row, including the one that tests running.</em></p><p><em>Changed 2026-07-29: a person's second job used to be REFUSED; it now takes over the slot (cancel-and-run). A refusal the person has to read, then Cancel, then re-issue is three steps to do the one thing they plainly meant. The nesting exception is unchanged and is still evaluated before any takeover, so it stays impossible for a run to cancel its own parent — only the job holding the slot is cancelled, and a nested run's ancestors keep the slot and resume when the takeover job ends.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
-  </div><div class="req" data-r="R5" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R5</span><span class="rt">Cancel actually stops it</span><span class="chev">›</span></div>
-    <div class="body"><p>The process is killed, and the partial work is left in place rather than rolled back, so you can see how far it got.</p><p>Cancel may name the job it means. Unnamed it stops whatever is running, which is what the panel's button wants; named, it refuses unless that is really the job in hand — so a request to stop one job can never stop a different one that happens to be running by then.</p><p><em>Added 2026-07-28: without this, a spec cancelling the run it had started killed the run that was executing the spec instead, once nesting made those two different things. The suite stopped itself half way through and reported nothing.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
-  </div><div class="req" data-r="R6" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R6</span><span class="rt">The whole log is kept, not just the verdict</span><span class="chev">›</span></div>
-    <div class="body"><p>Every line the job printed is saved with the run and can be read back in full afterwards — not a truncated snippet, and not only while you happened to be watching it scroll past. &quot;7 of 7 passed&quot; is the headline; the reason a case failed lives in its output, so a run whose log is thrown away the moment it ends cannot be debugged after the fact. Each run's full log is reachable from the record kept under the case it covered (R8).</p><p><em>Narrowed 2026-07-30: R6 previously also required a screen-level &quot;recent runs&quot; list that disambiguated what each run covered (the screen, or the one case a scoped run named). Removed at the human's direction — every case already keeps its own last-ten-run history under the test (R8), each stamped with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the tests column. A run's log and its scope now live in the per-case record, nowhere else.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
-  </div><div class="req" data-r="R7" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R7</span><span class="rt">The panel stays open when the job ends</span><span class="chev">›</span></div>
-    <div class="body"><p>Finishing does not close the panel or reload the page out from under it. The log and the result stay on screen until you dismiss them, so the output is there to read for reference. There is no &quot;background&quot; that hides a running job behind a chip: a job runs in the open or is cancelled.</p><p><em>Corrected 2026-07-28: &quot;Run in background&quot; was removed. It hid a live job behind a header chip on the theory that a visible chip stops a double-start — but R4 already refuses a second job on the server, so the chip bought nothing, and a running job you could not read was more misleading than one you could. Keeping the panel open is what &quot;keep it visible&quot; was always meant to buy.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
-  </div><div class="req" data-r="R8" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R8</span><span class="rt">A test run records each case on its own</span><span class="chev">›</span></div>
-    <div class="body"><p>Running a screen's suite records every test case individually — its result, its duration, its steps and its own log — never one pass/fail folded over the whole file. Each case keeps its OWN most recent record and shows it under that case, and every case can always expand its steps, so &quot;which one failed, and what did it actually say&quot; is answerable without running it again.</p><p>Records <strong>fold across runs, they never replace</strong>. A run filtered to one test describes only that test, so reading every case's record out of the newest run blanks the steps and the log of every case that run did not include. Each case's record is the newest run that actually covered <em>that case</em>.</p><p>A case keeps its <strong>last ten runs</strong>, not just the newest, each headed with when it ran, how long it took and the commit it ran against. One run says whether it passes today; ten say whether it has been flaky, when it started failing, and which commit changed it — which is the question you actually have when a test goes red.</p><p>Evidence must be real evidence. A screenshot of a page that was never driven proves nothing, and a picture that no longer exists is worse than no picture: both read as &quot;here is what the test saw&quot; while showing nothing. Neither is displayed.</p><p><em>Corrected 2026-07-28: this said each case keeps its record &quot;from the latest run&quot;, which is what got built and is wrong — running a single test left that one case with steps and stripped every other case on the screen down to nothing. It is the same trap as the results index, where a scoped run must fold rather than replace, and it needed saying here too.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
+  </div><div class="req" data-r="R4" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R4</span><span class="rt">One job at a time; a person's second job takes over, a nested run shares the slot</span><span class="chev">›</span></div>
+    <div class="body"><p>Only one job runs at a time — two agents editing one wireframe is a corrupted file and a confusing diff. So when a person starts a second job while one is running, the running job is <strong>cancelled and the new one takes its place</strong> — not queued, and no longer bounced with a refusal the person then has to read, Cancel, and re-issue by hand. The cancelled job's partial work is left on disk (R5) and its log stays readable.</p><p>Takeover cancels only the job actually <strong>holding</strong> the slot, never a job it is nested inside. The one exception to &quot;one at a time&quot; is still a run started by the run already going — a spec proving the run panel has to start a run to have anything to prove. Nesting is checked <strong>first</strong> and never triggers a takeover, so a suite that runs itself can never cancel the run executing it: a nested run names the run it is nested in, and nesting is <strong>bounded</strong> to a chain short enough that such a suite stops instead of recursing. A request that names a parent is only ever a nest attempt — mis-named or too deep, it is refused, never a takeover.</p><p><em>Corrected 2026-07-28: this said &quot;one job per SCREEN at a time&quot;, which was never what the code did — the slot has always been global. Worse, it made the dispatch row the one row on the board that could not be run: clicking Run put the run in the slot, and this spec's first act is to wait for that slot to be free, so it waited for itself and timed out at a blank browser window. The nesting exception is what makes the board able to run every row, including the one that tests running.</em></p><p><em>Changed 2026-07-29: a person's second job used to be REFUSED; it now takes over the slot (cancel-and-run). A refusal the person has to read, then Cancel, then re-issue is three steps to do the one thing they plainly meant. The nesting exception is unchanged and is still evaluated before any takeover, so it stays impossible for a run to cancel its own parent — only the job holding the slot is cancelled, and a nested run's ancestors keep the slot and resume when the takeover job ends.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+  </div><div class="req" data-r="R5" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R5</span><span class="rt">Cancel actually stops it</span><span class="chev">›</span></div>
+    <div class="body"><p>The process is killed, and the partial work is left in place rather than rolled back, so you can see how far it got.</p><p>Cancel may name the job it means. Unnamed it stops whatever is running, which is what the panel's button wants; named, it refuses unless that is really the job in hand — so a request to stop one job can never stop a different one that happens to be running by then.</p><p><em>Added 2026-07-28: without this, a spec cancelling the run it had started killed the run that was executing the spec instead, once nesting made those two different things. The suite stopped itself half way through and reported nothing.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+  </div><div class="req" data-r="R6" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R6</span><span class="rt">The whole log is kept, not just the verdict</span><span class="chev">›</span></div>
+    <div class="body"><p>Every line the job printed is saved with the run and can be read back in full afterwards — not a truncated snippet, and not only while you happened to be watching it scroll past. &quot;7 of 7 passed&quot; is the headline; the reason a case failed lives in its output, so a run whose log is thrown away the moment it ends cannot be debugged after the fact. Each run's full log is reachable from the record kept under the case it covered (R8).</p><p><em>Narrowed 2026-07-30: R6 previously also required a screen-level &quot;recent runs&quot; list that disambiguated what each run covered (the screen, or the one case a scoped run named). Removed at the human's direction — every case already keeps its own last-ten-run history under the test (R8), each stamped with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the tests column. A run's log and its scope now live in the per-case record, nowhere else.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+  </div><div class="req" data-r="R7" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R7</span><span class="rt">The panel stays open when the job ends</span><span class="chev">›</span></div>
+    <div class="body"><p>Finishing does not close the panel or reload the page out from under it. The log and the result stay on screen until you dismiss them, so the output is there to read for reference. There is no &quot;background&quot; that hides a running job behind a chip: a job runs in the open or is cancelled.</p><p><em>Corrected 2026-07-28: &quot;Run in background&quot; was removed. It hid a live job behind a header chip on the theory that a visible chip stops a double-start — but R4 already refuses a second job on the server, so the chip bought nothing, and a running job you could not read was more misleading than one you could. Keeping the panel open is what &quot;keep it visible&quot; was always meant to buy.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+  </div><div class="req" data-r="R8" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R8</span><span class="rt">A test run records each case on its own</span><span class="chev">›</span></div>
+    <div class="body"><p>Running a screen's suite records every test case individually — its result, its duration, its steps and its own log — never one pass/fail folded over the whole file. Each case keeps its OWN most recent record and shows it under that case, and every case can always expand its steps, so &quot;which one failed, and what did it actually say&quot; is answerable without running it again.</p><p>Records <strong>fold across runs, they never replace</strong>. A run filtered to one test describes only that test, so reading every case's record out of the newest run blanks the steps and the log of every case that run did not include. Each case's record is the newest run that actually covered <em>that case</em>.</p><p>A case keeps its <strong>last ten runs</strong>, not just the newest, each headed with when it ran, how long it took and the commit it ran against. One run says whether it passes today; ten say whether it has been flaky, when it started failing, and which commit changed it — which is the question you actually have when a test goes red.</p><p>Evidence must be real evidence. A screenshot of a page that was never driven proves nothing, and a picture that no longer exists is worse than no picture: both read as &quot;here is what the test saw&quot; while showing nothing. Neither is displayed.</p><p><em>Corrected 2026-07-28: this said each case keeps its record &quot;from the latest run&quot;, which is what got built and is wrong — running a single test left that one case with steps and stripped every other case on the screen down to nothing. It is the same trap as the results index, where a scoped run must fold rather than replace, and it needed saying here too.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div>
 </div>
       <div class="pane testpane">
-  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
+  <h2>2 · E2E tests</h2>
   <div class="test tst p" data-t="R1/R2 — the panel opens on the click and streams the job while it runs" data-title="R1/R2 — the panel opens on the click and streams the job while it runs">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5847ms</span></div>
-        <div class="tsub">passed · 5847ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5331ms</span></div>
+        <div class="tsub">passed · 5331ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs" title="run only this test">Run</button>
@@ -2066,17 +2039,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R1/R2 — the panel opens on the click and streams the job while it runs"></div>
       <div class="fold"><div class="tststeps" data-title="R1/R2 — the panel opens on the click and streams the job while it runs"></div></div>
       <div class="tstlog" data-title="R1/R2 — the panel opens on the click and streams the job while it runs"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — a person's second run takes over the running one: accepted, not refused" data-title="R4 — a person's second run takes over the running one: accepted, not refused">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a person's second run takes over the running one: accepted, not refused</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">124ms</span></div>
-        <div class="tsub">passed · 124ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">111ms</span></div>
+        <div class="tsub">passed · 111ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a person's second run takes over the running one: accepted, not refused" title="run only this test">Run</button>
@@ -2084,17 +2056,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R4 — a person's second run takes over the running one: accepted, not refused"></div>
       <div class="fold"><div class="tststeps" data-title="R4 — a person's second run takes over the running one: accepted, not refused"></div></div>
       <div class="tstlog" data-title="R4 — a person's second run takes over the running one: accepted, not refused"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — a run may nest inside the run driving it, and nesting is bounded" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a run may nest inside the run driving it, and nesting is bounded</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">1003ms</span></div>
-        <div class="tsub">passed · 1003ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1030ms</span></div>
+        <div class="tsub">passed · 1030ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a run may nest inside the run driving it, and nesting is bounded" title="run only this test">Run</button>
@@ -2102,17 +2073,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded"></div>
       <div class="fold"><div class="tststeps" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded"></div></div>
       <div class="tstlog" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="running one screen leaves every other screen's E2E result standing" data-title="running one screen leaves every other screen's E2E result standing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">running one screen leaves every other screen's E2E result standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6073ms</span></div>
-        <div class="tsub">passed · 6073ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5076ms</span></div>
+        <div class="tsub">passed · 5076ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing" title="run only this test">Run</button>
@@ -2120,17 +2090,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="running one screen leaves every other screen's E2E result standing"></div>
       <div class="fold"><div class="tststeps" data-title="running one screen leaves every other screen's E2E result standing"></div></div>
       <div class="tstlog" data-title="running one screen leaves every other screen's E2E result standing"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R6/R8 — a run saves its whole log, and records every test case on its own" data-title="R6/R8 — a run saves its whole log, and records every test case on its own">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R6/R8 — a run saves its whole log, and records every test case on its own</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5950ms</span></div>
-        <div class="tsub">passed · 5950ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">533ms</span></div>
+        <div class="tsub">passed · 533ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R6/R8 — a run saves its whole log, and records every test case on its own" title="run only this test">Run</button>
@@ -2138,17 +2107,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R6/R8 — a run saves its whole log, and records every test case on its own"></div>
       <div class="fold"><div class="tststeps" data-title="R6/R8 — a run saves its whole log, and records every test case on its own"></div></div>
       <div class="tstlog" data-title="R6/R8 — a run saves its whole log, and records every test case on its own"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a run that matched no test is recorded as an error, never 0 of 0 passing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">2012ms</span></div>
-        <div class="tsub">passed · 2012ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1975ms</span></div>
+        <div class="tsub">passed · 1975ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" title="run only this test">Run</button>
@@ -2156,17 +2124,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing"></div>
       <div class="fold"><div class="tststeps" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing"></div></div>
       <div class="tstlog" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — running ONE case leaves every other case's steps and log standing" data-title="R8 — running ONE case leaves every other case's steps and log standing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — running ONE case leaves every other case's steps and log standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">9094ms</span></div>
-        <div class="tsub">passed · 9094ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">7186ms</span></div>
+        <div class="tsub">passed · 7186ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — running ONE case leaves every other case's steps and log standing" title="run only this test">Run</button>
@@ -2174,17 +2141,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R8 — running ONE case leaves every other case's steps and log standing"></div>
       <div class="fold"><div class="tststeps" data-title="R8 — running ONE case leaves every other case's steps and log standing"></div></div>
       <div class="tstlog" data-title="R8 — running ONE case leaves every other case's steps and log standing"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — a case keeps a LOG HISTORY, folded across runs" data-title="R8 — a case keeps a LOG HISTORY, folded across runs">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a case keeps a LOG HISTORY, folded across runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6041ms</span></div>
-        <div class="tsub">passed · 6041ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">6086ms</span></div>
+        <div class="tsub">passed · 6086ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a case keeps a LOG HISTORY, folded across runs" title="run only this test">Run</button>
@@ -2192,17 +2158,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R8 — a case keeps a LOG HISTORY, folded across runs"></div>
       <div class="fold"><div class="tststeps" data-title="R8 — a case keeps a LOG HISTORY, folded across runs"></div></div>
       <div class="tstlog" data-title="R8 — a case keeps a LOG HISTORY, folded across runs"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — EVERY case that has run can expand its steps, not only the one you clicked" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — EVERY case that has run can expand its steps, not only the one you clicked</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5430ms</span></div>
-        <div class="tsub">passed · 5430ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5557ms</span></div>
+        <div class="tsub">passed · 5557ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — EVERY case that has run can expand its steps, not only the one you clicked" title="run only this test">Run</button>
@@ -2210,17 +2175,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked"></div>
       <div class="fold"><div class="tststeps" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked"></div></div>
       <div class="tstlog" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R7 — the run panel offers no background run" data-title="R7 — the run panel offers no background run">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the run panel offers no background run</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">94ms</span></div>
-        <div class="tsub">passed · 94ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">89ms</span></div>
+        <div class="tsub">passed · 89ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the run panel offers no background run" title="run only this test">Run</button>
@@ -2228,17 +2192,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R7 — the run panel offers no background run"></div>
       <div class="fold"><div class="tststeps" data-title="R7 — the run panel offers no background run"></div></div>
       <div class="tstlog" data-title="R7 — the run panel offers no background run"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R7 — the panel and its log stay on screen after the run ends" data-title="R7 — the panel and its log stay on screen after the run ends">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the panel and its log stay on screen after the run ends</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">8066ms</span></div>
-        <div class="tsub">passed · 8066ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">8075ms</span></div>
+        <div class="tsub">passed · 8075ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the panel and its log stay on screen after the run ends" title="run only this test">Run</button>
@@ -2246,10 +2209,9 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R7 — the panel and its log stay on screen after the run ends"></div>
       <div class="fold"><div class="tststeps" data-title="R7 — the panel and its log stay on screen after the run ends"></div></div>
       <div class="tstlog" data-title="R7 — the panel and its log stay on screen after the run ends"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — cancel stops the job, and cancelling nothing is refused not crashed" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2264,10 +2226,9 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed"></div>
       <div class="fold"><div class="tststeps" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed"></div></div>
       <div class="tstlog" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -2275,36 +2236,27 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </section>
 <section class="dt" data-i="3" data-screen="init" hidden>
-  <div class="dth">
-    <h2>Init</h2>
+  <div class="dth dbarhook">
+    <h2>Setup</h2>
+    <span class="m">5 requirements · spec/init/</span>
     <span class="grow"></span>
+    <button class="btn pri runbtn" data-run="init">Run all<span class="kbd">r</span></button>
     <button class="btn turn nextw" data-i="3">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dbar dbarhook">
-      <span class="t">Init</span>
-      <span class="m">5 requirements · spec/init/</span>
-      <span class="grow"></span>
-      <button class="btn pri runbtn" data-run="init">Run all<span class="kbd">r</span></button>
-    </div>
-    <div class="gate open">
-    <span class="g1">Gate · your turn</span>
-    <span class="g2">Requirements changed since they were accepted. Re-read what moved, then accept them again as the source of truth.</span>
-    <button class="btn ok" data-act="accept" data-gate="prd" data-screen="init" style="flex:none;margin-left:auto">Accept requirements</button>
-  </div>
     <div class="cols">
       <div class="pane reqpane">
-  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
+  <h2>1 · Requirements</h2>
   <div class="req" data-r="R1" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R1</span><span class="rt">Asks for what cannot be guessed, and nothing else</span><span class="chev">›</span></div>
     <div class="body"><p>How to start the app, what URL it serves on, and which routes matter. Guessing any of these wrong produces a complete, confident, wrong board.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R2" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R2</span><span class="rt">An existing app is crawled into rows</span><span class="chev">›</span></div>
     <div class="body"><p>Each route becomes a screen: visited, screenshotted, and given a draft PRD read from what is actually on the page. The board is populated on day one instead of empty.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
-  </div><div class="req" data-r="R3" data-state="reworded">
-    <div class="h"><span class="chip stale" title="reworded since it was accepted"><span class="mark"></span></span><span class="id">R3</span><span class="rt">A crawled PRD is marked as a guess</span><span class="chev">›</span></div>
-    <div class="body"><p>It is a proposal for you to correct, never canon, and it is visibly different from a PRD you wrote. A crawled screen lands in document mode — the guessed PRD, the current screen, and a test that proves it, with no wireframe — so the one gate here is accepting the requirements as canon, not a draft review.</p><p><em>Corrected 2026-07-27: this said &quot;the draft and screen cells stay unapproved so the loop starts at gate A.&quot; That was the greenfield-only model. An existing screen already exists, so it is documented (PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code grew a second mode and the spec had to follow; the meaning the human owns — a crawl is a guess to be corrected, never canon — is unchanged.</em></p><div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div></div>
+  </div><div class="req" data-r="R3" data-state="unproven">
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R3</span><span class="rt">A crawled PRD is marked as a guess</span><span class="chev">›</span></div>
+    <div class="body"><p>It is a proposal for you to correct, never canon, and it is visibly different from a PRD you wrote. A crawled screen lands in document mode — the guessed PRD, the current screen, and a test that proves it, with no wireframe — so the one gate here is accepting the requirements as canon, not a draft review.</p><p><em>Corrected 2026-07-27: this said &quot;the draft and screen cells stay unapproved so the loop starts at gate A.&quot; That was the greenfield-only model. An existing screen already exists, so it is documented (PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code grew a second mode and the spec had to follow; the meaning the human owns — a crawl is a guess to be corrected, never canon — is unchanged.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R4" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R4</span><span class="rt">An empty project is the same flow with nothing found</span><span class="chev">›</span></div>
     <div class="body"><p>No routes, no rows, and a prompt to write the first PRD. Greenfield is the zero case of the crawl, not a separate mode with separate code.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -2314,13 +2266,13 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
       <div class="pane testpane">
-  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
+  <h2>2 · E2E tests</h2>
   <div class="test tst p" data-t="R1 — the form persists what cannot be guessed, and reads it back" data-title="R1 — the form persists what cannot be guessed, and reads it back">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the form persists what cannot be guessed, and reads it back</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">256ms</span></div>
-        <div class="tsub">passed · 256ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">308ms</span></div>
+        <div class="tsub">passed · 308ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back" title="run only this test">Run</button>
@@ -2328,17 +2280,33 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R1 — the form persists what cannot be guessed, and reads it back"></div>
       <div class="fold"><div class="tststeps" data-title="R1 — the form persists what cannot be guessed, and reads it back"></div></div>
       <div class="tstlog" data-title="R1 — the form persists what cannot be guessed, and reads it back"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
+    </div>
+  </div><div class="test tst p" data-t="R1 — the setup cards are single-column blocks, not the home two-column grid" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the setup cards are single-column blocks, not the home two-column grid</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">105ms</span></div>
+        <div class="tsub">passed · 105ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid"></div></div>
+      <div class="tstlog" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R1 — start mode saves backend and frontend, in order" data-title="R1 — start mode saves backend and frontend, in order">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — start mode saves backend and frontend, in order</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">180ms</span></div>
-        <div class="tsub">passed · 180ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">194ms</span></div>
+        <div class="tsub">passed · 194ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order" title="run only this test">Run</button>
@@ -2346,35 +2314,33 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R1 — start mode saves backend and frontend, in order"></div>
       <div class="fold"><div class="tststeps" data-title="R1 — start mode saves backend and frontend, in order"></div></div>
       <div class="tstlog" data-title="R1 — start mode saves backend and frontend, in order"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
-  </div><div class="test tst p" data-t="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate" data-title="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">118ms</span></div>
-        <div class="tsub">passed · 118ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">119ms</span></div>
+        <div class="tsub">passed · 119ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
         </span>
       </div>
       
-      <div class="tstshots" data-title="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate"></div>
-      <div class="fold"><div class="tststeps" data-title="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate"></div></div>
-      <div class="tstlog" data-title="R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="fold"><div class="tststeps" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div></div>
+      <div class="tstlog" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">91ms</span></div>
-        <div class="tsub">passed · 91ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">88ms</span></div>
+        <div class="tsub">passed · 88ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" title="run only this test">Run</button>
@@ -2382,17 +2348,16 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"></div>
       <div class="fold"><div class="tststeps" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"></div></div>
       <div class="tstlog" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — rerunning marks new routes new and leaves a settled row alone" data-title="R5 — rerunning marks new routes new and leaves a settled row alone">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">161ms</span></div>
-        <div class="tsub">passed · 161ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">146ms</span></div>
+        <div class="tsub">passed · 146ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone" title="run only this test">Run</button>
@@ -2400,10 +2365,9 @@ ins { color:var(--koke); text-decoration:none; }
         </span>
       </div>
       
-      <div class="tstshots" data-title="R5 — rerunning marks new routes new and leaves a settled row alone"></div>
       <div class="fold"><div class="tststeps" data-title="R5 — rerunning marks new routes new and leaves a settled row alone"></div></div>
       <div class="tstlog" data-title="R5 — rerunning marks new routes new and leaves a settled row alone"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -2480,12 +2444,19 @@ ins { color:var(--koke); text-decoration:none; }
   const SCREENS = ["board","conflicts","dispatch","init"]
   // The skills that have a baked flowchart page at #howitworks/<id>; an unknown id falls back to overview.
   const SKILL_IDS = ["kg-init","kg-e2e","kg-staff","kg-update"]
-  const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+  const closeAll = () => {
+    document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+    // A detail is a full-screen fixed window; while it is open the PAGE must not scroll — only the two
+    // panes do. Locking the body kills the "scrolling does nothing" (it was moving the hidden list
+    // behind the overlay) and any overscroll bounce. Cleared here, set by show() when a detail opens.
+    document.documentElement.classList.remove('noscroll')
+  }
   const show = i => {
     closeAll()
     const dt = document.querySelector('.dt[data-i="' + i + '"]')
     if (!dt) return
     dt.hidden = false
+    document.documentElement.classList.add('noscroll')
     // Every screen's detail is baked in, so the #reqpane / #testpane ids — and the .dbar class — the
     // tests address unscoped would not be unique. Carry them on the VISIBLE detail only: strip
     // everywhere, then set here, so each resolves to exactly one element while this detail is open.
@@ -2587,6 +2558,8 @@ ins { color:var(--koke); text-decoration:none; }
       document.getElementById('logtitle').textContent = 'Full log — ' + (testEl.querySelector('.ttl').textContent || '')
       const src = testEl.querySelector('.tstlog')
       logbody.innerHTML = src ? src.innerHTML : ''
+      // the copied history is a <details>; open it so the popup shows every run without another click
+      logbody.querySelectorAll('details').forEach(d => { d.open = true })
       logsheet.classList.add('on')
     })
   for (const b of document.querySelectorAll('[data-logclose]'))
@@ -2599,7 +2572,7 @@ ins { color:var(--koke); text-decoration:none; }
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
   // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
-  const WAITING = [0,2,3]
+  const WAITING = []
   for (const b of document.querySelectorAll('.nextw')) {
     if (WAITING.length < 2) { b.hidden = true; continue }
     b.addEventListener('click', () => {
@@ -2624,30 +2597,12 @@ ins { color:var(--koke); text-decoration:none; }
     if (openDt && e.key === 'r') { const b = openDt.querySelector('.runbtn'); if (b) b.click() }
   })
 
-  // gate actions ---------------------------------------------------------
-  // The ONE gate (board R8): accept the requirements. It POSTs to the board server, which pins the
-  // current PRD text so the reworded state clears and the gate closes. Opened as a plain file the
-  // board still renders; it just cannot record a decision, and says so rather than doing nothing.
+  // toast ----------------------------------------------------------------
+  // A small transient message, shared by the handlers below (runs, config, conflicts, update). There
+  // is no acceptance gate to wire (board R8) — a requirement is the source of truth as written.
   function toast (msg) {
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg
     document.body.appendChild(t); setTimeout(() => t.remove(), 5000)
-  }
-
-  for (const b of document.querySelectorAll('[data-act="accept"]')) {
-    b.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/gate', {
-          method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ screen: b.dataset.screen, gate: b.dataset.gate || 'prd', act: 'accept' })
-        })
-        if (!res.ok) throw new Error((await res.text()).slice(0, 120))
-        // Stay on the screen you just accepted — a plain reload lands you back on it showing the
-        // gate closed, so you see the result of what you did rather than being whisked elsewhere.
-        location.reload()
-      } catch (err) {
-        toast('Accepting needs the board server — run  npm run board  (' + err.message + ')')
-      }
-    })
   }
 
   // conflicts ------------------------------------------------------------
@@ -3234,17 +3189,28 @@ ins { color:var(--koke); text-decoration:none; }
           if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
         }
       }
-      for (const slot of panel.querySelectorAll('.tstshots')) {
-        const one = (rec[slot.dataset.title] || [])[0]
-        slot.innerHTML = one
-          ? (one.shots || []).map(src => '<img src="' + src + '" loading="lazy" alt="what this test saw">').join('') +
-            (one.video ? '<a class="recvid" href="' + one.video + '" target="_blank">▶ recording</a>' : '')
-          : ''
-        // A picture that no longer exists is worse than no picture: the record is pruned with its
-        // run, so a shot can outlive its file and render as a broken-image icon captioned "what
-        // this test saw". Show nothing rather than a lie about evidence.
-        for (const img of slot.querySelectorAll('img')) {
-          img.addEventListener('error', () => img.remove())
+      // The RECORDING is the test's cover and its ONE artifact (board R10): the last asserted frame
+      // as a still, and — when a board-started run captured a .webm — it PLAYS on click, swapping the
+      // still for an inline video. A plain CLI run captures no video, so the still stays the cover and
+      // there is nothing to play: never a fake play affordance, and never a separate screenshot strip.
+      for (const slot of panel.querySelectorAll('.rec')) {
+        const host = slot.closest('.test')
+        const one = (rec[host && host.dataset.title] || [])[0]
+        const lab = slot.querySelector('.lab')
+        const label = '<span class="lab">' + eh(lab ? lab.textContent : '') + '</span>'
+        const shots = (one && one.shots) || []
+        const still = shots[shots.length - 1]        // the end state it proved — the cover frame
+        slot.style.backgroundImage = still ? 'url("' + still + '")' : ''
+        if (one && one.video) {
+          slot.classList.add('playable')
+          slot.innerHTML = '<span class="play">▶</span>' + label
+          slot.onclick = () => {
+            slot.onclick = null; slot.classList.remove('playable')
+            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
+          }
+        } else {
+          slot.classList.remove('playable'); slot.onclick = null
+          slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
       }
       // The DETAIL STEPS of each case, collapsed behind a toggle — every action and check the test

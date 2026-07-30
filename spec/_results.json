@@ -84,7 +84,7 @@
       "line": 0,
       "specs": [
         {
-          "title": "unproven — an accepted requirement with no passing test reads unproven, and is not waiting",
+          "title": "unproven — a requirement with no passing test reads unproven, and is not waiting",
           "ok": true,
           "tags": [],
           "tests": [
@@ -104,7 +104,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:11.900Z",
+                  "startTime": "2026-07-30T09:55:53.804Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -112,9 +112,9 @@
               "status": "expected"
             }
           ],
-          "id": "74f4141ad054871aca7f-c4d80346363efb165053",
+          "id": "74f4141ad054871aca7f-f3af0e698d44448f8610",
           "file": "_modes/test.spec.ts",
-          "line": 47,
+          "line": 52,
           "column": 1
         },
         {
@@ -138,7 +138,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:11.933Z",
+                  "startTime": "2026-07-30T09:55:53.837Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -148,11 +148,11 @@
           ],
           "id": "74f4141ad054871aca7f-09e288180395e93b8f58",
           "file": "_modes/test.spec.ts",
-          "line": 54,
+          "line": 59,
           "column": 1
         },
         {
-          "title": "reworded — editing the requirement after acceptance wins over any proof, and it is waiting",
+          "title": "a proof that predates the source no longer proves — editing the PRD IS the change",
           "ok": true,
           "tags": [],
           "tests": [
@@ -167,12 +167,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7,
+                  "duration": 5,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:11.947Z",
+                  "startTime": "2026-07-30T09:55:53.850Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -180,13 +180,47 @@
               "status": "expected"
             }
           ],
-          "id": "74f4141ad054871aca7f-b84a3799673f0d84d16b",
+          "id": "74f4141ad054871aca7f-3d9f4dc7c23f8e547ba7",
           "file": "_modes/test.spec.ts",
-          "line": 60,
+          "line": 65,
           "column": 1
         },
         {
-          "title": "never accepted / a guess — both are waiting on you to accept the requirements",
+          "title": "state is only ever proven or unproven — there is no reworded / accept state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T09:55:53.861Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-8ce955b581faa020ad18",
+          "file": "_modes/test.spec.ts",
+          "line": 73,
+          "column": 1
+        },
+        {
+          "title": "a crawl guess is the only thing waiting; a normal screen never is",
           "ok": true,
           "tags": [],
           "tests": [
@@ -206,7 +240,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:11.960Z",
+                  "startTime": "2026-07-30T09:55:53.872Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -214,13 +248,13 @@
               "status": "expected"
             }
           ],
-          "id": "74f4141ad054871aca7f-0fa0ee5cd8fbcf76f039",
+          "id": "74f4141ad054871aca7f-b1391dbb4290ed2d35e5",
           "file": "_modes/test.spec.ts",
-          "line": 69,
+          "line": 84,
           "column": 1
         },
         {
-          "title": "accept — pins the current PRD text, clears reworded, and leaves the screen not waiting",
+          "title": "renders — the detail is the two columns, with NO gate and no accept button",
           "ok": true,
           "tags": [],
           "tests": [
@@ -235,12 +269,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 400,
+                  "duration": 453,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:11.971Z",
+                  "startTime": "2026-07-30T09:55:53.880Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -248,13 +282,13 @@
               "status": "expected"
             }
           ],
-          "id": "74f4141ad054871aca7f-0734363a357dfac83010",
+          "id": "74f4141ad054871aca7f-1795548a37a4f08c8007",
           "file": "_modes/test.spec.ts",
-          "line": 82,
+          "line": 106,
           "column": 1
         },
         {
-          "title": "accept — strips a crawl guess flag and pins, without touching a body line that begins \"guess:\"",
+          "title": "renders — a crawl guess reads as waiting on the board (the one remaining human case)",
           "ok": true,
           "tags": [],
           "tests": [
@@ -269,12 +303,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 62,
+                  "duration": 96,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:12.375Z",
+                  "startTime": "2026-07-30T09:55:54.630Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -282,111 +316,9 @@
               "status": "expected"
             }
           ],
-          "id": "74f4141ad054871aca7f-7fbd5db42d677be01aeb",
+          "id": "74f4141ad054871aca7f-e26223ec7a0698705cbc",
           "file": "_modes/test.spec.ts",
-          "line": 97,
-          "column": 1
-        },
-        {
-          "title": "accept — refused when there is nothing to accept (already accepted, nothing reworded)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 6,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-30T07:48:12.443Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "74f4141ad054871aca7f-739e7e7417f7a9084441",
-          "file": "_modes/test.spec.ts",
-          "line": 113,
-          "column": 1
-        },
-        {
-          "title": "renders — the detail shows exactly one accept gate, two panes, and no gate B / draft gate",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 441,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-30T07:48:12.453Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "74f4141ad054871aca7f-9d3532047dd2f1f57ed0",
-          "file": "_modes/test.spec.ts",
-          "line": 131,
-          "column": 1
-        },
-        {
-          "title": "renders — accepting from the board pins the requirements (the gate is a real wire)",
-          "ok": true,
-          "tags": [],
-          "tests": [
-            {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "",
-              "projectName": "",
-              "results": [
-                {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 220,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2026-07-30T07:48:13.204Z",
-                  "annotations": [],
-                  "attachments": []
-                }
-              ],
-              "status": "expected"
-            }
-          ],
-          "id": "74f4141ad054871aca7f-fc3e96b5dc8bf51738ef",
-          "file": "_modes/test.spec.ts",
-          "line": 143,
+          "line": 122,
           "column": 1
         }
       ]
@@ -398,7 +330,7 @@
       "line": 0,
       "specs": [
         {
-          "title": "R1 — home is one CARD per screen: titles + a cover, never a four-column strip",
+          "title": "Home lists every screen as a card",
           "ok": true,
           "tags": [],
           "tests": [
@@ -418,7 +350,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 144,
+                  "duration": 156,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -426,10 +358,10 @@
                   "steps": [
                     {
                       "title": "proves R1",
-                      "duration": 19
+                      "duration": 18
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:13.440Z",
+                  "startTime": "2026-07-30T09:55:54.743Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -442,13 +374,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-d874303730dd5e5f8ce1",
+          "id": "a4d8056b74ea4749de01-0c90e1bb630327d071c4",
           "file": "board/test.spec.ts",
-          "line": 20,
+          "line": 19,
           "column": 1
         },
         {
-          "title": "R2 — the detail is two columns, each scrolling on its own",
+          "title": "The detail opens as two independent columns",
           "ok": true,
           "tags": [],
           "tests": [
@@ -468,7 +400,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 122,
+                  "duration": 124,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -476,10 +408,10 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 21
+                      "duration": 26
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:13.592Z",
+                  "startTime": "2026-07-30T09:55:54.907Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -492,13 +424,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-a667f13794799892ef49",
+          "id": "a4d8056b74ea4749de01-ee5308068913b0cfe736",
           "file": "board/test.spec.ts",
-          "line": 36,
+          "line": 35,
           "column": 1
         },
         {
-          "title": "R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement",
+          "title": "A requirement expands; a test leads with its flow name",
           "ok": true,
           "tags": [],
           "tests": [
@@ -518,7 +450,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 198,
+                  "duration": 224,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -526,10 +458,10 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 79
+                      "duration": 106
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:13.721Z",
+                  "startTime": "2026-07-30T09:55:55.038Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -542,13 +474,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-4618ed00d1a100713f49",
+          "id": "a4d8056b74ea4749de01-7725dc80b18bbe5d2d20",
           "file": "board/test.spec.ts",
-          "line": 55,
+          "line": 54,
           "column": 1
         },
         {
-          "title": "R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives",
+          "title": "Requirement state is computed and assertion-backed",
           "ok": true,
           "tags": [],
           "tests": [
@@ -568,7 +500,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 215,
+                  "duration": 455,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -576,10 +508,10 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 114
+                      "duration": 358
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:13.924Z",
+                  "startTime": "2026-07-30T09:55:55.268Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -592,13 +524,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-eee98a68f333db069f41",
+          "id": "a4d8056b74ea4749de01-23c2261684cb6e1e4935",
           "file": "board/test.spec.ts",
-          "line": 76,
+          "line": 75,
           "column": 1
         },
         {
-          "title": "R5 — requirements and tests are many-to-many by tag, and the link lights up on hover",
+          "title": "Hovering a test lights up the requirements it covers",
           "ok": true,
           "tags": [],
           "tests": [
@@ -618,7 +550,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 243,
+                  "duration": 189,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -626,10 +558,10 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 94
+                      "duration": 97
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:14.145Z",
+                  "startTime": "2026-07-30T09:55:55.729Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -642,13 +574,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-86916ebd7c60c203bcd2",
+          "id": "a4d8056b74ea4749de01-6d6e2dacbc90d962d467",
           "file": "board/test.spec.ts",
-          "line": 107,
+          "line": 108,
           "column": 1
         },
         {
-          "title": "R6 — a test declares the coverage it proves; a requirement lists every test that covers it",
+          "title": "A requirement names the tests that cover it",
           "ok": true,
           "tags": [],
           "tests": [
@@ -668,7 +600,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 107,
+                  "duration": 198,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -676,10 +608,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 9
+                      "duration": 49
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:14.395Z",
+                  "startTime": "2026-07-30T09:55:55.925Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -692,13 +624,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-21393cff3b1613cd80e6",
+          "id": "a4d8056b74ea4749de01-39b789675ccafe5004e3",
           "file": "board/test.spec.ts",
-          "line": 123,
+          "line": 124,
           "column": 1
         },
         {
-          "title": "R7 — specboard owns no wireframe or design: no design affordance, nothing rendered",
+          "title": "The detail shows no wireframe or design affordance",
           "ok": true,
           "tags": [],
           "tests": [
@@ -718,7 +650,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 103,
+                  "duration": 99,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -726,10 +658,10 @@
                   "steps": [
                     {
                       "title": "proves R7",
-                      "duration": 5
+                      "duration": 4
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:14.510Z",
+                  "startTime": "2026-07-30T09:55:56.130Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -742,13 +674,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-b6b38e79d6e77a5d08bd",
+          "id": "a4d8056b74ea4749de01-266b98182da7f0f05e78",
           "file": "board/test.spec.ts",
-          "line": 143,
+          "line": 144,
           "column": 1
         },
         {
-          "title": "R8 — ONE human gate: accept the requirements; no gate B, no wireframe",
+          "title": "No acceptance gate — the detail is the two columns, nothing to accept",
           "ok": true,
           "tags": [],
           "tests": [
@@ -768,7 +700,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 226,
+                  "duration": 118,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -776,10 +708,10 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 131
+                      "duration": 22
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:14.619Z",
+                  "startTime": "2026-07-30T09:55:56.235Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -792,13 +724,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-ee42207ffd9c5538caae",
+          "id": "a4d8056b74ea4749de01-d361328a022bce421427",
           "file": "board/test.spec.ts",
-          "line": 155,
+          "line": 156,
           "column": 1
         },
         {
-          "title": "R9 — search across requirement text, grouped into areas, a group with no match hides",
+          "title": "Searching requirement text hides groups that miss",
           "ok": true,
           "tags": [],
           "tests": [
@@ -818,7 +750,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 206,
+                  "duration": 163,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -826,10 +758,10 @@
                   "steps": [
                     {
                       "title": "proves R9",
-                      "duration": 75
+                      "duration": 80
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:14.852Z",
+                  "startTime": "2026-07-30T09:55:56.359Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -842,13 +774,13 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-7fa6db278610b2c9fcf3",
+          "id": "a4d8056b74ea4749de01-a65565fa8517263db880",
           "file": "board/test.spec.ts",
           "line": 174,
           "column": 1
         },
         {
-          "title": "R10 — a test opens to its evidence and can be run; the whole log opens in a floating window",
+          "title": "A test opens to its evidence and the log opens in a window",
           "ok": true,
           "tags": [],
           "tests": [
@@ -868,7 +800,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 197,
+                  "duration": 217,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -876,10 +808,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 100
+                      "duration": 118
                     }
                   ],
-                  "startTime": "2026-07-30T07:48:15.064Z",
+                  "startTime": "2026-07-30T09:55:56.528Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -892,7 +824,7 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-bc42b0f2ab3e010d02d4",
+          "id": "a4d8056b74ea4749de01-987e4a2f9c8286335f0d",
           "file": "board/test.spec.ts",
           "line": 189,
           "column": 1
@@ -926,7 +858,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:15.273Z",
+                  "startTime": "2026-07-30T09:55:56.758Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -955,12 +887,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 122,
+                  "duration": 155,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:15.369Z",
+                  "startTime": "2026-07-30T09:55:56.854Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -989,12 +921,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 424,
+                  "duration": 402,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:15.497Z",
+                  "startTime": "2026-07-30T09:55:57.016Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1023,12 +955,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 423,
+                  "duration": 439,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:15.926Z",
+                  "startTime": "2026-07-30T09:55:57.427Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1057,12 +989,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 533,
+                  "duration": 891,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:16.354Z",
+                  "startTime": "2026-07-30T09:55:57.872Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1099,12 +1031,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5847,
+                  "duration": 5331,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:16.899Z",
+                  "startTime": "2026-07-30T09:55:58.783Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1133,12 +1065,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 124,
+                  "duration": 111,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:22.754Z",
+                  "startTime": "2026-07-30T09:56:04.122Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1167,12 +1099,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1003,
+                  "duration": 1030,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:22.887Z",
+                  "startTime": "2026-07-30T09:56:04.239Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1201,12 +1133,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6073,
+                  "duration": 5076,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:23.896Z",
+                  "startTime": "2026-07-30T09:56:05.279Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1235,12 +1167,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5950,
+                  "duration": 533,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:29.976Z",
+                  "startTime": "2026-07-30T09:56:10.364Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1269,12 +1201,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2012,
+                  "duration": 1975,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:35.931Z",
+                  "startTime": "2026-07-30T09:56:10.908Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1303,12 +1235,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 9094,
+                  "duration": 7186,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:37.953Z",
+                  "startTime": "2026-07-30T09:56:12.892Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1337,12 +1269,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6041,
+                  "duration": 6086,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:47.057Z",
+                  "startTime": "2026-07-30T09:56:20.092Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1352,7 +1284,7 @@
           ],
           "id": "b4322de4926762c72732-79952b2189547d52028e",
           "file": "dispatch/test.spec.ts",
-          "line": 245,
+          "line": 250,
           "column": 1
         },
         {
@@ -1371,12 +1303,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5430,
+                  "duration": 5557,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:53.107Z",
+                  "startTime": "2026-07-30T09:56:26.184Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1386,7 +1318,7 @@
           ],
           "id": "b4322de4926762c72732-484efddb8142d778d57c",
           "file": "dispatch/test.spec.ts",
-          "line": 274,
+          "line": 284,
           "column": 1
         },
         {
@@ -1405,12 +1337,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 94,
+                  "duration": 89,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:58.546Z",
+                  "startTime": "2026-07-30T09:56:31.746Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1420,7 +1352,7 @@
           ],
           "id": "b4322de4926762c72732-53627675295a33af2f35",
           "file": "dispatch/test.spec.ts",
-          "line": 299,
+          "line": 312,
           "column": 1
         },
         {
@@ -1439,12 +1371,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8066,
+                  "duration": 8075,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:48:58.646Z",
+                  "startTime": "2026-07-30T09:56:31.842Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1454,7 +1386,7 @@
           ],
           "id": "b4322de4926762c72732-060aef15eecfbc321259",
           "file": "dispatch/test.spec.ts",
-          "line": 307,
+          "line": 320,
           "column": 1
         },
         {
@@ -1478,7 +1410,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:06.721Z",
+                  "startTime": "2026-07-30T09:56:39.924Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1488,7 +1420,7 @@
           ],
           "id": "b4322de4926762c72732-88f0e03ddfdc17969524",
           "file": "dispatch/test.spec.ts",
-          "line": 324,
+          "line": 337,
           "column": 1
         }
       ]
@@ -1515,12 +1447,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 256,
+                  "duration": 308,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:06.832Z",
+                  "startTime": "2026-07-30T09:56:40.036Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1531,6 +1463,40 @@
           "id": "a3d7ad62b56c3ce6940d-98eed5b60465800dc917",
           "file": "init/test.spec.ts",
           "line": 23,
+          "column": 1
+        },
+        {
+          "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 105,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-07-30T09:56:40.350Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-b04ed2d27deff8733eb8",
+          "file": "init/test.spec.ts",
+          "line": 48,
           "column": 1
         },
         {
@@ -1549,12 +1515,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 180,
+                  "duration": 194,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:07.093Z",
+                  "startTime": "2026-07-30T09:56:40.460Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1564,11 +1530,11 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-a7bd6c25b291e27139ea",
           "file": "init/test.spec.ts",
-          "line": 48,
+          "line": 60,
           "column": 1
         },
         {
-          "title": "R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate",
+          "title": "R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate",
           "ok": true,
           "tags": [],
           "tests": [
@@ -1583,12 +1549,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 118,
+                  "duration": 119,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:07.278Z",
+                  "startTime": "2026-07-30T09:56:40.659Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1596,9 +1562,9 @@
               "status": "expected"
             }
           ],
-          "id": "a3d7ad62b56c3ce6940d-0699bf7a7c39ec70fc56",
+          "id": "a3d7ad62b56c3ce6940d-1e6b04294567034dee58",
           "file": "init/test.spec.ts",
-          "line": 68,
+          "line": 80,
           "column": 1
         },
         {
@@ -1617,12 +1583,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 91,
+                  "duration": 88,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:07.403Z",
+                  "startTime": "2026-07-30T09:56:40.784Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1632,7 +1598,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-b41ba3b8e290735872a7",
           "file": "init/test.spec.ts",
-          "line": 104,
+          "line": 117,
           "column": 1
         },
         {
@@ -1651,12 +1617,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 161,
+                  "duration": 146,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-07-30T07:49:07.499Z",
+                  "startTime": "2026-07-30T09:56:40.877Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1666,7 +1632,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-07c5f2756c5fc84a7906",
           "file": "init/test.spec.ts",
-          "line": 114,
+          "line": 127,
           "column": 1
         }
       ]
@@ -1674,9 +1640,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-07-30T07:48:10.632Z",
-    "duration": 57073.787000000004,
-    "expected": 41,
+    "startTime": "2026-07-30T09:55:52.612Z",
+    "duration": 48449.764,
+    "expected": 40,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0

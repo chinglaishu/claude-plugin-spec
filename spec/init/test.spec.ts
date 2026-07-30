@@ -45,6 +45,18 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
   await expect(page.locator('#initroutes')).toHaveValue(/\/cart/)
 })
 
+test('R1 — the setup cards are single-column blocks, not the home two-column grid', async ({ page }) => {
+  // Regression: the home card is `display:grid; grid-template-columns:1fr 260px`, and the Setup
+  // view reuses `.card`. When that grid rule was left unscoped it leaked here and split every field
+  // into two clipped columns — the form was unreadable. Each Setup card must be a plain block.
+  await page.goto('/#init')
+  await expect(page.locator('#initview')).toBeVisible()
+  for (const sel of ['#initview .initcol .card.pad', '#initview .initcol .card:not(.pad)']) {
+    const cols = await page.locator(sel).evaluate(el => getComputedStyle(el).gridTemplateColumns)
+    expect(cols, sel + ' must not be a multi-track grid').toBe('none')
+  }
+})
+
 test('R1 — start mode saves backend and frontend, in order', async ({ page }) => {
   // Many apps need the API up before the frontend serves real pages, so a crawl that hits the
   // frontend first reads requirements off broken pages — a confident, wrong board. Init asks for
@@ -65,11 +77,12 @@ test('R1 — start mode saves backend and frontend, in order', async ({ page }) 
   expect(c.baseUrl).toBe('http://localhost:5173')
 })
 
-test('R3 — a crawled screen lands as a guess: one CARD, waiting on you to accept it, never a build gate', async ({ page }) => {
+test('R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate', async ({ page }) => {
   // A real crawl drafts a guessed PRD, authors a test, and shoots the screen. makeDocumentScreen
   // builds that shape; it rebuilds the board, so the row is there without waiting on the watcher. In
-  // the two-column model the wireframe is gone: the row is simply a guess waiting on you to accept its
-  // requirements — never a draft/gate-A review, never a "did you build it" gate B.
+  // the no-gate model a guess is the ONE thing still waiting on a human (init R3): you correct it and
+  // drop the `guess:` flag to make it canon. There is no accept gate, no draft/gate-A review, and no
+  // "did you build it" gate B.
   const name = makeDocumentScreen('storefront', { guess: true })
   try {
     const cardLoc = page.locator('#home .card[data-screen="' + name + '"]')
@@ -78,23 +91,23 @@ test('R3 — a crawled screen lands as a guess: one CARD, waiting on you to acce
       await page.goto('/')
       await expect(cardLoc).toHaveCount(1)
     }).toPass({ timeout: 15000 })
-    // visibly a guess — different from a PRD the human wrote — and waiting on you to accept it
+    // visibly a guess — different from a PRD the human wrote — and waiting on you to correct it
     await expect(cardLoc.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
     expect(await cardLoc.getAttribute('data-waiting')).toBe('1')
 
-    // the one gate is accepting the requirements — never a draft/gate-A review. Retry the detail nav:
+    // the detail is the two columns and NOTHING to accept — no gate anywhere. Retry the detail nav:
     // right after the fixture lands, the watcher can briefly rebuild the board stale (no storefront in
-    // its SCREENS list yet), so re-goto until the detail actually shows this screen's accept gate — the
+    // its SCREENS list yet), so re-goto until the detail actually shows this screen's columns — the
     // same settle the _modes specs ride out, and the same one a real browser gets via live-reload.
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-    const acceptBtn = dt.locator('[data-act="accept"][data-gate="prd"]')
     await expect(async () => {
       build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/#/' + name)
-      await expect(acceptBtn).toBeVisible()
+      await expect(dt.locator('.cols')).toBeVisible()
     }).toPass({ timeout: 15000 })
-    await expect(dt.locator('.gate')).toHaveCount(1)               // exactly one gate
-    await expect(dt.locator('[data-gate="screen"]')).toHaveCount(0) // no gate B
+    await expect(dt.locator('.gate')).toHaveCount(0)                // no acceptance gate (board R8)
+    await expect(dt.locator('[data-act="accept"]')).toHaveCount(0)  // nothing to accept
+    await expect(dt.locator('[data-gate]')).toHaveCount(0)          // no gate B / draft gate either
   } finally {
     rmSync(join(SPEC, name), { recursive: true, force: true })
     build()

@@ -33,10 +33,9 @@ export function writeJson (path, value) {
   writeFileSync(tmp, JSON.stringify(value, null, 2) + '\n')
   renameSync(tmp, path)
 }
-// Same temp-then-rename for text — prd.md is read by readScreen while the server rewrites it (the
-// only edit the server ever makes to a PRD: stripping the `guess` flag when a document-mode screen
-// is accepted). A torn PRD would misparse its frontmatter, which is the requirement going briefly
-// false — the one thing this store cannot allow.
+// Same temp-then-rename for text — a torn text file read mid-write would misparse (the prose
+// equivalent of "Unexpected end of JSON input"). Used to write board.html atomically; kept general so
+// anything textual this tool writes is observed either whole-old or whole-new, never half-formed.
 export function writeText (path, text) {
   const tmp = `${path}.${process.pid}.tmp`
   writeFileSync(tmp, text)
@@ -198,16 +197,11 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
 
 // Per-requirement proof state (R4/R5). Every test's tags are aggregated across the WHOLE board — a
 // flow on another screen can prove this screen's requirement, so a requirement lists every test that
-// covers it wherever its FILE lives. A pass counts only while CURRENT, and there are TWO ways a pass
-// stops being current:
-//   1. it predates a change to the test/source that produced it — it describes a screen that no
-//      longer exists (the same honesty column 4 already applies to a whole run); or
-//   2. it predates the current ACCEPTANCE of the requirement — accepting is the act that says "THIS
-//      is the spec now", and the gate only opens on a rework, so a proof from before you accepted
-//      proved the requirements as they stood before. After accepting reworded requirements they read
-//      unproven until re-run (board R4), exactly as after a source edit — accept then re-prove.
-// Reworded (text changed since acceptance) wins over any proof outright. aggregateCoverage is
-// memoised per results object, because allScreens hands every screen the same index and re-folding it
+// covers it wherever its FILE lives. A pass counts only while CURRENT: a pass that predates a change
+// to the test/source that produced it describes a screen that no longer exists (the same honesty
+// column 4 applies to a whole run), so it no longer proves anything. There is no acceptance gate
+// (board R8), so nothing else invalidates a proof — state is simply proven / unproven. aggregateCoverage
+// is memoised per results object, because allScreens hands every screen the same index and re-folding it
 // once per screen would be wasteful on a large board.
 const _aggCache = new WeakMap()
 function aggFor (results) {
@@ -216,7 +210,7 @@ function aggFor (results) {
   if (!a) { a = aggregateCoverage(key); _aggCache.set(key, a) }
   return a
 }
-function enrichReqs (reqs, screen, rewordedIds, results) {
+function enrichReqs (reqs, screen, results) {
   const agg = aggFor(results)
   const srcCache = {}
   const srcMs = s => (srcCache[s] ??= newestSource(join(SPEC, s)))
@@ -228,13 +222,12 @@ function enrichReqs (reqs, screen, rewordedIds, results) {
       status: e.status,
       // A pass counts only while CURRENT: stale if it predates a change to a source of the screen
       // that produced it (prd.md / test.spec.ts) — the proof then describes a version that has moved.
-      // Note this ALSO covers a reword-then-accept flow honestly: rewording edits prd.md, so every one
-      // of that screen's proofs goes stale by source and must be re-run — without accepting having to
-      // invalidate a sibling requirement whose text never changed and whose proof is still good.
+      // Editing a requirement is exactly such a change: it touches prd.md, so that screen's proofs go
+      // stale by source and the requirement reads unproven until re-run — no gate needed to notice.
       stale: e.status === 'pass' && e.ranAt != null && e.ranAt < srcMs(e.screen)
     }))
     const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
-    return { ...r, state: deriveReqState({ reworded: rewordedIds.has(r.id), hasCurrentPass }), tests }
+    return { ...r, state: deriveReqState({ hasCurrentPass }), tests }
   })
 }
 
@@ -318,27 +311,10 @@ export function readScreen (name, results = null) {
       : run.failed ? 'fail'
         : ranBeforeEdit ? 'ranstale' : 'pass'
 
-  // What you approved AGAINST, not just its fingerprint. A hash can tell you something moved; it
-  // can never tell you what. Gate A asks "is this still what you meant" — unanswerable without
-  // the old text to compare, which is why the requirement to highlight only what changed was
-  // impossible to satisfy while state.json held a hash alone.
-  const approvedReqs = state.approvedPrdText ? parsePrd(state.approvedPrdText).reqs : null
-  const byId = list => Object.fromEntries((list || []).map(r => [r.id, r]))
-  const wasById = byId(approvedReqs)
-  const nowById = byId(reqs)
-  const diff = approvedReqs && {
-    changed: reqs.filter(r => wasById[r.id] && (wasById[r.id].title !== r.title || wasById[r.id].body !== r.body)).map(r => r.id),
-    added: reqs.filter(r => !wasById[r.id]).map(r => r.id),
-    removed: approvedReqs.filter(r => !nowById[r.id]).map(r => r.id),
-    was: wasById
-  }
-
-  // Which requirements are AWAITING the human's gate: changed or newly added since the requirements
-  // were last accepted (R8 — the one gate). Reworded wins over any proof (R4). Before the first
-  // acceptance there is no diff, so nothing is "reworded" yet; state then falls to proven / unproven
-  // by test alone, and the accept gate itself is the server's business (R8).
-  const rewordedIds = new Set(diff ? [...diff.changed, ...diff.added] : [])
-  const reqStates = enrichReqs(reqs, name, rewordedIds, allResults)
+  // No acceptance gate (board R8): a requirement's state is proven / unproven from its tests alone
+  // (R4), never a hash-diff against an "accepted" text. Editing the PRD IS the change — it stales the
+  // proofs by source (enrichReqs) — so nothing is pinned or compared here.
+  const reqStates = enrichReqs(reqs, name, allResults)
 
   // A crawled PRD is a GUESS read off the running page, never canon (init R3). It is a proposal
   // for the CEO to correct, so it must look different from a PRD a human wrote and it must not let
@@ -360,7 +336,6 @@ export function readScreen (name, results = null) {
     governs,
     reqs: reqStates,
     prdText,
-    diff,
     rejections,
     hasShot,
     // cache-bust the img so a re-shot screenshot is never served stale from the last run
@@ -528,17 +503,11 @@ export function allScreens () {
     .filter(Boolean)
 }
 
-// "Waiting on you" means the ONE gate is open: accept the requirements (board R8). In the
-// two-column model there is no draft gate and no gate B — the single human decision is whether
-// these requirements are what you meant. A screen is waiting iff:
-//   - it is a crawled GUESS the human has not yet accepted (init R3), or
-//   - any requirement is REWORDED — its text moved since the requirements were accepted (R4/R8), or
-//   - the requirements have NEVER been accepted (no pin at all) while there is a PRD to accept.
-// Everything else — proven, unproven-but-accepted — is the tests' business, not a person's.
-export const isWaiting = s =>
-  s.guess ||
-  s.reqs.some(r => r.state === 'reworded') ||
-  (s.reqs.length > 0 && !s.state.approvedPrdText)
+// "Waiting on you" is the ONE remaining human-correction case: a crawled GUESS the human has not yet
+// confirmed (init R3). There is no acceptance gate (board R8) — editing the PRD IS the change, and a
+// requirement's proven / unproven state is the tests' business, not a person's. A guess becomes canon
+// when the human corrects it and deletes the `guess:` frontmatter flag; until then it waits.
+export const isWaiting = s => !!s.guess
 
 export function sortedAreas (screens) {
   return [...new Set(screens.map(s => s.area))].sort((a, b) => {

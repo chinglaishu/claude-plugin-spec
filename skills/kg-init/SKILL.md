@@ -63,12 +63,12 @@ guessed requirement doc + a passing characterization test** — one card, its re
 the test's recording. No wireframe, because the screen already exists.
 
 - The PRD is marked `guess: true` — a proposal read off the running app, never canon. Correct it if it
-  is wrong; the **one gate** is **Accept these requirements**, which makes the PRD the source of
-  truth. There is no "did you build it" gate: that question is answered by the assertion-backed tests
-  running against the real app (see `kg-e2e`), automatically, with no status field and no human
-  compare. The only thing waiting on a person is accepting the requirements.
-- Requirements changed since they were accepted read as **reworded** — awaiting re-acceptance. That is
-  the sole human decision on a row.
+  is wrong, then delete the `guess:` frontmatter flag to make the PRD canon. There is **no acceptance
+  gate**: a requirement is the source of truth the moment you write it, and the assertion-backed tests
+  prove it against the real app (see `kg-e2e`) automatically, with no status field and no rubber-stamp.
+  A crawl guess is the only thing still waiting on a person.
+- Requirement state is just **proven / unproven**, computed from the tests. Editing the PRD *is* the
+  change — a proof recorded before the edit reads stale, and the requirement goes unproven until re-run.
 - `crawl.png` is the evidence the PRD and test are written from, shown in the Init found-table; the
   test writes `screen.png` only as a fallback cover for a recording with no video. Neither is a
   "built screen" to review.
@@ -125,7 +125,8 @@ An empty found-table is the **greenfield** case: no rows, and a prompt to write 
 It is the zero case of the same flow, not a different mode — there is no wireframe loop and no build
 gate. Write a screen's `prd.md` (frontmatter + `## R<n>` blocks), then author its proving test with
 `kg-e2e`. As soon as the screen exists in the app, its test drives the
-real thing exactly as a crawled one does, and the one gate is still accepting the requirements.
+real thing exactly as a crawled one does — its requirements read proven or unproven, with no
+acceptance gate.
 
 ## 4. Find the contradictions already in the requirements
 

@@ -16,15 +16,12 @@ import {
 const chip = (tone, mark, label, attrs = '') =>
   `<span class="chip ${tone}"${attrs ? ' ' + attrs : ''}><span class="${mark}"></span>${label}</span>`
 
-// A requirement's derived state → its header chip (board R4). proven=moss ✓, reworded=iron (your
-// turn to re-accept), unproven=hollow ○ (honestly ungreen, never faked). Title only, no label — the
-// header stays compact; the word lives in the tooltip. NOTE the reworded mark is a plain filled
-// square, NOT the design system's half-fill `mark h`: that class would collide with the requirement
-// header's own `.h` inside the pane (the acceptance test clicks `.req .h`), so hue carries reworded
-// here — exactly as the approved mockup does.
+// A requirement's derived state → its header chip (board R4). Two states, computed from the tests and
+// nothing else: proven=moss ✓ (a current passing assertion covers it), unproven=hollow ○ (honestly
+// ungreen, never faked). Title only, no label — the header stays compact; the word lives in the
+// tooltip. There is no acceptance gate (R8), so there is no "reworded" chip.
 const REQ_CHIP = {
   proven: ['ok', 'mark', 'proven'],
-  reworded: ['stale', 'mark', 'reworded since it was accepted'],
   unproven: ['gone', 'mark o', 'no passing assertion covers this yet']
 }
 const reqChip = state => {
@@ -47,7 +44,7 @@ const card = (s, i) => {
     <div class="cd"><span class="nm">${esc(s.title)}</span>
       ${s.guess ? '<span class="chip stale gmark"><span class="mark h"></span>a guess</span>' : ''}
       <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span></div>
-    <ul class="rl">${s.reqs.map(r => `<li><span class="id">${esc(r.id)}</span>${esc(r.title)}</li>`).join('')}</ul>
+    <ul class="rl">${s.reqs.slice(0, 5).map(r => `<li><span class="id">${esc(r.id)}</span>${esc(r.title)}</li>`).join('')}${s.reqs.length > 5 ? `<li class="more">… ${s.reqs.length - 5} more</li>` : ''}</ul>
   </div>
   <div class="cshot">${s.hasShot
     ? `<img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} — latest run">`
@@ -96,26 +93,25 @@ const runAll = name =>
 // asserts this yet" when it is unproven (R6). A requirement is never faked green.
 const reqRow = r => {
   const passing = (r.tests || []).filter(t => t.status === 'pass' && !t.stale)
-  const covers = r.state === 'unproven'
-    ? '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
-    : passing.length
-      ? `<div class="covers">proven by ${passing.map(t => `<span class="ctag">${esc(t.title)}</span>`).join(' ')}</div>`
-      : '<div class="covers"><span class="nocov">a prior pass, now stale — re-run to re-prove</span></div>'
+  const covers = r.state === 'proven'
+    ? `<div class="covers">proven by ${passing.map(t => `<span class="ctag">${esc(t.title)}</span>`).join(' ')}</div>`
+    : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
     <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span><span class="chev">›</span></div>
     <div class="body">${renderBody(r.body)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
-  <h2>1 · Requirements <span class="s crumb">the source of truth</span></h2>
+  <h2>1 · Requirements</h2>
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
 // RIGHT column (board R3/R5/R10): one test per row, leading with its own FLOW title (prominent),
 // then the coverage TAGS — one neutral chip per requirement it covers — and a status chip. Collapsed;
 // open it for the recording cover, a Run/Watch pair, the fold of steps (scrollable), and the full log
-// which opens in a floating window. The .tststeps / .tstlog / .tstshots / data-title hooks keep the
-// existing run / steps / log machinery working, re-housed into the new row.
+// which opens in a floating window. The .rec / .tststeps / .tstlog / data-title hooks keep the
+// existing run / steps / log machinery working, re-housed into the new row. There is no separate
+// screenshot strip — the recording (its still as the cover) is the one artifact (R10).
 const testRow = (s, t) => {
   const tags = Object.keys(t.reqs || {}).map(qid => {
     const rid = qid.includes(':') ? qid.split(':').pop() : qid
@@ -135,43 +131,18 @@ const testRow = (s, t) => {
         </span>
       </div>
       ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
-      <div class="tstshots" data-title="${esc(t.title)}"></div>
       <div class="fold"><div class="tststeps" data-title="${esc(t.title)}"></div></div>
       <div class="tstlog" data-title="${esc(t.title)}"></div>
-      <div class="loglink" data-log><span class="chev" style="transform:none">▸</span>full log — opens in a window</div>
+      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>`
 }
 const testPane = s => `<div class="pane testpane">
-  <h2>2 · E2E tests <span class="s crumb">few, comprehensive · each tags what it covers</span></h2>
+  <h2>2 · E2E tests</h2>
   ${s.run && s.run.tests && s.run.tests.length
     ? s.run.tests.map(t => testRow(s, t)).join('')
     : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
 </div>`
-
-// The ONE human gate of the two-column model (board R8): accept the requirements. It is open — your
-// turn — whenever the screen is waiting (a crawl guess, a reworded requirement, or a never-accepted
-// PRD). Accepting POSTs to the server, which pins the current PRD text so nothing reads reworded
-// afterward and the gate closes. There is no draft gate and no gate B — the tests answer "did you
-// build it right?" against the real app, automatically.
-const acceptGate = s => {
-  if (!isWaiting(s)) {
-    return `<div class="gate ok">
-      ${chip('ok', 'dot', 'requirements accepted')}
-      <span class="g2">These requirements are the accepted source of truth. Edit the PRD to change what the screen should do, and it reads as needing re-acceptance until you accept again.</span>
-    </div>`
-  }
-  const why = s.guess
-    ? 'These requirements were read off the running app — a guess. Correct any that are wrong, then accept them as the source of truth.'
-    : (!s.state.approvedPrdText
-        ? 'These requirements have never been accepted. Read them, correct any that are wrong, then accept them as the source of truth.'
-        : 'Requirements changed since they were accepted. Re-read what moved, then accept them again as the source of truth.')
-  return `<div class="gate open">
-    <span class="g1">Gate · your turn</span>
-    <span class="g2">${why}</span>
-    <button class="btn ok" data-act="accept" data-gate="prd" data-screen="${esc(s.name)}" style="flex:none;margin-left:auto">Accept requirements</button>
-  </div>`
-}
 
 // The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, the two lanes
 // (greenfield DESIGN, brownfield DOCUMENT), and the four skills drawn as flowcharts (howFlowcharts,
@@ -402,7 +373,7 @@ const HOW_FLOWS = [
     nodes: [
       { id: 's1', type: 'step', cx: HOW_Cx, top: 16, w: 252, h: 54, title: 'Scaffold specboard into the repo', tags: ['vendors tools/ + spec/'] },
       { id: 's2', type: 'step', cx: HOW_Cx, top: 100, w: 252, h: 54, title: 'Install deps · start the board' },
-      { id: 's3', type: 'step', cx: HOW_Cx, top: 184, w: 252, h: 54, title: 'Open Init · point at the app' },
+      { id: 's3', type: 'step', cx: HOW_Cx, top: 184, w: 252, h: 54, title: 'Open Setup · point at the app' },
       { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 274, w: 208, h: 116, title: 'App already exists?' },
       { id: 'l1', type: 'step', cx: HOW_Lx, top: 456, w: 214, h: 54, title: 'Crawl the running app', state: 'running', tags: ['real browser'] },
       { id: 'l2', type: 'step', cx: HOW_Lx, top: 544, w: 214, h: 58, title: 'Guessed PRDs', tags: ['prd.md · guess'] },
@@ -669,7 +640,8 @@ const howView = () => `<section class="dt" id="howview" hidden>
 export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
-  // The one number that says whether it is your turn: how many screens have the accept gate open.
+  // The one number that says whether it is your turn: how many screens are waiting on a human
+  // correction — in the no-gate model (board R8) that is only a crawl guess still to be confirmed.
   const yourTurn = screens.filter(isWaiting).length
 
   const groups = areas.map(a => {
@@ -688,24 +660,19 @@ export function build () {
   }).join('')
 
   // The detail is two ends only (board R2): the requirements on the left, the tests that prove them
-  // on the right, each pane scrolling on its own. One accept gate above them; a Run-all in the bar.
-  // data-screen alongside data-i so the router can open it by name.
+  // on the right, each pane scrolling on its own — no acceptance gate above them (board R8), just the
+  // two columns and a Run-all in the bar. data-screen alongside data-i so the router can open it by name.
   const detail = screens.map((s, i) => `
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
-  <div class="dth">
+  <div class="dth dbarhook">
     <h2>${esc(s.title)}</h2>
+    <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · spec/${esc(s.name)}/</span>
     <span class="grow"></span>
+    ${runAll(s.name)}
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
-    <div class="dbar dbarhook">
-      <span class="t">${esc(s.title)}</span>
-      <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · spec/${esc(s.name)}/</span>
-      <span class="grow"></span>
-      ${runAll(s.name)}
-    </div>
-    ${acceptGate(s)}
     <div class="cols">
       ${reqPane(s)}
       ${testPane(s)}
@@ -721,6 +688,13 @@ export function build () {
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
   body { width:auto; }
+  /* The specboard bar heads the LIST (and the tool views); it sticks to the top as you scroll. On a
+     detail PAGE the detail is a full-screen window that covers it, so a detail has exactly ONE header
+     — its own — never two stacked bars. */
+  .top { position:sticky; top:0; z-index:40; }
+  /* while a detail (a full-screen fixed window) is open, the page itself must not scroll — only its
+     two panes do. Set on <html> by the router when a detail opens, cleared when it closes. */
+  html.noscroll { overflow:hidden; }
   .wrap { max-width:1200px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
   .empty { padding:var(--s5) var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
   .empty code { font-family:var(--mono); }
@@ -767,51 +741,49 @@ export function build () {
     font-size:var(--t-sm); padding:0; width:12px; line-height:1; }
   .grp.shut .cards { display:none; }
   .cards { display:flex; flex-direction:column; gap:var(--s4); }
-  .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
+  /* Home cards only — this grid, the pointer cursor and the hover lift are the affordance of an
+     openable row. Scoped to #home so it never leaks onto the plain block .card that _design.css
+     gives the Setup view; an unscoped rule once split that form into two clipped columns. */
+  #home .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
     border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s4) var(--s5); cursor:pointer;
     transition:border-color .12s, box-shadow .12s; }
-  .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
-  .card.gone { display:none; }
-  .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
-  .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
-  .card .pcount { margin-left:auto; }
+  #home .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
+  #home .card.gone { display:none; }
+  #home .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  #home .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
+  #home .card .pcount { margin-left:auto; }
   .rl { list-style:none; display:flex; flex-direction:column; gap:5px; margin:0; padding:0; }
   .rl li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-sm); color:var(--ink-2); }
   .rl li .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
+  .rl li.more { color:var(--ink-4); font-size:var(--t-xs); padding-left:calc(24px + var(--s2)); }
   .cshot { aspect-ratio:16/10; border-radius:var(--r); border:1px solid var(--hair-2); overflow:hidden;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); position:relative; }
   .cshot img { width:100%; height:100%; object-fit:cover; object-position:top left; display:block; }
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:18px; color:var(--ink-4); }
 
-  /* DETAIL — a fixed window: header, the one accept gate, two independently scrolling panes (R2) */
-  .dt { position:fixed; inset:0; background:var(--canvas); z-index:20; display:flex; flex-direction:column; }
+  /* DETAIL — a fixed FULL-SCREEN window that COVERS the specboard bar, so a detail page has exactly
+     ONE header: its own. Below it, R2's two panes each scroll on their own. z-index sits above the
+     top bar (40) and below the log popup (49/50). */
+  .dt { position:fixed; inset:0; background:var(--canvas); z-index:45;
+    display:flex; flex-direction:column; }
   /* An author display declaration beats the hidden attribute's UA display:none, so a hidden detail
      really disappears rather than every one stacking. */
   .dt[hidden] { display:none; }
+  /* the ONE detail header, full-width: title · requirement count · … · Run all · Next waiting · Close */
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
-    width:100%; max-width:1200px; margin:0 auto; padding:var(--s4) var(--s6);
+    width:100%; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
-  .dtscroll { flex:1; overflow:auto; }
-  .dtscroll > .dbar, .dtscroll > .gate, .dtscroll > .cols {
-    width:100%; max-width:1200px; margin-left:auto; margin-right:auto; }
-  .dtscroll { padding:var(--s5) var(--s6) var(--s5); }
-  .dbar { display:flex; align-items:center; gap:var(--s4); padding:0 var(--s2) var(--s4); }
-  .dbar .t { font-size:var(--t-xl); letter-spacing:-.02em; }
-  .dbar .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
-
-  /* the ONE gate (board R8) — indigo = your turn; the settled state wears moss */
-  .gate { display:flex; align-items:center; gap:var(--s3); border-radius:var(--r-md);
-    padding:var(--s3) var(--s4); margin-bottom:var(--s4); }
-  .gate.open { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:3px solid var(--ai); }
-  .gate.ok { background:var(--koke-tint); border:1px solid var(--koke-line); border-left:3px solid var(--koke); }
-  .gate .g1 { font-weight:600; color:var(--ai); white-space:nowrap; }
-  .gate .g2 { color:var(--ink-2); font-size:var(--t-sm); }
+  .dth h2 { font-size:var(--t-xl); letter-spacing:-.02em; }
+  .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
+  .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
+    align-items:center; padding:var(--s5) var(--s6) var(--s5); }
+  .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
 
   /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
      other, neither scrolls the page, and both headers stay pinned (board R2) */
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
-    height:calc(100vh - 236px); min-height:340px; }
+    min-height:340px; }
   .pane { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     overflow-y:auto; overflow-x:hidden; padding-bottom:var(--s6); }
   .pane > h2 { position:sticky; top:0; z-index:2; background:var(--card);
@@ -851,10 +823,11 @@ export function build () {
      the fold of steps, and a link to the full log (board R3/R10) */
   .test { border-bottom:1px solid var(--hair); padding:var(--s3) var(--s4); }
   .test:last-child { border-bottom:0; }
-  .test.hot { background:var(--ai-tint); }
+  .test.hot > .th { background:var(--ai-tint); }
   .test > .th { cursor:pointer; }
   .throw { display:flex; align-items:center; gap:var(--s3); }
-  .test > .th:hover .ttl { color:var(--ai); }
+  /* hover the item → grey; its linked item(s) → blue (.hot). Same both directions, reqs ↔ tests. */
+  .test > .th:hover { background:var(--wash); }
   .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -863,10 +836,13 @@ export function build () {
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
   .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
-    border:1px solid var(--hair-2); overflow:hidden; cursor:pointer;
-    background:linear-gradient(135deg,var(--wash),var(--sunk)); }
+    border:1px solid var(--hair-2); overflow:hidden; cursor:default;
+    background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }
+  /* a still cover is playable ONLY when a run captured a video; otherwise it is honestly a still */
+  .rec.playable { cursor:pointer; }
   .rec .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:20px; color:var(--ink-4); }
+  .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; background:var(--ink); }
   .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
@@ -877,15 +853,21 @@ export function build () {
     background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
   .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
   .test .tacts { opacity:1; margin-left:0; }
+  /* aligned with the steps fold (both indented 14px) so the two read as one list, and NO toggle
+     chevron — it opens a window, it does not expand in place */
   .loglink { font:var(--t-xs) var(--sans); color:var(--ai); cursor:pointer; display:inline-flex;
-    gap:6px; align-items:center; margin-top:var(--s3); }
+    gap:6px; align-items:center; margin:var(--s3) 0 0 14px; }
   .loglink:hover { text-decoration:underline; }
   .fold { margin-top:var(--s3); }
 
   /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
      behind it. Close / Esc / a click off the card dismiss it (board R10). */
   .sheet { display:none; }
-  .sheet.on { display:block; }
+  /* open: a full-viewport scrim dims the board so the popup reads as the foreground, and the .box
+     (below) floats on it as a CARD — never filling the viewport (board R10). A click anywhere on the
+     scrim (off the card) closes it, alongside the Close button and Esc. The scrim wears the ink colour
+     at low alpha, the same overlay tone the lightbox uses. */
+  .sheet.on { display:block; position:fixed; inset:0; z-index:49; background:rgba(28,27,24,.32); }
   .sheet .box { position:fixed; z-index:50; top:8vh; left:50%; transform:translateX(-50%);
     width:720px; max-width:calc(100vw - 48px); max-height:80vh;
     background:var(--card); border:1px solid var(--hair-2); border-radius:var(--r-lg);
@@ -915,13 +897,14 @@ export function build () {
   .stepslist li.sf:before { content:"✕"; color:var(--bengara); }
   .terr { margin:var(--s2) 0 0 14px; padding:var(--s2) var(--s3); background:var(--bengara-tint);
     font:var(--t-xs)/1.6 var(--mono); color:var(--bengara); white-space:pre-wrap; overflow-x:auto; }
-  /* the case's OWN log, collapsed behind a native disclosure — the whole thing it printed, kept from
-     the latest run, so a failure can be read here without running it again (dispatch R8) */
-  .tstlog { margin:var(--s2) 0 0 14px; }
-  .tstlog:empty { display:none; }
-  .tstlog summary { font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); cursor:pointer; }
-  .tstlog summary:hover { color:var(--ink-2); }
-  .tstlog pre { margin:var(--s2) 0 0; padding:var(--s2) var(--s3); background:var(--sunk);
+  /* the case's OWN log history is POPULATED but never shown inline — there is ONE full-log
+     affordance, the popup (board R10). loadRuns still fills .tstlog (dispatch R8 folds every case's
+     history into it) and the popup copies its content, so the log lives in exactly one visible place.
+     Its styles hang off .logbox / .lghist so they render inside the popup, where the log is read. */
+  .tstlog { display:none; }
+  .logbox summary { font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); cursor:pointer; }
+  .logbox summary:hover { color:var(--ink-2); }
+  .lghist pre { margin:var(--s2) 0 0; padding:var(--s2) var(--s3); background:var(--sunk);
     border:1px solid var(--hair); border-radius:var(--r-sm); max-height:280px; overflow:auto;
     font:var(--t-xs)/1.6 var(--mono); color:var(--ink-3); white-space:pre-wrap; }
   /* the case's last ten runs, newest first — each headed with when, how long, and on what commit */
@@ -963,15 +946,6 @@ export function build () {
   .rplog { margin:0; padding:var(--s3) var(--s4); height:260px; overflow:auto;
     font:var(--t-xs)/1.75 var(--mono); color:var(--ink-2); background:var(--canvas);
     white-space:pre-wrap; }
-  /* what THIS test saw — its own shots, under its own row, each zoomable */
-  .tstshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:var(--s2) 0 0 14px; }
-  .tstshots:empty { display:none; }
-  .tstshots img { width:76px; height:48px; object-fit:cover; object-position:top left;
-    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--wash); display:block; }
-  .tstshots img:hover { border-color:var(--ink); }
-  .tstshots .recvid { font-size:var(--t-micro); font-family:var(--mono); color:var(--ink-3);
-    text-decoration:none; border:1px solid var(--hair); border-radius:var(--r-sm); padding:3px 6px; }
-  .tstshots .recvid:hover { border-color:var(--ink); color:var(--ink); }
   /* per-test run controls appear on the row you are pointing at, so five tests do not become ten
      competing buttons */
   .tacts { display:inline-flex; gap:4px; margin-left:var(--s2); opacity:0; transition:opacity .12s; }
@@ -1286,7 +1260,7 @@ export function build () {
 <div class="wrap">
   ${yourTurn === 0 && screens.length ? `<div class="clear">
     <span class="chip ok"><span class="dot"></span>queue clear</span>
-    Nothing is waiting on you — every screen's requirements are accepted. What proves them is up to the tests.
+    Nothing is waiting on you — only a crawled guess ever needs a look; everything else is proven or unproven by its tests.
   </div>` : ''}
   <div id="home">
     ${groups}
@@ -1330,9 +1304,13 @@ export function build () {
   </div>
 </section>
 
-<!-- Init is a tool view too (#init): how to reach the project's app, and what a crawl of it
+<!-- Setup is a tool view too (#init): how to reach the project's app, and what a crawl of it
      found. A project that arrives with code and no specs starts here, so the board is populated on
-     day one instead of being an empty page nobody knows how to fill. -->
+     day one instead of being an empty page nobody knows how to fill. The hash stays #init — the
+     stored route — while every label the human reads says Setup, to match the Set up button. -->
+<!-- reworded 2026-07-30: the screen's title became "Setup" so it matches the Set up button and
+     header; awaiting the human's accept on the board (never accepted here). -->
+
 <section class="dt" id="initview" hidden>
   <div class="dth">
     <h2>Set up the board</h2>
@@ -1516,12 +1494,19 @@ ${detail}
   const SCREENS = ${JSON.stringify(screens.map(s => s.name))}
   // The skills that have a baked flowchart page at #howitworks/<id>; an unknown id falls back to overview.
   const SKILL_IDS = ${JSON.stringify(HOW_FLOWS.map(f => f.id))}
-  const closeAll = () => document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+  const closeAll = () => {
+    document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
+    // A detail is a full-screen fixed window; while it is open the PAGE must not scroll — only the two
+    // panes do. Locking the body kills the "scrolling does nothing" (it was moving the hidden list
+    // behind the overlay) and any overscroll bounce. Cleared here, set by show() when a detail opens.
+    document.documentElement.classList.remove('noscroll')
+  }
   const show = i => {
     closeAll()
     const dt = document.querySelector('.dt[data-i="' + i + '"]')
     if (!dt) return
     dt.hidden = false
+    document.documentElement.classList.add('noscroll')
     // Every screen's detail is baked in, so the #reqpane / #testpane ids — and the .dbar class — the
     // tests address unscoped would not be unique. Carry them on the VISIBLE detail only: strip
     // everywhere, then set here, so each resolves to exactly one element while this detail is open.
@@ -1623,6 +1608,8 @@ ${detail}
       document.getElementById('logtitle').textContent = 'Full log — ' + (testEl.querySelector('.ttl').textContent || '')
       const src = testEl.querySelector('.tstlog')
       logbody.innerHTML = src ? src.innerHTML : ''
+      // the copied history is a <details>; open it so the popup shows every run without another click
+      logbody.querySelectorAll('details').forEach(d => { d.open = true })
       logsheet.classList.add('on')
     })
   for (const b of document.querySelectorAll('[data-logclose]'))
@@ -1660,30 +1647,12 @@ ${detail}
     if (openDt && e.key === 'r') { const b = openDt.querySelector('.runbtn'); if (b) b.click() }
   })
 
-  // gate actions ---------------------------------------------------------
-  // The ONE gate (board R8): accept the requirements. It POSTs to the board server, which pins the
-  // current PRD text so the reworded state clears and the gate closes. Opened as a plain file the
-  // board still renders; it just cannot record a decision, and says so rather than doing nothing.
+  // toast ----------------------------------------------------------------
+  // A small transient message, shared by the handlers below (runs, config, conflicts, update). There
+  // is no acceptance gate to wire (board R8) — a requirement is the source of truth as written.
   function toast (msg) {
     const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg
     document.body.appendChild(t); setTimeout(() => t.remove(), 5000)
-  }
-
-  for (const b of document.querySelectorAll('[data-act="accept"]')) {
-    b.addEventListener('click', async () => {
-      try {
-        const res = await fetch('/api/gate', {
-          method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ screen: b.dataset.screen, gate: b.dataset.gate || 'prd', act: 'accept' })
-        })
-        if (!res.ok) throw new Error((await res.text()).slice(0, 120))
-        // Stay on the screen you just accepted — a plain reload lands you back on it showing the
-        // gate closed, so you see the result of what you did rather than being whisked elsewhere.
-        location.reload()
-      } catch (err) {
-        toast('Accepting needs the board server — run  npm run board  (' + err.message + ')')
-      }
-    })
   }
 
   // conflicts ------------------------------------------------------------
@@ -2270,17 +2239,28 @@ ${detail}
           if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
         }
       }
-      for (const slot of panel.querySelectorAll('.tstshots')) {
-        const one = (rec[slot.dataset.title] || [])[0]
-        slot.innerHTML = one
-          ? (one.shots || []).map(src => '<img src="' + src + '" loading="lazy" alt="what this test saw">').join('') +
-            (one.video ? '<a class="recvid" href="' + one.video + '" target="_blank">▶ recording</a>' : '')
-          : ''
-        // A picture that no longer exists is worse than no picture: the record is pruned with its
-        // run, so a shot can outlive its file and render as a broken-image icon captioned "what
-        // this test saw". Show nothing rather than a lie about evidence.
-        for (const img of slot.querySelectorAll('img')) {
-          img.addEventListener('error', () => img.remove())
+      // The RECORDING is the test's cover and its ONE artifact (board R10): the last asserted frame
+      // as a still, and — when a board-started run captured a .webm — it PLAYS on click, swapping the
+      // still for an inline video. A plain CLI run captures no video, so the still stays the cover and
+      // there is nothing to play: never a fake play affordance, and never a separate screenshot strip.
+      for (const slot of panel.querySelectorAll('.rec')) {
+        const host = slot.closest('.test')
+        const one = (rec[host && host.dataset.title] || [])[0]
+        const lab = slot.querySelector('.lab')
+        const label = '<span class="lab">' + eh(lab ? lab.textContent : '') + '</span>'
+        const shots = (one && one.shots) || []
+        const still = shots[shots.length - 1]        // the end state it proved — the cover frame
+        slot.style.backgroundImage = still ? 'url("' + still + '")' : ''
+        if (one && one.video) {
+          slot.classList.add('playable')
+          slot.innerHTML = '<span class="play">▶</span>' + label
+          slot.onclick = () => {
+            slot.onclick = null; slot.classList.remove('playable')
+            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
+          }
+        } else {
+          slot.classList.remove('playable'); slot.onclick = null
+          slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
       }
       // The DETAIL STEPS of each case, collapsed behind a toggle — every action and check the test

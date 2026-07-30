@@ -1,5 +1,4 @@
 import { test, expect, checkReq, coverReqs } from '../_base'
-import { readState, writeState, readScreen } from '../../tools/spec-store.mjs'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
@@ -17,7 +16,7 @@ test.beforeEach(async ({ page }) => {
   await page.waitForSelector('.card')
 })
 
-test('R1 — home is one CARD per screen: titles + a cover, never a four-column strip', async ({ page }) => {
+test('Home lists every screen as a card', async ({ page }) => {
   await coverReqs('R1')
   await checkReq('R1', async () => {
     const cards = page.locator('#home .card')
@@ -33,7 +32,7 @@ test('R1 — home is one CARD per screen: titles + a cover, never a four-column 
   await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
 })
 
-test('R2 — the detail is two columns, each scrolling on its own', async ({ page }) => {
+test('The detail opens as two independent columns', async ({ page }) => {
   await coverReqs('R2')
   await openDetail(page)
   await checkReq('R2', async () => {
@@ -52,7 +51,7 @@ test('R2 — the detail is two columns, each scrolling on its own', async ({ pag
   })
 })
 
-test('R3 — a requirement is a title that EXPANDS; a test leads with its flow name, not a requirement', async ({ page }) => {
+test('A requirement expands; a test leads with its flow name', async ({ page }) => {
   await coverReqs('R3')
   await openDetail(page)
   await checkReq('R3', async () => {
@@ -73,38 +72,40 @@ test('R3 — a requirement is a title that EXPANDS; a test leads with its flow n
   })
 })
 
-test('R4 — requirement state is computed: reworded wins, else proven / unproven — and it re-derives', async ({ page }) => {
+test('Requirement state is computed and assertion-backed', async ({ page }) => {
   await coverReqs('R4')
-  // Capture the REAL pinned state so the transition restores exactly — never leave the board's own
-  // gate flipped (that is the human's, not mine).
-  const before = readState('board')
-  const prdText = readScreen('board').prdText
   await openDetail(page)
   await checkReq('R4', async () => {
-    // The board's requirements were rewritten since they were accepted, so every one reads REWORDED
-    // (awaiting the human's gate) — reworded wins over any proof.
-    await expect(page.locator('#reqpane .req[data-state="reworded"]').first()).toBeVisible()
-    const rewordedNow = await page.locator('#reqpane .req[data-state="reworded"]').count()
-    expect(rewordedNow).toBeGreaterThan(0)
-
-    // Pin the CURRENT text (what accepting the requirements does): the reworded state clears and every
-    // requirement RE-DERIVES to a computed proof state (proven or unproven) — never reworded, never
-    // blank. Driven directly so the test restores the exact bytes; the accept BUTTON is proven by R8.
-    // (Whether a given one lands proven or unproven depends on the last run's coverage — not asserted
-    // here, so this stays a clean test of "reworded wins, then state is computed", not of run timing.)
-    const total = await page.locator('#reqpane .req').count()
-    writeState('board', { ...before, approvedPrdText: prdText })
-    await page.reload()
-    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    const reqs = page.locator('#reqpane .req')
+    const total = await reqs.count()
+    expect(total).toBeGreaterThan(0)
+    // There is no acceptance gate (R8), so there is no "changed since accepted" state at all —
+    // never a reworded chip, never a blank cell.
     await expect(page.locator('#reqpane .req[data-state="reworded"]')).toHaveCount(0)
-    // every requirement now carries a computed proof state — none left uncomputed, none still reworded
-    await expect(page.locator('#reqpane .req[data-state="proven"], #reqpane .req[data-state="unproven"]')).toHaveCount(total)
+    // Every requirement carries a COMPUTED state, one of exactly two: proven or unproven.
+    await expect(page.locator('#reqpane .req[data-state="proven"], #reqpane .req[data-state="unproven"]'))
+      .toHaveCount(total)
+
+    // …and that state is ASSERTION-BACKED, not typed. A proven requirement NAMES the passing test(s)
+    // that cover it (real .ctag chips in its covers line); an unproven one says so honestly. If the
+    // derivation were faked — every requirement stamped proven regardless of its tests — a proven row
+    // would have no covering test to name and its .ctag would be missing, and this would fail.
+    const proven = page.locator('#reqpane .req[data-state="proven"]')
+    const provenN = await proven.count()
+    for (let i = 0; i < provenN; i++) {
+      const row = proven.nth(i)
+      await row.locator('.h').click()
+      await expect(row.locator('.covers .ctag').first()).toBeVisible()
+    }
+    const unproven = page.locator('#reqpane .req[data-state="unproven"]').first()
+    if (await unproven.count()) {
+      await unproven.locator('.h').click()
+      await expect(unproven.locator('.covers .nocov')).toBeVisible()
+    }
   })
-  // restore the real pin — the board stays honestly reworded until the human accepts
-  writeState('board', before)
 })
 
-test('R5 — requirements and tests are many-to-many by tag, and the link lights up on hover', async ({ page }) => {
+test('Hovering a test lights up the requirements it covers', async ({ page }) => {
   await coverReqs('R5')
   await openDetail(page)
   await checkReq('R5', async () => {
@@ -120,7 +121,7 @@ test('R5 — requirements and tests are many-to-many by tag, and the link lights
   })
 })
 
-test('R6 — a test declares the coverage it proves; a requirement lists every test that covers it', async ({ page }) => {
+test('A requirement names the tests that cover it', async ({ page }) => {
   await coverReqs('R6')
   await openDetail(page)
   await checkReq('R6', async () => {
@@ -140,7 +141,7 @@ test('R6 — a test declares the coverage it proves; a requirement lists every t
   })
 })
 
-test('R7 — specboard owns no wireframe or design: no design affordance, nothing rendered', async ({ page }) => {
+test('The detail shows no wireframe or design affordance', async ({ page }) => {
   await coverReqs('R7')
   await openDetail(page)
   await checkReq('R7', async () => {
@@ -152,26 +153,25 @@ test('R7 — specboard owns no wireframe or design: no design affordance, nothin
   })
 })
 
-test('R8 — ONE human gate: accept the requirements; no gate B, no wireframe', async ({ page }) => {
+test('No acceptance gate — the detail is the two columns, nothing to accept', async ({ page }) => {
   await coverReqs('R8')
-  const before = readState('board')
   await openDetail(page)
   await checkReq('R8', async () => {
     const detail = page.locator('.dt[data-screen="board"]:not([hidden])')
-    await expect(detail.locator('.gate')).toHaveCount(1)     // exactly one gate
-    // it is the accept-requirements gate — there is no "did you build it" gate and no draft gate
-    await expect(detail.getByText(/Matches the design|approved design|Open draft/i)).toHaveCount(0)
-    const accept = detail.locator('[data-act="accept"]')
-    await expect(accept).toBeVisible()
-
-    // the button actually accepts — pins the requirements, and the gate closes
-    await accept.click()
+    // There is NO gate (R8): a requirement is the source of truth the moment it is written, so the
+    // detail has no gate bar and no accept button — nothing waits on a rubber-stamp.
+    await expect(detail.locator('.gate')).toHaveCount(0)
     await expect(detail.locator('[data-act="accept"]')).toHaveCount(0)
+    // nor any "did you build it" / draft gate — none ever existed in the two-column model
+    await expect(detail.locator('[data-gate]')).toHaveCount(0)
+    await expect(detail.getByText(/Matches the design|approved design|Open draft/i)).toHaveCount(0)
+    // the detail goes straight from its header to the two columns
+    await expect(detail.locator('.dtscroll > .cols')).toHaveCount(1)
+    await expect(detail.locator('.cols .pane')).toHaveCount(2)
   })
-  writeState('board', before)   // restore — accepting is the human's, done here only to prove the wire
 })
 
-test('R9 — search across requirement text, grouped into areas, a group with no match hides', async ({ page }) => {
+test('Searching requirement text hides groups that miss', async ({ page }) => {
   await coverReqs('R9')
   await checkReq('R9', async () => {
     await expect(page.locator('.grp')).toHaveCount(3)        // Core, Running, Setup
@@ -186,7 +186,7 @@ test('R9 — search across requirement text, grouped into areas, a group with no
   })
 })
 
-test('R10 — a test opens to its evidence and can be run; the whole log opens in a floating window', async ({ page }) => {
+test('A test opens to its evidence and the log opens in a window', async ({ page }) => {
   await coverReqs('R10')
   await openDetail(page)
   await checkReq('R10', async () => {
