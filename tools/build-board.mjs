@@ -147,10 +147,6 @@ const testPane = s => `<div class="pane testpane">
   ${s.run && s.run.tests && s.run.tests.length
     ? s.run.tests.map(t => testRow(s, t)).join('')
     : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
-  <div class="runlog" data-screen="${esc(s.name)}">
-    <div class="lbl">recent runs</div>
-    <div class="runrows">loading…</div>
-  </div>
 </div>`
 
 // The ONE human gate of the two-column model (board R8): accept the requirements. It is open — your
@@ -817,7 +813,7 @@ export function build () {
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
     height:calc(100vh - 236px); min-height:340px; }
   .pane { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    overflow-y:auto; overflow-x:hidden; }
+    overflow-y:auto; overflow-x:hidden; padding-bottom:var(--s6); }
   .pane > h2 { position:sticky; top:0; z-index:2; background:var(--card);
     font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4);
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
@@ -967,12 +963,6 @@ export function build () {
   .rplog { margin:0; padding:var(--s3) var(--s4); height:260px; overflow:auto;
     font:var(--t-xs)/1.75 var(--mono); color:var(--ink-2); background:var(--canvas);
     white-space:pre-wrap; }
-  .runlog { margin-top:var(--s4); padding-top:var(--s3); border-top:1px solid var(--hair); }
-  .runrow { display:flex; align-items:center; gap:var(--s2); padding:4px 0;
-    font-size:var(--t-xs); color:var(--ink-3); font-family:var(--mono); }
-  .runrow .rr-s { color:var(--ink-4); }
-  .runrow .ms { margin-left:auto; color:var(--ink-4); }
-  .runrow .rr-arch { color:var(--ink-4); font-family:var(--mono); font-size:var(--t-micro); }
   /* what THIS test saw — its own shots, under its own row, each zoomable */
   .tstshots { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:var(--s2) 0 0 14px; }
   .tstshots:empty { display:none; }
@@ -2247,41 +2237,17 @@ ${detail}
     }).catch(() => {})
   }
 
-  // recent runs, fetched rather than baked in — the board is rebuilt by a run, so a run log
-  // written into the HTML would always be one run behind itself
-  // Where a run's record went, if anywhere but local — said plainly, success or failure, because a
-  // storage option that silently does nothing is worse than not offering it.
-  function archiveNote (a) {
-    if (!a) return ''
-    if (a.where === 'git') {
-      return a.ok
-        ? '→ git ' + eh(a.branch) + ' @ ' + eh(a.sha) +
-          (a.requestedPush ? (a.pushed ? ' (pushed)' : ' (push failed)') : ' (committed locally)')
-        : '→ git failed: ' + eh(a.error || 'unknown')
-    }
-    if (a.where === 'bucket') {
-      return a.ok ? '→ bucket · ' + (a.count || 0) + ' file(s)' : '→ bucket failed: ' + eh(a.error || 'unknown')
-    }
-    return ''
-  }
-
+  // Per-test records are fetched rather than baked in — the board is rebuilt by a run, so a record
+  // written into the HTML would always be one run behind itself.
   async function loadRuns () {
     let data
     try { data = await (await fetch('/api/runs')).json() } catch (e) { return }
     syncWatch(!!data.watch)
     setRunning(!!data.running)
-    for (const box of document.querySelectorAll('.runlog')) {
-      const screen = box.dataset.screen
-      const mine = data.runs.filter(r => r.screen === screen || r.screen === 'all').slice(0, 5)
-      box.querySelector('.runrows').innerHTML = mine.length
-        ? mine.map(r => '<div class="runrow"><span class="mark ' + (r.ok ? '' : 'o') + '" style="color:var(--' +
-            (r.ok ? 'koke' : 'bengara') + ')"></span><span>' + r.at.replace('T', ' ').slice(0, 16) +
-            // WHICH case, when the run was scoped to one — "board 1/1" twice tells you nothing
-            '</span><span class="rr-s">' + r.screen + (r.grep ? ' · ' + eh(r.grep) : '') +
-            '</span><span class="ms">' +
-            (r.total - r.failed) + '/' + r.total + ' · ' + Math.round(r.ms / 100) / 10 + 's</span>' +
-            (r.archive ? '<span class="rr-arch">' + archiveNote(r.archive) + '</span>' : '') + '</div>').join('')
-        : '<div class="runrow ms">no runs recorded yet</div>'
+    for (const panel of document.querySelectorAll('.testpane')) {
+      const dt = panel.closest('.dt')
+      const screen = dt && dt.dataset.screen
+      if (!screen) continue
 
       // The RECORD, shown UNDER each test — what THAT test saw, not a heap of images under all of
       // them. FOLDED across runs, never read out of a single one: a run filtered to one test records
@@ -2304,7 +2270,6 @@ ${detail}
           if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
         }
       }
-      const panel = box.closest('.testpane') || box.closest('.pane') || box.parentElement
       for (const slot of panel.querySelectorAll('.tstshots')) {
         const one = (rec[slot.dataset.title] || [])[0]
         slot.innerHTML = one

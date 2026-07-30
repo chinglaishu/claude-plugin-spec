@@ -242,11 +242,11 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   await expect(untouched.locator('.tstlog summary'), 'every case still has its own log').toBeVisible()
 })
 
-test('R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it was', async ({ page, request }) => {
+test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, request }) => {
   // One log answers "does it pass today". The question you actually have when a case goes red is
-  // when it started failing and what changed — so a case keeps its last runs, each stamped with the
-  // time, the duration and the commit. And a run scoped to one case has to say WHICH case: a list of
-  // "board 1/1 · 1/1" is a list of runs nobody can tell apart.
+  // when it started failing and what changed — so a case keeps its last runs under the case itself,
+  // each stamped with the time, the duration and the commit. This per-case record is where a run's
+  // scope and its log live (R6): a scoped run of one case updates that case's history, nowhere else.
   await idle(request)
   const title = B_R2
   for (let i = 0; i < 2; i++) {
@@ -269,9 +269,6 @@ test('R6/R8 — a case keeps a LOG HISTORY, and a scoped run says which case it 
   // each stamped with when it ran and the commit it ran against
   await expect(log.locator('.lghist > li').first().locator('.lgh'))
     .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
-
-  // and the recent-runs list names the case the run covered
-  await expect(page.locator('.runlog .runrow').first()).toContainText('two columns')
 })
 
 test('R8 — EVERY case that has run can expand its steps, not only the one you clicked', async ({ page, request }) => {

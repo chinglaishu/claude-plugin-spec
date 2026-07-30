@@ -65,10 +65,14 @@ half way through and reported nothing.*
 Every line the job printed is saved with the run and can be read back in full afterwards — not a
 truncated snippet, and not only while you happened to be watching it scroll past. "7 of 7 passed"
 is the headline; the reason a case failed lives in its output, so a run whose log is thrown away the
-moment it ends cannot be debugged after the fact.
+moment it ends cannot be debugged after the fact. Each run's full log is reachable from the record
+kept under the case it covered (R8).
 
-The recent-runs list says what each run actually covered — the screen, and the case when the run was
-scoped to one. "board 1/1" twice over tells you nothing about which two tests those were.
+*Narrowed 2026-07-30: R6 previously also required a screen-level "recent runs" list that disambiguated
+what each run covered (the screen, or the one case a scoped run named). Removed at the human's
+direction — every case already keeps its own last-ten-run history under the test (R8), each stamped
+with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the
+tests column. A run's log and its scope now live in the per-case record, nowhere else.*
 
 ## R7 — The panel stays open when the job ends
 
