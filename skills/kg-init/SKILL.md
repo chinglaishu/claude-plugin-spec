@@ -97,7 +97,7 @@ authenticate, navigate, wait for data, then explore — write it, run it, read i
 
 **PRD rubric:** a screen's PRD is under-specified if a competent tester could not, from it alone, list
 every number, control and flow to check. One requirement per meaningful behaviour, each naming the
-concrete elements (put their testids in a comment). Keep `guess: true` — it is still the CEO's to
+concrete elements (put their testids in a comment). Keep `guess: true` — it is still the human's to
 correct — but make the guess *rich*, not a two-line summary. kg-e2e then turns that detail into a
 test that asserts real data and behaviour.
 
@@ -109,7 +109,7 @@ is still shallow — say *which* total, for *which* input. Live data drifts, so 
 kg-e2e's "Deterministic golden data" section for the seed hook (`spec/_seed.ts` / a `seed:e2e` script)
 and the `golden.json` format.
 
-Rerunning finds new routes without touching a screen the CEO has already worked.
+Rerunning finds new routes without touching a screen the human has already worked.
 
 ### New project (or a new screen) → DESIGN mode
 
@@ -127,8 +127,8 @@ gate B appear: you are now approving a new design and then the build against it.
 ## 4. Find the contradictions already in the requirements
 
 Once there are a few PRDs, open the **Conflicts** tab and **Rescan**. It reads every `prd.md` and
-surfaces one-fact-stated-two-ways contradictions for the CEO to adjudicate. **Do not decide on the
-user's behalf** — choosing a canonical side is the CEO's gate. Surface what you found and ask.
+surfaces one-fact-stated-two-ways contradictions for the human to adjudicate. **Do not decide on the
+user's behalf** — choosing a canonical side is the human's gate. Surface what you found and ask.
 
 Then stop and report: what the board contains, how many rows are still guesses waiting to be corrected,
 and any contradictions the scan found.

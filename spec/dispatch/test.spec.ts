@@ -75,22 +75,36 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
   await page.screenshot({ path: 'spec/dispatch/screen.png', fullPage: false })
 })
 
-test('R4 — a second job is refused while one runs, not queued silently', async ({ page, request }) => {
+test('R4 — a person\'s second run takes over the running one: accepted, not refused', async ({ request }) => {
   await idle(request)
-  await page.goto(BOARD)
-  await page.locator('.dt[data-i="0"] .runbtn').first().click()
-  await expect(page.locator('#runpanel #rpchip')).toContainText('running')
-  // The panel says "running" the instant you click — that is client-side optimism. Wait for the
-  // SERVER to actually hold the run before racing a second one at it, or the two /api/run calls
-  // (the button's own and this test's) land in an undefined order and either could be the winner.
-  await expect.poll(async () => (await request.get('/api/runs').then((r: any) => r.json())).running,
-    { timeout: 30000 }).not.toBeNull()
+  const first = await startRun(request, { screen: 'board' })
+  expect(first.ok(), 'the first run is accepted').toBeTruthy()
+  // Wait for the SERVER to actually hold the run, and capture WHICH run holds it, before taking it
+  // over — or the two /api/run calls land in an undefined order and the assertion cannot tell them
+  // apart.
+  let firstId = ''
+  await expect.poll(async () => {
+    const j = await request.get('/api/runs').then((r: any) => r.json())
+    firstId = j.runningId || ''
+    return j.running
+  }, { timeout: 30000 }).toBe('board')
+  expect(firstId, 'the first run is holding the slot').toBeTruthy()
 
-  // Two agents editing one wireframe is a corrupted file. The guard is one singleton across every
-  // job kind — a redraft, a scan, a run all refuse each other — proven here with a run.
+  // A person's second job carries NO parent. It is not refused (409) and not queued — it is accepted
+  // and cancels the run holding the slot. Only the holder is cancelled; when this spec is itself a
+  // nested run, the run driving it is an ANCESTOR, never the holder, so it survives the takeover.
   const second = await request.post('/api/run', { data: { screen: 'board' } })
-  expect(second.status()).toBe(409)
-  expect(await second.text()).toMatch(/in progress/i)
+  expect(second.status(), 'a person\'s second job is accepted, not 409').toBe(200)
+  await idle(request)
+
+  // R5: the run it replaced was cancelled — still recorded, marked not-ok, not silently vanished.
+  const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
+  const taken = runs.find((x: any) => x.runId === firstId)
+  expect(taken, 'the taken-over run was recorded, not lost').toBeTruthy()
+  expect(taken.ok, 'a cancelled run is not a pass').toBe(false)
+  // R5: takeover is a cancel — the partial work is left on disk, so the run's log is still readable.
+  const log = await request.get('/spec/_runs/' + firstId + '/run.log')
+  expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
 })
 
 test('R4 — a run may nest inside the run driving it, and nesting is bounded', async ({ request }) => {
@@ -108,10 +122,10 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
   }, { timeout: 30000 }).toBe('board')
   expect(outerId, 'the server names the run holding the slot').toBeTruthy()
 
-  // A person's second job is still refused — the guard R4 exists for is untouched.
-  const human = await request.post('/api/run', { data: { screen: 'board' } })
-  expect(human.status()).toBe(409)
-  // Naming the WRONG run is not a way past it either.
+  // A request that NAMES a parent is only ever a nest attempt, and naming the wrong run is refused —
+  // never a takeover. Takeover is reserved for a job with NO parent (a person); a mis-named nest must
+  // fail loudly rather than cancel a run it might be running inside. (A person's no-parent takeover is
+  // proven in the takeover spec above.)
   const wrong = await request.post('/api/run', { data: { screen: 'board', parent: 'not-the-run' } })
   expect(wrong.status()).toBe(409)
 
@@ -129,28 +143,6 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
     refused = res.status() === 409
   }
   expect(refused, 'nesting stops instead of recursing').toBeTruthy()
-})
-
-test('R4 — a refusal names what is blocking it and leaves a way to clear it', async ({ page, request }) => {
-  // "Refused, not queued silently" is only honest if the refusal is ACTIONABLE. A dead-end message
-  // that disables Cancel tells you that you cannot run, and gives you nothing to do about it —
-  // which is exactly what a person hits when they click Run twice.
-  await idle(request)
-  await page.goto(BOARD)
-  await page.locator('.dt[data-i="0"] .runbtn').first().click()
-  await expect.poll(async () => (await request.get('/api/runs').then((r: any) => r.json())).running,
-    { timeout: 30000 }).not.toBeNull()
-
-  // the second click, while the first is still going
-  await page.locator('.dt[data-i="0"] .runbtn').first().click()
-  const panel = page.locator('#runpanel')
-  await expect(panel.locator('#rpchip')).toContainText('refused')
-  // it NAMES the job in the way, rather than saying only "a run is already in progress"
-  await expect(panel.locator('#rplog')).toContainText('board')
-  // and it says what to do about it
-  await expect(panel.locator('#rplog')).toContainText(/cancel|wait/i)
-  // Cancel stays usable — cancelling the blocking run is how you clear the block from right here
-  await expect(page.locator('#rpcancel')).toBeEnabled()
 })
 
 test('running one screen leaves every other screen\'s E2E result standing', async ({ page, request }) => {
@@ -197,6 +189,24 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   const one = run.shotsByTest[titles[0]]
   expect(typeof one.log, 'the case carries its own log').toBe('string')
   expect(one.log).toMatch(/passed|failed/i)
+})
+
+test('R8 — a run that matched no test is recorded as an error, never 0 of 0 passing', async ({ request }) => {
+  // "0 of 0 passing" reads green, but a run that matched no case proved nothing — the exact thing
+  // that happened when a title with a paren was handed to -g as a regex and quietly matched nothing.
+  // A grep that cannot match anything reproduces it deterministically; the run must come back not-ok
+  // and carry an honest reason, not a benign zero tally.
+  await idle(request)
+  const started = await startRun(request, { screen: 'board', grep: 'zzz-honest-no-match-marker' })
+  expect(started.ok(), 'the run is accepted').toBeTruthy()
+  await idle(request)
+
+  const data = await request.get('/api/runs').then((r: any) => r.json())
+  const run = data.runs.find((x: any) => x.grep === 'zzz-honest-no-match-marker')
+  expect(run, 'the no-match run was recorded').toBeTruthy()
+  expect(run.total, 'it ran zero cases').toBe(0)
+  expect(run.ok, 'a run that tested nothing is not a pass').toBe(false)
+  expect(run.note, 'it says WHY, not "0 of 0 passing"').toMatch(/no tests ran/i)
 })
 
 test('R8 — running ONE case leaves every other case\'s steps and log standing', async ({ page, request }) => {

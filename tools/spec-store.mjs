@@ -44,6 +44,23 @@ export function writeText (path, text) {
 export const esc = s => String(s).replace(/[&<>"]/g,
   c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
 
+// The board's "run one" hands a test's TITLE to Playwright's -g, which is a REGEX. A title with a
+// paren, bracket or dot — "… in-cell (before any Run)" — is then a pattern that does not match its
+// own literal text, so the run finds no test and honestly reports zero cases while looking like it
+// simply had nothing to do. Escaped, -g matches the title verbatim.
+export const reEscape = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// The verdict of a finished test run. A run that tested NOTHING is not a pass: "0 of 0 passing"
+// reads green, but a run that matched no cases (a bad grep, a renamed test, Playwright's own "no
+// tests found") proved nothing and must read as the error it is. So ok requires BOTH a clean exit
+// AND at least one case actually run — never faking a green out of an empty run.
+export function runVerdict (code, total) {
+  return {
+    ok: code === 0 && total > 0,
+    note: total === 0 ? `no tests ran — the run matched no cases (exit ${code})` : null
+  }
+}
+
 // Drafts link the shared sheet relatively so they render standalone over http. Embedded as
 // srcdoc there is no base URL to resolve against, so it is inlined at build time instead.
 // Exported because the BOARD uses it too. The board is one of the screens this tool tracks, so

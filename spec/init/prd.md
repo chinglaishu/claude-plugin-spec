@@ -25,7 +25,7 @@ not a draft review.
 *Corrected 2026-07-27: this said "the draft and screen cells stay unapproved so the loop starts at
 gate A." That was the greenfield-only model. An existing screen already exists, so it is documented
 (PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code
-grew a second mode and the spec had to follow; the meaning the CEO owns — a crawl is a guess to be
+grew a second mode and the spec had to follow; the meaning the human owns — a crawl is a guess to be
 corrected, never canon — is unchanged.*
 
 ## R4 — An empty project is the same flow with nothing found

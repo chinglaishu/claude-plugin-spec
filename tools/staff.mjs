@@ -1,6 +1,6 @@
 // The staff briefing. An agent about to change a screen runs this FIRST, and it prints what
 // governs that screen — the requirements that are the source of truth, whether they are approved
-// or still a guess, which gates are open, what is actually proven, and any contradiction the CEO
+// or still a guess, which gates are open, what is actually proven, and any contradiction the human
 // has not yet settled. A board nobody consults before coding is an expensive lint; this is the
 // half that makes an AI MAINTAIN the truth rather than just display it.
 //
@@ -38,7 +38,7 @@ function briefing (name) {
   // 1 — the requirements, the SSoT
   if (!s.reqs.length) {
     L.push('## ⛔ Ungoverned — no requirement exists for this screen.')
-    L.push('STOP. Do not build here. Ask the CEO for a requirement first — the next person to change')
+    L.push('STOP. Do not build here. Ask the human for a requirement first — the next person to change')
     L.push('this has no statement of how it should work, and that is where the bug is born.')
   } else {
     L.push(`## Requirements — the source of truth (${s.reqs.length})`)
@@ -77,18 +77,18 @@ function briefing (name) {
       L.push(`    ${c.a.source}: ${c.a.quote}`)
       L.push(`    ${c.b.source}: ${c.b.quote}`)
     }
-    L.push('  DO NOT pick a side. Choosing canon is the CEO\'s decision — surface it and stop.')
+    L.push('  DO NOT pick a side. Choosing canon is the human\'s decision — surface it and stop.')
     L.push('')
   }
 
   // 4 — the rules
   L.push('## Before you change this screen')
-  L.push('1. Change the REQUIREMENT first, never the code first. Requirement meaning is the CEO\'s gate.')
+  L.push('1. Change the REQUIREMENT first, never the code first. Requirement meaning is the human\'s gate.')
   L.push('2. For new or changed behaviour, write the failing test first and watch it go red.')
-  L.push('3. Never weaken a test to go green, and never approve a gate on the CEO\'s behalf.')
-  if (!s.reqs.length) L.push('4. There is no requirement here — you cannot proceed. Ask the CEO.')
-  else if (s.guess) L.push('4. This PRD is a guess — get the CEO to correct and approve it before building to it.')
-  else if (open.length) L.push('4. There is an open contradiction here — the CEO must pick canon before you build.')
+  L.push('3. Never weaken a test to go green, and never approve a gate on the human\'s behalf.')
+  if (!s.reqs.length) L.push('4. There is no requirement here — you cannot proceed. Ask the human.')
+  else if (s.guess) L.push('4. This PRD is a guess — get the human to correct and approve it before building to it.')
+  else if (open.length) L.push('4. There is an open contradiction here — the human must pick canon before you build.')
   return L.join('\n')
 }
 
@@ -127,11 +127,11 @@ function stale () {
   for (const s of screens) {
     const why = []
     if (!s.reqs.length) why.push('⛔ ungoverned — no requirement exists; nothing downstream can be trusted')
-    if (s.guess) why.push('⚠ PRD is a guess — the CEO must correct and approve it at gate A')
+    if (s.guess) why.push('⚠ PRD is a guess — the human must correct and approve it at gate A')
     if (['review', 'stale', 'rejected'].includes(s.cells.draft)) why.push(`2 · Draft:  ${cellWord[s.cells.draft]}`)
     if (['review', 'stale'].includes(s.cells.screen)) why.push(`3 · Screen: ${cellWord[s.cells.screen]}`)
     if (['unrun', 'fail', 'ranstale'].includes(s.cells.e2e)) why.push(`4 · E2E:    ${cellWord[s.cells.e2e]}`)
-    if (openBy.has(s.name)) why.push('⚖ open contradiction touching this screen — the CEO picks canon, you must not')
+    if (openBy.has(s.name)) why.push('⚖ open contradiction touching this screen — the human picks canon, you must not')
     if (why.length) rows.push({ name: s.name, why })
   }
   if (!rows.length) {
@@ -145,7 +145,7 @@ function stale () {
   L.push('')
   L.push('Work every item your change left stale — a test still asserting the old behaviour is a false green.')
   L.push('If clearing one needs a requirement decision (picking canon, changing what a REQ means, approving')
-  L.push('a gate), STOP and ask the CEO — never decide it yourself.')
+  L.push('a gate), STOP and ask the human — never decide it yourself.')
   return L.join('\n')
 }
 
@@ -156,7 +156,7 @@ function byFile (path) {
   const hits = allScreens().filter(s => (s.governs || []).some(g => rx(g).test(path)))
   if (!hits.length) {
     return `## ⛔ Nothing on the board governs ${path}\n\nNo screen's PRD declares \`governs:\` covering this file. ` +
-      'Either add a `governs:` glob to the screen this file implements, or ask the CEO for a requirement — ' +
+      'Either add a `governs:` glob to the screen this file implements, or ask the human for a requirement — ' +
       'ungoverned code has no statement of how it should work.'
   }
   return hits.map(s => briefing(s.name)).join('\n\n' + '─'.repeat(70) + '\n\n')

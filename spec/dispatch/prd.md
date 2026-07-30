@@ -19,21 +19,33 @@ clicked again, and the second run fights the first.
 
 The cell the job was fixing changes state in place. If a gate is now due, it opens.
 
-## R4 — One job at a time, except a run nested inside the run that drives it
+## R4 — One job at a time; a person's second job takes over, a nested run shares the slot
 
-A second job started by a person is refused, not queued silently. Two agents editing one wireframe
-is a corrupted file and a confusing diff.
+Only one job runs at a time — two agents editing one wireframe is a corrupted file and a confusing
+diff. So when a person starts a second job while one is running, the running job is **cancelled and
+the new one takes its place** — not queued, and no longer bounced with a refusal the person then has
+to read, Cancel, and re-issue by hand. The cancelled job's partial work is left on disk (R5) and its
+log stays readable.
 
-The one exception is a run started by the run that is already going — a spec proving the run panel
-has to start a run to have anything to prove. It must name the run it is nested in, so a person
-clicking Run twice is still refused; and nesting is **bounded** to a chain short enough that a suite
-which runs itself stops instead of recursing.
+Takeover cancels only the job actually **holding** the slot, never a job it is nested inside. The one
+exception to "one at a time" is still a run started by the run already going — a spec proving the run
+panel has to start a run to have anything to prove. Nesting is checked **first** and never triggers a
+takeover, so a suite that runs itself can never cancel the run executing it: a nested run names the
+run it is nested in, and nesting is **bounded** to a chain short enough that such a suite stops
+instead of recursing. A request that names a parent is only ever a nest attempt — mis-named or too
+deep, it is refused, never a takeover.
 
 *Corrected 2026-07-28: this said "one job per SCREEN at a time", which was never what the code did —
 the slot has always been global. Worse, it made the dispatch row the one row on the board that could
 not be run: clicking Run put the run in the slot, and this spec's first act is to wait for that slot
 to be free, so it waited for itself and timed out at a blank browser window. The nesting exception is
 what makes the board able to run every row, including the one that tests running.*
+
+*Changed 2026-07-29: a person's second job used to be REFUSED; it now takes over the slot
+(cancel-and-run). A refusal the person has to read, then Cancel, then re-issue is three steps to do
+the one thing they plainly meant. The nesting exception is unchanged and is still evaluated before any
+takeover, so it stays impossible for a run to cancel its own parent — only the job holding the slot is
+cancelled, and a nested run's ancestors keep the slot and resume when the takeover job ends.*
 
 ## R5 — Cancel actually stops it
 

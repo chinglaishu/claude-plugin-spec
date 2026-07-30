@@ -98,8 +98,35 @@ const prdFilter = s => {
   </div>`
 }
 
-const para = t => t.split(/\n\s*\n/)
-  .map(p => `<p>${esc(p.replace(/\n/g, ' ')).replace(/\*(.+?)\*/g, '<em>$1</em>')}</p>`).join('')
+// Requirement prose is light markdown: paragraphs, `- ` lists, **bold**, *em*, `code`, plus
+// <!-- author notes --> that are hints for the test author, not requirement text. A PRD is UNTRUSTED
+// (anyone authors one; a crawl reads them off a running app), so every span is HTML-escaped before a
+// tag is emitted — the only tags in the output are the ones this function puts there. Notes and code
+// spans are pulled out FIRST, on the raw text, so their contents are never read as markdown and their
+// delimiters (<!--, `) never reach the page; notes render muted so the prose reads clean without
+// losing the hint. A private-use sentinel marks the holes, chosen because it cannot occur in prose
+// and survives escaping untouched.
+export function renderBody (text) {
+  const holds = []
+  const SENT = ''
+  const stash = html => SENT + (holds.push(html) - 1) + SENT
+  // marks that are safe to run on already-escaped text; ** before * so the double star is consumed
+  // first and never leaves a stray asterisk behind.
+  const inline = s => esc(s)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+  const src = String(text)
+    .replace(/<!--([\s\S]*?)-->/g, (_, c) => stash(`<span class="cmt">${esc(c.trim())}</span>`))
+    .replace(/`([^`]+)`/g, (_, c) => stash(`<code>${esc(c)}</code>`))
+  const out = src.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => {
+    const lines = b.split(/\n/)
+    // a block whose every line is a `- ` item is a list; anything else is a paragraph
+    if (lines.every(l => /^\s*[-*]\s+/.test(l)))
+      return `<ul>${lines.map(l => `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`).join('')}</ul>`
+    return `<p>${inline(b.replace(/\n/g, ' '))}</p>`
+  }).join('')
+  return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
+}
 
 function prdBody (s) {
   const d = s.diff
@@ -114,7 +141,7 @@ function prdBody (s) {
       : esc(r.title)
     return `<article class="${m}"${m ? '' : ' data-unchanged="1"'}>
       <h3><span class="rid">${esc(r.id)}</span><span>${title}</span>${m ? `<span class="chip ${m === 'added' ? 'rev' : 'stale'}">${m === 'added' ? 'new' : 'reworded'}</span>` : ''}</h3>
-      ${para(r.body)}</article>`
+      ${renderBody(r.body)}</article>`
   }).join('')
   const gone = d && d.removed.length
     ? `<article class="removed"><h3><span class="rid"></span><span>${d.removed.map(id => esc(id)).join(', ')} deleted since you approved this</span></h3></article>`
@@ -321,7 +348,7 @@ const WORKFLOW = {
         label: 'then, before &amp; after every change — forever',
         steps: [
           { skill: 'kg-staff', file: 'before any edit', h: 'Run the change discipline',
-            p: 'Find what governs the screen, learn the three times to stop and ask the CEO, and change things in the right order.' },
+            p: 'Find what governs the screen, learn the three times to stop and ask the human, and change things in the right order.' },
           { skill: 'kg-update', file: 'on each release', h: 'Stay current',
             p: 'Bring the vendored board to a new specboard release — untouched files updated, your edits kept, conflicts dropped beside them to merge.' }
         ]
@@ -365,7 +392,7 @@ const howSpineCol = c => c.gate
 // The four skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
 // time from the definitions below rather than fetched. The node/edge geometry and the SVG chevron
 // connectors are computed HERE, in Node, and emitted as static svg/html; nothing is laid out in the
-// browser. Diagram language: rectangle = step · indigo diamond = decision · tinted bar = CEO gate ·
+// browser. Diagram language: rectangle = step · indigo diamond = decision · tinted bar = human gate ·
 // open-chevron connectors carry yes/no branch pills. All hues come from the inlined design tokens.
 // (Ported from the approved skills-flow mockup + its deterministic geometry generator.) This whole
 // block is plain module-level JS — it produces a STRING that howView() interpolates, so its own
@@ -409,7 +436,7 @@ function fStepBody (n) {
 function fGateBody (n) {
   const cmp = n.cmp ? `<div class="cmp mono">${esc(n.cmp)}</div>` : ''
   return `<div ${XH} class="nb gate">
-    <div class="glbl"><span class="dia"></span>CEO GATE · your turn</div>
+    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
     <div class="nb-title ai">${esc(n.title)}</div>
     ${cmp}
   </div>`
@@ -516,7 +543,7 @@ const HOW_FLOWS = [
       { id: 'r5', type: 'gate', cx: HOW_Rx, top: 810, w: 250, h: 68, title: 'Gate B · did you build it?', cmp: 'draft.html ↔ screen.png' },
       { id: 'r6', type: 'step', cx: HOW_Rx, top: 912, w: 214, h: 58, title: 'Prove it', tags: ['kg-e2e → screen.png'] },
       { id: 'm1', type: 'step', cx: HOW_Cx, top: 1016, w: 214, h: 54, title: 'Conflicts scan', tags: ['cross-screen'] },
-      { id: 'm2', type: 'gate', cx: HOW_Cx, top: 1100, w: 272, h: 68, title: 'CEO adjudicates conflicts' }
+      { id: 'm2', type: 'gate', cx: HOW_Cx, top: 1100, w: 272, h: 68, title: 'Human adjudicates conflicts' }
     ],
     captions: [],
     edges: [
@@ -579,9 +606,9 @@ const HOW_FLOWS = [
     nodes: [
       { id: 'st1', type: 'step', cx: HOW_Cx, top: 16, w: 272, h: 54, title: 'Read what governs the screen', tags: ['staff briefing'] },
       { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 124, title: 'Which case is the screen in?' },
-      { id: 'a1', type: 'gate', cx: 170, top: 316, w: 234, h: 86, title: 'Ask CEO for a requirement' },
-      { id: 'a2', type: 'gate', cx: 462, top: 316, w: 234, h: 86, title: 'CEO corrects + approves', cmp: 'Gate A' },
-      { id: 'a3', type: 'gate', cx: 754, top: 316, w: 234, h: 86, title: 'CEO picks the canonical side' },
+      { id: 'a1', type: 'gate', cx: 170, top: 316, w: 234, h: 86, title: 'Ask the human for a requirement' },
+      { id: 'a2', type: 'gate', cx: 462, top: 316, w: 234, h: 86, title: 'Human corrects + approves', cmp: 'Gate A' },
+      { id: 'a3', type: 'gate', cx: 754, top: 316, w: 234, h: 86, title: 'Human picks the canonical side' },
       { id: 'a4', type: 'step', cx: 1046, top: 316, w: 212, h: 86, title: 'Governed & settled', state: 'settled', note: 'proceed' },
       { id: 'o1', type: 'gate', cx: HOW_Cx, top: 480, w: 300, h: 66, title: '1 · Requirement FIRST', cmp: 'you own meaning' },
       { id: 'o2', type: 'step', cx: HOW_Cx, top: 584, w: 234, h: 54, title: '2 · Write the failing test', tags: ['watch it go red'] },
@@ -754,7 +781,7 @@ const howView = () => `<section class="dt" id="howview" hidden>
           <div class="flow-legend legend">
             <span class="chip"><span class="mk o"></span>step / artifact</span>
             <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
-            <span class="chip rev"><span class="mk d"></span>CEO gate — your turn</span>
+            <span class="chip rev"><span class="mk d"></span>human gate — your turn</span>
             <span class="chip run"><span class="mk"></span>running — a job in flight</span>
             <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
             <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
@@ -1092,6 +1119,16 @@ export function build () {
     width:20px; flex:none; padding-top:3px; }
   .prd p { margin:0 0 var(--s2) 28px; font-size:var(--t-sm); line-height:1.75; color:var(--ink-2); }
   .prd em { color:var(--ink-4); font-style:normal; font-size:var(--t-xs); }
+  .prd ul { margin:0 0 var(--s2) 28px; padding-left:var(--s4); font-size:var(--t-sm);
+    line-height:1.75; color:var(--ink-2); }
+  .prd li { margin:0 0 2px; }
+  .prd strong { font-weight:600; color:var(--ink); }
+  .prd code { font-family:var(--mono); font-size:var(--t-xs); background:var(--sunk);
+    border:1px solid var(--hair); border-radius:var(--r-sm); padding:1px 5px; color:var(--ink-2); }
+  /* An author's <!-- note --> is a hint for the test author, not requirement prose — kept, but
+     visibly secondary so the requirement reads clean. */
+  .prd .cmt { font-family:var(--mono); font-size:var(--t-micro); color:var(--ink-3);
+    background:var(--wash); border-radius:var(--r-sm); padding:0 5px; white-space:pre-wrap; }
   .bigframe { overflow:hidden; position:relative; }
   .bigframe iframe { width:${CANVAS_W}px; height:${CANVAS_H}px; border:0; transform-origin:top left; }
 
@@ -2122,7 +2159,7 @@ ${detail}
   }
 
   function foundRow (r) {
-    // 'yours' — a real PRD the CEO wrote — is never touched; a guessed row already on the board is
+    // 'yours' — a real PRD the human wrote — is never touched; a guessed row already on the board is
     // still a guess; a route with no screen yet is new. R5: rerunning leaves settled work alone.
     const state = r.mine ? 'yours' : r.exists ? 'a guess, already on board' : 'new'
     const thumb = r.exists || r.slug
@@ -2530,7 +2567,11 @@ ${detail}
         if (r.screen !== screen && r.screen !== 'all') continue
         for (const title of Object.keys(r.shotsByTest || {})) {
           if (!rec[title]) rec[title] = []
-          if (rec[title].length < 10) rec[title].push(r.shotsByTest[title])
+          // carry the runId (and whether a whole-log file exists) so the case's log can link out to
+          // the WHOLE run log — the per-case log is that case's stdout/stderr/error (bounded); run.log
+          // is the entire process output, including globalSetup / seed output and the untruncated tail,
+          // which the per-case view never had. A CLI run has no run.log, so the link is withheld.
+          if (rec[title].length < 10) rec[title].push({ ...r.shotsByTest[title], runId: r.runId, hasLog: !!r.hasLog })
         }
       }
       const panel = box.closest('.e2e')
@@ -2571,8 +2612,13 @@ ${detail}
           const took = h.ms != null ? Math.round(h.ms) + 'ms' : ''
           const sha = h.commit ? ' · ' + eh(h.commit) : ''
           const mark = h.ok === false ? 'o' : ''
+          // link to the WHOLE run log — the complete process output for the run this case ran in, not
+          // just this case's bounded stdout. Only a board-started run writes run.log, so link only when
+          // that file exists; a CLI run has none and simply shows its per-case log.
+          const whole = (h.hasLog && h.runId) ? ' · <a class="wholelog" href="/spec/_runs/' + eh(h.runId) +
+            '/run.log" target="_blank" rel="noopener">whole run log ↗</a>' : ''
           return '<li><div class="lgh"><span class="mark ' + mark + '"></span>' +
-            eh(when) + ' · ' + eh(took) + sha + '</div><pre>' + eh(h.log) + '</pre></li>'
+            eh(when) + ' · ' + eh(took) + sha + whole + '</div><pre>' + eh(h.log) + '</pre></li>'
         }).join('')
         slot.innerHTML = '<details class="logbox"><summary>full log · last ' + hist.length +
           ' run' + (hist.length === 1 ? '' : 's') + '</summary><ol class="lghist">' + runs + '</ol></details>'

@@ -27,7 +27,7 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
   const view = page.locator('#initview')
   await expect(view).toBeVisible()
 
-  // the CEO explicitly asked to be able to point at an ALREADY-RUNNING server rather than always
+  // the human explicitly asked to be able to point at an ALREADY-RUNNING server rather than always
   // starting one — so the mode is a real choice, and it has to survive
   await view.locator('#initmode [data-mode="attach"]').click()
   await view.locator('#initurl').fill('http://localhost:3000')
@@ -77,7 +77,7 @@ test('R3 — a crawled screen lands as a document-mode row: a guess, accepted no
       await page.goto('/')
       await expect(row).toHaveCount(1)
     }).toPass({ timeout: 15000 })
-    // visibly a guess — different from a PRD the CEO wrote — and waiting on you to accept it
+    // visibly a guess — different from a PRD the human wrote — and waiting on you to accept it
     await expect(row.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
     expect(await row.getAttribute('data-waiting')).toBe('1')
     // document mode: no wireframe, and the CURRENT screen is shown — not the greenfield "not started"

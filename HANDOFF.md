@@ -26,11 +26,11 @@ content hash. Two human gates: **gate A** (PRD vs draft — "is this what I mean
 
 The tool **dogfoods itself**: its own six screens are the rows on its own board.
 
-The human is the CEO. They approve requirement *meaning*; you do everything else. Do not ask
+The human decides what things mean. They approve requirement *meaning*; you do everything else. Do not ask
 permission to work. When a decision is genuinely theirs (new requirement, changed requirement,
 picking a canonical side in a conflict), stop and ask — otherwise decide and move.
 
-**The CEO's stated preferences** (learned the hard way this session):
+**The human's stated preferences** (learned the hard way this session):
 - Visual over prose. Show a screenshot or a diagram, not paragraphs.
 - Be critical and honest. Say what is broken and what you did not do.
 - Never take control away from the user (no auto-advancing after a verdict, etc).
@@ -211,7 +211,7 @@ Rules that were learned by getting them wrong:
   screen details — do not collide.
 - Add the header button the design already specifies (`spec/board/draft.html` has `Conflicts 2`).
   Show the open count. This drift — design has it, build does not — is exactly what gate B would
-  have caught if the row had a screenshot; it only surfaced because the CEO asked.
+  have caught if the row had a screenshot; it only surfaced because the human asked.
 - Render each finding: subject, both positions quoted in full with their source, blast radius,
   a radio to pick canon, and a note field. Follow `spec/conflicts/draft.html` — it is the
   approved-then-redrafted design and includes per-row **Undo** on settled items.
@@ -223,7 +223,7 @@ Rules that were learned by getting them wrong:
 ### C · The Init page
 - Route `#init`. Form: how to start the app, its base URL, which routes matter, optional sign-in
   script. Persist to `spec/_config.json`.
-- **The CEO explicitly asked that this let you point at an already-running dev server** by port /
+- **The human explicitly asked that this let you point at an already-running dev server** by port /
   URL rather than always starting one. `playwright.board.ts` already honours `BOARD_URL` and
   `BOARD_PORT`; surface the same choice here and write it into the config.
 - Crawl: visit each route with Playwright, screenshot it, then a `runJob` drafts a `prd.md` per
@@ -242,7 +242,7 @@ Rules that were learned by getting them wrong:
 
 ### E · Finish
 - `npm run e2e` green **three times in a row from a dirty state**.
-- Then the CEO's standing request: run the whole tool end to end, clicking every control, three
+- Then the human's standing request: run the whole tool end to end, clicking every control, three
   times over — flow, then debugging, then design/layout — being critical and honest each pass.
 - Delete v1: `src/` (13k lines), `viewer.template.html`, `knowledge-graph/`, `fixtures/`,
   `scripts/`, `hooks/`, and 7 of the 8 `skills/` (keep the `kg-init` name). Archive
@@ -263,7 +263,7 @@ npm run e2e                   # full suite
 node tools/build-board.mjs    # rebuild only
 ```
 
-Open in the CEO's **real Chrome**, never the preview pane, and force a reload after a hash change.
+Open in the human's **real Chrome**, never the preview pane, and force a reload after a hash change.
 
 Contrast probe — run in the page console after any colour change; it must return `[]`:
 

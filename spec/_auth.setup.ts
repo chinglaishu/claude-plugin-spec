@@ -22,7 +22,7 @@ setup('authenticate', async ({ page }) => {
   const script = String(cfg.signIn || '').trim()
   if (!script) throw new Error('no signIn in spec/_config.json — the setup project should not run without it')
 
-  // The CEO's script, run verbatim against the live app. It MUST type into fields
+  // The human's script, run verbatim against the live app. It MUST type into fields
   // (pressSequentially, or click + type), never page.fill(): controlled React inputs (react-hook-form
   // and friends) ignore fill()'s programmatic value and submit EMPTY, leaving you on /login. kg-e2e
   // says the same. Signing in first also means /login redirects away and cannot be a document-mode

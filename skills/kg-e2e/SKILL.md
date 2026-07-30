@@ -74,7 +74,7 @@ test('R2 — <the behaviour R2 names>', async ({ page }) => {
 - **A document-mode / characterization screen** (an existing screen kg-init crawled): navigate the
   **real running app** at its route, taken from `spec/_config.json` (`baseUrl` + the screen's
   `route`). The screenshot is then the app as it actually is, and the assertions lock in its current
-  behaviour as the baseline. The guessed PRD gives that baseline meaning: when the CEO corrects the
+  behaviour as the baseline. The guessed PRD gives that baseline meaning: when the human corrects the
   PRD to say the behaviour *should* differ, you update the test to the corrected PRD — and its
   failing against the current app is then a real bug surfaced, which is the point.
 

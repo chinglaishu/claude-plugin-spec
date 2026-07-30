@@ -1,4 +1,4 @@
-// Shipping a run's screenshots and video somewhere other than this repo. Two destinations the CEO
+// Shipping a run's screenshots and video somewhere other than this repo. Two destinations the human
 // asked for: a git branch (versioned, shareable through the host) and a bucket (survives the
 // local prune, shareable by URL). Both are BEST EFFORT — a shipping failure logs and falls back to
 // the local copy; it never fails the run, because the record is a convenience and the verdict is not.
@@ -11,10 +11,10 @@ import { tmpdir } from 'node:os'
 const git = (args, cwd) =>
   execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] }).toString().trim()
 
-// Commit the run's record onto a branch, in an ISOLATED worktree so the working tree the CEO (and
+// Commit the run's record onto a branch, in an ISOLATED worktree so the working tree the human (and
 // any other agent) is using is never touched. Pushing to origin is an OUTWARD action, so it is
 // off unless explicitly asked for (Setup's "push to origin"): the default commits locally to the
-// branch, versioned and safe, and the CEO pushes when they mean to.
+// branch, versioned and safe, and the human pushes when they mean to.
 export function shipToGit (recordDir, runId, branch, root, push = false) {
   if (!branch) return { ok: false, error: 'no branch name set' }
   const wt = join(tmpdir(), `specboard-shots-${process.pid}-${runId}`)

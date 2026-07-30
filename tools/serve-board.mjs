@@ -14,7 +14,7 @@ import {
   ROOT, SPEC, readScreen, readState, writeState, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson, writeText,
-  RUNS, readRuns, recordRunEntry
+  RUNS, readRuns, recordRunEntry, reEscape, runVerdict
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
@@ -179,6 +179,25 @@ function cancelJob (runId) {
   return running.screen
 }
 
+// Releasing the slot when a job ends. A job that was TAKEN OVER (R4) must record itself but NOT touch
+// the slot — the run that took over already holds it — so its close asks this instead of clearing
+// `running` by hand. For every other job the slot passes back to the run it was nested in, or to
+// nobody. runStack is only ever non-empty for runs, so a plain job pops nothing and this reads null.
+function releaseSlot (job) {
+  if (job && job.superseded) return
+  running = runStack.pop() || null
+}
+
+// A person's second RUN takes the slot from the run holding it (R4, cancel-and-run). Only ever called
+// when the holder is a test run: the run is cancelled (R5 — its partial work and log are kept) and
+// marked superseded so its close will not release the slot back over the new run. runStack is left
+// alone, so a taken-over NESTED run's ancestors keep the slot and resume once the new run ends — which
+// is why a suite that runs itself can never be cancelled by a takeover of one of its nested runs.
+function takeover () {
+  running.superseded = true
+  cancelJob(running.runId)
+}
+
 // The comparison surface is every PRD in the project. The model adjudicates a bounded set of real
 // documents — it is never asked to go hunting the tree for something interesting.
 function scanPrompt () {
@@ -269,7 +288,7 @@ function rewritePrompt (finding) {
   return [
     `Rewrite exactly one file: ${sideFile(lost)}`,
     '',
-    'Two requirement documents contradict each other. The CEO has chosen which one is canon.',
+    'Two requirement documents contradict each other. The human has chosen which one is canon.',
     `The subject is: ${finding.subject}`,
     '',
     `## Canon — do NOT change this, it is the answer (${won.source})`,
@@ -278,7 +297,7 @@ function rewritePrompt (finding) {
     `## Wrong — this is the claim you must remove (${lost.source})`,
     lost.quote,
     '',
-    note ? `## The CEO's note on the decision\n\n${note}\n` : '',
+    note ? `## The human's note on the decision\n\n${note}\n` : '',
     `Edit ${sideFile(lost)} so it agrees with the canon above. Change ONLY the sentences that`,
     'state the losing claim. Keep the frontmatter, keep every requirement id, keep the voice and',
     'the formatting of the surrounding document, and do not add, delete or renumber requirements.',
@@ -351,7 +370,7 @@ function crawlDraftPrompt (routes, cfg = {}) {
     '',
     'Then `## R<n> — <behaviour>` blocks — ONE per meaningful behaviour, each naming the concrete',
     'elements (put their data-testids in an HTML comment). The `guess: true` line is not optional: this',
-    'is a proposal for the CEO to correct, never canon. Do not remove it, and do not approve anything.',
+    'is a proposal for the human to correct, never canon. Do not remove it, and do not approve anything.',
     '',
     'Routes to draft (skip any file that already exists — its screen is already on the board):',
     list,
@@ -521,19 +540,29 @@ function decideConflict ({ key, canon, note, undo }) {
 }
 
 function startRun (screen, opts = {}) {
-  // R4: the slot is global, and a person's second job is refused. The ONE exception is the run that
-  // is already holding the slot asking to nest — a spec that proves the run panel has to start a run
-  // to have anything to prove, and without this the dispatch row is the only row the board cannot
-  // run (it would wait for the slot its own run is holding, which is the blank-browser hang).
-  // The caller must NAME the run it is nested in, so a person clicking Run twice is still refused,
-  // and nesting stops at one level so a suite that runs itself cannot recurse.
+  // R4: the slot is global. A request that NAMES a parent is a run asking to NEST — the run already
+  // holding the slot proving the run panel by starting a run of its own; without it the dispatch row
+  // is the one row the board cannot run (it would wait for the slot its own run holds — the blank
+  // browser hang). A request with NO parent is a person's second job: it does not queue and is no
+  // longer refused — it TAKES OVER, cancelling the run in the slot and taking its place.
   if (running) {
     const parent = String(opts.parent || '')
-    // Bounded, not unlimited: a chain this short cannot recurse, and it leaves room for the case
-    // that matters — the board runs a spec (1) which starts a run of its own (2).
-    const mayNest = parent && parent === running.runId && runStack.length < 2
-    if (!mayNest) throw new Error('a run is already in progress')
-    runStack.push(running)
+    if (parent) {
+      // A named request is only ever a nest attempt. Nest if it names the current holder and the
+      // chain is still short enough (bounded so a suite that runs itself cannot recurse); otherwise
+      // REFUSE — a mis-named or too-deep nest must fail loudly, never take over a run it might be
+      // running inside.
+      const mayNest = parent === running.runId && runStack.length < 2
+      if (!mayNest) throw new Error('a run is already in progress')
+      runStack.push(running)
+    } else if (running.kind === 'tests') {
+      // A person's second run takes over the run in the slot (cancel-and-run).
+      takeover()
+    } else {
+      // The slot is held by an agent job (a redraft, a scan, a crawl). Those run for minutes, so a
+      // stray Run must not discard them — refused, with the panel telling you to Cancel it first.
+      throw new Error('a job is already in progress')
+    }
   }
   const args = ['playwright', 'test', '--config=playwright.board.ts']
   // the only interpolated value, and it is checked against real directories before it is used
@@ -541,7 +570,9 @@ function startRun (screen, opts = {}) {
   // ONE test, not the whole file. Passed as its own argv entry, never interpolated into a shell
   // string, so a title with quotes or spaces in it cannot become anything but a grep pattern.
   const grep = String(opts.grep || '').trim()
-  if (grep) args.push('-g', grep)
+  // -g is a REGEX; the board passes a literal test title, so escape it or a title with a paren or
+  // bracket becomes a pattern that misses its own text and the run finds no test (dispatch R8).
+  if (grep) args.push('-g', reEscape(grep))
   // Headed: the browser opens and you watch the test drive the app. This is what "watch it run"
   // means to a person — the file-watcher that re-runs on save is a different feature entirely.
   if (opts.headed) args.push('--headed')
@@ -585,8 +616,10 @@ function startRun (screen, opts = {}) {
   // Captured, not read off `running` at close: with nesting there can be two live runs, and the
   // slot holds the innermost — so a run must name itself from a local, never from the global.
   const myScreen = screen || 'all'
-  running = { screen: myScreen, started, child, kind: 'tests', runId }
-  push('run', { state: 'started', screen: myScreen })
+  const myJob = (running = { screen: myScreen, started, child, kind: 'tests', runId })
+  // runId travels with the start event so a page can tell its OWN run from one that took over: a
+  // superseded run's 'done' arriving after the replacement started must not flip the live panel.
+  push('run', { state: 'started', screen: myScreen, runId })
 
   // R6: keep the WHOLE log, not just the lines that scrolled past. Accumulate every byte the run
   // printed; on close it is written beside the run's other artifacts so it can be read back in full
@@ -609,8 +642,11 @@ function startRun (screen, opts = {}) {
     const totals = Object.values(fresh).reduce(
       (a, r) => ({ total: a.total + r.total, failed: a.failed + r.failed }), { total: 0, failed: 0 })
     // R6: write the whole log into this run's own record dir, so the prune that caps the run log
-    // takes it away with everything else the run produced. FORCE_COLOR=0 already keeps it clean.
-    try { writeFileSync(join(recordDir, 'run.log'), log.replace(/\x1b\[[0-9;]*m/g, '')) } catch { /* best effort: a missing log never fails a run */ }
+    // takes it away with everything else the run produced. FORCE_COLOR=0 already keeps it clean. A
+    // board-started run has one; a CLI run (npm run e2e) has no record dir and so none — the entry
+    // says which, so the board only offers the "whole run log" link when there is a file behind it.
+    let hasLog = false
+    try { writeFileSync(join(recordDir, 'run.log'), log.replace(/\x1b\[[0-9;]*m/g, '')); hasLog = true } catch { /* best effort: a missing log never fails a run */ }
     let shotsByTest = collectRecord(recordDir)
     // Ship the record where Setup says, if anywhere but local. Best effort: a failure records the
     // reason on the run and keeps the local copy, and never touches the verdict.
@@ -624,6 +660,10 @@ function startRun (screen, opts = {}) {
       // point the board at the bucket copies, which outlive the local prune
       if (r.ok) shotsByTest = r.shotsByTest
     }
+    // A run that matched no case proved nothing — never a green. runVerdict decides ok (a clean exit
+    // AND at least one case) and attaches the honest "no tests ran" line so the panel and the run log
+    // say what happened instead of "0 of 0 passing", which reads as success.
+    const verdict = runVerdict(code, totals.total)
     const entry = {
       at: new Date(started).toISOString(),
       screen: myScreen,
@@ -632,8 +672,12 @@ function startRun (screen, opts = {}) {
       grep: grep || null,
       ms: Date.now() - started,
       ...totals,
-      ok: code === 0,
+      ok: verdict.ok,
+      note: verdict.note,
       runId,
+      // whether spec/_runs/<runId>/run.log exists — so the board offers the whole-log link only when
+      // there is a file behind it (a CLI run has none).
+      hasLog,
       // what each test SAW, keyed by title — the record is only useful if it can be looked at,
       // and only trustworthy if you can tell which test it belongs to
       shotsByTest,
@@ -990,7 +1034,7 @@ const server = createServer(async (req, res) => {
     return
   }
 
-  // Recording a decision is instant and always allowed — it is the CEO's answer, and it must not
+  // Recording a decision is instant and always allowed — it is the human's answer, and it must not
   // be able to fail because some unrelated job happens to be running.
   if (url.pathname === '/api/conflict' && req.method === 'POST') {
     try {

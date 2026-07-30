@@ -75,7 +75,7 @@ async function main () {
   const browser = await chromium.launch()
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } })
 
-  // sign-in, if the app needs it: the CEO's script runs against the live page BEFORE crawling, so
+  // sign-in, if the app needs it: the human's script runs against the live page BEFORE crawling, so
   // routes behind auth are reachable. It is their code, run verbatim. Two things bite here:
   //  - the script must TYPE into fields (pressSequentially, or click + type), never page.fill():
   //    controlled React inputs (react-hook-form and friends) ignore fill()'s programmatic value and
@@ -88,7 +88,7 @@ async function main () {
   }
 
   // Explicit routes, or discover from the root by collecting same-origin links. Discovery is
-  // deliberately shallow — one hop from the root — because a guess the CEO has to correct is worth
+  // deliberately shallow — one hop from the root — because a guess the human has to correct is worth
   // more when there are five of them than five hundred.
   let routes = cfg.routes.length ? cfg.routes : await discover(page, base)
   routes = [...new Set(routes.map(normalise))].slice(0, 60)
@@ -131,7 +131,7 @@ const normalise = r => {
 // Discover routes by following same-origin links, BFS to a small depth. One hop from the root only
 // ever finds the TOP NAV; a real app hides most of itself a click deeper — an entity list links to
 // entity pages, a section to its sub-tabs. So we go two levels by default, capped, because a guess
-// the CEO must correct is worth more when there are a few dozen than a few hundred.
+// the human must correct is worth more when there are a few dozen than a few hundred.
 //
 // What this CANNOT find: entity-scoped routes with a concrete id (/thing/42/scenario) unless the app
 // links to one, and features reached by a CLICK rather than a link (wizards, modals, sub-tabs behind

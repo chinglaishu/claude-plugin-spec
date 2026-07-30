@@ -1,13 +1,13 @@
 ---
 name: kg-staff
-description: Use BEFORE changing any screen or the code that implements it in a specboard project. You are staff maintaining the source of truth — this tells you how to find what governs a screen, the three times to stop and ask the CEO, and the order a change must happen in. Run it first; do not code from memory of the board.
+description: Use BEFORE changing any screen or the code that implements it in a specboard project. You are staff maintaining the source of truth — this tells you how to find what governs a screen, the three times to stop and ask the human, and the order a change must happen in. Run it first; do not code from memory of the board.
 ---
 
-# You are staff. The human is the CEO.
+# You are staff. The human decides what things mean.
 
 A specboard project keeps its requirements as the visible source of truth: every screen is a row —
 PRD → wireframe → screenshot → test — and the board derives, never stores, whether each is still
-true. **You maintain that truth. You do not decide what it should say.** The CEO owns requirement
+true. **You maintain that truth. You do not decide what it should say.** The human owns requirement
 *meaning*; you do everything else, and you do not code from memory of the board — you read it first.
 
 ## 1. Before you touch a screen, read what governs it
@@ -20,29 +20,29 @@ node tools/staff.mjs --file <path>      # which screen governs a source file (ne
 
 The briefing tells you the screen's **requirements** (the SSoT), whether they are **approved** or
 still a **guess**, which **gates are open**, what is actually **proven by a test**, and any
-**contradiction** the CEO has not settled. Read it before the first line of code.
+**contradiction** the human has not settled. Read it before the first line of code.
 
-## 2. Stop and ask the CEO in exactly three cases
+## 2. Stop and ask the human in exactly three cases
 
 - **Nothing governs it.** The briefing says `⛔ Ungoverned` — no requirement exists. **Stop.** Do
-  not write code the next person has no guideline for. Ask the CEO for a requirement (offer to draft
+  not write code the next person has no guideline for. Ask the human for a requirement (offer to draft
   one with `kg-spec`, marked unapproved, for them to correct).
 - **The requirement is a guess.** The briefing says `⚠ guess` — it was read off a crawl, not written.
-  It cannot be trusted until the CEO corrects and approves it at gate A. A requirement read off an
+  It cannot be trusted until the human corrects and approves it at gate A. A requirement read off an
   implementation records the implementation's bugs as intent.
 - **Two sources disagree.** The briefing shows an `⚖ open contradiction`. **Never pick a side** —
-  choosing canon is a requirement decision. Surface both quotes to the CEO and stop.
+  choosing canon is a requirement decision. Surface both quotes to the human and stop.
 
 Everything else, decide and move.
 
 ## 3. The order a change must happen in
 
 1. **Change the requirement first, never the code first.** If behaviour should change, the PRD text
-   changes first — and changed requirement *meaning* is the CEO's gate, so propose it, don't commit it.
+   changes first — and changed requirement *meaning* is the human's gate, so propose it, don't commit it.
 2. **Write the failing test first** for new or changed behaviour, and watch it go red. A test written
    after the code can only confirm it, never contradict it.
 3. **Make it pass without weakening the test.** Never skip, delete, or loosen an assertion to go
-   green; never approve a gate on the CEO's behalf.
+   green; never approve a gate on the human's behalf.
 4. **Correct the doc in place, with the reason attached.** When the code teaches you a requirement was
    wrong, fix the requirement and say why — conforming a doc silently to the code is how a requirement
    quietly becomes false.
@@ -52,7 +52,7 @@ Everything else, decide and move.
    silence. Decide which is wrong, the test or the code (never just re-baseline to go green). If the new
    numbers are intended: update the seed (`spec/_seed.ts`) when the inputs changed, re-capture
    `golden.json` against the re-seeded app, and update the values the PRD names. Because those named
-   numbers are requirement *meaning*, that update is the CEO's gate — propose it, don't self-approve it.
+   numbers are requirement *meaning*, that update is the human's gate — propose it, don't self-approve it.
 
 ## 4. After the change, close the loop — your edit rippled
 
@@ -65,7 +65,7 @@ cannot catch on its own. Before you call the work done:
    one screen you touched says nothing about the ones you did not.
 2. **Re-run the conflict scan.** Your new requirement text may now contradict another feature's PRD.
    Trigger it from the board's **Scan** action (`POST /api/scan`) — it re-reads every PRD and surfaces
-   any new contradiction for the CEO to settle. (It is an agent job: it needs a valid `claude` login
+   any new contradiction for the human to settle. (It is an agent job: it needs a valid `claude` login
    and takes minutes.)
 3. **Run the stale worklist and clear every item your edit caused.**
    ```bash
@@ -74,7 +74,7 @@ cannot catch on its own. Before you call the work done:
    A stale test still asserting the old behaviour is a false green — do not leave it. Re-run, re-shoot,
    re-draft until nothing on the list traces back to your change.
 4. **If clearing an item needs a requirement decision, stop and escalate.** Picking the canonical side
-   of a conflict, changing what a requirement *means*, or approving a gate are the CEO's — never decide
+   of a conflict, changing what a requirement *means*, or approving a gate are the human's — never decide
    one to make the list go quiet. These are the same three stops as section 2; they do not stop
    applying just because you are nearly done.
 
