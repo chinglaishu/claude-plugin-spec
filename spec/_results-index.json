@@ -6,7 +6,7 @@
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 168,
+        "ms": 170,
         "error": null,
         "line": 19,
         "reqs": {
@@ -16,7 +16,7 @@
       {
         "title": "The detail opens as two independent columns",
         "ok": true,
-        "ms": 119,
+        "ms": 129,
         "error": null,
         "line": 35,
         "reqs": {
@@ -26,7 +26,7 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 210,
+        "ms": 201,
         "error": null,
         "line": 54,
         "reqs": {
@@ -36,7 +36,7 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 459,
+        "ms": 429,
         "error": null,
         "line": 75,
         "reqs": {
@@ -46,7 +46,7 @@
       {
         "title": "Hovering a test lights up the requirements it covers",
         "ok": true,
-        "ms": 189,
+        "ms": 190,
         "error": null,
         "line": 108,
         "reqs": {
@@ -56,7 +56,7 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 131,
+        "ms": 165,
         "error": null,
         "line": 124,
         "reqs": {
@@ -66,7 +66,7 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 97,
+        "ms": 99,
         "error": null,
         "line": 144,
         "reqs": {
@@ -76,7 +76,7 @@
       {
         "title": "No acceptance gate — the detail is the two columns, nothing to accept",
         "ok": true,
-        "ms": 111,
+        "ms": 114,
         "error": null,
         "line": 156,
         "reqs": {
@@ -86,7 +86,7 @@
       {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 140,
+        "ms": 149,
         "error": null,
         "line": 174,
         "reqs": {
@@ -96,7 +96,7 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 201,
+        "ms": 212,
         "error": null,
         "line": 189,
         "reqs": {
@@ -104,7 +104,7 @@
         }
       }
     ],
-    "ranAt": 1785406022152
+    "ranAt": 1785466927873
   },
   "conflicts": {
     "total": 5,
@@ -160,7 +160,7 @@
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 5345,
+        "ms": 22144,
         "error": null,
         "line": 63,
         "reqs": {}
@@ -168,7 +168,7 @@
       {
         "title": "R4 — a person's second run takes over the running one: accepted, not refused",
         "ok": true,
-        "ms": 105,
+        "ms": 122,
         "error": null,
         "line": 85,
         "reqs": {}
@@ -176,7 +176,7 @@
       {
         "title": "R4 — a run may nest inside the run driving it, and nesting is bounded",
         "ok": true,
-        "ms": 1003,
+        "ms": 999,
         "error": null,
         "line": 117,
         "reqs": {}
@@ -184,7 +184,7 @@
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 5038,
+        "ms": 5075,
         "error": null,
         "line": 155,
         "reqs": {}
@@ -192,7 +192,7 @@
       {
         "title": "R6/R8 — a run saves its whole log, and records every test case on its own",
         "ok": true,
-        "ms": 148,
+        "ms": 941,
         "error": null,
         "line": 172,
         "reqs": {}
@@ -200,7 +200,7 @@
       {
         "title": "R8 — a run that matched no test is recorded as an error, never 0 of 0 passing",
         "ok": true,
-        "ms": 1923,
+        "ms": 1928,
         "error": null,
         "line": 201,
         "reqs": {}
@@ -208,7 +208,7 @@
       {
         "title": "R8 — running ONE case leaves every other case's steps and log standing",
         "ok": true,
-        "ms": 6137,
+        "ms": 6171,
         "error": null,
         "line": 219,
         "reqs": {}
@@ -216,7 +216,7 @@
       {
         "title": "R8 — a case keeps a LOG HISTORY, folded across runs",
         "ok": true,
-        "ms": 6059,
+        "ms": 6121,
         "error": null,
         "line": 250,
         "reqs": {}
@@ -224,7 +224,7 @@
       {
         "title": "R8 — EVERY case that has run can expand its steps, not only the one you clicked",
         "ok": true,
-        "ms": 5472,
+        "ms": 5445,
         "error": null,
         "line": 284,
         "reqs": {}
@@ -232,7 +232,7 @@
       {
         "title": "R7 — the run panel offers no background run",
         "ok": true,
-        "ms": 88,
+        "ms": 94,
         "error": null,
         "line": 312,
         "reqs": {}
@@ -240,7 +240,7 @@
       {
         "title": "R7 — the panel and its log stay on screen after the run ends",
         "ok": true,
-        "ms": 8085,
+        "ms": 8100,
         "error": null,
         "line": 320,
         "reqs": {}
@@ -248,13 +248,13 @@
       {
         "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
         "ok": true,
-        "ms": 89,
+        "ms": 95,
         "error": null,
         "line": 337,
         "reqs": {}
       }
     ],
-    "ranAt": 1785406022152
+    "ranAt": 1785466841908
   },
   "init": {
     "total": 6,

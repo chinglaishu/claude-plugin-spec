@@ -395,7 +395,7 @@ ins { color:var(--koke); text-decoration:none; }
   .tbody { display:none; padding:0 var(--s4) var(--s3); }
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
-  .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
+  .rec { position:relative; width:220px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
     border:1px solid var(--hair-2); overflow:hidden; cursor:default;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }
   /* a still cover is playable ONLY when a run captured a video; otherwise it is honestly a still */
@@ -412,12 +412,9 @@ ins { color:var(--koke); text-decoration:none; }
   .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
     background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
   .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
-  .test .tacts { opacity:1; margin-left:0; }
-  /* aligned with the steps fold (both indented 14px) so the two read as one list, and NO toggle
-     chevron — it opens a window, it does not expand in place */
-  .loglink { font:var(--t-xs) var(--sans); color:var(--ai); cursor:pointer; display:inline-flex;
-    gap:6px; align-items:center; margin:var(--s3) 0 0 14px; }
-  .loglink:hover { text-decoration:underline; }
+  .test .tacts { opacity:1; margin-left:0; display:inline-flex; gap:var(--s2); }
+  /* full log rides the actions row as a bordered button beside Watch — NOT indigo (indigo is
+     "your turn" only): it wears the neutral .btn sm like Run/Watch. It opens a floating window. */
   .fold { margin-top:var(--s3); }
 
   /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
@@ -840,7 +837,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip ok pcount"><span class="mark"></span>10 / 10 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 5 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=33410f0f4c45" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=7ce3c13f96e2" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -869,7 +866,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=8022b69601a0" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=96d34717b76f" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -1696,171 +1693,171 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Home lists every screen as a card</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">168ms</span></div>
-        <div class="tsub">passed · 168ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">170ms</span></div>
+        <div class="tsub">passed · 170ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="Home lists every screen as a card"></div></div>
       <div class="tstlog" data-title="Home lists every screen as a card"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="The detail opens as two independent columns" data-title="The detail opens as two independent columns">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail opens as two independent columns</span><div class="tags"><span class="tag" data-r="R2">R2</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">119ms</span></div>
-        <div class="tsub">passed · 119ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">129ms</span></div>
+        <div class="tsub">passed · 129ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="The detail opens as two independent columns"></div></div>
       <div class="tstlog" data-title="The detail opens as two independent columns"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="A requirement expands; a test leads with its flow name" data-title="A requirement expands; a test leads with its flow name">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement expands; a test leads with its flow name</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">210ms</span></div>
-        <div class="tsub">passed · 210ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="A requirement expands; a test leads with its flow name"></div></div>
-      <div class="tstlog" data-title="A requirement expands; a test leads with its flow name"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="Requirement state is computed and assertion-backed" data-title="Requirement state is computed and assertion-backed">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">459ms</span></div>
-        <div class="tsub">passed · 459ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="Requirement state is computed and assertion-backed"></div></div>
-      <div class="tstlog" data-title="Requirement state is computed and assertion-backed"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="Hovering a test lights up the requirements it covers" data-title="Hovering a test lights up the requirements it covers">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">189ms</span></div>
-        <div class="tsub">passed · 189ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="Hovering a test lights up the requirements it covers"></div></div>
-      <div class="tstlog" data-title="Hovering a test lights up the requirements it covers"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="A requirement names the tests that cover it" data-title="A requirement names the tests that cover it">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement names the tests that cover it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">131ms</span></div>
-        <div class="tsub">passed · 131ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="A requirement names the tests that cover it"></div></div>
-      <div class="tstlog" data-title="A requirement names the tests that cover it"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="The detail shows no wireframe or design affordance" data-title="The detail shows no wireframe or design affordance">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail shows no wireframe or design affordance</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">97ms</span></div>
-        <div class="tsub">passed · 97ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="The detail shows no wireframe or design affordance"></div></div>
-      <div class="tstlog" data-title="The detail shows no wireframe or design affordance"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="No acceptance gate — the detail is the two columns, nothing to accept" data-title="No acceptance gate — the detail is the two columns, nothing to accept">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">111ms</span></div>
-        <div class="tsub">passed · 111ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div></div>
-      <div class="tstlog" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="Searching requirement text hides groups that miss" data-title="Searching requirement text hides groups that miss">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
-    <div class="tbody">
-      <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">140ms</span></div>
-        <div class="tsub">passed · 140ms</div>
-        <span class="grow"></span>
-        <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
-        </span>
-      </div>
-      
-      <div class="fold"><div class="tststeps" data-title="Searching requirement text hides groups that miss"></div></div>
-      <div class="tstlog" data-title="Searching requirement text hides groups that miss"></div>
-      <div class="loglink" data-log>full log ↗</div>
-    </div>
-  </div><div class="test tst p" data-t="A test opens to its evidence and the log opens in a window" data-title="A test opens to its evidence and the log opens in a window">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
         <div class="rec"><span class="play">▶</span><span class="lab">201ms</span></div>
         <div class="tsub">passed · 201ms</div>
         <span class="grow"></span>
         <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="A requirement expands; a test leads with its flow name"></div></div>
+      <div class="tstlog" data-title="A requirement expands; a test leads with its flow name"></div>
+    </div>
+  </div><div class="test tst p" data-t="Requirement state is computed and assertion-backed" data-title="Requirement state is computed and assertion-backed">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">429ms</span></div>
+        <div class="tsub">passed · 429ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="Requirement state is computed and assertion-backed"></div></div>
+      <div class="tstlog" data-title="Requirement state is computed and assertion-backed"></div>
+    </div>
+  </div><div class="test tst p" data-t="Hovering a test lights up the requirements it covers" data-title="Hovering a test lights up the requirements it covers">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">190ms</span></div>
+        <div class="tsub">passed · 190ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="Hovering a test lights up the requirements it covers"></div></div>
+      <div class="tstlog" data-title="Hovering a test lights up the requirements it covers"></div>
+    </div>
+  </div><div class="test tst p" data-t="A requirement names the tests that cover it" data-title="A requirement names the tests that cover it">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement names the tests that cover it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">165ms</span></div>
+        <div class="tsub">passed · 165ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="A requirement names the tests that cover it"></div></div>
+      <div class="tstlog" data-title="A requirement names the tests that cover it"></div>
+    </div>
+  </div><div class="test tst p" data-t="The detail shows no wireframe or design affordance" data-title="The detail shows no wireframe or design affordance">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail shows no wireframe or design affordance</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">99ms</span></div>
+        <div class="tsub">passed · 99ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="The detail shows no wireframe or design affordance"></div></div>
+      <div class="tstlog" data-title="The detail shows no wireframe or design affordance"></div>
+    </div>
+  </div><div class="test tst p" data-t="No acceptance gate — the detail is the two columns, nothing to accept" data-title="No acceptance gate — the detail is the two columns, nothing to accept">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">114ms</span></div>
+        <div class="tsub">passed · 114ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div></div>
+      <div class="tstlog" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div>
+    </div>
+  </div><div class="test tst p" data-t="Searching requirement text hides groups that miss" data-title="Searching requirement text hides groups that miss">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">149ms</span></div>
+        <div class="tsub">passed · 149ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+        </span>
+      </div>
+      
+      <div class="fold"><div class="tststeps" data-title="Searching requirement text hides groups that miss"></div></div>
+      <div class="tstlog" data-title="Searching requirement text hides groups that miss"></div>
+    </div>
+  </div><div class="test tst p" data-t="A test opens to its evidence and the log opens in a window" data-title="A test opens to its evidence and the log opens in a window">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab">212ms</span></div>
+        <div class="tsub">passed · 212ms</div>
+        <span class="grow"></span>
+        <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="A test opens to its evidence and the log opens in a window"></div></div>
       <div class="tstlog" data-title="A test opens to its evidence and the log opens in a window"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -1909,12 +1906,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R2 — both positions are shown in full, each naming where it came from"></div></div>
       <div class="tstlog" data-title="R2 — both positions are shown in full, each naming where it came from"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R3 — the tool never picks: resolving is refused until you choose a side" data-title="R3 — the tool never picks: resolving is refused until you choose a side">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — the tool never picks: resolving is refused until you choose a side</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -1926,12 +1923,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R3 — the tool never picks: resolving is refused until you choose a side"></div></div>
       <div class="tstlog" data-title="R3 — the tool never picks: resolving is refused until you choose a side"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — resolving records which side lost, and offers the rewrite of that file" data-title="R4 — resolving records which side lost, and offers the rewrite of that file">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -1943,12 +1940,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R4 — resolving records which side lost, and offers the rewrite of that file"></div></div>
       <div class="tstlog" data-title="R4 — resolving records which side lost, and offers the rewrite of that file"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — a decision survives a rescan that reorders and swaps the sides" data-title="R5 — a decision survives a rescan that reorders and swaps the sides">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -1960,12 +1957,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R5 — a decision survives a rescan that reorders and swaps the sides"></div></div>
       <div class="tstlog" data-title="R5 — a decision survives a rescan that reorders and swaps the sides"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -1977,12 +1974,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"></div></div>
       <div class="tstlog" data-title="R5 — undo puts a settled conflict back, and the scanner is never asked to pick"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -2034,205 +2031,205 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5345ms</span></div>
-        <div class="tsub">passed · 5345ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">22144ms</span></div>
+        <div class="tsub">passed · 22144ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R1/R2 — the panel opens on the click and streams the job while it runs"></div></div>
       <div class="tstlog" data-title="R1/R2 — the panel opens on the click and streams the job while it runs"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — a person's second run takes over the running one: accepted, not refused" data-title="R4 — a person's second run takes over the running one: accepted, not refused">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a person's second run takes over the running one: accepted, not refused</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">105ms</span></div>
-        <div class="tsub">passed · 105ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">122ms</span></div>
+        <div class="tsub">passed · 122ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a person's second run takes over the running one: accepted, not refused" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a person's second run takes over the running one: accepted, not refused" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R4 — a person's second run takes over the running one: accepted, not refused"></div></div>
       <div class="tstlog" data-title="R4 — a person's second run takes over the running one: accepted, not refused"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — a run may nest inside the run driving it, and nesting is bounded" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a run may nest inside the run driving it, and nesting is bounded</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">1003ms</span></div>
-        <div class="tsub">passed · 1003ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">999ms</span></div>
+        <div class="tsub">passed · 999ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a run may nest inside the run driving it, and nesting is bounded" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a run may nest inside the run driving it, and nesting is bounded" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded"></div></div>
       <div class="tstlog" data-title="R4 — a run may nest inside the run driving it, and nesting is bounded"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="running one screen leaves every other screen's E2E result standing" data-title="running one screen leaves every other screen's E2E result standing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">running one screen leaves every other screen's E2E result standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5038ms</span></div>
-        <div class="tsub">passed · 5038ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5075ms</span></div>
+        <div class="tsub">passed · 5075ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="running one screen leaves every other screen's E2E result standing"></div></div>
       <div class="tstlog" data-title="running one screen leaves every other screen's E2E result standing"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R6/R8 — a run saves its whole log, and records every test case on its own" data-title="R6/R8 — a run saves its whole log, and records every test case on its own">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R6/R8 — a run saves its whole log, and records every test case on its own</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">148ms</span></div>
-        <div class="tsub">passed · 148ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">941ms</span></div>
+        <div class="tsub">passed · 941ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R6/R8 — a run saves its whole log, and records every test case on its own" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R6/R8 — a run saves its whole log, and records every test case on its own" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R6/R8 — a run saves its whole log, and records every test case on its own"></div></div>
       <div class="tstlog" data-title="R6/R8 — a run saves its whole log, and records every test case on its own"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a run that matched no test is recorded as an error, never 0 of 0 passing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">1923ms</span></div>
-        <div class="tsub">passed · 1923ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1928ms</span></div>
+        <div class="tsub">passed · 1928ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing"></div></div>
       <div class="tstlog" data-title="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — running ONE case leaves every other case's steps and log standing" data-title="R8 — running ONE case leaves every other case's steps and log standing">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — running ONE case leaves every other case's steps and log standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6137ms</span></div>
-        <div class="tsub">passed · 6137ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">6171ms</span></div>
+        <div class="tsub">passed · 6171ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — running ONE case leaves every other case's steps and log standing" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — running ONE case leaves every other case's steps and log standing" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R8 — running ONE case leaves every other case's steps and log standing"></div></div>
       <div class="tstlog" data-title="R8 — running ONE case leaves every other case's steps and log standing"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — a case keeps a LOG HISTORY, folded across runs" data-title="R8 — a case keeps a LOG HISTORY, folded across runs">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a case keeps a LOG HISTORY, folded across runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6059ms</span></div>
-        <div class="tsub">passed · 6059ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">6121ms</span></div>
+        <div class="tsub">passed · 6121ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a case keeps a LOG HISTORY, folded across runs" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a case keeps a LOG HISTORY, folded across runs" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R8 — a case keeps a LOG HISTORY, folded across runs"></div></div>
       <div class="tstlog" data-title="R8 — a case keeps a LOG HISTORY, folded across runs"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R8 — EVERY case that has run can expand its steps, not only the one you clicked" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — EVERY case that has run can expand its steps, not only the one you clicked</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5472ms</span></div>
-        <div class="tsub">passed · 5472ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5445ms</span></div>
+        <div class="tsub">passed · 5445ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — EVERY case that has run can expand its steps, not only the one you clicked" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — EVERY case that has run can expand its steps, not only the one you clicked" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked"></div></div>
       <div class="tstlog" data-title="R8 — EVERY case that has run can expand its steps, not only the one you clicked"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R7 — the run panel offers no background run" data-title="R7 — the run panel offers no background run">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the run panel offers no background run</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">88ms</span></div>
-        <div class="tsub">passed · 88ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">94ms</span></div>
+        <div class="tsub">passed · 94ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the run panel offers no background run" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the run panel offers no background run" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R7 — the run panel offers no background run"></div></div>
       <div class="tstlog" data-title="R7 — the run panel offers no background run"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R7 — the panel and its log stay on screen after the run ends" data-title="R7 — the panel and its log stay on screen after the run ends">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the panel and its log stay on screen after the run ends</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">8085ms</span></div>
-        <div class="tsub">passed · 8085ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">8100ms</span></div>
+        <div class="tsub">passed · 8100ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the panel and its log stay on screen after the run ends" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the panel and its log stay on screen after the run ends" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R7 — the panel and its log stay on screen after the run ends"></div></div>
       <div class="tstlog" data-title="R7 — the panel and its log stay on screen after the run ends"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — cancel stops the job, and cancelling nothing is refused not crashed" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">89ms</span></div>
-        <div class="tsub">passed · 89ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">95ms</span></div>
+        <div class="tsub">passed · 95ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed"></div></div>
       <div class="tstlog" data-title="R5 — cancel stops the job, and cancelling nothing is refused not crashed"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>
@@ -2281,12 +2278,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R1 — the form persists what cannot be guessed, and reads it back"></div></div>
       <div class="tstlog" data-title="R1 — the form persists what cannot be guessed, and reads it back"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R1 — the setup cards are single-column blocks, not the home two-column grid" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the setup cards are single-column blocks, not the home two-column grid</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2298,12 +2295,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid"></div></div>
       <div class="tstlog" data-title="R1 — the setup cards are single-column blocks, not the home two-column grid"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R1 — start mode saves backend and frontend, in order" data-title="R1 — start mode saves backend and frontend, in order">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — start mode saves backend and frontend, in order</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2315,12 +2312,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R1 — start mode saves backend and frontend, in order"></div></div>
       <div class="tstlog" data-title="R1 — start mode saves backend and frontend, in order"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2332,12 +2329,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div></div>
       <div class="tstlog" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2349,12 +2346,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"></div></div>
       <div class="tstlog" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div><div class="test tst p" data-t="R5 — rerunning marks new routes new and leaves a settled row alone" data-title="R5 — rerunning marks new routes new and leaves a settled row alone">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
@@ -2366,12 +2363,12 @@ ins { color:var(--koke); text-decoration:none; }
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
       <div class="fold"><div class="tststeps" data-title="R5 — rerunning marks new routes new and leaves a settled row alone"></div></div>
       <div class="tstlog" data-title="R5 — rerunning marks new routes new and leaves a settled row alone"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>
 </div>

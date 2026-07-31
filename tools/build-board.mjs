@@ -108,8 +108,8 @@ const reqPane = s => `<div class="pane reqpane">
 
 // RIGHT column (board R3/R5/R10): one test per row, leading with its own FLOW title (prominent),
 // then the coverage TAGS — one neutral chip per requirement it covers — and a status chip. Collapsed;
-// open it for the recording cover, a Run/Watch pair, the fold of steps (scrollable), and the full log
-// which opens in a floating window. The .rec / .tststeps / .tstlog / data-title hooks keep the
+// open it for the recording cover, a Run/Watch/full-log trio of buttons (full log opens in a
+// floating window), and the fold of steps (scrollable). The .rec / .tststeps / .tstlog / data-title hooks keep the
 // existing run / steps / log machinery working, re-housed into the new row. There is no separate
 // screenshot strip — the recording (its still as the cover) is the one artifact (R10).
 const testRow = (s, t) => {
@@ -128,12 +128,12 @@ const testRow = (s, t) => {
         <span class="tacts">
           <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
       <div class="fold"><div class="tststeps" data-title="${esc(t.title)}"></div></div>
       <div class="tstlog" data-title="${esc(t.title)}"></div>
-      <div class="loglink" data-log>full log ↗</div>
     </div>
   </div>`
 }
@@ -839,7 +839,7 @@ export function build () {
   .tbody { display:none; padding:0 var(--s4) var(--s3); }
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
-  .rec { position:relative; width:150px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
+  .rec { position:relative; width:220px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
     border:1px solid var(--hair-2); overflow:hidden; cursor:default;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }
   /* a still cover is playable ONLY when a run captured a video; otherwise it is honestly a still */
@@ -856,12 +856,9 @@ export function build () {
   .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
     background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
   .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
-  .test .tacts { opacity:1; margin-left:0; }
-  /* aligned with the steps fold (both indented 14px) so the two read as one list, and NO toggle
-     chevron — it opens a window, it does not expand in place */
-  .loglink { font:var(--t-xs) var(--sans); color:var(--ai); cursor:pointer; display:inline-flex;
-    gap:6px; align-items:center; margin:var(--s3) 0 0 14px; }
-  .loglink:hover { text-decoration:underline; }
+  .test .tacts { opacity:1; margin-left:0; display:inline-flex; gap:var(--s2); }
+  /* full log rides the actions row as a bordered button beside Watch — NOT indigo (indigo is
+     "your turn" only): it wears the neutral .btn sm like Run/Watch. It opens a floating window. */
   .fold { margin-top:var(--s3); }
 
   /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
