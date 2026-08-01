@@ -145,47 +145,38 @@ const testPane = s => `<div class="pane testpane">
 </div>`
 
 // The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, the two lanes
-// (greenfield DESIGN, brownfield DOCUMENT), and the four skills drawn as flowcharts (howFlowcharts,
+// (map, then depth), and the five skills drawn as flowcharts (howFlowcharts,
 // below) — so it is all baked here at build time rather than fetched. Only a PROJECT's own added
 // skills/agents are live (loadHow reads /api/capabilities), because those cannot be known ahead of time.
 const WORKFLOW = {
   spine: [
-    { num: '1 · PRD', h: 'Requirements', file: 'prd.md' },
-    { gate: 'GATE A', h: 'Is this what I meant?', cmp: 'PRD ↔ wireframe' },
-    { num: '2 · DRAFT', h: 'Wireframe', file: 'draft.html' },
-    { gate: 'GATE B', h: 'Did you build it?', cmp: 'wireframe ↔ screenshot' },
-    { num: '3 · SCREEN', h: 'Screenshot', file: 'screen.png' },
-    { num: '4 · E2E', h: 'The proving test', file: 'test.spec.ts' }
+    { num: '1 · REQUIREMENTS', h: 'What the screen must do', file: 'prd.md' },
+    { gate: 'YOUR GATE', h: 'Are these what I meant?', cmp: 'guess → accepted' },
+    { num: '2 · E2E TESTS', h: 'The proof, against the real app', file: 'test.spec.ts' }
   ],
   lanes: [
     {
-      mode: 'New project · greenfield',
-      sub: '<b>DESIGN mode.</b> You write the requirement first, then everything downstream chases it.',
+      mode: '1 · Get the map — once',
+      sub: '<b>kg-init.</b> The board lands in the repo, and the crawl inventories every screen it can reach. Nothing is faked.',
       steps: [
-        { skill: 'kg-init', file: 'prd.md', h: 'Write the first PRD',
-          p: 'Scaffold the board, then state what the screen must do — the source of truth.' },
-        { gate: true, glbl: 'Gate A · your turn', h: 'Is this what I meant?', cmp: 'prd.md ↔ draft.html',
-          p: 'Only a human approves <b>meaning</b>. Reject sends the wireframe back to the drawing.' },
-        { skill: 'kg-init', file: 'draft.html', h: 'Draw the wireframe',
-          p: 'A hi-fi, clickable draft at exactly 1280px — every control does something visible.' },
-        { gate: true, glbl: 'Gate B · your turn', h: 'Did you build it?', cmp: 'draft.html ↔ screen.png',
-          p: 'You compare the wireframe against the screenshot of what shipped.' },
-        { skill: 'kg-e2e', file: 'test.spec.ts', h: 'Build &amp; prove', arrow: 'the test writes the screenshot',
-          p: 'Write the failing test first, watch it go red, then build until it asserts something real — and it shoots <span class="mono">screen.png</span> as a byproduct.' }
+        { skill: 'kg-init', file: 'tools/ + spec/', h: 'Scaffold the board',
+          p: 'The board is vendored into the repo and serves on its own port. Your screens will be its rows.' },
+        { skill: 'kg-init', file: 'crawl.png · rows', h: 'Inventory the app', arrow: 'a real browser, no drafting',
+          p: 'Each route is visited and screenshotted, and lands as a row with <b>no PRD</b> — visibly uncovered. The board now shows honestly what is not yet governed.' }
       ]
     },
     {
-      mode: 'Existing project · brownfield',
-      sub: '<b>DOCUMENT mode.</b> The app already runs. You reverse the arrows: capture reality, then keep it honest.',
+      mode: '2 · Make each screen deep — one at a time',
+      sub: '<b>kg-deep</b>, per screen, most important first. This is where requirements and proof actually come from.',
       steps: [
-        { skill: 'kg-init', file: 'crawl', h: 'Scaffold &amp; crawl',
-          p: 'Vendor the board into the repo, then drive a real browser over the running app to find its screens.' },
-        { skill: 'kg-init', file: 'prd.md · guess', h: 'Guessed PRDs',
-          p: 'Each crawled screen gets a first-draft requirement, flagged <span class="mono">guess</span> until you confirm the meaning.' },
-        { skill: 'kg-e2e', file: 'test.spec.ts', h: 'Characterization tests',
-          p: 'Pin what the screen <i>currently</i> does, so any later drift shows up as a real failure.' },
-        { skill: 'kg-e2e', file: 'golden data', h: 'Golden data', arrow: 'for data-driven screens',
-          p: 'Freeze a known dataset so the test asserts the real values a screen renders — not just that boxes exist.' }
+        { skill: 'kg-deep', file: 'study · golden.json', h: 'Study the real screen, seed golden data',
+          p: 'Source, testids, existing tests, contracts — then a deterministic fixture, so tests can assert <b>exact numbers</b>, not that boxes exist.' },
+        { skill: 'kg-deep', file: 'prd.md · guess', h: 'Draft the requirements',
+          p: 'One requirement per behaviour, grounded in what the screen really does — a proposal, flagged <span class="mono">guess</span>.' },
+        { gate: true, glbl: 'Your gate · your turn', h: 'Are these what I meant?', cmp: 'guess → accepted',
+          p: 'The one human gate on the board. Correct the wording, drop the flag — accepted requirements are the source of truth.' },
+        { skill: 'kg-deep', file: 'test.spec.ts', h: 'Prove with a few comprehensive flows', arrow: 'checkReq tags carry coverage',
+          p: 'A handful of flow tests prove MANY requirements each — exact golden values, safe cross-page round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.' }
       ],
       band: {
         label: 'then, before &amp; after every change — forever',
@@ -232,7 +223,7 @@ const howSpineCol = c => c.gate
   : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
         <div class="file">${c.file}</div></div>`
 
-// The four skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
+// The five skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
 // time from the definitions below rather than fetched. The node/edge geometry and the SVG chevron
 // connectors are computed HERE, in Node, and emitted as static svg/html; nothing is laid out in the
 // browser. Diagram language: rectangle = step · indigo diamond = decision · tinted bar = human gate ·
@@ -367,77 +358,66 @@ function fRenderFlow (f, idx) {
 const HOW_FLOWS = [
   {
     id: 'kg-init',
-    tagline: 'scaffold the board + stand up the first rows',
+    tagline: 'scaffold the board + inventory the app into rows',
     when: 'once · when a project has no board yet',
-    height: 1188,
+    height: 528,
     nodes: [
       { id: 's1', type: 'step', cx: HOW_Cx, top: 16, w: 252, h: 54, title: 'Scaffold specboard into the repo', tags: ['vendors tools/ + spec/'] },
       { id: 's2', type: 'step', cx: HOW_Cx, top: 100, w: 252, h: 54, title: 'Install deps · start the board' },
-      { id: 's3', type: 'step', cx: HOW_Cx, top: 184, w: 252, h: 54, title: 'Open Setup · point at the app' },
-      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 274, w: 208, h: 116, title: 'App already exists?' },
-      { id: 'l1', type: 'step', cx: HOW_Lx, top: 456, w: 214, h: 54, title: 'Crawl the running app', state: 'running', tags: ['real browser'] },
-      { id: 'l2', type: 'step', cx: HOW_Lx, top: 544, w: 214, h: 58, title: 'Guessed PRDs', tags: ['prd.md · guess'] },
-      { id: 'l3', type: 'gate', cx: HOW_Lx, top: 640, w: 250, h: 68, title: 'Accept the requirements', cmp: 'guess → approved' },
-      { id: 'l4', type: 'step', cx: HOW_Lx, top: 742, w: 214, h: 58, title: 'Characterization test', tags: ['kg-e2e'] },
-      { id: 'r1', type: 'step', cx: HOW_Rx, top: 456, w: 214, h: 54, title: 'Write the first PRD', tags: ['prd.md'] },
-      { id: 'r2', type: 'step', cx: HOW_Rx, top: 540, w: 214, h: 54, title: 'Draw the wireframe', tags: ['draft.html · 1280px'] },
-      { id: 'r3', type: 'gate', cx: HOW_Rx, top: 624, w: 250, h: 68, title: 'Gate A · is this what I meant?', cmp: 'prd.md ↔ draft.html' },
-      { id: 'r4', type: 'step', cx: HOW_Rx, top: 726, w: 214, h: 54, title: 'Build the screen' },
-      { id: 'r5', type: 'gate', cx: HOW_Rx, top: 810, w: 250, h: 68, title: 'Gate B · did you build it?', cmp: 'draft.html ↔ screen.png' },
-      { id: 'r6', type: 'step', cx: HOW_Rx, top: 912, w: 214, h: 58, title: 'Prove it', tags: ['kg-e2e → screen.png'] },
-      { id: 'm1', type: 'step', cx: HOW_Cx, top: 1016, w: 214, h: 54, title: 'Conflicts scan', tags: ['cross-screen'] },
-      { id: 'm2', type: 'gate', cx: HOW_Cx, top: 1100, w: 272, h: 68, title: 'Human adjudicates conflicts' }
+      { id: 's3', type: 'step', cx: HOW_Cx, top: 184, w: 252, h: 54, title: 'Setup — point it at the app', tags: ['spec/_config.json'] },
+      { id: 's4', type: 'step', cx: HOW_Cx, top: 268, w: 300, h: 58, title: 'Crawl: inventory every reachable route', state: 'running', tags: ['real browser · no drafting'] },
+      { id: 's5', type: 'step', cx: HOW_Cx, top: 356, w: 316, h: 58, title: 'Rows land with NO PRD — honestly uncovered', tags: ['crawl.png'] },
+      { id: 's6', type: 'step', cx: HOW_Cx, top: 444, w: 316, h: 58, title: 'Pick the most important screen → kg-deep', tags: ['kg-deep · per screen'] }
     ],
-    captions: [],
     edges: [
       { from: 's1', fromSide: 'bottom', to: 's2', toSide: 'top', route: 'v' },
       { from: 's2', fromSide: 'bottom', to: 's3', toSide: 'top', route: 'v' },
-      { from: 's3', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
-      { from: 'd1', fromSide: 'left', to: 'l1', toSide: 'top', route: 'hv', label: { t: 'yes · already built', sub: '→ DOCUMENT mode', pos: [372, 314] } },
-      { from: 'd1', fromSide: 'right', to: 'r1', toSide: 'top', route: 'hv', label: { t: 'no · greenfield', sub: '→ DESIGN mode', no: true, pos: [844, 314] } },
-      { from: 'l1', fromSide: 'bottom', to: 'l2', toSide: 'top', route: 'v' },
-      { from: 'l2', fromSide: 'bottom', to: 'l3', toSide: 'top', route: 'v' },
-      { from: 'l3', fromSide: 'bottom', to: 'l4', toSide: 'top', route: 'v' },
-      { from: 'r1', fromSide: 'bottom', to: 'r2', toSide: 'top', route: 'v' },
-      { from: 'r2', fromSide: 'bottom', to: 'r3', toSide: 'top', route: 'v' },
-      { from: 'r3', fromSide: 'bottom', to: 'r4', toSide: 'top', route: 'v' },
-      { from: 'r4', fromSide: 'bottom', to: 'r5', toSide: 'top', route: 'v' },
-      { from: 'r5', fromSide: 'bottom', to: 'r6', toSide: 'top', route: 'v' },
-      { from: 'l4', fromSide: 'bottom', to: 'm1', toSide: 'top', route: 'vhv', my: 990 },
-      { from: 'r6', fromSide: 'bottom', to: 'm1', toSide: 'top', route: 'vhv', my: 990 },
-      { from: 'm1', fromSide: 'bottom', to: 'm2', toSide: 'top', route: 'v' }
+      { from: 's3', fromSide: 'bottom', to: 's4', toSide: 'top', route: 'v' },
+      { from: 's4', fromSide: 'bottom', to: 's5', toSide: 'top', route: 'v' },
+      { from: 's5', fromSide: 'bottom', to: 's6', toSide: 'top', route: 'v' }
+    ]
+  },
+  {
+    id: 'kg-deep',
+    tagline: 'one screen → deep, accepted, proven',
+    when: 'per screen · most important first',
+    height: 734,
+    nodes: [
+      { id: 'k0', type: 'step', cx: HOW_Cx, top: 16, w: 300, h: 54, title: 'Phase 0 · what governs this screen?', tags: ['tools/staff.mjs'] },
+      { id: 'k1', type: 'step', cx: HOW_Cx, top: 100, w: 316, h: 58, title: 'Phase 1 · study the real screen', tags: ['source · testids · existing tests'] },
+      { id: 'k2', type: 'step', cx: HOW_Cx, top: 188, w: 316, h: 58, title: 'Phase 2 · golden fixture + capture', state: 'running', tags: ['_seed.ts · golden.json'] },
+      { id: 'k3', type: 'step', cx: HOW_Cx, top: 276, w: 300, h: 58, title: 'Phase 3 · draft the requirements', tags: ['prd.md · guess'] },
+      { id: 'g1', type: 'gate', cx: HOW_Cx, top: 364, w: 300, h: 68, title: 'Are these what I meant?', cmp: 'guess → accepted' },
+      { id: 'k4', type: 'step', cx: HOW_Cx, top: 466, w: 316, h: 58, title: 'Phase 4 · a few comprehensive flows', tags: ['checkReq · exact numbers'] },
+      { id: 'k5', type: 'step', cx: HOW_Cx, top: 554, w: 350, h: 62, title: 'Writer flow LAST — round trip, self-restoring', note: 'discovery-first on every write path' },
+      { id: 'k6', type: 'step', cx: HOW_Cx, top: 650, w: 316, h: 58, title: 'Phase 5 · settle on the board + review', state: 'settled' }
+    ],
+    edges: [
+      { from: 'k0', fromSide: 'bottom', to: 'k1', toSide: 'top', route: 'v' },
+      { from: 'k1', fromSide: 'bottom', to: 'k2', toSide: 'top', route: 'v' },
+      { from: 'k2', fromSide: 'bottom', to: 'k3', toSide: 'top', route: 'v' },
+      { from: 'k3', fromSide: 'bottom', to: 'g1', toSide: 'top', route: 'v' },
+      { from: 'g1', fromSide: 'bottom', to: 'k4', toSide: 'top', route: 'v' },
+      { from: 'k4', fromSide: 'bottom', to: 'k5', toSide: 'top', route: 'v' },
+      { from: 'k5', fromSide: 'bottom', to: 'k6', toSide: 'top', route: 'v' }
     ]
   },
   {
     id: 'kg-e2e',
     tagline: 'author the proving test — red first, then real',
-    when: 'per screen · writes column 4, shoots column 3',
-    height: 1112,
+    when: 'inside a kg-deep pass · or standalone per screen',
+    height: 452,
     nodes: [
       { id: 'e1', type: 'step', cx: HOW_Cx, top: 16, w: 288, h: 54, title: 'Write the FAILING assertion first', tags: ['test.spec.ts'] },
       { id: 'e2', type: 'step', cx: HOW_Cx, top: 100, w: 214, h: 54, title: 'Watch it go RED', state: 'redfail' },
-      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 190, w: 232, h: 116, title: 'Design- or document-mode screen?' },
-      { id: 'e3', type: 'step', cx: HOW_Cx, top: 372, w: 316, h: 62, title: 'Assert on DATA, not chrome', note: 'wait for content — prove something DID happen' },
-      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 470, w: 208, h: 116, title: 'Data-driven screen?' },
-      { id: 'f1', type: 'step', cx: HOW_Rx, top: 654, w: 232, h: 58, title: 'Seed golden data', state: 'running', tags: ['_seed.ts · seed:e2e'] },
-      { id: 'f2', type: 'step', cx: HOW_Rx, top: 750, w: 214, h: 54, title: 'Record golden.json', tags: ['golden.json'] },
-      { id: 'f3', type: 'step', cx: HOW_Rx, top: 834, w: 214, h: 54, title: 'Assert EXACT values', state: 'settled' },
-      { id: 'g1', type: 'step', cx: HOW_Lx, top: 654, w: 214, h: 54, title: 'Assert behaviour' },
-      { id: 'e4', type: 'step', cx: HOW_Cx, top: 942, w: 258, h: 58, title: 'Make it pass — never weaken', state: 'settled' },
-      { id: 'e5', type: 'step', cx: HOW_Cx, top: 1032, w: 272, h: 58, title: 'Shoots screen.png', tags: ['column 3 · byproduct'] }
+      { id: 'e3', type: 'step', cx: HOW_Cx, top: 184, w: 340, h: 62, title: 'Assert on DATA — exact golden values', note: 'wait for content; prove something DID happen' },
+      { id: 'e4', type: 'step', cx: HOW_Cx, top: 280, w: 258, h: 58, title: 'Make it pass — never weaken', state: 'settled' },
+      { id: 'e5', type: 'step', cx: HOW_Cx, top: 368, w: 288, h: 58, title: 'Shoots screen.png as a byproduct', tags: ['the recording cover'] }
     ],
     edges: [
       { from: 'e1', fromSide: 'bottom', to: 'e2', toSide: 'top', route: 'v' },
-      { from: 'e2', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
-      { from: 'd1', fromSide: 'left', to: 'e3', toSide: 'top', route: 'vhv', bPt: { x: 578, y: 372 }, my: 336, label: { t: 'design', sub: 'drive draft route', plain: true, pos: [460, 330] } },
-      { from: 'd1', fromSide: 'right', to: 'e3', toSide: 'top', route: 'vhv', bPt: { x: 638, y: 372 }, my: 336, label: { t: 'document', sub: 'drive live app', plain: true, pos: [756, 330] } },
-      { from: 'e3', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v' },
-      { from: 'd2', fromSide: 'right', to: 'f1', toSide: 'top', route: 'hv', label: { t: 'yes', sub: 'data-driven' } },
-      { from: 'd2', fromSide: 'left', to: 'g1', toSide: 'top', route: 'hv', label: { t: 'no', no: true } },
-      { from: 'f1', fromSide: 'bottom', to: 'f2', toSide: 'top', route: 'v' },
-      { from: 'f2', fromSide: 'bottom', to: 'f3', toSide: 'top', route: 'v' },
-      { from: 'f3', fromSide: 'bottom', to: 'e4', toSide: 'top', route: 'vhv', my: 916 },
-      { from: 'g1', fromSide: 'bottom', to: 'e4', toSide: 'top', route: 'vhv', my: 916 },
+      { from: 'e2', fromSide: 'bottom', to: 'e3', toSide: 'top', route: 'v' },
+      { from: 'e3', fromSide: 'bottom', to: 'e4', toSide: 'top', route: 'v' },
       { from: 'e4', fromSide: 'bottom', to: 'e5', toSide: 'top', route: 'v' }
     ]
   },
@@ -445,90 +425,54 @@ const HOW_FLOWS = [
     id: 'kg-staff',
     tagline: 'the change discipline — before you touch a screen',
     when: 'before every change · stop & ask in 3 cases',
-    height: 1364,
+    height: 448,
     nodes: [
       { id: 'st1', type: 'step', cx: HOW_Cx, top: 16, w: 272, h: 54, title: 'Read what governs the screen', tags: ['staff briefing'] },
-      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 124, title: 'Which case is the screen in?' },
-      { id: 'a1', type: 'gate', cx: 170, top: 316, w: 234, h: 86, title: 'Ask the human for a requirement' },
-      { id: 'a2', type: 'gate', cx: 462, top: 316, w: 234, h: 86, title: 'Human corrects + approves', cmp: 'Gate A' },
-      { id: 'a3', type: 'gate', cx: 754, top: 316, w: 234, h: 86, title: 'Human picks the canonical side' },
-      { id: 'a4', type: 'step', cx: 1046, top: 316, w: 212, h: 86, title: 'Governed & settled', state: 'settled', note: 'proceed' },
-      { id: 'o1', type: 'gate', cx: HOW_Cx, top: 480, w: 300, h: 66, title: '1 · Requirement FIRST', cmp: 'you own meaning' },
-      { id: 'o2', type: 'step', cx: HOW_Cx, top: 584, w: 234, h: 54, title: '2 · Write the failing test', tags: ['watch it go red'] },
-      { id: 'o3', type: 'step', cx: HOW_Cx, top: 668, w: 234, h: 54, title: '3 · Make it pass', state: 'settled', note: 'never weaken' },
-      { id: 'o4', type: 'step', cx: HOW_Cx, top: 752, w: 254, h: 54, title: '4 · Correct the doc in place', tags: ['reason attached'] },
-      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 836, w: 200, h: 112, title: 'Golden data?' },
-      { id: 'o5', type: 'gate', cx: HOW_Rx, top: 859, w: 242, h: 66, title: 'Update golden values', cmp: 'you own the values' },
-      { id: 'jb', type: 'junction', cx: HOW_Cx, top: 984, w: 10, h: 10 },
-      { id: 'cl1', type: 'step', cx: HOW_Cx, top: 1028, w: 260, h: 54, title: "Run the screen's test" },
-      { id: 'cl2', type: 'step', cx: HOW_Cx, top: 1112, w: 260, h: 54, title: 'Run the whole suite', state: 'running' },
-      { id: 'cl3', type: 'step', cx: HOW_Cx, top: 1196, w: 260, h: 54, title: 'Conflict rescan' },
-      { id: 'cl4', type: 'step', cx: HOW_Cx, top: 1280, w: 260, h: 54, title: 'Clear the stale worklist', state: 'settled' }
-    ],
-    captions: [
-      { x: 468, top: 452, w: 280, text: 'CHANGE ORDER — requirement leads', align: 'center' },
-      { x: 120, top: 1000, w: 320, text: 'CLOSE THE LOOP — run outward', align: 'left' }
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 116, title: 'One of the three stop cases?' },
+      { id: 'a1', type: 'gate', cx: HOW_Rx, top: 119, w: 260, h: 86, title: 'Stop — the human decides', cmp: 'new meaning · guess · contradiction' },
+      { id: 'o1', type: 'step', cx: HOW_Cx, top: 268, w: 340, h: 62, title: 'Requirement first · failing test · then green', note: 'the change order — never weaken a test' },
+      { id: 'o2', type: 'step', cx: HOW_Cx, top: 364, w: 380, h: 58, title: 'Close the loop: whole suite · rescan · stale worklist', state: 'running' }
     ],
     edges: [
       { from: 'st1', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
-      { from: 'd1', fromSide: 'bottom', to: 'a1', toSide: 'top', route: 'vhv', my: 274, label: { t: 'ungoverned', plain: true, pos: [389, 260] } },
-      { from: 'd1', fromSide: 'bottom', to: 'a2', toSide: 'top', route: 'vhv', my: 274, label: { t: 'unapproved guess', plain: true, pos: [535, 260] } },
-      { from: 'd1', fromSide: 'bottom', to: 'a3', toSide: 'top', route: 'vhv', my: 274, label: { t: 'open contradiction', plain: true, pos: [681, 260] } },
-      { from: 'd1', fromSide: 'bottom', to: 'a4', toSide: 'top', route: 'vhv', my: 274, label: { t: 'else — governed', plain: true, pos: [827, 260] } },
-      { from: 'a1', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'vhv', my: 452, bPt: { x: 460, y: 480 } },
-      { from: 'a2', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'v', bPt: { x: 462, y: 480 } },
-      { from: 'a3', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'v', bPt: { x: 754, y: 480 } },
-      { from: 'a4', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'vhv', my: 452, bPt: { x: 756, y: 480 } },
-      { from: 'o1', fromSide: 'bottom', to: 'o2', toSide: 'top', route: 'v' },
-      { from: 'o2', fromSide: 'bottom', to: 'o3', toSide: 'top', route: 'v' },
-      { from: 'o3', fromSide: 'bottom', to: 'o4', toSide: 'top', route: 'v' },
-      { from: 'o4', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v' },
-      { from: 'd2', fromSide: 'right', to: 'o5', toSide: 'left', route: 'h', label: { t: 'yes', pos: [762, 892] } },
-      { from: 'd2', fromSide: 'bottom', to: 'jb', toSide: 'top', route: 'v', label: { t: 'no', no: true, pos: [608, 970] } },
-      { from: 'o5', fromSide: 'bottom', to: 'jb', toSide: 'top', route: 'vhv', my: 966 },
-      { from: 'jb', fromSide: 'bottom', to: 'cl1', toSide: 'top', route: 'v' },
-      { from: 'cl1', fromSide: 'bottom', to: 'cl2', toSide: 'top', route: 'v' },
-      { from: 'cl2', fromSide: 'bottom', to: 'cl3', toSide: 'top', route: 'v' },
-      { from: 'cl3', fromSide: 'bottom', to: 'cl4', toSide: 'top', route: 'v' }
+      { from: 'd1', fromSide: 'right', to: 'a1', toSide: 'left', route: 'h', label: { t: 'yes — ask first', pos: [768, 140] } },
+      { from: 'd1', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'v', label: { t: 'no — governed', pos: [608, 244] } },
+      { from: 'a1', fromSide: 'bottom', to: 'o1', toSide: 'top', route: 'vhv', my: 240 },
+      { from: 'o1', fromSide: 'bottom', to: 'o2', toSide: 'top', route: 'v' }
     ]
   },
   {
     id: 'kg-update',
     tagline: 'adopt a new release without clobbering your edits',
     when: 'after the plugin updates · restart on new code',
-    height: 1168,
+    height: 916,
     nodes: [
       { id: 'u1', type: 'step', cx: HOW_Cx, top: 16, w: 280, h: 54, title: 'Compare versions', tags: ['plugin vs _specboard.json'] },
       { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 204, h: 112, title: 'Update due?' },
       { id: 'tc', type: 'step', cx: 250, top: 134, w: 214, h: 52, title: 'Already current — done', state: 'settled' },
-      { id: 'd2', type: 'diamond', cx: HOW_Cx, top: 268, w: 204, h: 116, title: 'Has a manifest?' },
-      { id: 'sm', type: 'step', cx: 950, top: 290, w: 272, h: 72, title: 'Score cached releases', note: '--from-dir <closest base>' },
-      { id: 'ur', type: 'step', cx: HOW_Cx, top: 468, w: 384, h: 178, title: 'Update runs — per file',
+      { id: 'ur', type: 'step', cx: HOW_Cx, top: 252, w: 384, h: 178, title: 'Update runs — per file',
         rows: [
           { s: 'added', t: 'added — new file dropped in' },
           { s: 'updated', t: 'updated — untouched file refreshed' },
           { s: 'settled', t: 'your local edit kept' },
           { s: 'relook', t: 'CONFLICT → written as <file>.new' }
         ] },
-      { id: 'd3', type: 'diamond', cx: HOW_Cx, top: 704, w: 204, h: 112, title: 'Conflicts?' },
-      { id: 'mg1', type: 'step', cx: 950, top: 733, w: 232, h: 54, title: 'Merge each .new by graft', state: 'relook' },
-      { id: 'mg2', type: 'step', cx: 950, top: 817, w: 214, h: 54, title: 'Delete .new', state: 'settled' },
-      { id: 'ur2', type: 'step', cx: HOW_Cx, top: 902, w: 230, h: 54, title: 'Rebuild board.html', state: 'running' },
-      { id: 'ur3', type: 'step', cx: HOW_Cx, top: 986, w: 254, h: 54, title: 'Restart the board', state: 'running', tags: ['detached · own port'] },
-      { id: 'ur4', type: 'step', cx: HOW_Cx, top: 1070, w: 284, h: 58, title: 'Verify live server on new code', state: 'settled' }
+      { id: 'd3', type: 'diamond', cx: HOW_Cx, top: 466, w: 204, h: 112, title: 'Conflicts?' },
+      { id: 'mg1', type: 'step', cx: 950, top: 495, w: 232, h: 54, title: 'Merge each .new by graft', state: 'relook' },
+      { id: 'mg2', type: 'step', cx: 950, top: 579, w: 214, h: 54, title: 'Delete .new', state: 'settled' },
+      { id: 'ur2', type: 'step', cx: HOW_Cx, top: 664, w: 230, h: 54, title: 'Rebuild board.html', state: 'running' },
+      { id: 'ur3', type: 'step', cx: HOW_Cx, top: 748, w: 254, h: 54, title: 'Restart the board', state: 'running', tags: ['detached · own port'] },
+      { id: 'ur4', type: 'step', cx: HOW_Cx, top: 832, w: 284, h: 58, title: 'Verify live server on new code', state: 'settled' }
     ],
     edges: [
       { from: 'u1', fromSide: 'bottom', to: 'd1', toSide: 'top', route: 'v' },
       { from: 'd1', fromSide: 'left', to: 'tc', toSide: 'right', route: 'h', label: { t: 'no', sub: 'up to date', no: true, pos: [432, 160] } },
-      { from: 'd1', fromSide: 'bottom', to: 'd2', toSide: 'top', route: 'v', label: { t: 'yes', pos: [608, 244] } },
-      { from: 'd2', fromSide: 'right', to: 'sm', toSide: 'left', route: 'h', label: { t: 'no', sub: 'no manifest', no: true, pos: [760, 326] } },
-      { from: 'd2', fromSide: 'bottom', to: 'ur', toSide: 'top', route: 'v', label: { t: 'yes', sub: 'has manifest', pos: [608, 428] } },
-      { from: 'sm', fromSide: 'bottom', to: 'ur', toSide: 'top', route: 'vhv', my: 440 },
+      { from: 'd1', fromSide: 'bottom', to: 'ur', toSide: 'top', route: 'v', label: { t: 'yes', pos: [608, 234] } },
       { from: 'ur', fromSide: 'bottom', to: 'd3', toSide: 'top', route: 'v' },
-      { from: 'd3', fromSide: 'right', to: 'mg1', toSide: 'left', route: 'h', label: { t: 'yes', pos: [772, 760] } },
+      { from: 'd3', fromSide: 'right', to: 'mg1', toSide: 'left', route: 'h', label: { t: 'yes', pos: [772, 522] } },
       { from: 'mg1', fromSide: 'bottom', to: 'mg2', toSide: 'top', route: 'v' },
-      { from: 'mg2', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'vhv', my: 888 },
-      { from: 'd3', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'v', label: { t: 'no', no: true, pos: [608, 878] } },
+      { from: 'mg2', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'vhv', my: 648 },
+      { from: 'd3', fromSide: 'bottom', to: 'ur2', toSide: 'top', route: 'v', label: { t: 'no', no: true, pos: [608, 640] } },
       { from: 'ur2', fromSide: 'bottom', to: 'ur3', toSide: 'top', route: 'v' },
       { from: 'ur3', fromSide: 'bottom', to: 'ur4', toSide: 'top', route: 'v' }
     ]
@@ -557,45 +501,46 @@ const howView = () => `<section class="dt" id="howview" hidden>
   <div class="dtscroll cfscroll">
     <div class="howwrap">
 
-      <!-- The overview (#howoverview): intro, the row, the two lanes, the four COLLAPSED skill summary
+      <!-- The overview (#howoverview): intro, the row, the two lanes, the five COLLAPSED skill summary
            cards, and the project's own skills. Shown at #howitworks; hidden wholesale while a single
            skill's flowchart is shown at #howitworks/<skillId>. -->
       <div id="howoverview">
 
       <div class="intro">
         <h1>How specboard works</h1>
-        <p>Every screen in a project is one <b>row of four columns</b> —
-          <span class="spine">PRD</span><span class="arrowtok">→</span><span class="spine">wireframe</span><span class="arrowtok">→</span><span class="spine">screenshot</span><span class="arrowtok">→</span><span class="spine">test</span>.
-          There is no status field anywhere: <b>staleness is derived</b>, by comparing a stored approval
-          hash against the live content. Edit the PRD and the wireframe goes stale; change the wireframe
-          and the screenshot goes stale; touch anything and a green test result goes stale.</p>
-        <span class="gates-badge"><span class="dia"></span>Two human gates guard <b>meaning</b> and <b>the build</b>. Everything else, staff do.</span>
+        <p>Every screen in a project is one row with <b>two ends</b> —
+          <span class="spine">requirements</span><span class="arrowtok">↔</span><span class="spine">the tests that prove them</span>.
+          There is no status field anywhere: a requirement reads <b>proven</b> only while a passing
+          test <i>tags</i> it with an assertion that would fail without it. Edit a requirement and its
+          proof goes stale; delete an assertion and the green honestly disappears. The board never
+          stores state — it derives it, on every build.</p>
+        <span class="gates-badge"><span class="dia"></span>One human gate guards <b>meaning</b> — accepting the requirements. Everything else, staff do.</span>
         <div class="legend">
           <span class="chip"><span class="mk o"></span>step / artifact</span>
-          <span class="chip rev"><span class="mk d"></span>human gate — your turn</span>
-          <span class="chip ok"><span class="mk"></span>settled — hashes match</span>
+          <span class="chip rev"><span class="mk d"></span>your gate — your turn</span>
+          <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
           <span class="chip run"><span class="mk"></span>running — a job in flight</span>
-          <span class="chip stale"><span class="mk"></span>stale — needs a re-look</span>
+          <span class="chip stale"><span class="mk"></span>unproven — needs a proof</span>
         </div>
       </div>
 
       <div class="sect">
         <div class="sect-head"><span class="lbl">the row</span>
-          <h2>Wherever you start, you are filling in the same four columns</h2><span class="rule"></span></div>
+          <h2>What the screen must do — and the proof it still does it</h2><span class="rule"></span></div>
         <div class="spine-banner">${WORKFLOW.spine.map(howSpineCol).join('')}</div>
       </div>
 
       <div class="sect">
-        <div class="sect-head"><span class="lbl">two ways in</span>
-          <h2>Greenfield you design forward · brownfield you document what is already there</h2><span class="rule"></span></div>
+        <div class="sect-head"><span class="lbl">the journey</span>
+          <h2>Get the map once — then make each screen deep, one at a time</h2><span class="rule"></span></div>
         <div class="lanes">${WORKFLOW.lanes.map(howLane).join('')}</div>
       </div>
 
-      <!-- The four skills, COLLAPSED to one compact summary each. Clicking a summary NAVIGATES to
+      <!-- The five skills, COLLAPSED to one compact summary each. Clicking a summary NAVIGATES to
            #howitworks/<skillId> (history.pushState + route), which swaps this whole overview for the
            focused #skilldetail page below. The summaries stay put; nothing toggles in place. -->
       <div class="sect">
-        <div class="sect-head"><span class="lbl">the four skills</span>
+        <div class="sect-head"><span class="lbl">the five skills</span>
           <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
 
         <div class="skill-list" id="skilllist">
@@ -605,7 +550,7 @@ const howView = () => `<section class="dt" id="howview" hidden>
         </div>
       </div>
 
-      <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
+      <!-- The five skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
            loadHow and shown here, so this section only appears once there is something to show. -->
       <div class="sect" id="howprojsect" hidden>
         <div class="sect-head"><span class="lbl">this project</span>
@@ -1120,7 +1065,7 @@ export function build () {
   #howview .scard .when { margin-top:auto; padding-top:var(--s2); border-top:1px solid var(--hair);
     font-size:var(--t-xs); color:var(--ink-4); }
 
-  /* the four skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
+  /* the five skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
      #howview so its diagram-only classes never touch the board's globals, and it borrows the same
      design tokens. Colours ride shape + hue + label together, never hue alone. */
   #howview .flow-lead { max-width:900px; margin-top:var(--s3); color:var(--ink-2); font-size:var(--t-md); }

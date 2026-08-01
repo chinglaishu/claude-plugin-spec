@@ -26,11 +26,11 @@ has not settled. There is no acceptance gate. Read it before the first line of c
 ## 2. Stop and ask the human in exactly three cases
 
 - **Nothing governs it.** The briefing says `⛔ Ungoverned` — no requirement exists. **Stop.** Do
-  not write code the next person has no guideline for. Ask the human for a requirement (offer to draft
-  one with `kg-spec`, marked unapproved, for them to correct).
-- **The requirement is a guess.** The briefing says `⚠ guess` — it was read off a crawl, not written.
-  It cannot be trusted until the human corrects it and accepts the requirements. A requirement read off
-  an implementation records the implementation's bugs as intent.
+  not write code the next person has no guideline for. Ask the human for a requirement (offer a
+  **kg-deep** pass on the screen — it drafts the PRD, marked unapproved, for them to correct).
+- **The requirement is a guess.** The briefing says `⚠ guess` — a drafted proposal (a kg-deep draft)
+  the human has not yet accepted. It cannot be trusted until they correct it and drop the flag. A
+  requirement read off an implementation records the implementation's bugs as intent.
 - **Two sources disagree.** The briefing shows an `⚖ open contradiction`. **Never pick a side** —
   choosing canon is a requirement decision. Surface both quotes to the human and stop.
 

@@ -77,12 +77,12 @@ test('R1 — start mode saves backend and frontend, in order', async ({ page }) 
   expect(c.baseUrl).toBe('http://localhost:5173')
 })
 
-test('R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate', async ({ page }) => {
-  // A real crawl drafts a guessed PRD, authors a test, and shoots the screen. makeDocumentScreen
-  // builds that shape; it rebuilds the board, so the row is there without waiting on the watcher. In
-  // the no-gate model a guess is the ONE thing still waiting on a human (init R3): you correct it and
-  // drop the `guess:` flag to make it canon. There is no accept gate, no draft/gate-A review, and no
-  // "did you build it" gate B.
+test('R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate', async ({ page }) => {
+  // A kg-deep pass drafts a guessed PRD on the human's behalf (the crawl itself no longer drafts —
+  // it only inventories rows, init R2). makeDocumentScreen builds that drafted shape; it rebuilds
+  // the board, so the row is there without waiting on the watcher. In the no-gate model a guess is
+  // the ONE thing still waiting on a human (init R3): you correct it and drop the `guess:` flag to
+  // make it canon. There is no accept gate, no draft/gate-A review, and no "did you build it" gate B.
   const name = makeDocumentScreen('storefront', { guess: true })
   try {
     const cardLoc = page.locator('#home .card[data-screen="' + name + '"]')

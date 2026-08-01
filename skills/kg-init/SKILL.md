@@ -49,65 +49,37 @@ Open `#init`. It asks only what cannot be guessed — how to reach the app:
 
 All of this persists to `spec/_config.json`, which the crawl and the test harness both read.
 
-## 3. Crawl the app → a guessed requirement doc + a proving test per screen
+## 3. Crawl the app → an honest INVENTORY: one row per screen, nothing faked
 
 There is no wireframe step and no design-vs-document branch: specboard owns **neither wireframes nor
-designs**. A screen is documented by its **requirements** and the **tests that prove them**, full stop.
-So the crawl does exactly that, per route it finds:
+designs**. A screen is documented by its **requirements** and the **tests that prove them** — and the
+crawl produces *neither*. It produces the **map**:
 
 The crawl drives a **real browser** over the running app one route at a time, capturing each page
-(`crawl.png`) and its structure. Then, for every route not already on the board, Claude **drafts a
-guessed `prd.md`**, and kg-e2e authors a **characterization `test.spec.ts`** that proves that PRD
-against the running app and, as a byproduct, records the screen. A crawled row therefore lands as **a
-guessed requirement doc + a passing characterization test** — one card, its requirement titles, and
-the test's recording. No wireframe, because the screen already exists.
+(`crawl.png`) and listing it as a **row with no PRD** — visibly, honestly uncovered. That is the
+whole job. It deliberately does **not** draft requirements or tests: a guessed requirement records
+the implementation's bugs as intent, and a shallow auto-test is a false green that makes the board
+*look* finished while proving nothing. Depth is a per-screen decision a human sponsors — that is
+**kg-deep** (study → golden fixture → PRD draft → the human's acceptance → a few comprehensive
+proving flows). Run it screen by screen, most important screen first.
 
-- The PRD is marked `guess: true` — a proposal read off the running app, never canon. Correct it if it
-  is wrong, then delete the `guess:` frontmatter flag to make the PRD canon. There is **no acceptance
-  gate**: a requirement is the source of truth the moment you write it, and the assertion-backed tests
-  prove it against the real app (see `kg-e2e`) automatically, with no status field and no rubber-stamp.
-  A crawl guess is the only thing still waiting on a person.
-- Requirement state is just **proven / unproven**, computed from the tests. Editing the PRD *is* the
-  change — a proof recorded before the edit reads stale, and the requirement goes unproven until re-run.
-- `crawl.png` is the evidence the PRD and test are written from, shown in the Init found-table; the
-  test writes `screen.png` only as a fallback cover for a recording with no video. Neither is a
-  "built screen" to review.
-- Maintenance stays spec-driven: edit the PRD and its test's proof goes stale ("run it again"); update
-  the test to the corrected PRD, and a failure against the app is then a real bug surfaced.
+- A row with no PRD is the board saying "this screen exists and nothing governs it yet" — exactly
+  the honest state. `crawl.png` is its evidence and its cover until a kg-deep pass replaces both
+  with requirements and a recorded proving run.
+- Requirement state is **proven / unproven**, computed from checkReq-tagged tests (see `kg-e2e`).
+  The only thing ever *waiting* on a person is a drafted PRD still marked `guess:` — kg-deep
+  produces those; accepting them is the human's one gate.
 - **Coverage is not automatic.** The crawl link-follows a couple of levels from the root, so it finds
   nav-reachable pages — but **not** entity-scoped routes with a concrete id (`/portfolio/42/scenario`)
   unless the app links to one, and **not** features reached by a *click* rather than a link (wizards,
   modals, sub-tabs behind a button). List those in **Setup → routes**, which always wins over
-  discovery — otherwise the board only ever documents the top nav.
+  discovery — and expect your most important screens to be exactly the ones the crawl cannot see;
+  create their rows in the kg-deep pass.
 - **If the app needs a login,** give a `signIn` script in **Setup → sign-in**. The crawl runs it
-  first so pages behind auth are reachable, and characterization tests reuse the session automatically
+  first so pages behind auth are reachable, and the test harness reuses the session automatically
   (see `kg-e2e`). The script must **type** into fields, never `fill()` (controlled inputs submit
   empty). The login screen itself redirects away once you are in, so it can't be crawled — write it by
   hand.
-
-### The PRD must be DETAILED — drive the screen, don't skim it
-
-A crawl that reads the page shell writes a shallow PRD ("the workspace opens", "it has a year basis"),
-and kg-e2e then writes a shallow test — a board that looks finished while proving almost nothing.
-Depth comes from DRIVING the real screen, not reading it. Whether the crawler produces the first draft
-or you correct it, characterize each screen with a **drive-and-discover pass** (an on-the-fly script:
-authenticate, navigate, wait for data, then explore — write it, run it, read it, discard it):
-
-- **Harvest every `data-testid`** on the page — real apps are usually instrumented with them, and they
-  become the PRD's named elements and kg-e2e's most stable selectors.
-- **Name every metric/tile, table (its columns), chart, and control** (buttons, toggles, selects,
-  search, sliders) with its label.
-- **Note read-only vs editable** state (a "locked" indicator? a separate draft/edit surface?), and any
-  modal or notice that overlays the screen.
-- **Probe the primary interactions** — move a control and see which number changes, open a menu and
-  read its options, follow a cross-page link — and write the observed EFFECT into the PRD ("saving
-  here commits the change, and another page then reflects it"), not just "there is a save button".
-
-**PRD rubric:** a screen's PRD is under-specified if a competent tester could not, from it alone, list
-every number, control and flow to check. One requirement per meaningful behaviour, each naming the
-concrete elements (put their testids in a comment). Keep `guess: true` — it is still the human's to
-correct — but make the guess *rich*, not a two-line summary. kg-e2e then turns that detail into a
-test that asserts real data and behaviour, tagging each requirement it proves.
 
 **For a data-driven screen, name the expected VALUES, not just the fields.** If the screen's point is
 computed numbers (totals, a chart, a grid that recomputes on a filter), a PRD that says "shows a total"
@@ -135,5 +107,5 @@ surfaces one-fact-stated-two-ways contradictions for the human to adjudicate. **
 user's behalf** — choosing a canonical side is the human's, one of the few decisions that is theirs.
 Surface what you found and ask.
 
-Then stop and report: what the board contains, how many rows are still guesses waiting to be accepted,
+Then stop and report: what the board contains, how many rows the inventory found and which are still ungoverned (no PRD yet — kg-deep candidates, most important screen first),
 and any contradictions the scan found.

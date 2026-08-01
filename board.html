@@ -676,7 +676,7 @@ ins { color:var(--koke); text-decoration:none; }
   #howview .scard .when { margin-top:auto; padding-top:var(--s2); border-top:1px solid var(--hair);
     font-size:var(--t-xs); color:var(--ink-4); }
 
-  /* the four skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
+  /* the five skills as flowcharts — baked static SVG/HTML (howFlowcharts). Every rule is scoped under
      #howview so its diagram-only classes never touch the board's globals, and it borrows the same
      design tokens. Colours ride shape + hue + label together, never hue alone. */
   #howview .flow-lead { max-width:900px; margin-top:var(--s3); color:var(--ink-2); font-size:var(--t-md); }
@@ -837,7 +837,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip ok pcount"><span class="mark"></span>10 / 10 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 5 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=7ce3c13f96e2" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=311ff130fd04" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -847,7 +847,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=80d2b3d232b5" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=38528ed7d81b" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -866,7 +866,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=96d34717b76f" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=5090e9813334" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -878,14 +878,14 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cards">
 <div class="card" data-screen="init" data-i="3"
-     data-waiting="0" data-q="setup /init asks for what cannot be guessed, and nothing else an existing app is crawled into rows a crawled prd is marked as a guess an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
+     data-waiting="0" data-q="setup /init asks for what cannot be guessed, and nothing else an existing app is inventoried into rows: visited, screenshotted, nothing faked a drafted prd is marked as a guess until the human accepts it an empty project is the same flow with nothing found rerunning finds new screens without touching settled ones">
   <div class="cmain">
     <div class="cd"><span class="nm">Setup</span>
       
       <span class="chip gone pcount"><span class="mark o"></span>0 / 5 proven</span></div>
-    <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is crawled into rows</li><li><span class="id">R3</span>A crawled PRD is marked as a guess</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li></ul>
+    <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is inventoried into rows: visited, screenshotted, nothing faked</li><li><span class="id">R3</span>A drafted PRD is marked as a guess until the human accepts it</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=1ca3b6f0dea5" alt="Setup — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=fce3f69065c8" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>
@@ -1039,69 +1039,61 @@ ins { color:var(--koke); text-decoration:none; }
   <div class="dtscroll cfscroll">
     <div class="howwrap">
 
-      <!-- The overview (#howoverview): intro, the row, the two lanes, the four COLLAPSED skill summary
+      <!-- The overview (#howoverview): intro, the row, the two lanes, the five COLLAPSED skill summary
            cards, and the project's own skills. Shown at #howitworks; hidden wholesale while a single
            skill's flowchart is shown at #howitworks/<skillId>. -->
       <div id="howoverview">
 
       <div class="intro">
         <h1>How specboard works</h1>
-        <p>Every screen in a project is one <b>row of four columns</b> —
-          <span class="spine">PRD</span><span class="arrowtok">→</span><span class="spine">wireframe</span><span class="arrowtok">→</span><span class="spine">screenshot</span><span class="arrowtok">→</span><span class="spine">test</span>.
-          There is no status field anywhere: <b>staleness is derived</b>, by comparing a stored approval
-          hash against the live content. Edit the PRD and the wireframe goes stale; change the wireframe
-          and the screenshot goes stale; touch anything and a green test result goes stale.</p>
-        <span class="gates-badge"><span class="dia"></span>Two human gates guard <b>meaning</b> and <b>the build</b>. Everything else, staff do.</span>
+        <p>Every screen in a project is one row with <b>two ends</b> —
+          <span class="spine">requirements</span><span class="arrowtok">↔</span><span class="spine">the tests that prove them</span>.
+          There is no status field anywhere: a requirement reads <b>proven</b> only while a passing
+          test <i>tags</i> it with an assertion that would fail without it. Edit a requirement and its
+          proof goes stale; delete an assertion and the green honestly disappears. The board never
+          stores state — it derives it, on every build.</p>
+        <span class="gates-badge"><span class="dia"></span>One human gate guards <b>meaning</b> — accepting the requirements. Everything else, staff do.</span>
         <div class="legend">
           <span class="chip"><span class="mk o"></span>step / artifact</span>
-          <span class="chip rev"><span class="mk d"></span>human gate — your turn</span>
-          <span class="chip ok"><span class="mk"></span>settled — hashes match</span>
+          <span class="chip rev"><span class="mk d"></span>your gate — your turn</span>
+          <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
           <span class="chip run"><span class="mk"></span>running — a job in flight</span>
-          <span class="chip stale"><span class="mk"></span>stale — needs a re-look</span>
+          <span class="chip stale"><span class="mk"></span>unproven — needs a proof</span>
         </div>
       </div>
 
       <div class="sect">
         <div class="sect-head"><span class="lbl">the row</span>
-          <h2>Wherever you start, you are filling in the same four columns</h2><span class="rule"></span></div>
-        <div class="spine-banner"><div class="col"><div class="num">1 · PRD</div><h3>Requirements</h3>
-        <div class="file">prd.md</div></div><div class="col g"><div class="num">GATE A</div><h3>Is this what I meant?</h3>
-        <div class="gate-tag"><span class="dia"></span>PRD ↔ wireframe</div></div><div class="col"><div class="num">2 · DRAFT</div><h3>Wireframe</h3>
-        <div class="file">draft.html</div></div><div class="col g"><div class="num">GATE B</div><h3>Did you build it?</h3>
-        <div class="gate-tag"><span class="dia"></span>wireframe ↔ screenshot</div></div><div class="col"><div class="num">3 · SCREEN</div><h3>Screenshot</h3>
-        <div class="file">screen.png</div></div><div class="col"><div class="num">4 · E2E</div><h3>The proving test</h3>
+          <h2>What the screen must do — and the proof it still does it</h2><span class="rule"></span></div>
+        <div class="spine-banner"><div class="col"><div class="num">1 · REQUIREMENTS</div><h3>What the screen must do</h3>
+        <div class="file">prd.md</div></div><div class="col g"><div class="num">YOUR GATE</div><h3>Are these what I meant?</h3>
+        <div class="gate-tag"><span class="dia"></span>guess → accepted</div></div><div class="col"><div class="num">2 · E2E TESTS</div><h3>The proof, against the real app</h3>
         <div class="file">test.spec.ts</div></div></div>
       </div>
 
       <div class="sect">
-        <div class="sect-head"><span class="lbl">two ways in</span>
-          <h2>Greenfield you design forward · brownfield you document what is already there</h2><span class="rule"></span></div>
+        <div class="sect-head"><span class="lbl">the journey</span>
+          <h2>Get the map once — then make each screen deep, one at a time</h2><span class="rule"></span></div>
         <div class="lanes"><div class="lane">
-      <div class="lane-head"><span class="mode"><span class="mk"></span>New project · greenfield</span></div>
-      <div class="lane-sub"><b>DESIGN mode.</b> You write the requirement first, then everything downstream chases it.</div>
+      <div class="lane-head"><span class="mode"><span class="mk"></span>1 · Get the map — once</span></div>
+      <div class="lane-sub"><b>kg-init.</b> The board lands in the repo, and the crawl inventories every screen it can reach. Nothing is faked.</div>
       <div class="flow"><div class="node">
-        <div class="kick"><span class="skill">kg-init</span><span class="file">prd.md</span></div>
-        <h3>Write the first PRD</h3><p>Scaffold the board, then state what the screen must do — the source of truth.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node gate">
-        <div class="ghead"><span class="dia"></span><span class="glbl">Gate A · your turn</span></div>
-        <h3>Is this what I meant?</h3><p>Only a human approves <b>meaning</b>. Reject sends the wireframe back to the drawing.</p><div class="cmp">prd.md ↔ draft.html</div></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node">
-        <div class="kick"><span class="skill">kg-init</span><span class="file">draft.html</span></div>
-        <h3>Draw the wireframe</h3><p>A hi-fi, clickable draft at exactly 1280px — every control does something visible.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node gate">
-        <div class="ghead"><span class="dia"></span><span class="glbl">Gate B · your turn</span></div>
-        <h3>Did you build it?</h3><p>You compare the wireframe against the screenshot of what shipped.</p><div class="cmp">draft.html ↔ screen.png</div></div><div class="arrow lbl-arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg><span class="side">the test writes the screenshot</span></div><div class="node">
-        <div class="kick"><span class="skill">kg-e2e</span><span class="file">test.spec.ts</span></div>
-        <h3>Build &amp; prove</h3><p>Write the failing test first, watch it go red, then build until it asserts something real — and it shoots <span class="mono">screen.png</span> as a byproduct.</p></div></div>
+        <div class="kick"><span class="skill">kg-init</span><span class="file">tools/ + spec/</span></div>
+        <h3>Scaffold the board</h3><p>The board is vendored into the repo and serves on its own port. Your screens will be its rows.</p></div><div class="arrow lbl-arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg><span class="side">a real browser, no drafting</span></div><div class="node">
+        <div class="kick"><span class="skill">kg-init</span><span class="file">crawl.png · rows</span></div>
+        <h3>Inventory the app</h3><p>Each route is visited and screenshotted, and lands as a row with <b>no PRD</b> — visibly uncovered. The board now shows honestly what is not yet governed.</p></div></div>
     </div><div class="lane">
-      <div class="lane-head"><span class="mode"><span class="mk"></span>Existing project · brownfield</span></div>
-      <div class="lane-sub"><b>DOCUMENT mode.</b> The app already runs. You reverse the arrows: capture reality, then keep it honest.</div>
+      <div class="lane-head"><span class="mode"><span class="mk"></span>2 · Make each screen deep — one at a time</span></div>
+      <div class="lane-sub"><b>kg-deep</b>, per screen, most important first. This is where requirements and proof actually come from.</div>
       <div class="flow"><div class="node">
-        <div class="kick"><span class="skill">kg-init</span><span class="file">crawl</span></div>
-        <h3>Scaffold &amp; crawl</h3><p>Vendor the board into the repo, then drive a real browser over the running app to find its screens.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node">
-        <div class="kick"><span class="skill">kg-init</span><span class="file">prd.md · guess</span></div>
-        <h3>Guessed PRDs</h3><p>Each crawled screen gets a first-draft requirement, flagged <span class="mono">guess</span> until you confirm the meaning.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node">
-        <div class="kick"><span class="skill">kg-e2e</span><span class="file">test.spec.ts</span></div>
-        <h3>Characterization tests</h3><p>Pin what the screen <i>currently</i> does, so any later drift shows up as a real failure.</p></div><div class="arrow lbl-arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg><span class="side">for data-driven screens</span></div><div class="node">
-        <div class="kick"><span class="skill">kg-e2e</span><span class="file">golden data</span></div>
-        <h3>Golden data</h3><p>Freeze a known dataset so the test asserts the real values a screen renders — not just that boxes exist.</p></div>
+        <div class="kick"><span class="skill">kg-deep</span><span class="file">study · golden.json</span></div>
+        <h3>Study the real screen, seed golden data</h3><p>Source, testids, existing tests, contracts — then a deterministic fixture, so tests can assert <b>exact numbers</b>, not that boxes exist.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node">
+        <div class="kick"><span class="skill">kg-deep</span><span class="file">prd.md · guess</span></div>
+        <h3>Draft the requirements</h3><p>One requirement per behaviour, grounded in what the screen really does — a proposal, flagged <span class="mono">guess</span>.</p></div><div class="arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg></div><div class="node gate">
+        <div class="ghead"><span class="dia"></span><span class="glbl">Your gate · your turn</span></div>
+        <h3>Are these what I meant?</h3><p>The one human gate on the board. Correct the wording, drop the flag — accepted requirements are the source of truth.</p><div class="cmp">guess → accepted</div></div><div class="arrow lbl-arrow"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg><span class="side">checkReq tags carry coverage</span></div><div class="node">
+        <div class="kick"><span class="skill">kg-deep</span><span class="file">test.spec.ts</span></div>
+        <h3>Prove with a few comprehensive flows</h3><p>A handful of flow tests prove MANY requirements each — exact golden values, safe cross-page round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.</p></div>
         <div class="band">
           <div class="band-lbl"><span class="loop">&#8635;</span> then, before &amp; after every change — forever</div>
           <div class="flow"><div class="node">
@@ -1113,11 +1105,11 @@ ins { color:var(--koke); text-decoration:none; }
     </div></div>
       </div>
 
-      <!-- The four skills, COLLAPSED to one compact summary each. Clicking a summary NAVIGATES to
+      <!-- The five skills, COLLAPSED to one compact summary each. Clicking a summary NAVIGATES to
            #howitworks/<skillId> (history.pushState + route), which swaps this whole overview for the
            focused #skilldetail page below. The summaries stay put; nothing toggles in place. -->
       <div class="sect">
-        <div class="sect-head"><span class="lbl">the four skills</span>
+        <div class="sect-head"><span class="lbl">the five skills</span>
           <h2>Where each one branches, runs, and waits for you</h2><span class="rule"></span></div>
 
         <div class="skill-list" id="skilllist">
@@ -1125,24 +1117,30 @@ ins { color:var(--koke); text-decoration:none; }
             where a job runs, and where it <b>stops for you</b>. Pick one to see its flow drawn out.</p>
           <div class="skill-summaries"><button class="skill-summary" type="button" data-skill="kg-init">
       <span class="ss-num">1</span>
-      <span class="ss-main"><span class="ss-name mono">kg-init</span><span class="ss-tag">scaffold the board + stand up the first rows</span></span>
+      <span class="ss-main"><span class="ss-name mono">kg-init</span><span class="ss-tag">scaffold the board + inventory the app into rows</span></span>
       <span class="ss-when">once · when a project has no board yet</span>
       <span class="ss-go">View flow →</span>
     </button>
-<button class="skill-summary" type="button" data-skill="kg-e2e">
+<button class="skill-summary" type="button" data-skill="kg-deep">
       <span class="ss-num">2</span>
+      <span class="ss-main"><span class="ss-name mono">kg-deep</span><span class="ss-tag">one screen → deep, accepted, proven</span></span>
+      <span class="ss-when">per screen · most important first</span>
+      <span class="ss-go">View flow →</span>
+    </button>
+<button class="skill-summary" type="button" data-skill="kg-e2e">
+      <span class="ss-num">3</span>
       <span class="ss-main"><span class="ss-name mono">kg-e2e</span><span class="ss-tag">author the proving test — red first, then real</span></span>
-      <span class="ss-when">per screen · writes column 4, shoots column 3</span>
+      <span class="ss-when">inside a kg-deep pass · or standalone per screen</span>
       <span class="ss-go">View flow →</span>
     </button>
 <button class="skill-summary" type="button" data-skill="kg-staff">
-      <span class="ss-num">3</span>
+      <span class="ss-num">4</span>
       <span class="ss-main"><span class="ss-name mono">kg-staff</span><span class="ss-tag">the change discipline — before you touch a screen</span></span>
       <span class="ss-when">before every change · stop &amp; ask in 3 cases</span>
       <span class="ss-go">View flow →</span>
     </button>
 <button class="skill-summary" type="button" data-skill="kg-update">
-      <span class="ss-num">4</span>
+      <span class="ss-num">5</span>
       <span class="ss-main"><span class="ss-name mono">kg-update</span><span class="ss-tag">adopt a new release without clobbering your edits</span></span>
       <span class="ss-when">after the plugin updates · restart on new code</span>
       <span class="ss-go">View flow →</span>
@@ -1150,7 +1148,7 @@ ins { color:var(--koke); text-decoration:none; }
         </div>
       </div>
 
-      <!-- The four skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
+      <!-- The five skills above are baked; anything the PROJECT adds under .claude/ is fetched live by
            loadHow and shown here, so this section only appears once there is something to show. -->
       <div class="sect" id="howprojsect" hidden>
         <div class="sect-head"><span class="lbl">this project</span>
@@ -1178,11 +1176,11 @@ ins { color:var(--koke); text-decoration:none; }
         <div class="skill-flows"><section class="flow-panel" data-skill="kg-init">
     <header class="p-head">
       <div class="p-id"><span class="p-num">1</span><h3 class="mono">kg-init</h3>
-        <span class="p-tag">scaffold the board + stand up the first rows</span></div>
+        <span class="p-tag">scaffold the board + inventory the app into rows</span></div>
       <span class="p-when">once · when a project has no board yet</span>
     </header>
     <div class="p-diagram">
-      <svg viewBox="0 0 1216 1188" width="1216" height="1188" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 1216 528" width="1216" height="528" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="ah-1" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1190,20 +1188,9 @@ ins { color:var(--koke); text-decoration:none; }
         </defs>
         <g class="edges"><path class="edge" d="M608 70 L608 100" marker-end="url(#ah-1)"/>
 <path class="edge" d="M608 154 L608 184" marker-end="url(#ah-1)"/>
-<path class="edge" d="M608 238 L608 274" marker-end="url(#ah-1)"/>
-<path class="edge" d="M504 332 L300 332 L300 456" marker-end="url(#ah-1)"/><foreignObject x="284" y="291" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes · already built<span class="bl-sub">→ DOCUMENT mode</span></span></div></foreignObject>
-<path class="edge" d="M712 332 L916 332 L916 456" marker-end="url(#ah-1)"/><foreignObject x="756" y="291" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no · greenfield<span class="bl-sub">→ DESIGN mode</span></span></div></foreignObject>
-<path class="edge" d="M300 510 L300 544" marker-end="url(#ah-1)"/>
-<path class="edge" d="M300 602 L300 640" marker-end="url(#ah-1)"/>
-<path class="edge" d="M300 708 L300 742" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 510 L916 540" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 594 L916 624" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 692 L916 726" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 780 L916 810" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 878 L916 912" marker-end="url(#ah-1)"/>
-<path class="edge" d="M300 800 L300 990 L608 990 L608 1016" marker-end="url(#ah-1)"/>
-<path class="edge" d="M916 970 L916 990 L608 990 L608 1016" marker-end="url(#ah-1)"/>
-<path class="edge" d="M608 1070 L608 1100" marker-end="url(#ah-1)"/></g>
+<path class="edge" d="M608 238 L608 268" marker-end="url(#ah-1)"/>
+<path class="edge" d="M608 326 L608 356" marker-end="url(#ah-1)"/>
+<path class="edge" d="M608 414 L608 444" marker-end="url(#ah-1)"/></g>
         <g class="caps"></g>
         <g class="nodes"><foreignObject x="482" y="16" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
     <div class="nb-title">Scaffold specboard into the repo</div>
@@ -1218,112 +1205,120 @@ ins { color:var(--koke); text-decoration:none; }
     
   </div></foreignObject>
 <foreignObject x="482" y="184" width="252" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Open Setup · point at the app</div>
+    <div class="nb-title">Setup — point it at the app</div>
     
     
-    
+    <div class="nb-foot"><span class="tag mono">spec/_config.json</span></div>
   </div></foreignObject>
-<polygon class="dia-shape" points="608,274 712,332 608,390 504,332"/>
-      <foreignObject x="526.88" y="296.04" width="162.24" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">App already exists?</div>
+<foreignObject x="458" y="268" width="300" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Crawl: inventory every reachable route</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">real browser · no drafting</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
   </div></foreignObject>
-<foreignObject x="193" y="456" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
-    <div class="nb-title">Crawl the running app</div>
+<foreignObject x="450" y="356" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Rows land with NO PRD — honestly uncovered</div>
     
     
-    <div class="nb-foot"><span class="tag mono">real browser</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+    <div class="nb-foot"><span class="tag mono">crawl.png</span></div>
   </div></foreignObject>
-<foreignObject x="193" y="544" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Guessed PRDs</div>
+<foreignObject x="450" y="444" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Pick the most important screen → kg-deep</div>
     
     
-    <div class="nb-foot"><span class="tag mono">prd.md · guess</span></div>
-  </div></foreignObject>
-<foreignObject x="175" y="640" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Accept the requirements</div>
-    <div class="cmp mono">guess → approved</div>
-  </div></foreignObject>
-<foreignObject x="193" y="742" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Characterization test</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">kg-e2e</span></div>
-  </div></foreignObject>
-<foreignObject x="809" y="456" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Write the first PRD</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">prd.md</span></div>
-  </div></foreignObject>
-<foreignObject x="809" y="540" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Draw the wireframe</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">draft.html · 1280px</span></div>
-  </div></foreignObject>
-<foreignObject x="791" y="624" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Gate A · is this what I meant?</div>
-    <div class="cmp mono">prd.md ↔ draft.html</div>
-  </div></foreignObject>
-<foreignObject x="809" y="726" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Build the screen</div>
-    
-    
-    
-  </div></foreignObject>
-<foreignObject x="791" y="810" width="250" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Gate B · did you build it?</div>
-    <div class="cmp mono">draft.html ↔ screen.png</div>
-  </div></foreignObject>
-<foreignObject x="809" y="912" width="214" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Prove it</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">kg-e2e → screen.png</span></div>
-  </div></foreignObject>
-<foreignObject x="501" y="1016" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Conflicts scan</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">cross-screen</span></div>
-  </div></foreignObject>
-<foreignObject x="472" y="1100" width="272" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Human adjudicates conflicts</div>
-    
+    <div class="nb-foot"><span class="tag mono">kg-deep · per screen</span></div>
   </div></foreignObject></g>
       </svg>
     </div>
   </section>
-<section class="flow-panel" data-skill="kg-e2e">
+<section class="flow-panel" data-skill="kg-deep">
     <header class="p-head">
-      <div class="p-id"><span class="p-num">2</span><h3 class="mono">kg-e2e</h3>
-        <span class="p-tag">author the proving test — red first, then real</span></div>
-      <span class="p-when">per screen · writes column 4, shoots column 3</span>
+      <div class="p-id"><span class="p-num">2</span><h3 class="mono">kg-deep</h3>
+        <span class="p-tag">one screen → deep, accepted, proven</span></div>
+      <span class="p-when">per screen · most important first</span>
     </header>
     <div class="p-diagram">
-      <svg viewBox="0 0 1216 1112" width="1216" height="1112" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 1216 734" width="1216" height="734" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="ah-2" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
           </marker>
         </defs>
         <g class="edges"><path class="edge" d="M608 70 L608 100" marker-end="url(#ah-2)"/>
-<path class="edge" d="M608 154 L608 190" marker-end="url(#ah-2)"/>
-<path class="edge" d="M492 248 L492 336 L578 336 L578 372" marker-end="url(#ah-2)"/><foreignObject x="372" y="307" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>design<span class="bl-sub">drive draft route</span></span></div></foreignObject>
-<path class="edge" d="M724 248 L724 336 L638 336 L638 372" marker-end="url(#ah-2)"/><foreignObject x="668" y="307" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>document<span class="bl-sub">drive live app</span></span></div></foreignObject>
-<path class="edge" d="M608 434 L608 470" marker-end="url(#ah-2)"/>
-<path class="edge" d="M712 528 L916 528 L916 654" marker-end="url(#ah-2)"/><foreignObject x="726" y="490" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes<span class="bl-sub">data-driven</span></span></div></foreignObject>
-<path class="edge" d="M504 528 L300 528 L300 654" marker-end="url(#ah-2)"/><foreignObject x="314" y="500" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
-<path class="edge" d="M916 712 L916 750" marker-end="url(#ah-2)"/>
-<path class="edge" d="M916 804 L916 834" marker-end="url(#ah-2)"/>
-<path class="edge" d="M916 888 L916 916 L608 916 L608 942" marker-end="url(#ah-2)"/>
-<path class="edge" d="M300 708 L300 916 L608 916 L608 942" marker-end="url(#ah-2)"/>
-<path class="edge" d="M608 1000 L608 1032" marker-end="url(#ah-2)"/></g>
+<path class="edge" d="M608 158 L608 188" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 246 L608 276" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 334 L608 364" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 432 L608 466" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 524 L608 554" marker-end="url(#ah-2)"/>
+<path class="edge" d="M608 616 L608 650" marker-end="url(#ah-2)"/></g>
+        <g class="caps"></g>
+        <g class="nodes"><foreignObject x="458" y="16" width="300" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Phase 0 · what governs this screen?</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">tools/staff.mjs</span></div>
+  </div></foreignObject>
+<foreignObject x="450" y="100" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Phase 1 · study the real screen</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">source · testids · existing tests</span></div>
+  </div></foreignObject>
+<foreignObject x="450" y="188" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Phase 2 · golden fixture + capture</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">_seed.ts · golden.json</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject>
+<foreignObject x="458" y="276" width="300" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Phase 3 · draft the requirements</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">prd.md · guess</span></div>
+  </div></foreignObject>
+<foreignObject x="458" y="364" width="300" height="68"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
+    <div class="nb-title ai">Are these what I meant?</div>
+    <div class="cmp mono">guess → accepted</div>
+  </div></foreignObject>
+<foreignObject x="450" y="466" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Phase 4 · a few comprehensive flows</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">checkReq · exact numbers</span></div>
+  </div></foreignObject>
+<foreignObject x="433" y="554" width="350" height="62"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Writer flow LAST — round trip, self-restoring</div>
+    <div class="nb-note">discovery-first on every write path</div>
+    
+    
+  </div></foreignObject>
+<foreignObject x="450" y="650" width="316" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+    <div class="nb-title">Phase 5 · settle on the board + review</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section>
+<section class="flow-panel" data-skill="kg-e2e">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">3</span><h3 class="mono">kg-e2e</h3>
+        <span class="p-tag">author the proving test — red first, then real</span></div>
+      <span class="p-when">inside a kg-deep pass · or standalone per screen</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 452" width="1216" height="452" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-3" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 100" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 154 L608 184" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 246 L608 280" marker-end="url(#ah-3)"/>
+<path class="edge" d="M608 338 L608 368" marker-end="url(#ah-3)"/></g>
         <g class="caps"></g>
         <g class="nodes"><foreignObject x="464" y="16" width="288" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
     <div class="nb-title">Write the FAILING assertion first</div>
@@ -1337,215 +1332,100 @@ ins { color:var(--koke); text-decoration:none; }
     
     <div class="nb-foot"><span class="schip s-redfail"><span class="mk "></span>must fail</span></div>
   </div></foreignObject>
-<polygon class="dia-shape" points="608,190 724,248 608,306 492,248"/>
-      <foreignObject x="517.52" y="212.04" width="180.96" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">Design- or document-mode screen?</div>
-  </div></foreignObject>
-<foreignObject x="450" y="372" width="316" height="62"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Assert on DATA, not chrome</div>
-    <div class="nb-note">wait for content — prove something DID happen</div>
+<foreignObject x="438" y="184" width="340" height="62"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Assert on DATA — exact golden values</div>
+    <div class="nb-note">wait for content; prove something DID happen</div>
     
     
   </div></foreignObject>
-<polygon class="dia-shape" points="608,470 712,528 608,586 504,528"/>
-      <foreignObject x="526.88" y="492.04" width="162.24" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">Data-driven screen?</div>
-  </div></foreignObject>
-<foreignObject x="800" y="654" width="232" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
-    <div class="nb-title">Seed golden data</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">_seed.ts · seed:e2e</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
-  </div></foreignObject>
-<foreignObject x="809" y="750" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Record golden.json</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">golden.json</span></div>
-  </div></foreignObject>
-<foreignObject x="809" y="834" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
-    <div class="nb-title">Assert EXACT values</div>
-    
-    
-    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
-  </div></foreignObject>
-<foreignObject x="193" y="654" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Assert behaviour</div>
-    
-    
-    
-  </div></foreignObject>
-<foreignObject x="479" y="942" width="258" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+<foreignObject x="479" y="280" width="258" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
     <div class="nb-title">Make it pass — never weaken</div>
     
     
     <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
   </div></foreignObject>
-<foreignObject x="472" y="1032" width="272" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Shoots screen.png</div>
+<foreignObject x="464" y="368" width="288" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Shoots screen.png as a byproduct</div>
     
     
-    <div class="nb-foot"><span class="tag mono">column 3 · byproduct</span></div>
+    <div class="nb-foot"><span class="tag mono">the recording cover</span></div>
   </div></foreignObject></g>
       </svg>
     </div>
   </section>
 <section class="flow-panel" data-skill="kg-staff">
     <header class="p-head">
-      <div class="p-id"><span class="p-num">3</span><h3 class="mono">kg-staff</h3>
+      <div class="p-id"><span class="p-num">4</span><h3 class="mono">kg-staff</h3>
         <span class="p-tag">the change discipline — before you touch a screen</span></div>
       <span class="p-when">before every change · stop &amp; ask in 3 cases</span>
     </header>
     <div class="p-diagram">
-      <svg viewBox="0 0 1216 1364" width="1216" height="1364" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="ah-3" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
-            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          </marker>
-        </defs>
-        <g class="edges"><path class="edge" d="M608 70 L608 104" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 228 L608 274 L170 274 L170 316" marker-end="url(#ah-3)"/><foreignObject x="301" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>ungoverned</span></div></foreignObject>
-<path class="edge" d="M608 228 L608 274 L462 274 L462 316" marker-end="url(#ah-3)"/><foreignObject x="447" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>unapproved guess</span></div></foreignObject>
-<path class="edge" d="M608 228 L608 274 L754 274 L754 316" marker-end="url(#ah-3)"/><foreignObject x="593" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>open contradiction</span></div></foreignObject>
-<path class="edge" d="M608 228 L608 274 L1046 274 L1046 316" marker-end="url(#ah-3)"/><foreignObject x="739" y="247" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel plain"><span class="bdia"></span>else — governed</span></div></foreignObject>
-<path class="edge" d="M170 402 L170 452 L460 452 L460 480" marker-end="url(#ah-3)"/>
-<path class="edge" d="M462 402 L462 480" marker-end="url(#ah-3)"/>
-<path class="edge" d="M754 402 L754 480" marker-end="url(#ah-3)"/>
-<path class="edge" d="M1046 402 L1046 452 L756 452 L756 480" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 546 L608 584" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 638 L608 668" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 722 L608 752" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 806 L608 836" marker-end="url(#ah-3)"/>
-<path class="edge" d="M708 892 L795 892" marker-end="url(#ah-3)"/><foreignObject x="674" y="879" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
-<path class="edge" d="M608 948 L608 984" marker-end="url(#ah-3)"/><foreignObject x="520" y="957" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
-<path class="edge" d="M916 925 L916 966 L608 966 L608 984" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 994 L608 1028" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 1082 L608 1112" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 1166 L608 1196" marker-end="url(#ah-3)"/>
-<path class="edge" d="M608 1250 L608 1280" marker-end="url(#ah-3)"/></g>
-        <g class="caps"><foreignObject x="468" y="452" width="280" height="28"><div xmlns="http://www.w3.org/1999/xhtml" class="cap center">CHANGE ORDER — requirement leads</div></foreignObject>
-<foreignObject x="120" y="1000" width="320" height="28"><div xmlns="http://www.w3.org/1999/xhtml" class="cap left">CLOSE THE LOOP — run outward</div></foreignObject></g>
-        <g class="nodes"><foreignObject x="472" y="16" width="272" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Read what governs the screen</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">staff briefing</span></div>
-  </div></foreignObject>
-<polygon class="dia-shape" points="608,104 728,166 608,228 488,166"/>
-      <foreignObject x="514.4" y="127.56" width="187.20000000000002" height="76.88"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">Which case is the screen in?</div>
-  </div></foreignObject>
-<foreignObject x="53" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Ask the human for a requirement</div>
-    
-  </div></foreignObject>
-<foreignObject x="345" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Human corrects + approves</div>
-    <div class="cmp mono">Gate A</div>
-  </div></foreignObject>
-<foreignObject x="637" y="316" width="234" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Human picks the canonical side</div>
-    
-  </div></foreignObject>
-<foreignObject x="940" y="316" width="212" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
-    <div class="nb-title">Governed &amp; settled</div>
-    <div class="nb-note">proceed</div>
-    
-    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
-  </div></foreignObject>
-<foreignObject x="458" y="480" width="300" height="66"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">1 · Requirement FIRST</div>
-    <div class="cmp mono">you own meaning</div>
-  </div></foreignObject>
-<foreignObject x="491" y="584" width="234" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">2 · Write the failing test</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">watch it go red</span></div>
-  </div></foreignObject>
-<foreignObject x="491" y="668" width="234" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
-    <div class="nb-title">3 · Make it pass</div>
-    <div class="nb-note">never weaken</div>
-    
-    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
-  </div></foreignObject>
-<foreignObject x="481" y="752" width="254" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">4 · Correct the doc in place</div>
-    
-    
-    <div class="nb-foot"><span class="tag mono">reason attached</span></div>
-  </div></foreignObject>
-<polygon class="dia-shape" points="608,836 708,892 608,948 508,892"/>
-      <foreignObject x="530" y="857.28" width="156" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">Golden data?</div>
-  </div></foreignObject>
-<foreignObject x="795" y="859" width="242" height="66"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
-    <div class="nb-title ai">Update golden values</div>
-    <div class="cmp mono">you own the values</div>
-  </div></foreignObject>
-<circle class="jdot" cx="608" cy="989" r="4.5"/>
-<foreignObject x="478" y="1028" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Run the screen's test</div>
-    
-    
-    
-  </div></foreignObject>
-<foreignObject x="478" y="1112" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
-    <div class="nb-title">Run the whole suite</div>
-    
-    
-    <div class="nb-foot"><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
-  </div></foreignObject>
-<foreignObject x="478" y="1196" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Conflict rescan</div>
-    
-    
-    
-  </div></foreignObject>
-<foreignObject x="478" y="1280" width="260" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
-    <div class="nb-title">Clear the stale worklist</div>
-    
-    
-    <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
-  </div></foreignObject></g>
-      </svg>
-    </div>
-  </section>
-<section class="flow-panel" data-skill="kg-update">
-    <header class="p-head">
-      <div class="p-id"><span class="p-num">4</span><h3 class="mono">kg-update</h3>
-        <span class="p-tag">adopt a new release without clobbering your edits</span></div>
-      <span class="p-when">after the plugin updates · restart on new code</span>
-    </header>
-    <div class="p-diagram">
-      <svg viewBox="0 0 1216 1168" width="1216" height="1168" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 1216 448" width="1216" height="448" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <marker id="ah-4" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
             <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
           </marker>
         </defs>
         <g class="edges"><path class="edge" d="M608 70 L608 104" marker-end="url(#ah-4)"/>
-<path class="edge" d="M506 160 L357 160" marker-end="url(#ah-4)"/><foreignObject x="344" y="137" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no<span class="bl-sub">up to date</span></span></div></foreignObject>
-<path class="edge" d="M608 216 L608 268" marker-end="url(#ah-4)"/><foreignObject x="520" y="231" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
-<path class="edge" d="M710 326 L814 326" marker-end="url(#ah-4)"/><foreignObject x="672" y="303" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no<span class="bl-sub">no manifest</span></span></div></foreignObject>
-<path class="edge" d="M608 384 L608 468" marker-end="url(#ah-4)"/><foreignObject x="520" y="405" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes<span class="bl-sub">has manifest</span></span></div></foreignObject>
-<path class="edge" d="M950 362 L950 440 L608 440 L608 468" marker-end="url(#ah-4)"/>
-<path class="edge" d="M608 646 L608 704" marker-end="url(#ah-4)"/>
-<path class="edge" d="M710 760 L834 760" marker-end="url(#ah-4)"/><foreignObject x="684" y="747" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
-<path class="edge" d="M950 787 L950 817" marker-end="url(#ah-4)"/>
-<path class="edge" d="M950 871 L950 888 L608 888 L608 902" marker-end="url(#ah-4)"/>
-<path class="edge" d="M608 816 L608 902" marker-end="url(#ah-4)"/><foreignObject x="520" y="865" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
-<path class="edge" d="M608 956 L608 986" marker-end="url(#ah-4)"/>
-<path class="edge" d="M608 1040 L608 1070" marker-end="url(#ah-4)"/></g>
+<path class="edge" d="M728 162 L786 162" marker-end="url(#ah-4)"/><foreignObject x="680" y="127" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes — ask first</span></div></foreignObject>
+<path class="edge" d="M608 220 L608 268" marker-end="url(#ah-4)"/><foreignObject x="520" y="231" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>no — governed</span></div></foreignObject>
+<path class="edge" d="M916 205 L916 240 L608 240 L608 268" marker-end="url(#ah-4)"/>
+<path class="edge" d="M608 330 L608 364" marker-end="url(#ah-4)"/></g>
+        <g class="caps"></g>
+        <g class="nodes"><foreignObject x="472" y="16" width="272" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Read what governs the screen</div>
+    
+    
+    <div class="nb-foot"><span class="tag mono">staff briefing</span></div>
+  </div></foreignObject>
+<polygon class="dia-shape" points="608,104 728,162 608,220 488,162"/>
+      <foreignObject x="514.4" y="126.03999999999999" width="187.20000000000002" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+    <div class="dkick"><span class="ddia"></span>DECISION</div>
+    <div class="nb-title ai">One of the three stop cases?</div>
+  </div></foreignObject>
+<foreignObject x="786" y="119" width="260" height="86"><div xmlns="http://www.w3.org/1999/xhtml" class="nb gate">
+    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
+    <div class="nb-title ai">Stop — the human decides</div>
+    <div class="cmp mono">new meaning · guess · contradiction</div>
+  </div></foreignObject>
+<foreignObject x="438" y="268" width="340" height="62"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+    <div class="nb-title">Requirement first · failing test · then green</div>
+    <div class="nb-note">the change order — never weaken a test</div>
+    
+    
+  </div></foreignObject>
+<foreignObject x="418" y="364" width="380" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+    <div class="nb-title">Close the loop: whole suite · rescan · stale worklist</div>
+    
+    
+    <div class="nb-foot"><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
+  </div></foreignObject></g>
+      </svg>
+    </div>
+  </section>
+<section class="flow-panel" data-skill="kg-update">
+    <header class="p-head">
+      <div class="p-id"><span class="p-num">5</span><h3 class="mono">kg-update</h3>
+        <span class="p-tag">adopt a new release without clobbering your edits</span></div>
+      <span class="p-when">after the plugin updates · restart on new code</span>
+    </header>
+    <div class="p-diagram">
+      <svg viewBox="0 0 1216 916" width="1216" height="916" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="ah-5" markerWidth="10" markerHeight="10" refX="7.5" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
+            <path d="M1.5 1.5 L7.5 4.5 L1.5 7.5" fill="none" stroke="var(--line3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <g class="edges"><path class="edge" d="M608 70 L608 104" marker-end="url(#ah-5)"/>
+<path class="edge" d="M506 160 L357 160" marker-end="url(#ah-5)"/><foreignObject x="344" y="137" width="176" height="46" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no<span class="bl-sub">up to date</span></span></div></foreignObject>
+<path class="edge" d="M608 216 L608 252" marker-end="url(#ah-5)"/><foreignObject x="520" y="221" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
+<path class="edge" d="M608 430 L608 466" marker-end="url(#ah-5)"/>
+<path class="edge" d="M710 522 L834 522" marker-end="url(#ah-5)"/><foreignObject x="684" y="509" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel yes"><span class="bdia"></span>yes</span></div></foreignObject>
+<path class="edge" d="M950 549 L950 579" marker-end="url(#ah-5)"/>
+<path class="edge" d="M950 633 L950 648 L608 648 L608 664" marker-end="url(#ah-5)"/>
+<path class="edge" d="M608 578 L608 664" marker-end="url(#ah-5)"/><foreignObject x="520" y="627" width="176" height="26" class="fo-lbl"><div xmlns="http://www.w3.org/1999/xhtml" class="blwrap"><span class="blabel no"><span class="bdia"></span>no</span></div></foreignObject>
+<path class="edge" d="M608 718 L608 748" marker-end="url(#ah-5)"/>
+<path class="edge" d="M608 802 L608 832" marker-end="url(#ah-5)"/></g>
         <g class="caps"></g>
         <g class="nodes"><foreignObject x="468" y="16" width="280" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
     <div class="nb-title">Compare versions</div>
@@ -1564,53 +1444,42 @@ ins { color:var(--koke); text-decoration:none; }
     
     <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
   </div></foreignObject>
-<polygon class="dia-shape" points="608,268 710,326 608,384 506,326"/>
-      <foreignObject x="528.44" y="290.04" width="159.12" height="71.92"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
-    <div class="dkick"><span class="ddia"></span>DECISION</div>
-    <div class="nb-title ai">Has a manifest?</div>
-  </div></foreignObject>
-<foreignObject x="814" y="290" width="272" height="72"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
-    <div class="nb-title">Score cached releases</div>
-    <div class="nb-note">--from-dir &lt;closest base&gt;</div>
-    
-    
-  </div></foreignObject>
-<foreignObject x="416" y="468" width="384" height="178"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
+<foreignObject x="416" y="252" width="384" height="178"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step">
     <div class="nb-title">Update runs — per file</div>
     
     <div class="frows"><div class="frow"><span class="fmk s-added"></span><span class="ftxt">added — new file dropped in</span></div><div class="frow"><span class="fmk s-updated"></span><span class="ftxt">updated — untouched file refreshed</span></div><div class="frow"><span class="fmk s-settled"></span><span class="ftxt">your local edit kept</span></div><div class="frow"><span class="fmk s-relook"></span><span class="ftxt">CONFLICT → written as &lt;file&gt;.new</span></div></div>
     
   </div></foreignObject>
-<polygon class="dia-shape" points="608,704 710,760 608,816 506,760"/>
-      <foreignObject x="528.44" y="725.28" width="159.12" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
+<polygon class="dia-shape" points="608,466 710,522 608,578 506,522"/>
+      <foreignObject x="528.44" y="487.28" width="159.12" height="69.44"><div xmlns="http://www.w3.org/1999/xhtml" class="nb dbody">
     <div class="dkick"><span class="ddia"></span>DECISION</div>
     <div class="nb-title ai">Conflicts?</div>
   </div></foreignObject>
-<foreignObject x="834" y="733" width="232" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-relook">
+<foreignObject x="834" y="495" width="232" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-relook">
     <div class="nb-title">Merge each .new by graft</div>
     
     
     <div class="nb-foot"><span class="schip s-relook"><span class="mk "></span>re-look</span></div>
   </div></foreignObject>
-<foreignObject x="843" y="817" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+<foreignObject x="843" y="579" width="214" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
     <div class="nb-title">Delete .new</div>
     
     
     <div class="nb-foot"><span class="schip s-settled"><span class="mk "></span>settled</span></div>
   </div></foreignObject>
-<foreignObject x="493" y="902" width="230" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+<foreignObject x="493" y="664" width="230" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
     <div class="nb-title">Rebuild board.html</div>
     
     
     <div class="nb-foot"><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
   </div></foreignObject>
-<foreignObject x="481" y="986" width="254" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
+<foreignObject x="481" y="748" width="254" height="54"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-running">
     <div class="nb-title">Restart the board</div>
     
     
     <div class="nb-foot"><span class="tag mono">detached · own port</span><span class="schip s-running"><span class="mk "></span>runs a job</span></div>
   </div></foreignObject>
-<foreignObject x="466" y="1070" width="284" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
+<foreignObject x="466" y="832" width="284" height="58"><div xmlns="http://www.w3.org/1999/xhtml" class="nb step s-settled">
     <div class="nb-title">Verify live server on new code</div>
     
     
@@ -1693,8 +1562,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Home lists every screen as a card</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">170ms</span></div>
-        <div class="tsub">passed · 170ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">360ms</span></div>
+        <div class="tsub">passed · 360ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" title="run only this test">Run</button>
@@ -1727,8 +1596,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement expands; a test leads with its flow name</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">201ms</span></div>
-        <div class="tsub">passed · 201ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">223ms</span></div>
+        <div class="tsub">passed · 223ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test">Run</button>
@@ -1744,8 +1613,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">429ms</span></div>
-        <div class="tsub">passed · 429ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">454ms</span></div>
+        <div class="tsub">passed · 454ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test">Run</button>
@@ -1761,8 +1630,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">190ms</span></div>
-        <div class="tsub">passed · 190ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">203ms</span></div>
+        <div class="tsub">passed · 203ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test">Run</button>
@@ -1778,8 +1647,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement names the tests that cover it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">165ms</span></div>
-        <div class="tsub">passed · 165ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">133ms</span></div>
+        <div class="tsub">passed · 133ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" title="run only this test">Run</button>
@@ -1812,8 +1681,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">114ms</span></div>
-        <div class="tsub">passed · 114ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">116ms</span></div>
+        <div class="tsub">passed · 116ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test">Run</button>
@@ -1829,8 +1698,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">149ms</span></div>
-        <div class="tsub">passed · 149ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">164ms</span></div>
+        <div class="tsub">passed · 164ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test">Run</button>
@@ -1846,8 +1715,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">212ms</span></div>
-        <div class="tsub">passed · 212ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">223ms</span></div>
+        <div class="tsub">passed · 223ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" title="run only this test">Run</button>
@@ -1900,8 +1769,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R2 — both positions are shown in full, each naming where it came from</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">117ms</span></div>
-        <div class="tsub">passed · 117ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">89ms</span></div>
+        <div class="tsub">passed · 89ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from" title="run only this test">Run</button>
@@ -1917,8 +1786,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — the tool never picks: resolving is refused until you choose a side</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">109ms</span></div>
-        <div class="tsub">passed · 109ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">166ms</span></div>
+        <div class="tsub">passed · 166ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side" title="run only this test">Run</button>
@@ -1934,8 +1803,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — resolving records which side lost, and offers the rewrite of that file</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">463ms</span></div>
-        <div class="tsub">passed · 463ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">394ms</span></div>
+        <div class="tsub">passed · 394ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, and offers the rewrite of that file" title="run only this test">Run</button>
@@ -1951,8 +1820,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">461ms</span></div>
-        <div class="tsub">passed · 461ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">432ms</span></div>
+        <div class="tsub">passed · 432ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides" title="run only this test">Run</button>
@@ -1968,8 +1837,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">891ms</span></div>
-        <div class="tsub">passed · 891ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">766ms</span></div>
+        <div class="tsub">passed · 766ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" title="run only this test">Run</button>
@@ -2031,8 +1900,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">22144ms</span></div>
-        <div class="tsub">passed · 22144ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5324ms</span></div>
+        <div class="tsub">passed · 5324ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs" title="run only this test">Run</button>
@@ -2048,8 +1917,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a person's second run takes over the running one: accepted, not refused</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">122ms</span></div>
-        <div class="tsub">passed · 122ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">134ms</span></div>
+        <div class="tsub">passed · 134ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a person's second run takes over the running one: accepted, not refused" title="run only this test">Run</button>
@@ -2065,8 +1934,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a run may nest inside the run driving it, and nesting is bounded</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">999ms</span></div>
-        <div class="tsub">passed · 999ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1038ms</span></div>
+        <div class="tsub">passed · 1038ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a run may nest inside the run driving it, and nesting is bounded" title="run only this test">Run</button>
@@ -2082,8 +1951,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">running one screen leaves every other screen's E2E result standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5075ms</span></div>
-        <div class="tsub">passed · 5075ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">5180ms</span></div>
+        <div class="tsub">passed · 5180ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing" title="run only this test">Run</button>
@@ -2099,8 +1968,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R6/R8 — a run saves its whole log, and records every test case on its own</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">941ms</span></div>
-        <div class="tsub">passed · 941ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1928ms</span></div>
+        <div class="tsub">passed · 1928ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R6/R8 — a run saves its whole log, and records every test case on its own" title="run only this test">Run</button>
@@ -2116,8 +1985,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a run that matched no test is recorded as an error, never 0 of 0 passing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">1928ms</span></div>
-        <div class="tsub">passed · 1928ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1943ms</span></div>
+        <div class="tsub">passed · 1943ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a run that matched no test is recorded as an error, never 0 of 0 passing" title="run only this test">Run</button>
@@ -2133,8 +2002,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — running ONE case leaves every other case's steps and log standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6171ms</span></div>
-        <div class="tsub">passed · 6171ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">6160ms</span></div>
+        <div class="tsub">passed · 6160ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — running ONE case leaves every other case's steps and log standing" title="run only this test">Run</button>
@@ -2150,8 +2019,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — a case keeps a LOG HISTORY, folded across runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6121ms</span></div>
-        <div class="tsub">passed · 6121ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">2629ms</span></div>
+        <div class="tsub">passed · 2629ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — a case keeps a LOG HISTORY, folded across runs" title="run only this test">Run</button>
@@ -2167,8 +2036,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — EVERY case that has run can expand its steps, not only the one you clicked</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">5445ms</span></div>
-        <div class="tsub">passed · 5445ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">748ms</span></div>
+        <div class="tsub">passed · 748ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — EVERY case that has run can expand its steps, not only the one you clicked" title="run only this test">Run</button>
@@ -2184,8 +2053,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the run panel offers no background run</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">94ms</span></div>
-        <div class="tsub">passed · 94ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">93ms</span></div>
+        <div class="tsub">passed · 93ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the run panel offers no background run" title="run only this test">Run</button>
@@ -2201,8 +2070,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the panel and its log stay on screen after the run ends</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">8100ms</span></div>
-        <div class="tsub">passed · 8100ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">8613ms</span></div>
+        <div class="tsub">passed · 8613ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the panel and its log stay on screen after the run ends" title="run only this test">Run</button>
@@ -2218,8 +2087,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">95ms</span></div>
-        <div class="tsub">passed · 95ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">91ms</span></div>
+        <div class="tsub">passed · 91ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed" title="run only this test">Run</button>
@@ -2253,11 +2122,11 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R1</span><span class="rt">Asks for what cannot be guessed, and nothing else</span><span class="chev">›</span></div>
     <div class="body"><p>How to start the app, what URL it serves on, and which routes matter. Guessing any of these wrong produces a complete, confident, wrong board.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R2" data-state="unproven">
-    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R2</span><span class="rt">An existing app is crawled into rows</span><span class="chev">›</span></div>
-    <div class="body"><p>Each route becomes a screen: visited, screenshotted, and given a draft PRD read from what is actually on the page. The board is populated on day one instead of empty.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R2</span><span class="rt">An existing app is inventoried into rows: visited, screenshotted, nothing faked</span><span class="chev">›</span></div>
+    <div class="body"><p>Each route becomes a row: visited and screenshotted (<code>crawl.png</code>), with <strong>no PRD</strong> — visibly, honestly ungoverned. The board shows the whole app on day one as a map of what is not yet covered, never as fake coverage.</p><p><em>Corrected 2026-07-31 (the human's call): this said each route was &quot;given a draft PRD read from what is actually on the page&quot;, and the crawl went on to auto-author characterization tests. That drafting was removed: a guessed requirement records the implementation's bugs as intent, and a shallow auto-test is a false green that makes the board look finished while proving nothing. Depth is a per-screen, human-sponsored <strong>kg-deep</strong> pass — study, golden fixture, a drafted PRD for the human's gate, then a few comprehensive proving flows — run one screen at a time, most important first.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R3" data-state="unproven">
-    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R3</span><span class="rt">A crawled PRD is marked as a guess</span><span class="chev">›</span></div>
-    <div class="body"><p>It is a proposal for you to correct, never canon, and it is visibly different from a PRD you wrote. A crawled screen lands in document mode — the guessed PRD, the current screen, and a test that proves it, with no wireframe — so the one gate here is accepting the requirements as canon, not a draft review.</p><p><em>Corrected 2026-07-27: this said &quot;the draft and screen cells stay unapproved so the loop starts at gate A.&quot; That was the greenfield-only model. An existing screen already exists, so it is documented (PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code grew a second mode and the spec had to follow; the meaning the human owns — a crawl is a guess to be corrected, never canon — is unchanged.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R3</span><span class="rt">A drafted PRD is marked as a guess until the human accepts it</span><span class="chev">›</span></div>
+    <div class="body"><p>A PRD drafted on the human's behalf (a kg-deep pass's draft) carries <code>guess: true</code> — a proposal for them to correct, never canon, and visibly different from a PRD they wrote. A guess is the one thing on the board still waiting on a person; dropping the flag is the acceptance, and there is no other gate.</p><p><em>Corrected 2026-07-27: this said &quot;the draft and screen cells stay unapproved so the loop starts at gate A.&quot; That was the greenfield-only model — a screen with no wireframe has no gate A and no gate B. Corrected again 2026-07-31: the guess's SOURCE changed — the crawl no longer drafts PRDs (see R2), so a guess now comes from a kg-deep pass. What the human owns is unchanged: a drafted requirement is a guess to be corrected, never canon.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R4" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R4</span><span class="rt">An empty project is the same flow with nothing found</span><span class="chev">›</span></div>
     <div class="body"><p>No routes, no rows, and a prompt to write the first PRD. Greenfield is the zero case of the crawl, not a separate mode with separate code.</p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -2272,8 +2141,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the form persists what cannot be guessed, and reads it back</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">248ms</span></div>
-        <div class="tsub">passed · 248ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">268ms</span></div>
+        <div class="tsub">passed · 268ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back" title="run only this test">Run</button>
@@ -2289,8 +2158,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the setup cards are single-column blocks, not the home two-column grid</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">103ms</span></div>
-        <div class="tsub">passed · 103ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">105ms</span></div>
+        <div class="tsub">passed · 105ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" title="run only this test">Run</button>
@@ -2306,8 +2175,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — start mode saves backend and frontend, in order</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">172ms</span></div>
-        <div class="tsub">passed · 172ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">198ms</span></div>
+        <div class="tsub">passed · 198ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order" title="run only this test">Run</button>
@@ -2319,29 +2188,29 @@ ins { color:var(--koke); text-decoration:none; }
       <div class="fold"><div class="tststeps" data-title="R1 — start mode saves backend and frontend, in order"></div></div>
       <div class="tstlog" data-title="R1 — start mode saves backend and frontend, in order"></div>
     </div>
-  </div><div class="test tst p" data-t="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
+  </div><div class="test tst p" data-t="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-title="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">114ms</span></div>
-        <div class="tsub">passed · 114ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">116ms</span></div>
+        <div class="tsub">passed · 116ms</div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" title="run only this test">Run</button>
-          <button class="btn sm runone" data-run="init" data-grep="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
+          <button class="btn sm runone" data-run="init" data-grep="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate" title="run only this test">Run</button>
+          <button class="btn sm runone" data-run="init" data-grep="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
         </span>
       </div>
       
-      <div class="fold"><div class="tststeps" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div></div>
-      <div class="tstlog" data-title="R3 — a crawled screen lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div>
+      <div class="fold"><div class="tststeps" data-title="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div></div>
+      <div class="tstlog" data-title="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate"></div>
     </div>
   </div><div class="test tst p" data-t="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" data-title="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">88ms</span></div>
-        <div class="tsub">passed · 88ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">89ms</span></div>
+        <div class="tsub">passed · 89ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" title="run only this test">Run</button>
@@ -2357,8 +2226,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">152ms</span></div>
-        <div class="tsub">passed · 152ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">146ms</span></div>
+        <div class="tsub">passed · 146ms</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone" title="run only this test">Run</button>
@@ -2444,7 +2313,7 @@ ins { color:var(--koke); text-decoration:none; }
   // back button leaves the page entirely, and a screen cannot be linked to anyone.
   const SCREENS = ["board","conflicts","dispatch","init"]
   // The skills that have a baked flowchart page at #howitworks/<id>; an unknown id falls back to overview.
-  const SKILL_IDS = ["kg-init","kg-e2e","kg-staff","kg-update"]
+  const SKILL_IDS = ["kg-init","kg-deep","kg-e2e","kg-staff","kg-update"]
   const closeAll = () => {
     document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
     // A detail is a full-screen fixed window; while it is open the PAGE must not scroll — only the two

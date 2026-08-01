@@ -291,87 +291,13 @@ function startRewrite (key) {
   })
 }
 
-// The crawl: visit the project's own app, screenshot each route, then draft a guessed PRD per NEW
-// route. It is a real browser plus a Claude job, so like the redraft it lives OUTSIDE the
-// deterministic suite. Two phases in one job: tools/crawl.mjs drives the browser and writes the
-// manifest + crawl.png; then Claude drafts a guessed prd.md for every route not already on the
-// board. Rerunning touches nothing settled — the crawler writes the manifest, the drafting skips
-// any route whose screen already exists.
-function crawlDraftPrompt (routes, cfg = {}) {
-  const base = cfg.baseUrl || '<the app base URL from spec/_config.json>'
-  const targets = routes.filter(r => !r.exists)
-  const list = targets.map(r =>
-    `- route ${r.route} → spec/${r.slug}/prd.md` +
-    (r.title ? ` (page title: ${r.title})` : '') +
-    (r.headings ? `\n  headings on the page: ${r.headings}` : '')).join('\n')
-  return [
-    'A crawl visited this project\'s running app and captured each route. For every route below, write',
-    'a GUESSED but DETAILED product requirement document at the given path. Read the kg-init skill\'s',
-    '"drive the screen, don\'t skim it" section first: the PRD must be detailed enough that a tester',
-    'could list every number, control and flow to check from it alone — a two-line summary is a failure.',
-    '',
-    `DRIVE the screen, do not infer from its shell. The running app is at ${base}. For each route, open`,
-    `${base}<route> and explore it (reuse the saved login session; a signIn is in spec/_config.json):`,
-    '- harvest every data-testid on the page (metrics, grids, charts, panels) and name them in the PRD;',
-    '- name every metric/tile (and that it carries a value), table (its columns), chart, and control',
-    '  (buttons, toggles, selects, search, sliders) with its label;',
-    '- note read-only vs editable state (a lock indicator? a separate draft/edit surface?) and any',
-    '  modal or notice that overlays the screen;',
-    '- probe the primary interactions (move a lever, open a menu, follow a cross-page link) and write',
-    '  the OBSERVED EFFECT into the PRD, not just that a control exists.',
-    'If you cannot reach the live app, spec/<slug>/crawl.png is the captured screenshot — but a PRD',
-    'from a screenshot alone will be shallow; prefer driving the app.',
-    '',
-    'Each file must start with this frontmatter, guess included:',
-    '',
-    '---',
-    'screen: <slug>',
-    'area: Crawled',
-    'title: <a short human name for the screen>',
-    'route: <the route>',
-    'guess: true',
-    '---',
-    '',
-    'Then `## R<n> — <behaviour>` blocks — ONE per meaningful behaviour, each naming the concrete',
-    'elements (put their data-testids in an HTML comment). The `guess: true` line is not optional: this',
-    'is a proposal for the human to correct, never canon. Do not remove it, and do not approve anything.',
-    '',
-    'Routes to draft (skip any file that already exists — its screen is already on the board):',
-    list,
-    '',
-    'Write only those prd.md files. Change nothing else. Do not explain.'
-  ].join('\n')
-}
-
-// Phase three of a brownfield crawl: having guessed a PRD per route, author the E2E test that proves
-// each one — a CHARACTERIZATION test against the running app, which also shoots screen.png. This is
-// what makes a crawled row land as PRD + current screen + passing test with NO wireframe (document
-// mode), keeping column 3 a byproduct of column 4 rather than a copy of crawl.png. It follows the
-// kg-e2e skill; the model reads it there rather than having the whole convention inlined here.
-function crawlTestPrompt (screens, cfg) {
-  const base = cfg.baseUrl || '<the app base URL from spec/_config.json>'
-  const list = screens.map(s =>
-    `- spec/${s.name}/test.spec.ts  — proves spec/${s.name}/prd.md, screen at ${base}${s.route || '/' + s.name}` +
-    ` (evidence: spec/${s.name}/crawl.png)`).join('\n')
-  return [
-    'A crawl has drafted a guessed PRD for each screen below. Author the E2E test that proves each',
-    'PRD and, as a byproduct, shoots its screen.png — a CHARACTERIZATION test that locks in the',
-    'running app\'s CURRENT behaviour as the baseline. Follow the kg-e2e skill.',
-    '',
-    'For each screen write spec/<screen>/test.spec.ts:',
-    '- import { test, expect } from \'../_base\'',
-    `- navigate to the REAL running app: page.goto('${base}' + the screen's route (an absolute URL)`,
-    '- one test per requirement in that screen\'s prd.md, asserting the behaviour it names — never',
-    '  merely that the page loaded (a test that passes with the requirement deleted is not a test)',
-    '- the LAST test shoots the screenshot: await page.screenshot({ path: \'spec/<screen>/screen.png\', fullPage: false })',
-    '  — column 3 is this byproduct, never captured any other way',
-    'Read spec/<screen>/crawl.png to see what the screen looks like.',
-    '',
-    list,
-    '',
-    'Write only those test.spec.ts files. Change nothing else. Do not run anything. Do not explain.'
-  ].join('\n')
-}
+// The crawl: an INVENTORY, nothing more. tools/crawl.mjs drives a real browser over the project's
+// own app, screenshotting each route (crawl.png) and writing the manifest — each NEW route lands as
+// a row with NO PRD, visibly ungoverned. It deliberately drafts neither requirements nor tests: a
+// guessed requirement records the implementation's bugs as intent, and a shallow auto-test is a
+// false green — depth is a per-screen, human-gated kg-deep pass (2026-07-31, the human's call; the
+// old phase-2/3 Claude drafting was removed for exactly that reason). No claude login needed —
+// the whole job is deterministic browser work. Rerunning touches nothing settled.
 
 function startCrawl () {
   if (running) throw new Error('a job is already in progress')
@@ -396,73 +322,19 @@ function startCrawl () {
   crawler.on('error', err => push('run', { state: 'line', line: `could not start the crawler: ${err.message}` }))
 
   crawler.on('close', () => {
-    if (running && running.cancelled) { finishCrawl(started, false, 'cancelled — partial crawl left in place'); return }
+    if (running && running.cancelled) { finishCrawl(started, false, 'cancelled — partial inventory left in place'); return }
     const manifest = readCrawl()
     if (!manifest.routes.length) {
-      // greenfield: nothing to draft, and that is a valid, complete answer
+      // greenfield: nothing found, and that is a valid, complete answer
       finishCrawl(started, true, 'nothing found — greenfield: write the first PRD')
       return
     }
-    const toDraft = manifest.routes.filter(r => !r.exists)
-    if (!toDraft.length) { finishCrawl(started, true, `${manifest.routes.length} route(s), all already on the board`); return }
-
-    // Phase two: Claude drafts a guessed PRD per new route. The browser is done; hand the same
-    // job's panel to the drafter so it reads as one continuous crawl.
-    push('run', { state: 'line', line: `drafting ${toDraft.length} guessed PRD(s)…` })
-    const before = new Set(allScreens().map(s => s.name))
-    const drafter = spawn('claude', ['-p', crawlDraftPrompt(manifest.routes, cfg), '--permission-mode', 'acceptEdits'],
-      { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
-    running.child = drafter
-    drafter.stdout.on('data', feed)
-    drafter.stderr.on('data', feed)
-    drafter.on('error', err => push('run', { state: 'line', line: `could not start claude: ${err.message}` }))
-    drafter.on('close', () => {
-      const newScreens = allScreens().filter(s => !before.has(s.name))
-      if (!newScreens.length) {
-        finishCrawl(started, false, running && running.cancelled ? 'cancelled — partial crawl left in place'
-          : /401|OAuth|authenticate/i.test(transcript) ? 'crawled, but claude is not authenticated — sign in and rerun to draft'
-            : 'crawled, but no rows were drafted')
-        return
-      }
-      if (running && running.cancelled) { finishCrawl(started, true, 'cancelled — partial crawl left in place'); return }
-
-      // Phase three: author a characterization test per new screen, so each lands as a DOCUMENT-mode
-      // row (PRD + current screen + test, no wireframe) rather than a bare guessed PRD. Same panel,
-      // same job — chained so Cancel still reaches whatever child is live.
-      push('run', { state: 'line', line: `drafting ${newScreens.length} characterization test(s)…` })
-      const tester = spawn('claude', ['-p', crawlTestPrompt(newScreens, cfg), '--permission-mode', 'acceptEdits'],
-        { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
-      running.child = tester
-      tester.stdout.on('data', feed)
-      tester.stderr.on('data', feed)
-      tester.on('error', err => push('run', { state: 'line', line: `could not start claude: ${err.message}` }))
-      tester.on('close', () => {
-        if (running && running.cancelled) { finishCrawl(started, true, 'cancelled — partial crawl left in place'); return }
-        const specs = newScreens
-          .map(s => `spec/${s.name}/test.spec.ts`)
-          .filter(f => existsSync(join(ROOT, f)))
-        if (!specs.length) {
-          finishCrawl(started, true, `crawled ${manifest.routes.length} route(s) · ${newScreens.length} documented (PRD only — no test authored; accept them at the PRD gate)`)
-          return
-        }
-
-        // Phase four: run those tests. This produces each screen.png (column 3, a byproduct) and the
-        // suite's own reporter folds the results into the per-screen index (column 4). The board
-        // server is reused by the run (reuseExistingServer); the tests hit the REAL app, not it.
-        push('run', { state: 'line', line: `running ${specs.length} new test(s)…` })
-        const runner = spawn('npx', ['playwright', 'test', '--config', 'playwright.board.ts', ...specs],
-          { cwd: ROOT, detached: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, FORCE_COLOR: '0' } })
-        running.child = runner
-        runner.stdout.on('data', feed)
-        runner.stderr.on('data', feed)
-        runner.on('error', err => push('run', { state: 'line', line: `could not start playwright: ${err.message}` }))
-        runner.on('close', () => {
-          const proven = allScreens().filter(s => !before.has(s.name) && s.cells.e2e === 'pass').length
-          finishCrawl(started, true,
-            `crawled ${manifest.routes.length} route(s) · ${newScreens.length} documented, ${proven} with a passing test — accept the requirements at the PRD gate`)
-        })
-      })
-    })
+    // The inventory IS the result: every new route is a row with no PRD — honestly ungoverned.
+    // Depth (requirements + proving flows) is a per-screen kg-deep pass, the human's to sponsor.
+    const fresh = manifest.routes.filter(r => !r.exists).length
+    finishCrawl(started, true, fresh
+      ? `inventoried ${manifest.routes.length} route(s) · ${fresh} new row(s) with no PRD yet — run kg-deep on a screen to make it deep`
+      : `inventoried ${manifest.routes.length} route(s), all already on the board`)
   })
 }
 

@@ -79,7 +79,7 @@ tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/f
 tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
 tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
 tools/serve-board.mjs        server: static allowlist, the accept gate, runs, scan, rewrite, crawl, SSE, watch
-tools/crawl.mjs              the Init crawler (a real browser + Claude job, drafts guessed PRDs, outside the suite)
+tools/crawl.mjs              the Init crawler — INVENTORY ONLY (a real browser; rows + crawl.png, no drafting; outside the suite)
 tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
 tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
 tools/scaffold.mjs           vendors the skeleton into a project (kg-init) and writes spec/_specboard.json
@@ -155,9 +155,11 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.
-- **Agent jobs (scan, rewrite, crawl) need a valid `claude` login and take minutes.** They run
+- **Agent jobs (scan, rewrite) need a valid `claude` login and take minutes.** They run
   detached so Cancel can kill the whole process group. They are real and live **outside** the
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
+  The crawl also runs detached and long, but it is **inventory-only** (a real browser, no claude):
+  it screenshots routes into rows with no PRD. Depth is the per-screen **kg-deep** skill, human-gated.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
 - **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`

@@ -15,23 +15,31 @@ route: /init
 How to start the app, what URL it serves on, and which routes matter. Guessing any of these
 wrong produces a complete, confident, wrong board.
 
-## R2 — An existing app is crawled into rows
+## R2 — An existing app is inventoried into rows: visited, screenshotted, nothing faked
 
-Each route becomes a screen: visited, screenshotted, and given a draft PRD read from what
-is actually on the page. The board is populated on day one instead of empty.
+Each route becomes a row: visited and screenshotted (`crawl.png`), with **no PRD** — visibly,
+honestly ungoverned. The board shows the whole app on day one as a map of what is not yet covered,
+never as fake coverage.
 
-## R3 — A crawled PRD is marked as a guess
+*Corrected 2026-07-31 (the human's call): this said each route was "given a draft PRD read from what
+is actually on the page", and the crawl went on to auto-author characterization tests. That drafting
+was removed: a guessed requirement records the implementation's bugs as intent, and a shallow
+auto-test is a false green that makes the board look finished while proving nothing. Depth is a
+per-screen, human-sponsored **kg-deep** pass — study, golden fixture, a drafted PRD for the human's
+gate, then a few comprehensive proving flows — run one screen at a time, most important first.*
 
-It is a proposal for you to correct, never canon, and it is visibly different from a PRD you
-wrote. A crawled screen lands in document mode — the guessed PRD, the current screen, and a test
-that proves it, with no wireframe — so the one gate here is accepting the requirements as canon,
-not a draft review.
+## R3 — A drafted PRD is marked as a guess until the human accepts it
+
+A PRD drafted on the human's behalf (a kg-deep pass's draft) carries `guess: true` — a proposal for
+them to correct, never canon, and visibly different from a PRD they wrote. A guess is the one thing
+on the board still waiting on a person; dropping the flag is the acceptance, and there is no other
+gate.
 
 *Corrected 2026-07-27: this said "the draft and screen cells stay unapproved so the loop starts at
-gate A." That was the greenfield-only model. An existing screen already exists, so it is documented
-(PRD + current screen + test), and a screen with no wireframe has no gate A and no gate B. The code
-grew a second mode and the spec had to follow; the meaning the human owns — a crawl is a guess to be
-corrected, never canon — is unchanged.*
+gate A." That was the greenfield-only model — a screen with no wireframe has no gate A and no gate B.
+Corrected again 2026-07-31: the guess's SOURCE changed — the crawl no longer drafts PRDs (see R2), so
+a guess now comes from a kg-deep pass. What the human owns is unchanged: a drafted requirement is a
+guess to be corrected, never canon.*
 
 ## R4 — An empty project is the same flow with nothing found
 
