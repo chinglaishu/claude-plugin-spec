@@ -784,9 +784,11 @@ export function build () {
   .tbody { display:none; padding:0 var(--s4) var(--s3); }
   .test.open .tbody { display:block; }
   .trow2 { display:flex; gap:var(--s4); align-items:center; }
-  .rec { position:relative; width:220px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
-    border:1px solid var(--hair-2); overflow:hidden; cursor:default;
+  .rec { position:relative; width:300px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
+    border:1px solid var(--hair-2); overflow:hidden; cursor:default; transition:width .25s ease;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }
+  /* while the recording PLAYS the player grows, so a run is watchable without fullscreen */
+  .rec.playing { width:min(640px, 100%); }
   /* a still cover is playable ONLY when a run captured a video; otherwise it is honestly a still */
   .rec.playable { cursor:pointer; }
   .rec .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -2203,6 +2205,21 @@ ${detail}
           slot.onclick = () => {
             slot.onclick = null; slot.classList.remove('playable')
             slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
+            const v = slot.querySelector('video')
+            // MediaRecorder webm has no duration header, so the timeline starts unscrubbable.
+            // Force the browser's end-of-file probe (needs the server's Range support): jump far
+            // past the end once metadata lands, then snap back — duration resolves and seeking works.
+            v.addEventListener('loadedmetadata', () => {
+              if (v.duration === Infinity) {
+                const back = () => { v.removeEventListener('seeked', back); v.currentTime = 0; v.play() }
+                v.addEventListener('seeked', back)
+                v.currentTime = 1e9
+              }
+            })
+            // The player grows while it plays, so a run is watchable without going fullscreen.
+            v.addEventListener('play', () => slot.classList.add('playing'))
+            v.addEventListener('pause', () => slot.classList.remove('playing'))
+            v.addEventListener('ended', () => slot.classList.remove('playing'))
           }
         } else {
           slot.classList.remove('playable'); slot.onclick = null

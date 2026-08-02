@@ -898,11 +898,32 @@ const server = createServer(async (req, res) => {
   if (!allowed || !file.startsWith(ROOT) || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404, { 'content-type': 'text/plain' }); res.end('not found'); return
   }
+  const body = readFileSync(file)
+  const type = TYPES[extname(file)] || 'application/octet-stream'
+  // BYTE-RANGE support. The run recordings are MediaRecorder .webm files, which carry no duration
+  // header — a <video> timeline can only become seekable once the browser probes the file's end,
+  // and it probes with Range requests. Without 206 partials the player shows an unscrubbable
+  // timeline. Ranges are honoured for every static file; video is the consumer that needs it.
+  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '')
+  if (range && (range[1] !== '' || range[2] !== '')) {
+    const size = body.length
+    const start = range[1] === '' ? Math.max(0, size - Number(range[2])) : Number(range[1])
+    const end = range[1] !== '' && range[2] !== '' ? Math.min(Number(range[2]), size - 1) : size - 1
+    if (start > end || start >= size) {
+      res.writeHead(416, { 'content-range': 'bytes */' + size }); res.end(); return
+    }
+    res.writeHead(206, {
+      'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes',
+      'content-range': 'bytes ' + start + '-' + end + '/' + size, 'content-length': end - start + 1
+    })
+    res.end(body.subarray(start, end + 1))
+    return
+  }
   res.writeHead(200, {
-    'content-type': TYPES[extname(file)] || 'application/octet-stream',
-    'cache-control': 'no-store'
+    'content-type': type, 'cache-control': 'no-store',
+    'accept-ranges': 'bytes', 'content-length': body.length
   })
-  res.end(readFileSync(file))
+  res.end(body)
 })
 
 // Editing a PRD or a draft in your editor should move the board without you asking it to.
