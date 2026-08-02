@@ -93,14 +93,20 @@ test('Steps read as named beats, a failure names itself, and the recording expla
   await openDetail(page)
   const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()
   const t1 = (await page.locator('#testpane .test .ttl').nth(1).textContent())!.trim()
+  // the passing case carries a RECOVERED error (a caught wait, as real setups do) — it must not
+  // read as a failure: the case's verdict, not a step's, decides whether the alarm is raised
   const steps0 = [
     { label: 'proves R1', cat: 'test.step', depth: 0, ok: true, t: 0, d: 5000 },
+    { label: 'Wait for the “#email”', cat: 'pw:api', depth: 1, ok: false, t: 50, d: 30 },
     { label: 'Open /', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 400 },
     { label: 'proves R2', cat: 'test.step', depth: 0, ok: true, t: 5000, d: 4000 },
     { label: 'Check the “cards” has the expected number', cat: 'expect', depth: 1, ok: true, t: 5200, d: 300 }
   ]
+  // the failing case ALSO carries an early recovered error — the failing beat is the one holding
+  // the LAST failed step (the flow stopped there), never the first errored-and-recovered one
   const steps1 = [
     { label: 'proves R4', cat: 'test.step', depth: 0, ok: true, t: 0, d: 2000 },
+    { label: 'Wait for the “.grid”', cat: 'pw:api', depth: 1, ok: false, t: 50, d: 30 },
     { label: 'Click the “Run all”', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 200 },
     { label: 'proves R5', cat: 'test.step', depth: 0, ok: false, t: 2000, d: 1000 },
     { label: 'Check the “tags” has the expected number', cat: 'expect', depth: 1, ok: false, t: 2100, d: 900 }
@@ -130,20 +136,27 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     await expect(pass.locator('.tststeps .bacts li').first()).toBeHidden()
     await beats.first().locator('.stepstog').click()
     await expect(pass.locator('.tststeps .bacts li').first()).toBeVisible()
-    await expect(pass.locator('.tststeps .bacts li').first()).toContainText('Open /')
+    await expect(pass.locator('.tststeps .bacts li').nth(1)).toContainText('Open /')
+    // the recovered step keeps its honest ✕ mark at detail level — it happened — without the alarm
+    await expect(pass.locator('.tststeps .bacts li.sf')).toHaveCount(1)
+
+    // a PASSING case never raises the alarm, even when a step inside it errored and recovered —
+    // the verdict is the case's, not a caught wait's
+    await expect(pass.locator('.tststeps .beat.f')).toHaveCount(0)
+    await expect(pass.locator('.tmeta')).toContainText('2 beats')
+    await expect(pass.locator('.tmeta')).not.toContainText('failed')
 
     // WHICH PART FAILED is visible without opening anything: the meta line names the failing beat…
     await expect(fail.locator('.tmeta')).toContainText('proves R5')
-    // …and inside, the failing beat arrives OPEN, marked, with its failing check marked too
+    // …and inside, exactly ONE beat wears the failure — the one holding the LAST failed step,
+    // arriving OPEN with its failing check marked, not the early errored-and-recovered beat
     await fail.locator('.th').click()
     const fbeat = fail.locator('.tststeps .beat.f')
     await expect(fbeat).toHaveCount(1)
     await expect(fbeat).toContainText('proves R5')
     await expect(fbeat.locator('.bacts li.sf')).toBeVisible()    // auto-revealed, marked ✕
-    // while its passing neighbour beat stays folded
+    // while its recovered neighbour beat stays folded and quiet
     await expect(fail.locator('.tststeps .beat.p .bacts li').first()).toBeHidden()
-    // the passing case's meta line reads as a quiet summary, not a false alarm
-    await expect(pass.locator('.tmeta')).toContainText('2 beats')
   })
 
   await checkReq('R10', async () => {
@@ -158,6 +171,7 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     })
     await expect(bar).toBeVisible()
     await expect(bar).toContainText('proves R2')                 // the beat live at 5.5s
+    await expect(bar).not.toHaveClass(/bad/)                     // a recovered error never pins a failure
     // on a failed case, once the playhead passes the failure the bar PINS the failing beat
     await fail.locator('.rec').click()
     await fail.locator('.rec video').evaluate(v => {

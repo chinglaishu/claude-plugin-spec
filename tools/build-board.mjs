@@ -2268,7 +2268,9 @@ ${detail}
             // never shows the bar.
             const ctx = slot.querySelector('.ctx')
             const timed = ((one.steps) || []).filter(s => typeof s.t === 'number' && s.cat !== 'note')
-            const failat = timed.find(s => !s.ok)
+            // pin a failure only when the CASE failed, and at the LAST failed step — the flow
+            // stopped there; an errored-then-recovered step in a green flow is not a failure
+            const failat = one.ok === false ? timed.filter(s => !s.ok).pop() : null
             const beatBefore = i => {
               for (let j = i; j >= 0; j--) if (timed[j].cat === 'test.step' && !timed[j].depth) return timed[j]
               return null
@@ -2338,9 +2340,18 @@ ${detail}
           if (!cur) { cur = { head: { label: 'setup — before the first named step', ok: true, synth: true }, kids: [] }; beats.push(cur) }
           cur.kids.push(s)
         }
+        // The alarm keys off the CASE's verdict, never a step's: a green flow can contain a caught,
+        // recovered error (a raced wait in setup, say) and that must not read as a failure. On a
+        // failed case, THE failing beat is the one holding the LAST failed step — the flow stopped
+        // there; earlier errors were recovered, or nothing after them would have run.
+        let failStep = null
+        if (one.ok === false) for (const s of steps) { if (!s.ok && s.cat !== 'note') failStep = s }
+        const failBeat = failStep
+          ? beats.filter(b => b.head && (b.kids.includes(failStep) || b.head === failStep)).pop()
+          : null
         slot.innerHTML = beats.map(b => {
           if (b.note != null) return '<div class="snote">' + eh(b.note) + '</div>'
-          const bad = !b.head.ok || b.kids.some(k => !k.ok)
+          const bad = b === failBeat
           const n = b.kids.length
           const kid = s => '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) +
             (s.ok ? '' : ' sf') + '" style="margin-left:' + (Math.max(0, (s.depth || 0) - 1) * 14) + 'px">' +
@@ -2358,10 +2369,7 @@ ${detail}
         if (meta) {
           const took = one.ms != null ? fmt(one.ms) : ''
           if (one.ok === false) {
-            let fb = null
-            for (const b of beats) { if (b.head && (!b.head.ok || b.kids.some(k => !k.ok))) { fb = b; break } }
-            const fs = steps.find(s => !s.ok && s.cat !== 'note')
-            const name = (fb && fb.head.label) || (fs && fs.label) || 'an unnamed step'
+            const name = (failBeat && failBeat.head.label) || (failStep && failStep.label) || 'an unnamed step'
             meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' +
               (took ? ' · ' + eh(took) : '')
           } else {
