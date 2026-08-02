@@ -9,9 +9,9 @@
   "plugins": [
     {
       "name": "specboard",
-      "version": "0.10.0",
+      "version": "0.13.0",
       "source": "./",
-      "description": "A visualised spec-driven development board. Every screen is a row — PRD → wireframe → screenshot → test — and staleness is derived, never tracked: edit the requirements and the wireframe goes stale, change the wireframe and the screenshot goes stale. Two human gates decide is-this-what-I-meant and did-you-build-it; contradictions across requirements are surfaced for you to adjudicate.",
+      "description": "A visualised spec-driven development board. Every screen is two ends — its requirements, and the E2E tests that prove them against the real app. Drift is derived, never tracked: a requirement is proven only while a passing test tags it with an assertion that would fail without it; contradictions across requirements are surfaced for you to adjudicate.",
       "author": {
         "name": "chinglaishu"
       },
@@ -19,9 +19,9 @@
       "keywords": [
         "requirements",
         "spec-driven",
-        "wireframe",
-        "testing",
-        "staleness"
+        "e2e",
+        "coverage",
+        "drift"
       ]
     }
   ]

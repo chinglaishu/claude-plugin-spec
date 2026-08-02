@@ -16,6 +16,21 @@ import {
 const chip = (tone, mark, label, attrs = '') =>
   `<span class="chip ${tone}"${attrs ? ' ' + attrs : ''}><span class="${mark}"></span>${label}</span>`
 
+// A duration a person can read — "27457ms" is a number to parse, "27.5s" is a fact.
+const fmtMs = ms => ms >= 1000 ? (Math.round(ms / 100) / 10) + 's' : Math.round(ms) + 'ms'
+
+// The one-line excerpt under a requirement title (board R3) — the body's first sentence, stripped
+// of markdown and author notes, so a collapsed row still says what the requirement is ABOUT.
+const excerpt = body => {
+  const flat = String(body || '')
+    .replace(/<!--[\s\S]*?-->/g, ' ')            // author notes are hints for the test author
+    .replace(/[`*_]/g, '')
+    .replace(/^\s*[-#>]+\s*/gm, '')
+    .replace(/\s+/g, ' ').trim()
+  const m = flat.match(/^.{20,150}?[.!?](?=\s|$)/)
+  return m ? m[0] : (flat.length > 140 ? flat.slice(0, 140).trimEnd() + '…' : flat)
+}
+
 // A requirement's derived state → its header chip (board R4). Two states, computed from the tests and
 // nothing else: proven=moss ✓ (a current passing assertion covers it), unproven=hollow ○ (honestly
 // ungreen, never faked). Title only, no label — the header stays compact; the word lives in the
@@ -97,12 +112,12 @@ const reqRow = r => {
     ? `<div class="covers">proven by ${passing.map(t => `<span class="ctag">${esc(t.title)}</span>`).join(' ')}</div>`
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
-    <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><span class="rt">${esc(r.title)}</span><span class="chev">›</span></div>
+    <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBody(r.body)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
-  <h2>Requirements</h2>
+  <h2>Requirements<span class="s">what the screen must do — click a row for its full text</span></h2>
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
@@ -119,11 +134,11 @@ const testRow = (s, t) => {
   }).join('')
   const status = t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
   return `<div class="test tst ${t.ok ? 'p' : 'f'}" data-t="${esc(t.title)}" data-title="${esc(t.title)}">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(t.title)}</span><div class="tags">${tags}</div>${status}</div></div>
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(t.title)}</span><div class="tags">${tags}</div>${status}</div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">${t.ms}ms</span></div>
-        <div class="tsub">${t.ok ? 'passed' : 'failed'} · ${t.ms}ms</div>
+        <div class="rec"><span class="play">▶</span><span class="lab">${fmtMs(t.ms)}</span></div>
+        <div class="tsub">${t.ok ? 'passed' : 'failed'} · ${fmtMs(t.ms)}</div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" title="run only this test">Run</button>
@@ -138,7 +153,7 @@ const testRow = (s, t) => {
   </div>`
 }
 const testPane = s => `<div class="pane testpane">
-  <h2>E2E tests</h2>
+  <h2>E2E tests<span class="s">the proof — each flow tags the requirements it covers</span></h2>
   ${s.run && s.run.tests && s.run.tests.length
     ? s.run.tests.map(t => testRow(s, t)).join('')
     : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
@@ -611,7 +626,7 @@ export function build () {
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth dbarhook">
     <h2>${esc(s.title)}</h2>
-    <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · spec/${esc(s.name)}/</span>
+    <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · ${s.reqs.filter(r => r.state === 'proven').length} proven · spec/${esc(s.name)}/</span>
     <span class="grow"></span>
     ${runAll(s.name)}
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
@@ -736,6 +751,16 @@ export function build () {
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
 
+  /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
+  .rmain { flex:1; min-width:0; }
+  .rhint { font-size:var(--t-xs); color:var(--ink-4); white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; margin-top:1px; }
+  .req.open .rhint { display:none; }  /* the full body follows — the excerpt would just repeat it */
+  .tmeta { font-size:var(--t-xs); color:var(--ink-4); margin-top:2px; padding-left:calc(11px + var(--s3));
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tmeta:empty { display:none; }
+  .tmeta .failat { color:var(--bengara); }
+
   /* requirements — the TITLE until clicked, then the full markdown (board R3) */
   /* highlight the WHOLE item (header + expanded body), and fade it in/out */
   .req { border-bottom:1px solid var(--hair); transition:background-color .16s ease; }
@@ -796,6 +821,19 @@ export function build () {
   .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; background:var(--ink); }
   .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); padding:0 5px; border-radius:3px; }
+  /* the CONTEXT BAR (board R10): while the recording plays, a bar over the player names the beat and
+     action under the playhead — and once the playhead passes the failure it PINS the failing beat */
+  .rec .ctx { position:absolute; top:0; left:0; right:0; z-index:1; display:flex; align-items:baseline;
+    gap:var(--s2); padding:3px var(--s3); background:var(--paper); border-bottom:1px solid var(--hair);
+    font-size:var(--t-xs); color:var(--ink-2); }
+  .rec .ctx[hidden] { display:none; }
+  .rec .ctx .cmk { flex:none; color:var(--koke); }
+  .rec .ctx .cwords { flex:1; min-width:0; display:flex; align-items:baseline; gap:var(--s1);
+    white-space:nowrap; overflow:hidden; }
+  .rec .ctx .cb { font-weight:600; flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+  .rec .ctx .ca { color:var(--ink-4); overflow:hidden; text-overflow:ellipsis; }
+  .rec .ctx.bad { background:var(--bengara-tint); border-bottom-color:var(--bengara); color:var(--bengara); }
+  .rec .ctx.bad .cmk, .rec .ctx.bad .ca { color:var(--bengara); }
   .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
   .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
   /* coverage refs — quiet, NEUTRAL metadata (indigo is reserved for "your turn"). They tint only
@@ -825,13 +863,28 @@ export function build () {
   .sheet .bh strong { font-size:var(--t-md); }
   .sheet .bb { padding:var(--s4); overflow:auto; }
   .sheet .bb:empty:before { content:"No runs recorded for this test yet."; color:var(--ink-4); font-size:var(--t-sm); }
-  /* the detail steps of a case — every action and check, collapsed behind a toggle */
+  /* the detail steps of a case, grouped under the author's NAMED BEATS (board R10): one row per
+     beat wearing its own pass/fail mark, its fine-grained actions folded inside — a failed beat
+     arrives open so the red part shows itself */
   .tststeps { margin:var(--s2) 0 0 14px; }
   .tststeps:empty { display:none; }
+  .beat { border-left:2px solid var(--hair); margin:var(--s2) 0; padding-left:var(--s3); }
+  .beat.f { border-left-color:var(--bengara); }
   .stepstog { border:0; background:transparent; cursor:pointer; padding:0;
-    font:var(--t-xs)/1.4 var(--sans); color:var(--ink-4); }
+    font:var(--t-xs)/1.5 var(--sans); color:var(--ink-4); }
   .stepstog:hover { color:var(--ink-2); }
+  .beat > .stepstog { display:flex; align-items:baseline; gap:var(--s2); width:100%; text-align:left;
+    color:var(--ink-2); }
+  .beat > .stepstog:hover { color:var(--ink); }
+  .beat.f > .stepstog { color:var(--bengara); }
+  .beat .bmk { flex:none; }
+  .beat.p .bmk { color:var(--koke); }
+  .beat.f .bmk { color:var(--bengara); }
+  .beat .blbl { flex:1; min-width:0; }
+  .beat .bn { flex:none; margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-4); }
+  .snote { font:var(--t-micro) var(--mono); color:var(--ink-4); margin-top:var(--s2); }
   .stepslist { list-style:none; margin:var(--s2) 0 0; padding:0; }
+  .stepslist.bacts { padding-left:var(--s4); margin-top:var(--s1); }
   /* the humanised step reads as a sentence; a leading tick marks a check, a dot marks an action,
      and a named step (the author's own words) stands out as the beat it is */
   .stepslist li { font-size:var(--t-xs); color:var(--ink-3); padding:2px 0; line-height:1.5; }
@@ -2204,8 +2257,46 @@ ${detail}
           slot.innerHTML = '<span class="play">▶</span>' + label
           slot.onclick = () => {
             slot.onclick = null; slot.classList.remove('playable')
-            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
+            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label +
+              '<div class="ctx" hidden><span class="cmk"></span><span class="cwords"><span class="cb"></span><span class="ca"></span></span></div>'
             const v = slot.querySelector('video')
+            // The CONTEXT BAR (board R10): while the recording plays, name the beat and action under
+            // the playhead so the video explains what it is testing — and once the playhead passes
+            // the failure, PIN the failing beat so the red part explains itself. Steps carry .t,
+            // their offset from the moment the recording started (the reporter measures it from the
+            // Create page step — video is recorded per page); an old record without offsets simply
+            // never shows the bar.
+            const ctx = slot.querySelector('.ctx')
+            const timed = ((one.steps) || []).filter(s => typeof s.t === 'number' && s.cat !== 'note')
+            const failat = timed.find(s => !s.ok)
+            const beatBefore = i => {
+              for (let j = i; j >= 0; j--) if (timed[j].cat === 'test.step' && !timed[j].depth) return timed[j]
+              return null
+            }
+            const sync = () => {
+              if (!timed.length) return
+              const ms = v.currentTime * 1000
+              if (failat && ms >= failat.t) {
+                const beat = beatBefore(timed.indexOf(failat)) || failat
+                ctx.classList.add('bad')
+                ctx.querySelector('.cmk').textContent = '✕'
+                ctx.querySelector('.cb').textContent = 'failed here — ' + (beat.label || '')
+                ctx.querySelector('.ca').textContent = beat !== failat ? (failat.label || '') : ''
+                ctx.hidden = false
+                return
+              }
+              let cur = null, curi = -1
+              for (let j = 0; j < timed.length; j++) { if (timed[j].t <= ms + 50) { cur = timed[j]; curi = j } else break }
+              if (!cur) { ctx.hidden = true; return }
+              const beat = beatBefore(curi) || cur
+              ctx.classList.remove('bad')
+              ctx.querySelector('.cmk').textContent = cur.cat === 'expect' ? '✓' : '·'
+              ctx.querySelector('.cb').textContent = beat.label || ''
+              ctx.querySelector('.ca').textContent = beat !== cur ? '— ' + (cur.label || '') : ''
+              ctx.hidden = false
+            }
+            v.addEventListener('timeupdate', sync)
+            v.addEventListener('seeked', sync)
             // MediaRecorder webm has no duration header, so the timeline starts unscrubbable.
             // Force the browser's end-of-file probe (needs the server's Range support): jump far
             // past the end once metadata lands, then snap back — duration resolves and seeking works.
@@ -2226,18 +2317,59 @@ ${detail}
           slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
       }
-      // The DETAIL STEPS of each case, collapsed behind a toggle — every action and check the test
-      // ran, in order, indented under its named steps. Expand to see exactly what a case did.
+      // The DETAIL STEPS of each case, grouped under the author's NAMED BEATS (board R10): each
+      // beat (a test.step — 'proves R5' and friends) is one sentence-row wearing its own pass/fail
+      // mark, folding the fine-grained actions and checks inside it — eighty steps read as a
+      // handful of beats. A FAILED beat arrives OPEN, marked, and is named on the case's META LINE
+      // (board R3) so which part failed is visible without opening anything.
+      const fmt = ms => ms >= 1000 ? (Math.round(ms / 100) / 10) + 's' : Math.round(ms) + 'ms'
       for (const slot of panel.querySelectorAll('.tststeps')) {
+        const host = slot.closest('.test')
+        const meta = host && host.querySelector('.tmeta')
         const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
-        if (!steps.length) { slot.innerHTML = ''; continue }
-        slot.innerHTML =
-          '<button class="stepstog" aria-expanded="false">▸ ' + steps.length + ' steps</button>' +
-          '<ol class="stepslist" hidden>' + steps.map(s =>
-            '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) + (s.ok ? '' : ' sf') +
-            '" style="margin-left:' + (s.depth * 14) + 'px">' +
-            eh(s.label || '') + '</li>').join('') + '</ol>'
+        if (!steps.length) { slot.innerHTML = ''; if (meta) meta.textContent = ''; continue }
+        // fold the flat record back into beats; actions before the first named beat read as setup
+        const beats = []
+        let cur = null
+        for (const s of steps) {
+          if (s.cat === 'note') { beats.push({ note: s.label }); continue }
+          if (s.cat === 'test.step' && !s.depth) { cur = { head: s, kids: [] }; beats.push(cur); continue }
+          if (!cur) { cur = { head: { label: 'setup — before the first named step', ok: true, synth: true }, kids: [] }; beats.push(cur) }
+          cur.kids.push(s)
+        }
+        slot.innerHTML = beats.map(b => {
+          if (b.note != null) return '<div class="snote">' + eh(b.note) + '</div>'
+          const bad = !b.head.ok || b.kids.some(k => !k.ok)
+          const n = b.kids.length
+          const kid = s => '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) +
+            (s.ok ? '' : ' sf') + '" style="margin-left:' + (Math.max(0, (s.depth || 0) - 1) * 14) + 'px">' +
+            eh(s.label || '') + '</li>'
+          return '<div class="beat ' + (bad ? 'f' : 'p') + '">' +
+            '<button class="stepstog" aria-expanded="' + String(bad) + '">' +
+            '<span class="bmk">' + (bad ? '✕' : '✓') + '</span>' +
+            '<span class="blbl">' + eh(b.head.label || '') + '</span>' +
+            (n ? '<span class="bn">' + n + ' step' + (n === 1 ? '' : 's') + '</span>' : '') +
+            '</button>' +
+            (n ? '<ol class="stepslist bacts"' + (bad ? '' : ' hidden') + '>' + b.kids.map(kid).join('') + '</ol>' : '') +
+            '</div>'
+        }).join('')
+        // the meta line under the case title: a quiet summary — or, on a failure, its NAME
+        if (meta) {
+          const took = one.ms != null ? fmt(one.ms) : ''
+          if (one.ok === false) {
+            let fb = null
+            for (const b of beats) { if (b.head && (!b.head.ok || b.kids.some(k => !k.ok))) { fb = b; break } }
+            const fs = steps.find(s => !s.ok && s.cat !== 'note')
+            const name = (fb && fb.head.label) || (fs && fs.label) || 'an unnamed step'
+            meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' +
+              (took ? ' · ' + eh(took) : '')
+          } else {
+            const nb = beats.filter(b => b.head && !b.head.synth).length
+            meta.textContent = (nb ? nb + ' beat' + (nb === 1 ? '' : 's') + ' · ' : '') +
+              steps.filter(s => s.cat !== 'note').length + ' steps' + (took ? ' · ' + took : '')
+          }
+        }
       }
       // The case's own LOG HISTORY — its last ten runs, newest first, each headed with when it ran,
       // how long it took and the commit it ran against. One log says whether it passes today; ten
@@ -2288,15 +2420,15 @@ ${detail}
     openLb(img.src, img.alt || 'screenshot')
   })
 
-  // expand/collapse a test case's detail steps
+  // expand/collapse one beat's actions (board R10) — a beat with no recorded actions has no list
   document.addEventListener('click', e => {
     const tog = e.target.closest('.stepstog')
     if (!tog) return
     const list = tog.nextElementSibling
+    if (!list) return
     const show = list.hidden
     list.hidden = !show
     tog.setAttribute('aria-expanded', String(show))
-    tog.textContent = (show ? '▾ ' : '▸ ') + list.querySelectorAll('li').length + ' steps'
   })
   document.getElementById('lbzoom').addEventListener('click', e => {
     const on = lbstage.classList.toggle('actual')

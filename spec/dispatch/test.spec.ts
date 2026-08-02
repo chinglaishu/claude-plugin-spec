@@ -234,11 +234,11 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   // the case that DID run keeps its record, of course (open it — the machinery lives in the .tbody)
   const ran = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R1 }).first()
   await openCase(ran)
-  await expect(ran.locator('.tststeps .stepstog')).toBeVisible()
+  await expect(ran.locator('.tststeps .stepstog').first()).toBeVisible()   // ≥1 beat toggle (board R10)
   // and so does a case the filtered run never touched — this is the bit that was being blanked
   const untouched = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R2 }).first()
   await openCase(untouched)
-  await expect(untouched.locator('.tststeps .stepstog'), 'every case can still expand its steps').toBeVisible()
+  await expect(untouched.locator('.tststeps .stepstog').first(), 'every case can still expand its steps').toBeVisible()
   // the whole log now opens in ONE place — the popup (board R10). The inline .tstlog is still FOLDED
   // for every case (this fold is the bit that was being blanked); its history feeds the popup and its
   // affordance is the full-log link. Assert the fold reached this untouched case, and the link is there.
@@ -299,7 +299,7 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   for (let i = 0; i < n; i++) {
     const title = await cases.nth(i).locator('.tt').textContent()
     await openCase(cases.nth(i))   // the machinery lives in the collapsed .tbody
-    await expect(cases.nth(i).locator('.tststeps .stepstog'),
+    await expect(cases.nth(i).locator('.tststeps .stepstog').first(),
       'case can expand its steps: ' + title).toBeVisible()
     // its log is folded per case (feeds the one full-log popup); assert the record reached this case
     await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),

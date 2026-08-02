@@ -38,6 +38,15 @@ the flow it runs — its own name, so it says what the test is *for* — then it
 test title just repeating a requirement's, is gone: under many-to-many a test covers several
 requirements, so its title names the *flow* and the tags carry the requirement link.
 
+Both lists carry a **reading hierarchy**, never bare title rows: each pane's header wears a quiet
+purpose hint; a requirement row shows a one-line **excerpt** of its body under the title (hidden once
+the row is open — the full text follows); a test row shows a quiet **meta line** under its title —
+its beats, step count and duration, and on a failure **the name of the beat that failed**, readable
+without opening anything.
+
+*Amended 2026-08-03 at the human's direction: the detail page read as bare title rows — the lists
+needed the title / sub-line / hint layer this adds to be scannable.*
+
 ## R4 — Requirement state is computed and assertion-backed
 
 Each requirement is **proven** or **unproven** — computed from the tests, never typed. **Proven** means:
@@ -98,14 +107,25 @@ never paginated — a board you page through can no longer answer "what is the s
 
 ## R10 — A test opens to its full evidence, and can be run or watched
 
-A test row is not just a verdict. It opens to: its **steps**, each carrying its own pass / fail /
-not-reached mark, in a list that **scrolls** so fifty steps read as clearly as five; the **whole run
+A test row is not just a verdict. It opens to: its **steps**, grouped under the author's **named
+beats** (`test.step` — `proves R5` and friends): each beat is one sentence-row wearing its own pass /
+fail mark and folding the fine-grained actions and checks inside it, so eighty steps read as a
+handful of sentences, not a flat wall; a **failed beat names itself** — it arrives open to its
+failing check, marked, and is named on the test's meta line (R3) so the failure is visible without
+digging; a record trimmed at the step cap **says so** rather than ending silently; the **whole run
 log** — the complete process output for that run, including globalSetup / seed output and the
 untruncated tail, not only that case's bounded stdout (the per-case log alone was the gap that read as
 "it doesn't show the whole log"); and a record **per run**, each keeping its own **recording** (its
 cover the last asserted frame — the end state it proved, not the blank first frame), the time, the
 duration, the commit and the verdict. A still screenshot is kept only as the fallback cover when a run
 has no video (a headless CLI run, or the recording was pruned) — the recording is the primary
-artifact, so there is no separate screenshot column. Every test can be **Run** (headless — nothing to
+artifact, so there is no separate screenshot column. While the recording **plays**, a **context bar**
+on the player names the beat and action under the playhead — the video explains what it is testing as
+it goes — and once the playhead passes the point of failure the bar **pins the failing beat**, so a
+red run's video explains which part failed. Every test can be **Run** (headless — nothing to
 watch, it just goes) or **Watched** (a real browser opens and drives the app in front of you). Run and
 Watch stay wherever a test is shown.
+
+*Amended 2026-08-03 at the human's direction: a flat "80 steps" fold was unreadable, the failure was
+invisible until you dug for it, and a recording that never says what it is currently testing cannot
+explain a failure.*

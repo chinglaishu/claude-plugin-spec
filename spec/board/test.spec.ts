@@ -69,6 +69,103 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     const testTitle = (await t.locator('.ttl').textContent())?.trim()
     const reqTitles = await page.locator('#reqpane .req .rt').allTextContents()
     expect(reqTitles.map(s => s.trim())).not.toContain(testTitle)
+
+    // the READING HIERARCHY: never bare title rows. Each pane's header wears a quiet purpose hint;
+    // a requirement row shows a one-line excerpt of its body under the title — and the excerpt
+    // yields to the full text once the row is open, never repeating it.
+    await expect(page.locator('#reqpane h2 .s')).not.toBeEmpty()
+    await expect(page.locator('#testpane h2 .s')).not.toBeEmpty()
+    const second = page.locator('#reqpane .req').nth(1)
+    await expect(second.locator('.rhint')).not.toBeEmpty()
+    await expect(second.locator('.rhint')).toBeVisible()
+    await expect(req.locator('.rhint')).toBeHidden()             // this row is open — the body follows
+    // a test row carries a meta-line hook under its title (loadRuns fills it from the case's record)
+    await expect(t.locator('.tmeta')).toBeAttached()
+  })
+})
+
+// Board R10/R3 — the presentation of a case's evidence, proven against a DETERMINISTIC record: the
+// live records on disk cannot deterministically contain a failure, so this test stubs /api/runs with
+// one passing and one failing case (fixture data through the REAL client pipeline) and asserts how
+// the board reads them back. The titles are the real baked rows' — the fixture only supplies records.
+test('Steps read as named beats, a failure names itself, and the recording explains itself', async ({ page }) => {
+  await coverReqs('R10')
+  await openDetail(page)
+  const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()
+  const t1 = (await page.locator('#testpane .test .ttl').nth(1).textContent())!.trim()
+  const steps0 = [
+    { label: 'proves R1', cat: 'test.step', depth: 0, ok: true, t: 0, d: 5000 },
+    { label: 'Open /', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 400 },
+    { label: 'proves R2', cat: 'test.step', depth: 0, ok: true, t: 5000, d: 4000 },
+    { label: 'Check the “cards” has the expected number', cat: 'expect', depth: 1, ok: true, t: 5200, d: 300 }
+  ]
+  const steps1 = [
+    { label: 'proves R4', cat: 'test.step', depth: 0, ok: true, t: 0, d: 2000 },
+    { label: 'Click the “Run all”', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 200 },
+    { label: 'proves R5', cat: 'test.step', depth: 0, ok: false, t: 2000, d: 1000 },
+    { label: 'Check the “tags” has the expected number', cat: 'expect', depth: 1, ok: false, t: 2100, d: 900 }
+  ]
+  const mk = (ok: boolean, steps: object[]) => ({
+    shots: [], video: 'spec/_runs/rt/' + (ok ? 'a' : 'b') + '.webm', steps, log: 'x',
+    at: '2026-08-03T00:00:00.000Z', ms: 9000, ok, commit: 'abc1234'
+  })
+  await page.route('**/api/runs', route => route.fulfill({ json: {
+    watch: false, running: false,
+    runs: [{ screen: 'board', runId: 'rt', hasLog: false, at: '2026-08-03T00:00:00.000Z', ms: 9000,
+      ok: false, total: 2, failed: 1, shotsByTest: { [t0]: mk(true, steps0), [t1]: mk(false, steps1) } }]
+  } }))
+  await page.reload()                                            // same-document hash nav never reloads
+  await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const pass = dt.locator('.test', { hasText: t0 }).first()
+  const fail = dt.locator('.test', { hasText: t1 }).first()
+
+  await checkReq('R10', async () => {
+    // the steps fold reads as the author's NAMED BEATS, not one flat wall behind a count
+    await pass.locator('.th').click()
+    const beats = pass.locator('.tststeps .beat')
+    await expect(beats).toHaveCount(2)
+    await expect(beats.first()).toContainText('proves R1')
+    // a passing beat keeps its actions folded; one click on the beat reveals them
+    await expect(pass.locator('.tststeps .bacts li').first()).toBeHidden()
+    await beats.first().locator('.stepstog').click()
+    await expect(pass.locator('.tststeps .bacts li').first()).toBeVisible()
+    await expect(pass.locator('.tststeps .bacts li').first()).toContainText('Open /')
+
+    // WHICH PART FAILED is visible without opening anything: the meta line names the failing beat…
+    await expect(fail.locator('.tmeta')).toContainText('proves R5')
+    // …and inside, the failing beat arrives OPEN, marked, with its failing check marked too
+    await fail.locator('.th').click()
+    const fbeat = fail.locator('.tststeps .beat.f')
+    await expect(fbeat).toHaveCount(1)
+    await expect(fbeat).toContainText('proves R5')
+    await expect(fbeat.locator('.bacts li.sf')).toBeVisible()    // auto-revealed, marked ✕
+    // while its passing neighbour beat stays folded
+    await expect(fail.locator('.tststeps .beat.p .bacts li').first()).toBeHidden()
+    // the passing case's meta line reads as a quiet summary, not a false alarm
+    await expect(pass.locator('.tmeta')).toContainText('2 beats')
+  })
+
+  await checkReq('R10', async () => {
+    // the CONTEXT BAR: while the recording plays it names the beat under the playhead. The stub
+    // names no real video file, so the playhead is driven by hand — the bar logic is what is proven.
+    await pass.locator('.rec').click()
+    const bar = pass.locator('.rec .ctx')
+    await expect(bar).toBeAttached()
+    await pass.locator('.rec video').evaluate(v => {
+      Object.defineProperty(v, 'currentTime', { get: () => 5.5, configurable: true })
+      v.dispatchEvent(new Event('timeupdate'))
+    })
+    await expect(bar).toBeVisible()
+    await expect(bar).toContainText('proves R2')                 // the beat live at 5.5s
+    // on a failed case, once the playhead passes the failure the bar PINS the failing beat
+    await fail.locator('.rec').click()
+    await fail.locator('.rec video').evaluate(v => {
+      Object.defineProperty(v, 'currentTime', { get: () => 2.6, configurable: true })
+      v.dispatchEvent(new Event('timeupdate'))
+    })
+    await expect(fail.locator('.rec .ctx')).toHaveClass(/bad/)
+    await expect(fail.locator('.rec .ctx')).toContainText('proves R5')
   })
 })
 

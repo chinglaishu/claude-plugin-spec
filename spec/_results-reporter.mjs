@@ -78,14 +78,54 @@ function humanize (cat, title) {
   return title
 }
 
-function flattenSteps (steps, depth = 0, out = []) {
-  for (const s of steps || []) {
-    if (out.length >= 80) break
-    const title = String(s.title || '')
-    // fixture/context setup is framework plumbing, not a step of the test
-    const keep = ['test.step', 'pw:api', 'expect'].includes(s.category) && !STEP_NOISE.test(title)
-    if (keep) out.push({ label: humanize(s.category, title).slice(0, 160), cat: s.category, depth, ok: !s.error })
-    if (s.steps?.length) flattenSteps(s.steps, keep && s.category === 'test.step' ? depth + 1 : depth, out)
+// Exported for tools/reporter-steps.test.mjs. Each kept step carries `t` — its offset in ms from
+// the moment the RECORDING starts — so the board's player can name the step under the playhead
+// (board R10). Playwright records video per PAGE, so the `Create page` step (dropped as noise, but
+// still in the tree) is the recording's t=0; without one, the first kept step reads as t=0.
+export function flattenSteps (steps) {
+  const findEpoch = list => {
+    for (const s of list || []) {
+      if (/^Create page/.test(String(s.title || ''))) return s
+      const hit = findEpoch(s.steps)
+      if (hit) return hit
+    }
+    return null
+  }
+  const e = findEpoch(steps)
+  let epoch = e && e.startTime ? +new Date(e.startTime) : null
+  const out = []
+  let dropped = 0
+  const walk = (list, depth) => {
+    for (const s of list || []) {
+      const title = String(s.title || '')
+      // fixture/context setup is framework plumbing, not a step of the test
+      const keep = ['test.step', 'pw:api', 'expect'].includes(s.category) && !STEP_NOISE.test(title)
+      if (keep) {
+        if (out.length >= 80) dropped++              // capped so one test cannot bloat the record…
+        else {
+          const at = s.startTime ? +new Date(s.startTime) : null
+          if (epoch == null && at != null) epoch = at
+          out.push({
+            label: humanize(s.category, title).slice(0, 160),
+            cat: s.category,
+            depth,
+            ok: !s.error,
+            ...(at != null && epoch != null
+              ? { t: Math.max(0, Math.round(at - epoch)), d: Math.round(s.duration || 0) }
+              : {})
+          })
+        }
+      }
+      if (s.steps?.length) walk(s.steps, keep && s.category === 'test.step' ? depth + 1 : depth)
+    }
+  }
+  walk(steps, 0)
+  // …but a trimmed record SAYS so — a list that just stops reads as "the test ended here"
+  if (dropped) {
+    out.push({
+      label: '… trimmed here — ' + dropped + ' more steps ran (the record keeps the first 80)',
+      cat: 'note', depth: 0, ok: true
+    })
   }
   return out
 }
