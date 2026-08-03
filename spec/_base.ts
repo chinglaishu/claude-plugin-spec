@@ -68,14 +68,17 @@ export const test = windowed.extend<{ page: Page }>({
     } finally {
       CURRENT_PAGE = null
       // A failed run's recording is the BEST evidence of the failure, so it must never be dropped —
-      // yet Playwright can finish a failed test without attaching its video (board R10). Force-save
-      // the video into the test's own output dir and attach it, so the board's reporter finds the
-      // .webm and the failed run stays playable. Best-effort: only under a board recording, only on
-      // an unexpected outcome, and only if a video was actually being recorded.
+      // yet Playwright finishes a failed test without attaching its video (board R10). A page's
+      // video only FINALISES when the page closes, so saveAs() on a still-open page waits forever;
+      // close the page here to finalise it, then save it into the test's own output dir and attach
+      // it, so the board's reporter finds the .webm and the failed run stays playable. The built-in
+      // page teardown that follows closes an already-closed page harmlessly. Best-effort, and only
+      // under a board recording of an unexpected outcome.
       if (process.env.BOARD_RECORD && testInfo.status && testInfo.status !== testInfo.expectedStatus) {
         try {
           const v = page.video && page.video()
           if (v) {
+            await page.close().catch(() => {})            // finalise the recording
             const dest = testInfo.outputPath('video.webm')
             await v.saveAs(dest)
             if (!testInfo.attachments.some(a => a.contentType === 'video/webm')) {
