@@ -60,9 +60,19 @@ let CURRENT_PAGE: Page | null = null
 export const test = windowed.extend<{ page: Page }>({
   page: async ({ page }, use) => {
     CURRENT_PAGE = page
+    FLOW_N = 0
+    FLOW_DEPTH = 0
+    FAILED_PAINTED = false
     try { await use(page) } finally { CURRENT_PAGE = null }
   }
 })
+
+// Per-test narration state: the story-step counter, whether we are inside a flowStep (a nested
+// checkReq must not steal the narrative headline), and whether the red failure frame has already
+// been painted (an inner failure bubbles — paint once, at the most specific point).
+let FLOW_N = 0
+let FLOW_DEPTH = 0
+let FAILED_PAINTED = false
 
 // A requirement id in words: parse the screen's prd.md heading (`## R5 — Title`) once per screen.
 // A bare id belongs to the running spec file's own screen; a qualified one (`asset-plan:R5`) names
@@ -88,7 +98,11 @@ function reqTitle (qid: string): string {
 // mid-frame. pointer-events:none so it can never swallow a click the test meant for the app;
 // inline styles because it renders inside arbitrary apps that know nothing of the board's design
 // system (the values mirror the design tokens: ink, paper, and a deep bengara for failure).
+// The bar is a designed, glanceable card (board R10): a bold title line for the current story
+// step, the announced values stacked beneath — accumulating within a step the way a person would
+// list them, capped so the bar cannot swallow the frame.
 const HUD = { head: '', detail: '' }
+const DETAIL_MAX_LINES = 6
 // A goto WIPES the injected bar — and real flows navigate mid-beat (a cross-page read). Repaint
 // after every main-frame navigation so the narration is consistently on screen, not only until
 // the first goto. One listener per page, installed lazily on first paint.
@@ -100,45 +114,83 @@ function repaintOnNav (page: Page): void {
     if (f === page.mainFrame() && HUD.head && page === CURRENT_PAGE) void paintHud({})
   })
 }
-async function paintHud (s: { head?: string, detail?: string, failed?: boolean }): Promise<void> {
+async function paintHud (s: { head?: string, detail?: string, appendDetail?: string, failed?: boolean }): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   repaintOnNav(page)
-  if (s.head !== undefined) { HUD.head = s.head; HUD.detail = '' }
+  if (s.head !== undefined) { HUD.head = s.head; HUD.detail = '' }   // a new step starts a fresh list
   if (s.detail !== undefined) HUD.detail = s.detail
+  if (s.appendDetail !== undefined) {
+    const lines = (HUD.detail ? HUD.detail.split('\n') : []).concat(String(s.appendDetail).split('\n'))
+    HUD.detail = lines.slice(-DETAIL_MAX_LINES).join('\n')
+  }
   await page.evaluate(({ head, detail, failed }) => {
     let el = document.getElementById('__specboard-hud')
     if (!el) {
       el = document.createElement('div')
       el.id = '__specboard-hud'
       el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;pointer-events:none;' +
-        'display:flex;align-items:baseline;gap:14px;padding:9px 16px;' +
-        'font:600 14px/1.45 system-ui,sans-serif;color:#f4f1ea;background:rgba(28,27,24,.92);' +
-        'box-shadow:0 1px 8px rgba(0,0,0,.25)'
-      const h = document.createElement('span')
+        'display:flex;flex-direction:column;gap:4px;padding:14px 22px 12px;' +
+        'font-family:system-ui,sans-serif;color:#f4f1ea;background:rgba(28,27,24,.94);' +
+        'border-bottom:3px solid rgba(244,241,234,.30);box-shadow:0 2px 14px rgba(0,0,0,.30)'
+      const h = document.createElement('div')
       h.id = '__specboard-hud-head'
-      const d = document.createElement('span')
+      h.style.cssText = 'font-weight:700;font-size:20px;line-height:1.3;letter-spacing:-.01em'
+      const d = document.createElement('div')
       d.id = '__specboard-hud-detail'
-      d.style.cssText = 'font-weight:400;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
+      d.style.cssText = 'font-weight:400;font-size:15px;line-height:1.5;opacity:.92;white-space:pre-line'
       el.append(h, d)
       document.body.appendChild(el)
     }
-    el.style.background = failed ? 'rgba(122,47,29,.95)' : 'rgba(28,27,24,.92)'
+    el.style.background = failed ? 'rgba(122,47,29,.96)' : 'rgba(28,27,24,.94)'
+    el.style.borderBottomColor = failed ? 'rgba(232,161,138,.65)' : 'rgba(244,241,234,.30)'
     const hd = document.getElementById('__specboard-hud-head')
     const dt = document.getElementById('__specboard-hud-detail')
     if (hd) hd.textContent = head
-    if (dt) dt.textContent = detail
+    if (dt) { dt.textContent = detail; dt.style.display = detail ? '' : 'none' }
   }, { head: HUD.head, detail: HUD.detail, failed: !!s.failed }).catch(() => {})
 }
 
-// Announce the expected vs actual values of the current check on the topbar — the video then shows
-// not just WHAT is being proven but the numbers it is proven with (board R10).
+// A narration line does TWO things at once: it stacks onto the topbar (into the video), and it is
+// RECORDED as a `note: ` step so the board can show it as the step's expandable detail — the same
+// got/expected line in both places, from one call (board R10).
+async function narrate (text: string): Promise<void> {
+  await test.step('note: ' + text, async () => {
+    await paintHud({ appendDetail: text })
+  })
+}
+// Announce the got vs expected values of the current check.
 export async function hudCheck (label: string, expected: unknown, actual: unknown): Promise<void> {
-  await paintHud({ detail: String(label) + ' — expected ' + String(expected) + ' · actual ' + String(actual) })
+  await narrate(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
 }
 // Freeform variant, for a sentence the author wants on the bar.
 export async function hudNote (text: string): Promise<void> {
-  await paintHud({ detail: String(text) })
+  await narrate(String(text))
+}
+
+// A STORY STEP (board R10): one numbered sentence of what a user does and what should happen —
+// "Edit the draft — change Unit 01-02 Net Rent from 40,000 to 60,000". The board shows the flow as
+// these steps; the topbar leads with the current one; checkReq calls nest INSIDE them so coverage
+// still tags requirements while the narrative carries the story.
+export async function flowStep (title: string, fn: () => Promise<void> | void): Promise<void> {
+  const n = ++FLOW_N
+  await test.step(title, async () => {
+    await paintHud({ head: n + '. ' + title })
+    FLOW_DEPTH++
+    try {
+      await fn()
+    } catch (err) {
+      if (!FAILED_PAINTED) {
+        FAILED_PAINTED = true
+        await paintHud({ head: '✗ failed — ' + n + '. ' + title, detail: HUD.detail, failed: true })
+        if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})
+      }
+      throw err
+    } finally {
+      FLOW_DEPTH--
+    }
+    await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })  // keep the listed values
+  })
 }
 
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
@@ -151,19 +203,29 @@ export async function hudNote (text: string): Promise<void> {
 export async function checkReq (id: string, fn: () => Promise<void> | void): Promise<void> {
   // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from
   // it; the human words go on the HUD (and the board maps the id back to its title on its side)
+  // Inside a flowStep the narrative keeps the headline — coverage tags quietly; a top-level
+  // checkReq (a requirement-enumeration test) narrates itself as before.
   const title = reqTitle(id)
+  const nested = FLOW_DEPTH > 0
   await test.step('proves ' + id, async () => {
-    await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
+    if (!nested) await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
     try {
       await fn()
     } catch (err) {
-      // the viewer must SEE where it went red: repaint (keeping the expected/actual that failed)
-      // and hold a beat so the recorder catches the frame before the page is torn down
-      await paintHud({ head: '✗ failed — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
-      if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(500).catch(() => {})
+      // the viewer must SEE where it went red: repaint (keeping the values that failed) and hold
+      // a beat so the recorder catches the frame before the page is torn down — once, at the most
+      // specific point (an inner failure bubbles out through the enclosing flowStep)
+      if (!FAILED_PAINTED) {
+        FAILED_PAINTED = true
+        const head = nested
+          ? '✗ failed — ' + (HUD.head || id) + ' (' + id + ')'
+          : '✗ failed — ' + id + (title ? ' · ' + title : '')
+        await paintHud({ head, detail: HUD.detail, failed: true })
+        if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(500).catch(() => {})
+      }
       throw err
     }
-    await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : '') })
+    if (!nested) await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
   })
 }
 export function coverReqs (...ids: string[]): void {

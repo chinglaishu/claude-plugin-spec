@@ -40,6 +40,20 @@ test('without a Create page step, the first kept step reads as t=0', () => {
   assert.deepEqual(out.map(s => s.t), [0, 500])
 })
 
+test('a "note: " step records as an info line — the announced got/expected values', () => {
+  const out = flattenSteps([
+    step('proves R1', 'test.step', {
+      at: 0,
+      d: 100,
+      steps: [step('note: IY1 — got 2400000 · expected 2400000', 'test.step', { at: 50, d: 5 })]
+    })
+  ])
+  assert.equal(out.length, 2)
+  assert.equal(out[1].cat, 'info')
+  assert.equal(out[1].label, 'IY1 — got 2400000 · expected 2400000')
+  assert.equal(out[1].depth, 1)
+})
+
 test('a record trimmed at the step cap says so instead of ending silently', () => {
   const many = Array.from({ length: 90 }, (_, i) => step('Click n' + i, 'pw:api', { at: i * 10, d: 5 }))
   const out = flattenSteps(many)

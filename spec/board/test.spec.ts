@@ -93,6 +93,7 @@ test('Steps read as named beats, a failure names itself, and the recording expla
   await openDetail(page)
   const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()
   const t1 = (await page.locator('#testpane .test .ttl').nth(1).textContent())!.trim()
+  const t2 = (await page.locator('#testpane .test .ttl').nth(2).textContent())!.trim()
   // the passing case carries a RECOVERED error (a caught wait, as real setups do) — it must not
   // read as a failure: the case's verdict, not a step's, decides whether the alarm is raised
   const steps0 = [
@@ -111,6 +112,16 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     { label: 'proves R5', cat: 'test.step', depth: 0, ok: false, t: 2000, d: 1000 },
     { label: 'Check the “tags” has the expected number', cat: 'expect', depth: 1, ok: false, t: 2100, d: 900 }
   ]
+  // a NARRATIVE flow (flowStep-authored): numbered story steps in user language, with the
+  // announced got/expected values recorded as `info` lines and the proves-tags nested inside
+  const steps2 = [
+    { label: 'User changes a market rent number in the table', cat: 'test.step', depth: 0, ok: true, t: 0, d: 3000 },
+    { label: 'Unit 01-02 · Net Rent 40,000 → 60,000', cat: 'info', depth: 1, ok: true, t: 200, d: 10 },
+    { label: 'Click the “Run plan”', cat: 'pw:api', depth: 1, ok: true, t: 500, d: 300 },
+    { label: 'proves R5', cat: 'test.step', depth: 1, ok: true, t: 1000, d: 500 },
+    { label: 'Run the plan — the chart shows the expected numbers', cat: 'test.step', depth: 0, ok: true, t: 3000, d: 2000 },
+    { label: 'IY1 — got 2400000 · expected 2400000', cat: 'info', depth: 1, ok: true, t: 3500, d: 5 }
+  ]
   const mk = (ok: boolean, steps: object[]) => ({
     shots: [], video: 'spec/_runs/rt/' + (ok ? 'a' : 'b') + '.webm', steps, log: 'x',
     at: '2026-08-03T00:00:00.000Z', ms: 9000, ok, commit: 'abc1234'
@@ -118,7 +129,8 @@ test('Steps read as named beats, a failure names itself, and the recording expla
   await page.route('**/api/runs', route => route.fulfill({ json: {
     watch: false, running: false,
     runs: [{ screen: 'board', runId: 'rt', hasLog: false, at: '2026-08-03T00:00:00.000Z', ms: 9000,
-      ok: false, total: 2, failed: 1, shotsByTest: { [t0]: mk(true, steps0), [t1]: mk(false, steps1) } }]
+      ok: false, total: 3, failed: 1,
+      shotsByTest: { [t0]: mk(true, steps0), [t1]: mk(false, steps1), [t2]: mk(true, steps2) } }]
   } }))
   await page.reload()                                            // same-document hash nav never reloads
   await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
@@ -136,10 +148,12 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     await expect(hud).toBeVisible()
     await expect(hud).toContainText('R10')
     await expect(hud).toContainText(await titleOf('R10'))
-    // a test can announce the expected and actual values of its current check — same bar
-    await hudCheck('beats shown', 2, 2)
-    await expect(hud).toContainText('expected 2')
-    await expect(hud).toContainText('actual 2')
+    // a test can announce the got/expected values of its current check — same bar, and the
+    // lines ACCUMULATE within a step the way a person would list them
+    await hudCheck('first check', 1, 1)
+    await hudCheck('second check', 2, 2)
+    await expect(hud).toContainText('first check — got 1 · expected 1')
+    await expect(hud).toContainText('second check — got 2 · expected 2')
 
     // the INLINE evidence is human words: a proves-beat wears the requirement's TITLE…
     await pass.locator('.th').click()
@@ -149,6 +163,24 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     await expect(beats.nth(1)).toContainText(await titleOf('R2'))
     // …and setup plumbing is not shown inline at all — it lives only in the all-steps window
     await expect(pass.locator('.tststeps')).not.toContainText('#email')
+
+    // a NARRATIVE flow reads as its NUMBERED story steps, and each expands to its recorded detail
+    const story = dt.locator('.test', { hasText: t2 }).first()
+    await story.locator('.th').click()
+    const srows = story.locator('.tststeps .beat')
+    await expect(srows).toHaveCount(2)
+    await expect(srows.nth(0).locator('.bnum')).toHaveText('1')
+    await expect(srows.nth(0)).toContainText('User changes a market rent number in the table')
+    await expect(srows.nth(1).locator('.bnum')).toHaveText('2')
+    // detail waits behind a click: the golden values and the requirements the step proved —
+    // never the raw plumbing (that stays in the Steps window)
+    await expect(story.locator('.bdet li').first()).toBeHidden()
+    await srows.nth(0).locator('.bh').click()
+    await expect(srows.nth(0).locator('.bdet .bnote')).toContainText('Net Rent 40,000 → 60,000')
+    await expect(srows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R5'))
+    await expect(story.locator('.tststeps')).not.toContainText('Click the “Run plan”')
+    await srows.nth(1).locator('.bh').click()
+    await expect(srows.nth(1).locator('.bdet .bnote')).toContainText('IY1 — got 2400000 · expected 2400000')
 
     // the complete raw record opens in the all-steps WINDOW — a floating card, not a scrim
     await pass.locator('[data-steps]').click()

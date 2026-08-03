@@ -105,9 +105,12 @@ export function flattenSteps (steps) {
         else {
           const at = s.startTime ? +new Date(s.startTime) : null
           if (epoch == null && at != null) epoch = at
+          // a `note: ` step is a narration line the test announced (a got/expected value) — the
+          // board shows it as the step's expandable detail, so it gets its own category
+          const isNote = s.category === 'test.step' && /^note: /.test(title)
           out.push({
-            label: humanize(s.category, title).slice(0, 160),
-            cat: s.category,
+            label: (isNote ? title.slice(6) : humanize(s.category, title)).slice(0, 160),
+            cat: isNote ? 'info' : s.category,
             depth,
             ok: !s.error,
             ...(at != null && epoch != null

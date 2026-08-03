@@ -107,15 +107,17 @@ never paginated — a board you page through can no longer answer "what is the s
 
 ## R10 — A test opens to its full evidence, and can be run or watched
 
-A test row is not just a verdict. It opens to: its **evidence in human words** — one row per named
-beat, where a `proves R5` beat renders **the requirement's own title**, never the bare id (nobody
-should have to cross-reference "R5" to know what was proven), and an author-named beat keeps the
-author's sentence; setup plumbing before the first named beat is **not shown inline at all**. The
+A test row is not just a verdict. It opens to: the flow's **numbered story steps** — the author's
+own sentences of what a user does and what should happen ("Edit the draft — change Unit 01-02 Net
+Rent from 40,000 to 60,000"), each wearing its own pass/fail mark, and each **expanding on click to
+its recorded detail**: the got-vs-expected value notes the test announced while it ran, and the
+requirements that step proved. A test with no story steps (only `proves` tags) falls back to one row
+per requirement, rendered by **the requirement's own title**, never the bare id — nobody should have
+to cross-reference "R5" to know what was proven. Setup plumbing is **not shown inline at all**. The
 **complete raw record** — setup, every action and check with its mark, and the trimmed-at-cap note —
-lives one click behind an **"all steps" window** (a floating popup, like the run log). A **failed
-beat names itself** in those same human words — marked inline and named on the test's meta line (R3)
-— so the failure is visible without digging, and the raw failing check is in the window; the **whole
-run log** — the complete process output for that run, including globalSetup / seed output and the
+lives one click behind a **"Steps" window** (a floating popup, like the run log). A **failed step
+names itself** in those same human words — marked inline, its detail open, and named on the test's
+meta line (R3) — so the failure is visible without digging; the **whole run log** — the complete process output for that run, including globalSetup / seed output and the
 untruncated tail, not only that case's bounded stdout (the per-case log alone was the gap that read as
 "it doesn't show the whole log"); and a record **per run**, each keeping its own **recording** (its
 cover the last asserted frame — the end state it proved, not the blank first frame), the time, the
@@ -123,16 +125,19 @@ duration, the commit and the verdict. A still screenshot is kept only as the fal
 has no video (a headless CLI run, or the recording was pruned) — the recording is the primary
 artifact, so there is no separate screenshot column. The recording **narrates itself from inside the
 video**: while a run executes, the harness paints a **topbar into the page under test** — burned into
-the recording and its cover, not overlaid by the board — naming the requirement being proven (id
-**and title**) and, when the test announces them, the **expected and actual values** of the current
-check; on a failing check the bar turns red and names it, so the video alone explains what was being
-tested and which part failed. One consistent topbar, always in the same place — never a floating
-caption card in the middle of the frame. Every test can be **Run** (headless — nothing to
-watch, it just goes) or **Watched** (a real browser opens and drives the app in front of you). Run and
-Watch stay wherever a test is shown.
+the recording and its cover, not overlaid by the board. The bar is **large enough to read at a
+glance** — a bold title line naming the current story step (or the requirement being proven, id and
+title), with the announced **got-vs-expected values** stacked beneath it, accumulating within a step
+the way a person would list them; on a failing check the bar turns red and names it, so the video
+alone explains what was being tested and which part failed. One consistent topbar, always in the
+same place — never a floating caption card in the middle of the frame. Every test can be **Run**
+(headless — nothing to watch, it just goes) or **Watched** (a real browser opens and drives the app
+in front of you). Run and Watch stay wherever a test is shown.
 
-*Amended 2026-08-03 at the human's direction, twice. First: a flat "80 steps" fold was unreadable and
-a silent recording cannot explain a failure. Second: "proves R5" still meant nothing without
-cross-referencing R5, the setup beat was repeated noise, and the narration belongs INSIDE the video —
-one persistent topbar replacing both the board-side playback overlay and the centred caption card an
-earlier agent painted mid-frame.*
+*Amended 2026-08-03 at the human's direction, three times. First: a flat "80 steps" fold was
+unreadable and a silent recording cannot explain a failure. Second: "proves R5" still meant nothing
+without cross-referencing R5, the setup beat was repeated noise, and the narration belongs INSIDE
+the video — one persistent topbar replacing both the board-side playback overlay and the centred
+caption card an earlier agent painted mid-frame. Third: requirement titles alone still read as a
+checklist, not a story — the inline view became the flow's numbered steps in user language with the
+golden values one click away, and the topbar grew to a designed, glanceable two-line card.*
