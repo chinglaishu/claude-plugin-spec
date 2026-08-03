@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs } from '../_base'
+import { test, expect, checkReq, coverReqs, hudCheck } from '../_base'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
@@ -126,60 +126,60 @@ test('Steps read as named beats, a failure names itself, and the recording expla
   const pass = dt.locator('.test', { hasText: t0 }).first()
   const fail = dt.locator('.test', { hasText: t1 }).first()
 
+  const titleOf = async (rid: string) =>
+    (await page.locator('#reqpane .req[data-r="' + rid + '"] .rt').textContent())!.trim()
+
   await checkReq('R10', async () => {
-    // the steps fold reads as the author's NAMED BEATS, not one flat wall behind a count
+    // the recording narrates from INSIDE the page: this very checkReq painted the topbar the
+    // recorder films, and it names the requirement by id AND title — never the bare id
+    const hud = page.locator('#__specboard-hud')
+    await expect(hud).toBeVisible()
+    await expect(hud).toContainText('R10')
+    await expect(hud).toContainText(await titleOf('R10'))
+    // a test can announce the expected and actual values of its current check — same bar
+    await hudCheck('beats shown', 2, 2)
+    await expect(hud).toContainText('expected 2')
+    await expect(hud).toContainText('actual 2')
+
+    // the INLINE evidence is human words: a proves-beat wears the requirement's TITLE…
     await pass.locator('.th').click()
     const beats = pass.locator('.tststeps .beat')
     await expect(beats).toHaveCount(2)
-    await expect(beats.first()).toContainText('proves R1')
-    // a passing beat keeps its actions folded; one click on the beat reveals them
-    await expect(pass.locator('.tststeps .bacts li').first()).toBeHidden()
-    await beats.first().locator('.stepstog').click()
-    await expect(pass.locator('.tststeps .bacts li').first()).toBeVisible()
-    await expect(pass.locator('.tststeps .bacts li').nth(1)).toContainText('Open /')
-    // the recovered step keeps its honest ✕ mark at detail level — it happened — without the alarm
-    await expect(pass.locator('.tststeps .bacts li.sf')).toHaveCount(1)
+    await expect(beats.first()).toContainText(await titleOf('R1'))
+    await expect(beats.nth(1)).toContainText(await titleOf('R2'))
+    // …and setup plumbing is not shown inline at all — it lives only in the all-steps window
+    await expect(pass.locator('.tststeps')).not.toContainText('#email')
 
-    // a PASSING case never raises the alarm, even when a step inside it errored and recovered —
-    // the verdict is the case's, not a caught wait's
+    // the complete raw record opens in the all-steps WINDOW — a floating card, not a scrim
+    await pass.locator('[data-steps]').click()
+    const sheet = page.locator('#stepsheet')
+    await expect(sheet).toHaveClass(/on/)
+    await expect(sheet).toContainText('Wait for the “#email”')   // setup detail, marks and all
+    await expect(sheet).toContainText('Open /')
+    const covers = await sheet.locator('.box').evaluate(el => {
+      const r = el.getBoundingClientRect()
+      return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
+    })
+    expect(covers).toBeFalsy()
+    await sheet.locator('[data-stepsclose]').click()
+    await expect(sheet).not.toHaveClass(/on/)
+
+    // a PASSING case never raises the alarm, even with an errored-and-recovered step inside
     await expect(pass.locator('.tststeps .beat.f')).toHaveCount(0)
-    await expect(pass.locator('.tmeta')).toContainText('2 beats')
     await expect(pass.locator('.tmeta')).not.toContainText('failed')
 
-    // WHICH PART FAILED is visible without opening anything: the meta line names the failing beat…
-    await expect(fail.locator('.tmeta')).toContainText('proves R5')
-    // …and inside, exactly ONE beat wears the failure — the one holding the LAST failed step,
-    // arriving OPEN with its failing check marked, not the early errored-and-recovered beat
+    // WHICH PART FAILED reads in the same human words, without opening anything…
+    await expect(fail.locator('.tmeta')).toContainText(await titleOf('R5'))
+    // …and inside, exactly ONE beat wears it — the one holding the LAST failed step, by title
     await fail.locator('.th').click()
     const fbeat = fail.locator('.tststeps .beat.f')
     await expect(fbeat).toHaveCount(1)
-    await expect(fbeat).toContainText('proves R5')
-    await expect(fbeat.locator('.bacts li.sf')).toBeVisible()    // auto-revealed, marked ✕
-    // while its recovered neighbour beat stays folded and quiet
-    await expect(fail.locator('.tststeps .beat.p .bacts li').first()).toBeHidden()
-  })
-
-  await checkReq('R10', async () => {
-    // the CONTEXT BAR: while the recording plays it names the beat under the playhead. The stub
-    // names no real video file, so the playhead is driven by hand — the bar logic is what is proven.
-    await pass.locator('.rec').click()
-    const bar = pass.locator('.rec .ctx')
-    await expect(bar).toBeAttached()
-    await pass.locator('.rec video').evaluate(v => {
-      Object.defineProperty(v, 'currentTime', { get: () => 5.5, configurable: true })
-      v.dispatchEvent(new Event('timeupdate'))
-    })
-    await expect(bar).toBeVisible()
-    await expect(bar).toContainText('proves R2')                 // the beat live at 5.5s
-    await expect(bar).not.toHaveClass(/bad/)                     // a recovered error never pins a failure
-    // on a failed case, once the playhead passes the failure the bar PINS the failing beat
-    await fail.locator('.rec').click()
-    await fail.locator('.rec video').evaluate(v => {
-      Object.defineProperty(v, 'currentTime', { get: () => 2.6, configurable: true })
-      v.dispatchEvent(new Event('timeupdate'))
-    })
-    await expect(fail.locator('.rec .ctx')).toHaveClass(/bad/)
-    await expect(fail.locator('.rec .ctx')).toContainText('proves R5')
+    await expect(fbeat).toContainText(await titleOf('R5'))
+    await expect(fail.locator('.tststeps .beat.p')).toHaveCount(1) // the recovered beat stays quiet
+    // the raw failing check is marked in the window (the recovered wait keeps its ✕ there too)
+    await fail.locator('[data-steps]').click()
+    await expect(sheet.locator('li.sf.scat-expect')).toContainText('Check the')
+    await sheet.locator('[data-stepsclose]').click()
   })
 })
 

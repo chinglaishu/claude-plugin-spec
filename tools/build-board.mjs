@@ -144,6 +144,7 @@ const testRow = (s, t) => {
           <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" title="run only this test">Run</button>
           <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" data-headed="1" title="watch only this test in a browser">Watch ↗</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">full log ↗</button>
+          <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">all steps ↗</button>
         </span>
       </div>
       ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
@@ -821,19 +822,6 @@ export function build () {
   .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; background:var(--ink); }
   .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); padding:0 5px; border-radius:3px; }
-  /* the CONTEXT BAR (board R10): while the recording plays, a bar over the player names the beat and
-     action under the playhead — and once the playhead passes the failure it PINS the failing beat */
-  .rec .ctx { position:absolute; top:0; left:0; right:0; z-index:1; display:flex; align-items:baseline;
-    gap:var(--s2); padding:3px var(--s3); background:var(--paper); border-bottom:1px solid var(--hair);
-    font-size:var(--t-xs); color:var(--ink-2); }
-  .rec .ctx[hidden] { display:none; }
-  .rec .ctx .cmk { flex:none; color:var(--koke); }
-  .rec .ctx .cwords { flex:1; min-width:0; display:flex; align-items:baseline; gap:var(--s1);
-    white-space:nowrap; overflow:hidden; }
-  .rec .ctx .cb { font-weight:600; flex:none; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
-  .rec .ctx .ca { color:var(--ink-4); overflow:hidden; text-overflow:ellipsis; }
-  .rec .ctx.bad { background:var(--bengara-tint); border-bottom-color:var(--bengara); color:var(--bengara); }
-  .rec .ctx.bad .cmk, .rec .ctx.bad .ca { color:var(--bengara); }
   .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
   .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
   /* coverage refs — quiet, NEUTRAL metadata (indigo is reserved for "your turn"). They tint only
@@ -863,28 +851,23 @@ export function build () {
   .sheet .bh strong { font-size:var(--t-md); }
   .sheet .bb { padding:var(--s4); overflow:auto; }
   .sheet .bb:empty:before { content:"No runs recorded for this test yet."; color:var(--ink-4); font-size:var(--t-sm); }
-  /* the detail steps of a case, grouped under the author's NAMED BEATS (board R10): one row per
-     beat wearing its own pass/fail mark, its fine-grained actions folded inside — a failed beat
-     arrives open so the red part shows itself */
+  /* the INLINE evidence of a case (board R10): one plain row per named beat, in human words — the
+     requirement's title for a proves-beat (with a quiet id chip), the author's sentence otherwise.
+     No toggles here; the raw record opens in the all-steps window. */
   .tststeps { margin:var(--s2) 0 0 14px; }
   .tststeps:empty { display:none; }
-  .beat { border-left:2px solid var(--hair); margin:var(--s2) 0; padding-left:var(--s3); }
-  .beat.f { border-left-color:var(--bengara); }
-  .stepstog { border:0; background:transparent; cursor:pointer; padding:0;
-    font:var(--t-xs)/1.5 var(--sans); color:var(--ink-4); }
-  .stepstog:hover { color:var(--ink-2); }
-  .beat > .stepstog { display:flex; align-items:baseline; gap:var(--s2); width:100%; text-align:left;
-    color:var(--ink-2); }
-  .beat > .stepstog:hover { color:var(--ink); }
-  .beat.f > .stepstog { color:var(--bengara); }
+  .beat { display:flex; align-items:baseline; gap:var(--s2); border-left:2px solid var(--hair);
+    margin:var(--s2) 0; padding:2px 0 2px var(--s3); font-size:var(--t-sm); color:var(--ink-2); }
+  .beat.f { border-left-color:var(--bengara); color:var(--bengara); }
   .beat .bmk { flex:none; }
   .beat.p .bmk { color:var(--koke); }
   .beat.f .bmk { color:var(--bengara); }
+  .beat .bid { flex:none; font:var(--t-micro) var(--mono); background:var(--wash); color:var(--ink-3);
+    border-radius:var(--r-sm); padding:1px 6px; }
+  .beat.f .bid { background:var(--bengara-tint); color:var(--bengara); }
   .beat .blbl { flex:1; min-width:0; }
-  .beat .bn { flex:none; margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-4); }
   .snote { font:var(--t-micro) var(--mono); color:var(--ink-4); margin-top:var(--s2); }
   .stepslist { list-style:none; margin:var(--s2) 0 0; padding:0; }
-  .stepslist.bacts { padding-left:var(--s4); margin-top:var(--s1); }
   /* the humanised step reads as a sentence; a leading tick marks a check, a dot marks an action,
      and a named step (the author's own words) stands out as the beat it is */
   .stepslist li { font-size:var(--t-xs); color:var(--ink-3); padding:2px 0; line-height:1.5; }
@@ -1424,6 +1407,17 @@ ${howView()}
     <div class="bb" id="logbody"></div>
   </div>
 </div>
+
+<!-- The COMPLETE raw step record of a test's newest run opens HERE (board R10) — setup, every
+     action and check with its mark, and the trimmed-at-cap note. Inline, the test row shows only
+     the named beats in human words; this window is where the detail lives. -->
+<div class="sheet" id="stepsheet">
+  <div class="box">
+    <div class="bh"><strong id="stepstitle">All steps</strong><span class="grow"></span>
+      <button class="btn sm" data-stepsclose>Close<span class="kbd">esc</span></button></div>
+    <div class="bb" id="stepsbody"></div>
+  </div>
+</div>
 ${detail}
 
 <script>
@@ -1619,6 +1613,38 @@ ${detail}
   document.addEventListener('click', e => {
     if (logsheet.classList.contains('on') && !e.target.closest('.box') && !e.target.closest('[data-log]'))
       logsheet.classList.remove('on')
+  })
+
+  // The all-steps window (board R10): the COMPLETE raw record of the case's newest run — setup,
+  // every action and check with its mark, and the trimmed-at-cap note. Inline the row shows only
+  // the named beats in human words; the detail lives here, one click away, same floating card as
+  // the log. Reads the record loadRuns stashed on the case's .tststeps slot.
+  const stepsheet = document.getElementById('stepsheet')
+  const stepsbody = document.getElementById('stepsbody')
+  for (const l of document.querySelectorAll('[data-steps]'))
+    l.addEventListener('click', e => {
+      e.stopPropagation()
+      const testEl = l.closest('.test')
+      const slot = testEl.querySelector('.tststeps')
+      const steps = (slot && slot._steps) || []
+      document.getElementById('stepstitle').textContent =
+        'All steps — ' + (testEl.querySelector('.ttl').textContent || '')
+      stepsbody.innerHTML = steps.length
+        ? '<ol class="stepslist rawsteps">' + steps.map(s =>
+            s.cat === 'note'
+              ? '<li class="snote">' + eh(s.label || '') + '</li>'
+              : '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) + (s.ok ? '' : ' sf') +
+                '" style="margin-left:' + ((s.depth || 0) * 14) + 'px">' + eh(s.label || '') + '</li>'
+          ).join('') + '</ol>'
+        : '<span class="nocov">No run has recorded steps for this test yet.</span>'
+      stepsheet.classList.add('on')
+    })
+  for (const b of document.querySelectorAll('[data-stepsclose]'))
+    b.addEventListener('click', () => stepsheet.classList.remove('on'))
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') stepsheet.classList.remove('on') })
+  document.addEventListener('click', e => {
+    if (stepsheet.classList.contains('on') && !e.target.closest('.box') && !e.target.closest('[data-steps]'))
+      stepsheet.classList.remove('on')
   })
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
@@ -2269,48 +2295,12 @@ ${detail}
             // The large size is STICKY from the moment the player exists: pausing and SEEKING both
             // fire pause/play events, and a size that jumped on every scrub was unusable.
             slot.classList.add('playing')
-            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label +
-              '<div class="ctx" hidden><span class="cmk"></span><span class="cwords"><span class="cb"></span><span class="ca"></span></span></div>'
+            // No board-side overlay on the player: the recording NARRATES ITSELF — the harness
+            // paints a topbar into the page while the test runs (spec/_base.ts checkReq/hudCheck),
+            // so what-is-being-proven and expected-vs-actual are burned into the video's own
+            // frames and its cover (board R10).
+            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
             const v = slot.querySelector('video')
-            // The CONTEXT BAR (board R10): while the recording plays, name the beat and action under
-            // the playhead so the video explains what it is testing — and once the playhead passes
-            // the failure, PIN the failing beat so the red part explains itself. Steps carry .t,
-            // their offset from the moment the recording started (the reporter measures it from the
-            // Create page step — video is recorded per page); an old record without offsets simply
-            // never shows the bar.
-            const ctx = slot.querySelector('.ctx')
-            const timed = ((one.steps) || []).filter(s => typeof s.t === 'number' && s.cat !== 'note')
-            // pin a failure only when the CASE failed, and at the LAST failed step — the flow
-            // stopped there; an errored-then-recovered step in a green flow is not a failure
-            const failat = one.ok === false ? timed.filter(s => !s.ok).pop() : null
-            const beatBefore = i => {
-              for (let j = i; j >= 0; j--) if (timed[j].cat === 'test.step' && !timed[j].depth) return timed[j]
-              return null
-            }
-            const sync = () => {
-              if (!timed.length) return
-              const ms = v.currentTime * 1000
-              if (failat && ms >= failat.t) {
-                const beat = beatBefore(timed.indexOf(failat)) || failat
-                ctx.classList.add('bad')
-                ctx.querySelector('.cmk').textContent = '✕'
-                ctx.querySelector('.cb').textContent = 'failed here — ' + (beat.label || '')
-                ctx.querySelector('.ca').textContent = beat !== failat ? (failat.label || '') : ''
-                ctx.hidden = false
-                return
-              }
-              let cur = null, curi = -1
-              for (let j = 0; j < timed.length; j++) { if (timed[j].t <= ms + 50) { cur = timed[j]; curi = j } else break }
-              if (!cur) { ctx.hidden = true; return }
-              const beat = beatBefore(curi) || cur
-              ctx.classList.remove('bad')
-              ctx.querySelector('.cmk').textContent = cur.cat === 'expect' ? '✓' : '·'
-              ctx.querySelector('.cb').textContent = beat.label || ''
-              ctx.querySelector('.ca').textContent = beat !== cur ? '— ' + (cur.label || '') : ''
-              ctx.hidden = false
-            }
-            v.addEventListener('timeupdate', sync)
-            v.addEventListener('seeked', sync)
             // MediaRecorder webm has no duration header, so the timeline starts unscrubbable.
             // Force the browser's end-of-file probe (needs the server's Range support): jump far
             // past the end once metadata lands, then snap back — duration resolves and seeking works.
@@ -2327,62 +2317,65 @@ ${detail}
           slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
       }
-      // The DETAIL STEPS of each case, grouped under the author's NAMED BEATS (board R10): each
-      // beat (a test.step — 'proves R5' and friends) is one sentence-row wearing its own pass/fail
-      // mark, folding the fine-grained actions and checks inside it — eighty steps read as a
-      // handful of beats. A FAILED beat arrives OPEN, marked, and is named on the case's META LINE
-      // (board R3) so which part failed is visible without opening anything.
+      // The INLINE evidence of each case (board R10): one row per NAMED beat, in HUMAN WORDS — a
+      // 'proves R5' beat renders that requirement's own TITLE (looked up in the baked detail DOM,
+      // qualified ids across screens), an author-named beat keeps the author's sentence. Setup
+      // plumbing and the raw actions are NOT shown here — they live in the all-steps window, read
+      // off the record this loop stashes on the slot. The failure keys off the CASE's verdict,
+      // never a step's (a green flow can contain a caught, recovered error), and on a failed case
+      // THE failing beat is the one holding the LAST failed step — the flow stopped there.
       const fmt = ms => ms >= 1000 ? (Math.round(ms / 100) / 10) + 's' : Math.round(ms) + 'ms'
       for (const slot of panel.querySelectorAll('.tststeps')) {
         const host = slot.closest('.test')
         const meta = host && host.querySelector('.tmeta')
         const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
+        slot._steps = steps                    // the all-steps window reads the raw record here
         if (!steps.length) { slot.innerHTML = ''; if (meta) meta.textContent = ''; continue }
-        // fold the flat record back into beats; actions before the first named beat read as setup
+        // fold the flat record back into beats; actions before the first named beat are setup
         const beats = []
         let cur = null
         for (const s of steps) {
-          if (s.cat === 'note') { beats.push({ note: s.label }); continue }
+          if (s.cat === 'note') continue
           if (s.cat === 'test.step' && !s.depth) { cur = { head: s, kids: [] }; beats.push(cur); continue }
           if (!cur) { cur = { head: { label: 'setup — before the first named step', ok: true, synth: true }, kids: [] }; beats.push(cur) }
           cur.kids.push(s)
         }
-        // The alarm keys off the CASE's verdict, never a step's: a green flow can contain a caught,
-        // recovered error (a raced wait in setup, say) and that must not read as a failure. On a
-        // failed case, THE failing beat is the one holding the LAST failed step — the flow stopped
-        // there; earlier errors were recovered, or nothing after them would have run.
         let failStep = null
         if (one.ok === false) for (const s of steps) { if (!s.ok && s.cat !== 'note') failStep = s }
         const failBeat = failStep
-          ? beats.filter(b => b.head && (b.kids.includes(failStep) || b.head === failStep)).pop()
+          ? beats.filter(b => b.kids.includes(failStep) || b.head === failStep).pop()
           : null
-        slot.innerHTML = beats.map(b => {
-          if (b.note != null) return '<div class="snote">' + eh(b.note) + '</div>'
+        // 'proves R5' → { id: 'R5', txt: the requirement's title } — the id alone means nothing
+        // to a person; nobody should have to cross-reference it
+        const human = b => {
+          const m = /^proves (\\S+)$/.exec(b.head.label || '')
+          if (!m) return { id: '', txt: b.head.label || '' }
+          const qid = m[1]
+          const rid = qid.indexOf(':') > -1 ? qid.split(':').pop() : qid
+          const scr = qid.indexOf(':') > -1 ? qid.split(':')[0] : screen
+          const el = document.querySelector('.dt[data-screen="' + scr + '"] .req[data-r="' + rid + '"] .rt')
+          return { id: rid, txt: el && el.textContent ? el.textContent : qid }
+        }
+        // the synth setup beat is hidden inline — unless it is the one that failed
+        slot.innerHTML = beats.filter(b => !b.head.synth || b === failBeat).map(b => {
           const bad = b === failBeat
-          const n = b.kids.length
-          const kid = s => '<li class="scat-' + eh((s.cat || '').replace(/[^a-z]/gi, '')) +
-            (s.ok ? '' : ' sf') + '" style="margin-left:' + (Math.max(0, (s.depth || 0) - 1) * 14) + 'px">' +
-            eh(s.label || '') + '</li>'
+          const h = human(b)
           return '<div class="beat ' + (bad ? 'f' : 'p') + '">' +
-            '<button class="stepstog" aria-expanded="' + String(bad) + '">' +
             '<span class="bmk">' + (bad ? '✕' : '✓') + '</span>' +
-            '<span class="blbl">' + eh(b.head.label || '') + '</span>' +
-            (n ? '<span class="bn">' + n + ' step' + (n === 1 ? '' : 's') + '</span>' : '') +
-            '</button>' +
-            (n ? '<ol class="stepslist bacts"' + (bad ? '' : ' hidden') + '>' + b.kids.map(kid).join('') + '</ol>' : '') +
-            '</div>'
+            (h.id ? '<span class="bid">' + eh(h.id) + '</span>' : '') +
+            '<span class="blbl">' + eh(h.txt) + '</span></div>'
         }).join('')
-        // the meta line under the case title: a quiet summary — or, on a failure, its NAME
+        // the meta line under the case title: a quiet summary — or, on a failure, its NAME in words
         if (meta) {
           const took = one.ms != null ? fmt(one.ms) : ''
           if (one.ok === false) {
-            const name = (failBeat && failBeat.head.label) || (failStep && failStep.label) || 'an unnamed step'
+            const name = failBeat ? human(failBeat).txt : (failStep && failStep.label) || 'an unnamed step'
             meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' +
               (took ? ' · ' + eh(took) : '')
           } else {
-            const nb = beats.filter(b => b.head && !b.head.synth).length
-            meta.textContent = (nb ? nb + ' beat' + (nb === 1 ? '' : 's') + ' · ' : '') +
+            const np = beats.filter(b => !b.head.synth && /^proves /.test(b.head.label || '')).length
+            meta.textContent = (np ? 'proves ' + np + ' requirement' + (np === 1 ? '' : 's') + ' · ' : '') +
               steps.filter(s => s.cat !== 'note').length + ' steps' + (took ? ' · ' + took : '')
           }
         }
@@ -2436,16 +2429,6 @@ ${detail}
     openLb(img.src, img.alt || 'screenshot')
   })
 
-  // expand/collapse one beat's actions (board R10) — a beat with no recorded actions has no list
-  document.addEventListener('click', e => {
-    const tog = e.target.closest('.stepstog')
-    if (!tog) return
-    const list = tog.nextElementSibling
-    if (!list) return
-    const show = list.hidden
-    list.hidden = !show
-    tog.setAttribute('aria-expanded', String(show))
-  })
   document.getElementById('lbzoom').addEventListener('click', e => {
     const on = lbstage.classList.toggle('actual')
     e.target.textContent = on ? 'Fit to window' : 'Actual size'

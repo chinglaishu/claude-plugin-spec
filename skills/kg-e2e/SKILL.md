@@ -28,6 +28,13 @@ covers. Two helpers, both imported from `'../_base'`:
   reach. A flow that fails partway leaves the ids it never got to recorded **not-reached** — neither
   green nor red — instead of silently absent. `"0 of 0 passing"` reads green; not-reached must not.
 
+`checkReq` also **narrates the recording**: it paints a topbar into the page under test naming the
+requirement being proven (id + title from the PRD), turning red on a failing check — so the video
+explains itself. Two optional helpers put the *numbers* on that bar, from `'../_base'` too:
+**`hudCheck(label, expected, actual)`** announces the current check's expected vs actual values, and
+**`hudNote(text)`** shows a freeform sentence. Never paint your own captions or overlays into the
+page — one consistent topbar, always in the same place, is the contract.
+
 That yields the three states the board derives per requirement: **pass** (a `proves` step ran and did
 not error), **fail** (it ran and errored), **not-reached** (declared in `coverReqs` but its step
 never ran). The reporter folds these per-requirement into `spec/_results-index.json`, and
