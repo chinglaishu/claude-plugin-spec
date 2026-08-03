@@ -276,7 +276,7 @@ export function coverReqs (...ids: string[]): void {
 // A flow ran every step and collected its failures rather than dying at the first (board R10). Now
 // close the loop: paint ONE final red summary — so the recording's cover frame shows the failure
 // (not a later green step) and names every part that broke — then FAIL the test with all of them.
-test.afterEach(async () => {
+test.afterEach(async ({}, testInfo) => {
   if (!STEP_FAILURES.length) return
   const f = STEP_FAILURES
   if (CURRENT_PAGE) {
@@ -286,6 +286,14 @@ test.afterEach(async () => {
       failed: true
     }).catch(() => {})
     await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})
+    // Playwright's automatic screenshot fires BEFORE this hook, so on its own the run's cover
+    // shows the last step's paint — a green frame fronting a failed run. Shoot the red summary
+    // and attach it as a file (the reporter keeps only the LAST .png attachment as the cover).
+    try {
+      const cover = testInfo.outputPath('failure-cover.png')
+      await CURRENT_PAGE.screenshot({ path: cover })
+      await testInfo.attach('failure-cover', { path: cover, contentType: 'image/png' })
+    } catch { /* a closed page loses the cover, never the failure below */ }
   }
   const lines = f.map(s => '  ✗ ' + (s.n ? 'step ' + s.n + ' ' : '') + '"' + s.title + '": ' +
     String(s.message).split('\n')[0]).join('\n')
