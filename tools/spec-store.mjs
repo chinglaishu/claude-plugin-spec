@@ -92,6 +92,40 @@ export function parsePrd (text) {
   return { fm, reqs }
 }
 
+// The board shows a test's steps read from its DEFINITION (board R10), so the full plan is visible
+// the moment you open a test — before it has ever run, without trusting a green. This parses a
+// spec file into the ordered plan per test: a `flowStep('…')` test plans its numbered story steps
+// (a checkReq nested inside a flowStep is that step's detail, not a plan step of its own); a test
+// with no flowStep plans one step per requirement it proves (`checkReq('R5')`), rendered by the
+// requirement's title. Deliberately a light regex, not a parser — it runs at build time over the
+// project's own spec files and degrades to an empty plan (the record-driven fallback) if it cannot
+// read one, never throwing on an exotic file.
+const QUOTED = String.raw`(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")`
+export function parseTestPlan (src) {
+  const s = String(src || '')
+  // split into per-test blocks at each top-level test('…' / test("…"
+  const testRe = new RegExp(String.raw`\btest\s*\(\s*` + QUOTED, 'g')
+  const marks = []
+  let m
+  while ((m = testRe.exec(s))) marks.push({ title: unquote(m[1] ?? m[2]), at: m.index, bodyAt: testRe.lastIndex })
+  const plans = []
+  for (let i = 0; i < marks.length; i++) {
+    const block = s.slice(marks[i].bodyAt, i + 1 < marks.length ? marks[i + 1].at : s.length)
+    const flowRe = new RegExp(String.raw`\bflowStep\s*\(\s*` + QUOTED, 'g')
+    const flows = []
+    while ((m = flowRe.exec(block))) flows.push({ kind: 'flow', text: unquote(m[1] ?? m[2]) })
+    // every requirement the block tags, in order (nested or not) — the row's coverage chips, so a
+    // never-run test still shows what it will cover
+    const reqRe = /\bcheckReq\s*\(\s*['"]([^'"]+)['"]/g
+    const covers = []
+    while ((m = reqRe.exec(block))) if (!covers.includes(m[1])) covers.push(m[1])
+    const steps = flows.length ? flows : covers.map(id => ({ kind: 'prove', id }))
+    plans.push({ title: marks[i].title, steps, covers })
+  }
+  return plans
+}
+const unquote = str => String(str || '').replace(/\\(['"\\])/g, '$1')
+
 // Playwright writes one report for the whole run; the board needs it per screen. Tests live at
 // spec/<screen>/test.spec.ts, so the directory IS the screen — no registry to keep in sync.
 export const RESULTS = join(SPEC, '_results.json')
@@ -260,6 +294,9 @@ export function readScreen (name, results = null) {
 
   const hasShot = existsSync(join(dir, 'screen.png'))
   const hasTest = existsSync(join(dir, 'test.spec.ts'))
+  // The plan of every test, read from the spec file itself, so the board shows a test's steps
+  // before it has ever run (board R10). Empty when there is no test file or it parses to nothing.
+  const plans = hasTest ? parseTestPlan(readFileSync(join(dir, 'test.spec.ts'), 'utf8')) : []
   const state = readState(name)
 
   // A cell WAITS when the thing to its left does not exist yet — there is nothing to be stale
@@ -341,6 +378,7 @@ export function readScreen (name, results = null) {
     // cache-bust the img so a re-shot screenshot is never served stale from the last run
     shotHash: hasShot ? sha(String(statSync(join(dir, 'screen.png')).mtimeMs)) : '',
     run,
+    plans,
     prdHash,
     draftHash,
     draftHtml: hasDraft ? inlineDesign(draftSrc) : '',

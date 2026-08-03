@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, hudCheck } from '../_base'
+import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
@@ -88,142 +88,129 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
 // live records on disk cannot deterministically contain a failure, so this test stubs /api/runs with
 // one passing and one failing case (fixture data through the REAL client pipeline) and asserts how
 // the board reads them back. The titles are the real baked rows' — the fixture only supplies records.
-test('Steps read as named beats, a failure names itself, and the recording explains itself', async ({ page }) => {
+// The three named steps the dogfood flowStep test below authors — shared so the mocked run in the
+// R10 test can fabricate a record whose beats line up with the baked plan by title.
+const STORY_TITLE = 'Story-step evidence renders from the test definition'
+const STORY = [
+  'Open the board detail — the two columns are there',
+  'Announce a golden value on the narration bar',
+  'Confirm the tests column is present'
+]
+
+test('Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself', async ({ page }) => {
   await coverReqs('R10')
   await openDetail(page)
-  const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()
-  const t1 = (await page.locator('#testpane .test .ttl').nth(1).textContent())!.trim()
-  const t2 = (await page.locator('#testpane .test .ttl').nth(2).textContent())!.trim()
-  // the passing case carries a RECOVERED error (a caught wait, as real setups do) — it must not
-  // read as a failure: the case's verdict, not a step's, decides whether the alarm is raised
-  const steps0 = [
-    { label: 'proves R1', cat: 'test.step', depth: 0, ok: true, t: 0, d: 5000 },
-    { label: 'Wait for the “#email”', cat: 'pw:api', depth: 1, ok: false, t: 50, d: 30 },
-    { label: 'Open /', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 400 },
-    { label: 'proves R2', cat: 'test.step', depth: 0, ok: true, t: 5000, d: 4000 },
-    { label: 'Check the “cards” has the expected number', cat: 'expect', depth: 1, ok: true, t: 5200, d: 300 }
-  ]
-  // the failing case ALSO carries an early recovered error — the failing beat is the one holding
-  // the LAST failed step (the flow stopped there), never the first errored-and-recovered one
-  const steps1 = [
-    { label: 'proves R4', cat: 'test.step', depth: 0, ok: true, t: 0, d: 2000 },
-    { label: 'Wait for the “.grid”', cat: 'pw:api', depth: 1, ok: false, t: 50, d: 30 },
-    { label: 'Click the “Run all”', cat: 'pw:api', depth: 1, ok: true, t: 100, d: 200 },
-    { label: 'proves R5', cat: 'test.step', depth: 0, ok: false, t: 2000, d: 1000 },
-    { label: 'Check the “tags” has the expected number', cat: 'expect', depth: 1, ok: false, t: 2100, d: 900 }
-  ]
-  // a NARRATIVE flow (flowStep-authored): numbered story steps in user language, with the
-  // announced got/expected values recorded as `info` lines and the proves-tags nested inside
-  const steps2 = [
-    { label: 'User changes a market rent number in the table', cat: 'test.step', depth: 0, ok: true, t: 0, d: 3000 },
-    { label: 'Unit 01-02 · Net Rent 40,000 → 60,000', cat: 'info', depth: 1, ok: true, t: 200, d: 10 },
-    { label: 'Click the “Run plan”', cat: 'pw:api', depth: 1, ok: true, t: 500, d: 300 },
-    { label: 'proves R5', cat: 'test.step', depth: 1, ok: true, t: 1000, d: 500 },
-    { label: 'Run the plan — the chart shows the expected numbers', cat: 'test.step', depth: 0, ok: true, t: 3000, d: 2000 },
-    { label: 'IY1 — got 2400000 · expected 2400000', cat: 'info', depth: 1, ok: true, t: 3500, d: 5 }
-  ]
-  const mk = (ok: boolean, steps: object[]) => ({
-    shots: [], video: 'spec/_runs/rt/' + (ok ? 'a' : 'b') + '.webm', steps, log: 'x',
-    at: '2026-08-03T00:00:00.000Z', ms: 9000, ok, commit: 'abc1234'
-  })
-  await page.route('**/api/runs', route => route.fulfill({ json: {
-    watch: false, running: false,
-    runs: [{ screen: 'board', runId: 'rt', hasLog: false, at: '2026-08-03T00:00:00.000Z', ms: 9000,
-      ok: false, total: 3, failed: 1,
-      shotsByTest: { [t0]: mk(true, steps0), [t1]: mk(false, steps1), [t2]: mk(true, steps2) } }]
-  } }))
-  await page.reload()                                            // same-document hash nav never reloads
-  await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  const pass = dt.locator('.test', { hasText: t0 }).first()
-  const fail = dt.locator('.test', { hasText: t1 }).first()
-
+  const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()   // proves R1
   const titleOf = async (rid: string) =>
     (await page.locator('#reqpane .req[data-r="' + rid + '"] .rt').textContent())!.trim()
 
   await checkReq('R10', async () => {
-    // the recording narrates from INSIDE the page: this very checkReq painted the topbar the
-    // recorder films, and it names the requirement by id AND title — never the bare id
+    // the recording narrates from INSIDE the page: this very checkReq painted the topbar, naming
+    // the requirement by id AND title, and hudCheck lines ACCUMULATE the way a person lists them
     const hud = page.locator('#__specboard-hud')
     await expect(hud).toBeVisible()
     await expect(hud).toContainText('R10')
     await expect(hud).toContainText(await titleOf('R10'))
-    // a test can announce the got/expected values of its current check — same bar, and the
-    // lines ACCUMULATE within a step the way a person would list them
     await hudCheck('first check', 1, 1)
     await hudCheck('second check', 2, 2)
     await expect(hud).toContainText('first check — got 1 · expected 1')
     await expect(hud).toContainText('second check — got 2 · expected 2')
 
-    // the INLINE evidence is human words: a proves-beat wears the requirement's TITLE…
-    await pass.locator('.th').click()
-    const beats = pass.locator('.tststeps .beat')
-    await expect(beats).toHaveCount(2)
-    await expect(beats.first()).toContainText(await titleOf('R1'))
-    await expect(beats.nth(1)).toContainText(await titleOf('R2'))
-    // …and setup plumbing is not shown inline at all — it lives only in the all-steps window
-    await expect(pass.locator('.tststeps')).not.toContainText('#email')
-
-    // a NARRATIVE flow reads as its NUMBERED story steps, and each expands to its recorded detail
-    const story = dt.locator('.test', { hasText: t2 }).first()
+    // (1) STEPS COME FROM THE DEFINITION — with NO run at all, the full plan still shows, pending.
+    await page.route('**/api/runs', r => r.fulfill({ json: { watch: false, running: false, runs: [] } }))
+    await page.reload()
+    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    const story = dt.locator('.test', { hasText: STORY_TITLE }).first()
     await story.locator('.th').click()
     const srows = story.locator('.tststeps .beat')
-    await expect(srows).toHaveCount(2)
+    await expect(srows).toHaveCount(3)                              // its three flowStep sentences
+    await expect(srows.nth(0)).toContainText(STORY[0])
     await expect(srows.nth(0).locator('.bnum')).toHaveText('1')
-    await expect(srows.nth(0)).toContainText('User changes a market rent number in the table')
-    await expect(srows.nth(1).locator('.bnum')).toHaveText('2')
-    // detail waits behind a click: the golden values and the requirements the step proved —
-    // never the raw plumbing (that stays in the Steps window)
-    await expect(story.locator('.bdet li').first()).toBeHidden()
-    await srows.nth(0).locator('.bh').click()
-    await expect(srows.nth(0).locator('.bdet .bnote')).toContainText('Net Rent 40,000 → 60,000')
-    await expect(srows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R5'))
-    await expect(story.locator('.tststeps')).not.toContainText('Click the “Run plan”')
-    await srows.nth(1).locator('.bh').click()
-    await expect(srows.nth(1).locator('.bdet .bnote')).toContainText('IY1 — got 2400000 · expected 2400000')
+    await expect(srows).toHaveClass([/pending/, /pending/, /pending/])  // none green, none red
+    // a checkReq-only test plans one step per requirement, by TITLE, also before running
+    const p0 = dt.locator('.test', { hasText: t0 }).first()
+    await p0.locator('.th').click()
+    await expect(p0.locator('.tststeps .beat')).toContainText(await titleOf('R1'))
+    await expect(p0.locator('.tststeps .beat.pending')).toHaveCount(1)
 
-    // the complete raw record opens in the all-steps WINDOW — a floating card, not a scrim
-    await pass.locator('[data-steps]').click()
+    // (2) A RUN OVERLAYS its outcome onto those same rows — passed, failed, and NOT-REACHED. The
+    // story test's mock fails at step 2 and never reaches step 3.
+    const rec = [
+      { label: STORY[0], cat: 'test.step', depth: 0, ok: true, t: 0, d: 800 },
+      { label: 'proves R10', cat: 'test.step', depth: 1, ok: true, t: 100, d: 50 },
+      { label: 'Unit 01-02 · Net Rent 40,000 → 60,000', cat: 'info', depth: 1, ok: true, t: 150, d: 5 },
+      { label: STORY[1], cat: 'test.step', depth: 0, ok: false, t: 800, d: 500 },
+      { label: 'IY2 — got 2338064 · expected 2396129', cat: 'info', depth: 1, ok: false, t: 900, d: 5 },
+      { label: 'Check the result is what we expect', cat: 'expect', depth: 1, ok: false, t: 950, d: 5 }
+    ]
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rt', hasLog: false, at: '2026-08-03T00:00:00.000Z', ms: 6000,
+        ok: false, total: 1, failed: 1, shotsByTest: { [STORY_TITLE]: {
+          shots: [], video: 'spec/_runs/rt/a.webm', steps: rec, log: 'x',
+          at: '2026-08-03T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
+        } } }]
+    } }))
+    await page.reload()
+    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    const s2 = dt.locator('.test', { hasText: STORY_TITLE }).first()
+    await s2.locator('.th').click()
+    const rows = s2.locator('.tststeps .beat')
+    await expect(rows.nth(0)).toHaveClass(/\bp\b/)                  // step 1 passed
+    await expect(rows.nth(1)).toHaveClass(/\bf\b/)                  // step 2 failed
+    await expect(rows.nth(2)).toHaveClass(/\bnr\b/)                 // step 3 never reached — not hidden
+    await expect(rows).toHaveCount(3)
+    // the failure names itself on the meta line, in the step's own words
+    await expect(s2.locator('.tmeta')).toContainText('failed at')
+    await expect(s2.locator('.tmeta')).toContainText(STORY[1])
+    // step detail expands on click: the announced value note, and the requirement it proved
+    await rows.nth(0).locator('.bh').click()
+    await expect(rows.nth(0).locator('.bdet .bnote')).toContainText('Net Rent 40,000 → 60,000')
+    await expect(rows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R10'))
+    // the failed step arrives open, with the got/expected value it stopped on
+    await expect(rows.nth(1).locator('.bdet .bnote')).toContainText('got 2338064 · expected 2396129')
+
+    // the complete raw record opens in the Steps WINDOW — a floating card, not a scrim
+    await s2.locator('[data-steps]').click()
     const sheet = page.locator('#stepsheet')
     await expect(sheet).toHaveClass(/on/)
-    await expect(sheet).toContainText('Wait for the “#email”')   // setup detail, marks and all
-    await expect(sheet).toContainText('Open /')
-    const covers = await sheet.locator('.box').evaluate(el => {
+    await expect(sheet).toContainText('Check the result is what we expect')   // raw check, marked
+    const full = await sheet.locator('.box').evaluate(el => {
       const r = el.getBoundingClientRect()
       return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
     })
-    expect(covers).toBeFalsy()
-    await sheet.locator('[data-stepsclose]').click()
-    await expect(sheet).not.toHaveClass(/on/)
-
-    // a PASSING case never raises the alarm, even with an errored-and-recovered step inside
-    await expect(pass.locator('.tststeps .beat.f')).toHaveCount(0)
-    await expect(pass.locator('.tmeta')).not.toContainText('failed')
-
-    // WHICH PART FAILED reads in the same human words, without opening anything…
-    await expect(fail.locator('.tmeta')).toContainText(await titleOf('R5'))
-    // …and inside, exactly ONE beat wears it — the one holding the LAST failed step, by title
-    await fail.locator('.th').click()
-    const fbeat = fail.locator('.tststeps .beat.f')
-    await expect(fbeat).toHaveCount(1)
-    await expect(fbeat).toContainText(await titleOf('R5'))
-    await expect(fail.locator('.tststeps .beat.p')).toHaveCount(1) // the recovered beat stays quiet
-    // the raw failing check is marked in the window (the recovered wait keeps its ✕ there too)
-    await fail.locator('[data-steps]').click()
-    await expect(sheet.locator('li.sf.scat-expect')).toContainText('Check the')
+    expect(full).toBeFalsy()
     await sheet.locator('[data-stepsclose]').click()
 
     // the player never CROPS the frame: the narration topbar is burned into the video's top edge,
     // and an object-fit that fills-and-crops (cover) sliced exactly that edge off in display
-    await pass.locator('.rec').click()
-    const fit = await pass.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
+    await s2.locator('.rec').click()
+    const fit = await s2.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
     expect(fit).toBe('contain')
 
-    // the bar SURVIVES a navigation — a beat that walks to another page (dojostack's cross-page
-    // schedule read) must keep its narration; a goto wipes the DOM, so the harness repaints
+    // the bar SURVIVES a navigation — a beat that walks to another page keeps its narration
     await page.reload()
     await expect(page.locator('#__specboard-hud')).toBeVisible()
     await expect(page.locator('#__specboard-hud')).toContainText('R10')
+  })
+})
+
+// A real flowStep-authored test, so the suite exercises flowStep end to end and the board has a
+// genuine numbered-story record to render. flowStep titles must be STRING LITERALS (the board reads
+// them from the source to show the plan before a run) — these three must stay equal to STORY above.
+test('Story-step evidence renders from the test definition', async ({ page }) => {
+  await coverReqs('R10')
+  await flowStep('Open the board detail — the two columns are there', async () => {
+    await page.goto('/#/board')
+    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    await checkReq('R10', async () => { await expect(page.locator('#reqpane')).toBeVisible() })
+  })
+  await flowStep('Announce a golden value on the narration bar', async () => {
+    await hudCheck('cards on the home board', 4, await page.locator('#home .card').count())
+  })
+  await flowStep('Confirm the tests column is present', async () => {
+    await expect(page.locator('#testpane')).toBeVisible()
   })
 })
 

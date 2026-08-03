@@ -83,7 +83,11 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
     trace: 'off',
     screenshot: process.env.BOARD_RECORD ? 'on' : 'off',
-    video: process.env.BOARD_RECORD ? 'on' : 'off',
+    // Record at the app's REAL size — a bare `video: 'on'` downscales the recording to ~800px wide,
+    // which turns a data-dense screen (a chart over a rent-roll grid) into an illegible thumbnail
+    // (board R10). Pin the video size to the viewport so the frame shows what is being proven. The
+    // narration topbar (spec/_base.ts) is burned into these frames, so they must be readable.
+    video: process.env.BOARD_RECORD ? { mode: 'on', size: { width: 1440, height: 900 } } : 'off',
     // A watchable run pauses between actions so a person can follow along — the board sets
     // BOARD_SLOWMO from the Setup page's "time between steps". Zero (or unset) on a normal run,
     // because slowing a headless suite down helps no one.

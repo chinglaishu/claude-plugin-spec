@@ -111,7 +111,11 @@ A test row is not just a verdict. It opens to: the flow's **numbered story steps
 own sentences of what a user does and what should happen ("Edit the draft — change Unit 01-02 Net
 Rent from 40,000 to 60,000"), each wearing its own pass/fail mark, and each **expanding on click to
 its recorded detail**: the got-vs-expected value notes the test announced while it ran, and the
-requirements that step proved. A test with no story steps (only `proves` tags) falls back to one row
+requirements that step proved. **These steps are read from the test's definition, not from the last
+run** — the full list shows the moment you open a test, before it has ever run, so you can see what
+it will do without trusting a green. A run overlays each step's outcome: **passed / failed /
+not-reached** (a flow that stops at a failure leaves the steps after it honestly not-reached, never
+hidden — so a failure never makes the rest of the plan disappear). A test with no story steps (only `proves` tags) falls back to one row
 per requirement, rendered by **the requirement's own title**, never the bare id — nobody should have
 to cross-reference "R5" to know what was proven. Setup plumbing is **not shown inline at all**. The
 **complete raw record** — setup, every action and check with its mark, and the trimmed-at-cap note —
@@ -130,14 +134,21 @@ glance** — a bold title line naming the current story step (or the requirement
 title), with the announced **got-vs-expected values** stacked beneath it, accumulating within a step
 the way a person would list them; on a failing check the bar turns red and names it, so the video
 alone explains what was being tested and which part failed. One consistent topbar, always in the
-same place — never a floating caption card in the middle of the frame. Every test can be **Run**
-(headless — nothing to watch, it just goes) or **Watched** (a real browser opens and drives the app
-in front of you). Run and Watch stay wherever a test is shown.
+same place — never a floating caption card in the middle of the frame. The recording is captured at
+the **app's real size** (not a shrunken thumbnail), and a step that asserts on a value **scrolls
+that value into view and holds** before asserting, so the frame actually shows what is being proven
+rather than asking you to trust the topbar. A **failing run keeps its recording too** — the video is
+the best evidence of a failure, so it is never dropped just because the test went red. Every test can
+be **Run** (headless — nothing to watch, it just goes) or **Watched** (a real browser opens and
+drives the app in front of you). Run and Watch stay wherever a test is shown.
 
-*Amended 2026-08-03 at the human's direction, three times. First: a flat "80 steps" fold was
+*Amended 2026-08-03 at the human's direction, four times. First: a flat "80 steps" fold was
 unreadable and a silent recording cannot explain a failure. Second: "proves R5" still meant nothing
 without cross-referencing R5, the setup beat was repeated noise, and the narration belongs INSIDE
 the video — one persistent topbar replacing both the board-side playback overlay and the centred
 caption card an earlier agent painted mid-frame. Third: requirement titles alone still read as a
 checklist, not a story — the inline view became the flow's numbered steps in user language with the
-golden values one click away, and the topbar grew to a designed, glanceable two-line card.*
+golden values one click away, and the topbar grew to a designed, glanceable two-line card. Fourth:
+the steps must be read from the test's definition so the full plan shows before a run and a failure
+never hides the rest; the recording must be full-size, must scroll the asserted value into view, and
+must survive a failure.*

@@ -58,12 +58,33 @@ const windowed = process.env.BOARD_ONE_WINDOW
 // (playwright.board.ts workers:1) — one test, one page, at a time.
 let CURRENT_PAGE: Page | null = null
 export const test = windowed.extend<{ page: Page }>({
-  page: async ({ page }, use) => {
+  page: async ({ page }, use, testInfo) => {
     CURRENT_PAGE = page
     FLOW_N = 0
     FLOW_DEPTH = 0
     FAILED_PAINTED = false
-    try { await use(page) } finally { CURRENT_PAGE = null }
+    try {
+      await use(page)
+    } finally {
+      CURRENT_PAGE = null
+      // A failed run's recording is the BEST evidence of the failure, so it must never be dropped —
+      // yet Playwright can finish a failed test without attaching its video (board R10). Force-save
+      // the video into the test's own output dir and attach it, so the board's reporter finds the
+      // .webm and the failed run stays playable. Best-effort: only under a board recording, only on
+      // an unexpected outcome, and only if a video was actually being recorded.
+      if (process.env.BOARD_RECORD && testInfo.status && testInfo.status !== testInfo.expectedStatus) {
+        try {
+          const v = page.video && page.video()
+          if (v) {
+            const dest = testInfo.outputPath('video.webm')
+            await v.saveAs(dest)
+            if (!testInfo.attachments.some(a => a.contentType === 'video/webm')) {
+              testInfo.attachments.push({ name: 'video', path: dest, contentType: 'video/webm' })
+            }
+          }
+        } catch { /* the recording just could not be saved — nothing more to do */ }
+      }
+    }
   }
 })
 
@@ -166,6 +187,22 @@ export async function hudCheck (label: string, expected: unknown, actual: unknow
 // Freeform variant, for a sentence the author wants on the bar.
 export async function hudNote (text: string): Promise<void> {
   await narrate(String(text))
+}
+
+// Scroll a target to the CENTRE of the viewport and HOLD, so the recording actually shows the value
+// a step asserts on (board R10) rather than asking you to trust the topbar. Generic — it works
+// across nested scroll containers via scrollIntoView; a virtualised cell (one an app renders only
+// when its column is in view) must be brought into the DOM by the app's own API first, then
+// revealed. The hold is long under a board recording (so the frame is readable on playback) and
+// short otherwise (so a plain suite run stays fast).
+export async function reveal (target: Locator, opts: { hold?: number } = {}): Promise<void> {
+  const el = target.first()
+  try {
+    await el.scrollIntoViewIfNeeded({ timeout: 4000 })
+    await el.evaluate(n => (n as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' }))
+  } catch { /* off-screen / virtualised / detached — nothing to centre */ }
+  const hold = opts.hold ?? (process.env.BOARD_RECORD ? 1600 : 200)
+  if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
 
 // A STORY STEP (board R10): one numbered sentence of what a user does and what should happen —

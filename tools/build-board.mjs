@@ -121,43 +121,64 @@ const reqPane = s => `<div class="pane reqpane">
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
-// RIGHT column (board R3/R5/R10): one test per row, leading with its own FLOW title (prominent),
-// then the coverage TAGS — one neutral chip per requirement it covers — and a status chip. Collapsed;
-// open it for the recording cover, a Run/Watch/full-log trio of buttons (full log opens in a
-// floating window), and the fold of steps (scrollable). The .rec / .tststeps / .tstlog / data-title hooks keep the
-// existing run / steps / log machinery working, re-housed into the new row. There is no separate
-// screenshot strip — the recording (its still as the cover) is the one artifact (R10).
-const testRow = (s, t) => {
-  const tags = Object.keys(t.reqs || {}).map(qid => {
+// One PLANNED story step, baked from the test's definition (board R10) so it shows before the test
+// has run. It renders "pending" (a hollow mark); loadRuns overlays the recorded outcome — passed,
+// failed, or not-reached. A flow step carries its author sentence; a prove step carries the
+// requirement's title (resolved client-side, since the req row lives in the same document).
+const planRow = (st, i) =>
+  `<div class="beat pending" data-step="${st.kind}" data-key="${esc(st.kind === 'prove' ? st.id : st.text)}">
+    <div class="bh"><span class="bnum">${i + 1}</span><span class="bmk">○</span>${
+      st.kind === 'prove' ? `<span class="bid">${esc(st.id)}</span>` : ''
+    }<span class="blbl">${esc(st.kind === 'prove' ? st.id : st.text)}</span><span class="bchev">›</span></div>
+    <ul class="bdet" hidden></ul>
+  </div>`
+
+// RIGHT column (board R3/R5/R10): one test per row, enumerated from the SOURCE plan (so a test
+// shows even before it has run), merged with its latest run record `t` when there is one. Leads
+// with the flow title, the coverage tags, and a status chip; opens to the recording, the
+// Run/Watch/Logs/Steps buttons, and the numbered plan steps (loadRuns overlays outcomes). There is
+// no separate screenshot strip — the recording (its still as the cover) is the one artifact.
+const testRow = (s, plan, t) => {
+  const coverIds = t ? Object.keys(t.reqs || {}) : (plan.covers || [])
+  const tags = coverIds.map(qid => {
     const rid = qid.includes(':') ? qid.split(':').pop() : qid
     return `<span class="tag" data-r="${esc(rid)}">${esc(rid)}</span>`
   }).join('')
-  const status = t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
-  return `<div class="test tst ${t.ok ? 'p' : 'f'}" data-t="${esc(t.title)}" data-title="${esc(t.title)}">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(t.title)}</span><div class="tags">${tags}</div>${status}</div><div class="tmeta"></div></div>
+  const status = !t ? chip('gone', 'mark o', 'not run')
+    : t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
+  const cls = !t ? 'u' : t.ok ? 'p' : 'f'
+  const planned = (plan.steps || []).map(planRow).join('')
+  return `<div class="test tst ${cls}" data-t="${esc(plan.title)}" data-title="${esc(plan.title)}">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(plan.title)}</span><div class="tags">${tags}</div>${status}</div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">${fmtMs(t.ms)}</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">${t ? fmtMs(t.ms) : ''}</span></div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" title="run only this test, headless">Run</button>
-          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(t.title)}" data-headed="1" title="watch only this test in a browser">Watch</button>
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" title="run only this test, headless">Run</button>
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" data-headed="1" title="watch only this test in a browser">Watch</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
           <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
         </span>
       </div>
-      ${t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
-      <div class="fold"><div class="tststeps" data-title="${esc(t.title)}"></div></div>
-      <div class="tstlog" data-title="${esc(t.title)}"></div>
+      ${t && t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
+      <div class="fold"><div class="tststeps" data-title="${esc(plan.title)}" data-planned="1">${planned}</div></div>
+      <div class="tstlog" data-title="${esc(plan.title)}"></div>
     </div>
   </div>`
 }
-const testPane = s => `<div class="pane testpane">
+// Enumerate the tests from the SOURCE plan (definition order); merge each with its run record when
+// one exists. A screen whose spec did not parse into a plan falls back to whatever ran.
+const testPane = s => {
+  const runByTitle = new Map((s.run && s.run.tests || []).map(t => [t.title, t]))
+  const rows = (s.plans && s.plans.length)
+    ? s.plans.map(p => testRow(s, p, runByTitle.get(p.title)))
+    : (s.run && s.run.tests || []).map(t => testRow(s, { title: t.title, steps: [], covers: [] }, t))
+  return `<div class="pane testpane">
   <h2>E2E tests<span class="s">the proof</span></h2>
-  ${s.run && s.run.tests && s.run.tests.length
-    ? s.run.tests.map(t => testRow(s, t)).join('')
-    : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
+  ${rows.length ? rows.join('') : `<div class="empty">No test yet · write <code>spec/${esc(s.name)}/test.spec.ts</code>.</div>`}
 </div>`
+}
 
 // The How-it-works page. The METHOD is fixed — intro, the shared four-column spine, the two lanes
 // (map, then depth), and the five skills drawn as flowcharts (howFlowcharts,
@@ -861,14 +882,20 @@ export function build () {
   .beat { border-left:2px solid var(--hair); margin:var(--s2) 0; padding:2px 0 2px var(--s3);
     font-size:var(--t-sm); color:var(--ink-2); }
   .beat.f { border-left-color:var(--bengara); color:var(--bengara); }
+  /* a step not yet run (pending) or one the flow never reached (not-reached) reads quiet, never
+     green and never red — the honest "we don't know / we didn't get there" (board R10) */
+  .beat.pending, .beat.nr { color:var(--ink-4); }
+  .beat.nr { border-left-style:dashed; }
   .beat .bh { display:flex; align-items:baseline; gap:var(--s2); }
   .beat.hasdet .bh { cursor:pointer; }
   .beat.hasdet .bh:hover .blbl { color:var(--ink); }
   .beat.f.hasdet .bh:hover .blbl { color:var(--bengara); }
+  .beat:not(.hasdet) .bchev { visibility:hidden; }
   .beat .bnum { flex:none; font:var(--t-micro) var(--mono); color:var(--ink-4); min-width:12px; }
   .beat .bmk { flex:none; }
   .beat.p .bmk { color:var(--koke); }
   .beat.f .bmk { color:var(--bengara); }
+  .beat.pending .bmk, .beat.nr .bmk { color:var(--ink-4); }
   .beat .bid { flex:none; font:var(--t-micro) var(--mono); background:var(--wash); color:var(--ink-3);
     border-radius:var(--r-sm); padding:1px 6px; }
   .beat.f .bid { background:var(--bengara-tint); color:var(--bengara); }
@@ -2334,88 +2361,92 @@ ${detail}
           slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
       }
-      // The INLINE evidence of each case (board R10): one row per NAMED beat, in HUMAN WORDS — a
-      // 'proves R5' beat renders that requirement's own TITLE (looked up in the baked detail DOM,
-      // qualified ids across screens), an author-named beat keeps the author's sentence. Setup
-      // plumbing and the raw actions are NOT shown here — they live in the all-steps window, read
-      // off the record this loop stashes on the slot. The failure keys off the CASE's verdict,
-      // never a step's (a green flow can contain a caught, recovered error), and on a failed case
-      // THE failing beat is the one holding the LAST failed step — the flow stopped there.
+      // The INLINE evidence of each case (board R10): the plan rows are BAKED from the test source
+      // (planRow), so the full numbered story shows before the test ever runs. This loop OVERLAYS
+      // the latest run onto those rows — never replacing them — so a step reads passed / failed /
+      // not-reached, and a failure leaves the steps after it visibly not-reached rather than gone.
       const fmt = ms => ms >= 1000 ? (Math.round(ms / 100) / 10) + 's' : Math.round(ms) + 'ms'
+      // 'R5' (this screen) or 'x:R5' → the requirement's own title, looked up in the baked req rows
+      const reqTitle = (rid, scr) => {
+        const el = document.querySelector('.dt[data-screen="' + (scr || screen) + '"] .req[data-r="' + rid + '"] .rt')
+        return el && el.textContent ? el.textContent : rid
+      }
       for (const slot of panel.querySelectorAll('.tststeps')) {
         const host = slot.closest('.test')
         const meta = host && host.querySelector('.tmeta')
         const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
         slot._steps = steps                    // the all-steps window reads the raw record here
-        if (!steps.length) { slot.innerHTML = ''; if (meta) meta.textContent = ''; continue }
-        // fold the flat record back into beats; actions before the first named beat are setup
+        const rows = [...slot.querySelectorAll('.beat')]
+
+        // a prove-step's label is the requirement's TITLE (the id alone means nothing to a person)
+        for (const row of rows) if (row.dataset.step === 'prove') {
+          const lbl = row.querySelector('.blbl'); if (lbl) lbl.textContent = reqTitle(row.dataset.key)
+        }
+
+        // fold the record into top-level beats (test.step / proves) + their kids
         const beats = []
         let cur = null
         for (const s of steps) {
           if (s.cat === 'note') continue
           if (s.cat === 'test.step' && !s.depth) { cur = { head: s, kids: [] }; beats.push(cur); continue }
-          if (!cur) { cur = { head: { label: 'setup — before the first named step', ok: true, synth: true }, kids: [] }; beats.push(cur) }
-          cur.kids.push(s)
+          if (cur) cur.kids.push(s)
         }
+        const keyOf = b => {
+          const m = /^proves (\\S+)$/.exec(b.head.label || '')
+          return m ? (m[1].indexOf(':') > -1 ? m[1].split(':').pop() : m[1]) : (b.head.label || '')
+        }
+        const beatByKey = {}
+        for (const b of beats) beatByKey[keyOf(b)] = b
         let failStep = null
-        if (one.ok === false) for (const s of steps) { if (!s.ok && s.cat !== 'note') failStep = s }
-        const failBeat = failStep
-          ? beats.filter(b => b.kids.includes(failStep) || b.head === failStep).pop()
-          : null
-        // 'proves R5' → { id: 'R5', txt: the requirement's title } — the id alone means nothing
-        // to a person; nobody should have to cross-reference it. Anything else is the author's
-        // own story-step sentence, kept verbatim.
-        const human = label => {
-          const m = /^proves (\\S+)$/.exec(label || '')
-          if (!m) return { id: '', txt: label || '' }
-          const qid = m[1]
-          const rid = qid.indexOf(':') > -1 ? qid.split(':').pop() : qid
-          const scr = qid.indexOf(':') > -1 ? qid.split(':')[0] : screen
-          const el = document.querySelector('.dt[data-screen="' + scr + '"] .req[data-r="' + rid + '"] .rt')
-          return { id: rid, txt: el && el.textContent ? el.textContent : qid }
-        }
-        // NUMBERED story rows (board R10), each expanding to its CURATED detail: the note lines
-        // the test announced (got/expected values), the requirements the step proved, and — on the
-        // failing step — the raw check that stopped the flow. Plumbing stays in the Steps window.
-        // The synth setup beat is hidden inline unless it is the one that failed.
-        let num = 0
-        slot.innerHTML = beats.filter(b => !b.head.synth || b === failBeat).map(b => {
-          const bad = b === failBeat
-          const h = human(b.head.label)
-          num++
-          const det = []
-          for (const k of b.kids) {
-            if (k.cat === 'info') {
-              det.push('<li class="bnote' + (k.ok ? '' : ' sf') + '">' + eh(k.label || '') + '</li>')
-            } else if (k.cat === 'test.step' && /^proves /.test(k.label || '')) {
-              const kh = human(k.label)
-              det.push('<li class="bprove' + (k.ok ? '' : ' sf') + '">proves ' + eh(kh.id) +
-                ' · ' + eh(kh.txt) + '</li>')
-            } else if (bad && k === failStep) {
-              det.push('<li class="braw sf">' + eh(k.label || '') + '</li>')
+        if (one && one.ok === false) for (const s of steps) { if (!s.ok && s.cat !== 'note') failStep = s }
+
+        // walk the plan rows in order; once the failing step is passed, later unmatched rows are
+        // NOT-REACHED (the flow stopped) rather than pending
+        let passedFail = false
+        let failName = ''
+        for (const row of rows) {
+          const b = beatByKey[row.dataset.key]
+          const mk = row.querySelector('.bmk')
+          const bh = row.querySelector('.bh')
+          const dl = row.querySelector('.bdet')
+          row.classList.remove('pending', 'p', 'f', 'nr', 'hasdet')
+          if (b) {
+            const bad = b.kids.includes(failStep) || b.head === failStep
+            row.classList.add(bad ? 'f' : 'p')
+            if (mk) mk.textContent = bad ? '✕' : '✓'
+            if (bad) { passedFail = true; failName = row.querySelector('.blbl').textContent }
+            const det = []
+            for (const k of b.kids) {
+              if (k.cat === 'info') det.push('<li class="bnote' + (k.ok ? '' : ' sf') + '">' + eh(k.label || '') + '</li>')
+              else if (k.cat === 'test.step' && /^proves /.test(k.label || '')) {
+                const rid = /^proves (\\S+)/.exec(k.label)[1]
+                const bare = rid.indexOf(':') > -1 ? rid.split(':').pop() : rid
+                det.push('<li class="bprove' + (k.ok ? '' : ' sf') + '">proves ' + eh(bare) + ' · ' + eh(reqTitle(bare)) + '</li>')
+              } else if (bad && k === failStep) det.push('<li class="braw sf">' + eh(k.label || '') + '</li>')
             }
-          }
-          return '<div class="beat ' + (bad ? 'f' : 'p') + (det.length ? ' hasdet' : '') + '">' +
-            '<div class="bh">' +
-            '<span class="bnum">' + num + '</span>' +
-            '<span class="bmk">' + (bad ? '✕' : '✓') + '</span>' +
-            (h.id ? '<span class="bid">' + eh(h.id) + '</span>' : '') +
-            '<span class="blbl">' + eh(h.txt) + '</span>' +
-            (det.length ? '<span class="bchev">›</span>' : '') +
-            '</div>' +
-            (det.length ? '<ul class="bdet"' + (bad ? '' : ' hidden') + '>' + det.join('') + '</ul>' : '') +
-            '</div>'
-        }).join('')
-        // the meta line under the case title: a quiet summary — or, on a failure, its NAME in words
-        if (meta) {
-          const took = one.ms != null ? fmt(one.ms) : ''
-          if (one.ok === false) {
-            const name = failBeat ? human(failBeat.head.label).txt : (failStep && failStep.label) || 'an unnamed step'
-            meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' +
-              (took ? ' · ' + eh(took) : '')
+            if (dl) { dl.innerHTML = det.join(''); dl.hidden = !bad }
+            if (det.length) row.classList.add('hasdet')
+          } else if (one && (one.ok === false || passedFail)) {
+            row.classList.add('nr')                 // ran, but the flow never reached this step
+            if (mk) mk.textContent = '·'
+            if (dl) dl.innerHTML = ''
           } else {
-            const np = beats.filter(b => !b.head.synth && /^proves /.test(b.head.label || '')).length
+            row.classList.add('pending')            // no run yet
+            if (mk) mk.textContent = '○'
+            if (dl) dl.innerHTML = ''
+          }
+          void bh
+        }
+        // the meta line: a failure names its step; a pass counts what it proved; no run says so
+        if (meta) {
+          const took = one && one.ms != null ? fmt(one.ms) : ''
+          if (!one) meta.textContent = 'not run yet'
+          else if (one.ok === false) {
+            const name = failName || (failStep && failStep.label) || 'an unnamed step'
+            meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' + (took ? ' · ' + eh(took) : '')
+          } else {
+            const np = beats.filter(b => /^proves /.test(b.head.label || '')).length
             meta.textContent = (np ? 'proves ' + np + ' requirement' + (np === 1 ? '' : 's') + ' · ' : '') +
               steps.filter(s => s.cat !== 'note').length + ' steps' + (took ? ' · ' + took : '')
           }
