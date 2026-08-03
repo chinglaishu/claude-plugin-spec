@@ -186,6 +186,12 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     await pass.locator('.rec').click()
     const fit = await pass.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
     expect(fit).toBe('contain')
+
+    // the bar SURVIVES a navigation — a beat that walks to another page (dojostack's cross-page
+    // schedule read) must keep its narration; a goto wipes the DOM, so the harness repaints
+    await page.reload()
+    await expect(page.locator('#__specboard-hud')).toBeVisible()
+    await expect(page.locator('#__specboard-hud')).toContainText('R10')
   })
 })
 

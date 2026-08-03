@@ -89,9 +89,21 @@ function reqTitle (qid: string): string {
 // inline styles because it renders inside arbitrary apps that know nothing of the board's design
 // system (the values mirror the design tokens: ink, paper, and a deep bengara for failure).
 const HUD = { head: '', detail: '' }
+// A goto WIPES the injected bar — and real flows navigate mid-beat (a cross-page read). Repaint
+// after every main-frame navigation so the narration is consistently on screen, not only until
+// the first goto. One listener per page, installed lazily on first paint.
+const HOOKED = new WeakSet<Page>()
+function repaintOnNav (page: Page): void {
+  if (HOOKED.has(page)) return
+  HOOKED.add(page)
+  page.on('framenavigated', f => {
+    if (f === page.mainFrame() && HUD.head && page === CURRENT_PAGE) void paintHud({})
+  })
+}
 async function paintHud (s: { head?: string, detail?: string, failed?: boolean }): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
+  repaintOnNav(page)
   if (s.head !== undefined) { HUD.head = s.head; HUD.detail = '' }
   if (s.detail !== undefined) HUD.detail = s.detail
   await page.evaluate(({ head, detail, failed }) => {
