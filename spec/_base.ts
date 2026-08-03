@@ -63,6 +63,7 @@ export const test = windowed.extend<{ page: Page }>({
     FLOW_N = 0
     FLOW_DEPTH = 0
     FAILED_PAINTED = false
+    STEP_FAILURES = []
     try {
       await use(page)
     } finally {
@@ -97,6 +98,11 @@ export const test = windowed.extend<{ page: Page }>({
 let FLOW_N = 0
 let FLOW_DEPTH = 0
 let FAILED_PAINTED = false
+// Every step that failed THIS test. A flow does NOT abort at the first failure — it records each
+// one here and keeps going, so the recording reaches every step (incl. the ones that scroll a
+// table into view) and the board can show WHICH parts failed, not just the first (board R10). The
+// afterEach hook paints a final red summary and fails the test if this is non-empty.
+let STEP_FAILURES: { n: number, title: string, message: string }[] = []
 
 // A requirement id in words: parse the screen's prd.md heading (`## R5 — Title`) once per screen.
 // A bare id belongs to the running spec file's own screen; a qualified one (`asset-plan:R5`) names
@@ -214,23 +220,23 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
 // still tags requirements while the narrative carries the story.
 export async function flowStep (title: string, fn: () => Promise<void> | void): Promise<void> {
   const n = ++FLOW_N
-  await test.step(title, async () => {
-    await paintHud({ head: n + '. ' + title })
-    FLOW_DEPTH++
-    try {
-      await fn()
-    } catch (err) {
-      if (!FAILED_PAINTED) {
-        FAILED_PAINTED = true
-        await paintHud({ head: '✗ failed — ' + n + '. ' + title, detail: HUD.detail, failed: true })
-        if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})
-      }
-      throw err
-    } finally {
-      FLOW_DEPTH--
-    }
-    await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })  // keep the listed values
-  })
+  await paintHud({ head: n + '. ' + title })
+  FLOW_DEPTH++
+  try {
+    // fn runs INSIDE a test.step, so a failure marks THAT step failed on the board. The catch is
+    // OUTSIDE the step — the error has already left it (so Playwright records the step as failed) —
+    // which lets the flow CONTINUE to the next step instead of aborting (board R10). The test is
+    // still failed: afterEach throws the aggregate. The recording keeps rolling through every step.
+    await test.step(title, async () => { await fn() })
+    await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })
+  } catch (err) {
+    STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
+    await paintHud({ head: '✗ FAILED — ' + n + '. ' + title, detail: HUD.detail, failed: true })
+    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(900).catch(() => {})  // hold the red frame
+    // deliberately NOT re-thrown — the flow runs on
+  } finally {
+    FLOW_DEPTH--
+  }
 }
 
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
@@ -241,33 +247,47 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
 // that stops early leaves the ones it never got to honestly NOT-REACHED (not green, not red) rather
 // than silently absent. The reporter reads the steps and the annotation back out (tools/coverage.mjs).
 export async function checkReq (id: string, fn: () => Promise<void> | void): Promise<void> {
-  // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from
-  // it; the human words go on the HUD (and the board maps the id back to its title on its side)
-  // Inside a flowStep the narrative keeps the headline — coverage tags quietly; a top-level
-  // checkReq (a requirement-enumeration test) narrates itself as before.
+  // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from it.
   const title = reqTitle(id)
   const nested = FLOW_DEPTH > 0
-  await test.step('proves ' + id, async () => {
-    if (!nested) await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
-    try {
-      await fn()
-    } catch (err) {
-      // the viewer must SEE where it went red: repaint (keeping the values that failed) and hold
-      // a beat so the recorder catches the frame before the page is torn down — once, at the most
-      // specific point (an inner failure bubbles out through the enclosing flowStep)
-      if (!FAILED_PAINTED) {
-        FAILED_PAINTED = true
-        const head = nested
-          ? '✗ failed — ' + (HUD.head || id) + ' (' + id + ')'
-          : '✗ failed — ' + id + (title ? ' · ' + title : '')
-        await paintHud({ head, detail: HUD.detail, failed: true })
-        if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(500).catch(() => {})
-      }
-      throw err
-    }
-    if (!nested) await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
-  })
+  if (nested) {
+    // inside a flowStep: run the proof in its `proves` step and let a failure PROPAGATE — the
+    // enclosing flowStep catches it, records it, paints the red frame and continues the flow.
+    await test.step('proves ' + id, async () => { await fn() })
+    return
+  }
+  // top-level (a requirement-enumeration test, e.g. the board's own suite): continue-on-failure
+  // here too, so the test runs through EVERY requirement and the board shows each one's verdict,
+  // not just the first that broke. The test still fails — afterEach throws the aggregate.
+  await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
+  try {
+    await test.step('proves ' + id, async () => { await fn() })
+    await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
+  } catch (err) {
+    STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
+    await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
+    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})
+  }
 }
 export function coverReqs (...ids: string[]): void {
   test.info().annotations.push({ type: 'covers', description: ids.join(' ') })
 }
+
+// A flow ran every step and collected its failures rather than dying at the first (board R10). Now
+// close the loop: paint ONE final red summary — so the recording's cover frame shows the failure
+// (not a later green step) and names every part that broke — then FAIL the test with all of them.
+test.afterEach(async () => {
+  if (!STEP_FAILURES.length) return
+  const f = STEP_FAILURES
+  if (CURRENT_PAGE) {
+    await paintHud({
+      head: '✗ ' + f.length + ' of this test’s steps failed',
+      detail: f.map(s => '✗ ' + (s.n ? s.n + '. ' : '') + s.title).slice(0, 6).join('\n'),
+      failed: true
+    }).catch(() => {})
+    await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})
+  }
+  const lines = f.map(s => '  ✗ ' + (s.n ? 'step ' + s.n + ' ' : '') + '"' + s.title + '": ' +
+    String(s.message).split('\n')[0]).join('\n')
+  throw new Error(f.length + ' step(s) failed:\n' + lines)
+})

@@ -2398,24 +2398,20 @@ ${detail}
         }
         const beatByKey = {}
         for (const b of beats) beatByKey[keyOf(b)] = b
-        let failStep = null
-        if (one && one.ok === false) for (const s of steps) { if (!s.ok && s.cat !== 'note') failStep = s }
-
-        // walk the plan rows in order; once the failing step is passed, later unmatched rows are
-        // NOT-REACHED (the flow stopped) rather than pending
-        let passedFail = false
-        let failName = ''
+        // EVERY failed beat is marked, not just the last — a flow runs through all its steps now
+        // and records each failure (board R10), so a person sees the whole broken picture.
+        const isBad = b => (b.head && b.head.ok === false) || b.kids.some(k => !k.ok)
+        const failNames = []
         for (const row of rows) {
           const b = beatByKey[row.dataset.key]
           const mk = row.querySelector('.bmk')
-          const bh = row.querySelector('.bh')
           const dl = row.querySelector('.bdet')
           row.classList.remove('pending', 'p', 'f', 'nr', 'hasdet')
           if (b) {
-            const bad = b.kids.includes(failStep) || b.head === failStep
+            const bad = isBad(b)
             row.classList.add(bad ? 'f' : 'p')
             if (mk) mk.textContent = bad ? '✕' : '✓'
-            if (bad) { passedFail = true; failName = row.querySelector('.blbl').textContent }
+            if (bad) failNames.push(row.querySelector('.blbl').textContent)
             const det = []
             for (const k of b.kids) {
               if (k.cat === 'info') det.push('<li class="bnote' + (k.ok ? '' : ' sf') + '">' + eh(k.label || '') + '</li>')
@@ -2423,28 +2419,31 @@ ${detail}
                 const rid = /^proves (\\S+)/.exec(k.label)[1]
                 const bare = rid.indexOf(':') > -1 ? rid.split(':').pop() : rid
                 det.push('<li class="bprove' + (k.ok ? '' : ' sf') + '">proves ' + eh(bare) + ' · ' + eh(reqTitle(bare)) + '</li>')
-              } else if (bad && k === failStep) det.push('<li class="braw sf">' + eh(k.label || '') + '</li>')
+              } else if (bad && !k.ok) det.push('<li class="braw sf">' + eh(k.label || '') + '</li>')  // the failing check(s)
             }
-            if (dl) { dl.innerHTML = det.join(''); dl.hidden = !bad }
+            if (dl) { dl.innerHTML = det.join(''); dl.hidden = !bad }   // a failed beat opens to its failure
             if (det.length) row.classList.add('hasdet')
-          } else if (one && (one.ok === false || passedFail)) {
-            row.classList.add('nr')                 // ran, but the flow never reached this step
+          } else if (one && one.ok === false) {
+            row.classList.add('nr')                 // ran, but this planned step was never reached
             if (mk) mk.textContent = '·'
             if (dl) dl.innerHTML = ''
-          } else {
+          } else if (!one) {
             row.classList.add('pending')            // no run yet
             if (mk) mk.textContent = '○'
             if (dl) dl.innerHTML = ''
+          } else {
+            row.classList.add('p'); if (mk) mk.textContent = '✓'   // passed run, unrecorded plan row
           }
-          void bh
         }
-        // the meta line: a failure names its step; a pass counts what it proved; no run says so
+        // the meta line SHOUTS the failure: how many steps broke, and which — not just the first
         if (meta) {
           const took = one && one.ms != null ? fmt(one.ms) : ''
           if (!one) meta.textContent = 'not run yet'
           else if (one.ok === false) {
-            const name = failName || (failStep && failStep.label) || 'an unnamed step'
-            meta.innerHTML = '<span class="failat">✕ failed at — ' + eh(name) + '</span>' + (took ? ' · ' + eh(took) : '')
+            const nF = failNames.length || 1
+            const names = failNames.slice(0, 2).join(' · ') + (failNames.length > 2 ? ' · …' : '')
+            meta.innerHTML = '<span class="failat">✕ ' + nF + ' step' + (nF === 1 ? '' : 's') +
+              ' failed' + (names ? ' — ' + eh(names) : '') + '</span>' + (took ? ' · ' + eh(took) : '')
           } else {
             const np = beats.filter(b => /^proves /.test(b.head.label || '')).length
             meta.textContent = (np ? 'proves ' + np + ' requirement' + (np === 1 ? '' : 's') + ' · ' : '') +

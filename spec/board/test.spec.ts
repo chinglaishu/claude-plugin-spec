@@ -134,15 +134,17 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(p0.locator('.tststeps .beat')).toContainText(await titleOf('R1'))
     await expect(p0.locator('.tststeps .beat.pending')).toHaveCount(1)
 
-    // (2) A RUN OVERLAYS its outcome onto those same rows — passed, failed, and NOT-REACHED. The
-    // story test's mock fails at step 2 and never reaches step 3.
+    // (2) A RUN OVERLAYS its outcome — and because the flow RUNS THROUGH every step, MULTIPLE
+    // failures show, not just the first. This mock ran all three steps: 1 passed, 2 AND 3 failed.
     const rec = [
       { label: STORY[0], cat: 'test.step', depth: 0, ok: true, t: 0, d: 800 },
       { label: 'proves R10', cat: 'test.step', depth: 1, ok: true, t: 100, d: 50 },
       { label: 'Unit 01-02 · Net Rent 40,000 → 60,000', cat: 'info', depth: 1, ok: true, t: 150, d: 5 },
       { label: STORY[1], cat: 'test.step', depth: 0, ok: false, t: 800, d: 500 },
       { label: 'IY2 — got 2338064 · expected 2396129', cat: 'info', depth: 1, ok: false, t: 900, d: 5 },
-      { label: 'Check the result is what we expect', cat: 'expect', depth: 1, ok: false, t: 950, d: 5 }
+      { label: 'Check the result is what we expect', cat: 'expect', depth: 1, ok: false, t: 950, d: 5 },
+      { label: STORY[2], cat: 'test.step', depth: 0, ok: false, t: 1400, d: 300 },
+      { label: 'Check the tests column is present', cat: 'expect', depth: 1, ok: false, t: 1500, d: 5 }
     ]
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
@@ -157,19 +159,18 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     const s2 = dt.locator('.test', { hasText: STORY_TITLE }).first()
     await s2.locator('.th').click()
     const rows = s2.locator('.tststeps .beat')
-    await expect(rows.nth(0)).toHaveClass(/\bp\b/)                  // step 1 passed
-    await expect(rows.nth(1)).toHaveClass(/\bf\b/)                  // step 2 failed
-    await expect(rows.nth(2)).toHaveClass(/\bnr\b/)                 // step 3 never reached — not hidden
     await expect(rows).toHaveCount(3)
-    // the failure names itself on the meta line, in the step's own words
-    await expect(s2.locator('.tmeta')).toContainText('failed at')
-    await expect(s2.locator('.tmeta')).toContainText(STORY[1])
-    // step detail expands on click: the announced value note, and the requirement it proved
+    await expect(rows.nth(0)).toHaveClass(/\bp\b/)                  // step 1 passed
+    await expect(rows.nth(1)).toHaveClass(/\bf\b/)                  // step 2 failed — and shown
+    await expect(rows.nth(2)).toHaveClass(/\bf\b/)                  // step 3 ALSO failed — not hidden
+    // the meta line SHOUTS the count, not just the first failure
+    await expect(s2.locator('.tmeta')).toContainText('2 steps failed')
+    // both failed steps arrive OPEN to their failing value; the passing step's detail expands on click
+    await expect(rows.nth(1).locator('.bdet .bnote')).toContainText('got 2338064 · expected 2396129')
+    await expect(rows.nth(2).locator('.bdet .braw')).toContainText('tests column')
     await rows.nth(0).locator('.bh').click()
     await expect(rows.nth(0).locator('.bdet .bnote')).toContainText('Net Rent 40,000 → 60,000')
     await expect(rows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R10'))
-    // the failed step arrives open, with the got/expected value it stopped on
-    await expect(rows.nth(1).locator('.bdet .bnote')).toContainText('got 2338064 · expected 2396129')
 
     // the complete raw record opens in the Steps WINDOW — a floating card, not a scrim
     await s2.locator('[data-steps]').click()

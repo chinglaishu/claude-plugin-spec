@@ -114,8 +114,11 @@ its recorded detail**: the got-vs-expected value notes the test announced while 
 requirements that step proved. **These steps are read from the test's definition, not from the last
 run** — the full list shows the moment you open a test, before it has ever run, so you can see what
 it will do without trusting a green. A run overlays each step's outcome: **passed / failed /
-not-reached** (a flow that stops at a failure leaves the steps after it honestly not-reached, never
-hidden — so a failure never makes the rest of the plan disappear). A test with no story steps (only `proves` tags) falls back to one row
+not-reached**. A flow **runs through every step even after one fails** — it records each failure and
+carries on rather than aborting at the first — so the board shows **every** part that broke (the
+meta line counts them: "✕ 3 steps failed — …"), not just the first, and the recording reaches the
+later steps (the ones that scroll a table into view). The test still fails; not-reached is reserved
+for a step a non-flow abort genuinely never got to. A test with no story steps (only `proves` tags) falls back to one row
 per requirement, rendered by **the requirement's own title**, never the bare id — nobody should have
 to cross-reference "R5" to know what was proven. Setup plumbing is **not shown inline at all**. The
 **complete raw record** — setup, every action and check with its mark, and the trimmed-at-cap note —
@@ -151,4 +154,6 @@ checklist, not a story — the inline view became the flow's numbered steps in u
 golden values one click away, and the topbar grew to a designed, glanceable two-line card. Fourth:
 the steps must be read from the test's definition so the full plan shows before a run and a failure
 never hides the rest; the recording must be full-size, must scroll the asserted value into view, and
-must survive a failure.*
+must survive a failure. Fifth: a flow must run through ALL its steps and show EVERY failure (a
+person could not tell what broke when it died at the first), and the failure must be loud — the
+recording's cover frame is a red summary naming the failed steps, and the meta line counts them.*
