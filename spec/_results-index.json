@@ -6,7 +6,7 @@
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 154,
+        "ms": 275,
         "error": null,
         "line": 19,
         "reqs": {
@@ -16,7 +16,7 @@
       {
         "title": "The detail opens as two independent columns",
         "ok": true,
-        "ms": 127,
+        "ms": 237,
         "error": null,
         "line": 35,
         "reqs": {
@@ -26,7 +26,7 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 237,
+        "ms": 338,
         "error": null,
         "line": 54,
         "reqs": {
@@ -36,7 +36,7 @@
       {
         "title": "Steps read as named beats, a failure names itself, and the recording explains itself",
         "ok": true,
-        "ms": 435,
+        "ms": 784,
         "error": null,
         "line": 91,
         "reqs": {
@@ -46,7 +46,7 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 454,
+        "ms": 603,
         "error": null,
         "line": 186,
         "reqs": {
@@ -56,7 +56,7 @@
       {
         "title": "Hovering a test lights up the requirements it covers",
         "ok": true,
-        "ms": 206,
+        "ms": 312,
         "error": null,
         "line": 219,
         "reqs": {
@@ -66,7 +66,7 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 146,
+        "ms": 256,
         "error": null,
         "line": 235,
         "reqs": {
@@ -76,7 +76,7 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 103,
+        "ms": 196,
         "error": null,
         "line": 255,
         "reqs": {
@@ -86,7 +86,7 @@
       {
         "title": "No acceptance gate — the detail is the two columns, nothing to accept",
         "ok": true,
-        "ms": 118,
+        "ms": 191,
         "error": null,
         "line": 267,
         "reqs": {
@@ -96,7 +96,7 @@
       {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 155,
+        "ms": 276,
         "error": null,
         "line": 285,
         "reqs": {
@@ -106,7 +106,7 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 198,
+        "ms": 315,
         "error": null,
         "line": 300,
         "reqs": {
@@ -114,7 +114,7 @@
         }
       }
     ],
-    "ranAt": 1785698733361
+    "ranAt": 1785725187641
   },
   "conflicts": {
     "total": 5,
@@ -123,7 +123,7 @@
       {
         "title": "R2 — both positions are shown in full, each naming where it came from",
         "ok": true,
-        "ms": 90,
+        "ms": 94,
         "error": null,
         "line": 48,
         "reqs": {}
@@ -131,37 +131,41 @@
       {
         "title": "R3 — the tool never picks: resolving is refused until you choose a side",
         "ok": true,
-        "ms": 116,
+        "ms": 112,
         "error": null,
         "line": 62,
         "reqs": {}
       },
       {
-        "title": "R4 — resolving records which side lost, and offers the rewrite of that file",
+        "title": "R4 — resolving records which side lost, stays on Open, and offers the rewrite",
         "ok": true,
-        "ms": 425,
+        "ms": 381,
         "error": null,
         "line": 76,
-        "reqs": {}
+        "reqs": {
+          "conflicts:R4": "pass"
+        }
       },
       {
         "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
         "ok": true,
-        "ms": 423,
+        "ms": 389,
         "error": null,
-        "line": 97,
+        "line": 110,
         "reqs": {}
       },
       {
         "title": "R5 — undo puts a settled conflict back, and the scanner is never asked to pick",
         "ok": true,
-        "ms": 892,
+        "ms": 738,
         "error": null,
-        "line": 126,
-        "reqs": {}
+        "line": 140,
+        "reqs": {
+          "conflicts:R4": "pass"
+        }
       }
     ],
-    "ranAt": 1785698733361
+    "ranAt": 1785725127102
   },
   "dispatch": {
     "total": 12,
@@ -170,7 +174,7 @@
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 6675,
+        "ms": 6637,
         "error": null,
         "line": 63,
         "reqs": {}
@@ -178,7 +182,7 @@
       {
         "title": "R4 — a person's second run takes over the running one: accepted, not refused",
         "ok": true,
-        "ms": 118,
+        "ms": 115,
         "error": null,
         "line": 85,
         "reqs": {}
@@ -186,7 +190,7 @@
       {
         "title": "R4 — a run may nest inside the run driving it, and nesting is bounded",
         "ok": true,
-        "ms": 1007,
+        "ms": 1024,
         "error": null,
         "line": 117,
         "reqs": {}
@@ -194,7 +198,7 @@
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 6109,
+        "ms": 6150,
         "error": null,
         "line": 155,
         "reqs": {}
@@ -202,7 +206,7 @@
       {
         "title": "R6/R8 — a run saves its whole log, and records every test case on its own",
         "ok": true,
-        "ms": 994,
+        "ms": 469,
         "error": null,
         "line": 172,
         "reqs": {}
@@ -210,7 +214,7 @@
       {
         "title": "R8 — a run that matched no test is recorded as an error, never 0 of 0 passing",
         "ok": true,
-        "ms": 1993,
+        "ms": 1932,
         "error": null,
         "line": 201,
         "reqs": {}
@@ -218,7 +222,7 @@
       {
         "title": "R8 — running ONE case leaves every other case's steps and log standing",
         "ok": true,
-        "ms": 7174,
+        "ms": 7152,
         "error": null,
         "line": 219,
         "reqs": {}
@@ -226,7 +230,7 @@
       {
         "title": "R8 — a case keeps a LOG HISTORY, folded across runs",
         "ok": true,
-        "ms": 6094,
+        "ms": 6059,
         "error": null,
         "line": 250,
         "reqs": {}
@@ -234,7 +238,7 @@
       {
         "title": "R8 — EVERY case that has run can expand its steps, not only the one you clicked",
         "ok": true,
-        "ms": 6607,
+        "ms": 6464,
         "error": null,
         "line": 284,
         "reqs": {}
@@ -242,7 +246,7 @@
       {
         "title": "R7 — the run panel offers no background run",
         "ok": true,
-        "ms": 107,
+        "ms": 99,
         "error": null,
         "line": 312,
         "reqs": {}
@@ -250,7 +254,7 @@
       {
         "title": "R7 — the panel and its log stay on screen after the run ends",
         "ok": true,
-        "ms": 9110,
+        "ms": 9113,
         "error": null,
         "line": 320,
         "reqs": {}
@@ -258,13 +262,13 @@
       {
         "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
         "ok": true,
-        "ms": 94,
+        "ms": 102,
         "error": null,
         "line": 337,
         "reqs": {}
       }
     ],
-    "ranAt": 1785698733361
+    "ranAt": 1785725127102
   },
   "init": {
     "total": 6,
@@ -273,7 +277,7 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 275,
+        "ms": 254,
         "error": null,
         "line": 23,
         "reqs": {}
@@ -281,7 +285,7 @@
       {
         "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
         "ok": true,
-        "ms": 105,
+        "ms": 101,
         "error": null,
         "line": 48,
         "reqs": {}
@@ -289,7 +293,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 182,
+        "ms": 184,
         "error": null,
         "line": 60,
         "reqs": {}
@@ -297,7 +301,7 @@
       {
         "title": "R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate",
         "ok": true,
-        "ms": 118,
+        "ms": 116,
         "error": null,
         "line": 80,
         "reqs": {}
@@ -305,7 +309,7 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 93,
+        "ms": 89,
         "error": null,
         "line": 117,
         "reqs": {}
@@ -313,13 +317,13 @@
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 158,
+        "ms": 151,
         "error": null,
         "line": 127,
         "reqs": {}
       }
     ],
-    "ranAt": 1785698733361
+    "ranAt": 1785725127102
   },
   "_modes": {
     "total": 7,
@@ -328,7 +332,7 @@
       {
         "title": "unproven — a requirement with no passing test reads unproven, and is not waiting",
         "ok": true,
-        "ms": 13,
+        "ms": 22,
         "error": null,
         "line": 52,
         "reqs": {}
@@ -336,7 +340,7 @@
       {
         "title": "proven — a current passing proof makes a requirement proven",
         "ok": true,
-        "ms": 5,
+        "ms": 7,
         "error": null,
         "line": 59,
         "reqs": {}
@@ -344,7 +348,7 @@
       {
         "title": "a proof that predates the source no longer proves — editing the PRD IS the change",
         "ok": true,
-        "ms": 5,
+        "ms": 8,
         "error": null,
         "line": 65,
         "reqs": {}
@@ -352,7 +356,7 @@
       {
         "title": "state is only ever proven or unproven — there is no reworded / accept state",
         "ok": true,
-        "ms": 6,
+        "ms": 4,
         "error": null,
         "line": 73,
         "reqs": {}
@@ -368,7 +372,7 @@
       {
         "title": "renders — the detail is the two columns, with NO gate and no accept button",
         "ok": true,
-        "ms": 162,
+        "ms": 176,
         "error": null,
         "line": 106,
         "reqs": {}
@@ -376,12 +380,12 @@
       {
         "title": "renders — a crawl guess reads as waiting on the board (the one remaining human case)",
         "ok": true,
-        "ms": 131,
+        "ms": 104,
         "error": null,
         "line": 122,
         "reqs": {}
       }
     ],
-    "ranAt": 1785698733361
+    "ranAt": 1785725127102
   }
 }

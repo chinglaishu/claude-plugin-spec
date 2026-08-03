@@ -117,7 +117,7 @@ const reqRow = r => {
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
-  <h2>Requirements<span class="s">what the screen must do — click a row for its full text</span></h2>
+  <h2>Requirements<span class="s">what the screen must do</span></h2>
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
@@ -153,7 +153,7 @@ const testRow = (s, t) => {
   </div>`
 }
 const testPane = s => `<div class="pane testpane">
-  <h2>E2E tests<span class="s">the proof — each flow tags the requirements it covers</span></h2>
+  <h2>E2E tests<span class="s">the proof</span></h2>
   ${s.run && s.run.tests && s.run.tests.length
     ? s.run.tests.map(t => testRow(s, t)).join('')
     : `<div class="empty">No test has run yet · <code>spec/${esc(s.name)}/test.spec.ts</code>. Press <b>Run all</b> above.</div>`}
@@ -1776,20 +1776,29 @@ ${detail}
       const key = card.dataset.key
       if (!picked[key]) return
       const note = card.querySelector('.cfnote').value
+      // read these off the card BEFORE the re-render throws it away — the toast names them
+      const subject = card.querySelector('.sub').textContent
+      const winEl = card.querySelector('.side.picked .src')
+      const winner = fileOf(winEl ? winEl.textContent : '')
       if (!await cfPost('/api/conflict', { key: key, canon: picked[key], note: note })) return
       delete picked[key]
       await loadConflicts()
-      // Show what you just did. A card that silently vanishes from one tab is indistinguishable
-      // from a misclick, which is how you end up resolving the same thing twice.
-      setTab('settled')
+      // STAY on the Open list (conflicts R4) — the next open conflict is right where you were;
+      // working a queue must not cost a tab round-trip per decision. The card leaving quietly is
+      // NOT silent: the Settled count ticks up and this toast names what was settled, so a
+      // misclick is still distinguishable from nothing having happened.
+      toast('Settled — ' + subject + ' · ' + winner + ' won')
       return
     }
     const undo = e.target.closest('[data-undo]')
     if (undo) {
-      const key = undo.closest('.srow').dataset.key
+      const row = undo.closest('.srow')
+      const key = row.dataset.key
+      const subject = row.querySelector('.w').textContent
       if (!await cfPost('/api/conflict', { key: key, undo: true })) return
       await loadConflicts()
-      setTab('open')
+      // same rule the other way: undoing from the Settled list keeps you on it (conflicts R4)
+      toast('Reopened — ' + subject + ' is back under Open')
       return
     }
     const rw = e.target.closest('[data-rewrite]')
@@ -2257,6 +2266,9 @@ ${detail}
           slot.innerHTML = '<span class="play">▶</span>' + label
           slot.onclick = () => {
             slot.onclick = null; slot.classList.remove('playable')
+            // The large size is STICKY from the moment the player exists: pausing and SEEKING both
+            // fire pause/play events, and a size that jumped on every scrub was unusable.
+            slot.classList.add('playing')
             slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label +
               '<div class="ctx" hidden><span class="cmk"></span><span class="cwords"><span class="cb"></span><span class="ca"></span></span></div>'
             const v = slot.querySelector('video')
@@ -2309,10 +2321,6 @@ ${detail}
                 v.currentTime = 1e9
               }
             })
-            // The player grows while it plays, so a run is watchable without going fullscreen.
-            v.addEventListener('play', () => slot.classList.add('playing'))
-            v.addEventListener('pause', () => slot.classList.remove('playing'))
-            v.addEventListener('ended', () => slot.classList.remove('playing'))
           }
         } else {
           slot.classList.remove('playable'); slot.onclick = null

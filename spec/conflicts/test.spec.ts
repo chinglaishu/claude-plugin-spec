@@ -1,4 +1,4 @@
-import { test, expect } from '../_base'
+import { test, expect, checkReq, coverReqs } from '../_base'
 import { writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -73,8 +73,9 @@ test('R3 — the tool never picks: resolving is refused until you choose a side'
   expect(decisions()).toEqual({})
 })
 
-test('R4 — resolving records which side lost, and offers the rewrite of that file', async ({ page }) => {
-  seed([WIDTH])
+test('R4 — resolving records which side lost, stays on Open, and offers the rewrite', async ({ page }) => {
+  await coverReqs('R4')
+  seed([WIDTH, ROW])                 // a second open conflict — "stay on Open" must leave it in reach
   await page.goto('/#conflicts')
   const card = page.locator('#cfview .cf', { hasText: WIDTH.subject })
 
@@ -82,16 +83,28 @@ test('R4 — resolving records which side lost, and offers the rewrite of that f
   await expect(card.locator('[data-resolve]')).toContainText('spec/init/prd.md')
   await card.locator('[data-resolve]').click()
 
-  const settled = page.locator('#cfview .srow', { hasText: WIDTH.subject })
-  await expect(settled).toBeVisible()
-  await expect(settled).toContainText('spec/board/prd.md')
+  await checkReq('R4', async () => {
+    // the count updating proves the resolve landed and re-rendered — only THEN is the tab
+    // assertion meaningful (asserting it straight after the click can pass before the handler runs)
+    await expect(page.locator('#cfseg button[data-cf="settled"]')).toContainText('Settled 1')
+    // resolving STAYS on the Open list — the next open conflict is right where you were…
+    await expect(page.locator('#cfseg button.on')).toHaveAttribute('data-cf', 'open')
+    await expect(page.locator('#cfview .cf', { hasText: ROW.subject })).toBeVisible()
+    // …and the card left QUIETLY, with a toast naming what was settled
+    await expect(page.locator('.toast')).toContainText(WIDTH.subject)
 
-  const rec = Object.values(decisions())[0] as any
-  expect(rec.canon).toBe('a')
-  expect(rec.won).toBe('spec/board/prd.md')
-  expect(rec.lost).toBe('spec/init/prd.md')
-  // the rewrite of the loser is offered, and it names the file it would change
-  await expect(settled.locator('[data-rewrite]')).toContainText('spec/init/prd.md')
+    const rec = Object.values(decisions())[0] as any
+    expect(rec.canon).toBe('a')
+    expect(rec.won).toBe('spec/board/prd.md')
+    expect(rec.lost).toBe('spec/init/prd.md')
+
+    // the settled row, and the rewrite of the loser, live under the Settled tab
+    await page.locator('#cfseg button[data-cf="settled"]').click()
+    const settled = page.locator('#cfview .srow', { hasText: WIDTH.subject })
+    await expect(settled).toBeVisible()
+    await expect(settled).toContainText('spec/board/prd.md')
+    await expect(settled.locator('[data-rewrite]')).toContainText('spec/init/prd.md')
+  })
 })
 
 test('R5 — a decision survives a rescan that reorders and swaps the sides', async ({ page }) => {
@@ -100,7 +113,8 @@ test('R5 — a decision survives a rescan that reorders and swaps the sides', as
   const card = page.locator('#cfview .cf', { hasText: WIDTH.subject })
   await card.locator('.side', { hasText: WIDTH.a.source }).click()
   await card.locator('[data-resolve]').click()
-  await expect(page.locator('#cfview .srow', { hasText: WIDTH.subject })).toBeVisible()
+  // resolving stays on Open (R4) — the count ticking up is the proof the decision landed
+  await expect(page.locator('#cfseg button[data-cf="settled"]')).toContainText('Settled 1')
 
   // A rescan overwrites the whole file. It may list the findings in a different order, give them
   // different ids, and emit the two sides the other way round — none of which changes the fact
@@ -130,10 +144,17 @@ test('R5 — undo puts a settled conflict back, and the scanner is never asked t
   await card.locator('.side', { hasText: WIDTH.a.source }).click()
   await card.locator('[data-resolve]').click()
 
+  await page.locator('#cfseg button[data-cf="settled"]').click()   // resolving stays on Open (R4)
   const settled = page.locator('#cfview .srow', { hasText: WIDTH.subject })
   await expect(settled).toBeVisible()
   await settled.locator('[data-undo]').click()
 
+  // undo stays on the Settled list the same way (R4) — the list you were working through
+  await checkReq('R4', async () => {
+    await expect(page.locator('#cfseg button[data-cf="open"]')).toContainText('Open 1')  // undo landed
+    await expect(page.locator('#cfseg button.on')).toHaveAttribute('data-cf', 'settled')
+  })
+  await page.locator('#cfseg button[data-cf="open"]').click()
   await expect(page.locator('#cfview .cf', { hasText: WIDTH.subject })).toHaveCount(1)
   expect(decisions()).toEqual({})
 

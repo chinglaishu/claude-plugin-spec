@@ -7,8 +7,12 @@ route: /run/:job
 
 ## R1 — One panel per job, opened by the cell you clicked
 
-The job knows its screen and its column, so nothing has to be typed. "Draft the wireframe
-for checkout-page" is the whole instruction.
+The job knows its screen and its task, so nothing has to be typed. "Rewrite the losing side
+of the conflict for checkout-page" is the whole instruction.
+
+*Rewritten 2026-08-03 — resolved conflict 90a990d1: the human picked board R7 as canon (specboard
+owns no wireframe), so the example job can no longer be a wireframe draft. The point of R1 is
+unchanged: the job carries its own context.*
 
 ## R2 — The work is visible while it runs
 

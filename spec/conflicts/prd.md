@@ -23,8 +23,20 @@ silently is the thing this whole product exists to stop.
 
 ## R4 — Resolving dispatches the rewrite of the losing side
 
-Both PRD files end up agreeing, and every screen downstream of the loser goes stale so its
-draft and screen get revisited.
+Both PRD files end up agreeing: resolving records the decision and offers the rewrite of the
+losing file, and the losing screen's requirements read against their tests again — a meaning
+that changed shows up as unproven until a test proves the corrected text.
+
+Resolving **keeps you on the Open list**: the settled card leaves quietly — the Settled count
+ticks up and a toast names what was settled — so the next open conflict is right where you
+were. Undo, from the Settled list, stays there the same way. Jumping tabs after every decision
+made working through a queue of conflicts a two-click round trip each time.
+
+*Rewritten 2026-08-03 — two changes. The old "draft and screen get revisited" consequence
+described the deleted four-column board (conflict 291bf578: the human picked board R1 as canon —
+there are no draft or screen stages). The stay-on-Open behaviour is at the human's direction,
+replacing the old jump-to-Settled; that jump existed as feedback that the click landed, and the
+toast plus the live counts now carry that.*
 
 ## R5 — Decisions survive a rescan
 
