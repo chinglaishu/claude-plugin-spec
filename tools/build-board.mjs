@@ -819,7 +819,9 @@ export function build () {
   .rec.playable { cursor:pointer; }
   .rec .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:20px; color:var(--ink-4); }
-  .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; background:var(--ink); }
+  /* contain, never cover: the narration topbar is burned into the frame's top edge (board R10),
+     and cover's fill-and-crop sliced exactly that edge off. Letterbox on the ink background. */
+  .rec video { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; background:var(--ink); }
   .rec .lab { position:absolute; bottom:5px; right:7px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }

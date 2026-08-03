@@ -12,7 +12,7 @@
     "repo's own tests can catch a mistake here."
   ],
   "name": "specboard",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "A visualised spec-driven development board: every screen as its requirements and the tests that prove them against the real app — drift derived rather than tracked, coverage tagged at assertion granularity. Requirements are the source of truth as written, proven or unproven by the tests that tag them.",
   "author": {
     "name": "chinglaishu"

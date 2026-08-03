@@ -180,6 +180,12 @@ test('Steps read as named beats, a failure names itself, and the recording expla
     await fail.locator('[data-steps]').click()
     await expect(sheet.locator('li.sf.scat-expect')).toContainText('Check the')
     await sheet.locator('[data-stepsclose]').click()
+
+    // the player never CROPS the frame: the narration topbar is burned into the video's top edge,
+    // and an object-fit that fills-and-crops (cover) sliced exactly that edge off in display
+    await pass.locator('.rec').click()
+    const fit = await pass.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
+    expect(fit).toBe('contain')
   })
 })
 
