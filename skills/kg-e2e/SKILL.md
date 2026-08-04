@@ -75,6 +75,19 @@ way. Read it before writing your first one.
    OUTCOME — a lever moves a number, a search narrows a list, a save shows up elsewhere — an effect a
    frozen page cannot fake. Ask of every assertion: "would this still pass if the page were frozen
    behind an overlay?" If yes, it is not proving anything happened.
+5. **SHOW every asserted value in the recording — the human must SEE it, not just the topbar.** The
+   recording is the proof a person actually checks; a value fetched with `page.request`/an API call is
+   precise but **invisible** to a watcher, and the burned-in topbar is narration, not the value. So for
+   every number a `checkReq` claims, bring the real app UI showing it into view: switch to the view
+   that displays it (a **Summary → Details** toggle, a tab), **scroll or reveal** the cell, **read it
+   off the visible cell** to assert (so the proof IS what is shown), and **hold** long enough to read —
+   walking across **each** item (year by year, row by row). A summary or an average is **not** proof of
+   the per-item values; showing only the endpoints is not showing the series. `reveal(locator)` centres
+   a cell and holds; `proveVisible(locator, expected, label)` does the whole thing — centre, read the
+   on-screen text, assert it equals `expected`, announce it, and hold. Prefer those over asserting a
+   value you only read from the API. **The finishing check for the whole test: with the sound off, can
+   you SEE every number the test claims? If not, it is not done** — this is the single most common way a
+   green test still fails its one job (a recording a human can trust).
 
 Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — "fewer tests" never buys
 a false green: every requirement still needs a real assertion that would fail without it. When a test

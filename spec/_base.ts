@@ -240,6 +240,27 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
 
+// PROVE A VALUE ON SCREEN (kg-e2e rule 5 — the recording is the proof a human checks). Centre the
+// cell in the recording, read its RENDERED text, assert it, announce got-vs-expected on the topbar,
+// and hold so a person can read it. Use this instead of asserting a number you only fetched from the
+// API: the proof is then on what the human SEES, not on a read they cannot. By default the cell's
+// trimmed text must equal `expected`; pass `match` for a looser check (e.g. parse "$1,040,000" to a
+// number). Walk it across EACH item (year by year, row by row) — a summary/average is not proof of
+// the per-item values.
+export async function proveVisible (
+  target: Locator,
+  expected: string,
+  label: string,
+  opts: { match?: (shown: string) => boolean } = {}
+): Promise<void> {
+  await reveal(target, { hold: 0 })                         // centre it now; the readable hold comes after we read
+  const shown = ((await target.first().textContent()) || '').trim()
+  await hudCheck(label, expected, shown)
+  if (opts.match) expect(opts.match(shown), `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
+  else expect(shown, `${label} — the value read off the screen`).toBe(expected)
+  if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
+}
+
 // A STORY STEP (board R10): one numbered sentence of what a user does and what should happen —
 // "Edit the draft — change Unit 01-02 Net Rent from 40,000 to 60,000". The board shows the flow as
 // these steps; the topbar leads with the current one; checkReq calls nest INSIDE them so coverage

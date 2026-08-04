@@ -54,6 +54,14 @@ renumber.
 
 ## Phase 4 — Flows: few, comprehensive, checkReq-tagged
 
+**Every exact value a flow asserts must be VISIBLE in the recording** (kg-e2e rule 5). A deep test's
+whole point is a video a human can trust, so do not read a number off a grid API and assert it while
+the recording shows only a summary or an average — bring the real UI showing that value on screen
+(switch Summary→Details, scroll/reveal the cell), read it OFF the visible cell, and hold, walking each
+item (year by year, row by row). `proveVisible(locator, expected, label)` from `_base` does it in one
+call. The API read is for PRECISION behind the on-screen proof, never a substitute for it. Finishing
+check: with the sound off, can you SEE every number the flow claims?
+
 Coverage is many-to-many at assertion granularity, so write a FEW flow tests that each prove MANY
 requirements — the human reviews flows, the board still derives every requirement's state:
 
