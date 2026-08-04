@@ -33,11 +33,13 @@ test('a dash list renders as <ul><li>, never literal dashes', () => {
   assert.doesNotMatch(h, /- Base always/)
 })
 
-test('an HTML author-note is muted, never shown as raw <!-- -->', () => {
-  const h = renderBody('run the plan <!-- label "Run plan" then "Re-run plan" --> to recompute')
-  assert.doesNotMatch(h, /<!--/)         // no raw comment delimiter reaches the page
-  assert.match(h, /class="cmt"/)         // rendered as a muted note
-  assert.match(h, /Run plan/)            // the hint text is kept, not silently dropped
+test('an HTML author-note is STRIPPED from the display — a requirement is human intent, not a code log', () => {
+  const h = renderBody('run the plan <!-- migration foo.sql; services/x.py:12 (author grounding) --> to recompute')
+  assert.doesNotMatch(h, /<!--/)               // no raw comment delimiter reaches the page
+  assert.doesNotMatch(h, /class="cmt"/)        // and it is NOT rendered muted either — gone entirely
+  assert.doesNotMatch(h, /migration foo|services\/x\.py/) // the file:line grounding never shows
+  assert.match(h, /run the plan/)              // the human prose around it stays
+  assert.match(h, /to recompute/)
 })
 
 test('a comment spanning a blank line does not shatter the paragraphs around it', () => {

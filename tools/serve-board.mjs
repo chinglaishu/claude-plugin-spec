@@ -412,8 +412,13 @@ function startRun (screen, opts = {}) {
   // Headed: the browser opens and you watch the test drive the app. This is what "watch it run"
   // means to a person — the file-watcher that re-runs on save is a different feature entirely.
   if (opts.headed) args.push('--headed')
-  // A headed run is paced so you can follow it — the delay comes from Setup, not a magic number.
-  const slowMo = opts.headed ? readConfig().stepDelayMs : 0
+  // The one Setup pace ("Pace of a watchable run") drives BOTH ways of watching, so the slider you
+  // set means the same thing whether you watch it live or watch the recording back:
+  //   • a HEADED run is paced live by Playwright's slowMo (a delay before each action);
+  //   • a HEADLESS RECORDING reads the same value as BOARD_STEP_DELAY_MS and holds that long on each
+  //     narrated beat (spec/_base.ts), so the burned-in numbers are readable on playback.
+  const pace = readConfig().stepDelayMs
+  const slowMo = opts.headed ? pace : 0
 
   const started = Date.now()
   // The RECORD of this run: every screenshot and video Playwright captures while it drives the
@@ -441,6 +446,9 @@ function startRun (screen, opts = {}) {
       FORCE_COLOR: '0',
       BOARD_RESULTS: report,
       BOARD_RECORD: recordDir,
+      // the configured pace, for a RECORDING's per-beat hold (read by spec/_base.ts). Always passed,
+      // so "Pace of a watchable run" governs the video the same way slowMo governs a live watch.
+      BOARD_STEP_DELAY_MS: String(pace),
       ...(slowMo ? { BOARD_SLOWMO: String(slowMo) } : {}),
       // watching means ONE window that runs through every case — not a window flashing open and
       // shut between them

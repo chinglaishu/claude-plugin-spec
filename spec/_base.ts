@@ -207,12 +207,24 @@ export async function hudNote (text: string): Promise<void> {
   await narrate(String(text))
 }
 
+// How long a RECORDING holds on a narrated beat so the burned-in value is readable on playback. It
+// is the SAME knob as a live watch's pace — the board's "Pace of a watchable run" (Setup) is passed
+// to the run as BOARD_STEP_DELAY_MS, so the slider you set means the same thing whether you watch it
+// live or watch the video back. Off a recording it is 0, so a plain `npm run e2e` stays fast; under a
+// recording with no board value it falls back to `fallback` (the flows pass 2000). A flow's narration
+// hold should be `recordHold()`, never a hard-coded millisecond count.
+export function recordHold (fallback = 2000): number {
+  if (!process.env.BOARD_RECORD) return 0
+  const v = Number(process.env.BOARD_STEP_DELAY_MS)
+  return Number.isFinite(v) && v > 0 ? v : fallback
+}
+
 // Scroll a target to the CENTRE of the viewport and HOLD, so the recording actually shows the value
 // a step asserts on (board R10) rather than asking you to trust the topbar. Generic — it works
 // across nested scroll containers via scrollIntoView; a virtualised cell (one an app renders only
 // when its column is in view) must be brought into the DOM by the app's own API first, then
-// revealed. The hold is long under a board recording (so the frame is readable on playback) and
-// short otherwise (so a plain suite run stays fast).
+// revealed. The hold is the configured pace under a board recording (so the frame is readable on
+// playback) and short otherwise (so a plain suite run stays fast).
 export async function reveal (target: Locator, opts: { hold?: number } = {}): Promise<void> {
   const el = target.first()
   // Only centre a cell that is actually in the DOM. `scrollIntoViewIfNeeded({timeout})` on a
@@ -224,7 +236,7 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   if (await el.count().catch(() => 0)) {
     await el.evaluate(n => (n as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' })).catch(() => {})
   }
-  const hold = opts.hold ?? (process.env.BOARD_RECORD ? 1600 : 200)
+  const hold = opts.hold ?? (recordHold(1600) || 200)
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
 

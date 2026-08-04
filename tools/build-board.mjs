@@ -85,7 +85,7 @@ export function renderBody (text) {
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
   const src = String(text)
-    .replace(/<!--([\s\S]*?)-->/g, (_, c) => stash(`<span class="cmt">${esc(c.trim())}</span>`))
+    .replace(/<!--[\s\S]*?-->/g, '')                    // author notes are NEVER shown — a requirement is human intent, not a code log
     .replace(/`([^`]+)`/g, (_, c) => stash(`<code>${esc(c)}</code>`))
   const out = src.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => {
     const lines = b.split(/\n/)
@@ -107,9 +107,11 @@ const runAll = name =>
 // markdown. An open body ends in a covers line NAMING the tests that prove it, or an honest "no test
 // asserts this yet" when it is unproven (R6). A requirement is never faked green.
 const reqRow = r => {
-  const passing = (r.tests || []).filter(t => t.status === 'pass' && !t.stale)
+  // A proven requirement names NO tests here — the E2E column already shows the flow that proves it,
+  // so a "proven by …" line would just repeat it. An UNPROVEN one still says so plainly (board R6):
+  // honestly ungreen, never hidden.
   const covers = r.state === 'proven'
-    ? `<div class="covers">proven by ${passing.map(t => `<span class="ctag">${esc(t.title)}</span>`).join(' ')}</div>`
+    ? ''
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
     <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
@@ -794,18 +796,25 @@ export function build () {
   .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
   .req .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; }
   .req.open .chev { transform:rotate(90deg); }
-  .req .body { display:none; padding:0 var(--s4) var(--s4) calc(var(--s4) + 24px + var(--s3));
+  .req .body { display:none; padding:var(--s2) var(--s4) var(--s4) calc(var(--s4) + 24px + var(--s3));
     font-size:var(--t-sm); line-height:1.7; color:var(--ink-2); }
   .req.open .body { display:block; }
   .req .body p { margin:0 0 var(--s2); }
-  .req .body ul { margin:0 0 var(--s2) var(--s4); padding-left:var(--s3); }
-  .req .body li { margin:0 0 3px; }
-  .req .body strong { color:var(--ink); font-weight:600; }
-  .req .body em { color:var(--ink-4); font-style:normal; }
+  /* the LEAD line reads first — one glanceable sentence of what the requirement means, in full ink */
+  .req .body > p:first-child { color:var(--ink); font-weight:500; }
+  /* bullets carry the sub-points: a small warm marker for structure, hung in the gutter so the text
+     aligns flush and scans as a list, not a paragraph */
+  .req .body ul { list-style:none; margin:0 0 var(--s2); padding-left:var(--s4); }
+  .req .body li { margin:0 0 5px; position:relative; }
+  .req .body li::before { content:""; position:absolute; left:calc(-1 * var(--s4)); top:.62em;
+    width:5px; height:5px; border-radius:50%; background:var(--line3); }
+  /* bold KEY TERMS get a quiet highlighter wash (yamabuki-tint, the faintest gold) — emphasis that
+     reads as a marker-pen, never a state chip; the ink text keeps full AA contrast on top of it */
+  .req .body strong { color:var(--ink); font-weight:600;
+    box-shadow:inset 0 -0.34em 0 var(--yamabuki-tint); }
+  .req .body em { color:var(--ink-3); font-style:italic; }
   .req .body code { font:var(--t-xs) var(--mono); background:var(--sunk); border:1px solid var(--hair);
     border-radius:var(--r-sm); padding:1px 5px; }
-  .req .body .cmt { font:var(--t-micro) var(--mono); color:var(--ink-3); background:var(--wash);
-    border-radius:var(--r-sm); padding:0 5px; white-space:pre-wrap; }
   .covers { margin-top:var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-4);
     display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .covers .ctag { background:var(--wash); color:var(--ink-3); border-radius:var(--r-sm); padding:1px 6px; }
