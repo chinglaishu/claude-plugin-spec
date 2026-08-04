@@ -12,6 +12,8 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { homedir } from 'node:os'
+import { createServer } from 'node:net'
 import { FILES, SCRIPTS, DEV, MANIFEST, buildManifest } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -70,18 +72,49 @@ if (!existsSync(join(DEST, MANIFEST)) || force) {
   copied.push(MANIFEST)
 }
 
+// THIS PROJECT'S OWN BOARD PORT. Every scaffolded project used to default to 4173, so two projects
+// on one machine collided the moment both boards (or a board and a test run's throwaway) were up.
+// Each scaffold now assigns the project a port of its own and bakes it into the `board` script as
+// `--port <n>`; a machine-level registry (~/.specboard-ports.json) remembers every assignment so the
+// next project scaffolded skips taken ports even while no board is running. Re-scaffolding the same
+// project keeps its port. BOARD_PORT / PORT env still override at runtime.
+const REGISTRY = join(homedir(), '.specboard-ports.json')
+const reg = (() => { try { return JSON.parse(readFileSync(REGISTRY, 'utf8')) } catch { return {} } })()
+const bindable = p => new Promise(ok => {
+  const s = createServer()
+  s.once('error', () => ok(false))
+  s.listen(p, '127.0.0.1', () => s.close(() => ok(true)))
+})
+let boardPort = reg[DEST]
+if (!boardPort) {
+  const taken = new Set(Object.values(reg))
+  for (let p = 4173; p < 4273; p++) {
+    if (taken.has(p)) continue
+    if (await bindable(p)) { boardPort = p; break }
+  }
+  boardPort = boardPort || 4173 // 100 straight failures means something else is wrong; keep the old default
+  reg[DEST] = boardPort
+  try { writeFileSync(REGISTRY, JSON.stringify(reg, null, 2) + '\n') } catch { /* registry is best-effort */ }
+}
+
 // package.json — add the run scripts and the two dev deps without disturbing what is already there.
 // SCRIPTS and DEV come from _skeleton.mjs.
 const pkgPath = join(DEST, 'package.json')
 const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, 'utf8')) : { name: 'my-specboard', private: true }
 if (!pkg.type) pkg.type = 'module'
 pkg.scripts = { ...SCRIPTS, ...(pkg.scripts || {}) } // yours win — never clobber a script you rely on
+// Stamp the assigned port into the board script — but never rewrite a board script the project
+// customised (only the pristine skeleton default gets the stamp).
+if (!pkg.scripts.board || pkg.scripts.board === SCRIPTS.board) {
+  pkg.scripts.board = `${SCRIPTS.board} --port ${boardPort}`
+}
 pkg.devDependencies = { ...(pkg.devDependencies || {}), ...DEV }
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
 console.log(`Scaffolded specboard into ${DEST}`)
 console.log(`  ${copied.length} file(s) written${skipped.length ? `, ${skipped.length} left alone (already present — pass --force to overwrite)` : ''}`)
 if (pkg.type !== 'module') console.log('  NOTE: your package.json is not "type":"module" — the tools are ESM.')
+console.log(`  board port: ${boardPort} (this project's own — recorded in ~/.specboard-ports.json)`)
 console.log('\nNext:')
 console.log('  npm install')
-console.log('  npm run board      # empty board — open http://localhost:4173 and use Set up → Crawl')
+console.log(`  npm run board      # empty board — open http://localhost:${boardPort} and use Set up → Crawl`)

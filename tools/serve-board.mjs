@@ -19,9 +19,12 @@ import {
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
 // BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
-// PORT is still honoured as a fallback (some hosts inject it), and 4173 is the default — override it
-// when this vendored board would otherwise collide with specboard's own dev board on the same port.
-const PORT = Number(process.env.BOARD_PORT || process.env.PORT || 4173)
+// PORT is honoured as a fallback (some hosts inject it — dojostack's launchd sets it). A scaffolded
+// project also bakes its OWN assigned port into the `board` script as `--port <n>` (kg-init picks a
+// free one), so two projects on one machine never both default to 4173 and collide. An explicit
+// BOARD_PORT/PORT env still wins; 4173 is the last resort.
+const argPort = (() => { const i = process.argv.indexOf('--port'); return i >= 0 ? process.argv[i + 1] : '' })()
+const PORT = Number(process.env.BOARD_PORT || process.env.PORT || argPort || 4173)
 
 // The builder runs as a CHILD PROCESS, not an import. Node caches ES modules for the life of the
 // process, so an imported build() keeps rendering with the code it was started with — and since
@@ -417,7 +420,8 @@ function startRun (screen, opts = {}) {
   //   • a HEADED run is paced live by Playwright's slowMo (a delay before each action);
   //   • a HEADLESS RECORDING reads the same value as BOARD_STEP_DELAY_MS and holds that long on each
   //     narrated beat (spec/_base.ts), so the burned-in numbers are readable on playback.
-  const pace = readConfig().stepDelayMs
+  const cfg = readConfig()
+  const pace = cfg.stepDelayMs
   const slowMo = opts.headed ? pace : 0
 
   const started = Date.now()
@@ -449,6 +453,14 @@ function startRun (screen, opts = {}) {
       // the configured pace, for a RECORDING's per-beat hold (read by spec/_base.ts). Always passed,
       // so "Pace of a watchable run" governs the video the same way slowMo governs a live watch.
       BOARD_STEP_DELAY_MS: String(pace),
+      // Pin the run to THIS board's own port so it can NEVER spin up a second board on the hardcoded
+      // 4173 default — the throwaway that collides with another scaffolded project's live board.
+      // And for an ATTACH project (its app already runs at cfg.baseUrl), hand the run that URL so it
+      // drives the live app and starts NO board of its own (playwright.board.ts starts no webServer
+      // when BOARD_URL is set). A self-test project with no app still gets its board, but on PORT —
+      // which reuseExistingServer then reuses rather than binding a fresh one.
+      BOARD_PORT: String(PORT),
+      ...(cfg.baseUrl && cfg.mode === 'attach' ? { BOARD_URL: cfg.baseUrl } : {}),
       ...(slowMo ? { BOARD_SLOWMO: String(slowMo) } : {}),
       // watching means ONE window that runs through every case — not a window flashing open and
       // shut between them

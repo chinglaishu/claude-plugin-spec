@@ -3252,7 +3252,13 @@ ins { color:var(--koke); text-decoration:none; }
       // there is nothing to play: never a fake play affordance, and never a separate screenshot strip.
       for (const slot of panel.querySelectorAll('.rec')) {
         const host = slot.closest('.test')
-        const one = (rec[host && host.dataset.title] || [])[0]
+        // The RECORDING (cover + ▶) is board-only and must OUTLIVE a later video-less CLI run: a
+        // headless run updates a case's status/steps (the overlay block below) but captures no .webm
+        // and no shots, so if it lands newest it must NOT blank the last real recording. Draw the
+        // cover/video from the most recent run that actually captured one — status/steps still come
+        // from the newest run. (CLAUDE.md: shots stay board-only, folded never replaced.)
+        const hist = rec[host && host.dataset.title] || []
+        const one = hist.find(x => (x.shots && x.shots.length) || x.video) || hist[0]
         const lab = slot.querySelector('.lab')
         const label = '<span class="lab">' + eh(lab ? lab.textContent : '') + '</span>'
         const shots = (one && one.shots) || []

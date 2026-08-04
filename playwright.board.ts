@@ -15,7 +15,7 @@ import { readFileSync, existsSync } from 'node:fs'
 //   BOARD_PORT  — same board server, different port (default 4173)
 // With BOARD_URL set we deliberately do not manage the server at all: something you did not
 // start is something you must not kill.
-const PORT = process.env.BOARD_PORT || '4173'
+const PORT = process.env.BOARD_PORT || process.env.PORT || '4173'
 const EXTERNAL = process.env.BOARD_URL
 const baseURL = EXTERNAL || `http://localhost:${PORT}`
 
