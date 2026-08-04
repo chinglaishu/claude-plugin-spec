@@ -141,7 +141,16 @@ function repaintOnNav (page: Page): void {
   if (HOOKED.has(page)) return
   HOOKED.add(page)
   page.on('framenavigated', f => {
-    if (f === page.mainFrame() && HUD.head && page === CURRENT_PAGE) void paintHud({})
+    if (f !== page.mainFrame() || !HUD.head || page !== CURRENT_PAGE) return
+    // Repaint AFTER the new document is ready. Evaluating the instant `framenavigated`
+    // fires races the execution-context teardown and REJECTS — the reject is caught, but
+    // Playwright still records it as a failed "Run a script on the page" step, a spurious
+    // red ✕ on a flow that actually passed. Waiting for domcontentloaded lets the repaint
+    // land on a live context. Fully fire-and-forget: never awaited by the flow, and the
+    // wait's own failure (page closed / superseded nav) is swallowed.
+    void page.waitForLoadState('domcontentloaded')
+      .then(() => { if (HUD.head && page === CURRENT_PAGE) return paintHud({}) })
+      .catch(() => {})
   })
 }
 async function paintHud (s: { head?: string, detail?: string, appendDetail?: string, failed?: boolean }): Promise<void> {
@@ -206,10 +215,15 @@ export async function hudNote (text: string): Promise<void> {
 // short otherwise (so a plain suite run stays fast).
 export async function reveal (target: Locator, opts: { hold?: number } = {}): Promise<void> {
   const el = target.first()
-  try {
-    await el.scrollIntoViewIfNeeded({ timeout: 4000 })
-    await el.evaluate(n => (n as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' }))
-  } catch { /* off-screen / virtualised / detached — nothing to centre */ }
+  // Only centre a cell that is actually in the DOM. `scrollIntoViewIfNeeded({timeout})` on a
+  // virtualised / off-screen / detached cell TIMES OUT, and a caught timeout still records a
+  // failed action — a spurious red ✕ on a passing step. `count()` is a query (a number, never a
+  // throw), so it never logs; the synchronous `scrollIntoView` then centres with no actionability
+  // wait to time out. Its own throw (element detached mid-call) is swallowed and does not log
+  // because `count()` just proved it present.
+  if (await el.count().catch(() => 0)) {
+    await el.evaluate(n => (n as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' })).catch(() => {})
+  }
   const hold = opts.hold ?? (process.env.BOARD_RECORD ? 1600 : 200)
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }

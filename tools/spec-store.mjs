@@ -420,28 +420,42 @@ export function readConfig () {
   catch { return { ...DEFAULT_CONFIG } }
 }
 
-export function writeConfig (cfg) {
-  const mode = cfg.mode === 'start' ? 'start' : 'attach'
+// Pure: merge an incoming (possibly PARTIAL) config OVER the current one, then clamp/clean every
+// field. Split out of writeConfig so the load-bearing contract — "a partial save preserves the
+// fields it doesn't mention" — is unit-testable without touching disk (tools/config.test.mjs).
+//
+// writeConfig used to rebuild the whole config from the incoming payload alone, so a partial save,
+// or a save from a stale form, silently reset every unspecified field to its default (the reported
+// "Pace of a watchable run keeps resetting to 300"). Here the incoming value wins where present and
+// the current value fills every gap; `storage` is merged one level deep so a top-level-only save
+// keeps the stored storage settings and vice-versa.
+export function cleanConfig (cfg = {}, cur = {}) {
+  const src = { ...cur, ...cfg, storage: { ...(cur.storage || {}), ...(cfg.storage || {}) } }
+  const mode = src.mode === 'start' ? 'start' : 'attach'
   const str = (v, n = 400) => String(v || '').slice(0, n)
-  const clean = {
+  return {
     mode,
-    baseUrl: str(cfg.baseUrl).trim(),
-    backendCommand: str(cfg.backendCommand),
-    backendUrl: str(cfg.backendUrl).trim(),
-    frontendCommand: str(cfg.frontendCommand),
+    baseUrl: str(src.baseUrl).trim(),
+    backendCommand: str(src.backendCommand),
+    backendUrl: str(src.backendUrl).trim(),
+    frontendCommand: str(src.frontendCommand),
     // one route per line or comma; blank means "crawl from the root"
-    routes: (Array.isArray(cfg.routes) ? cfg.routes : String(cfg.routes || '').split(/[\n,]/))
+    routes: (Array.isArray(src.routes) ? src.routes : String(src.routes || '').split(/[\n,]/))
       .map(r => String(r).trim()).filter(Boolean).slice(0, 200),
-    signIn: str(cfg.signIn, 4000),
+    signIn: str(src.signIn, 4000),
     // clamped: 0 means "as fast as it can", and a giant value would hang a watch forever
-    stepDelayMs: Math.max(0, Math.min(5000, Number(cfg.stepDelayMs) || 0)) || (cfg.stepDelayMs === 0 ? 0 : 300),
+    stepDelayMs: Math.max(0, Math.min(5000, Number(src.stepDelayMs) || 0)) || (src.stepDelayMs === 0 ? 0 : 300),
     storage: {
-      where: ['local', 'git', 'bucket'].includes(cfg.storage?.where) ? cfg.storage.where : 'local',
-      gitBranch: str(cfg.storage?.gitBranch, 120).trim(),
-      push: !!cfg.storage?.push,
-      bucketUrl: str(cfg.storage?.bucketUrl, 400).trim()
+      where: ['local', 'git', 'bucket'].includes(src.storage?.where) ? src.storage.where : 'local',
+      gitBranch: str(src.storage?.gitBranch, 120).trim(),
+      push: !!src.storage?.push,
+      bucketUrl: str(src.storage?.bucketUrl, 400).trim()
     }
   }
+}
+
+export function writeConfig (cfg) {
+  const clean = cleanConfig(cfg, readConfig())
   writeJson(CONFIG, clean)
   return clean
 }
