@@ -41,7 +41,7 @@ not do. Never take control away from the user (no auto-advancing after a verdict
 4. **When a test breaks after a change, find which of the two is wrong before editing either.**
    Several tests here were *correctly* broken by good changes and needed their assertions fixed;
    several others were genuinely wrong.
-5. **Requirement *semantics* need the human's gate**: a new REQ, changed REQ text, a deleted REQ, or
+5. **Requirement *semantics* wait on the human**: a new REQ, changed REQ text, a deleted REQ, or
    choosing a canonical side. You edit prose; the human owns meaning — never drop a `guess:` flag on
    the human's behalf.
 6. **Correct docs in place, with the reason attached.** When the code teaches you a requirement was
@@ -163,7 +163,8 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
   detached so Cancel can kill the whole process group. They are real and live **outside** the
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
   The crawl also runs detached and long, but it is **inventory-only** (a real browser, no claude):
-  it screenshots routes into rows with no PRD. Depth is the per-screen **kg-deep** skill, human-gated.
+  it screenshots routes into rows with no PRD. Depth is the per-screen **kg-deep** skill, ending in
+  the human's confirmation.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
 - **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`

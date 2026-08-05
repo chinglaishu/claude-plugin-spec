@@ -21,7 +21,10 @@ clicked again, and the second run fights the first.
 
 ## R3 — Finishing updates the board without a reload
 
-The cell the job was fixing changes state in place. If a gate is now due, it opens.
+The cell the job was fixing changes state in place.
+
+*Trimmed 2026-08-05 at the human's direction: the gate-opening clause described the deleted
+four-column mechanism (doctrine sweep) — the cell simply changes state in place.*
 
 ## R4 — One job at a time; a person's second job takes over, a nested run shares the slot
 

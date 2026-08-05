@@ -1,6 +1,6 @@
 ---
 name: kg-deep
-description: Use to take ONE screen from a bare row (or no row) to deep, human-accepted requirements proven by a few comprehensive E2E flows. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD for the human's gate, then author checkReq-tagged flows with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
+description: Use to take ONE screen from a bare row (or no row) to deep, human-accepted requirements proven by a few comprehensive E2E flows. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD for the human to confirm, then author checkReq-tagged flows with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
 ---
 
 # kg-deep — one screen, made deep
@@ -11,7 +11,7 @@ if the app stopped honouring them. Depth does not batch — run this per screen,
 Expect a real session per complex screen; that cost is the point, not a defect.
 
 You are staff (kg-staff's rules apply throughout): you do everything, the human owns **meaning**.
-The one gate is theirs — accepting the requirements. Never accept on their behalf.
+The one thing that's theirs is accepting the requirements. Never accept on their behalf.
 
 ## Phase 0 — Governance: read before you touch
 
@@ -44,13 +44,13 @@ A deep test asserts **exact values**, and exact values need deterministic data.
   browser context; commit only when byte-identical. Record identities too (row ids, unit ids), not
   just values — cross-page tests will need them.
 
-## Phase 3 — Draft the PRD → the human's gate
+## Phase 3 — Draft the PRD → the human confirms
 
 Write `spec/<screen>/prd.md`: one `## R<n>` per requirement, each grounded in what phase 1/2 found,
 each annotated with the selector/testid its test will use. Mark the file `guess: true` — it is your
 draft of their meaning. **Stop here for the human**: they correct the wording and drop the flag;
-that acceptance is the whole gate. Requirement ids are stable forever — later passes append, never
-renumber.
+that acceptance is the whole of what waits on them here. Requirement ids are stable forever — later
+passes append, never renumber.
 
 ## Phase 4 — Flows: few, comprehensive, checkReq-tagged
 

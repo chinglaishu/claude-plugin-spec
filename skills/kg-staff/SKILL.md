@@ -39,7 +39,8 @@ Everything else, decide and move.
 ## 3. The order a change must happen in
 
 1. **Change the requirement first, never the code first.** If behaviour should change, the PRD text
-   changes first — and changed requirement *meaning* is the human's gate, so propose it, don't commit it.
+   changes first — and changed requirement *meaning* is the human's to decide, so propose it, don't
+   commit it.
 2. **Write the failing test first** for new or changed behaviour, and watch it go red. A test written
    after the code can only confirm it, never contradict it.
 3. **Make it pass without weakening the test.** Never skip, delete, or loosen an assertion to go
@@ -54,7 +55,8 @@ Everything else, decide and move.
    silence. Decide which is wrong, the test or the code (never just re-baseline to go green). If the new
    numbers are intended: update the seed (`spec/_seed.ts`) when the inputs changed, re-capture
    `golden.json` against the re-seeded app, and update the values the PRD names. Because those named
-   numbers are requirement *meaning*, that update is the human's gate — propose it, don't self-approve it.
+   numbers are requirement *meaning*, that update is the human's to decide — propose it, don't
+   self-approve it.
 
 ## 4. After the change, close the loop — your edit rippled
 

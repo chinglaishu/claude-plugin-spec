@@ -32,9 +32,8 @@ npm install
 npm run board          # serves THIS project's board on http://localhost:4173 (empty at first)
 ```
 
-Open it in the user's **real browser** over `http://localhost` — `file://` URLs do not work, and the
-gate needs the server to record a decision. On a fresh project the board is empty, which is the honest
-starting point, not a failure.
+Open it in the user's **real browser** over `http://localhost` — `file://` URLs do not work. On a
+fresh project the board is empty, which is the honest starting point, not a failure.
 
 ## 2. Point it at the app, on the Init page
 
@@ -68,7 +67,7 @@ proving flows). Run it screen by screen, most important screen first.
   with requirements and a recorded proving run.
 - Requirement state is **proven / unproven**, computed from checkReq-tagged tests (see `kg-e2e`).
   The only thing ever *waiting* on a person is a drafted PRD still marked `guess:` — kg-deep
-  produces those; accepting them is the human's one gate.
+  produces those; confirming it and dropping the flag is the human's one job here.
 - **Coverage is not automatic.** The crawl link-follows a couple of levels from the root, so it finds
   nav-reachable pages — but **not** entity-scoped routes with a concrete id (`/portfolio/42/scenario`)
   unless the app links to one, and **not** features reached by a *click* rather than a link (wizards,

@@ -7,7 +7,7 @@ route: /init
 
 <!-- reworded 2026-07-30: title Init → Setup so the screen reads the same as the "Set up" button and
      header that reach it. The stored identity (screen/route) stays "init" — only the human-facing
-     name changed. Awaiting your accept on the board. -->
+     name changed. Awaiting the human's confirmation (there is no accept mechanism to wire). -->
 
 
 ## R1 — Asks for what cannot be guessed, and nothing else

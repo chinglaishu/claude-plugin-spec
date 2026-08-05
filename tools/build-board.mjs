@@ -225,7 +225,7 @@ const testPane = s => {
 const WORKFLOW = {
   spine: [
     { num: '1 · REQUIREMENTS', h: 'What the screen must do', file: 'prd.md' },
-    { gate: 'YOUR GATE', h: 'Are these what I meant?', cmp: 'guess → accepted' },
+    { gate: 'YOUR TURN', h: 'Are these what I meant?', cmp: 'guess → accepted' },
     { num: '2 · E2E TESTS', h: 'The proof, against the real app', file: 'test.spec.ts' }
   ],
   lanes: [
@@ -247,8 +247,8 @@ const WORKFLOW = {
           p: 'Source, testids, existing tests, contracts — then a deterministic fixture, so tests can assert <b>exact numbers</b>, not that boxes exist.' },
         { skill: 'kg-deep', file: 'prd.md · guess', h: 'Draft the requirements',
           p: 'One requirement per behaviour, grounded in what the screen really does — a proposal, flagged <span class="mono">guess</span>.' },
-        { gate: true, glbl: 'Your gate · your turn', h: 'Are these what I meant?', cmp: 'guess → accepted',
-          p: 'The one human gate on the board. Correct the wording, drop the flag — accepted requirements are the source of truth.' },
+        { gate: true, glbl: 'Your turn', h: 'Are these what I meant?', cmp: 'guess → accepted',
+          p: 'The one thing that waits on you here. Correct the wording, drop the flag — accepted requirements are the source of truth.' },
         { skill: 'kg-deep', file: 'test.spec.ts', h: 'Prove with a few comprehensive flows', arrow: 'checkReq tags carry coverage',
           p: 'A handful of flow tests prove MANY requirements each — exact golden values, safe cross-page round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.' }
       ],
@@ -331,7 +331,7 @@ const WALKTHROUGH = {
       ] },
     { n: 2, title: 'With the tool', sub: 'the same hire, plus a system that makes work reviewable',
       steps: [
-        { kind: 'moment', label: 'Assigning work', body: 'The task becomes a written requirement — one shared document. Staff drafts it; you confirm the meaning. That is your only gate.' },
+        { kind: 'moment', label: 'Assigning work', body: 'The task becomes a written requirement — one shared document. Staff drafts it; you confirm the meaning — the one thing waiting on you.' },
         { kind: 'moment', label: 'Reviewing', body: 'The work arrives as a recording where every asserted number is visible on screen. You review by watching, not by reading code.' },
         { kind: 'moment', label: 'Two weeks later', body: 'The moment a proof stops holding, the requirement flips to unproven — you see drift when it happens, not two weeks after. Proven is computed from the tests, never stored.' },
         { kind: 'mirror', note: 'Same hire, same speed. The difference is a system: work arrives reviewable by watching, and a written discipline makes the classic mistakes hard.' }
@@ -551,10 +551,21 @@ function fStepBody (n) {
     ${tags || chip ? `<div class="nb-foot">${tags}${chip}</div>` : ''}
   </div>`
 }
+// A gate-shaped node draws one of two things, never both: `kind: 'turn'` (default) IS the guess
+// confirmation and keeps the your-turn/indigo treatment; `kind: 'stop'` is kg-staff's "stop and ask"
+// node, which is process discipline, not the board's reserved your-turn signal — it gets its own
+// neutral, non-indigo label and colouring so the two are never visually confused.
 function fGateBody (n) {
   const cmp = n.cmp ? `<div class="cmp mono">${esc(n.cmp)}</div>` : ''
+  if (n.kind === 'stop') {
+    return `<div ${XH} class="nb stop">
+    <div class="glbl stop"><span class="dia stop"></span>STOP &middot; ask the human</div>
+    <div class="nb-title">${esc(n.title)}</div>
+    ${cmp}
+  </div>`
+  }
   return `<div ${XH} class="nb gate">
-    <div class="glbl"><span class="dia"></span>HUMAN GATE · your turn</div>
+    <div class="glbl"><span class="dia"></span>YOUR TURN</div>
     <div class="nb-title ai">${esc(n.title)}</div>
     ${cmp}
   </div>`
@@ -713,7 +724,7 @@ const HOW_FLOWS = [
     nodes: [
       { id: 'st1', type: 'step', cx: HOW_Cx, top: 16, w: 272, h: 54, title: 'Read what governs the screen', tags: ['staff briefing'] },
       { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 116, title: 'One of the three stop cases?' },
-      { id: 'a1', type: 'gate', cx: HOW_Rx, top: 119, w: 260, h: 86, title: 'Stop — the human decides', cmp: 'new meaning · guess · contradiction' },
+      { id: 'a1', type: 'gate', kind: 'stop', cx: HOW_Rx, top: 119, w: 260, h: 86, title: 'Stop — the human decides', cmp: 'new meaning · guess · contradiction' },
       { id: 'o1', type: 'step', cx: HOW_Cx, top: 268, w: 340, h: 62, title: 'Requirement first · failing test · then green', note: 'the change order — never weaken a test' },
       { id: 'o2', type: 'step', cx: HOW_Cx, top: 364, w: 380, h: 58, title: 'Close the loop: whole suite · rescan · stale worklist', state: 'running' }
     ],
@@ -811,10 +822,10 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
           test <i>tags</i> it with an assertion that would fail without it. Edit a requirement and its
           proof goes stale; delete an assertion and the green honestly disappears. The board never
           stores state — it derives it, on every build.</p>
-        <span class="gates-badge"><span class="dia"></span>One human gate guards <b>meaning</b> — accepting the requirements. Everything else, staff do.</span>
+        <span class="gates-badge"><span class="dia"></span>One thing waits on a person — accepting requirement meaning. Everything else, staff do.</span>
         <div class="legend">
           <span class="chip"><span class="mk o"></span>step / artifact</span>
-          <span class="chip rev"><span class="mk d"></span>your gate — your turn</span>
+          <span class="chip rev"><span class="mk d"></span>your turn — a guess to confirm</span>
           <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
           <span class="chip run"><span class="mk"></span>running — a job in flight</span>
           <span class="chip gone"><span class="mk o"></span>unproven — needs a proof</span>
@@ -866,7 +877,8 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
           <div class="flow-legend legend">
             <span class="chip"><span class="mk o"></span>step / artifact</span>
             <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
-            <span class="chip rev"><span class="mk d"></span>human gate — your turn</span>
+            <span class="chip rev"><span class="mk d"></span>your turn — a guess to confirm</span>
+            <span class="chip"><span class="mk o"></span>stop — ask the human</span>
             <span class="chip run"><span class="mk"></span>running — a job in flight</span>
             <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
             <span class="chip stale"><span class="mk"></span>re-look — a conflict to resolve</span>
@@ -1231,8 +1243,8 @@ export function build () {
     border:1px solid var(--hair); border-radius:3px; padding:1px 4px; margin-left:7px; }
   /* a shortcut hint has to be legible on whatever the button is painted — inherit, don't guess */
   .btn .kbd { color:inherit; border-color:currentColor; opacity:.5; }
-  /* every image is clickable — thumbnails render at a fraction of real size, and gate B's
-     question cannot honestly be answered from a thumbnail */
+  /* every image is clickable — thumbnails render at a fraction of real size, and what a screenshot
+     actually shows cannot honestly be judged from a thumbnail */
   img { cursor:zoom-in; }
   .lb { position:fixed; inset:0; z-index:80; background:rgba(28,27,24,.86);
     display:flex; flex-direction:column; }
@@ -1626,11 +1638,17 @@ export function build () {
   #howview .nb.s-relook { border-left:3px solid var(--bengara); }
   #howview .nb.s-redfail { border-left:3px solid var(--bengara); }
 
-  /* gate node — the human decision point, a tint (never a second inverted element) */
+  /* gate node — the human decision point, a tint (never a second inverted element). "your turn" is
+     reserved for the guess confirmation ONLY (design system rule); kg-staff's stop-and-ask node below
+     is process discipline, not that signal, so it is deliberately NOT indigo. */
   #howview .nb.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
   #howview .glbl { display:flex; align-items:center; gap:6px; font-size:var(--t-micro); letter-spacing:.13em;
     text-transform:uppercase; color:var(--ai); }
   #howview .glbl .dia { width:8px; height:8px; background:var(--ai); transform:rotate(45deg); flex:none; }
+  /* stop-and-ask node — neutral ink, never the your-turn indigo */
+  #howview .nb.stop { background:var(--wash); border:1px solid var(--hair-2); border-left:4px solid var(--ink-3); }
+  #howview .glbl.stop { color:var(--ink-3); }
+  #howview .glbl.stop .dia { background:var(--ink-3); }
   #howview .cmp { font-size:var(--t-micro); color:var(--ai); opacity:.85; }
 
   /* diamond text */
@@ -1745,7 +1763,7 @@ export function build () {
      day one instead of being an empty page nobody knows how to fill. The hash stays #init — the
      stored route — while every label the human reads says Setup, to match the Set up button. -->
 <!-- reworded 2026-07-30: the screen's title became "Setup" so it matches the Set up button and
-     header; awaiting the human's accept on the board (never accepted here). -->
+     header; awaiting the human's confirmation (there is no accept mechanism to wire). -->
 
 <section class="dt" id="initview" hidden>
   <div class="dth">
@@ -1830,7 +1848,7 @@ export function build () {
           <div class="cfempty" id="initempty" hidden></div>
           <div class="initnote">
             <span class="chip stale"><span class="mark h"></span>a guess</span>
-            <span class="gbn">Read off the page, never canon. Every crawled screen starts unapproved, so the loop still begins at gate A.</span>
+            <span class="gbn">Read off the page, never canon. Correct it and drop the <span class="mono">guess:</span> flag to make it canon.</span>
           </div>
         </div>
       </div>
@@ -2100,7 +2118,8 @@ ${detail}
   })
 
   // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
-  // every screen costs a close, a scroll and a hunt for the next one still showing a gate.
+  // every screen costs a close, a scroll and a hunt for the next one still showing something that
+  // needs you.
   const WAITING = ${JSON.stringify(screens.map((s, i) => (isWaiting(s) ? i : -1)).filter(i => i >= 0))}
   for (const b of document.querySelectorAll('.nextw')) {
     if (WAITING.length < 2) { b.hidden = true; continue }
@@ -2951,8 +2970,8 @@ ${detail}
   loadRuns()
 
   // lightbox -------------------------------------------------------------
-  // Screenshots are the evidence gate B rests on, and they render at a third of their real size.
-  // A judgement about whether the build matches the design cannot be made from a thumbnail.
+  // Screenshots are a recording's evidence, and they render at a third of their real size.
+  // What a test actually showed cannot be judged from a thumbnail.
   const lb = document.getElementById('lb')
   const lbimg = document.getElementById('lbimg')
   const lbstage = document.getElementById('lbstage')
