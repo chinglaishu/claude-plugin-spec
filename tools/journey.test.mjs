@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { deriveJourney } from './journey.mjs'
-import { journeyRail } from './build-board.mjs'
+import { journeyRail, wCtaAction } from './build-board.mjs'
 
 const S = (guess, states) => ({ guess, reqs: states.map(state => ({ state })) })
 
@@ -87,4 +87,25 @@ test('render: a finished journey renders the rail hidden, an unfinished one open
   const done = deriveJourney({ configSaved: true, crawledAt: null, screens: [S(false, ['proven'])] })
   assert.match(journeyRail(done), /<div id="jrail" hidden>/)
   assert.match(journeyRail(midJourney()), /<div id="jrail">/)
+})
+
+// wCtaAction — Act 4's closing CTA (board R12, repurposed). This repo's own journey is always folded
+// (every requirement proven), so the board's own E2E can only ever exercise the folded branch below;
+// these drive SYNTHETIC journey() shapes straight through wCtaAction to prove the not-done branches
+// actually derive, the same reason midJourney()/journeyRail are driven directly above.
+test('wCtaAction: a not-done deepen step names its own command', () => {
+  const deepenCurrent = deriveJourney({ configSaved: true, crawledAt: '2026-08-05', screens: [] })
+  assert.equal(wCtaAction(deepenCurrent), '/kg-deep <screen>')
+})
+
+test('wCtaAction: a not-done step with no cmd falls back to J_ACT\'s own wording', () => {
+  assert.equal(wCtaAction(midJourney()), 'Delete the guess: line in that screen prd.md')       // confirm
+  const proveCurrent = deriveJourney({ configSaved: true, crawledAt: null, screens: [S(false, ['unproven'])] })
+  assert.equal(wCtaAction(proveCurrent), 'Run all')                                              // prove
+})
+
+test('wCtaAction: folded (nothing left to derive) names no step — it says everything already holds', () => {
+  const done = deriveJourney({ configSaved: true, crawledAt: null, screens: [S(false, ['proven'])] })
+  assert.equal(done.folded, true)
+  assert.equal(wCtaAction(done), 'Every derivable fact already holds — this project\'s requirements are proven.')
 })

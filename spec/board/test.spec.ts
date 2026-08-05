@@ -487,7 +487,14 @@ test('The guide ends with the derived next action, and there is no rail', async 
     const cta = page.locator('.act[data-act="4"] .wcta')
     await expect(cta).toHaveCount(1)
     await expect(cta).not.toBeEmpty()
-    // it is a real action, not a stored status — derived from the same journey facts
-    await expect(cta).toContainText(/kg-deep|proven|crawl|set up/i)
+    // EXACT text, not a permissive regex: the static '/kg-deep <screen>' literal this task removed
+    // would itself have satisfied a loose /kg-deep|proven|.../i check, so that alone could not tell a
+    // real derivation from the old hardcoded string left behind (rule 2 — an assertion that would
+    // still pass with the requirement deleted proves nothing). This repo's own journey is always
+    // folded (every requirement here is proven), so wCtaAction always takes its folded branch on this
+    // tree — assert that EXACT sentence; only a real journey() read produces it.
+    await expect(cta.locator('.wcta-act')).toHaveText(
+      'Every derivable fact already holds — this project\'s requirements are proven.'
+    )
   })
 })

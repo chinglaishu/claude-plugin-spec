@@ -421,7 +421,10 @@ const wFlow = s =>
 // its cmd when it has one (deepen: '/kg-deep <screen>'), else the short verb J_ACT already names for
 // the board control that does it. Once nothing is left (folded), there is no next step to name, so
 // the CTA says so instead of pointing at one. Pure function of journey()'s facts — nothing stored.
-const wCtaAction = j => {
+// Exported so the DERIVATION is unit-tested against synthetic journey() shapes (tools/journey.test.mjs)
+// — this repo's own journey is always folded (everything proven), so the live board's own E2E can only
+// ever exercise the folded branch below; the not-done branches need a driven fixture to prove at all.
+export const wCtaAction = j => {
   const cur = j.steps.find(s => !s.done)
   if (!cur) return 'Every derivable fact already holds — this project\'s requirements are proven.'
   return cur.cmd || J_ACT[cur.id] || cur.title
