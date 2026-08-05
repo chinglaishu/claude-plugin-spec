@@ -234,3 +234,30 @@ Tests assert **behaviour/content, not phrasing** (rule 2), so the human can rewo
 3. Cut the rail UI; repurpose R12 to the derived closing CTA fed by `journey()`; update the board's own
    R12 test.
 4. Human wording-gate on R11/R12; then release 0.21.0 + `kg-update` downstream + restart vendored boards.
+
+---
+
+# Revision 3 — the manager/staff story rebuild (2026-08-05, staged)
+
+The human wants the walkthrough rebuilt around a real-world frame that is ALREADY the product's own
+doctrine ("You are staff. The human decides meaning."): **the human is a manager; the AI is a
+brilliant, fast staff member with no memory who says "done!" without evidence.** The tool is a
+management system: it makes staff's work reviewable-by-watching, and gives staff a written
+discipline so wrongness is structurally hard.
+
+**Shape:** two situations, the SAME three moments each — assigning work, reviewing, two weeks later —
+first without the tool (unreviewable work, blind trust, the same bug back a third time, closing on a
+green assertion beside the screen it fails to prove), then with it (a written requirement you
+confirm; work arriving as a recording with every asserted number visible; drift flipping the
+requirement to unproven the moment a proof stops holding). The mirror is the argument. Analogy
+carries the voice; every beat still cashes out in a concrete artifact (rule: if a beat cannot point
+at a real artifact, cut it). Board copy says "you / the human / manager" — never the swept title.
+
+**Staged delivery (human checkpoint after every stage; each stage = one revertable commit):**
+1. Acts 1–2 become Without/With, static; Acts 3–4 untouched; R11 redrafted (guess stays).
+2. Acts 3–4 re-voiced into the frame + size contract + done/current/remaining progress tracker.
+3. The live drift beat in "With": delete-the-assertion → chip flips → THEN "computed, never stored".
+4. (Optional) the named Write→Tag→Run→Fold→Derive spine + "harder cases" (not-reached, many-to-many).
+
+Stages 2–4 are detailed just-in-time after the prior checkpoint passes — deliberately, so no
+planning is sunk into stages the human may cancel.
