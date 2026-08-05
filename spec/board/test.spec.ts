@@ -444,3 +444,21 @@ test('The guide opens with the problem, and teaches reading a test', async ({ pa
     await expect(anatomy).toContainText('2,671,006.87')
   })
 })
+
+test('The getting-started rail derives, folds, and reopens', async ({ page }) => {
+  await coverReqs('R12')
+  await checkReq('R12', async () => {
+    // this repo's own journey is complete (requirements are proven), so the rail ships FOLDED
+    const rail = page.locator('#jrail')
+    const chip = page.locator('#jchip')
+    await expect(rail).toBeHidden()
+    await expect(chip).toBeVisible()
+    await chip.click()
+    await expect(rail).toBeVisible()
+    await expect(rail.locator('.jstep')).toHaveCount(6)
+    await expect(rail.locator('.jstep.done')).toHaveCount(6)      // every derived fact holds here
+    await expect(rail.locator('.jstep .jfact').first()).toContainText('board is serving')
+    await chip.click()
+    await expect(rail).toBeHidden()
+  })
+})

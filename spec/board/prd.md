@@ -173,3 +173,17 @@ many-to-many coverage tags.
 *Drafted 2026-08-05 transcribing the approved onboarding design
 (docs/superpowers/specs/2026-08-05-onboarding-and-skill-eval-design.md) — wording awaits the
 human; reword freely, the test asserts content not phrasing.*
+
+## R12 — A getting-started rail derives the journey, never stores it
+
+The home carries a six-step rail — install the board, point it at your app, inventory the
+app, deepen one screen, confirm the draft, watch the proof — and every step's state is
+derived from the tree on each build (config saved, crawl ran or rows exist, a prd.md exists,
+a prd.md without `guess`, a requirement proven). Nothing is stored. The current step is the
+first incomplete one and shows the one next action; a later step whose fact already holds
+reads done — the rail is a map, not a turnstile. Once any requirement is proven the rail
+folds to a chip beside "How does it work", which reopens it.
+
+*Drafted 2026-08-05 transcribing the approved onboarding design
+(docs/superpowers/specs/2026-08-05-onboarding-and-skill-eval-design.md) — wording awaits the
+human; reword freely, the test asserts behaviour not phrasing.*

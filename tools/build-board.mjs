@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import {
   ROOT, esc, designCss, allScreens, sortedAreas, isWaiting, writeText
 } from './spec-store.mjs'
+import { journey } from './journey.mjs'
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
@@ -66,6 +67,31 @@ const card = (s, i) => {
     : '<span class="play">▶</span>'}</div>
 </div>`
 }
+
+// The getting-started rail (board R12) — six steps whose every state is DERIVED in journey.mjs from
+// the tree on this build, never stored. This function only DRAWS what it is handed.
+//
+// A step that has no command of its own names the board control that does it, so the one next action
+// is a thing you can point at rather than an instruction to go read something. Confirming a draft is
+// the exception the board has no button for: it happens in the screen's own prd.md.
+const J_ACT = {
+  config: 'Set up',
+  crawl: 'Crawl',
+  confirm: 'Delete the guess: line in that screen prd.md',
+  prove: 'Run all'
+}
+const journeyRail = j => `
+<div id="jrail"${j.folded ? ' hidden' : ''}>
+  <div class="jhd"><span class="jttl">Getting started</span>
+    <span class="gbn">six steps, each one derived from the tree — nothing is stored</span></div>
+  <ol class="jsteps">${j.steps.map((s, n) => `
+    <li class="jstep${s.done ? ' done' : s.current ? ' cur' : ''}">
+      <span class="jtop"><span class="mark${s.done ? '' : s.current ? ' h' : ' o'}"></span><span class="jn">${n + 1}</span><span class="jt">${esc(s.title)}</span></span>
+      <span class="jfact">${esc(s.fact)}</span>${s.current
+      ? `<span class="jact">${esc(s.cmd || J_ACT[s.id] || '')}</span>` : ''}
+    </li>`).join('')}
+  </ol>
+</div>`
 
 // Requirement prose is light markdown: paragraphs, `- ` lists, **bold**, *em*, `code`, plus
 // <!-- author notes --> that are hints for the test author, not requirement text. A PRD is UNTRUSTED
@@ -721,6 +747,10 @@ const howView = () => `<section class="dt" id="howview" hidden>
 export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
+  // The getting-started journey, derived once for this build (board R12) — read from the tree, so a
+  // step cannot claim a fact that is not in spec/. Once anything is proven it folds to its chip.
+  const j = journey()
+  const jDone = j.steps.filter(s => s.done).length
   // The one number that says whether it is your turn: how many screens are waiting on a human
   // correction — in the no-gate model (board R8) that is only a crawl guess still to be confirmed.
   const yourTurn = screens.filter(isWaiting).length
@@ -811,6 +841,34 @@ export function build () {
   .qx { position:absolute; right:6px; border:0; background:transparent; cursor:pointer;
     color:var(--ink-4); font-size:var(--t-sm); padding:2px 4px; line-height:1; display:none; }
   .qwrap.has .qx { display:block; }
+
+  /* THE GETTING-STARTED RAIL (board R12) — a quiet strip above the board, not a banner: it is
+     scaffolding for a first hour, and it folds itself to the topbar chip the moment anything is
+     proven. Every step's state is derived at build time; the page only draws it. */
+  #jrail { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    padding:var(--s4); margin-bottom:var(--s4); box-shadow:var(--sh-sm); }
+  #jrail[hidden] { display:none; }
+  .jhd { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s3); flex-wrap:wrap; }
+  .jttl { font-size:var(--t-md); letter-spacing:-.01em; color:var(--ink); }
+  .jsteps { list-style:none; margin:0; padding:0;
+    display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--s2); }
+  /* A step is neutral until a fact makes it otherwise — hue never carries the state alone, so every
+     one also wears a mark: filled done · half current · hollow not yet. */
+  .jstep { display:flex; flex-direction:column; gap:5px; padding:var(--s3);
+    background:var(--wash); border:1px solid var(--hair); border-radius:var(--r); }
+  .jtop { display:flex; align-items:center; gap:6px; }
+  .jn { font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  .jt { font-size:var(--t-sm); color:var(--ink-2); letter-spacing:-.01em; }
+  .jfact { font:var(--t-micro)/1.35 var(--mono); color:var(--ink-3); }
+  .jstep.done { background:var(--koke-tint); border-color:var(--koke-line); }
+  .jstep.done .jn, .jstep.done .jt, .jstep.done .jfact { color:var(--koke); }
+  /* INDIGO = your turn, and the current step is exactly that — the one thing to do next. Tinted,
+     never inverted: the board keeps a single inverted element. */
+  .jstep.cur { background:var(--ai-tint); border-color:var(--ai-line); }
+  .jstep.cur .jn, .jstep.cur .jt, .jstep.cur .jfact { color:var(--ai); }
+  .jact { margin-top:2px; font-size:var(--t-xs); color:var(--ai); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .jdone { font:var(--t-micro) var(--mono); color:var(--ink-3); }
 
   /* HOME — screens grouped into named areas, one CARD per screen (board R1). No column strip. */
   .grp { margin-bottom:var(--s2); }
@@ -1442,6 +1500,7 @@ export function build () {
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
   <button class="btn sm" id="howbtn">How does it work</button>
+  <button class="btn sm" id="jchip">Journey<span class="jdone">${jDone}/${j.steps.length}</span></button>
   <div class="setwrap">
     <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
     <div class="setmenu" id="setmenu" hidden>
@@ -1456,6 +1515,7 @@ export function build () {
     Nothing is waiting on you — only a crawled guess ever needs a look; everything else is proven or unproven by its tests.
   </div>` : ''}
   <div id="home">
+    ${journeyRail(j)}
     ${groups}
   </div>
   <div class="none" id="none">Nothing matches.</div>
@@ -2334,6 +2394,13 @@ ${detail}
   document.getElementById('howbtn').addEventListener('click', () => {
     history.pushState(null, '', '#howitworks'); route()
   })
+
+  // The rail folds itself once anything is proven (board R12) and this chip is how you get it back.
+  // Toggle only: every step's state was DERIVED at build time, so there is nothing to recompute here
+  // — the page redraws it on the next build, which is the whole point of not storing it.
+  const jrail = document.getElementById('jrail')
+  const jchip = document.getElementById('jchip')
+  if (jrail && jchip) jchip.addEventListener('click', () => { jrail.hidden = !jrail.hidden })
 
   route()
 

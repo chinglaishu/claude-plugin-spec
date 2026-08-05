@@ -10,7 +10,8 @@ import { join } from 'node:path'
 // The tools, the shared test harness, the ONE design system, the Playwright config. NOT
 // spec/<screen>/ — those are the target's own screens, never shipped.
 export const FILES = [
-  'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/build-board.mjs', 'tools/serve-board.mjs',
+  'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/journey.mjs', 'tools/build-board.mjs',
+  'tools/serve-board.mjs',
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',

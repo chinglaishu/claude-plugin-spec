@@ -96,6 +96,22 @@ test('the golden-data seed template is part of the skeleton', () => {
   assert.ok(FILES.includes('spec/_seed.ts'), 'spec/_seed.ts must be a vendored skeleton file')
 })
 
+test('every relative import of a vendored file is itself vendored', () => {
+  // A tool the skeleton ships can only import files the skeleton also ships. The failure is invisible
+  // HERE and fatal THERE: build-board.mjs importing an unvendored sibling throws ERR_MODULE_NOT_FOUND
+  // on the project's first `npm run board:build`, and the board never renders again. This caught
+  // exactly that for tools/journey.mjs the day it was added.
+  const missing = []
+  for (const rel of FILES.filter(f => f.endsWith('.mjs'))) {
+    const src = readFileSync(new URL('../' + rel, import.meta.url), 'utf8')
+    for (const m of src.matchAll(/(?:from|import)\s*\(?\s*['"](\.[^'"]+)['"]/g)) {
+      const dep = join(dirname(rel), m[1])
+      if (!FILES.includes(dep)) missing.push(rel + ' -> ' + dep)
+    }
+  }
+  assert.deepEqual(missing, [], 'imported but not vendored')
+})
+
 test('a project without the seed template GAINS it on update (added)', () => {
   // The exact path a manifest-less older project takes: the new release carries spec/_seed.ts, the
   // project has none, so it is ADDED and recorded — the harness gains the seed hook.
