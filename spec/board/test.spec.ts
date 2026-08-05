@@ -473,32 +473,21 @@ test('A deep-linked skill URL shows the skill detail on cold load', async ({ pag
   })
 })
 
-test('The getting-started rail derives, folds, and reopens', async ({ page }) => {
+test('The guide ends with the derived next action, and there is no rail', async ({ page }) => {
   await coverReqs('R12')
   await checkReq('R12', async () => {
-    // this repo's own journey is complete (requirements are proven), so the rail ships FOLDED
-    const rail = page.locator('#jrail')
-    const chip = page.locator('#jchip')
-    await expect(rail).toBeHidden()
-    await expect(chip).toBeVisible()
-    await chip.click()
-    await expect(rail).toBeVisible()
-    await expect(rail.locator('.jstep')).toHaveCount(6)
-    // A proof may not depend on an untracked, machine-local file. spec/_config.json is gitignored, so
-    // "point it at your app" is done on THIS machine and undone in a fresh clone — a flat
-    // toHaveCount(6) here would go red on a clone for a reason that is not a defect. Assert instead
-    // the five steps whose facts derive from COMMITTED files (prd.md files, _results-index.json), and
-    // tie the total to the chip's own count, which must agree with the rail it summarises.
-    for (const id of ['install', 'crawl', 'deepen', 'confirm', 'prove'])
-      await expect(rail.locator('.jstep[data-id="' + id + '"]')).toHaveClass(/\bdone\b/)
-    const n = Number(((await chip.textContent()) || '').match(/(\d+)\s*\/\s*6/)?.[1])
-    expect(n === 5 || n === 6).toBeTruthy()      // 5 in a fresh clone, 6 once the app is configured
-    await expect(rail.locator('.jstep.done')).toHaveCount(n)
-    // the one step config decides is the one that is NOT tracked — and it is the current step exactly
-    // when it is not done, which is what makes the rail a live derivation rather than a picture
-    await expect(rail.locator('.jstep[data-id="config"]')).toHaveClass(n === 6 ? /\bdone\b/ : /\bcur\b/)
-    await expect(rail.locator('.jstep .jfact').first()).toContainText('board is serving')
-    await chip.click()
-    await expect(rail).toBeHidden()
+    // the six-step home rail is gone
+    await page.goto('/')
+    await page.waitForSelector('.card')
+    await expect(page.locator('#jrail')).toHaveCount(0)
+    await expect(page.locator('#jchip')).toHaveCount(0)
+    // the walkthrough closes on a single derived next action
+    await page.goto('/#howitworks')
+    await page.waitForSelector('#walkthrough .act[data-act="4"]')
+    const cta = page.locator('.act[data-act="4"] .wcta')
+    await expect(cta).toHaveCount(1)
+    await expect(cta).not.toBeEmpty()
+    // it is a real action, not a stored status — derived from the same journey facts
+    await expect(cta).toContainText(/kg-deep|proven|crawl|set up/i)
   })
 })

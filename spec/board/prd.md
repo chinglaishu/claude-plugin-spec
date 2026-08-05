@@ -173,16 +173,13 @@ describing it; the old method flowcharts survive as reference, reached from the 
 *Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — wording
 awaits the human; reword freely, the test asserts content not phrasing.*
 
-## R12 — A getting-started rail derives the journey, never stores it
+## R12 — The guide ends with the one next action, derived not stored
 
-The home carries a six-step rail — install the board, point it at your app, inventory the
-app, deepen one screen, confirm the draft, watch the proof — and every step's state is
-derived from the tree on each build (config saved, crawl ran or rows exist, a prd.md exists,
-a prd.md without `guess`, a requirement proven). Nothing is stored. The current step is the
-first incomplete one and shows the one next action; a later step whose fact already holds
-reads done — the rail is a map, not a turnstile. Once any requirement is proven the rail
-folds to a chip beside "How does it work", which reopens it.
+The walkthrough closes on a single next action for this project, derived from the tree on each build
+(config saved, rows exist, a prd.md drafted, a prd.md without `guess`, a requirement proven) — the same
+`journey()` derivation, with no six-step rail and nothing stored. A returning user opens the guide and
+sees their next concrete step (for example `/kg-deep <screen>`); when everything derivable is done, the
+CTA says so. There is no home-screen checklist.
 
-*Drafted 2026-08-05 transcribing the approved onboarding design
-(docs/superpowers/specs/2026-08-05-onboarding-and-skill-eval-design.md) — wording awaits the
-human; reword freely, the test asserts behaviour not phrasing.*
+*Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier
+six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.*

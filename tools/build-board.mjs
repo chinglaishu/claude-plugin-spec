@@ -68,21 +68,24 @@ const card = (s, i) => {
 </div>`
 }
 
-// The getting-started rail (board R12) — six steps whose every state is DERIVED in journey.mjs from
-// the tree on this build, never stored. This function only DRAWS what it is handed.
-//
 // A step that has no command of its own names the board control that does it, so the one next action
 // is a thing you can point at rather than an instruction to go read something. Confirming a draft is
-// the exception the board has no button for: it happens in the screen's own prd.md.
+// the exception the board has no button for: it happens in the screen's own prd.md. Also feeds Act 4's
+// derived CTA (board R12, repurposed) — see wCtaAction below.
 const J_ACT = {
   config: 'Set up',
   crawl: 'Crawl',
   confirm: 'Delete the guess: line in that screen prd.md',
   prove: 'Run all'
 }
-// Exported so the RENDERER is unit-tested, not only the derivation (the same reason renderBody is):
-// this repo's own journey is finished, so a live board here can never draw a current step — the one
-// thing the rail exists for. tools/journey.test.mjs drives a mid-journey shape through it directly.
+// Every step's state, DERIVED in journey.mjs from the tree on this build, never stored. This function
+// only DRAWS what it is handed.
+//
+// The six-step home rail this drew was CUT at the human's direction (board R12, repurposed) — the
+// journey now surfaces as Act 4's single derived next action (wCtaAction) instead of a standing
+// checklist. journeyRail stays exported and unit-tested directly (tools/journey.test.mjs drives a
+// mid-journey shape through it) because the renderer itself is worth keeping proven even unwired;
+// it is no longer called from build()'s emitted HTML.
 export const journeyRail = j => `
 <div id="jrail"${j.folded ? ' hidden' : ''}>
   <div class="jhd"><span class="jttl">Getting started</span>
@@ -339,7 +342,9 @@ const WALKTHROUGH = {
     { n: 4, title: 'Do it on your app', sub: 'the flow, and the full method underneath',
       steps: [
         { kind: 'flow', chain: ['kg-init', 'kg-deep · per screen', 'you confirm the meaning', 'tests prove it'] },
-        { kind: 'cta', lead: 'Next on your board:', action: '/kg-deep <screen>' }
+        // action is no longer authored here (board R12, repurposed): it is DERIVED per build from
+        // journey() — see wCtaAction — so a returning user always sees their real next step.
+        { kind: 'cta', lead: 'Next on your board:' }
       ] }
   ]
 }
@@ -412,12 +417,24 @@ const wFlow = s =>
     return (i ? '<span class="wfa" aria-hidden="true">&#8594;</span>' : '') + node
   }).join('') + '</div>'
 
-// The single next action, in the "your turn" indigo treatment — the one inverted element of Act 4.
-const wCta = s =>
-  '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' +
-    '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(s.action) + '</span></span></div>'
+// Act 4's closing CTA text (board R12, repurposed): the first not-done journey() step's own action —
+// its cmd when it has one (deepen: '/kg-deep <screen>'), else the short verb J_ACT already names for
+// the board control that does it. Once nothing is left (folded), there is no next step to name, so
+// the CTA says so instead of pointing at one. Pure function of journey()'s facts — nothing stored.
+const wCtaAction = j => {
+  const cur = j.steps.find(s => !s.done)
+  if (!cur) return 'Every derivable fact already holds — this project\'s requirements are proven.'
+  return cur.cmd || J_ACT[cur.id] || cur.title
+}
 
-const wStepInner = s => {
+// The single next action, in the "your turn" indigo treatment — the one inverted element of Act 4.
+// `action` is the DERIVED text (board R12, repurposed) — journey()'s own facts, fed in from build(),
+// never the static WALKTHROUGH literal s.action was before this pass.
+const wCta = (s, action) =>
+  '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' +
+    '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(action) + '</span></span></div>'
+
+const wStepInner = (s, ctaAction) => {
   switch (s.kind) {
     case 'symptoms': return wSymptoms(s.lines)
     case 'proof': return wProof(s)
@@ -426,7 +443,7 @@ const wStepInner = s => {
     case 'demo': return wDemo(s)
     case 'crosspage': return wCrosspage(s)
     case 'flow': return wFlow(s)
-    case 'cta': return wCta(s)
+    case 'cta': return wCta(s, ctaAction)
     default: return ''
   }
 }
@@ -442,8 +459,8 @@ const wNav = a =>
     '<button class="wnavb" type="button" data-wnext aria-label="Next step">Next<span class="wchev" aria-hidden="true">&#8250;</span></button>' +
   '</div>'
 
-const wAct = a => {
-  const steps = a.steps.map((s, i) => wStepNode(a.n, i, s.kind, wStepInner(s), s.pinned)).join('')
+const wAct = (a, ctaAction) => {
+  const steps = a.steps.map((s, i) => wStepNode(a.n, i, s.kind, wStepInner(s, ctaAction), s.pinned)).join('')
   // Act 3 gathers its steps inside a single labelled demo panel; the .wpin banner is what keeps the
   // illustration honest — it says, in words, that this is not live board state.
   const body = a.illustration
@@ -457,13 +474,13 @@ const wAct = a => {
 
 // The walkthrough IS the #howitworks landing (board R11). A quiet map of the four beats heads it; its
 // pips carry data-pip (never data-act), so the R11 test's [data-act="N"] stays the four .act sections.
-const walkthrough = () =>
+const walkthrough = ctaAction =>
   '<div id="walkthrough">' +
     '<div class="wt-map">' + WALKTHROUGH.acts.map(a =>
       '<span class="wt-pip" data-pip="' + a.n + '"><span class="wt-pn">' + a.n + '</span>' + esc(a.title) + '</span>')
       .join('<span class="wt-sep" aria-hidden="true">&#8594;</span>') +
     '</div>' +
-    WALKTHROUGH.acts.map(wAct).join('') +
+    WALKTHROUGH.acts.map(a => wAct(a, ctaAction)).join('') +
   '</div>'
 
 
@@ -735,7 +752,7 @@ const howSkillSummaries = () => HOW_FLOWS.map((f, i) =>
       <span class="ss-go">View flow →</span>
     </button>`).join('\n')
 
-const howView = () => `<section class="dt" id="howview" hidden>
+const howView = ctaAction => `<section class="dt" id="howview" hidden>
   <div class="dth">
     <h2>How does it work</h2>
     <span class="gbn">spec-driven development, made visible</span>
@@ -748,7 +765,7 @@ const howView = () => `<section class="dt" id="howview" hidden>
       <!-- The walkthrough IS the landing (board R11): a four-act, click-to-advance guide that SHOWS
            the proof. It is the first thing in the view, and — until you open the reference below — the
            only thing. The click-to-advance controller is a later pass; every act is present here. -->
-      ${walkthrough()}
+      ${walkthrough(ctaAction)}
 
       <!-- The full method, demoted to a collapsed reference (board R11). It wraps the old overview and
            the skill flowcharts; a native <details> is the "See the full method" control reached from
@@ -845,9 +862,10 @@ export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
   // The getting-started journey, derived once for this build (board R12) — read from the tree, so a
-  // step cannot claim a fact that is not in spec/. Once anything is proven it folds to its chip.
+  // step cannot claim a fact that is not in spec/. It no longer draws a rail (cut at the human's
+  // direction); it feeds the walkthrough's closing CTA (Act 4) with the single derived next action.
   const j = journey()
-  const jDone = j.steps.filter(s => s.done).length
+  const ctaAction = wCtaAction(j)
   // The one number that says whether it is your turn: how many screens are waiting on a human
   // correction — in the no-gate model (board R8) that is only a crawl guess still to be confirmed.
   const yourTurn = screens.filter(isWaiting).length
@@ -939,39 +957,11 @@ export function build () {
     color:var(--ink-4); font-size:var(--t-sm); padding:2px 4px; line-height:1; display:none; }
   .qwrap.has .qx { display:block; }
 
-  /* THE GETTING-STARTED RAIL (board R12) — a quiet strip above the board, not a banner: it is
-     scaffolding for a first hour, and it folds itself to the topbar chip the moment anything is
-     proven. Every step's state is derived at build time; the page only draws it. */
-  #jrail { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    padding:var(--s4); margin-bottom:var(--s4); box-shadow:var(--sh-sm); }
-  #jrail[hidden] { display:none; }
-  .jhd { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s3); flex-wrap:wrap; }
-  .jttl { font-size:var(--t-md); letter-spacing:-.01em; color:var(--ink); }
-  .jsteps { list-style:none; margin:0; padding:0;
-    display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:var(--s2); }
-  /* A step is neutral until a fact makes it otherwise — hue never carries the state alone, so every
-     one also wears a mark: filled done · half current · hollow not yet. */
-  .jstep { display:flex; flex-direction:column; gap:5px; padding:var(--s3);
-    background:var(--wash); border:1px solid var(--hair); border-radius:var(--r); }
-  .jtop { display:flex; align-items:center; gap:6px; }
-  .jn { font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  .jt { font-size:var(--t-sm); color:var(--ink-2); letter-spacing:-.01em; }
-  .jfact { font:var(--t-micro)/1.35 var(--mono); color:var(--ink-3); }
-  /* the mark takes the state's hue like every chip on the board — .mark paints from currentColor, so
-     it must be in these lists or it silently keeps body ink while the text around it moves. The
-     not-yet step gets the caption's ink for the same reason: full-strength ink made the mark the
-     loudest thing in the quietest step. */
-  .jstep .mark { color:var(--ink-3); }
-  .jstep.done { background:var(--koke-tint); border-color:var(--koke-line); }
-  .jstep.done .jn, .jstep.done .jt, .jstep.done .jfact, .jstep.done .mark { color:var(--koke); }
-  /* INDIGO = your turn, and the current step is exactly that — the one thing to do next. Tinted,
-     never inverted: the board keeps a single inverted element. */
-  .jstep.cur { background:var(--ai-tint); border-color:var(--ai-line); }
-  .jstep.cur .jn, .jstep.cur .jt, .jstep.cur .jfact, .jstep.cur .mark { color:var(--ai); }
-  /* the action WRAPS. It is the one affordance on the rail, and a six-column grid is narrow enough
-     that an ellipsis would truncate exactly the words telling you what to do. */
-  .jact { margin-top:2px; font-size:var(--t-xs); color:var(--ai); overflow-wrap:anywhere; }
-  .jdone { font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  /* THE GETTING-STARTED RAIL (board R12) was cut at the human's direction — the journey now surfaces
+     as Act 4's single derived next action (#howview .wcta) instead of a standing home-screen
+     checklist. Its CSS (#jrail, .jhd/.jttl/.jsteps/.jstep/.jtop/.jn/.jt/.jfact/.jact/.jdone) is removed
+     with it; journeyRail's renderer stays in build-board.mjs only for its own direct unit test
+     (tools/journey.test.mjs), which checks HTML structure, not styling. */
 
   /* HOME — screens grouped into named areas, one CARD per screen (board R1). No column strip. */
   .grp { margin-bottom:var(--s2); }
@@ -1658,7 +1648,6 @@ export function build () {
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
   <button class="btn sm" id="howbtn">How does it work</button>
-  <button class="btn sm" id="jchip" aria-controls="jrail" aria-expanded="${j.folded ? 'false' : 'true'}">Journey<span class="jdone">${jDone}/${j.steps.length}</span></button>
   <div class="setwrap">
     <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
     <div class="setmenu" id="setmenu" hidden>
@@ -1673,7 +1662,6 @@ export function build () {
     Nothing is waiting on you — only a crawled guess ever needs a look; everything else is proven or unproven by its tests.
   </div>` : ''}
   <div id="home">
-    ${journeyRail(j)}
     ${groups}
   </div>
   <div class="none" id="none">Nothing matches.</div>
@@ -1816,7 +1804,7 @@ export function build () {
 <!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The intro,
      spine, lanes and the four skill flowcharts are baked; only a project's own added skills/agents are
      fetched from /api/capabilities and shown as cards below. -->
-${howView()}
+${howView(ctaAction)}
 
 <div class="lb" id="lb" hidden>
   <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
@@ -2542,6 +2530,10 @@ ${detail}
     if (overview) overview.hidden = false
     const open = document.querySelectorAll('#howview .flow-panel.open')
     for (let i = 0; i < open.length; i++) open[i].classList.remove('open')
+    // Backing out of a deep skill re-collapses the full method (board R11), so the walkthrough
+    // — not the reference it opened into — leads again the next time this view is seen.
+    const fm = document.getElementById('fullmethod')
+    if (fm) fm.open = false
   }
   // Clicking a summary NAVIGATES (pushState + route), so it lands in real history; browser Back then
   // returns to the overview. The back control and Esc both step back the same way.
@@ -2606,17 +2598,6 @@ ${detail}
       if (d < bestd) { bestd = d; best = wsteppers[i] }
     }
     if (best) { best.go(e.key === 'ArrowRight' ? 1 : -1); e.preventDefault() }
-  })
-
-  // The rail folds itself once anything is proven (board R12) and this chip is how you get it back.
-  // Toggle only: every step's state was DERIVED at build time, so there is nothing to recompute here
-  // — the page redraws it on the next build, which is the whole point of not storing it.
-  const jrail = document.getElementById('jrail')
-  const jchip = document.getElementById('jchip')
-  if (jrail && jchip) jchip.addEventListener('click', () => {
-    jrail.hidden = !jrail.hidden
-    // the chip IS the rail's disclosure control, so it has to say which state it is in
-    jchip.setAttribute('aria-expanded', String(!jrail.hidden))
   })
 
   route()
