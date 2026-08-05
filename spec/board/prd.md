@@ -157,3 +157,19 @@ never hides the rest; the recording must be full-size, must scroll the asserted 
 must survive a failure. Fifth: a flow must run through ALL its steps and show EVERY failure (a
 person could not tell what broke when it died at the first), and the failure must be loud — the
 recording's cover frame is a red summary naming the failed steps, and the meta line counts them.*
+
+## R11 — The guide opens with the problem, and teaches reading a test
+
+#howitworks opens with why the tool exists before how it works — four beats: the loop
+(fix one bug, another returns), why it happens (nobody knows the code anymore; slop tests
+prove nothing), what a real test is, and the fix (requirements ↔ proof kept in sync on every
+change). The "real test" beat is a worked storyboard with exact golden numbers — change a
+value, run, watch the chart assert IY1 2,400,000 … IY5 2,671,006.87 exactly, save, and see
+the other page reflect it — every asserted value visible on screen. A "reading a test"
+chapter shows the anatomy of the two-column detail: requirement chip states (proven /
+unproven / not-reached), a test's named beats and their marks, the recording, and the
+many-to-many coverage tags.
+
+*Drafted 2026-08-05 transcribing the approved onboarding design
+(docs/superpowers/specs/2026-08-05-onboarding-and-skill-eval-design.md) — wording awaits the
+human; reword freely, the test asserts content not phrasing.*

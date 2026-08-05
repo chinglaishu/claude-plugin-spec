@@ -229,16 +229,41 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     await expect(page.locator('#reqpane .req[data-state="proven"], #reqpane .req[data-state="unproven"]'))
       .toHaveCount(total)
 
-    // …and that state is ASSERTION-BACKED, not typed. A proven requirement NAMES the passing test(s)
-    // that cover it (real .ctag chips in its covers line); an unproven one says so honestly. If the
-    // derivation were faked — every requirement stamped proven regardless of its tests — a proven row
-    // would have no covering test to name and its .ctag would be missing, and this would fail.
-    const proven = page.locator('#reqpane .req[data-state="proven"]')
-    const provenN = await proven.count()
-    for (let i = 0; i < provenN; i++) {
-      const row = proven.nth(i)
-      await row.locator('.h').click()
-      await expect(row.locator('.covers .ctag').first()).toBeVisible()
+    // …and that state is COMPUTED and ASSERTION-BACKED, never typed. Two things follow, and both are
+    // checked board-wide (every screen's detail is baked into this document):
+    //   (a) ONE derivation, rendered twice — the home card's "N / M proven" count must equal the
+    //       number of proven rows in that screen's own detail. A typed-in state drifts between them.
+    //   (b) green is TAGGED green — a requirement reads proven only where a test tags it. Stamp the
+    //       states in regardless of the tests and the requirements no test tags (conflicts has four)
+    //       would read proven, and this fails.
+    //
+    // Corrected 2026-08-05: this used to click every PROVEN row and assert a `.covers .ctag` chip in
+    // it. That could never pass — reqRow renders `.covers` for UNPROVEN rows only (a proven row
+    // deliberately names no tests, since the E2E column already shows the flow), and `.ctag` has a
+    // CSS rule but no producer anywhere. It went green only while board happened to have ZERO proven
+    // requirements — the one-run dogfooding lag — and red on the very next run.
+    const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
+      const scr = dt.getAttribute('data-screen')
+      const rows = [...dt.querySelectorAll('.reqpane .req')]
+      const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
+        .map(el => el.getAttribute('data-r')))
+      const card = document.querySelector('#home .card[data-screen="' + scr + '"] .pcount')
+      return {
+        screen: scr,
+        card: (card && card.textContent || '').trim(),
+        proven: rows.filter(r => r.getAttribute('data-state') === 'proven').length,
+        // a proven requirement its own screen's tests never tag — coverage rides on the tag (R5),
+        // so if a cross-screen qualified tag ever proves one from ANOTHER pane, widen this lookup
+        untaggedProven: rows
+          .filter(r => r.getAttribute('data-state') === 'proven' && !tagged.has(r.getAttribute('data-r')))
+          .map(r => r.getAttribute('data-r'))
+      }
+    }))
+    expect(surfaces.length).toBeGreaterThan(0)
+    for (const s of surfaces) {
+      expect(s.card, s.screen + ' — the card must state its proven count').toMatch(/^\d+ \/ \d+ proven$/)
+      expect(Number(s.card.split(' ')[0]), s.screen + ' — card count vs detail rows').toBe(s.proven)
+      expect(s.untaggedProven, s.screen + ' — proven without a test tagging it').toEqual([])
     }
     const unproven = page.locator('#reqpane .req[data-state="unproven"]').first()
     if (await unproven.count()) {
@@ -275,11 +300,31 @@ test('A requirement names the tests that cover it', async ({ page }) => {
     const anyMulti = await page.locator('#testpane .test').evaluateAll(
       els => els.some(el => el.querySelectorAll('.tags .tag[data-r]').length >= 1))
     expect(anyMulti).toBeTruthy()
-    // a proven requirement names its covering test(s) in the covers line
-    const proven = page.locator('#reqpane .req[data-state="proven"]').first()
-    if (await proven.count()) {
-      await proven.locator('.h').click()
-      await expect(proven.locator('.covers')).toBeVisible()
+    // …and "fewer tests" can never buy itself a false green. Green is bought by a TAG plus an
+    // assertion, never by a test merely existing on the screen: a screen that HAS tests still shows
+    // every requirement none of them tags as unproven. Today conflicts is exactly that case — one
+    // test, five requirements — so this is not a vacuous check; a shallow walk that touched
+    // everything and tagged nothing would leave those requirements ungreen, which is the point.
+    //
+    // Corrected 2026-08-05: this used to open the first PROVEN requirement and assert a `.covers`
+    // line in it. `.covers` is rendered for UNPROVEN rows only (see the note on R4's test), so the
+    // assertion was unsatisfiable the moment board had a single proven requirement.
+    const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
+      const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
+        .map(el => el.getAttribute('data-r')))
+      const rows = [...dt.querySelectorAll('.reqpane .req')]
+      return {
+        screen: dt.getAttribute('data-screen'),
+        hasTests: dt.querySelectorAll('.testpane .test').length > 0,
+        untagged: rows.filter(r => !tagged.has(r.getAttribute('data-r'))).length,
+        untaggedGreen: rows
+          .filter(r => !tagged.has(r.getAttribute('data-r')) && r.getAttribute('data-state') === 'proven')
+          .map(r => r.getAttribute('data-r'))
+      }
+    }))
+    expect(screens.some(s => s.hasTests && s.untagged > 0)).toBeTruthy()   // the case that makes it real
+    for (const s of screens) {
+      expect(s.untaggedGreen, s.screen + ' — no test tags these, so none may read proven').toEqual([])
     }
   })
 })
@@ -350,5 +395,27 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
       return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
     })
     expect(covers).toBeFalsy()                               // a floating card, not a full-viewport overlay
+  })
+})
+
+test('The guide opens with the problem, and teaches reading a test', async ({ page }) => {
+  await coverReqs('R11')
+  await page.goto('/#howitworks')
+  await page.waitForSelector('#howview:not([hidden])')
+  await checkReq('R11', async () => {
+    // the problem story is the FIRST thing in the overview — before the method
+    const story = page.locator('#how-problem')
+    await expect(story).toBeVisible()
+    expect(await page.locator('#howoverview > :first-child').getAttribute('id')).toBe('how-problem')
+    await expect(story.locator('.beat')).toHaveCount(4)
+    // the worked storyboard carries EXACT golden values, not vibes
+    await expect(story).toContainText('2,400,000')
+    await expect(story).toContainText('2,671,006.87')
+    await expect(story).toContainText('200 psf')
+    // and the anatomy chapter teaches how to read a test
+    const anatomy = page.locator('#how-anatomy')
+    await expect(anatomy).toBeVisible()
+    await expect(anatomy).toContainText('not-reached')
+    await expect(anatomy.locator('.ana-call')).not.toHaveCount(0)
   })
 })

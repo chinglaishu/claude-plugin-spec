@@ -261,6 +261,89 @@ const howSpineCol = c => c.gate
   : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
         <div class="file">${c.file}</div></div>`
 
+// The FIRST chapter of the guide (board R11): why the tool exists, before how it works. Four beats,
+// then a worked storyboard whose frames carry the exact golden values a real test asserts — the
+// point being that "a test" here means a number checked on screen, not a box that exists.
+const HOW_PROBLEM = {
+  beats: [
+    { h: 'The loop', p: 'Fix one bug, another returns. The feature that worked last week quietly breaks under the next one.' },
+    { h: 'Why', p: 'At AI speed nobody knows the code anymore — and AI-slop tests (one button, an assertion no human can see) prove nothing.' },
+    { h: 'A real test', p: 'Exact golden numbers, visible on screen, checked across pages. Not "the box exists" — the number is RIGHT.' },
+    { h: 'The fix', p: 'Requirements on one end, the tests that prove them on the other — kept in sync on every change, so drift shows the moment it happens.' }
+  ],
+  frames: [
+    { k: '1 · change', t: 'Market rent, unit 33A', v: '100 → 200 psf' },
+    { k: '2 · run', t: 'The chart asserts exact values', v: 'IY1 2,400,000 ✓ · IY5 2,671,006.87 ✓' },
+    { k: '3 · save', t: 'Held on screen so a person can watch it happen', v: '' },
+    { k: '4 · cross-page', t: 'Tenancy schedule reflects it', v: '33A · 200 psf ✓' }
+  ]
+}
+const howProblem = () => `<div class="sect" id="how-problem">
+  <div class="sect-head"><span class="lbl">the problem</span>
+    <h2>Why this tool exists</h2><span class="rule"></span></div>
+  <div class="beats">${HOW_PROBLEM.beats.map(b =>
+    `<div class="beat"><h3>${esc(b.h)}</h3><p>${esc(b.p)}</p></div>`).join('')}</div>
+  <div class="frames">${HOW_PROBLEM.frames.map(f =>
+    `<div class="frame"><span class="fk">${esc(f.k)}</span><p>${esc(f.t)}</p>${f.v ? `<div class="fv mono">${esc(f.v)}</div>` : ''}</div>`).join('')}</div>
+  <p class="frames-cap">Every asserted value must be visible in the recording — you can watch it be true.</p>
+</div>`
+
+// "Reading a test" (board R11): a small STATIC mock of the two-column detail, annotated. It reuses
+// the board's OWN classes — .chip/.mark for a requirement's derived state, .beat/.bnum/.bmk for a
+// test's named beats, .tag for coverage — rather than restyling look-alikes, so the guide cannot
+// drift from what the detail actually renders, and a screenshot (which would) is never needed.
+// The requirement chip has exactly TWO states, because that is all the board derives; not-reached is
+// a per-run BEAT outcome, and the call-out below says what it leaves the requirement as.
+const HOW_ANATOMY = {
+  reqs: [
+    { tone: 'ok', mark: 'mark', id: 'R4', t: 'Requirement state is computed and assertion-backed', s: 'proven' },
+    { tone: 'gone', mark: 'mark o', id: 'R6', t: 'Few comprehensive tests — but never long-and-shallow', s: 'unproven' }
+  ],
+  tags: ['R4', 'asset-plan:R5'],
+  beats: [
+    { k: 'p', mk: '✓', t: 'Open Asset Plan — change unit 33A market rent to 200 psf' },
+    { k: 'f', mk: '✕', t: 'Assert the chart — got 2,338,064 · expected 2,396,129' },
+    { k: 'nr', mk: '○', t: 'Open Tenancy Schedule and confirm it reflects' }
+  ],
+  reqCalls: [
+    '<b>proven</b> means a passing assertion that TAGS this requirement would fail without it. <b>unproven</b> is the honest opposite — nothing asserts it yet. Hue never rides alone: every chip also carries a mark.',
+    'Neither state is stored. There is no status field anywhere — both are derived from the tests on every build, so a green can never outlive the assertion that earned it.'
+  ],
+  testCalls: [
+    'The flow’s <b>named beats</b>, in the author’s own words, each wearing its own mark — ✓ passed, ✕ failed, ○ not-reached. A flow runs through every beat, so every failure shows, not only the first.',
+    '<b>not-reached</b> is the honest third mark: this beat was never reached, so it is neither green nor red — and any requirement it would have proved stays <b>unproven</b> rather than quietly passing.',
+    'The <b>recording</b> is the primary evidence: the run narrates itself from a topbar burned into the video, and the cover frame is the last state it asserted.',
+    '<b>Coverage tags</b> are neutral metadata — indigo is reserved for "your turn". Hover the test and they tint, wiring it to every requirement it covers, qualified across screens. Many-to-many, by tag.'
+  ]
+}
+const anaCall = c => `<div class="ana-call"><span class="ana-dash"></span><p>${c}</p></div>`
+const howAnatomy = () => `<div class="sect" id="how-anatomy">
+  <div class="sect-head"><span class="lbl">reading a test</span>
+    <h2>What the two columns are telling you</h2><span class="rule"></span></div>
+  <p class="flow-lead">Open any screen and you get the same two panes. Every part of them, named —
+    built from the board&#39;s own markup, so it cannot drift from what you will actually see.</p>
+  <div class="ana">
+    <div class="ana-side">
+      <div class="ana-cap">1 · Requirements — the source of truth</div>
+      <div class="ana-mock">${HOW_ANATOMY.reqs.map(r =>
+        `<div class="ana-row"><span class="chip ${r.tone}"><span class="${r.mark}"></span></span><span class="ana-id">${esc(r.id)}</span><span class="ana-t">${esc(r.t)}</span><span class="ana-st">${esc(r.s)}</span></div>`).join('')}</div>
+      ${HOW_ANATOMY.reqCalls.map(anaCall).join('')}
+    </div>
+    <div class="ana-side">
+      <div class="ana-cap">2 · E2E tests — the proof</div>
+      <div class="ana-mock">
+        <div class="ana-th"><span class="ana-t">Edit the market rent and prove it downstream</span><span class="tags">${
+          HOW_ANATOMY.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')
+        }</span><span class="chip stale"><span class="mark o"></span>fail</span></div>
+        <div class="ana-beats">${HOW_ANATOMY.beats.map((b, i) =>
+          `<div class="beat ${b.k}"><div class="bh"><span class="bnum">${i + 1}</span><span class="bmk">${b.mk}</span><span class="blbl">${esc(b.t)}</span></div></div>`).join('')}</div>
+        <div class="ana-rec"><span class="ana-play">▶</span>the recording — its cover is the last asserted frame</div>
+      </div>
+      ${HOW_ANATOMY.testCalls.map(anaCall).join('')}
+    </div>
+  </div>
+</div>`
+
 // The five skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
 // time from the definitions below rather than fetched. The node/edge geometry and the SVG chevron
 // connectors are computed HERE, in Node, and emitted as static svg/html; nothing is laid out in the
@@ -544,6 +627,8 @@ const howView = () => `<section class="dt" id="howview" hidden>
            skill's flowchart is shown at #howitworks/<skillId>. -->
       <div id="howoverview">
 
+      ${howProblem()}
+
       <div class="intro">
         <h1>How specboard works</h1>
         <p>Every screen in a project is one row with <b>two ends</b> —
@@ -567,6 +652,8 @@ const howView = () => `<section class="dt" id="howview" hidden>
           <h2>What the screen must do — and the proof it still does it</h2><span class="rule"></span></div>
         <div class="spine-banner">${WORKFLOW.spine.map(howSpineCol).join('')}</div>
       </div>
+
+      ${howAnatomy()}
 
       <div class="sect">
         <div class="sect-head"><span class="lbl">the journey</span>
@@ -1092,6 +1179,56 @@ export function build () {
   #howview .sect-head h2 { font-size:var(--t-lg); }
   #howview .sect-head .lbl { position:relative; top:-1px; }
   #howview .rule { height:1px; background:var(--hair); flex:1; align-self:center; }
+
+  /* the problem story (board R11) — four beats, then the worked storyboard whose frames carry the
+     EXACT golden values. NOTE: .beat is a GLOBAL class (the detail's numbered story rows), so it
+     reaches in here; every property that rule sets is reset explicitly below rather than inherited. */
+  #howview .beats { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s4); margin-bottom:var(--s5); }
+  #howview .beats .beat { border:1px solid var(--hair); border-left:3px solid var(--hair-2);
+    border-radius:var(--r-md); background:var(--paper); margin:0; padding:var(--s4);
+    font-size:var(--t-sm); color:var(--ink-2); }
+  #howview .beats .beat h3 { font-size:var(--t-md); color:var(--ink); margin-bottom:4px; }
+  #howview .beats .beat p { font-size:var(--t-sm); line-height:1.45; }
+  /* the storyboard: one frame per act, its asserted value shown as the value it is */
+  #howview .frames { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s3); }
+  #howview .frame { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--canvas);
+    padding:var(--s3) var(--s4); display:flex; flex-direction:column; gap:var(--s2); }
+  #howview .frame .fk { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4); }
+  #howview .frame p { font-size:var(--t-sm); line-height:1.4; color:var(--ink); }
+  #howview .fv { margin-top:auto; font-family:var(--mono); font-size:var(--t-xs);
+    background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line);
+    border-radius:var(--r-sm); padding:3px var(--s2); }
+  #howview .frames-cap { margin-top:var(--s3); font-size:var(--t-xs); color:var(--ink-3); }
+
+  /* reading a test (board R11) — an annotated STATIC mock of the two-column detail. It borrows the
+     board's own .chip/.mark, .beat/.bnum/.bmk and .tag rules, so the guide renders what the detail
+     renders and cannot drift from it. No new hues: every colour below is an existing token pairing. */
+  #howview .ana { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); align-items:start;
+    margin-top:var(--s5); }
+  #howview .ana-side { display:flex; flex-direction:column; gap:var(--s3); }
+  #howview .ana-cap { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-4); }
+  #howview .ana-mock { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); }
+  #howview .ana-row { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-sm); color:var(--ink); }
+  #howview .ana-row .chip { padding:3px; }
+  #howview .ana-id { flex:none; font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
+  #howview .ana-t { flex:1; min-width:0; }
+  #howview .ana-st { flex:none; font-size:var(--t-xs); color:var(--ink-3); }
+  #howview .ana-th { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; font-size:var(--t-sm);
+    color:var(--ink); padding-bottom:var(--s3); border-bottom:1px solid var(--hair); }
+  #howview .ana-beats .beat:first-child { margin-top:0; }
+  #howview .ana-beats .beat:last-child { margin-bottom:0; }
+  /* coverage tags stay NEUTRAL; hovering the mock tints them, exactly as hovering a real test lights
+     the requirements it covers — the many-to-many wire, never a status colour. */
+  #howview .ana-mock:hover .tag { background:var(--ai-tint); color:var(--ai); }
+  #howview .ana-rec { display:flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
+    border-radius:var(--r); background:var(--wash); padding:var(--s2) var(--s3);
+    font-size:var(--t-xs); color:var(--ink-3); }
+  #howview .ana-play { color:var(--ink); font-size:var(--t-xs); }
+  #howview .ana-call { display:flex; gap:var(--s2); align-items:flex-start; font-size:var(--t-xs);
+    color:var(--ink-2); line-height:1.5; }
+  #howview .ana-call .ana-dash { flex:none; width:var(--s3); height:1px; background:var(--hair-2); margin-top:8px; }
+  #howview .ana-call b { color:var(--ink); }
 
   /* the shared spine banner */
   #howview .spine-banner { display:flex; align-items:stretch; border:1px solid var(--hair);
