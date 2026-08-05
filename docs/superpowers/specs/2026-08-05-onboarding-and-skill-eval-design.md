@@ -136,3 +136,101 @@ work — flagged here because it is the human's top-level doc.
    on dojostack's real data.
 5. Layer 2: `spec/_escapes.md` + the kg-staff skill addition.
 6. Release, then `kg-update` downstream and restart the vendored boards (standing rules).
+
+---
+
+# Revision 2 — the guided walkthrough (2026-08-05, after user feedback + reference research)
+
+## Why revised
+
+The human tried the shipped Design A (problem-first chapter on `#howitworks`) and Design B (the derived
+getting-started rail) and reported both "help nothing": neither presents **problem → solution → user
+flow** to a zero-context user in an easy-to-follow way. A reference page explains mechanics you only
+value *after* you understand the tool; a checklist rail lists clicks you only value *after* you've
+bought in. Both are backwards for onboarding.
+
+## What the reference research found (3 parallel digests, all fetched real pages)
+
+`research-methods.md`, `research-flows.md`, `research-problem.md` in the SDD workspace. The three
+converge on one principle:
+
+> **specboard's thesis is "you can see the proof." So the onboarding must *be* a proof you can see —
+> not a description of one.** The same show-don't-tell grammar works at every level: the problem (a
+> green test beside a wrong screen — Kent C. Dodds), the idea (a card that looks proven beside the same
+> card computed as drifted — Turborepo before/after, mabl inversion), the flow (an exact number
+> rendered on a chart, held, then mirrored on another page with a checkmark — Playwright Trace Viewer,
+> Learn Git Branching).
+
+Delivery pattern shared by every strong flow-explainer: **one self-contained page, click-to-advance
+(never scroll-jacked, never auto-playing — matches the "never auto-advance after a verdict" rule), one
+sticky panel, one value highlighted per step.** Opening shape from Stripe's idempotency post (feel the
+pain → taxonomy of fake greens → name the concept only once wanted → worked example → real code),
+first sentence in the reader's own voice (Shape Up).
+
+## Decisions (the human, 2026-08-05)
+
+- **Scope = replace both.** The walkthrough becomes the `#howitworks` landing. The five method
+  flowcharts (`HOW_FLOWS`) demote to a collapsed "full method" reference reached at the end. The
+  six-step home rail (`#jrail`/`#jchip`) is **cut**; its one useful job (your next concrete action)
+  becomes the walkthrough's closing CTA.
+- **Demo = interactive, market-rent illustration.** Click-to-advance with real client JS; Act 3 is a
+  clearly-labeled **illustration** using the real golden numbers from a real project (dojostack
+  asset-plan), because specboard's own four screens are meta UI. Honest per authored-vs-measured: it is
+  labeled teaching content, never dressed as live board state.
+
+## The four acts
+
+1. **Feel it** — 3–4 symptom lines in the reader's voice ("You fix the bug. Two features later, it's
+   back."), then one falsifiable proof: a green assertion beside the screen showing the wrong value.
+2. **Get it** — "Don't write tests — prove requirements." One before/after: a card as a trusted stored
+   flag vs computed live as drifted. **"drift, computed never stored" is named here, once, on first
+   use.** (The old "reading a test" anatomy folds in here and in Act 3.)
+3. **See it work** — the golden-number demo, click-to-advance, one sticky mock panel: change market
+   rent 100 → 200 psf → Run → chart prints IY1 2,400,000 … IY5 2,671,006.87 directly on the marks and
+   holds them pinned → Save → Tenancy schedule shows 200, checkmarked against Page A (two panels
+   becoming one picture). Illustration banner names the source project.
+4. **Do it on your app** — the flow as verb-phrase steps (kg-init → kg-deep per screen → you confirm
+   the meaning → tests prove it), the five flowcharts as a collapsed "full method" below, and the single
+   derived next-action (`/kg-deep <screen>`, from `journey()`) as the closing CTA.
+
+## Architecture (lowest-risk interactive build)
+
+Follow the existing `HOW_FLOWS` precedent — **bake the heavy content, keep the client JS tiny**:
+
+- A module-level `WALKTHROUGH` data structure (acts → steps) in `tools/build-board.mjs`, rendered to
+  **static stacked DOM at build time** (every step's markup baked, one `data-act`/`data-step` per node).
+- A small client controller (~15 lines) shows one step at a time and advances on Next/Prev + arrow keys;
+  a reached numeric state gets a visible **pinned** affordance and **never auto-advances**. All emitted
+  strings stay backtick-free with `\\n` escapes; `build()`'s `new Function()` guard must keep passing
+  (it bit three times this session — twice inside CSS comments in the emitted literal).
+- `journey.mjs` (derivation), its skeleton vendoring, and the multi-line import guard **survive** from
+  the paused rail work; only the rail *UI* is removed. `journey()` feeds Act 4's CTA.
+- The current `#howitworks` overview/flowchart pages are **re-sequenced, not deleted** — reachable as
+  the collapsed "full method" reference.
+
+## Requirements (both remain `guess:` — the human's wording gate)
+
+- **R11 revised** — from "the guide opens with the problem" to "the guide is a four-act walkthrough
+  (feel it → get it → see it work → do it), click-to-advance, that demonstrates the proof rather than
+  describing it; Act 3 is a labeled illustration asserting exact golden values held on screen and
+  mirrored across a page."
+- **R12 repurposed** — from "a six-step getting-started rail" to "the guide ends with the single derived
+  next action (`journey()`), so a returning user gets their next concrete step without a stored
+  checklist." The rail UI is gone; the derivation remains.
+
+Tests assert **behaviour/content, not phrasing** (rule 2), so the human can reword freely at the gate.
+
+## Superseded / cut
+
+- Design A's standalone story chapter + anatomy sections → folded into the walkthrough Acts.
+- Design B's six-step rail UI (`#jrail`, `#jchip`) → removed; next-action absorbed into Act 4.
+- Nothing from Design C (proof-integrity + escape log, Tasks 2–3, already committed) changes.
+
+## Build order
+
+1. Walkthrough data + static baked DOM (all four acts stacked), routed as the `#howitworks` landing;
+   five flowcharts demoted to collapsed reference. Test-first (R11 revised). Fold in Design A's content.
+2. The client stepper controller (Next/Prev/arrows, pinned, no auto-advance), Playwright-driven.
+3. Cut the rail UI; repurpose R12 to the derived closing CTA fed by `journey()`; update the board's own
+   R12 test.
+4. Human wording-gate on R11/R12; then release 0.21.0 + `kg-update` downstream + restart vendored boards.
