@@ -8,11 +8,14 @@ that prove them:
 | the source of truth | the proof, run against the real app |
 
 The product is about **drift**, computed and never stored. A requirement is **proven** only while a
-test that *tags* it passed on an assertion that would fail without it; reword the requirement and it
-reads **reworded** (awaiting the human); with no passing assertion it reads **unproven** — honestly
-ungreen. **There is no status field anywhere** — every requirement's state is *derived* from the
-stored accept pin and the folded test coverage against the current tree. **One human gate: accept the
-requirements** ("are these what I meant?"). specboard owns **neither the wireframe nor the design** —
+test that *tags* it passed on an assertion that would fail without it; with no passing assertion it
+reads **unproven** — honestly ungreen (a flow that stops early also leaves a per-run **not-reached**
+for whatever it never got to). **There is no status field anywhere** — every requirement's state is
+*derived* solely from the folded test coverage against the current tree. **There is no acceptance
+gate** *(removed by the human 2026-07-30 — see board R8; a decision that is always yes is ceremony,
+not a gate)*: a requirement is canon the moment it is written; a PRD drafted on the human's behalf
+carries `guess: true`, and dropping that flag *is* the acceptance — the one thing on the board still
+waiting on a person (init R3). specboard owns **neither the wireframe nor the design** —
 it tracks requirements and their proof, nothing else (no design field, no external-artifact chip). The
 tool **dogfoods itself**: its own four screens are the cards on its own board.
 
@@ -39,8 +42,8 @@ not do. Never take control away from the user (no auto-advancing after a verdict
    Several tests here were *correctly* broken by good changes and needed their assertions fixed;
    several others were genuinely wrong.
 5. **Requirement *semantics* need the human's gate**: a new REQ, changed REQ text, a deleted REQ, or
-   choosing a canonical side. You edit prose; the human owns meaning, and the one gate is accepting
-   the requirements — never accept them on the human's behalf.
+   choosing a canonical side. You edit prose; the human owns meaning — never drop a `guess:` flag on
+   the human's behalf.
 6. **Correct docs in place, with the reason attached.** When the code teaches you a requirement was
    wrong, fix the requirement and say why inline — conforming a doc silently to the code is how a
    requirement quietly becomes false.
@@ -59,7 +62,7 @@ covers — qualified (`asset-plan:R5`), so a flow can prove another screen's req
 
 `spec/_results-reporter.mjs` folds each run's per-requirement pass/fail/not-reached into
 `spec/_results-index.json`; `tools/coverage.mjs` (pure, unit-tested) and `tools/spec-store.mjs`
-derive each requirement's **proven / reworded / unproven** state. Aim for **few comprehensive** tests
+derive each requirement's **proven / unproven** state. Aim for **few comprehensive** tests
 — one flow proving several requirements — but every requirement still needs a real assertion (rule
 2), so "fewer tests" can never buy a false green. A flow's *file* lives in the screen it **starts**
 on; a requirement lists every test that covers it wherever that file lives.
@@ -69,16 +72,16 @@ on; a requirement lists every test that covers it wherever that file lives.
 ```
 spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess])
 spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq (may also shoot screen.png as a fallback cover)
-spec/<screen>/state.json     the accept pin (approvedPrdText) — the only mutable per-screen state
+spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
 spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
-tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/reworded/unproven
+tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/unproven
 tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
 tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
-tools/serve-board.mjs        server: static allowlist, the accept gate, runs, scan, rewrite, crawl, SSE, watch
+tools/serve-board.mjs        server: static allowlist, runs, scan, rewrite, crawl, SSE, watch (no accept endpoint — the gate is gone, board R8)
 tools/crawl.mjs              the Init crawler — INVENTORY ONLY (a real browser; rows + crawl.png, no drafting; outside the suite)
 tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
 tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
@@ -110,7 +113,8 @@ moves the board's own port.
 `spec/_design.css` is the single source — traditional Japanese dye colours at low saturation on
 unbleached paper. **Never** introduce a raw hex colour, a font size outside the scale, or a radius
 outside the tokens, in the board. Hue names a state but never carries it alone (every chip also has a
-mark). **Indigo means one thing only — "your turn"** (a reworded requirement, the open gate); coverage
+mark). **Indigo means one thing only — "your turn"** (a screen whose PRD still carries a `guess:`
+flag, waiting on the human's correction — there is no gate anymore, board R8); coverage
 tags are **neutral** and tint indigo only on hover to show the many-to-many link. Exactly **one**
 inverted element per screen. An action wears the colour of the state it produces. Every text/background
 pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
@@ -163,12 +167,13 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
 - **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`
-  tags its own R1–R10 with `checkReq`; R4 and R8 transiently write **and restore** `spec/board/state.json`
-  to prove the accept transition, and the state guard restores it at teardown too. So editing board's
-  requirements passes the suite while the live board stays honestly **reworded** (awaiting acceptance)
-  until the human accepts — and because the board proves itself, the *first* run after editing
-  `board/test.spec.ts` can lag one run behind (its own coverage folds at that run's end). Never **accept
-  board's requirements yourself** to make the live board green — that is the human's gate.
+  tags its own R1–R10 with `checkReq`; R4 and R8 now *assert the gate is gone* (no reworded state, no
+  gate bar, no accept button) rather than transiently touching any file — the tests no longer write or
+  restore `spec/board/state.json` (that file is a pre-redesign relic, see Architecture). Because the
+  board proves itself, the *first* run after editing `board/test.spec.ts` can lag one run behind (its
+  own coverage folds at that run's end). The standing rule survives the mechanism change: never drop a
+  PRD's `guess:` flag, or edit a requirement's wording just to make its test go green — that is still
+  the human's call, not yours.
 
 ## Authored vs measured
 
