@@ -80,12 +80,15 @@ const J_ACT = {
   confirm: 'Delete the guess: line in that screen prd.md',
   prove: 'Run all'
 }
-const journeyRail = j => `
+// Exported so the RENDERER is unit-tested, not only the derivation (the same reason renderBody is):
+// this repo's own journey is finished, so a live board here can never draw a current step — the one
+// thing the rail exists for. tools/journey.test.mjs drives a mid-journey shape through it directly.
+export const journeyRail = j => `
 <div id="jrail"${j.folded ? ' hidden' : ''}>
   <div class="jhd"><span class="jttl">Getting started</span>
     <span class="gbn">six steps, each one derived from the tree — nothing is stored</span></div>
   <ol class="jsteps">${j.steps.map((s, n) => `
-    <li class="jstep${s.done ? ' done' : s.current ? ' cur' : ''}">
+    <li class="jstep${s.done ? ' done' : s.current ? ' cur' : ''}" data-id="${esc(s.id)}">
       <span class="jtop"><span class="mark${s.done ? '' : s.current ? ' h' : ' o'}"></span><span class="jn">${n + 1}</span><span class="jt">${esc(s.title)}</span></span>
       <span class="jfact">${esc(s.fact)}</span>${s.current
       ? `<span class="jact">${esc(s.cmd || J_ACT[s.id] || '')}</span>` : ''}
@@ -860,14 +863,20 @@ export function build () {
   .jn { font:var(--t-micro) var(--mono); color:var(--ink-3); }
   .jt { font-size:var(--t-sm); color:var(--ink-2); letter-spacing:-.01em; }
   .jfact { font:var(--t-micro)/1.35 var(--mono); color:var(--ink-3); }
+  /* the mark takes the state's hue like every chip on the board — .mark paints from currentColor, so
+     it must be in these lists or it silently keeps body ink while the text around it moves. The
+     not-yet step gets the caption's ink for the same reason: full-strength ink made the mark the
+     loudest thing in the quietest step. */
+  .jstep .mark { color:var(--ink-3); }
   .jstep.done { background:var(--koke-tint); border-color:var(--koke-line); }
-  .jstep.done .jn, .jstep.done .jt, .jstep.done .jfact { color:var(--koke); }
+  .jstep.done .jn, .jstep.done .jt, .jstep.done .jfact, .jstep.done .mark { color:var(--koke); }
   /* INDIGO = your turn, and the current step is exactly that — the one thing to do next. Tinted,
      never inverted: the board keeps a single inverted element. */
   .jstep.cur { background:var(--ai-tint); border-color:var(--ai-line); }
-  .jstep.cur .jn, .jstep.cur .jt, .jstep.cur .jfact { color:var(--ai); }
-  .jact { margin-top:2px; font-size:var(--t-xs); color:var(--ai); overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap; }
+  .jstep.cur .jn, .jstep.cur .jt, .jstep.cur .jfact, .jstep.cur .mark { color:var(--ai); }
+  /* the action WRAPS. It is the one affordance on the rail, and a six-column grid is narrow enough
+     that an ellipsis would truncate exactly the words telling you what to do. */
+  .jact { margin-top:2px; font-size:var(--t-xs); color:var(--ai); overflow-wrap:anywhere; }
   .jdone { font:var(--t-micro) var(--mono); color:var(--ink-3); }
 
   /* HOME — screens grouped into named areas, one CARD per screen (board R1). No column strip. */
@@ -1500,7 +1509,7 @@ export function build () {
   <button class="btn sm" id="cfbtn">Conflicts<span class="chip stale cfn" id="cfcount" hidden></span></button>
   <button class="btn sm" id="initbtn">Set up</button>
   <button class="btn sm" id="howbtn">How does it work</button>
-  <button class="btn sm" id="jchip">Journey<span class="jdone">${jDone}/${j.steps.length}</span></button>
+  <button class="btn sm" id="jchip" aria-controls="jrail" aria-expanded="${j.folded ? 'false' : 'true'}">Journey<span class="jdone">${jDone}/${j.steps.length}</span></button>
   <div class="setwrap">
     <button class="btn sm gear" id="setbtn" aria-label="Settings" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
     <div class="setmenu" id="setmenu" hidden>
@@ -2400,7 +2409,11 @@ ${detail}
   // — the page redraws it on the next build, which is the whole point of not storing it.
   const jrail = document.getElementById('jrail')
   const jchip = document.getElementById('jchip')
-  if (jrail && jchip) jchip.addEventListener('click', () => { jrail.hidden = !jrail.hidden })
+  if (jrail && jchip) jchip.addEventListener('click', () => {
+    jrail.hidden = !jrail.hidden
+    // the chip IS the rail's disclosure control, so it has to say which state it is in
+    jchip.setAttribute('aria-expanded', String(!jrail.hidden))
+  })
 
   route()
 

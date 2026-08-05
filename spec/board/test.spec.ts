@@ -456,7 +456,19 @@ test('The getting-started rail derives, folds, and reopens', async ({ page }) =>
     await chip.click()
     await expect(rail).toBeVisible()
     await expect(rail.locator('.jstep')).toHaveCount(6)
-    await expect(rail.locator('.jstep.done')).toHaveCount(6)      // every derived fact holds here
+    // A proof may not depend on an untracked, machine-local file. spec/_config.json is gitignored, so
+    // "point it at your app" is done on THIS machine and undone in a fresh clone — a flat
+    // toHaveCount(6) here would go red on a clone for a reason that is not a defect. Assert instead
+    // the five steps whose facts derive from COMMITTED files (prd.md files, _results-index.json), and
+    // tie the total to the chip's own count, which must agree with the rail it summarises.
+    for (const id of ['install', 'crawl', 'deepen', 'confirm', 'prove'])
+      await expect(rail.locator('.jstep[data-id="' + id + '"]')).toHaveClass(/\bdone\b/)
+    const n = Number(((await chip.textContent()) || '').match(/(\d+)\s*\/\s*6/)?.[1])
+    expect(n === 5 || n === 6).toBeTruthy()      // 5 in a fresh clone, 6 once the app is configured
+    await expect(rail.locator('.jstep.done')).toHaveCount(n)
+    // the one step config decides is the one that is NOT tracked — and it is the current step exactly
+    // when it is not done, which is what makes the rail a live derivation rather than a picture
+    await expect(rail.locator('.jstep[data-id="config"]')).toHaveClass(n === 6 ? /\bdone\b/ : /\bcur\b/)
     await expect(rail.locator('.jstep .jfact').first()).toContainText('board is serving')
     await chip.click()
     await expect(rail).toBeHidden()

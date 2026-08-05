@@ -101,12 +101,30 @@ test('every relative import of a vendored file is itself vendored', () => {
   // HERE and fatal THERE: build-board.mjs importing an unvendored sibling throws ERR_MODULE_NOT_FOUND
   // on the project's first `npm run board:build`, and the board never renders again. This caught
   // exactly that for tools/journey.mjs the day it was added.
+  // The .ts half matters just as much — spec/_state-guard.ts imports ./_seed, spec/_fixture.ts
+  // imports ../tools/build-board.mjs — and those specifiers are extensionless, so a bare list check
+  // would miss them. Accept the path as written or with a .ts/.mjs extension added.
+  const vendored = dep => FILES.includes(dep) ||
+    FILES.includes(dep + '.ts') || FILES.includes(dep + '.mjs') || FILES.includes(dep + '.js')
+  // What counts as an import, and what does NOT. A blunt scan for a quoted './…' reads three things
+  // that are not dependencies: an example inside a comment (spec/_seed.ts), an import inside a STRING
+  // that writes a generated spec file (spec/_fixture.ts), and resolve(…, '..') (tools/spec-store.mjs).
+  // So: statements are anchored to the start of a line and must carry `from`, and dynamic imports —
+  // spec/_state-guard.ts loads ./_seed.ts that way, mid-line — are matched only after line comments
+  // are stripped.
+  const PATTERNS = [
+    /^\s*(?:import|export)\b[^'"\n]*?\bfrom\s*['"](\.[^'"]+)['"]/gm,  // import/export … from './x'
+    /^\s*import\s+['"](\.[^'"]+)['"]/gm,                              // side-effect import './x'
+    /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g                        // await import('./x')
+  ]
   const missing = []
-  for (const rel of FILES.filter(f => f.endsWith('.mjs'))) {
-    const src = readFileSync(new URL('../' + rel, import.meta.url), 'utf8')
-    for (const m of src.matchAll(/(?:from|import)\s*\(?\s*['"](\.[^'"]+)['"]/g)) {
-      const dep = join(dirname(rel), m[1])
-      if (!FILES.includes(dep)) missing.push(rel + ' -> ' + dep)
+  for (const rel of FILES.filter(f => /\.(mjs|ts)$/.test(f))) {
+    const src = readFileSync(new URL('../' + rel, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '')
+    for (const pattern of PATTERNS) {
+      for (const m of src.matchAll(pattern)) {
+        const dep = join(dirname(rel), m[1])
+        if (!vendored(dep)) missing.push(rel + ' -> ' + m[1])
+      }
     }
   }
   assert.deepEqual(missing, [], 'imported but not vendored')
