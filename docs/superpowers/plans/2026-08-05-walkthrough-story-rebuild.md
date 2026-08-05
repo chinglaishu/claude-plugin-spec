@@ -133,3 +133,49 @@ The named Write → Tag → Run → Fold → Derive strip threaded above the act
 
 ### Release gate (unchanged)
 Held for the human's explicit go: R11/R12 wording (guess flags), version bump 0.21.0, push, dojostack kg-update.
+
+---
+
+## Stage 1R (added after checkpoint 1): Acts 1–2 become WATCHABLE SCENES
+
+**Checkpoint-1 verdict:** the human rejected the prose-step form ("no one will watch — I expect real
+visualization"). The approved direction (mock taste-locked 2026-08-05): every step is a drawn,
+animated mock-app scene — things move, numbers land, chips flip. Acts 1–2 first, checkpoint after.
+
+**Scene grammar (from the approved mock):**
+- A scene = a small drawn mock (HTML/CSS or inline SVG) baked into the step's DOM; its animation
+  PLAYS when the step is revealed and ENDS IN A HELD STATE (animation-fill-mode: forwards; no
+  loops, no timers advancing steps — the stepper stays click-driven).
+- The `.wstep` show/hide is display-based, so CSS animations restart naturally each time a step is
+  entered — no new client JS.
+- `prefers-reduced-motion: reduce` shows end-states with no motion.
+- Tokens only; bengara = failure beats, koke = ok beats, indigo ONLY on the you-confirm beat (it is
+  your-turn); every state carries a mark; WCAG AA; captions shrink to ≤1 line under each scene.
+
+**The eight scenes:**
+- A1 S1 *Assigning work*: chat mock — manager bubble "Build the rent-edit feature.", staff bubble
+  "Done, boss!" pops instantly, then the thread scrolls up and fades (the task lost in scroll); a
+  ghosted empty-document icon lands: nothing written down.
+- A1 S2 *Reviewing*: a wall of greeked code lines + a green "40 tests passing" badge; nothing else
+  to look at — the caption's "you approve blindly" is the only readable thing.
+- A1 S3 *Two weeks later*: a calendar flips ×2; a feature card cracks to bengara; a "fix" visibly
+  REWRITES the requirement label instead of the code; counter: same bug · 3rd time.
+- A1 S4 *the proof*: split scene — left a green assertion chip (`toBeVisible ✓`), right a mock
+  screen with rent = 100 highlighted stale; "NOBODY LOOKED" between them. (Evolves the existing
+  proof step into a drawn scene.)
+- A2 S1 *Assigning work*: the chat bubble transforms into a written requirement card; a `guess:`
+  flag chip on it; the flag drops when "you confirm the meaning" (indigo beat) — the one thing
+  waiting on you.
+- A2 S2 *Reviewing*: staff hands over a recording player mock — inside it, a miniature of the
+  golden scene (table cell → chart values visible) plays once; "you review by watching."
+- A2 S3 *Two weeks later*: a code line mutates; the board-mock's chip flips proven → unproven the
+  same instant; "you see drift when it happens."
+- A2 S4 *mirror*: the two summaries drawn side-by-side — same hire, same speed; left column's
+  beats in bengara marks, right column's in koke; one line: the difference is a system.
+
+**Task contract:** same files as Stage 1 (build-board.mjs, spec/board/test.spec.ts; prd.md only if
+R11 needs a scene-truthful clause — propose, don't decide). TDD: R11 test gains falsifiable
+scene assertions (presence + end-state content: "Done, boss" bubble, 40-passing badge, stale 100,
+the guess-flag element, the proven→unproven flip pair) — RED first. Suite green on a free port;
+build guard passes; sequenced AFTER the doctrine pass lands (same-file).
+**CHECKPOINT 1R:** live board to the human; wait. Acts 3–4 scenes are a later slice, same grammar.
