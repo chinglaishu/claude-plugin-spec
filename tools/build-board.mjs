@@ -294,95 +294,160 @@ const howSpineCol = c => c.gate
   : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
         <div class="file">${c.file}</div></div>`
 
-// The FIRST chapter of the guide (board R11): why the tool exists, before how it works. Four beats,
-// then a worked storyboard whose frames carry the exact golden values a real test asserts — the
-// point being that "a test" here means a number checked on screen, not a box that exists.
-const HOW_PROBLEM = {
-  beats: [
-    { h: 'The loop', p: 'Fix one bug, another returns. The feature that worked last week quietly breaks under the next one.' },
-    { h: 'Why', p: 'At AI speed nobody knows the code anymore — and AI-slop tests (one button, an assertion no human can see) prove nothing.' },
-    { h: 'A real test', p: 'Exact golden numbers, visible on screen, checked across pages. Not "the box exists" — the number is RIGHT.' },
-    { h: 'The fix', p: 'Requirements on one end, the tests that prove them on the other — kept in sync on every change, so drift shows the moment it happens.' }
-  ],
-  frames: [
-    { k: '1 · change', t: 'Market rent, unit 33A', v: '100 → 200 psf' },
-    { k: '2 · run', t: 'The chart asserts exact values', v: 'IY1 2,400,000 ✓ · IY5 2,671,006.87 ✓' },
-    { k: '3 · save', t: 'Held on screen so a person can watch it happen', v: '' },
-    { k: '4 · cross-page', t: 'Tenancy schedule reflects it', v: '33A · 200 psf ✓' }
+// The guide (board R11) — a four-act, click-to-advance walkthrough that DEMONSTRATES the proof
+// rather than describing it: feel it, get it, see it work, do it. Every act and every step is baked
+// here as static DOM (all steps present); the click-to-advance controller and Act 4's derived next
+// action are a later pass. The heavy content lives in this one module-level literal, exactly like
+// WORKFLOW / HOW_FLOWS, so howView() only interpolates the finished string.
+//   Act 3 is an explicitly LABELLED illustration of a real asset-plan flow — a .wpin banner names it
+// in words, so it can never be mistaken for live board state (authored vs measured); its goldens are
+// real values shown AS an illustration. The anatomy the old #how-anatomy taught — proven / unproven /
+// not-reached, the mark that rides every hue, coverage tags — is folded into the act copy below.
+//   INVERSION / INDIGO: indigo is spent only on Act 4 — the "you confirm the meaning" step (a tint)
+// and the CTA action (the one solid-indigo "your turn" element). Act 1's invisible-green failure
+// wears the board's own solid `chip bad`, the single inverted element of that act. Because the acts
+// step one at a time (a later pass), each act is its own view with ONE inverted element; rendered
+// all-at-once here they read as two, the same documented trade the old anatomy chapter made.
+const WALKTHROUGH = {
+  acts: [
+    { n: 1, title: 'Feel it', sub: 'recognition, then one proof you cannot argue with',
+      steps: [
+        { kind: 'symptoms', lines: [
+          'You fix the bug. Two features later, it is back.',
+          'A feature that worked yesterday is broken today, and nothing you touched explains why.',
+          'You ask the AI for tests. It writes 40. None of them would have caught this.'] },
+        { kind: 'proof', green: 'test green', wrong: 'screen shows rent = 100 (stale)',
+          note: 'The assertion passed. Nobody looked at the screen. A green you cannot see is a guess you pay for later.' }
+      ] },
+    { n: 2, title: 'Get it', sub: 'the reframe — named once, only now that you want it',
+      steps: [
+        { kind: 'inversion', head: 'Do not write tests. Prove requirements.' },
+        { kind: 'beforeafter', before: 'stored status: proven — looks fine',
+          after: 'computed live: drifted — the text moved, the proof did not',
+          note: 'Nothing changed except that we stopped trusting a field you can lie to. This is drift, computed never stored.' }
+      ] },
+    { n: 3, title: 'See it work', sub: 'a real flow, held on screen, checked across pages',
+      illustration: 'Illustration — a real asset-plan flow from a real project',
+      steps: [
+        { kind: 'demo', step: '1', body: 'Change market rent, unit 33A: 100 to 200 psf' },
+        { kind: 'demo', step: '2', body: 'Click Run. The chart asserts exact values, and holds them:',
+          rows: ['IY1  2,400,000', 'IY3  2,630,687.10', 'IY5  2,671,006.87'] },
+        { kind: 'demo', step: '3', body: 'Click Save, then open the Tenancy schedule' },
+        { kind: 'crosspage', a: 'Page A after Save: 200', b: 'Page B on load: 200',
+          note: 'Every asserted value is visible in the recording. The carry-over is two panels becoming one picture, not a sentence.' }
+      ] },
+    { n: 4, title: 'Do it on your app', sub: 'the flow, and the full method underneath',
+      steps: [
+        { kind: 'flow', chain: ['kg-init', 'kg-deep · per screen', 'you confirm the meaning', 'tests prove it'] },
+        { kind: 'cta', lead: 'Next on your board:', action: '/kg-deep <screen>' }
+      ] }
   ]
 }
-const howProblem = () => `<div class="sect" id="how-problem">
-  <div class="sect-head"><span class="lbl">the problem</span>
-    <h2>Why this tool exists</h2><span class="rule"></span></div>
-  <div class="beats">${HOW_PROBLEM.beats.map(b =>
-    `<div class="beat"><h3>${esc(b.h)}</h3><p>${esc(b.p)}</p></div>`).join('')}</div>
-  <div class="frames">${HOW_PROBLEM.frames.map(f =>
-    `<div class="frame"><span class="fk">${esc(f.k)}</span><p>${esc(f.t)}</p>${f.v ? `<div class="fv mono">${esc(f.v)}</div>` : ''}</div>`).join('')}</div>
-  <p class="frames-cap">Every asserted value must be visible in the recording — you can watch it be true.</p>
-</div>`
 
-// "Reading a test" (board R11): a small STATIC mock of the two-column detail, annotated. It reuses
-// the board's OWN classes — .chip/.mark for a requirement's derived state, .beat/.bnum/.bmk for a
-// test's named beats, .tag for coverage — rather than restyling look-alikes, so the guide cannot
-// drift from what the detail actually renders, and a screenshot (which would) is never needed.
-// The requirement chip has exactly TWO states, because that is all the board derives; not-reached is
-// a per-run BEAT outcome, and the call-out below says what it leaves the requirement as.
-// DELIBERATE EXCEPTION to "exactly one inverted element per screen": the failing row wears the real
-// `chip bad` (solid bengara), which the board's own detail renders — the rule guards the FOCAL
-// inversion, and this is a 20px chip inside a framed illustration, not the page's emphasis. The
-// focal inverted element on this view is still .gates-badge. Do not "fix" this to a tint: a chapter
-// that teaches a chip the board never draws is worse than a second small inversion.
-const HOW_ANATOMY = {
-  reqs: [
-    { tone: 'ok', mark: 'mark', id: 'R4', t: 'Requirement state is computed and assertion-backed', s: 'proven' },
-    { tone: 'gone', mark: 'mark o', id: 'R6', t: 'Few comprehensive tests — but never long-and-shallow', s: 'unproven' }
-  ],
-  tags: ['R4', 'asset-plan:R5'],
-  beats: [
-    { k: 'p', mk: '✓', t: 'Open Asset Plan — change unit 33A market rent to 200 psf' },
-    // the same scenario the storyboard above walks, so it quotes the SAME goldens — the "got" is a
-    // perturbed value (this beat is failing), but what the flow EXPECTED is the storyboard's number
-    { k: 'f', mk: '✕', t: 'Assert the chart — IY5 got 2,338,064 · expected 2,671,006.87' },
-    { k: 'nr', mk: '○', t: 'Open Tenancy Schedule and confirm it reflects' }
-  ],
-  reqCalls: [
-    '<b>proven</b> means a passing assertion that TAGS this requirement would fail without it. <b>unproven</b> is the honest opposite — nothing asserts it yet. Hue never rides alone: every chip also carries a mark.',
-    'Neither state is stored. There is no status field anywhere — both are derived from the tests on every build, so a green can never outlive the assertion that earned it.'
-  ],
-  testCalls: [
-    'The flow’s <b>named beats</b>, in the author’s own words, each wearing its own mark — ✓ passed, ✕ failed, ○ not-reached. A flow runs through every beat, so every failure shows, not only the first.',
-    '<b>not-reached</b> is the honest third mark: this beat was never reached, so it is neither green nor red — and any requirement it would have proved stays <b>unproven</b> rather than quietly passing.',
-    'The <b>recording</b> is the primary evidence: the run narrates itself from a topbar burned into the video, and the cover frame is the last state it asserted.',
-    '<b>Coverage tags</b> are neutral metadata — indigo is reserved for "your turn". Hover the test and they tint, wiring it to every requirement it covers, qualified across screens. Many-to-many, by tag.'
-  ]
+// Marks ride every hue (design rule): reuse #howview .mk — a filled 6px square, hollow (.o) for an
+// absent state, a diamond (.d) for "your turn" — so the guide draws the board's own marks.
+const wMark = cls => '<span class="mk ' + cls + '"></span>'
+
+// One walkthrough step, carrying data-step (1-based) and data-wact (its act) for the later stepping
+// controller. The act index is deliberately NOT emitted as data-act: the R11 test selects
+// [data-act="N"], and a wstep that shared that attribute would make it strict-match more than the
+// one .act it means. Every wstep still lives inside its .act[data-act], so the act is never lost.
+const wStepNode = (actN, i, kind, inner) =>
+  '<div class="wstep k-' + kind + '" data-wact="' + actN + '" data-step="' + (i + 1) + '">' + inner + '</div>'
+
+const wSymptoms = lines =>
+  '<ul class="wsym">' + lines.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>'
+
+// The invisible green: a real passing chip beside the wrong value the screen actually shows. chip.bad
+// is the board's own solid failure chip (this act's one inverted element); the note carries the lesson.
+const wProof = s =>
+  '<div class="wproof">' +
+    '<span class="chip ok"><span class="mark"></span>' + esc(s.green) + '</span>' +
+    '<span class="wsep">nobody looked &#8594;</span>' +
+    '<span class="chip bad"><span class="mark o"></span>' + esc(s.wrong) + '</span>' +
+  '</div>' +
+  '<p class="wnote">' + esc(s.note) + '</p>'
+
+const wReframe = s => '<p class="wreframe">' + esc(s.head) + '</p>'
+
+// Before / after: the SAME requirement read as a stored flag (looks proven) then computed live
+// (drifted). Both are tints — proven-looking koke, drifted bengara — never a solid block.
+const wBeforeAfter = s =>
+  '<div class="wba">' +
+    '<span class="chip ok"><span class="mark"></span>' + esc(s.before) + '</span>' +
+    '<span class="wba-arw" aria-hidden="true">&#8594;</span>' +
+    '<span class="chip stale"><span class="mark"></span>' + esc(s.after) + '</span>' +
+  '</div>' +
+  '<p class="wnote">' + esc(s.note) + '</p>'
+
+const wDemo = s =>
+  '<div class="wds">' +
+    '<span class="wds-n mono">' + esc(s.step) + '</span>' +
+    '<div class="wds-b"><p>' + esc(s.body) + '</p>' +
+      (s.rows ? '<div class="wgold">' + s.rows.map(r => '<div class="wgrow mono">' + esc(r) + '</div>').join('') + '</div>' : '') +
+    '</div>' +
+  '</div>'
+
+// The carry-over: two panels becoming one picture — Page A after Save equals Page B on load.
+const wCrosspage = s =>
+  '<div class="wcross">' +
+    '<div class="wcp"><span class="wcp-v mono">' + esc(s.a) + '</span></div>' +
+    '<span class="wcp-eq" aria-hidden="true">=</span>' +
+    '<div class="wcp"><span class="wcp-v mono">' + esc(s.b) + '</span></div>' +
+  '</div>' +
+  '<p class="wnote">' + esc(s.note) + '</p>'
+
+// The flow as verb-phrase steps; the human's step ("you confirm the meaning") wears indigo = your turn.
+const wFlow = s =>
+  '<div class="wflow">' + s.chain.map((c, i) => {
+    const yours = /confirm/i.test(c)
+    const node = '<span class="wfn' + (yours ? ' yours' : '') + '">' + (yours ? wMark('d') : '') + esc(c) + '</span>'
+    return (i ? '<span class="wfa" aria-hidden="true">&#8594;</span>' : '') + node
+  }).join('') + '</div>'
+
+// The single next action, in the "your turn" indigo treatment — the one inverted element of Act 4.
+const wCta = s =>
+  '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' +
+    '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(s.action) + '</span></span></div>'
+
+const wStepInner = s => {
+  switch (s.kind) {
+    case 'symptoms': return wSymptoms(s.lines)
+    case 'proof': return wProof(s)
+    case 'inversion': return wReframe(s)
+    case 'beforeafter': return wBeforeAfter(s)
+    case 'demo': return wDemo(s)
+    case 'crosspage': return wCrosspage(s)
+    case 'flow': return wFlow(s)
+    case 'cta': return wCta(s)
+    default: return ''
+  }
 }
-const anaCall = c => `<div class="ana-call"><span class="ana-dash"></span><p>${c}</p></div>`
-const howAnatomy = () => `<div class="sect" id="how-anatomy">
-  <div class="sect-head"><span class="lbl">reading a test</span>
-    <h2>What the two columns are telling you</h2><span class="rule"></span></div>
-  <p class="flow-lead">Open any screen and you get the same two panes. Every part of them, named —
-    built from the board&#39;s own markup, so it cannot drift from what you will actually see.</p>
-  <div class="ana">
-    <div class="ana-side">
-      <div class="ana-cap">1 · Requirements — the source of truth</div>
-      <div class="ana-mock">${HOW_ANATOMY.reqs.map(r =>
-        `<div class="ana-row"><span class="chip ${r.tone}"><span class="${r.mark}"></span></span><span class="ana-id">${esc(r.id)}</span><span class="ana-t">${esc(r.t)}</span><span class="ana-st">${esc(r.s)}</span></div>`).join('')}</div>
-      ${HOW_ANATOMY.reqCalls.map(anaCall).join('')}
-    </div>
-    <div class="ana-side">
-      <div class="ana-cap">2 · E2E tests — the proof</div>
-      <div class="ana-mock">
-        <div class="ana-th"><span class="ana-t">Edit the market rent and prove it downstream</span><span class="tags">${
-          HOW_ANATOMY.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')
-        }</span><span class="chip bad"><span class="mark o"></span>fail</span></div>
-        <div class="ana-beats">${HOW_ANATOMY.beats.map((b, i) =>
-          `<div class="beat ${b.k}"><div class="bh"><span class="bnum">${i + 1}</span><span class="bmk">${b.mk}</span><span class="blbl">${esc(b.t)}</span></div></div>`).join('')}</div>
-        <div class="ana-rec"><span class="ana-play">▶</span>the recording — its cover is the last asserted frame</div>
-      </div>
-      ${HOW_ANATOMY.testCalls.map(anaCall).join('')}
-    </div>
-  </div>
-</div>`
+
+const wAct = a => {
+  const steps = a.steps.map((s, i) => wStepNode(a.n, i, s.kind, wStepInner(s))).join('')
+  // Act 3 gathers its steps inside a single labelled demo panel; the .wpin banner is what keeps the
+  // illustration honest — it says, in words, that this is not live board state.
+  const body = a.illustration
+    ? '<div class="wdemo"><div class="wpin">' + wMark('o') + esc(a.illustration) + '</div>' + steps + '</div>'
+    : '<div class="wsteps">' + steps + '</div>'
+  return '<section class="act" data-act="' + a.n + '">' +
+    '<div class="act-h"><span class="act-n">' + a.n + '</span>' +
+    '<div class="act-t"><h2>' + esc(a.title) + '</h2><span class="act-sub">' + esc(a.sub) + '</span></div></div>' +
+    body + '</section>'
+}
+
+// The walkthrough IS the #howitworks landing (board R11). A quiet map of the four beats heads it; its
+// pips carry data-pip (never data-act), so the R11 test's [data-act="N"] stays the four .act sections.
+const walkthrough = () =>
+  '<div id="walkthrough">' +
+    '<div class="wt-map">' + WALKTHROUGH.acts.map(a =>
+      '<span class="wt-pip" data-pip="' + a.n + '"><span class="wt-pn">' + a.n + '</span>' + esc(a.title) + '</span>')
+      .join('<span class="wt-sep" aria-hidden="true">&#8594;</span>') +
+    '</div>' +
+    WALKTHROUGH.acts.map(wAct).join('') +
+  '</div>'
+
 
 // The five skills, drawn as flowcharts — a fixed part of the specboard method, so baked at build
 // time from the definitions below rather than fetched. The node/edge geometry and the SVG chevron
@@ -662,12 +727,23 @@ const howView = () => `<section class="dt" id="howview" hidden>
   <div class="dtscroll cfscroll">
     <div class="howwrap">
 
+      <!-- The walkthrough IS the landing (board R11): a four-act, click-to-advance guide that SHOWS
+           the proof. It is the first thing in the view, and — until you open the reference below — the
+           only thing. The click-to-advance controller is a later pass; every act is present here. -->
+      ${walkthrough()}
+
+      <!-- The full method, demoted to a collapsed reference (board R11). It wraps the old overview and
+           the skill flowcharts; a native <details> is the "See the full method" control reached from
+           the end of Act 4 — no client JS (that is a later pass). The deep #howitworks/<skillId> pages
+           and their router (skillShow / skillReset toggling #howoverview / #skilldetail) are unchanged;
+           when the disclosure is closed those toggles simply have nothing to show, which is the point. -->
+      <details id="fullmethod">
+        <summary>See the full method — the spine, the journey, and the five skills drawn</summary>
+
       <!-- The overview (#howoverview): intro, the row, the two lanes, the five COLLAPSED skill summary
            cards, and the project's own skills. Shown at #howitworks; hidden wholesale while a single
            skill's flowchart is shown at #howitworks/<skillId>. -->
       <div id="howoverview">
-
-      ${howProblem()}
 
       <div class="intro">
         <h1>How specboard works</h1>
@@ -692,8 +768,6 @@ const howView = () => `<section class="dt" id="howview" hidden>
           <h2>What the screen must do — and the proof it still does it</h2><span class="rule"></span></div>
         <div class="spine-banner">${WORKFLOW.spine.map(howSpineCol).join('')}</div>
       </div>
-
-      ${howAnatomy()}
 
       <div class="sect">
         <div class="sect-head"><span class="lbl">the journey</span>
@@ -742,6 +816,8 @@ const howView = () => `<section class="dt" id="howview" hidden>
         </div>
         <div class="skill-flows">${howFlowcharts()}</div>
       </div>
+
+      </details><!-- /#fullmethod -->
 
     </div>
   </div>
@@ -1266,55 +1342,89 @@ export function build () {
   #howview .sect-head .lbl { position:relative; top:-1px; }
   #howview .rule { height:1px; background:var(--hair); flex:1; align-self:center; }
 
-  /* the problem story (board R11) — four beats, then the worked storyboard whose frames carry the
-     EXACT golden values. NOTE: .beat is a GLOBAL class (the detail's numbered story rows), so it
-     reaches in here; every property that rule sets is reset explicitly below rather than inherited. */
-  #howview .beats { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s4); margin-bottom:var(--s5); }
-  #howview .beats .beat { border:1px solid var(--hair); border-left:3px solid var(--hair-2);
-    border-radius:var(--r-md); background:var(--paper); margin:0; padding:var(--s4);
-    font-size:var(--t-sm); color:var(--ink-2); }
-  #howview .beats .beat h3 { font-size:var(--t-md); color:var(--ink); margin-bottom:4px; }
-  #howview .beats .beat p { font-size:var(--t-sm); line-height:1.45; }
-  /* the storyboard: one frame per act, its asserted value shown as the value it is */
-  #howview .frames { display:grid; grid-template-columns:repeat(4,1fr); gap:var(--s3); }
-  #howview .frame { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--canvas);
-    padding:var(--s3) var(--s4); display:flex; flex-direction:column; gap:var(--s2); }
-  #howview .frame .fk { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-4); }
-  #howview .frame p { font-size:var(--t-sm); line-height:1.4; color:var(--ink); }
-  #howview .fv { margin-top:auto; font-family:var(--mono); font-size:var(--t-xs);
-    background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line);
-    border-radius:var(--r-sm); padding:3px var(--s2); }
-  #howview .frames-cap { margin-top:var(--s3); font-size:var(--t-xs); color:var(--ink-3); }
-
-  /* reading a test (board R11) — an annotated STATIC mock of the two-column detail. It borrows the
-     board's own .chip/.mark, .beat/.bnum/.bmk and .tag rules, so the guide renders what the detail
-     renders and cannot drift from it. No new hues: every colour below is an existing token pairing. */
-  #howview .ana { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); align-items:start;
-    margin-top:var(--s5); }
-  #howview .ana-side { display:flex; flex-direction:column; gap:var(--s3); }
-  #howview .ana-cap { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-4); }
-  #howview .ana-mock { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
-    padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3); }
-  #howview .ana-row { display:flex; align-items:center; gap:var(--s2); font-size:var(--t-sm); color:var(--ink); }
-  #howview .ana-row .chip { padding:3px; }
-  #howview .ana-id { flex:none; font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
-  #howview .ana-t { flex:1; min-width:0; }
-  #howview .ana-st { flex:none; font-size:var(--t-xs); color:var(--ink-3); }
-  #howview .ana-th { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; font-size:var(--t-sm);
-    color:var(--ink); padding-bottom:var(--s3); border-bottom:1px solid var(--hair); }
-  #howview .ana-beats .beat:first-child { margin-top:0; }
-  #howview .ana-beats .beat:last-child { margin-bottom:0; }
-  /* coverage tags stay NEUTRAL; hovering the mock tints them, exactly as hovering a real test lights
-     the requirements it covers — the many-to-many wire, never a status colour. */
-  #howview .ana-mock:hover .tag { background:var(--ai-tint); color:var(--ai); }
-  #howview .ana-rec { display:flex; align-items:center; gap:var(--s2); border:1px solid var(--hair-2);
-    border-radius:var(--r); background:var(--wash); padding:var(--s2) var(--s3);
+  /* the guide, as a four-act walkthrough (board R11) — LAYOUT only. Every colour, size, radius and
+     mark is a token or a board class reused from above; no raw hue is introduced here. The acts are
+     all present; a later pass steps them one at a time. Indigo is spent only in Act 4 (.wfn.yours,
+     .wcta-act), and the one solid element per act is chip.bad in Act 1 and .wcta-act in Act 4. */
+  #howview #walkthrough { margin-top:var(--s5); display:flex; flex-direction:column; gap:var(--s6); }
+  /* a quiet map of the four beats — pips carry data-pip, never data-act */
+  #howview .wt-map { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2);
     font-size:var(--t-xs); color:var(--ink-3); }
-  #howview .ana-play { color:var(--ink); font-size:var(--t-xs); }
-  #howview .ana-call { display:flex; gap:var(--s2); align-items:flex-start; font-size:var(--t-xs);
-    color:var(--ink-2); line-height:1.5; }
-  #howview .ana-call .ana-dash { flex:none; width:var(--s3); height:1px; background:var(--hair-2); margin-top:8px; }
-  #howview .ana-call b { color:var(--ink); }
+  #howview .wt-pip { display:inline-flex; align-items:center; gap:6px; padding:4px var(--s2);
+    background:var(--wash); border-radius:var(--r-sm); color:var(--ink-2); }
+  #howview .wt-pn { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px;
+    flex:none; border-radius:50%; background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair-2);
+    font-size:var(--t-micro); color:var(--ink-3); }
+  #howview .wt-sep { color:var(--ink-4); }
+
+  /* one act */
+  #howview .act { border:1px solid var(--hair); border-radius:var(--r-md); background:var(--paper);
+    padding:var(--s5); }
+  #howview .act-h { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+  #howview .act-n { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px;
+    flex:none; border-radius:50%; background:var(--wash); box-shadow:inset 0 0 0 1px var(--hair-2);
+    font-size:var(--t-sm); color:var(--ink-3); }
+  #howview .act-t h2 { font-size:var(--t-lg); }
+  #howview .act-sub { display:block; margin-top:2px; font-size:var(--t-sm); color:var(--ink-3); }
+  #howview .wsteps { display:flex; flex-direction:column; gap:var(--s4); }
+  #howview .wstep { display:flex; flex-direction:column; gap:var(--s3); }
+  #howview .wnote { font-size:var(--t-sm); color:var(--ink-2); line-height:1.5; max-width:760px; }
+
+  /* Act 1 — feel it: the symptom lines, then a green chip beside the wrong screen value */
+  #howview .wsym { list-style:none; display:flex; flex-direction:column; gap:var(--s2); }
+  #howview .wsym li { position:relative; padding-left:var(--s4); font-size:var(--t-md); color:var(--ink);
+    line-height:1.5; }
+  #howview .wsym li::before { content:""; position:absolute; left:0; top:.7em; width:7px; height:1px;
+    background:var(--line3); }
+  #howview .wproof { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
+  #howview .wsep { font-size:var(--t-micro); letter-spacing:.06em; color:var(--ink-4); text-transform:uppercase; }
+
+  /* Act 2 — get it: a bald reframe, then before/after as two tints (never a solid block) */
+  #howview .wreframe { font-size:var(--t-lg); color:var(--ink); letter-spacing:-.01em; }
+  #howview .wba { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
+  #howview .wba-arw, #howview .wcp-eq, #howview .wfa { color:var(--ink-4); font-size:var(--t-sm); flex:none; }
+
+  /* Act 3 — see it work: an explicitly LABELLED illustration, never dressed as live board state */
+  #howview .wdemo { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--canvas);
+    padding:var(--s4); display:flex; flex-direction:column; gap:var(--s4); }
+  #howview .wpin { display:inline-flex; align-self:flex-start; align-items:center; gap:6px;
+    padding:4px var(--s3); border-radius:var(--r-sm); background:var(--wash);
+    box-shadow:inset 0 0 0 1px var(--hair-2); font-size:var(--t-xs); color:var(--ink-2); letter-spacing:.02em; }
+  #howview .wds { display:flex; gap:var(--s3); }
+  #howview .wds-n { flex:none; width:22px; height:22px; display:inline-flex; align-items:center;
+    justify-content:center; border-radius:50%; background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair-2);
+    font-size:var(--t-xs); color:var(--ink-3); }
+  #howview .wds-b { display:flex; flex-direction:column; gap:var(--s2); min-width:0; }
+  #howview .wds-b p { font-size:var(--t-sm); color:var(--ink); line-height:1.5; }
+  #howview .wgold { display:flex; flex-wrap:wrap; gap:var(--s2); }
+  #howview .wgrow { font-size:var(--t-xs); color:var(--ink); background:var(--paper);
+    box-shadow:inset 0 0 0 1px var(--hair-2); border-radius:var(--r-sm); padding:3px var(--s2);
+    white-space:pre; }
+  #howview .wcross { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
+  #howview .wcp { flex:1; min-width:150px; border:1px solid var(--hair-2); border-radius:var(--r);
+    background:var(--paper); padding:var(--s3); }
+  #howview .wcp-v { font-size:var(--t-sm); color:var(--ink); }
+
+  /* Act 4 — do it: indigo is spent here and ONLY here (design rule: indigo == your turn) */
+  #howview .wflow { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); }
+  #howview .wfn { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s3);
+    border-radius:var(--r); background:var(--wash); font-size:var(--t-sm); color:var(--ink-2); }
+  #howview .wfn.yours { background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  #howview .wcta { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s2); }
+  #howview .wcta-lead { font-size:var(--t-md); color:var(--ink); }
+  #howview .wcta-act { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s4);
+    border-radius:var(--r); background:var(--ai); color:var(--paper); font-size:var(--t-sm); }
+
+  /* the full method, demoted to a collapsed native disclosure — the guide shows the proof, this is
+     where the old spine / journey / flowcharts survive as reference, reached from the end of Act 4 */
+  #howview #fullmethod { margin-top:var(--s7); border-top:1px solid var(--hair); }
+  #howview #fullmethod > summary { list-style:none; cursor:pointer; display:inline-flex; align-items:center;
+    gap:var(--s2); margin-top:var(--s5); padding:var(--s2) var(--s3); border:1px solid var(--hair-2);
+    border-radius:var(--r); background:var(--paper); font-size:var(--t-sm); color:var(--ink-2); }
+  #howview #fullmethod > summary::-webkit-details-marker { display:none; }
+  #howview #fullmethod > summary::after { content:"▸"; color:var(--ink-4); }
+  #howview #fullmethod[open] > summary::after { content:"▾"; color:var(--ink-4); }
+  #howview #fullmethod #howoverview { margin-top:var(--s5); }
 
   /* the shared spine banner */
   #howview .spine-banner { display:flex; align-items:stretch; border:1px solid var(--hair);

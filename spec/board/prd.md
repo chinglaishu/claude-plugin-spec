@@ -158,21 +158,20 @@ must survive a failure. Fifth: a flow must run through ALL its steps and show EV
 person could not tell what broke when it died at the first), and the failure must be loud — the
 recording's cover frame is a red summary naming the failed steps, and the meta line counts them.*
 
-## R11 — The guide opens with the problem, and teaches reading a test
+## R11 — The guide is a walkthrough that demonstrates the proof
 
-#howitworks opens with why the tool exists before how it works — four beats: the loop
-(fix one bug, another returns), why it happens (nobody knows the code anymore; slop tests
-prove nothing), what a real test is, and the fix (requirements ↔ proof kept in sync on every
-change). The "real test" beat is a worked storyboard with exact golden numbers — change a
-value, run, watch the chart assert IY1 2,400,000 … IY5 2,671,006.87 exactly, save, and see
-the other page reflect it — every asserted value visible on screen. A "reading a test"
-chapter shows the anatomy of the two-column detail: requirement chip states (proven /
-unproven / not-reached), a test's named beats and their marks, the recording, and the
-many-to-many coverage tags.
+#howitworks is a four-act, click-to-advance walkthrough, not a reference page: **feel it** (symptom
+lines in the reader's own words, then one green assertion shown beside the screen it fails to prove),
+**get it** (one before/after — a requirement that looks proven as a stored flag vs computed live as
+drifted — where "drift, computed never stored" is named once), **see it work** (a labeled illustration
+of a real flow: change a value → Run → a chart asserts exact golden values held on screen — IY1
+2,400,000 … IY5 2,671,006.87 — → Save → another page shows the value carried over, checked against the
+first), and **do it on your app** (the flow as verb-phrase steps, the full method available as a
+collapsed reference, and the single next action to take). The walkthrough shows the proof rather than
+describing it; the old method flowcharts survive as reference, reached from the end.
 
-*Drafted 2026-08-05 transcribing the approved onboarding design
-(docs/superpowers/specs/2026-08-05-onboarding-and-skill-eval-design.md) — wording awaits the
-human; reword freely, the test asserts content not phrasing.*
+*Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — wording
+awaits the human; reword freely, the test asserts content not phrasing.*
 
 ## R12 — A getting-started rail derives the journey, never stores it
 

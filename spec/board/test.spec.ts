@@ -408,40 +408,29 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
   })
 })
 
-test('The guide opens with the problem, and teaches reading a test', async ({ page }) => {
+test('The guide is a four-act walkthrough that shows the proof', async ({ page }) => {
   await coverReqs('R11')
   await page.goto('/#howitworks')
   await page.waitForSelector('#howview:not([hidden])')
   await checkReq('R11', async () => {
-    // the problem story is the FIRST thing in the overview — before the method
-    const story = page.locator('#how-problem')
-    await expect(story).toBeVisible()
-    expect(await page.locator('#howoverview > :first-child').getAttribute('id')).toBe('how-problem')
-    await expect(story.locator('.beat')).toHaveCount(4)
-    // the worked storyboard carries EXACT golden values, not vibes
-    await expect(story).toContainText('2,400,000')
-    await expect(story).toContainText('2,671,006.87')
-    await expect(story).toContainText('200 psf')
-    // and the anatomy chapter teaches how to read a test
-    const anatomy = page.locator('#how-anatomy')
-    await expect(anatomy).toBeVisible()
-    await expect(anatomy).toContainText('not-reached')
-    await expect(anatomy.locator('.ana-call')).not.toHaveCount(0)
-
-    // …and the anatomy draws the board's OWN chips, or the chapter teaches a board that does not
-    // exist: a failing test row is the real chip('bad', 'mark o', 'fail'), and a requirement wears
-    // reqChip's own pair — proven = `chip ok`, unproven = `chip gone`. Swap in a look-alike tone and
-    // this fails.
-    await expect(anatomy.locator('.ana-th .chip')).toHaveClass(/\bbad\b/)
-    await expect(anatomy.locator('.ana-row .chip').first()).toHaveClass(/\bok\b/)
-    await expect(anatomy.locator('.ana-row .chip').nth(1)).toHaveClass(/\bgone\b/)
-    // and the overview legend must name that SAME chip for unproven — one appearance, one meaning,
-    // on the page that claims it cannot drift from what you will actually see
-    await expect(page.locator('#howoverview .legend .chip', { hasText: 'unproven' }))
-      .toHaveClass(/\bgone\b/)
-    // the storyboard and the anatomy walk the SAME scenario, so they quote the same goldens — a
-    // failing "got" is a perturbed value, but what the flow EXPECTED is the storyboard's number
-    await expect(anatomy).toContainText('2,671,006.87')
+    const wt = page.locator('#walkthrough')
+    await expect(wt).toBeVisible()
+    // the walkthrough IS the landing — first thing in the view, before the full-method reference
+    expect(await page.locator('#howview .dtscroll >> #walkthrough, #howview #walkthrough').first().isVisible()).toBeTruthy()
+    await expect(wt.locator('.act')).toHaveCount(4)
+    // Act 1 feel-it carries symptom lines and a green-beside-wrong proof
+    await expect(wt.locator('[data-act="1"]')).toContainText('back')
+    // Act 2 names the concept once
+    await expect(wt.locator('[data-act="2"]')).toContainText('computed')
+    // Act 3 is a LABELLED illustration with the exact goldens held on screen
+    const demo = wt.locator('.wdemo')
+    await expect(demo.locator('.wpin')).toContainText(/illustration/i)
+    await expect(demo).toContainText('2,400,000')
+    await expect(demo).toContainText('2,671,006.87')
+    await expect(demo).toContainText('200 psf')
+    // Act 4 shows the flow and the full method survives as a collapsed reference
+    await expect(wt.locator('[data-act="4"]')).toContainText('kg-deep')
+    await expect(page.locator('#fullmethod')).toHaveCount(1)
   })
 })
 
