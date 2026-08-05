@@ -242,6 +242,10 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // deliberately names no tests, since the E2E column already shows the flow), and `.ctag` has a
     // CSS rule but no producer anywhere. It went green only while board happened to have ZERO proven
     // requirements — the one-run dogfooding lag — and red on the very next run.
+    //   R5's "a requirement lists every test that covers it" is NOT lost with that line: the board
+    // serves it with the hover wire instead — hovering a requirement lights every test tagging it
+    // and vice versa (build-board.mjs ~1771/1779), which is what the R5 test above asserts. So the
+    // many-to-many listing is proven; it is simply proven where it now lives, not in a covers line.
     const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
       const scr = dt.getAttribute('data-screen')
       const rows = [...dt.querySelectorAll('.reqpane .req')]
@@ -252,8 +256,12 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
         screen: scr,
         card: (card && card.textContent || '').trim(),
         proven: rows.filter(r => r.getAttribute('data-state') === 'proven').length,
-        // a proven requirement its own screen's tests never tag — coverage rides on the tag (R5),
-        // so if a cross-screen qualified tag ever proves one from ANOTHER pane, widen this lookup
+        // a proven requirement its own screen's tests never tag. Coverage rides on the tag (R5), and
+        // this lookup is PER-PANE, so a cross-screen qualified tag would break it BOTH ways and both
+        // must be fixed together: the owning screen sees a proven requirement with no local tag and
+        // fails here, while the tagging screen — testRow strips the qualifier, rendering
+        // `asset-plan:R5` as a bare data-r="R5" (build-board.mjs ~146) — would falsely satisfy this
+        // check for its OWN R5. Widen to qualified ids on both sides the day one is introduced.
         untaggedProven: rows
           .filter(r => r.getAttribute('data-state') === 'proven' && !tagged.has(r.getAttribute('data-r')))
           .map(r => r.getAttribute('data-r'))
@@ -307,8 +315,10 @@ test('A requirement names the tests that cover it', async ({ page }) => {
     // everything and tagged nothing would leave those requirements ungreen, which is the point.
     //
     // Corrected 2026-08-05: this used to open the first PROVEN requirement and assert a `.covers`
-    // line in it. `.covers` is rendered for UNPROVEN rows only (see the note on R4's test), so the
-    // assertion was unsatisfiable the moment board had a single proven requirement.
+    // line in it. `.covers` is rendered for UNPROVEN rows only (see the note on R4's test, which
+    // also explains why R5's "a requirement lists every test that covers it" survives that removal —
+    // the hover wire carries it). The old assertion was unsatisfiable the moment board had a single
+    // proven requirement. Same per-pane / stripped-qualifier caveat as R4's check applies here.
     const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
       const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
         .map(el => el.getAttribute('data-r')))
@@ -417,5 +427,20 @@ test('The guide opens with the problem, and teaches reading a test', async ({ pa
     await expect(anatomy).toBeVisible()
     await expect(anatomy).toContainText('not-reached')
     await expect(anatomy.locator('.ana-call')).not.toHaveCount(0)
+
+    // …and the anatomy draws the board's OWN chips, or the chapter teaches a board that does not
+    // exist: a failing test row is the real chip('bad', 'mark o', 'fail'), and a requirement wears
+    // reqChip's own pair — proven = `chip ok`, unproven = `chip gone`. Swap in a look-alike tone and
+    // this fails.
+    await expect(anatomy.locator('.ana-th .chip')).toHaveClass(/\bbad\b/)
+    await expect(anatomy.locator('.ana-row .chip').first()).toHaveClass(/\bok\b/)
+    await expect(anatomy.locator('.ana-row .chip').nth(1)).toHaveClass(/\bgone\b/)
+    // and the overview legend must name that SAME chip for unproven — one appearance, one meaning,
+    // on the page that claims it cannot drift from what you will actually see
+    await expect(page.locator('#howoverview .legend .chip', { hasText: 'unproven' }))
+      .toHaveClass(/\bgone\b/)
+    // the storyboard and the anatomy walk the SAME scenario, so they quote the same goldens — a
+    // failing "got" is a perturbed value, but what the flow EXPECTED is the storyboard's number
+    await expect(anatomy).toContainText('2,671,006.87')
   })
 })

@@ -104,8 +104,12 @@ const runAll = name =>
 
 // LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
 // the long, formatted description collapses behind it and one click on the header reveals the full
-// markdown. An open body ends in a covers line NAMING the tests that prove it, or an honest "no test
-// asserts this yet" when it is unproven (R6). A requirement is never faked green.
+// markdown. An UNPROVEN row's open body ends in an honest "no test asserts this yet" line (R6); a
+// proven one ends with the body. A requirement is never faked green.
+// (Corrected 2026-08-05: this said an open body "ends in a covers line NAMING the tests that prove
+// it". That line was removed from reqRow below — the E2E column already shows the flow — but the
+// comment was left behind, and two board tests then asserted a `.covers .ctag` chip that nothing
+// renders. A comment describing behaviour the code dropped is how a dead test survives review.)
 const reqRow = r => {
   // A proven requirement names NO tests here — the E2E column already shows the flow that proves it,
   // so a "proven by …" line would just repeat it. An UNPROVEN one still says so plainly (board R6):
@@ -294,6 +298,11 @@ const howProblem = () => `<div class="sect" id="how-problem">
 // drift from what the detail actually renders, and a screenshot (which would) is never needed.
 // The requirement chip has exactly TWO states, because that is all the board derives; not-reached is
 // a per-run BEAT outcome, and the call-out below says what it leaves the requirement as.
+// DELIBERATE EXCEPTION to "exactly one inverted element per screen": the failing row wears the real
+// `chip bad` (solid bengara), which the board's own detail renders — the rule guards the FOCAL
+// inversion, and this is a 20px chip inside a framed illustration, not the page's emphasis. The
+// focal inverted element on this view is still .gates-badge. Do not "fix" this to a tint: a chapter
+// that teaches a chip the board never draws is worse than a second small inversion.
 const HOW_ANATOMY = {
   reqs: [
     { tone: 'ok', mark: 'mark', id: 'R4', t: 'Requirement state is computed and assertion-backed', s: 'proven' },
@@ -302,7 +311,9 @@ const HOW_ANATOMY = {
   tags: ['R4', 'asset-plan:R5'],
   beats: [
     { k: 'p', mk: '✓', t: 'Open Asset Plan — change unit 33A market rent to 200 psf' },
-    { k: 'f', mk: '✕', t: 'Assert the chart — got 2,338,064 · expected 2,396,129' },
+    // the same scenario the storyboard above walks, so it quotes the SAME goldens — the "got" is a
+    // perturbed value (this beat is failing), but what the flow EXPECTED is the storyboard's number
+    { k: 'f', mk: '✕', t: 'Assert the chart — IY5 got 2,338,064 · expected 2,671,006.87' },
     { k: 'nr', mk: '○', t: 'Open Tenancy Schedule and confirm it reflects' }
   ],
   reqCalls: [
@@ -334,7 +345,7 @@ const howAnatomy = () => `<div class="sect" id="how-anatomy">
       <div class="ana-mock">
         <div class="ana-th"><span class="ana-t">Edit the market rent and prove it downstream</span><span class="tags">${
           HOW_ANATOMY.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')
-        }</span><span class="chip stale"><span class="mark o"></span>fail</span></div>
+        }</span><span class="chip bad"><span class="mark o"></span>fail</span></div>
         <div class="ana-beats">${HOW_ANATOMY.beats.map((b, i) =>
           `<div class="beat ${b.k}"><div class="bh"><span class="bnum">${i + 1}</span><span class="bmk">${b.mk}</span><span class="blbl">${esc(b.t)}</span></div></div>`).join('')}</div>
         <div class="ana-rec"><span class="ana-play">▶</span>the recording — its cover is the last asserted frame</div>
@@ -643,7 +654,7 @@ const howView = () => `<section class="dt" id="howview" hidden>
           <span class="chip rev"><span class="mk d"></span>your gate — your turn</span>
           <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
           <span class="chip run"><span class="mk"></span>running — a job in flight</span>
-          <span class="chip stale"><span class="mk"></span>unproven — needs a proof</span>
+          <span class="chip gone"><span class="mk o"></span>unproven — needs a proof</span>
         </div>
       </div>
 
@@ -902,9 +913,12 @@ export function build () {
   .req .body em { color:var(--ink-3); font-style:italic; }
   .req .body code { font:var(--t-xs) var(--mono); background:var(--sunk); border:1px solid var(--hair);
     border-radius:var(--r-sm); padding:1px 5px; }
+  /* the honest "no test asserts this yet" line on an UNPROVEN requirement. (The .ctag rule that used
+     to sit here was deleted 2026-08-05: reqRow stopped rendering per-test chips in this line long
+     ago, so nothing produced a .ctag — and the orphaned rule was exactly what made a dead assertion
+     on it look plausible to two board tests.) */
   .covers { margin-top:var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-4);
     display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-  .covers .ctag { background:var(--wash); color:var(--ink-3); border-radius:var(--r-sm); padding:1px 6px; }
   .covers .nocov { color:var(--ink-4); }
 
   /* a test — collapsible: title + coverage tags + status when closed; open to a recording, run/watch,
@@ -1168,6 +1182,11 @@ export function build () {
   #howview .legend .chip.ok { background:var(--koke-tint); color:var(--koke); box-shadow:inset 0 0 0 1px var(--koke-line); }
   #howview .legend .chip.run { background:var(--yamabuki-tint); color:var(--yamabuki); box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
   #howview .legend .chip.stale { background:var(--bengara-tint); color:var(--bengara); box-shadow:inset 0 0 0 1px var(--bengara-line); }
+  /* unproven wears the board's OWN chip. reqChip draws it as chip.gone + a hollow mark, so the
+     legend must draw it that way too — it used to borrow bengara chip.stale, which the flow legend
+     below already spends on "re-look", leaving one appearance carrying two meanings on the page
+     whose whole claim is that it cannot drift from what you will actually see. */
+  #howview .legend .chip.gone { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
   #howview .mk { width:6px; height:6px; flex:none; background:currentColor; }
   #howview .mk.o { background:transparent; box-shadow:inset 0 0 0 1px currentColor; }
   #howview .mk.d { transform:rotate(45deg); }
