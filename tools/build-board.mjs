@@ -298,10 +298,13 @@ const howSpineCol = c => c.gate
         <div class="file">${c.file}</div></div>`
 
 // The guide (board R11) — a four-act, click-to-advance walkthrough that DEMONSTRATES the proof
-// rather than describing it: feel it, get it, see it work, do it. Every act and every step is baked
-// here as static DOM (all steps present); the click-to-advance controller and Act 4's derived next
-// action are a later pass. The heavy content lives in this one module-level literal, exactly like
-// WORKFLOW / HOW_FLOWS, so howView() only interpolates the finished string.
+// rather than describing it: without the tool, with the tool, see it work, do it. Acts 1 and 2 are a
+// MIRROR — the same three moments (assigning work, reviewing, two weeks later) told twice, once for a
+// fast hire whose work you cannot review and once with the system that makes it reviewable. The
+// comparison is the argument, so neither act may be tinted to win it: the only hue in the pair is Act
+// 1's failure chip. Every act and every step is baked here as static DOM (all steps present; the
+// stepper only moves which one is .on). The heavy content lives in this one module-level literal,
+// exactly like WORKFLOW / HOW_FLOWS, so howView() only interpolates the finished string.
 //   Act 3 is an explicitly LABELLED illustration of a real asset-plan flow — a .wpin banner names it
 // in words, so it can never be mistaken for live board state (authored vs measured); its goldens are
 // real values shown AS an illustration. The anatomy the old #how-anatomy taught — proven / unproven /
@@ -313,26 +316,25 @@ const howSpineCol = c => c.gate
 // never indigo: CLAUDE.md is absolute that indigo means "your turn" and nothing else, and a folded
 // board has no turn left to take (board R12 fix; see wCtaAction / wCta below). Act 1's invisible-green
 // failure wears the board's own solid `chip bad`, the single inverted element of that act. Because the
-// acts step one at a time (a later pass), each act is its own view with ONE inverted element; rendered
+// acts step one at a time, each act is its own view with ONE inverted element; rendered
 // all-at-once here they read as two (when the CTA is in its 'turn' state), the same documented trade
 // the old anatomy chapter made.
 const WALKTHROUGH = {
   acts: [
-    { n: 1, title: 'Feel it', sub: 'recognition, then one proof you cannot argue with',
+    { n: 1, title: 'Without the tool', sub: 'a brilliant, fast hire whose work you cannot review',
       steps: [
-        { kind: 'symptoms', lines: [
-          'You fix the bug. Two features later, it is back.',
-          'A feature that worked yesterday is broken today, and nothing you touched explains why.',
-          'You ask the AI for tests. It writes 40. None of them would have caught this.'] },
+        { kind: 'moment', label: 'Assigning work', body: '"Build the rent-edit feature." — "Done, boss!" The task now lives only in a chat scroll. Nothing is written down.' },
+        { kind: 'moment', label: 'Reviewing', body: '"Does it work?" You get a wall of code and "all 40 tests pass." You cannot check any of it without reading everything — so you approve blindly.' },
+        { kind: 'moment', label: 'Two weeks later', body: 'The feature breaks. Staff — no memory of the old decision — fixes it by changing what it was supposed to do. Same bug, third time.' },
         { kind: 'proof', green: 'test green', wrong: 'screen shows rent = 100 (stale)',
-          note: 'The assertion passed. Nobody looked at the screen. A green you cannot see is a guess you pay for later.' }
+          note: 'The assertion passed. Nobody looked at the screen. A green you cannot see is trust, not review.' }
       ] },
-    { n: 2, title: 'Get it', sub: 'the reframe — named once, only now that you want it',
+    { n: 2, title: 'With the tool', sub: 'the same hire, plus a system that makes work reviewable',
       steps: [
-        { kind: 'inversion', head: 'Do not write tests. Prove requirements.' },
-        { kind: 'beforeafter', before: 'stored status: proven — looks fine',
-          after: 'computed live: drifted — the text moved, the proof did not',
-          note: 'Nothing changed except that we stopped trusting a field you can lie to. This is drift, computed never stored.' }
+        { kind: 'moment', label: 'Assigning work', body: 'The task becomes a written requirement — one shared document. Staff drafts it; you confirm the meaning. That is your only gate.' },
+        { kind: 'moment', label: 'Reviewing', body: 'The work arrives as a recording where every asserted number is visible on screen. You review by watching, not by reading code.' },
+        { kind: 'moment', label: 'Two weeks later', body: 'The moment a proof stops holding, the requirement flips to unproven — you see drift when it happens, not two weeks after. Proven is computed from the tests, never stored.' },
+        { kind: 'mirror', note: 'Same hire, same speed. The difference is a system: work arrives reviewable by watching, and a written discipline makes the classic mistakes hard.' }
       ] },
     { n: 3, title: 'See it work', sub: 'a real flow, held on screen, checked across pages',
       illustration: 'Illustration — a real asset-plan flow from a real project',
@@ -372,8 +374,19 @@ const wStepNode = (actN, i, kind, inner, pinned) =>
     (pinned ? '<span class="wpinned"><span class="mk"></span>held on screen — this value stays</span>' : '') +
   '</div>'
 
-const wSymptoms = lines =>
-  '<ul class="wsym">' + lines.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>'
+// One MOMENT in the story (board R11): a captioned beat — the label names the situation ("Assigning
+// work"), the body tells it. Acts 1 and 2 carry the SAME three labels in the same order, so the two
+// acts read as one mirror: the argument is the comparison, not any sentence inside it.
+const wMoment = s =>
+  '<div class="wmoment">' +
+    '<span class="wm-label">' + esc(s.label) + '</span>' +
+    '<p class="wm-body">' + esc(s.body) + '</p>' +
+  '</div>'
+
+// The closing note of Act 2 — a quiet full-width frame that names what actually changed between the
+// two acts. Deliberately NOT a chip or a solid: it is the reader's own conclusion, restated once.
+const wMirror = s =>
+  '<div class="wmirror">' + wMark('n') + '<p class="wnote">' + esc(s.note) + '</p></div>'
 
 // The invisible green: a real passing chip beside the wrong value the screen actually shows. chip.bad
 // is the board's own solid failure chip (this act's one inverted element); the note carries the lesson.
@@ -382,18 +395,6 @@ const wProof = s =>
     '<span class="chip ok"><span class="mark"></span>' + esc(s.green) + '</span>' +
     '<span class="wsep">nobody looked &#8594;</span>' +
     '<span class="chip bad"><span class="mark o"></span>' + esc(s.wrong) + '</span>' +
-  '</div>' +
-  '<p class="wnote">' + esc(s.note) + '</p>'
-
-const wReframe = s => '<p class="wreframe">' + esc(s.head) + '</p>'
-
-// Before / after: the SAME requirement read as a stored flag (looks proven) then computed live
-// (drifted). Both are tints — proven-looking koke, drifted bengara — never a solid block.
-const wBeforeAfter = s =>
-  '<div class="wba">' +
-    '<span class="chip ok"><span class="mark"></span>' + esc(s.before) + '</span>' +
-    '<span class="wba-arw" aria-hidden="true">&#8594;</span>' +
-    '<span class="chip stale"><span class="mark"></span>' + esc(s.after) + '</span>' +
   '</div>' +
   '<p class="wnote">' + esc(s.note) + '</p>'
 
@@ -454,12 +455,14 @@ const wCta = (s, cta) => {
   return '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' + pill + '</div>'
 }
 
+// The story rebuild (board R11) retired three kinds with their data — 'symptoms' (Act 1's bullet list
+// of pains), 'inversion' and 'beforeafter' (the old Act 2). Their renderers and CSS are deleted rather
+// than parked: no act references them any more, and a dead branch is a lie about what this page draws.
 const wStepInner = (s, ctaAction) => {
   switch (s.kind) {
-    case 'symptoms': return wSymptoms(s.lines)
+    case 'moment': return wMoment(s)
+    case 'mirror': return wMirror(s)
     case 'proof': return wProof(s)
-    case 'inversion': return wReframe(s)
-    case 'beforeafter': return wBeforeAfter(s)
     case 'demo': return wDemo(s)
     case 'crosspage': return wCrosspage(s)
     case 'flow': return wFlow(s)
@@ -1372,7 +1375,7 @@ export function build () {
 
   /* the guide, as a four-act walkthrough (board R11) — LAYOUT only. Every colour, size, radius and
      mark is a token or a board class reused from above; no raw hue is introduced here. The acts are
-     all present; a later pass steps them one at a time. Indigo is spent only in Act 4 (.wfn.yours,
+     all present; the stepper shows one step of each at a time. Indigo is spent only in Act 4 (.wfn.yours,
      .wcta-act), and the one solid element per act is chip.bad in Act 1 and .wcta-act in Act 4 — but
      ONLY while there is a real next action (board R12 fix). Once the journey is folded, the CTA wears
      .wcta-settled instead — the same koke/"ok" tint tokens as this page's own proven/settled chips
@@ -1422,19 +1425,24 @@ export function build () {
   #howview .wcount { min-width:44px; text-align:center; font-size:var(--t-xs); color:var(--ink-3);
     letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 
-  /* Act 1 — feel it: the symptom lines, then a green chip beside the wrong screen value */
-  #howview .wsym { list-style:none; display:flex; flex-direction:column; gap:var(--s2); }
-  #howview .wsym li { position:relative; padding-left:var(--s4); font-size:var(--t-md); color:var(--ink);
-    line-height:1.5; }
-  #howview .wsym li::before { content:""; position:absolute; left:0; top:.7em; width:7px; height:1px;
-    background:var(--line3); }
+  /* Acts 1 & 2 — the same three moments, told without the tool then with it. Layout only: the label is
+     the board's existing micro/uppercase caption treatment (compare .wsep), the body the reading size.
+     No hue at all in a moment — the mirror is the argument, so neither act may be tinted to win it. */
+  #howview .wmoment { display:flex; flex-direction:column; gap:var(--s2); max-width:760px; }
+  #howview .wm-label { font-size:var(--t-micro); letter-spacing:.06em; color:var(--ink-4);
+    text-transform:uppercase; }
+  #howview .wm-body { font-size:var(--t-md); color:var(--ink); line-height:1.55; }
+  /* the closing note of Act 2: a quiet full-width frame — wash tint, hairline, and the .mk.n rule mark.
+     Never a chip, never a solid: it restates what the reader already saw, it does not announce a state. */
+  #howview .wmirror { display:flex; align-items:flex-start; gap:var(--s3); padding:var(--s3) var(--s4);
+    border:1px solid var(--hair); border-radius:var(--r-md); background:var(--wash); }
+  #howview .wmirror .mk { margin-top:.62em; color:var(--ink-4); }
+
+  /* Act 1's close — a green chip beside the wrong value the screen actually shows */
   #howview .wproof { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
   #howview .wsep { font-size:var(--t-micro); letter-spacing:.06em; color:var(--ink-4); text-transform:uppercase; }
-
-  /* Act 2 — get it: a bald reframe, then before/after as two tints (never a solid block) */
-  #howview .wreframe { font-size:var(--t-lg); color:var(--ink); letter-spacing:-.01em; }
-  #howview .wba { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
-  #howview .wba-arw, #howview .wcp-eq, #howview .wfa { color:var(--ink-4); font-size:var(--t-sm); flex:none; }
+  /* (.wsym / .wreframe / .wba went with the retired symptoms / inversion / beforeafter step kinds) */
+  #howview .wcp-eq, #howview .wfa { color:var(--ink-4); font-size:var(--t-sm); flex:none; }
 
   /* Act 3 — see it work: an explicitly LABELLED illustration, never dressed as live board state */
   #howview .wdemo { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--canvas);

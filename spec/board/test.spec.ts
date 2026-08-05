@@ -408,28 +408,32 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
   })
 })
 
-test('The guide is a four-act walkthrough that shows the proof', async ({ page }) => {
+test('The guide opens as manager and staff — without, then with', async ({ page }) => {
   await coverReqs('R11')
   await page.goto('/#howitworks')
   await page.waitForSelector('#howview:not([hidden])')
   await checkReq('R11', async () => {
     const wt = page.locator('#walkthrough')
-    await expect(wt).toBeVisible()
-    // the walkthrough IS the landing — first thing in the view, before the full-method reference
-    expect(await page.locator('#howview .dtscroll >> #walkthrough, #howview #walkthrough').first().isVisible()).toBeTruthy()
     await expect(wt.locator('.act')).toHaveCount(4)
-    // Act 1 feel-it carries symptom lines and a green-beside-wrong proof
-    await expect(wt.locator('[data-act="1"]')).toContainText('back')
-    // Act 2 names the concept once
-    await expect(wt.locator('[data-act="2"]')).toContainText('computed')
-    // Act 3 is a LABELLED illustration with the exact goldens held on screen
+    const w1 = wt.locator('.act[data-act="1"]'), w2 = wt.locator('.act[data-act="2"]')
+    // the same three moments, told twice — the mirror IS the argument
+    for (const a of [w1, w2]) {
+      await expect(a.locator('.wmoment')).toHaveCount(3)
+      await expect(a).toContainText('Assigning work')
+      await expect(a).toContainText('Two weeks later')
+    }
+    await expect(w1).toContainText('Done, boss')
+    // without ends on the falsifiable proof: a green test beside the screen it fails to prove
+    await expect(w1.locator('.chip.ok')).toContainText('test green')
+    await expect(w1.locator('.chip.bad')).toContainText('stale')
+    // with names the mechanism once, only after the mirror
+    await expect(w2).toContainText('computed')
+    await expect(w2).toContainText('unproven')
+    // the surviving acts still carry the goldens, the illustration label, and the reference
     const demo = wt.locator('.wdemo')
     await expect(demo.locator('.wpin')).toContainText(/illustration/i)
     await expect(demo).toContainText('2,400,000')
     await expect(demo).toContainText('2,671,006.87')
-    await expect(demo).toContainText('200 psf')
-    // Act 4 shows the flow and the full method survives as a collapsed reference
-    await expect(wt.locator('[data-act="4"]')).toContainText('kg-deep')
     await expect(page.locator('#fullmethod')).toHaveCount(1)
   })
 })

@@ -158,20 +158,20 @@ must survive a failure. Fifth: a flow must run through ALL its steps and show EV
 person could not tell what broke when it died at the first), and the failure must be loud — the
 recording's cover frame is a red summary naming the failed steps, and the meta line counts them.*
 
-## R11 — The guide is a walkthrough that demonstrates the proof
+## R11 — The guide is the manager's story: without the tool, then with it
 
-#howitworks is a four-act, click-to-advance walkthrough, not a reference page: **feel it** (symptom
-lines in the reader's own words, then one green assertion shown beside the screen it fails to prove),
-**get it** (one before/after — a requirement that looks proven as a stored flag vs computed live as
-drifted — where "drift, computed never stored" is named once), **see it work** (a labeled illustration
-of a real flow: change a value → Run → a chart asserts exact golden values held on screen — IY1
-2,400,000 … IY5 2,671,006.87 — → Save → another page shows the value carried over, checked against the
-first), and **do it on your app** (the flow as verb-phrase steps, the full method available as a
-collapsed reference, and the single next action to take). The walkthrough shows the proof rather than
-describing it; the old method flowcharts survive as reference, reached from the end.
+#howitworks opens on two situations with the SAME three moments — assigning work, reviewing it, two
+weeks later. Without the tool: the task lives in a chat scroll ("Done, boss!"), review is a wall of
+code you approve blindly, and the same bug returns — closing on a green assertion shown beside the
+screen it fails to prove. With the tool: the task is a written requirement whose meaning you confirm,
+the work arrives as a recording where every asserted number is visible, and the moment a proof stops
+holding the requirement flips to unproven — proven is computed from the tests, never stored. Then the
+walkthrough shows it working for real (a labelled illustration asserting exact golden values held on
+screen) and ends on this project's own derived next action. Click-to-advance; the mirror is the
+argument; the proof is demonstrated, never described.
 
-*Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — wording
-awaits the human; reword freely, the test asserts content not phrasing.*
+*Drafted 2026-08-05 transcribing design revision 3 (the manager/staff rebuild) — wording awaits the
+human; reword freely, the test asserts content not phrasing.*
 
 ## R12 — The guide ends with the one next action, derived not stored
 
