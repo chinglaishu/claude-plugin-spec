@@ -493,7 +493,14 @@ test('The guide ends with the derived next action, and there is no rail', async 
     // still pass with the requirement deleted proves nothing). This repo's own journey is always
     // folded (every requirement here is proven), so wCtaAction always takes its folded branch on this
     // tree — assert that EXACT sentence; only a real journey() read produces it.
-    await expect(cta.locator('.wcta-act')).toHaveText(
+    //
+    // FOLDED MEANS SETTLED, NOT YOUR-TURN: CLAUDE.md is absolute that indigo means one thing only —
+    // "your turn" — but this board is permanently folded (nothing left to derive), so the closing CTA
+    // must NOT wear the your-turn indigo pill (.wcta-act). Select the CTA via the stable .wcta wrapper
+    // (never renamed) so this survives either class the pill happens to carry.
+    await expect(cta.locator('.wcta-act')).toHaveCount(0)
+    await expect(cta.locator('.wcta-settled')).toHaveCount(1)
+    await expect(cta.locator('.wcta-settled')).toHaveText(
       'Every derivable fact already holds — this project\'s requirements are proven.'
     )
   })

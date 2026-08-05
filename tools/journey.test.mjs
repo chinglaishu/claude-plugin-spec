@@ -95,17 +95,24 @@ test('render: a finished journey renders the rail hidden, an unfinished one open
 // actually derive, the same reason midJourney()/journeyRail are driven directly above.
 test('wCtaAction: a not-done deepen step names its own command', () => {
   const deepenCurrent = deriveJourney({ configSaved: true, crawledAt: '2026-08-05', screens: [] })
-  assert.equal(wCtaAction(deepenCurrent), '/kg-deep <screen>')
+  assert.equal(wCtaAction(deepenCurrent).text, '/kg-deep <screen>')
+  assert.equal(wCtaAction(deepenCurrent).state, 'turn')
 })
 
 test('wCtaAction: a not-done step with no cmd falls back to J_ACT\'s own wording', () => {
-  assert.equal(wCtaAction(midJourney()), 'Delete the guess: line in that screen prd.md')       // confirm
+  assert.equal(wCtaAction(midJourney()).text, 'Delete the guess: line in that screen prd.md')   // confirm
+  assert.equal(wCtaAction(midJourney()).state, 'turn')
   const proveCurrent = deriveJourney({ configSaved: true, crawledAt: null, screens: [S(false, ['unproven'])] })
-  assert.equal(wCtaAction(proveCurrent), 'Run all')                                              // prove
+  assert.equal(wCtaAction(proveCurrent).text, 'Run all')                                         // prove
+  assert.equal(wCtaAction(proveCurrent).state, 'turn')
 })
 
-test('wCtaAction: folded (nothing left to derive) names no step — it says everything already holds', () => {
+// board R12 fix: the closing CTA must wear the state it names — CLAUDE.md's "indigo means your
+// turn, and only your turn" means the folded (nothing left to derive) branch cannot share the same
+// 'turn' state as a real next action, or the renderer has no honest way to paint it settled instead.
+test('wCtaAction: folded (nothing left to derive) names no step — it says everything already holds, and the state is settled, not your-turn', () => {
   const done = deriveJourney({ configSaved: true, crawledAt: null, screens: [S(false, ['proven'])] })
   assert.equal(done.folded, true)
-  assert.equal(wCtaAction(done), 'Every derivable fact already holds — this project\'s requirements are proven.')
+  assert.equal(wCtaAction(done).text, 'Every derivable fact already holds — this project\'s requirements are proven.')
+  assert.equal(wCtaAction(done).state, 'settled')
 })

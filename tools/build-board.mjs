@@ -307,10 +307,15 @@ const howSpineCol = c => c.gate
 // real values shown AS an illustration. The anatomy the old #how-anatomy taught — proven / unproven /
 // not-reached, the mark that rides every hue, coverage tags — is folded into the act copy below.
 //   INVERSION / INDIGO: indigo is spent only on Act 4 — the "you confirm the meaning" step (a tint)
-// and the CTA action (the one solid-indigo "your turn" element). Act 1's invisible-green failure
-// wears the board's own solid `chip bad`, the single inverted element of that act. Because the acts
-// step one at a time (a later pass), each act is its own view with ONE inverted element; rendered
-// all-at-once here they read as two, the same documented trade the old anatomy chapter made.
+// and the closing CTA when (and ONLY when) there is a real next action to name (the one solid-indigo
+// "your turn" element, `.wcta-act`). Once the journey is folded — nothing left to derive — the CTA
+// names that instead and wears the settled/koke treatment (`.wcta-settled`, a tint, no inversion),
+// never indigo: CLAUDE.md is absolute that indigo means "your turn" and nothing else, and a folded
+// board has no turn left to take (board R12 fix; see wCtaAction / wCta below). Act 1's invisible-green
+// failure wears the board's own solid `chip bad`, the single inverted element of that act. Because the
+// acts step one at a time (a later pass), each act is its own view with ONE inverted element; rendered
+// all-at-once here they read as two (when the CTA is in its 'turn' state), the same documented trade
+// the old anatomy chapter made.
 const WALKTHROUGH = {
   acts: [
     { n: 1, title: 'Feel it', sub: 'recognition, then one proof you cannot argue with',
@@ -417,25 +422,37 @@ const wFlow = s =>
     return (i ? '<span class="wfa" aria-hidden="true">&#8594;</span>' : '') + node
   }).join('') + '</div>'
 
-// Act 4's closing CTA text (board R12, repurposed): the first not-done journey() step's own action —
+// Act 4's closing CTA (board R12, repurposed): the first not-done journey() step's own action —
 // its cmd when it has one (deepen: '/kg-deep <screen>'), else the short verb J_ACT already names for
 // the board control that does it. Once nothing is left (folded), there is no next step to name, so
 // the CTA says so instead of pointing at one. Pure function of journey()'s facts — nothing stored.
+// Returns { text, state } rather than a bare string (fix, board R12): CLAUDE.md is absolute that
+// indigo means ONE thing — "your turn" — but the folded branch names nothing left to DO, so it
+// cannot share the 'turn' state a real next action gets. `state` rides the exact same `cur` branch
+// that picked `text`, so the renderer (wCta) never re-derives folded-vs-action from journey() itself
+// — one derivation, read twice, rather than two derivations that could disagree.
 // Exported so the DERIVATION is unit-tested against synthetic journey() shapes (tools/journey.test.mjs)
 // — this repo's own journey is always folded (everything proven), so the live board's own E2E can only
-// ever exercise the folded branch below; the not-done branches need a driven fixture to prove at all.
+// ever exercise the folded/settled branch below; the not-done/turn branches need a driven fixture.
 export const wCtaAction = j => {
   const cur = j.steps.find(s => !s.done)
-  if (!cur) return 'Every derivable fact already holds — this project\'s requirements are proven.'
-  return cur.cmd || J_ACT[cur.id] || cur.title
+  if (!cur) return { text: 'Every derivable fact already holds — this project\'s requirements are proven.', state: 'settled' }
+  return { text: cur.cmd || J_ACT[cur.id] || cur.title, state: 'turn' }
 }
 
-// The single next action, in the "your turn" indigo treatment — the one inverted element of Act 4.
-// `action` is the DERIVED text (board R12, repurposed) — journey()'s own facts, fed in from build(),
-// never the static WALKTHROUGH literal s.action was before this pass.
-const wCta = (s, action) =>
-  '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' +
-    '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(action) + '</span></span></div>'
+// Act 4's closing pill wears the state `cta` names (board R12 fix), not indigo unconditionally:
+// `cta.state === 'turn'` (a real next action) keeps the original solid "your turn" treatment — the
+// one inverted element of Act 4 — with the `.mk.d` your-turn diamond. `cta.state === 'settled'` (the
+// folded branch: every derivable fact already holds, nothing left to point at) renders instead as a
+// tint, the SAME koke/"ok" tokens the board already uses for proven/settled chips elsewhere on this
+// page (compare the legend's `chip ok` / `mk`), with a filled settled mark — no inversion, so a
+// folded board never shows two solid indigo elements competing on one screen.
+const wCta = (s, cta) => {
+  const pill = cta.state === 'turn'
+    ? '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(cta.text) + '</span></span>'
+    : '<span class="wcta-settled"><span class="mk"></span><span class="mono">' + esc(cta.text) + '</span></span>'
+  return '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' + pill + '</div>'
+}
 
 const wStepInner = (s, ctaAction) => {
   switch (s.kind) {
@@ -1356,7 +1373,10 @@ export function build () {
   /* the guide, as a four-act walkthrough (board R11) — LAYOUT only. Every colour, size, radius and
      mark is a token or a board class reused from above; no raw hue is introduced here. The acts are
      all present; a later pass steps them one at a time. Indigo is spent only in Act 4 (.wfn.yours,
-     .wcta-act), and the one solid element per act is chip.bad in Act 1 and .wcta-act in Act 4. */
+     .wcta-act), and the one solid element per act is chip.bad in Act 1 and .wcta-act in Act 4 — but
+     ONLY while there is a real next action (board R12 fix). Once the journey is folded, the CTA wears
+     .wcta-settled instead — the same koke/"ok" tint tokens as this page's own proven/settled chips
+     (see .legend .chip.ok below), never indigo: no inverted element competes with anything else. */
   #howview #walkthrough { margin-top:var(--s5); display:flex; flex-direction:column; gap:var(--s6); }
   /* a quiet map of the four beats — pips carry data-pip, never data-act */
   #howview .wt-map { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2);
@@ -1446,6 +1466,12 @@ export function build () {
   #howview .wcta-lead { font-size:var(--t-md); color:var(--ink); }
   #howview .wcta-act { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s4);
     border-radius:var(--r); background:var(--ai); color:var(--paper); font-size:var(--t-sm); }
+  /* the folded/settled CTA (board R12 fix): nothing left to derive is not "your turn", so it never
+     wears indigo. Same shape as .wcta-act, same koke/"ok" tint every proven chip on this page already
+     uses (.chip.ok / .legend .chip.ok) — a tint, not a second solid inversion. */
+  #howview .wcta-settled { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s4);
+    border-radius:var(--r); background:var(--koke-tint); color:var(--koke); font-size:var(--t-sm);
+    box-shadow:inset 0 0 0 1px var(--koke-line); }
 
   /* the full method, demoted to a collapsed native disclosure — the guide shows the proof, this is
      where the old spine / journey / flowcharts survive as reference, reached from the end of Act 4 */
