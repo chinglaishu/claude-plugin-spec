@@ -96,6 +96,32 @@ test('the golden-data seed template is part of the skeleton', () => {
   assert.ok(FILES.includes('spec/_seed.ts'), 'spec/_seed.ts must be a vendored skeleton file')
 })
 
+// The relative-path specifiers a vendored file actually imports. Extracted so the meta-test below can
+// pin that the detector SEES the multi-line brace form — a regression an earlier line-anchored rewrite
+// introduced, because `[^'"\n]` can never span the newlines of
+//     import {
+//       ROOT, esc, ...
+//     } from './spec-store.mjs'
+// which is exactly how build-board.mjs and serve-board.mjs import spec-store. A blunt scan for a
+// quoted './…' would over-read TWO things that are not dependencies: an example inside a comment
+// (spec/_seed.ts) and an import inside a STRING that writes a generated spec file (spec/_fixture.ts).
+// So: strip line comments first; require `from` for a statement (the `import.meta.url` on
+// spec-store's ROOT line carries no `from`, so it is never mistaken for one); match the dynamic
+// import() form spec/_state-guard.ts uses for ./_seed.ts; and dedup through a Set so the brace and
+// single-line `from` patterns never double-report the same specifier.
+const relImports = text => {
+  const src = text.replace(/^\s*\/\/.*$/gm, '')
+  const specs = new Set()
+  const PATTERNS = [
+    /^\s*import\s*\{[^}]*\}\s*from\s*['"](\.[^'"]+)['"]/gm,          // import { … } from './x'  (spans newlines; anchored so the in-string import in _fixture.ts, which has a quote before `import`, is not read)
+    /^\s*(?:import|export)\b[^'"\n]*?\bfrom\s*['"](\.[^'"]+)['"]/gm, // default / namespace / re-export from './x'
+    /^\s*import\s+['"](\.[^'"]+)['"]/gm,                             // side-effect import './x'
+    /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g                       // await import('./x')
+  ]
+  for (const p of PATTERNS) for (const m of src.matchAll(p)) specs.add(m[1])
+  return [...specs]
+}
+
 test('every relative import of a vendored file is itself vendored', () => {
   // A tool the skeleton ships can only import files the skeleton also ships. The failure is invisible
   // HERE and fatal THERE: build-board.mjs importing an unvendored sibling throws ERR_MODULE_NOT_FOUND
@@ -106,28 +132,27 @@ test('every relative import of a vendored file is itself vendored', () => {
   // would miss them. Accept the path as written or with a .ts/.mjs extension added.
   const vendored = dep => FILES.includes(dep) ||
     FILES.includes(dep + '.ts') || FILES.includes(dep + '.mjs') || FILES.includes(dep + '.js')
-  // What counts as an import, and what does NOT. A blunt scan for a quoted './…' reads three things
-  // that are not dependencies: an example inside a comment (spec/_seed.ts), an import inside a STRING
-  // that writes a generated spec file (spec/_fixture.ts), and resolve(…, '..') (tools/spec-store.mjs).
-  // So: statements are anchored to the start of a line and must carry `from`, and dynamic imports —
-  // spec/_state-guard.ts loads ./_seed.ts that way, mid-line — are matched only after line comments
-  // are stripped.
-  const PATTERNS = [
-    /^\s*(?:import|export)\b[^'"\n]*?\bfrom\s*['"](\.[^'"]+)['"]/gm,  // import/export … from './x'
-    /^\s*import\s+['"](\.[^'"]+)['"]/gm,                              // side-effect import './x'
-    /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g                        // await import('./x')
-  ]
   const missing = []
   for (const rel of FILES.filter(f => /\.(mjs|ts)$/.test(f))) {
-    const src = readFileSync(new URL('../' + rel, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, '')
-    for (const pattern of PATTERNS) {
-      for (const m of src.matchAll(pattern)) {
-        const dep = join(dirname(rel), m[1])
-        if (!vendored(dep)) missing.push(rel + ' -> ' + m[1])
-      }
+    const text = readFileSync(new URL('../' + rel, import.meta.url), 'utf8')
+    for (const spec of relImports(text)) {
+      const dep = join(dirname(rel), spec)
+      if (!vendored(dep)) missing.push(rel + ' -> ' + spec)
     }
   }
   assert.deepEqual(missing, [], 'imported but not vendored')
+})
+
+test('the vendoring guard sees the multi-line brace import form', () => {
+  // The hole the guard above had, pinned so it cannot silently return. build-board.mjs imports
+  // ./spec-store.mjs with a multi-line `import { … } from`, and a line-anchored `from` pattern never
+  // spans those newlines — so the detector saw only ./journey.mjs. The guard STILL passed, because
+  // other single-line importers kept spec-store in FILES; it would not have failed with spec-store
+  // dropped from FILES for build-board, the very miss it exists to catch (rule 2). Assert the
+  // detector actually resolves spec-store for this file.
+  const src = readFileSync(new URL('../tools/build-board.mjs', import.meta.url), 'utf8')
+  assert.ok(relImports(src).includes('./spec-store.mjs'),
+    'the multi-line import of ./spec-store.mjs must be seen, not only ./journey.mjs')
 })
 
 test('a project without the seed template GAINS it on update (added)', () => {
