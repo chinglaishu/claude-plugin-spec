@@ -11,7 +11,7 @@ import { join } from 'node:path'
 // spec/<screen>/ — those are the target's own screens, never shipped.
 export const FILES = [
   'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/build-board.mjs', 'tools/serve-board.mjs',
-  'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs',
+  'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
@@ -19,7 +19,10 @@ export const FILES = [
   'spec/_auth.setup.ts',
   // the optional golden-data seed — an inert no-op stub until a project fills it in; the globalSetup
   // in _state-guard.ts runs it (or a `seed:e2e` script) before the suite. See the kg-e2e skill.
-  'spec/_seed.ts'
+  'spec/_seed.ts',
+  // the escape log — a bug the green board missed, logged with the assertion it hardened and the
+  // skill that got the lesson. See kg-staff section 4.
+  'spec/_escapes.md'
 ]
 
 // The run scripts a scaffolded project gets. `board` runs under --watch so it restarts when its own
@@ -30,6 +33,7 @@ export const SCRIPTS = {
   board: 'node --watch tools/serve-board.mjs',
   'board:build': 'node tools/build-board.mjs',
   staff: 'node tools/staff.mjs',
+  proof: 'node tools/proof-integrity.mjs',
   e2e: 'playwright test --config=playwright.board.ts'
 }
 

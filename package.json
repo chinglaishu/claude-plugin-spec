@@ -6,6 +6,7 @@
     "board": "node --watch tools/serve-board.mjs",
     "board:build": "node tools/build-board.mjs",
     "staff": "node tools/staff.mjs",
+    "proof": "node tools/proof-integrity.mjs",
     "e2e": "playwright test --config=playwright.board.ts",
     "test:tools": "node --test tools/*.test.mjs"
   },

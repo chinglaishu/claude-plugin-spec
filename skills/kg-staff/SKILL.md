@@ -79,6 +79,11 @@ cannot catch on its own. Before you call the work done:
    of a conflict, changing what a requirement *means*, or confirming a crawl guess as canon are the human's —
    never decide one to make the list go quiet. These are the same three stops as section 2; they do not
    stop applying just because you are nearly done.
+- **A bug found while the board was green is an escape.** Log it in `spec/_escapes.md`,
+  strengthen the assertion that should have caught it in the same turn, and bake the lesson
+  into the skill that authored the weak proof. When in doubt whether a proof is real, run
+  `npm run proof lint` — and `node tools/proof-integrity.mjs perturb <screen>` to demand the
+  golden numbers actually bite.
 
 ## Why this exists
 
