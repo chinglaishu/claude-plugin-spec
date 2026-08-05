@@ -330,7 +330,7 @@ const WALKTHROUGH = {
       illustration: 'Illustration — a real asset-plan flow from a real project',
       steps: [
         { kind: 'demo', step: '1', body: 'Change market rent, unit 33A: 100 to 200 psf' },
-        { kind: 'demo', step: '2', body: 'Click Run. The chart asserts exact values, and holds them:',
+        { kind: 'demo', step: '2', pinned: true, body: 'Click Run. The chart asserts exact values, and holds them:',
           rows: ['IY1  2,400,000', 'IY3  2,630,687.10', 'IY5  2,671,006.87'] },
         { kind: 'demo', step: '3', body: 'Click Save, then open the Tenancy schedule' },
         { kind: 'crosspage', a: 'Page A after Save: 200', b: 'Page B on load: 200',
@@ -348,12 +348,19 @@ const WALKTHROUGH = {
 // absent state, a diamond (.d) for "your turn" — so the guide draws the board's own marks.
 const wMark = cls => '<span class="mk ' + cls + '"></span>'
 
-// One walkthrough step, carrying data-step (1-based) and data-wact (its act) for the later stepping
+// One walkthrough step, carrying data-step (1-based) and data-wact (its act) for the stepping
 // controller. The act index is deliberately NOT emitted as data-act: the R11 test selects
 // [data-act="N"], and a wstep that shared that attribute would make it strict-match more than the
 // one .act it means. Every wstep still lives inside its .act[data-act], so the act is never lost.
-const wStepNode = (actN, i, kind, inner) =>
-  '<div class="wstep k-' + kind + '" data-wact="' + actN + '" data-step="' + (i + 1) + '">' + inner + '</div>'
+//   The first step of each act is baked `.on` so it shows even before the controller runs (and with
+// JS off); the controller shows exactly one .on step per act. A `pinned` step (Act 3's numeric
+// reveal) carries a .wpinned badge — a mark-bearing, neutral pill — that becomes visible when the
+// step is active and STAYS (it rides its step's visibility; no timer, no auto-advance).
+const wStepNode = (actN, i, kind, inner, pinned) =>
+  '<div class="wstep k-' + kind + (i === 0 ? ' on' : '') + '" data-wact="' + actN + '" data-step="' + (i + 1) + '">' +
+    inner +
+    (pinned ? '<span class="wpinned"><span class="mk"></span>held on screen — this value stays</span>' : '') +
+  '</div>'
 
 const wSymptoms = lines =>
   '<ul class="wsym">' + lines.map(l => '<li>' + esc(l) + '</li>').join('') + '</ul>'
@@ -424,8 +431,19 @@ const wStepInner = s => {
   }
 }
 
+// Per-act stepper nav (board R11): Prev / a live "n / N" count / Next. Marks (the chevron glyphs and
+// the numeric count), never hue, carry the affordance; the buttons are quiet outlines, not a solid or
+// indigo element (indigo == your turn, spent only in Act 4). The controller wires these and clamps at
+// the ends; without JS the act simply shows its first step, which is honest.
+const wNav = a =>
+  '<div class="wnav">' +
+    '<button class="wnavb" type="button" data-wprev aria-label="Previous step"><span class="wchev" aria-hidden="true">&#8249;</span>Prev</button>' +
+    '<span class="wcount" aria-live="polite">1 / ' + a.steps.length + '</span>' +
+    '<button class="wnavb" type="button" data-wnext aria-label="Next step">Next<span class="wchev" aria-hidden="true">&#8250;</span></button>' +
+  '</div>'
+
 const wAct = a => {
-  const steps = a.steps.map((s, i) => wStepNode(a.n, i, s.kind, wStepInner(s))).join('')
+  const steps = a.steps.map((s, i) => wStepNode(a.n, i, s.kind, wStepInner(s), s.pinned)).join('')
   // Act 3 gathers its steps inside a single labelled demo panel; the .wpin banner is what keeps the
   // illustration honest — it says, in words, that this is not live board state.
   const body = a.illustration
@@ -434,7 +452,7 @@ const wAct = a => {
   return '<section class="act" data-act="' + a.n + '">' +
     '<div class="act-h"><span class="act-n">' + a.n + '</span>' +
     '<div class="act-t"><h2>' + esc(a.title) + '</h2><span class="act-sub">' + esc(a.sub) + '</span></div></div>' +
-    body + '</section>'
+    body + wNav(a) + '</section>'
 }
 
 // The walkthrough IS the #howitworks landing (board R11). A quiet map of the four beats heads it; its
@@ -1367,8 +1385,29 @@ export function build () {
   #howview .act-t h2 { font-size:var(--t-lg); }
   #howview .act-sub { display:block; margin-top:2px; font-size:var(--t-sm); color:var(--ink-3); }
   #howview .wsteps { display:flex; flex-direction:column; gap:var(--s4); }
-  #howview .wstep { display:flex; flex-direction:column; gap:var(--s3); }
+  /* one step per act at a time (board R11): every .wstep is hidden until it is the active .on step —
+     the first is baked .on, the controller moves it. Text of a hidden step stays in the DOM. */
+  #howview .wstep { display:none; flex-direction:column; gap:var(--s3); }
+  #howview .wstep.on { display:flex; }
   #howview .wnote { font-size:var(--t-sm); color:var(--ink-2); line-height:1.5; max-width:760px; }
+
+  /* the pinned verdict (board R11): a mark-bearing neutral pill, NOT a solid/indigo element. It rides
+     its step's visibility, so it appears when that step is active and stays — no timer removes it. */
+  #howview .wpinned { display:inline-flex; align-self:flex-start; align-items:center; gap:6px;
+    margin-top:2px; padding:3px var(--s2); border-radius:var(--r-sm); background:var(--wash);
+    box-shadow:inset 0 0 0 1px var(--hair-2); font-size:var(--t-xs); color:var(--ink-2); letter-spacing:.02em; }
+
+  /* per-act stepper nav — quiet outline buttons; the chevron marks and the numeric count carry it */
+  #howview .wnav { display:flex; align-items:center; gap:var(--s3); margin-top:var(--s4);
+    padding-top:var(--s3); border-top:1px solid var(--hair); }
+  #howview .wnavb { display:inline-flex; align-items:center; gap:6px; padding:5px var(--s3);
+    border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper);
+    font-size:var(--t-sm); color:var(--ink-2); cursor:pointer; }
+  #howview .wnavb:hover:not([disabled]) { border-color:var(--line3); color:var(--ink); }
+  #howview .wnavb[disabled] { opacity:.4; cursor:default; }
+  #howview .wchev { color:var(--ink-4); font-size:var(--t-md); line-height:1; }
+  #howview .wcount { min-width:44px; text-align:center; font-size:var(--t-xs); color:var(--ink-3);
+    letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 
   /* Act 1 — feel it: the symptom lines, then a green chip beside the wrong screen value */
   #howview .wsym { list-style:none; display:flex; flex-direction:column; gap:var(--s2); }
@@ -2486,6 +2525,11 @@ ${detail}
     for (let i = 0; i < panels.length; i++) {
       panels[i].classList.toggle('open', panels[i].getAttribute('data-skill') === id)
     }
+    // #skilldetail lives inside the collapsed #fullmethod <details>. A direct #howitworks/<skillId>
+    // cold load would strand it inside a closed disclosure and render blank — so OPEN the disclosure
+    // whenever a skill routes (board R11, the guide's routing).
+    const fm = document.getElementById('fullmethod')
+    if (fm) fm.open = true
     document.getElementById('howoverview').hidden = true
     document.getElementById('skilldetail').hidden = false
     const back = document.getElementById('skillback')
@@ -2512,6 +2556,56 @@ ${detail}
 
   document.getElementById('howbtn').addEventListener('click', () => {
     history.pushState(null, '', '#howitworks'); route()
+  })
+
+  // The walkthrough steps on click and HOLDS (board R11). Each .act is its own mini-stepper through
+  // its own .wsteps: one .on step at a time, Prev/Next and the arrow keys advance it, clamped at the
+  // ends. Nothing here ever auto-advances — no setTimeout/setInterval touches a step, so the pinned
+  // verdict stays put once it is revealed. Emitted in the template literal: plain quotes, +
+  // concatenation, no backticks.
+  const wsteppers = []
+  const wacts = document.querySelectorAll('#walkthrough .act')
+  for (let ai = 0; ai < wacts.length; ai++) {
+    const act = wacts[ai]
+    const steps = act.querySelectorAll('.wstep')
+    if (!steps.length) continue
+    const prevb = act.querySelector('[data-wprev]')
+    const nextb = act.querySelector('[data-wnext]')
+    const count = act.querySelector('.wcount')
+    let idx = 0
+    for (let si = 0; si < steps.length; si++) if (steps[si].classList.contains('on')) idx = si
+    const render = function () {
+      for (let si = 0; si < steps.length; si++) steps[si].classList.toggle('on', si === idx)
+      if (prevb) prevb.disabled = idx === 0
+      if (nextb) nextb.disabled = idx === steps.length - 1
+      if (count) count.textContent = (idx + 1) + ' / ' + steps.length
+    }
+    const go = function (d) {
+      const n = Math.min(steps.length - 1, Math.max(0, idx + d))
+      if (n !== idx) { idx = n; render() }
+    }
+    if (prevb) prevb.addEventListener('click', function () { go(-1) })
+    if (nextb) nextb.addEventListener('click', function () { go(1) })
+    wsteppers.push({ act: act, go: go })
+    render()
+  }
+  // Arrow keys drive whichever act is nearest the middle of the viewport — but NEVER while the caret
+  // is in an input/textarea (the board has a search box), so typing is not hijacked, and only while
+  // the guide is the open view.
+  if (wsteppers.length) document.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+    const a = document.activeElement
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return
+    const how = document.getElementById('howview')
+    if (!how || how.hidden) return
+    let best = null, bestd = Infinity
+    for (let i = 0; i < wsteppers.length; i++) {
+      const r = wsteppers[i].act.getBoundingClientRect()
+      if (r.bottom <= 0 || r.top >= innerHeight) continue
+      const d = Math.abs((r.top + r.bottom) / 2 - innerHeight / 2)
+      if (d < bestd) { bestd = d; best = wsteppers[i] }
+    }
+    if (best) { best.go(e.key === 'ArrowRight' ? 1 : -1); e.preventDefault() }
   })
 
   // The rail folds itself once anything is proven (board R12) and this chip is how you get it back.

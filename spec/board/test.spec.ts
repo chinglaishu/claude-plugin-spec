@@ -434,6 +434,45 @@ test('The guide is a four-act walkthrough that shows the proof', async ({ page }
   })
 })
 
+test('The walkthrough steps on click and holds — never auto-advances', async ({ page }) => {
+  await coverReqs('R11')
+  await page.goto('/#howitworks')
+  await page.waitForSelector('#walkthrough .act[data-act="3"]')
+  await checkReq('R11', async () => {
+    const act = page.locator('.act[data-act="3"]')
+    const steps = act.locator('.wstep')
+    // only the first step of the act is shown initially
+    await expect(act.locator('.wstep.on')).toHaveCount(1)
+    await expect(steps.first()).toHaveClass(/\bon\b/)
+    // Next advances exactly one step
+    await act.locator('[data-wnext]').click()
+    await expect(steps.nth(1)).toHaveClass(/\bon\b/)
+    await expect(steps.first()).not.toHaveClass(/\bon\b/)
+    // the golden-number reveal pins and STAYS — no auto-advance after a verdict
+    await expect(act.locator('.wpinned')).toBeVisible()
+    const shown = await act.locator('.wstep.on').getAttribute('data-step')
+    await page.waitForTimeout(1200)
+    await expect(act.locator('.wstep.on')).toHaveAttribute('data-step', shown)  // unchanged
+    // Prev goes back
+    await act.locator('[data-wprev]').click()
+    await expect(steps.first()).toHaveClass(/\bon\b/)
+  })
+})
+
+test('A deep-linked skill URL shows the skill detail on cold load', async ({ page }) => {
+  await coverReqs('R11')
+  await page.goto('/#howitworks/kg-deep')
+  await page.waitForSelector('#howview:not([hidden])')
+  await checkReq('R11', async () => {
+    // Cold-loading a skill URL reveals its detail. The guide's routing (R11) owns this: #skilldetail
+    // lives inside the collapsed #fullmethod <details>, so the router must OPEN that disclosure or the
+    // deep page renders blank — the regression Task 1 deferred to the controller pass.
+    await expect(page.locator('#skilldetail')).toBeVisible()
+    await expect(page.locator('#howoverview')).toBeHidden()
+    await expect(page.locator('.flow-panel.open[data-skill="kg-deep"]')).toHaveCount(1)
+  })
+})
+
 test('The getting-started rail derives, folds, and reopens', async ({ page }) => {
   await coverReqs('R12')
   await checkReq('R12', async () => {
