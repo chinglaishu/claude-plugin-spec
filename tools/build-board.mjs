@@ -1125,7 +1125,11 @@ export function build () {
   .throw .tags { flex:none; }
   .tbody { display:none; padding:0 var(--s4) var(--s3); }
   .test.open .tbody { display:block; }
-  .trow2 { display:flex; gap:var(--s4); align-items:center; }
+  /* wrap, so when the player GROWS (below) the Run/Watch/Logs/Steps do not get crushed into a sliver
+     beside it and spill past the panel — they drop to their own row underneath instead. */
+  .trow2 { display:flex; gap:var(--s4); align-items:center; flex-wrap:wrap; }
+  /* the actions keep their natural size — never shrink to make room for the growing player. */
+  .trow2 .tacts { flex:none; }
   .rec { position:relative; width:300px; aspect-ratio:16/9; flex:none; border-radius:var(--r);
     border:1px solid var(--hair-2); overflow:hidden; cursor:default; transition:width .25s ease;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); background-size:cover; background-position:top left; }

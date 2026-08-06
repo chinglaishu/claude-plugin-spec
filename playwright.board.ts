@@ -47,7 +47,11 @@ export default defineConfig({
   // per-screen match. Absent signIn this whole key is gone and the default single project runs.
   ...(signIn ? {
     projects: [
-      { name: 'setup', testMatch: /_auth\.setup\.ts$/ },
+      // The login is PLUMBING, not a scene to watch: it must never inherit the watch pace. slowMo is
+      // set on the top-level `use` below (so a watched run of the SCREENS is paced), which would also
+      // slow every keystroke of the sign-in — at 2000ms the login crawls. Pin this project's slowMo to
+      // 0 so it always signs in at full speed, whatever the pace of the run it precedes.
+      { name: 'setup', testMatch: /_auth\.setup\.ts$/, use: { launchOptions: { slowMo: 0 } } },
       { name: 'screens', testMatch: '*/test.spec.ts', dependencies: ['setup'], use: { storageState: STORAGE } }
     ]
   } : {}),
