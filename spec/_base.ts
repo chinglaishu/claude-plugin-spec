@@ -34,7 +34,18 @@ export async function waitForContent (locator: Locator, opts: { timeout?: number
 const windowed = process.env.BOARD_ONE_WINDOW
   ? base.extend<{ page: Page }, { _sharedContext: BrowserContext, _keepalive: Page }>({
       _sharedContext: [async ({ browser }, use) => {
-        const context = await browser.newContext()
+        // A HAND-MADE context does NOT inherit playwright.board.ts's `use` options — Playwright only
+        // applies those to the context IT builds, which one-window mode replaces. So the viewport and
+        // (critically) the video recording must be passed here by hand, or a WATCHED run silently
+        // records nothing (page.video() is null) and shrinks the app to the 1280×720 default — the
+        // recording a person just watched comes back blank/unplayable. Match the config exactly:
+        // full-size viewport, and video only under a board recording (BOARD_RECORD).
+        const context = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+          ...(process.env.BOARD_RECORD
+            ? { recordVideo: { dir: process.env.BOARD_RECORD, size: { width: 1440, height: 900 } } }
+            : {})
+        })
         await use(context)
         await context.close()
       }, { scope: 'worker' }],
@@ -68,14 +79,21 @@ export const test = windowed.extend<{ page: Page }>({
       await use(page)
     } finally {
       CURRENT_PAGE = null
-      // A failed run's recording is the BEST evidence of the failure, so it must never be dropped —
-      // yet Playwright finishes a failed test without attaching its video (board R10). A page's
-      // video only FINALISES when the page closes, so saveAs() on a still-open page waits forever;
-      // close the page here to finalise it, then save it into the test's own output dir and attach
-      // it, so the board's reporter finds the .webm and the failed run stays playable. The built-in
-      // page teardown that follows closes an already-closed page harmlessly. Best-effort, and only
-      // under a board recording of an unexpected outcome.
-      if (process.env.BOARD_RECORD && testInfo.status && testInfo.status !== testInfo.expectedStatus) {
+      // Attach this page's recording OURSELVES exactly when Playwright won't — otherwise the board's
+      // reporter finds no .webm and the run comes back unplayable. A page's video only FINALISES when
+      // the page closes, so close it here, then saveAs() into the test's output dir and attach it.
+      // Two cases we must handle ourselves:
+      //   • ONE-WINDOW (a WATCHED run): the shared context is hand-made, so Playwright auto-attaches
+      //     NOTHING — pass or fail — and every watched run would otherwise have no video at all.
+      //   • a FAILED default run: closing the page here FINALISES the recording before we save it, so
+      //     the failed run's video is complete and playable (board R10; release 0.16.1). We write it
+      //     to the same outputPath Playwright uses, so this is a finalised copy, not a duplicate file.
+      // A PASSING default run is left alone: Playwright auto-attaches its finalised video at context
+      // teardown, so touching it here would only add a redundant reference. The built-in page teardown
+      // that follows closes an already-closed page harmlessly. Best-effort, and only under a recording.
+      const oneWindow = !!process.env.BOARD_ONE_WINDOW
+      const failed = !!(testInfo.status && testInfo.status !== testInfo.expectedStatus)
+      if (process.env.BOARD_RECORD && (oneWindow || failed)) {
         try {
           const v = page.video && page.video()
           if (v) {
