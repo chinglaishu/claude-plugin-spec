@@ -421,11 +421,63 @@ test('The guide opens as manager and staff — without, then with', async ({ pag
       await expect(a.locator('.wmoment')).toHaveCount(3)
       await expect(a).toContainText('Assigning work')
       await expect(a).toContainText('Two weeks later')
+      // …and every step of the pair is a DRAWN SCENE, not a paragraph. A caption under a mock is
+      // the form the human accepted; four prose steps would satisfy every assertion above.
+      await expect(a.locator('.wstep')).toHaveCount(4)
+      await expect(a.locator('.wstep > .scene')).toHaveCount(4)
     }
     await expect(w1).toContainText('Done, boss')
-    // without ends on the falsifiable proof: a green test beside the screen it fails to prove
-    await expect(w1.locator('.chip.ok')).toContainText('test green')
-    await expect(w1.locator('.chip.bad')).toContainText('stale')
+    // 1 · the chat that scrolls away — the task pops, the thread leaves, nothing is written down
+    const chat = w1.locator('.scene.s-chat')
+    await expect(chat.locator('.sc-bub')).toHaveCount(3)
+    await expect(chat).toContainText('Done, boss')
+    await expect(chat).toContainText('nothing written down')
+    // 2 · the wall you cannot review — greeked code and one readable green badge
+    const wall = w1.locator('.scene.s-wall')
+    await expect(wall.locator('.sc-gl')).toHaveCount(16)
+    await expect(wall.locator('.chip.ok')).toContainText('40 tests passing')
+    // 3 · two weeks later — the calendar flips twice, the feature cracks, the REQUIREMENT is
+    //     rewritten instead of the code, and the counter lands on the third time
+    const rot = w1.locator('.scene.s-rot')
+    await expect(rot.locator('.sc-sheet')).toHaveCount(3)
+    await expect(rot.locator('.sc-crack')).toHaveCount(1)
+    await expect(rot.locator('.sc-old')).not.toBeEmpty()
+    await expect(rot.locator('.sc-new')).not.toBeEmpty()
+    await expect(rot).toContainText('same bug')
+    await expect(rot.locator('.sc-roll')).toContainText('3rd')
+    // 4 · the invisible green — the passing assertion beside the screen it never looked at
+    const blind = w1.locator('.scene.s-blind')
+    await expect(blind.locator('.chip.ok')).toContainText('test green')
+    await expect(blind.locator('.chip.bad')).toContainText('stale')
+    await expect(blind).toContainText('NOBODY LOOKED')
+    await expect(blind.locator('.sc-fv')).toContainText('100')
+    // the act's chips are the scene's chips — no second copy left over from the prose form
+    await expect(w1.locator('.chip.ok')).toHaveCount(2)
+    await expect(w1.locator('.chip.bad')).toHaveCount(1)
+    // 1 · the flag that drops — the bubble becomes a written requirement, and the ONE thing that
+    //     waits on a person is on it
+    const req = w2.locator('.scene.s-req')
+    await expect(req.locator('.sc-bub')).toHaveCount(1)
+    await expect(req.locator('.sc-card')).toHaveCount(1)
+    await expect(req.locator('.wflag')).toContainText('guess:')
+    await expect(req.locator('.wconfirm')).toContainText('you confirm the meaning')
+    // 2 · review by watching — a recording player whose miniature golden scene shows the numbers
+    const watch = w2.locator('.scene.s-watch')
+    await expect(watch.locator('.sc-bar')).toHaveCount(3)
+    await expect(watch.locator('.sc-cell')).toContainText('200')
+    await expect(watch).toContainText('2,671,006.87')
+    await expect(watch.locator('.sc-tag')).toContainText(/illustration/i)
+    // 3 · the chip that flips — a code line mutates and BOTH halves of the flip are drawn
+    const drift = w2.locator('.scene.s-drift')
+    await expect(drift.locator('.sc-mut')).toHaveCount(1)
+    await expect(drift.locator('.wproven')).toContainText('proven')
+    await expect(drift.locator('.wunproven')).toContainText('unproven')
+    // 4 · the mirror, drawn — three beats a side, each carrying its own mark
+    const mir = w2.locator('.scene.s-mirror')
+    await expect(mir.locator('.sc-bad .sc-row')).toHaveCount(3)
+    await expect(mir.locator('.sc-ok .sc-row')).toHaveCount(3)
+    await expect(mir.locator('.sc-bad .mk')).toHaveCount(3)
+    await expect(mir.locator('.sc-ok .mk')).toHaveCount(3)
     // with names the mechanism once, only after the mirror
     await expect(w2).toContainText('computed')
     await expect(w2).toContainText('unproven')
@@ -435,6 +487,54 @@ test('The guide opens as manager and staff — without, then with', async ({ pag
     await expect(demo).toContainText('2,400,000')
     await expect(demo).toContainText('2,671,006.87')
     await expect(page.locator('#fullmethod')).toHaveCount(1)
+  })
+})
+
+// The scenes are the deliverable, so the SHAPE of their motion is asserted, not just their markup:
+// every scene plays once when its step is revealed, ENDS (a looping animation never resolves the
+// finished promise below, so this test would hang red), and HOLDS its end state — and under
+// prefers-reduced-motion the very same end states are already on screen with no animation at all.
+test('Acts 1 and 2 play once, hold, and stand still under reduced motion', async ({ page }) => {
+  await coverReqs('R11')
+  // opacity is the honest read of a held end state: the flag has really gone, the stamp has really
+  // landed. getComputedStyle sees the animation's forwards fill, so a scene that never ran fails here.
+  const op = (l: any) => l.evaluate((el: Element) => Number(getComputedStyle(el).opacity))
+  const settle = (l: any) => l.evaluate(async (el: Element) => {
+    const as = (el as any).getAnimations()
+    await Promise.all(as.map((a: any) => a.finished))
+    return as.length
+  })
+  await page.goto('/#howitworks')
+  await page.waitForSelector('#walkthrough .act[data-act="2"]')
+  await checkReq('R11', async () => {
+    const w2 = page.locator('.act[data-act="2"]')
+    const flag = w2.locator('.scene.s-req .wflag')
+    expect(await settle(flag)).toBeGreaterThan(0)      // it really animates, and it really finishes
+    expect(await op(flag)).toBeLessThan(0.1)           // the guess flag has dropped
+    expect(await op(w2.locator('.scene.s-req .wconfirm'))).toBe(1)   // your confirmation is held
+    // revealing a later step RESTARTS its scene — the display toggle is the trigger, no JS timer
+    await w2.locator('[data-wnext]').click()
+    await w2.locator('[data-wnext]').click()
+    await expect(w2.locator('.wstep.on')).toHaveAttribute('data-step', '3')
+    const un = w2.locator('.scene.s-drift .wunproven')
+    expect(await settle(un)).toBeGreaterThan(0)
+    expect(await op(w2.locator('.scene.s-drift .wproven'))).toBeLessThan(0.1)
+    expect(await op(un)).toBe(1)
+    // and it HOLDS: nothing loops, nothing advances the step for you
+    await page.waitForTimeout(1200)
+    await expect(w2.locator('.wstep.on')).toHaveAttribute('data-step', '3')
+    expect(await op(un)).toBe(1)
+  })
+  await checkReq('R11', async () => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.reload()
+    await page.waitForSelector('#walkthrough .act[data-act="2"]')
+    const req = page.locator('.act[data-act="2"] .scene.s-req')
+    // no motion at all — and the end state is what you see
+    expect(await req.evaluate((el: Element) => (el as any).getAnimations({ subtree: true }).length)).toBe(0)
+    expect(await op(req.locator('.wconfirm'))).toBe(1)
+    expect(await op(req.locator('.wflag'))).toBeLessThan(0.1)
+    await page.emulateMedia({ reducedMotion: null })
   })
 })
 

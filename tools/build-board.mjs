@@ -323,18 +323,25 @@ const WALKTHROUGH = {
   acts: [
     { n: 1, title: 'Without the tool', sub: 'a brilliant, fast hire whose work you cannot review',
       steps: [
-        { kind: 'moment', label: 'Assigning work', body: '"Build the rent-edit feature." — "Done, boss!" The task now lives only in a chat scroll. Nothing is written down.' },
-        { kind: 'moment', label: 'Reviewing', body: '"Does it work?" You get a wall of code and "all 40 tests pass." You cannot check any of it without reading everything — so you approve blindly.' },
-        { kind: 'moment', label: 'Two weeks later', body: 'The feature breaks. Staff — no memory of the old decision — fixes it by changing what it was supposed to do. Same bug, third time.' },
-        { kind: 'proof', green: 'test green', wrong: 'screen shows rent = 100 (stale)',
-          note: 'The assertion passed. Nobody looked at the screen. A green you cannot see is trust, not review.' }
+        { kind: 'scene', scene: 'chat', label: 'Assigning work',
+          body: 'The task lives in a chat scroll and then scrolls away. Nothing is written down.' },
+        { kind: 'scene', scene: 'wall', label: 'Reviewing',
+          body: '"Does it work?" A wall of code and one green badge — so you approve blindly.' },
+        { kind: 'scene', scene: 'rot', label: 'Two weeks later',
+          body: 'Staff, with no memory of the decision, fixes it by rewriting what it was meant to do.' },
+        { kind: 'scene', scene: 'blind',
+          note: 'The assertion passed. Nobody looked at the screen — a green you cannot see is trust, not review.' }
       ] },
     { n: 2, title: 'With the tool', sub: 'the same hire, plus a system that makes work reviewable',
       steps: [
-        { kind: 'moment', label: 'Assigning work', body: 'The task becomes a written requirement — one shared document. Staff drafts it; you confirm the meaning — the one thing waiting on you.' },
-        { kind: 'moment', label: 'Reviewing', body: 'The work arrives as a recording where every asserted number is visible on screen. You review by watching, not by reading code.' },
-        { kind: 'moment', label: 'Two weeks later', body: 'The moment a proof stops holding, the requirement flips to unproven — you see drift when it happens, not two weeks after. Proven is computed from the tests, never stored.' },
-        { kind: 'mirror', note: 'Same hire, same speed. The difference is a system: work arrives reviewable by watching, and a written discipline makes the classic mistakes hard.' }
+        { kind: 'scene', scene: 'req', label: 'Assigning work',
+          body: 'The task becomes a written requirement. You confirm the meaning — the one thing waiting on you.' },
+        { kind: 'scene', scene: 'watch', label: 'Reviewing',
+          body: 'The work arrives as a recording where every asserted number is on screen. You review by watching.' },
+        { kind: 'scene', scene: 'drift', label: 'Two weeks later',
+          body: 'You see drift the moment it happens — proven is computed from the tests, never stored.' },
+        { kind: 'scene', scene: 'mirror',
+          note: 'Same hire, same speed. The difference is a system.' }
       ] },
     { n: 3, title: 'See it work', sub: 'a real flow, held on screen, checked across pages',
       illustration: 'Illustration — a real asset-plan flow from a real project',
@@ -383,20 +390,236 @@ const wMoment = s =>
     '<p class="wm-body">' + esc(s.body) + '</p>' +
   '</div>'
 
-// The closing note of Act 2 — a quiet full-width frame that names what actually changed between the
-// two acts. Deliberately NOT a chip or a solid: it is the reader's own conclusion, restated once.
-const wMirror = s =>
-  '<div class="wmirror">' + wMark('n') + '<p class="wnote">' + esc(s.note) + '</p></div>'
+// ── THE SCENES (board R11, stage 1R) ────────────────────────────────────────────────────────────
+// Acts 1 and 2 are WATCHED, not read. Every step of the pair is a small drawn mock — a chat window,
+// a wall of code, a recording player, a board card — animated in pure CSS. The prose form these
+// replaced said the right things and nobody would have watched it, which is the whole complaint the
+// product exists to answer: a claim you cannot see is not review.
+//
+// THREE INVARIANTS, and everything else follows from them:
+//
+//   1. NO NEW CLIENT JS. The stepper hides a step with display:none, which cancels its animations;
+//      showing it again starts them from zero. The replay when you press Next is the browser's own
+//      behaviour, not a timer — so nothing can auto-advance and nothing can drift out of sync.
+//   2. EVERY ANIMATED ELEMENT'S BASE RULE IS ITS END STATE, and its keyframes travel from the start
+//      to that same end (animation-fill-mode: both). That is what makes prefers-reduced-motion free:
+//      switch the animations off and the finished picture is already on screen, nothing to undo. It
+//      is also what makes the end states assertable — getComputedStyle reads the held value.
+//   3. NOTHING LOOPS and every scene finishes inside ~3.5s, most beats in 1-2s. A viewer who just
+//      clicked must never wait on dead air, and a loop would turn a held conclusion into wallpaper.
+//
+// Colour follows the design system exactly: bengara names the failure beats, koke the settled ones,
+// and INDIGO is spent on one thing on this whole page — Act 2's guess flag and your confirmation of
+// it — because that is the one thing in the product that genuinely waits on a person.
+const scene = (id, inner) => '<div class="scene s-' + id + '">' + inner + '</div>'
 
-// The invisible green: a real passing chip beside the wrong value the screen actually shows. chip.bad
-// is the board's own solid failure chip (this act's one inverted element); the note carries the lesson.
-const wProof = s =>
-  '<div class="wproof">' +
-    '<span class="chip ok"><span class="mark"></span>' + esc(s.green) + '</span>' +
-    '<span class="wsep">nobody looked &#8594;</span>' +
-    '<span class="chip bad"><span class="mark o"></span>' + esc(s.wrong) + '</span>' +
-  '</div>' +
-  '<p class="wnote">' + esc(s.note) + '</p>'
+// 1 · THE CHAT THAT SCROLLS AWAY. The task is spoken, answered instantly, and then the thread rides
+// up out of the window and fades — leaving a dashed, empty document where the requirement should be.
+const scChat = () => scene('chat',
+  '<div class="sc-win">' +
+    '<div class="sc-hd"><span class="sc-t">chat · #rent-edit</span><span class="sc-t sc-r mono">14:02</span></div>' +
+    '<div class="sc-view">' +
+      '<div class="sc-thread">' +
+        '<div class="sc-bub sc-you">Build the rent-edit feature.</div>' +
+        '<div class="sc-bub sc-them">Done, boss!</div>' +
+        '<div class="sc-bub sc-you">…and it rounds to 2 dp, right?</div>' +
+      '</div>' +
+      '<div class="sc-ghost">' +
+        '<svg class="sc-doc" viewBox="0 0 34 44" aria-hidden="true">' +
+          '<path d="M2 2 h20 l10 10 v30 h-30 z"/><path d="M22 2 v10 h10"/>' +
+          '<path d="M8 22 h18 M8 28 h18 M8 34 h11"/></svg>' +
+        '<span class="sc-gt">nothing written down</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>')
+
+// 2 · THE WALL YOU CANNOT REVIEW. Sixteen greeked lines stream in — deliberately unreadable, because
+// that is the honest picture of a diff you were asked to approve — and the only legible thing in the
+// window is a green badge counting tests you did not see run.
+const WALL_LINES = [
+  { i: 0, w: [42, 88] }, { i: 1, w: [30, 118, 26] }, { i: 1, w: [64, 40, 92] }, { i: 2, w: [36, 74] },
+  { i: 2, w: [106, 28, 52] }, { i: 1, w: [48, 128] }, { i: 0, w: [22] }, { i: 0, w: [56, 100, 34] },
+  { i: 1, w: [78, 46] }, { i: 2, w: [38, 90, 58] }, { i: 2, w: [122, 30] }, { i: 1, w: [44, 70, 108] },
+  { i: 1, w: [34, 58] }, { i: 0, w: [92, 42] }, { i: 0, w: [26, 114, 48] }, { i: 1, w: [72, 36, 86] }
+]
+const scWall = () => scene('wall',
+  '<div class="sc-win">' +
+    '<div class="sc-hd"><span class="sc-t mono">src/plan/rent-edit.ts + 11 files</span>' +
+      '<span class="sc-t sc-r">1,412 lines changed</span></div>' +
+    '<div class="sc-code">' +
+      WALL_LINES.map((l, i) =>
+        '<div class="sc-gl" style="animation-delay:' + (i * 52) + 'ms">' +
+          '<span class="sc-n mono">' + (41 + i) + '</span>' +
+          '<span class="sc-toks" style="padding-left:' + (l.i * 16) + 'px">' +
+            l.w.map((w, k) => '<span class="sc-tok' + (k === 0 ? ' k' : '') + '" style="width:' + w + 'px"></span>').join('') +
+          '</span>' +
+        '</div>').join('') +
+      '<span class="chip ok sc-badge"><span class="mark"></span>40 tests passing</span>' +
+    '</div>' +
+  '</div>')
+
+// 3 · TWO WEEKS LATER. A calendar peels twice; the feature cracks; and the "fix" rewrites the
+// REQUIREMENT rather than the code — the exact move this product exists to make impossible — while a
+// counter rolls to the third time the same bug came back.
+const scRot = () => scene('rot',
+  '<div class="sc-rot">' +
+    '<div class="sc-cal">' +
+      '<div class="sc-calh"><span class="sc-t">the same feature</span></div>' +
+      '<div class="sc-sheets">' +
+        '<span class="sc-sheet sc-s3"><b class="mono">3</b>weeks</span>' +
+        '<span class="sc-sheet sc-s2"><b class="mono">2</b>weeks</span>' +
+        '<span class="sc-sheet sc-s1"><b class="mono">1</b>week</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sc-rotr">' +
+      '<div class="sc-fcard"><span class="sc-fct">rent-edit</span>' +
+        '<span class="chip stale sc-fcc"><span class="mark o"></span>broken again</span>' +
+        '<svg class="sc-crack" viewBox="0 0 240 44" preserveAspectRatio="none" aria-hidden="true">' +
+          '<path d="M22 0 L58 19 L36 25 L92 44"/></svg>' +
+      '</div>' +
+      '<div class="sc-rew"><span class="sc-rewl mono">the fix · spec/asset-plan/prd.md R5</span>' +
+        '<span class="sc-old">market rent carries to the schedule<i class="sc-strike"></i></span>' +
+        '<span class="sc-arr" aria-hidden="true">&#8594;</span>' +
+        '<span class="sc-new">market rent is a plan-only field</span>' +
+      '</div>' +
+      '<span class="chip stale sc-same"><span class="mark o"></span>same bug&#160;·&#160;' +
+        '<span class="sc-roll"><span class="sc-rs"><span>1st</span><span>2nd</span><span>3rd</span></span></span>&#160;time</span>' +
+    '</div>' +
+  '</div>')
+
+// 4 · THE INVISIBLE GREEN. The passing assertion on the left, the screen it never looked at on the
+// right, and a struck-through eye between them. chip.bad is the board's own solid failure chip and
+// this act's ONE inverted element; the assertion is real (toBeVisible ignores what the value says).
+const scBlind = () => scene('blind',
+  '<div class="sc-split">' +
+    '<div class="sc-win sc-half">' +
+      '<div class="sc-hd"><span class="sc-t mono">spec/asset-plan/test.spec.ts</span></div>' +
+      '<div class="sc-pad">' +
+        '<div class="sc-line mono"><span class="sc-n">17</span>const rent = page.locator(".rent")</div>' +
+        '<div class="sc-line mono"><span class="sc-n">18</span>await expect(rent).toBeVisible()</div>' +
+        '<span class="chip ok sc-green"><span class="mark"></span>test green</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="sc-mid">' +
+      '<svg class="sc-eye" viewBox="0 0 28 20" aria-hidden="true">' +
+        '<path d="M2 10 C8 2 20 2 26 10 C20 18 8 18 2 10 Z"/><circle cx="14" cy="10" r="3.2"/>' +
+        '<path class="sc-slash" d="M4 19 L24 1"/></svg>' +
+      '<span class="sc-nobody">NOBODY LOOKED</span>' +
+    '</div>' +
+    '<div class="sc-win sc-half">' +
+      '<div class="sc-hd"><span class="sc-t">the app · unit 33A</span></div>' +
+      '<div class="sc-pad">' +
+        '<div class="sc-fld"><span class="sc-fl">Market rent</span><span class="sc-fv mono">100</span></div>' +
+        '<div class="sc-fld sc-dimf"><span class="sc-fl">Passing rent</span><span class="sc-fv2 mono">96</span></div>' +
+        '<span class="chip bad sc-stalec"><span class="mark o"></span>screen shows rent = 100 (stale)</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>')
+
+// 5 · THE FLAG THAT DROPS (the mirror of scene 1). The same spoken sentence becomes a written
+// requirement card; a `guess:` flag is pinned to it — indigo, because a guess is the one thing in
+// this product that waits on a person — and your confirmation drops it off the document.
+const scReq = () => scene('req',
+  '<div class="sc-morph">' +
+    '<div class="sc-bub sc-you sc-mbub">Build the rent-edit feature.</div>' +
+    '<div class="sc-card">' +
+      '<span class="wflag">' + wMark('d') + 'guess: true</span>' +
+      '<div class="sc-ch"><span class="sc-t mono">spec/asset-plan/prd.md</span><span class="sc-id mono">R5</span></div>' +
+      '<p class="sc-cb">Market rent edited on the plan carries to the tenancy schedule, to the penny.</p>' +
+      '<span class="wconfirm">' + wMark('d') + 'you confirm the meaning</span>' +
+    '</div>' +
+  '</div>')
+
+// 6 · REVIEW BY WATCHING (the mirror of scene 2). A recording player whose miniature golden scene
+// plays once: the edited cell flips 100 → 200, then the chart it feeds grows with its asserted values
+// PRINTED ON SCREEN. Labelled `illustration` in the title bar for the same reason Act 3 is — these
+// are authored goldens from a real project, never this board's live state.
+const WATCH_BARS = [['IY1', '2,400,000', 44], ['IY3', '2,630,687.10', 78], ['IY5', '2,671,006.87', 92]]
+const scWatch = () => scene('watch',
+  '<div class="sc-player">' +
+    '<div class="sc-hd"><span class="sc-t mono">recording · asset-plan · market rent 100 &#8594; 200</span>' +
+      '<span class="sc-tag">illustration</span></div>' +
+    '<div class="sc-stage">' +
+      '<div class="sc-pv sc-tbl">' +
+        '<div class="sc-tr sc-th"><span>unit</span><span>market rent</span><span>psf</span></div>' +
+        '<div class="sc-tr sc-hit"><span class="mono">33A</span>' +
+          '<span class="sc-cell mono"><i class="sc-was">100</i><i class="sc-is">200</i></span>' +
+          '<span class="mono">psf</span></div>' +
+        '<div class="sc-tr"><span class="mono">33B</span><span class="mono">180</span><span class="mono">psf</span></div>' +
+      '</div>' +
+      '<div class="sc-pv sc-chart">' +
+        WATCH_BARS.map(([l, v, h], i) =>
+          '<div class="sc-col">' +
+            '<span class="sc-bv mono" style="animation-delay:' + (2900 + i * 130) + 'ms">' + v + '</span>' +
+            '<span class="sc-track"><i class="sc-bar" style="height:' + h + '%;animation-delay:' + (2500 + i * 130) + 'ms"></i></span>' +
+            '<span class="sc-bl mono">' + l + '</span>' +
+          '</div>').join('') +
+      '</div>' +
+    '</div>' +
+    '<div class="sc-transport">' +
+      '<svg class="sc-play" viewBox="0 0 10 12" aria-hidden="true"><path d="M1 1 L9 6 L1 11 Z"/></svg>' +
+      '<span class="sc-prog"><i class="sc-fill"></i></span><span class="sc-time mono">0:04</span>' +
+    '</div>' +
+  '</div>')
+
+// 7 · THE CHIP THAT FLIPS (the mirror of scene 3). A code line mutates, a pulse travels the wire, and
+// the requirement's chip flips proven → unproven the same instant. BOTH halves of the flip are drawn,
+// so the pair is what you watch — not a chip that was simply always red.
+const scDrift = () => scene('drift',
+  '<div class="sc-dr">' +
+    '<div class="sc-win">' +
+      '<div class="sc-hd"><span class="sc-t mono">src/plan/rent.ts</span></div>' +
+      '<div class="sc-pad">' +
+        '<div class="sc-line mono"><span class="sc-n">40</span>const carried = plan.marketRent</div>' +
+        '<div class="sc-line sc-hot mono"><span class="sc-n">41</span>return round(carried, ' +
+          '<span class="sc-mut"><i class="sc-was">2</i><i class="sc-is">0</i></span>)</div>' +
+        '<div class="sc-line mono"><span class="sc-n">42</span>}</div>' +
+      '</div>' +
+    '</div>' +
+    '<svg class="sc-wire" viewBox="0 0 64 14" aria-hidden="true">' +
+      '<path class="sc-wl" d="M2 7 H56"/><path class="sc-wh" d="M50 3 L56 7 L50 11"/>' +
+      '<path class="sc-wp" d="M2 7 H56"/></svg>' +
+    '<div class="sc-win">' +
+      '<div class="sc-hd"><span class="sc-t">board · asset-plan</span></div>' +
+      '<div class="sc-pad">' +
+        '<div class="sc-rq"><span class="sc-rqt">R5 · market rent carries to the schedule</span>' +
+          '<span class="sc-flip">' +
+            '<span class="chip ok wproven"><span class="mark"></span>proven</span>' +
+            '<span class="chip stale wunproven"><span class="mark o"></span>unproven</span>' +
+          '</span></div>' +
+        '<div class="sc-rq sc-dimf"><span class="sc-rqt">R6 · psf is displayed to 2 dp</span>' +
+          '<span class="chip ok"><span class="mark"></span>proven</span></div>' +
+      '</div>' +
+    '</div>' +
+  '</div>')
+
+// 8 · THE MIRROR, DRAWN. The two situations side by side, three beats each, every beat carrying its
+// own mark — hollow bengara for what went wrong, filled koke for what holds. The columns are marks
+// and ink, never a wash of hue: the comparison has to be read, not felt.
+const MIRROR_ROWS = [
+  ['the task lives in a chat scroll', 'the task is a written requirement you confirm'],
+  ['review is a wall of code you approve blindly', 'review is a recording where the numbers show'],
+  ['the same bug comes back a third time', 'the chip flips to unproven the instant it drifts']
+]
+const scMirror = () => scene('mirror',
+  '<div class="sc-mir">' +
+    '<div class="sc-mcol sc-bad"><span class="sc-mh">Without the tool</span>' +
+      MIRROR_ROWS.map(r => '<span class="sc-row">' + wMark('o') + esc(r[0]) + '</span>').join('') +
+    '</div>' +
+    '<span class="sc-div" aria-hidden="true"></span>' +
+    '<div class="sc-mcol sc-ok"><span class="sc-mh">With the tool</span>' +
+      MIRROR_ROWS.map(r => '<span class="sc-row">' + wMark('') + esc(r[1]) + '</span>').join('') +
+    '</div>' +
+  '</div>')
+
+const SCENES = { chat: scChat, wall: scWall, rot: scRot, blind: scBlind,
+  req: scReq, watch: scWatch, drift: scDrift, mirror: scMirror }
+
+// A scene step: the drawn mock, then AT MOST ONE LINE under it. The three mirrored moments keep the
+// board's existing caption treatment (.wmoment — the label is what makes Acts 1 and 2 read as the
+// same three beats twice); the two closing scenes carry a plain note. The caption is a caption: if it
+// grows past a line the scene has stopped carrying the beat and the beat needs redrawing, not more prose.
+const wScene = s => SCENES[s.scene]() + (s.label ? wMoment(s) : '<p class="wnote">' + esc(s.note) + '</p>')
 
 const wDemo = s =>
   '<div class="wds">' +
@@ -456,13 +679,13 @@ const wCta = (s, cta) => {
 }
 
 // The story rebuild (board R11) retired three kinds with their data — 'symptoms' (Act 1's bullet list
-// of pains), 'inversion' and 'beforeafter' (the old Act 2). Their renderers and CSS are deleted rather
-// than parked: no act references them any more, and a dead branch is a lie about what this page draws.
+// of pains), 'inversion' and 'beforeafter' (the old Act 2). Stage 1R retired three more — the prose
+// 'moment', and the 'proof' and 'mirror' summaries — when Acts 1 and 2 became scenes. Their renderers
+// and CSS are deleted rather than parked: no act references them any more, and a dead branch is a lie
+// about what this page draws. (wMoment survives as the SCENE CAPTION, which is all it ever drew.)
 const wStepInner = (s, ctaAction) => {
   switch (s.kind) {
-    case 'moment': return wMoment(s)
-    case 'mirror': return wMirror(s)
-    case 'proof': return wProof(s)
+    case 'scene': return wScene(s)
     case 'demo': return wDemo(s)
     case 'crosspage': return wCrosspage(s)
     case 'flow': return wFlow(s)
@@ -1441,24 +1664,278 @@ export function build () {
   #howview .wcount { min-width:44px; text-align:center; font-size:var(--t-xs); color:var(--ink-3);
     letter-spacing:.02em; font-variant-numeric:tabular-nums; }
 
-  /* Acts 1 & 2 — the same three moments, told without the tool then with it. Layout only: the label is
-     the board's existing micro/uppercase caption treatment (compare .wsep), the body the reading size.
-     No hue at all in a moment — the mirror is the argument, so neither act may be tinted to win it. */
-  #howview .wmoment { display:flex; flex-direction:column; gap:var(--s2); max-width:760px; }
+  /* Acts 1 & 2 — the caption UNDER a scene, never the beat itself. One line: the label is the board's
+     existing micro/uppercase caption treatment, the body the reading size, and the label is what makes
+     the two acts read as the same three moments twice. No hue in a caption — the mirror is the
+     argument, so neither act may be tinted to win it. (.wproof / .wmirror / .wsep went with the prose
+     step kinds stage 1R replaced; .wsym / .wreframe / .wba with the earlier symptoms/inversion pass.) */
+  #howview .wmoment { display:flex; flex-direction:column; gap:var(--s1); }
   #howview .wm-label { font-size:var(--t-micro); letter-spacing:.06em; color:var(--ink-4);
     text-transform:uppercase; }
   #howview .wm-body { font-size:var(--t-md); color:var(--ink); line-height:1.55; }
-  /* the closing note of Act 2: a quiet full-width frame — wash tint, hairline, and the .mk.n rule mark.
-     Never a chip, never a solid: it restates what the reader already saw, it does not announce a state. */
-  #howview .wmirror { display:flex; align-items:flex-start; gap:var(--s3); padding:var(--s3) var(--s4);
-    border:1px solid var(--hair); border-radius:var(--r-md); background:var(--wash); }
-  #howview .wmirror .mk { margin-top:.62em; color:var(--ink-4); }
-
-  /* Act 1's close — a green chip beside the wrong value the screen actually shows */
-  #howview .wproof { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); }
-  #howview .wsep { font-size:var(--t-micro); letter-spacing:.06em; color:var(--ink-4); text-transform:uppercase; }
-  /* (.wsym / .wreframe / .wba went with the retired symptoms / inversion / beforeafter step kinds) */
   #howview .wcp-eq, #howview .wfa { color:var(--ink-4); font-size:var(--t-sm); flex:none; }
+
+  /* ── THE SCENES (board R11, stage 1R) ─────────────────────────────────────────────────────────
+     Every step of Acts 1 and 2 is a small drawn mock that PLAYS when the stepper reveals it and ENDS
+     IN A HELD STATE. Three invariants hold this together (see the renderers in build-board.mjs):
+       1. no new client JS — .wstep toggles display, which cancels a hidden step's animations and
+          starts them from zero when it is shown again. That IS the replay mechanism;
+       2. every animated element's BASE declaration is its END state, and its keyframes travel from
+          the start to that same end with fill-mode both. So the reduced-motion block below only has
+          to switch animation off: the finished picture is already what the rules describe;
+       3. nothing loops; every scene lands inside ~3.5s.
+     Colour is the design system unchanged: bengara for the failure beats, koke for the settled ones,
+     and indigo on exactly one thing — the guess flag and its confirmation — because that is the one
+     thing in the product that waits on a person. Every hue still rides a mark. */
+  #howview .scene { --sc-e:cubic-bezier(.2,.7,.3,1);
+    border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--canvas); padding:var(--s4); }
+
+  /* the shared mock-window chrome every scene is built from */
+  #howview .sc-win { border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper);
+    overflow:hidden; }
+  #howview .sc-hd { display:flex; align-items:center; gap:var(--s2); padding:5px var(--s3);
+    border-bottom:1px solid var(--hair); background:var(--wash); }
+  #howview .sc-t { font-size:var(--t-micro); color:var(--ink-3); }
+  #howview .sc-r { margin-left:auto; }
+  #howview .sc-pad { display:flex; flex-direction:column; gap:var(--s2); padding:var(--s3); }
+  #howview .sc-line { display:flex; gap:var(--s3); font-size:var(--t-xs); color:var(--ink); }
+  #howview .sc-n { flex:none; width:18px; text-align:right; font-size:var(--t-micro); color:var(--ink-4); }
+  #howview .sc-dimf { opacity:.45; }
+
+  /* 1 · the chat that scrolls away */
+  #howview .s-chat .sc-view { position:relative; height:190px; overflow:hidden; }
+  #howview .sc-thread { position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column;
+    gap:var(--s2); padding:var(--s3); opacity:.13; transform:translateY(-108px);
+    animation:sc-away 1.2s var(--sc-e) 1.55s both; }
+  #howview .sc-bub { max-width:64%; padding:6px var(--s3); border-radius:var(--r);
+    font-size:var(--t-sm); line-height:1.45; animation:sc-pop .34s var(--sc-e) both; }
+  #howview .sc-you { align-self:flex-end; background:var(--wash); color:var(--ink); }
+  #howview .sc-them { align-self:flex-start; background:var(--paper); color:var(--ink-2);
+    box-shadow:inset 0 0 0 1px var(--hair-2); }
+  #howview .sc-thread .sc-bub:nth-child(2) { animation:sc-popin .4s var(--sc-e) .5s both; }
+  #howview .sc-thread .sc-bub:nth-child(3) { animation-delay:.95s; }
+  #howview .sc-ghost { position:absolute; left:0; right:0; bottom:var(--s4); display:flex;
+    flex-direction:column; align-items:center; gap:var(--s2);
+    animation:sc-rise .6s var(--sc-e) 2.45s both; }
+  #howview .sc-doc { width:34px; height:44px; fill:none; stroke:var(--line3); stroke-width:1;
+    stroke-dasharray:3 3; }
+  #howview .sc-gt { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); }
+
+  /* 2 · the wall you cannot review — greeked, because that is the honest picture of a diff nobody read */
+  #howview .s-wall .sc-code { position:relative; padding:var(--s3) var(--s3) var(--s6); min-height:190px; }
+  #howview .sc-gl { display:flex; align-items:center; gap:var(--s3); height:15px;
+    animation:sc-slide .3s var(--sc-e) both; }
+  #howview .sc-toks { display:flex; align-items:center; gap:6px; }
+  #howview .sc-tok { height:5px; border-radius:2px; background:var(--hair-2); }
+  #howview .sc-tok.k { background:var(--line3); }
+  #howview .sc-badge { position:absolute; right:var(--s3); bottom:var(--s3);
+    animation:sc-stamp .42s var(--sc-e) 1.15s both; }
+
+  /* 3 · two weeks later — the calendar peels, the feature cracks, the REQUIREMENT gets rewritten */
+  #howview .sc-rot { display:flex; gap:var(--s4); }
+  #howview .sc-cal { flex:none; width:114px; border:1px solid var(--hair-2); border-radius:var(--r);
+    background:var(--paper); overflow:hidden; }
+  #howview .sc-calh { padding:5px var(--s3); border-bottom:1px solid var(--hair); background:var(--wash); }
+  #howview .sc-sheets { position:relative; height:104px; perspective:460px; }
+  #howview .sc-sheet { position:absolute; left:0; right:0; top:0; bottom:0; display:flex;
+    flex-direction:column; align-items:center; justify-content:center; gap:2px; background:var(--paper);
+    font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+    transform-origin:top center; }
+  #howview .sc-sheet b { font-weight:400; font-size:var(--t-xl); color:var(--ink); letter-spacing:-.03em; }
+  #howview .sc-s3 { z-index:1; }
+  #howview .sc-s2 { z-index:2; opacity:0; transform:rotateX(-94deg); animation:sc-peel .5s var(--sc-e) .95s both; }
+  #howview .sc-s1 { z-index:3; opacity:0; transform:rotateX(-94deg); animation:sc-peel .5s var(--sc-e) .35s both; }
+  #howview .sc-rotr { flex:1; min-width:0; display:flex; flex-direction:column; gap:var(--s3);
+    justify-content:center; }
+  #howview .sc-fcard { position:relative; display:flex; align-items:center; gap:var(--s3);
+    padding:var(--s3); border-radius:var(--r); overflow:hidden; background:var(--bengara-tint);
+    box-shadow:inset 0 0 0 1px var(--bengara-line); animation:sc-break .5s var(--sc-e) 1.35s both; }
+  #howview .sc-fct { font-size:var(--t-sm); color:var(--ink); }
+  #howview .sc-fcc { margin-left:auto; }
+  #howview .sc-crack { position:absolute; left:0; top:0; width:100%; height:100%; fill:none;
+    stroke:var(--bengara); stroke-width:1.5; stroke-dasharray:170; stroke-dashoffset:0;
+    animation:sc-draw .55s linear 1.65s both; }
+  #howview .sc-rew { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); font-size:var(--t-sm); }
+  #howview .sc-rewl { width:100%; font-size:var(--t-micro); color:var(--ink-4); }
+  #howview .sc-old { position:relative; color:var(--ink-3); }
+  #howview .sc-strike { position:absolute; left:0; top:50%; height:1px; width:100%;
+    background:var(--bengara); animation:sc-strike .45s linear 2s both; }
+  #howview .sc-arr { color:var(--ink-4); }
+  #howview .sc-new { color:var(--bengara); animation:sc-rise .4s var(--sc-e) 2.4s both; }
+  #howview .sc-same { align-self:flex-start; animation:sc-stamp .4s var(--sc-e) 2.55s both; }
+  #howview .sc-roll { display:inline-block; height:15px; overflow:hidden; vertical-align:-3px; }
+  #howview .sc-rs { display:block; transform:translateY(-30px); animation:sc-roll .9s linear 2.75s both; }
+  #howview .sc-rs > span { display:block; height:15px; line-height:15px; }
+
+  /* 4 · the invisible green — a passing assertion beside the screen it never looked at */
+  #howview .sc-split { display:grid; grid-template-columns:1fr 130px 1fr; align-items:center; gap:var(--s3); }
+  #howview .sc-split > .sc-win:first-child { animation:sc-rise .4s var(--sc-e) both; }
+  #howview .sc-split > .sc-win:last-child { animation:sc-rise .4s var(--sc-e) 1.1s both; }
+  #howview .s-blind .sc-line:nth-child(1) { animation:sc-rise .35s var(--sc-e) .15s both; }
+  #howview .s-blind .sc-line:nth-child(2) { animation:sc-rise .35s var(--sc-e) .4s both; }
+  #howview .sc-green { align-self:flex-start; animation:sc-stamp .42s var(--sc-e) .8s both; }
+  #howview .sc-mid { display:flex; flex-direction:column; align-items:center; gap:var(--s2);
+    animation:sc-rise .55s var(--sc-e) 2.3s both; }
+  #howview .sc-eye { width:28px; height:20px; fill:none; stroke:var(--bengara); stroke-width:1.2; }
+  #howview .sc-nobody { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+    color:var(--bengara); text-align:center; }
+  #howview .sc-fld { display:flex; align-items:baseline; gap:var(--s3); padding-bottom:var(--s2);
+    border-bottom:1px solid var(--hair); animation:sc-rise .35s var(--sc-e) 1.3s both; }
+  #howview .sc-fld.sc-dimf { animation-delay:1.45s; }
+  #howview .sc-fl { font-size:var(--t-xs); color:var(--ink-3); }
+  #howview .sc-fv, #howview .sc-fv2 { margin-left:auto; font-size:var(--t-sm); }
+  #howview .sc-fv { padding:2px 6px; border-radius:var(--r-sm); color:var(--bengara);
+    background:var(--bengara-tint); box-shadow:inset 0 0 0 1px var(--bengara-line);
+    animation:sc-mark .5s var(--sc-e) 1.75s both; }
+  #howview .sc-stalec { align-self:flex-start; animation:sc-stamp .42s var(--sc-e) 2.65s both; }
+
+  /* 5 · the flag that drops — the ONE indigo in the guide, and the one inverted element at rest */
+  #howview .sc-morph { position:relative; min-height:158px; display:flex; align-items:center; }
+  #howview .sc-mbub { position:absolute; left:0; top:var(--s3); max-width:58%; opacity:0;
+    animation:sc-become 1.35s var(--sc-e) both; }
+  #howview .sc-card { position:relative; flex:1; border:1px solid var(--hair-2); border-radius:var(--r);
+    background:var(--paper); padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3);
+    transform-origin:top left; animation:sc-grow .55s var(--sc-e) 1s both; }
+  #howview .sc-ch { display:flex; align-items:center; gap:var(--s2); }
+  #howview .sc-id { font-size:var(--t-micro); color:var(--ink-3); padding:1px 6px;
+    border-radius:var(--r-sm); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  #howview .sc-cb { font-size:var(--t-md); color:var(--ink); line-height:1.5; }
+  #howview .wflag { position:absolute; right:var(--s4); top:-11px; display:inline-flex; align-items:center;
+    gap:6px; padding:3px var(--s2); border-radius:var(--r-sm); background:var(--ai-tint); color:var(--ai);
+    box-shadow:inset 0 0 0 1px var(--ai-line); font-size:var(--t-xs); opacity:0;
+    transform:translateY(34px) rotate(-10deg); animation:sc-drop 1.9s var(--sc-e) 1.45s both; }
+  #howview .wconfirm { align-self:flex-start; display:inline-flex; align-items:center; gap:6px;
+    padding:5px var(--s3); border-radius:var(--r); background:var(--ai); color:var(--paper);
+    font-size:var(--t-sm); animation:sc-stamp .45s var(--sc-e) 2.9s both; }
+
+  /* 6 · review by watching — a recording player whose miniature golden scene plays once */
+  #howview .sc-player { border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper);
+    overflow:hidden; animation:sc-rise .4s var(--sc-e) both; }
+  #howview .sc-tag { margin-left:auto; font-size:var(--t-micro); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-3); padding:1px 6px; border-radius:var(--r-sm);
+    background:var(--paper); box-shadow:inset 0 0 0 1px var(--hair-2); }
+  #howview .sc-stage { position:relative; height:176px; overflow:hidden; }
+  #howview .sc-pv { position:absolute; left:0; right:0; top:0; bottom:0; padding:var(--s3); }
+  #howview .sc-tbl { display:flex; flex-direction:column; gap:2px; opacity:0; transform:translateX(-28px);
+    animation:sc-swapout 2.45s var(--sc-e) .2s both; }
+  #howview .sc-tr { display:grid; grid-template-columns:52px 1fr 44px; align-items:center; gap:var(--s2);
+    padding:5px var(--s2); font-size:var(--t-xs); color:var(--ink); }
+  #howview .sc-th { font-size:var(--t-micro); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-4); border-bottom:1px solid var(--hair); }
+  #howview .sc-hit { background:var(--wash); border-radius:var(--r-sm); }
+  #howview .sc-cell { position:relative; display:inline-block; height:15px; width:38px; overflow:hidden;
+    vertical-align:-3px; }
+  #howview .sc-was, #howview .sc-is { position:absolute; left:0; top:0; height:15px; line-height:15px;
+    font-style:normal; }
+  #howview .sc-was { opacity:0; transform:translateY(-15px); animation:sc-vout .3s var(--sc-e) .95s both; }
+  #howview .sc-is { animation:sc-vin .32s var(--sc-e) 1.05s both; }
+  #howview .sc-chart { display:flex; align-items:flex-end; justify-content:center; gap:var(--s6);
+    padding-bottom:var(--s4); animation:sc-swapin .45s var(--sc-e) 2.25s both; }
+  #howview .sc-col { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  #howview .sc-bv { font-size:var(--t-micro); color:var(--ink); animation:sc-rise .35s var(--sc-e) both; }
+  #howview .sc-track { display:flex; align-items:flex-end; height:88px; }
+  #howview .sc-bar { display:block; width:26px; background:var(--ink-3); border-radius:2px 2px 0 0;
+    transform-origin:bottom; animation:sc-growb .5s var(--sc-e) both; }
+  #howview .sc-bl { font-size:var(--t-micro); color:var(--ink-4); }
+  #howview .sc-transport { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
+    border-top:1px solid var(--hair); }
+  #howview .sc-play { width:10px; height:12px; flex:none; fill:var(--ink-3); }
+  #howview .sc-prog { flex:1; height:3px; border-radius:2px; background:var(--hair); overflow:hidden; }
+  #howview .sc-fill { display:block; height:3px; width:100%; background:var(--ink-3);
+    animation:sc-prog 3.3s linear .2s both; }
+  #howview .sc-time { font-size:var(--t-micro); color:var(--ink-4); }
+
+  /* 7 · the chip that flips — the mutation and the verdict, drawn as one movement */
+  #howview .sc-dr { display:grid; grid-template-columns:1fr 64px 1fr; align-items:center; gap:var(--s2); }
+  #howview .s-drift .sc-win { animation:sc-rise .4s var(--sc-e) both; }
+  #howview .sc-hot { margin:0 -4px; padding:1px 4px; border-radius:var(--r-sm);
+    background:var(--bengara-tint); animation:sc-hot .45s var(--sc-e) .85s both; }
+  #howview .sc-mut { position:relative; display:inline-block; height:15px; width:8px; overflow:hidden;
+    vertical-align:-3px; }
+  #howview .s-drift .sc-is { color:var(--bengara); }
+  #howview .sc-wire { width:64px; height:14px; fill:none; }
+  #howview .sc-wl, #howview .sc-wh { stroke:var(--hair-2); stroke-width:1; }
+  #howview .sc-wp { stroke:var(--bengara); stroke-width:1.6; stroke-dasharray:10 60;
+    stroke-dashoffset:-58; animation:sc-travel .55s linear 1s both; }
+  #howview .sc-rq { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) 0; }
+  #howview .sc-rqt { font-size:var(--t-xs); color:var(--ink-2); }
+  #howview .sc-flip { position:relative; flex:none; margin-left:auto; width:82px; height:21px; }
+  #howview .wproven, #howview .wunproven { position:absolute; right:0; top:0; }
+  #howview .wproven { opacity:0; transform:scale(.82); animation:sc-flipout .3s var(--sc-e) 1.45s both; }
+  #howview .wunproven { animation:sc-flipin .34s var(--sc-e) 1.55s both; }
+
+  /* 8 · the mirror, drawn — marks and ink, never a wash of hue: the comparison must be read */
+  #howview .sc-mir { display:grid; grid-template-columns:1fr 1px 1fr; gap:var(--s5); }
+  #howview .sc-mcol { display:flex; flex-direction:column; gap:var(--s3); }
+  #howview .sc-mh { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); animation:sc-rise .35s var(--sc-e) both; }
+  #howview .sc-row { display:flex; align-items:flex-start; gap:var(--s2); font-size:var(--t-sm);
+    color:var(--ink-2); line-height:1.5; animation:sc-inl .4s var(--sc-e) both; }
+  #howview .sc-row .mk { flex:none; margin-top:.5em; }
+  #howview .sc-bad .mk { color:var(--bengara); }
+  #howview .sc-ok .mk { color:var(--koke); }
+  #howview .sc-ok .sc-mh { animation-delay:.8s; }
+  #howview .sc-ok .sc-row { animation-name:sc-inr; }
+  #howview .sc-bad .sc-row:nth-child(2) { animation-delay:.1s; }
+  #howview .sc-bad .sc-row:nth-child(3) { animation-delay:.35s; }
+  #howview .sc-bad .sc-row:nth-child(4) { animation-delay:.6s; }
+  #howview .sc-ok .sc-row:nth-child(2) { animation-delay:.95s; }
+  #howview .sc-ok .sc-row:nth-child(3) { animation-delay:1.2s; }
+  #howview .sc-ok .sc-row:nth-child(4) { animation-delay:1.45s; }
+  #howview .sc-div { background:var(--hair-2); transform-origin:top;
+    animation:sc-drawv .45s var(--sc-e) 1.5s both; }
+
+  /* the keyframes — every one travels FROM a start state TO the rule's own base state, so the last
+     frame and the static rule are the same picture. That is the whole reduced-motion strategy. */
+  @keyframes sc-pop { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:none; } }
+  @keyframes sc-popin { 0% { opacity:0; transform:translateY(7px) scale(.9); }
+    62% { opacity:1; transform:translateY(0) scale(1.05); } 100% { opacity:1; transform:none; } }
+  @keyframes sc-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+  @keyframes sc-slide { from { opacity:0; transform:translateX(-9px); } to { opacity:1; transform:none; } }
+  @keyframes sc-stamp { 0% { opacity:0; transform:scale(.84); } 64% { opacity:1; transform:scale(1.06); }
+    100% { opacity:1; transform:none; } }
+  @keyframes sc-away { 0%, 30% { opacity:1; transform:none; } 100% { opacity:.13; transform:translateY(-108px); } }
+  @keyframes sc-peel { 0%, 55% { opacity:1; transform:none; } 100% { opacity:0; transform:rotateX(-94deg); } }
+  @keyframes sc-break { 0% { background:var(--wash); box-shadow:inset 0 0 0 1px var(--hair-2); transform:none; }
+    30% { transform:translateX(-3px); } 55% { transform:translateX(3px); } 75% { transform:translateX(-1px); }
+    100% { background:var(--bengara-tint); box-shadow:inset 0 0 0 1px var(--bengara-line); transform:none; } }
+  @keyframes sc-draw { from { stroke-dashoffset:170; } to { stroke-dashoffset:0; } }
+  @keyframes sc-strike { from { width:0; } to { width:100%; } }
+  @keyframes sc-roll { 0%, 30% { transform:none; } 31%, 63% { transform:translateY(-15px); }
+    64%, 100% { transform:translateY(-30px); } }
+  @keyframes sc-mark { 0% { color:var(--ink); background:var(--paper); box-shadow:inset 0 0 0 1px var(--paper); }
+    55% { transform:scale(1.1); }
+    100% { color:var(--bengara); background:var(--bengara-tint); box-shadow:inset 0 0 0 1px var(--bengara-line);
+      transform:none; } }
+  @keyframes sc-become { 0% { opacity:0; transform:translateY(8px); } 16% { opacity:1; transform:none; }
+    58% { opacity:1; transform:none; } 100% { opacity:0; transform:scale(1.04); } }
+  @keyframes sc-grow { from { opacity:0; transform:scale(.94) translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes sc-drop { 0% { opacity:0; transform:translateY(-7px) scale(.9); }
+    11% { opacity:1; transform:none; } 56% { opacity:1; transform:none; }
+    72% { opacity:.7; transform:translateY(12px) rotate(-6deg); }
+    100% { opacity:0; transform:translateY(34px) rotate(-10deg); } }
+  @keyframes sc-swapout { 0% { opacity:0; transform:translateX(12px); } 14% { opacity:1; transform:none; }
+    74% { opacity:1; transform:none; } 100% { opacity:0; transform:translateX(-28px); } }
+  @keyframes sc-swapin { from { opacity:0; transform:translateX(28px); } to { opacity:1; transform:none; } }
+  @keyframes sc-vout { from { opacity:1; transform:none; } to { opacity:0; transform:translateY(-15px); } }
+  @keyframes sc-vin { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:none; } }
+  @keyframes sc-growb { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+  @keyframes sc-prog { from { width:0; } to { width:100%; } }
+  @keyframes sc-hot { from { background:transparent; } to { background:var(--bengara-tint); } }
+  @keyframes sc-travel { from { stroke-dashoffset:12; } to { stroke-dashoffset:-58; } }
+  @keyframes sc-flipout { from { opacity:1; transform:none; } to { opacity:0; transform:scale(.82); } }
+  @keyframes sc-flipin { from { opacity:0; transform:scale(.82) translateY(-5px); } to { opacity:1; transform:none; } }
+  @keyframes sc-inl { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:none; } }
+  @keyframes sc-inr { from { opacity:0; transform:translateX(10px); } to { opacity:1; transform:none; } }
+  @keyframes sc-drawv { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+
+  /* the whole point of invariant 2: switch every scene animation off and the held end state is
+     already the rule. Nothing to restate here, and nothing that can drift out of sync with the
+     keyframes above — a reduced-motion block that re-declared end states would be a second copy. */
+  @media (prefers-reduced-motion: reduce) {
+    #howview .scene, #howview .scene * { animation:none !important; }
+  }
 
   /* Act 3 — see it work: an explicitly LABELLED illustration, never dressed as live board state */
   #howview .wdemo { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--canvas);
