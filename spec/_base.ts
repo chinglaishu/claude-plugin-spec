@@ -208,6 +208,64 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
   }, { head: HUD.head, detail: HUD.detail, failed: !!s.failed }).catch(() => {})
 }
 
+// The FOCUS overlay (board R10 — the recording is the proof a human checks). A dense table's topbar
+// names a value but not WHERE it is; this paints the eye onto the exact cell reveal() centres. Like
+// the HUD it is injected INTO the page, so it is burned into the video and shown in the live watch: a
+// full-width dim BAND that lights only the target's row (so the topbar's words tie to the row on the
+// left), and a RING on the target itself — sumi ink normally, deep bengara on a failed check (the one
+// place red belongs — it mirrors the topbar going red). Gated on a board recording, so a plain
+// `npm run e2e` paints nothing and stays fast. pointer-events:none so it never swallows a click, and a
+// z-index just BELOW the HUD so the narration always sits on top. Best-effort: an off-screen or
+// detached target (no box) simply leaves the previous frame's overlay as it was.
+async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page || !process.env.BOARD_RECORD) return
+  const box = await target.first().boundingBox().catch(() => null)
+  if (!box) return
+  await page.evaluate(({ box, failed }) => {
+    const RING = failed ? '#7a2f1d' : '#1c1b18'                       // bengara on failure, sumi ink on a pass
+    const GLOW = failed ? 'rgba(122,47,29,.38)' : 'rgba(28,27,24,.28)'
+    let el = document.getElementById('__specboard-focus')
+    if (!el) {
+      el = document.createElement('div')
+      el.id = '__specboard-focus'
+      el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none'
+      const veil = document.createElement('div')
+      veil.className = 'sb-veil'
+      // a transparent full-width band; its huge box-shadow dims everything ABOVE and BELOW it, so the
+      // target's row stays lit while the rest of the table recedes.
+      veil.style.cssText = 'position:fixed;left:0;width:100vw;box-shadow:0 0 0 100vmax rgba(28,27,24,.5);' +
+        'transition:top .18s ease,height .18s ease'
+      const ring = document.createElement('div')
+      ring.className = 'sb-ring'
+      ring.style.cssText = 'position:fixed;border-radius:5px;transition:all .18s ease'
+      el.append(veil, ring)
+      document.body.appendChild(el)
+    }
+    el.style.display = ''
+    const veil = el.querySelector('.sb-veil') as HTMLElement
+    const ring = el.querySelector('.sb-ring') as HTMLElement
+    veil.style.top = (box.y - 2) + 'px'
+    veil.style.height = (box.height + 4) + 'px'
+    ring.style.left = (box.x - 3) + 'px'
+    ring.style.top = (box.y - 3) + 'px'
+    ring.style.width = (box.width + 6) + 'px'
+    ring.style.height = (box.height + 6) + 'px'
+    ring.style.border = '2px solid ' + RING
+    ring.style.boxShadow = '0 0 0 3px rgba(244,241,234,.7),0 0 12px ' + GLOW
+  }, { box, failed: !!opts.failed }).catch(() => {})
+}
+// Hide the focus overlay so a NEW step starts clean — the ring reappears only once the step reveals a
+// value to prove, never lingering on the previous step's cell.
+async function hideFocus (): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page || !process.env.BOARD_RECORD) return
+  await page.evaluate(() => {
+    const el = document.getElementById('__specboard-focus')
+    if (el) el.style.display = 'none'
+  }).catch(() => {})
+}
+
 // A narration line does TWO things at once: it stacks onto the topbar (into the video), and it is
 // RECORDED as a `note: ` step so the board can show it as the step's expandable detail — the same
 // got/expected line in both places, from one call (board R10).
@@ -254,6 +312,9 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   if (await el.count().catch(() => 0)) {
     await el.evaluate(n => (n as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' })).catch(() => {})
   }
+  // Point the recording at what this step proves — painted after the centre so it reads the settled
+  // position. Ink here; proveVisible reddens it if the value it then reads is wrong.
+  await paintFocus(target)
   const hold = opts.hold ?? (recordHold(1600) || 200)
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
@@ -271,12 +332,16 @@ export async function proveVisible (
   label: string,
   opts: { match?: (shown: string) => boolean } = {}
 ): Promise<void> {
-  await reveal(target, { hold: 0 })                         // centre it now; the readable hold comes after we read
+  await reveal(target, { hold: 0 })                         // centre it now, ring it in ink; the readable hold comes after we read
   const shown = ((await target.first().textContent()) || '').trim()
   await hudCheck(label, expected, shown)
-  if (opts.match) expect(opts.match(shown), `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
-  else expect(shown, `${label} — the value read off the screen`).toBe(expected)
+  const ok = opts.match ? !!opts.match(shown) : shown === expected
+  // A wrong value turns the ring bengara BEFORE we throw, and we hold on that red frame, so the
+  // recording shows exactly which cell failed rather than cutting away at the assertion.
+  if (!ok) await paintFocus(target, { failed: true })
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
+  if (opts.match) expect(ok, `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
+  else expect(shown, `${label} — the value read off the screen`).toBe(expected)
 }
 
 // A STORY STEP (board R10): one numbered sentence of what a user does and what should happen —
@@ -286,6 +351,7 @@ export async function proveVisible (
 export async function flowStep (title: string, fn: () => Promise<void> | void): Promise<void> {
   const n = ++FLOW_N
   await paintHud({ head: n + '. ' + title })
+  await hideFocus()                                          // a new step starts clean — no ring until it reveals a value
   FLOW_DEPTH++
   try {
     // fn runs INSIDE a test.step, so a failure marks THAT step failed on the board. The catch is
