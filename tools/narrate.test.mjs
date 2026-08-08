@@ -6,7 +6,7 @@
 // piper/ffmpeg shell lives in narrate-run.mjs and is not under test here.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseBeats, selectCues, buildAnchors, wallToVideo, layoutCues, toSrt } from './narrate.mjs'
+import { parseBeats, selectCues, buildAnchors, wallToVideo, layoutCues, toSrt, toAss } from './narrate.mjs'
 
 const BEATS = [
   { t: 10000, kind: 'step', label: '1. Read the inherited fee — follows House View' },
@@ -30,6 +30,12 @@ const PACK = {
     { on: 'step', match: '^9\\.', spoken: 'Never happens.', shown: 'Never happens.' }
   ]
 }
+
+test('a cue with a single `text` speaks and shows the SAME words — subtitle equals voice', () => {
+  const { cues } = selectCues(BEATS, { cues: [{ on: 'step', match: '^1\\.', text: 'One string, both channels.' }] })
+  assert.equal(cues[0].spoken, 'One string, both channels.')
+  assert.equal(cues[0].shown, 'One string, both channels.')
+})
 
 test('parseBeats reads JSONL and skips blank lines', () => {
   const beats = parseBeats('{"t":1,"kind":"step","label":"a"}\n\n{"t":2,"kind":"note","label":"b"}\n')
@@ -89,6 +95,22 @@ test('layoutCues nudges a cue that would start while the previous line still spe
   assert.equal(laid.cues[1].t, 5.25, 'second cue waits for the first + gap')
   assert.ok(laid.cues[1].nudged > 0)
   assert.equal(laid.endsAt, 7.25)
+})
+
+test('toAss renders at the video’s own resolution — no PlayRes scaling to garble the boxes', () => {
+  // SRT + force_style renders at libass’ default 384×288 and SCALES UP; with BorderStyle=3 boxes
+  // that mis-measured a third wrapped line into a clipped sliver under the subtitle (v6). A native
+  // ASS script pins PlayRes to the real frame so what we author is exactly what burns in.
+  const ass = toAss([
+    { t: 1.0, dur: 2.0, shown: 'first {line}' },
+    { t: 10.0, dur: 5.0, shown: 'second line' }
+  ], 12.0, { width: 1440, height: 900, fontSize: 28 })
+  assert.match(ass, /PlayResX: 1440/)
+  assert.match(ass, /PlayResY: 900/)
+  assert.match(ass, /Style: Sub,[^,]+,28,/, 'font size is in real frame pixels')
+  assert.match(ass, /,3,3,0,2,/, 'BorderStyle=3 opaque box, bottom-centre alignment')
+  assert.match(ass, /Dialogue: 0,0:00:01\.00,0:00:03\.40,Sub,,0,0,0,,first \(line\)/, 'braces are neutralised — they would be ASS override tags')
+  assert.match(ass, /Dialogue: 0,0:00:10\.00,0:00:12\.00,Sub,,0,0,0,,second line/, 'clamped to the video end')
 })
 
 test('toSrt writes white-on-black-sized cues that never outlive the next line or the video', () => {

@@ -85,11 +85,11 @@ test('the chip strip advances pending → active → passed, and the beat log re
   assert.match(String(s.duringR1), /▸/, 'the chip is marked active while its checkReq runs')
   assert.match(String(s.afterR1), /✓/, 'the chip is marked passed once its checkReq passed')
   assert.ok(!/[✓✕▸]/.test(String(s.pendingR2)), 'an untouched chip stays pending, with no mark')
-  // Steps and requirements are DIFFERENT numbering systems, and the bar must say which one it is
-  // using: the head names its step as "Step N ·", and while a checkReq runs a dedicated proving
-  // line names the requirement — so the voice saying "requirement five" always has an R5 on the
-  // bar to point at, whatever step number sits in the headline.
-  assert.match(String(s.head), /✓ Step 1 · Read the table/, 'the head names the STEP system explicitly')
+  // Requirements are the ONLY numbering system a watcher sees: the head is the step's plain
+  // action description with NO number (a "1." beside an "R5" is how the first cut got misread),
+  // while the proving line and the chips carry the R#s — one system, labeled.
+  assert.match(String(s.head), /✓ Read the table/, 'the head is the action, unnumbered')
+  assert.ok(!/\b[Ss]tep\s*\d|^\d+[.·]/.test(String(s.head)), 'no step number for a watcher to confuse with an R#')
   assert.match(String(s.provingDuring), /▸ proving R1/, 'the proving line names the requirement while it runs')
   assert.match(String(s.provingAfter), /✓ R1 proven/, 'the proving line reports the verdict after the check')
 })
@@ -124,7 +124,7 @@ test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
   // still explaining R1 — the proving line must hold the requirement's verdict on the bar through
   // the red frame, so both numbering systems are on screen and labeled.
   assert.match(String(s.proving), /✕ R1 failed/, 'the proving line keeps naming the failed requirement')
-  assert.match(String(s.head), /✗ Step 1 failed — A wrong value/, 'the head names the failed STEP explicitly')
+  assert.match(String(s.head), /✗ Failed — A wrong value/, 'the failed head is the action, unnumbered')
 })
 
 test('BOARD_BEAT_LOG records a wall-clock JSONL timeline of steps, checks and notes', () => {

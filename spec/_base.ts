@@ -511,9 +511,11 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
   await paceGate('step', n + '. ' + title)
   beat('step', n + '. ' + title)
   PROVING = null                                             // a new step starts with no requirement claimed
-  // the head names its numbering system — "Step 1 ·", never a bare "1." a watcher could confuse
-  // with a requirement number (the beat label keeps the stable machine format)
-  await paintHud({ head: 'Step ' + n + ' · ' + title })
+  // The head is the step's plain ACTION, unnumbered. Requirements (R#) are the only numbering a
+  // watcher sees — on the chips and the proving line — because two number systems side by side is
+  // how the first narrated cut got misread ("✗ 1." on the bar while the voice said "requirement
+  // five"). The beat label keeps the numbered machine format for pack matching and the board.
+  await paintHud({ head: title })
   await hideFocus()                                          // a new step starts clean — no ring until it reveals a value
   FLOW_DEPTH++
   try {
@@ -524,12 +526,12 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     await test.step(title, async () => { await fn() })
     await paceGate('step-done', '✓ ' + n + '. ' + title, false)
     beat('step-done', '✓ ' + n + '. ' + title)
-    await paintHud({ head: '✓ Step ' + n + ' · ' + title, detail: HUD.detail })
+    await paintHud({ head: '✓ ' + title, detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
     await paceGate('step-done', '✗ ' + n + '. ' + title, false)
     beat('step-done', '✗ ' + n + '. ' + title)
-    await paintHud({ head: '✗ Step ' + n + ' failed — ' + title, detail: HUD.detail, failed: true })
+    await paintHud({ head: '✗ Failed — ' + title, detail: HUD.detail, failed: true })
     // Hold the red frame long enough to READ: the last detail line is the failing check's own
     // got-vs-expected, and under a recording the pause stretches by the watch pace so the failure
     // is a scene, not a flash. (A narrated run holds longer still — the pace gate keeps this frame
@@ -616,8 +618,10 @@ test.afterEach(async ({}, testInfo) => {
   const f = STEP_FAILURES
   if (CURRENT_PAGE) {
     await paintHud({
+      // titles only, no ordinals — beside a strip of R-chips, a "✗ 2." reads like a requirement
+      // number and the whole point of the card is to be unmistakable
       head: '✗ ' + f.length + ' of this test’s steps failed',
-      detail: f.map(s => '✗ ' + (s.n ? s.n + '. ' : '') + s.title).slice(0, 6).join('\n'),
+      detail: f.map(s => '✗ ' + s.title).slice(0, 6).join('\n'),
       failed: true
     }).catch(() => {})
     await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})

@@ -22,7 +22,7 @@ import { execFileSync, execSync } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs'
 import { join, dirname, resolve, basename } from 'node:path'
 import { createHash } from 'node:crypto'
-import { parseBeats, selectCues, buildAnchors, wallToVideo, layoutCues, toSrt } from './narrate.mjs'
+import { parseBeats, selectCues, buildAnchors, wallToVideo, layoutCues, toSrt, toAss } from './narrate.mjs'
 
 const args = process.argv.slice(2)
 const cmd = args[0]
@@ -67,11 +67,11 @@ if (cmd === 'pace') {
   const out = opt('out') || die('--out <pace.json> is required')
   const pad = Number(opt('pad', 300))                    // breathing room after each line, ms
   const cues = (pack.cues || []).map(c => {
-    const { dur } = synth(c.spoken)
+    const { dur } = synth(c.text ?? c.spoken)
     return { on: c.on, match: c.match, ms: Math.round(dur * 1000) + pad }
   })
   // the intro has no beat — the run reserves it at test start so the first beat waits it out
-  const introMs = pack.intro ? Math.round(synth(pack.intro.spoken).dur * 1000) + pad : 0
+  const introMs = pack.intro ? Math.round(synth(pack.intro.text ?? pack.intro.spoken).dur * 1000) + pad : 0
   writeFileSync(out, JSON.stringify({ gap: 250, introMs, cues }, null, 1))
   console.log(`pace rules for ${cues.length} lines -> ${out}`)
   process.exit(0)
@@ -83,7 +83,7 @@ if (cmd !== 'render') die('usage: narrate-run.mjs pace|render …')
 const video = opt('video') || die('--video <video.webm> is required')
 const beatsFile = opt('beats') || die('--beats <beats.jsonl> is required')
 const outFile = opt('out', 'narrated.mp4')
-const subSize = Number(opt('sub-size', 11))
+const subSize = Number(opt('sub-size', 28))          // real frame pixels — the ASS PlayRes is the video's own
 const voiceOn = !flag('no-voice')
 
 const probeDur = (f) => Number(execFileSync('ffprobe', ['-v', 'quiet', '-show_entries', 'format=duration',
@@ -131,14 +131,18 @@ const { cues, endsAt } = layoutCues(timed, { gap: 0.25 })
 for (const c of cues) if (c.nudged > 0.75) console.warn(`  !! "${c.shown.slice(0, 50)}" nudged ${c.nudged}s — hold its beat longer (record with the pace file)`)
 
 const finalDur = Math.max(videoDur, endsAt + 0.7)
+// The .srt is the portable artifact; the burn-in uses a native .ass pinned to the video's own
+// resolution (SRT+force_style scales from 384×288 and garbles BorderStyle=3 boxes — see toAss).
 const srtFile = outFile.replace(/\.\w+$/, '') + '.srt'
 writeFileSync(srtFile, toSrt(cues, finalDur))
+const assFile = outFile.replace(/\.\w+$/, '') + '.ass'
+const [vw, vh] = execFileSync('ffprobe', ['-v', 'quiet', '-select_streams', 'v:0', '-show_entries',
+  'stream=width,height', '-of', 'csv=p=0', video], { encoding: 'utf8' }).trim().split(',').map(Number)
+writeFileSync(assFile, toAss(cues, finalDur, { width: vw || 1440, height: vh || 900, fontSize: subSize }))
 
 // audio: every line adelay'd onto one silent-backed track; video: tpad-freeze if narration overruns
-const style = `FontName=Helvetica,FontSize=${subSize},PrimaryColour=&H00FFFFFF,BorderStyle=3,` +
-  'OutlineColour=&H00000000,BackColour=&H00000000,Outline=2,Shadow=0,MarginV=22'
 const pad = finalDur > videoDur ? `tpad=stop_mode=clone:stop_duration=${(finalDur - videoDur).toFixed(2)},` : ''
-const vf = `[0:v]${pad}subtitles=${srtFile.replace(/([\\':])/g, '\\$1')}:force_style='${style}'[v]`
+const vf = `[0:v]${pad}subtitles=${assFile.replace(/([\\':])/g, '\\$1')}[v]`
 const ffArgs = ['-y', '-loglevel', 'error', '-i', video]
 let fc = vf
 let map = ['-map', '[v]']
