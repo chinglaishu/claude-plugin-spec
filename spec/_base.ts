@@ -76,6 +76,7 @@ export const test = windowed.extend<{ page: Page }>({
     FAILED_PAINTED = false
     STEP_FAILURES = []
     REQ_CHIPS = []
+    NARRATE_UNTIL = 0
     try {
       await use(page)
     } finally {
@@ -119,6 +120,38 @@ function beat (kind: string, label: string): void {
   const file = process.env.BOARD_BEAT_LOG
   if (!file) return
   try { appendFileSync(file, JSON.stringify({ t: Date.now(), kind, label }) + '\n') } catch { /* timeline only */ }
+}
+
+// THE PACE GATE — the topbar must never outrun the voice. A narrated recording synthesizes its
+// lines BEFORE the run (the screen's narration pack, tools/narrate-run.mjs), so every line's
+// duration is known; BOARD_NARRATION_PACE names a JSON file of {on, match, ms} rules and this gate
+// holds each new beat until the previous line has finished speaking. Sync by construction — the
+// subtitle can never still be explaining R1 while the bar has moved on. Off (no env) it costs
+// nothing, so a plain suite run and an unnarrated recording are exactly as fast as before.
+let PACE: { gap: number, rules: { on: string, re: RegExp, ms: number }[] } | null | undefined
+function paceRules () {
+  if (PACE !== undefined) return PACE
+  const file = process.env.BOARD_NARRATION_PACE
+  if (!file) return (PACE = null)
+  try {
+    const j = JSON.parse(readFileSync(file, 'utf8'))
+    PACE = { gap: Number(j.gap ?? 250), rules: (j.cues || []).map((c: any) => ({ on: String(c.on), re: new RegExp(String(c.match)), ms: Number(c.ms) || 0 })) }
+  } catch { PACE = null }
+  return PACE
+}
+let NARRATE_UNTIL = 0
+// wait=true (a beat that STARTS something): first wait out the line still speaking, then reserve
+// this beat's own line. wait=false (a done-beat): the ✗/✓ paint must land immediately — only
+// reserve its line so the NEXT beat waits it out.
+async function paceGate (kind: string, label: string, wait = true): Promise<void> {
+  const p = paceRules()
+  if (!p) return
+  if (wait) {
+    const hold = NARRATE_UNTIL - Date.now()
+    if (hold > 0 && CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
+  }
+  const rule = p.rules.find(r => r.on === kind && r.re.test(label))
+  if (rule) NARRATE_UNTIL = Math.max(Date.now(), NARRATE_UNTIL) + rule.ms + p.gap
 }
 
 // Per-test narration state: the story-step counter, whether we are inside a flowStep (a nested
@@ -173,7 +206,11 @@ function reqTitle (qid: string): string {
 // step, the announced values stacked beneath — accumulating within a step the way a person would
 // list them, capped so the bar cannot swallow the frame.
 const HUD = { head: '', detail: '' }
-const DETAIL_MAX_LINES = 6
+const DETAIL_MAX_LINES = 3
+// The band's fixed height under a recording. Fixed on purpose: the page below is shifted by
+// exactly this much, and a bar that grew with its detail lines would bounce the whole app on
+// every narration line.
+const BAND_H = 118
 // A goto WIPES the injected bar — and real flows navigate mid-beat (a cross-page read). Repaint
 // after every main-frame navigation so the narration is consistently on screen, not only until
 // the first goto. One listener per page, installed lazily on first paint.
@@ -204,13 +241,13 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     const lines = (HUD.detail ? HUD.detail.split('\n') : []).concat(String(s.appendDetail).split('\n'))
     HUD.detail = lines.slice(-DETAIL_MAX_LINES).join('\n')
   }
-  await page.evaluate(({ head, detail, failed, chips }) => {
+  await page.evaluate(({ head, detail, failed, chips, band }) => {
     let el = document.getElementById('__specboard-hud')
     if (!el) {
       el = document.createElement('div')
       el.id = '__specboard-hud'
       el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;pointer-events:none;' +
-        'display:flex;flex-direction:column;gap:4px;padding:14px 22px 12px;' +
+        'display:flex;flex-direction:column;gap:4px;padding:12px 22px 10px;box-sizing:border-box;' +
         'font-family:system-ui,sans-serif;color:#f4f1ea;background:rgba(28,27,24,.94);' +
         'border-bottom:3px solid rgba(244,241,234,.30);box-shadow:0 2px 14px rgba(0,0,0,.30)'
       const row = document.createElement('div')
@@ -218,16 +255,27 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
       row.style.cssText = 'display:flex;align-items:flex-start;gap:18px'
       const h = document.createElement('div')
       h.id = '__specboard-hud-head'
-      h.style.cssText = 'flex:1;font-weight:700;font-size:20px;line-height:1.3;letter-spacing:-.01em'
+      h.style.cssText = 'flex:1;font-weight:700;font-size:19px;line-height:1.25;letter-spacing:-.01em;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
       const c = document.createElement('div')
       c.id = '__specboard-hud-reqs'
       c.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px'
       row.append(h, c)
       const d = document.createElement('div')
       d.id = '__specboard-hud-detail'
-      d.style.cssText = 'font-weight:400;font-size:15px;line-height:1.5;opacity:.92;white-space:pre-line'
+      d.style.cssText = 'font-weight:400;font-size:14px;line-height:1.55;opacity:.92;white-space:pre-line'
       el.append(row, d)
-      document.body.appendChild(el)
+      // Hang the bar off <html>, NOT <body>. Under a recording the body is transformed down by the
+      // band height so the bar sits ABOVE the site instead of on top of it — nothing is ever
+      // covered, and because a transformed body becomes the containing block for its fixed
+      // descendants, the app's own fixed chrome (sidebars, sticky headers) shifts down too. The
+      // bar itself must therefore live OUTSIDE the body, or it would shift with everything else.
+      document.documentElement.appendChild(el)
+    }
+    if (band) {
+      el.style.height = band + 'px'
+      el.style.overflow = 'hidden'
+      document.body.style.transform = 'translateY(' + band + 'px)'
     }
     el.style.background = failed ? 'rgba(122,47,29,.96)' : 'rgba(28,27,24,.94)'
     el.style.borderBottomColor = failed ? 'rgba(232,161,138,.65)' : 'rgba(244,241,234,.30)'
@@ -259,7 +307,15 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
         strip.appendChild(s)
       }
     }
-  }, { head: HUD.head, detail: HUD.detail, failed: !!s.failed, chips: REQ_CHIPS.map(c => ({ ...c })) }).catch(() => {})
+  }, {
+    head: HUD.head,
+    detail: HUD.detail,
+    failed: !!s.failed,
+    chips: REQ_CHIPS.map(c => ({ ...c })),
+    // the band-and-shift layout only under a recording — a plain suite run must leave the page
+    // geometry exactly alone (tests may assert on positions, and nobody is watching anyway)
+    band: process.env.BOARD_RECORD ? BAND_H : 0
+  }).catch(() => {})
 }
 
 // The FOCUS overlay (board R10 — the recording is the proof a human checks). A dense table's topbar
@@ -274,6 +330,10 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
 async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
   const page = CURRENT_PAGE
   if (!page || !process.env.BOARD_RECORD) return
+  // Apply the band shift BEFORE measuring. A bare proveVisible with no flowStep in front would
+  // otherwise measure the cell pre-shift, paint the ring, and then the first hudCheck's paint
+  // would shift the page — leaving the ring BAND_H px above the cell it claims to point at.
+  await page.evaluate((band) => { document.body.style.transform = 'translateY(' + band + 'px)' }, BAND_H).catch(() => {})
   const box = await target.first().boundingBox().catch(() => null)
   if (!box) return
   await page.evaluate(({ box, failed }) => {
@@ -284,6 +344,9 @@ async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Pr
       el = document.createElement('div')
       el.id = '__specboard-focus'
       el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none'
+      // outside the (possibly transformed) body, like the HUD — a fixed overlay inside a
+      // transformed body would be re-rooted and land BAND_H px below the cell it rings
+      document.documentElement.appendChild(el)
       const veil = document.createElement('div')
       veil.className = 'sb-veil'
       // a transparent full-width band; its huge box-shadow dims everything ABOVE and BELOW it, so the
@@ -294,7 +357,6 @@ async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Pr
       ring.className = 'sb-ring'
       ring.style.cssText = 'position:fixed;border-radius:5px;transition:all .18s ease'
       el.append(veil, ring)
-      document.body.appendChild(el)
     }
     el.style.display = ''
     const veil = el.querySelector('.sb-veil') as HTMLElement
@@ -324,6 +386,7 @@ async function hideFocus (): Promise<void> {
 // RECORDED as a `note: ` step so the board can show it as the step's expandable detail — the same
 // got/expected line in both places, from one call (board R10).
 async function narrate (text: string): Promise<void> {
+  await paceGate('note', text)
   beat('note', text)
   await test.step('note: ' + text, async () => {
     await paintHud({ appendDetail: text })
@@ -415,6 +478,7 @@ export async function proveVisible (
 // still tags requirements while the narrative carries the story.
 export async function flowStep (title: string, fn: () => Promise<void> | void): Promise<void> {
   const n = ++FLOW_N
+  await paceGate('step', n + '. ' + title)
   beat('step', n + '. ' + title)
   await paintHud({ head: n + '. ' + title })
   await hideFocus()                                          // a new step starts clean — no ring until it reveals a value
@@ -425,10 +489,12 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     // which lets the flow CONTINUE to the next step instead of aborting (board R10). The test is
     // still failed: afterEach throws the aggregate. The recording keeps rolling through every step.
     await test.step(title, async () => { await fn() })
+    await paceGate('step-done', '✓ ' + n + '. ' + title, false)
     beat('step-done', '✓ ' + n + '. ' + title)
     await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
+    await paceGate('step-done', '✗ ' + n + '. ' + title, false)
     beat('step-done', '✗ ' + n + '. ' + title)
     await paintHud({ head: '✗ FAILED — ' + n + '. ' + title, detail: HUD.detail, failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(900).catch(() => {})  // hold the red frame
@@ -449,6 +515,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from it.
   const title = reqTitle(id)
   const nested = FLOW_DEPTH > 0
+  await paceGate('req', id + (title ? ' — ' + title : ''))
   setChip(id, 'active')
   beat('req', id + (title ? ' — ' + title : ''))
   if (nested) {
@@ -460,10 +527,12 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
+      await paceGate('req-done', id + ' pass', false)
       beat('req-done', id + ' pass')
       await paintHud({})
     } catch (err) {
       setChip(id, 'fail')
+      await paceGate('req-done', id + ' fail', false)
       beat('req-done', id + ' fail')
       throw err
     }
@@ -476,11 +545,13 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   try {
     await test.step('proves ' + id, async () => { await fn() })
     setChip(id, 'pass')
+    await paceGate('req-done', id + ' pass', false)
     beat('req-done', id + ' pass')
     await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
     setChip(id, 'fail')
+    await paceGate('req-done', id + ' fail', false)
     beat('req-done', id + ' fail')
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})

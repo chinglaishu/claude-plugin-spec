@@ -84,6 +84,11 @@ tools/build-board.mjs        renders board.html (home cards + the two-column det
 tools/serve-board.mjs        server: static allowlist, runs, scan, rewrite, crawl, SSE, watch (no accept endpoint — the gate is gone, board R8)
 tools/crawl.mjs              the Init crawler — INVENTORY ONLY (a real browser; rows + crawl.png, no drafting; outside the suite)
 tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
+tools/narrate.mjs            pure, unit-tested: beats + a screen's narration pack → cues, timing map, SRT
+tools/narrate-run.mjs        the shell: `pace` (synth pack lines → BOARD_NARRATION_PACE rules the run holds
+                             beats to) and `render` (recording + beats + pack → subtitled/voiced mp4).
+                             NO model at run time — packs are authored once per screen with pass AND
+                             fail variants; piper synth is cached by voice+text
 tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
 tools/scaffold.mjs           vendors the skeleton into a project (kg-init) and writes spec/_specboard.json
 tools/update.mjs             brings a scaffolded project to a new release (kg-update); test-first in tools/update.test.mjs
