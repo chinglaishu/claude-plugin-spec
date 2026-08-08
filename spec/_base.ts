@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test'
 import type { BrowserContext, Page, Locator } from '@playwright/test'
-import { readFileSync } from 'node:fs'
+import { readFileSync, appendFileSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -75,6 +75,7 @@ export const test = windowed.extend<{ page: Page }>({
     FLOW_DEPTH = 0
     FAILED_PAINTED = false
     STEP_FAILURES = []
+    REQ_CHIPS = []
     try {
       await use(page)
     } finally {
@@ -110,6 +111,16 @@ export const test = windowed.extend<{ page: Page }>({
   }
 })
 
+// The BEAT LOG — the run's own timeline, for cutting a voice-over or subtitle track against the
+// recording. When BOARD_BEAT_LOG names a file, every flowStep, checkReq and narration line appends
+// one JSONL row `{t, kind, label}` with its wall-clock time. Off (the default) it costs nothing.
+// Append-only and best-effort: a beat that cannot be written must never fail a step.
+function beat (kind: string, label: string): void {
+  const file = process.env.BOARD_BEAT_LOG
+  if (!file) return
+  try { appendFileSync(file, JSON.stringify({ t: Date.now(), kind, label }) + '\n') } catch { /* timeline only */ }
+}
+
 // Per-test narration state: the story-step counter, whether we are inside a flowStep (a nested
 // checkReq must not steal the narrative headline), and whether the red failure frame has already
 // been painted (an inner failure bubbles — paint once, at the most specific point).
@@ -121,6 +132,18 @@ let FAILED_PAINTED = false
 // table into view) and the board can show WHICH parts failed, not just the first (board R10). The
 // afterEach hook paints a final red summary and fails the test if this is non-empty.
 let STEP_FAILURES: { n: number, title: string, message: string }[] = []
+
+// The REQUIREMENT CHIP STRIP — one chip per id the flow covers, painted into the topbar so a watcher
+// always knows WHICH requirement the recording is proving and how far the proof has come. States
+// advance pending → active (its checkReq is running) → passed / failed, and per the design rule hue
+// never carries the state alone: active wears ▸, passed ✓, failed ✕. Seeded by coverReqs (the
+// declared set), grown by checkReq for any id proven without a declaration. Per-test, like the HUD.
+let REQ_CHIPS: { id: string, state: 'pending' | 'active' | 'pass' | 'fail' }[] = []
+function setChip (id: string, state: 'pending' | 'active' | 'pass' | 'fail'): void {
+  const chip = REQ_CHIPS.find(c => c.id === id)
+  if (chip) chip.state = state
+  else REQ_CHIPS.push({ id, state })
+}
 
 // A requirement id in words: parse the screen's prd.md heading (`## R5 — Title`) once per screen.
 // A bare id belongs to the running spec file's own screen; a qualified one (`asset-plan:R5`) names
@@ -181,7 +204,7 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     const lines = (HUD.detail ? HUD.detail.split('\n') : []).concat(String(s.appendDetail).split('\n'))
     HUD.detail = lines.slice(-DETAIL_MAX_LINES).join('\n')
   }
-  await page.evaluate(({ head, detail, failed }) => {
+  await page.evaluate(({ head, detail, failed, chips }) => {
     let el = document.getElementById('__specboard-hud')
     if (!el) {
       el = document.createElement('div')
@@ -190,13 +213,20 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
         'display:flex;flex-direction:column;gap:4px;padding:14px 22px 12px;' +
         'font-family:system-ui,sans-serif;color:#f4f1ea;background:rgba(28,27,24,.94);' +
         'border-bottom:3px solid rgba(244,241,234,.30);box-shadow:0 2px 14px rgba(0,0,0,.30)'
+      const row = document.createElement('div')
+      row.id = '__specboard-hud-row'
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:18px'
       const h = document.createElement('div')
       h.id = '__specboard-hud-head'
-      h.style.cssText = 'font-weight:700;font-size:20px;line-height:1.3;letter-spacing:-.01em'
+      h.style.cssText = 'flex:1;font-weight:700;font-size:20px;line-height:1.3;letter-spacing:-.01em'
+      const c = document.createElement('div')
+      c.id = '__specboard-hud-reqs'
+      c.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px'
+      row.append(h, c)
       const d = document.createElement('div')
       d.id = '__specboard-hud-detail'
       d.style.cssText = 'font-weight:400;font-size:15px;line-height:1.5;opacity:.92;white-space:pre-line'
-      el.append(h, d)
+      el.append(row, d)
       document.body.appendChild(el)
     }
     el.style.background = failed ? 'rgba(122,47,29,.96)' : 'rgba(28,27,24,.94)'
@@ -205,7 +235,31 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     const dt = document.getElementById('__specboard-hud-detail')
     if (hd) hd.textContent = head
     if (dt) { dt.textContent = detail; dt.style.display = detail ? '' : 'none' }
-  }, { head: HUD.head, detail: HUD.detail, failed: !!s.failed }).catch(() => {})
+    // The requirement chips — rebuilt each paint (a handful of spans; idempotent and cheap). Every
+    // state wears a MARK as well as a colour: ▸ active, ✓ passed, ✕ failed, pending bare (design
+    // rule: hue names a state but never carries it alone). The palette mirrors the design tokens the
+    // HUD already uses — paper on ink, koke-line for a pass, bengara for a failure.
+    const strip = document.getElementById('__specboard-hud-reqs')
+    if (strip) {
+      strip.innerHTML = ''
+      strip.style.display = chips.length ? '' : 'none'
+      const MARK: Record<string, string> = { pending: '', active: '▸ ', pass: '✓ ', fail: '✕ ' }
+      const CSS: Record<string, string> = {
+        pending: 'color:rgba(244,241,234,.72);border:1px solid rgba(244,241,234,.35);background:transparent',
+        active: 'color:#1c1b18;border:1px solid #f4f1ea;background:#f4f1ea',
+        pass: 'color:#bcc4a8;border:1px solid rgba(188,196,168,.55);background:transparent',
+        fail: 'color:#f4f1ea;border:1px solid rgba(232,161,138,.65);background:rgba(122,47,29,.96)'
+      }
+      for (const chip of chips) {
+        const s = document.createElement('span')
+        s.setAttribute('data-req', chip.id)
+        s.style.cssText = 'font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap;' +
+          'padding:3px 10px;border-radius:999px;' + CSS[chip.state]
+        s.textContent = MARK[chip.state] + chip.id
+        strip.appendChild(s)
+      }
+    }
+  }, { head: HUD.head, detail: HUD.detail, failed: !!s.failed, chips: REQ_CHIPS.map(c => ({ ...c })) }).catch(() => {})
 }
 
 // The FOCUS overlay (board R10 — the recording is the proof a human checks). A dense table's topbar
@@ -270,6 +324,7 @@ async function hideFocus (): Promise<void> {
 // RECORDED as a `note: ` step so the board can show it as the step's expandable detail — the same
 // got/expected line in both places, from one call (board R10).
 async function narrate (text: string): Promise<void> {
+  beat('note', text)
   await test.step('note: ' + text, async () => {
     await paintHud({ appendDetail: text })
   })
@@ -319,6 +374,16 @@ export async function reveal (target: Locator, opts: { hold?: number } = {}): Pr
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(hold).catch(() => {})
 }
 
+// Point the recording at a value WITHOUT scrolling to it — the ring + dim band alone. For cells a
+// flow brings on screen through the APP's own navigation (an AG Grid keyboard walk across
+// virtualised columns, a carousel, a stepper): there `reveal()`'s raw scrollIntoView would desync
+// the app's scroller (see the horizontally-virtualised-grid trap in the specs that hit it), but the
+// value still deserves the ring so a watcher knows which cell the step is reading. Same gating as
+// the overlay itself: paints only under a board recording, never swallows a click.
+export async function pointAt (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
+  await paintFocus(target, opts)
+}
+
 // PROVE A VALUE ON SCREEN (kg-e2e rule 5 — the recording is the proof a human checks). Centre the
 // cell in the recording, read its RENDERED text, assert it, announce got-vs-expected on the topbar,
 // and hold so a person can read it. Use this instead of asserting a number you only fetched from the
@@ -350,6 +415,7 @@ export async function proveVisible (
 // still tags requirements while the narrative carries the story.
 export async function flowStep (title: string, fn: () => Promise<void> | void): Promise<void> {
   const n = ++FLOW_N
+  beat('step', n + '. ' + title)
   await paintHud({ head: n + '. ' + title })
   await hideFocus()                                          // a new step starts clean — no ring until it reveals a value
   FLOW_DEPTH++
@@ -359,9 +425,11 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     // which lets the flow CONTINUE to the next step instead of aborting (board R10). The test is
     // still failed: afterEach throws the aggregate. The recording keeps rolling through every step.
     await test.step(title, async () => { await fn() })
+    beat('step-done', '✓ ' + n + '. ' + title)
     await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
+    beat('step-done', '✗ ' + n + '. ' + title)
     await paintHud({ head: '✗ FAILED — ' + n + '. ' + title, detail: HUD.detail, failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(900).catch(() => {})  // hold the red frame
     // deliberately NOT re-thrown — the flow runs on
@@ -381,10 +449,24 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from it.
   const title = reqTitle(id)
   const nested = FLOW_DEPTH > 0
+  setChip(id, 'active')
+  beat('req', id + (title ? ' — ' + title : ''))
   if (nested) {
     // inside a flowStep: run the proof in its `proves` step and let a failure PROPAGATE — the
-    // enclosing flowStep catches it, records it, paints the red frame and continues the flow.
-    await test.step('proves ' + id, async () => { await fn() })
+    // enclosing flowStep catches it, records it, paints the red frame and continues the flow. The
+    // narration line names the requirement being proven (the chip alone is an id, not a meaning),
+    // and the chip advances ▸ → ✓/✕ so the strip tracks the proof through the whole flow.
+    await narrate('▸ proving ' + id + (title ? ' — ' + title : ''))
+    try {
+      await test.step('proves ' + id, async () => { await fn() })
+      setChip(id, 'pass')
+      beat('req-done', id + ' pass')
+      await paintHud({})
+    } catch (err) {
+      setChip(id, 'fail')
+      beat('req-done', id + ' fail')
+      throw err
+    }
     return
   }
   // top-level (a requirement-enumeration test, e.g. the board's own suite): continue-on-failure
@@ -393,15 +475,22 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
   try {
     await test.step('proves ' + id, async () => { await fn() })
+    setChip(id, 'pass')
+    beat('req-done', id + ' pass')
     await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
+    setChip(id, 'fail')
+    beat('req-done', id + ' fail')
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})
   }
 }
 export function coverReqs (...ids: string[]): void {
   test.info().annotations.push({ type: 'covers', description: ids.join(' ') })
+  // Seed the chip strip in DECLARED order, so the topbar shows the full set the flow intends to
+  // prove — pending chips included — from the very first paint.
+  for (const id of ids) if (!REQ_CHIPS.some(c => c.id === id)) REQ_CHIPS.push({ id, state: 'pending' })
 }
 
 // A flow ran every step and collected its failures rather than dying at the first (board R10). Now
