@@ -66,12 +66,15 @@ test('the chip strip advances pending → active → passed, and the beat log re
     `  await flowStep('Read the table', async () => {\n` +
     `    await checkReq('R1', async () => {\n` +
     `      states.duringR1 = await page.locator('[data-req="R1"]').textContent()\n` +
+    `      states.provingDuring = await page.locator('#__specboard-hud-proving').textContent()\n` +
     `      await expect(page.locator('#t')).toHaveText('4.00%')\n` +
     `    })\n` +
     `  })\n` +
     `  states.chipCount = await page.locator('#__specboard-hud-reqs [data-req]').count()\n` +
     `  states.afterR1 = await page.locator('[data-req="R1"]').textContent()\n` +
     `  states.pendingR2 = await page.locator('[data-req="R2"]').textContent()\n` +
+    `  states.head = await page.locator('#__specboard-hud-head').textContent()\n` +
+    `  states.provingAfter = await page.locator('#__specboard-hud-proving').textContent()\n` +
     `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify(states))\n` +
     `})\n`,
   {}, 'chips advance')
@@ -82,6 +85,13 @@ test('the chip strip advances pending → active → passed, and the beat log re
   assert.match(String(s.duringR1), /▸/, 'the chip is marked active while its checkReq runs')
   assert.match(String(s.afterR1), /✓/, 'the chip is marked passed once its checkReq passed')
   assert.ok(!/[✓✕▸]/.test(String(s.pendingR2)), 'an untouched chip stays pending, with no mark')
+  // Steps and requirements are DIFFERENT numbering systems, and the bar must say which one it is
+  // using: the head names its step as "Step N ·", and while a checkReq runs a dedicated proving
+  // line names the requirement — so the voice saying "requirement five" always has an R5 on the
+  // bar to point at, whatever step number sits in the headline.
+  assert.match(String(s.head), /✓ Step 1 · Read the table/, 'the head names the STEP system explicitly')
+  assert.match(String(s.provingDuring), /▸ proving R1/, 'the proving line names the requirement while it runs')
+  assert.match(String(s.provingAfter), /✓ R1 proven/, 'the proving line reports the verdict after the check')
 })
 
 test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
@@ -98,7 +108,9 @@ test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
     `  const chip = page.locator('[data-req="R1"]')\n` +
     `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({\n` +
     `    mark: await chip.textContent(),\n` +
-    `    bg: await chip.evaluate((el: any) => getComputedStyle(el).backgroundColor)\n` +
+    `    bg: await chip.evaluate((el: any) => getComputedStyle(el).backgroundColor),\n` +
+    `    proving: await page.locator('#__specboard-hud-proving').textContent(),\n` +
+    `    head: await page.locator('#__specboard-hud-head').textContent()\n` +
     `  }))\n` +
     `})\n`,
   {}, 'chip fails red')
@@ -108,6 +120,11 @@ test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
   assert.ok(s, 'the spec wrote its observations before the aggregate failure')
   assert.match(String(s.mark), /✕/, 'the failed chip wears the ✕ mark')
   assert.match(String(s.bg), /122, 47, 29/, 'the failed chip is bengara')
+  // The moment that confused a watcher: the step head goes "✗ Step 1 failed" while the VOICE is
+  // still explaining R1 — the proving line must hold the requirement's verdict on the bar through
+  // the red frame, so both numbering systems are on screen and labeled.
+  assert.match(String(s.proving), /✕ R1 failed/, 'the proving line keeps naming the failed requirement')
+  assert.match(String(s.head), /✗ Step 1 failed — A wrong value/, 'the head names the failed STEP explicitly')
 })
 
 test('BOARD_BEAT_LOG records a wall-clock JSONL timeline of steps, checks and notes', () => {

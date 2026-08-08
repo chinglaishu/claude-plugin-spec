@@ -76,7 +76,11 @@ export const test = windowed.extend<{ page: Page }>({
     FAILED_PAINTED = false
     STEP_FAILURES = []
     REQ_CHIPS = []
-    NARRATE_UNTIL = 0
+    PROVING = null
+    // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
+    // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
+    // out like any other line, so the opening narration finishes before the bar starts moving.
+    NARRATE_UNTIL = paceRules()?.introMs ? Date.now() + paceRules()!.introMs : 0
     try {
       await use(page)
     } finally {
@@ -128,14 +132,18 @@ function beat (kind: string, label: string): void {
 // holds each new beat until the previous line has finished speaking. Sync by construction — the
 // subtitle can never still be explaining R1 while the bar has moved on. Off (no env) it costs
 // nothing, so a plain suite run and an unnarrated recording are exactly as fast as before.
-let PACE: { gap: number, rules: { on: string, re: RegExp, ms: number }[] } | null | undefined
+let PACE: { gap: number, introMs: number, rules: { on: string, re: RegExp, ms: number }[] } | null | undefined
 function paceRules () {
   if (PACE !== undefined) return PACE
   const file = process.env.BOARD_NARRATION_PACE
   if (!file) return (PACE = null)
   try {
     const j = JSON.parse(readFileSync(file, 'utf8'))
-    PACE = { gap: Number(j.gap ?? 250), rules: (j.cues || []).map((c: any) => ({ on: String(c.on), re: new RegExp(String(c.match)), ms: Number(c.ms) || 0 })) }
+    PACE = {
+      gap: Number(j.gap ?? 250),
+      introMs: Number(j.introMs) || 0,
+      rules: (j.cues || []).map((c: any) => ({ on: String(c.on), re: new RegExp(String(c.match)), ms: Number(c.ms) || 0 }))
+    }
   } catch { PACE = null }
   return PACE
 }
@@ -210,7 +218,14 @@ const DETAIL_MAX_LINES = 3
 // The band's fixed height under a recording. Fixed on purpose: the page below is shifted by
 // exactly this much, and a bar that grew with its detail lines would bounce the whole app on
 // every narration line.
-const BAND_H = 118
+const BAND_H = 142
+// The PROVING line — steps and requirements are two different numbering systems (Step N = what the
+// flow DOES, R# = what it PROVES, many-to-many), and a watcher hearing "requirement five" while the
+// head says "Step 1" needs the bar itself to say which is which. While a checkReq runs, this
+// dedicated line names the requirement under the step head — "▸ proving R5 — <its title>" — and it
+// HOLDS the verdict ("✕ R5 failed — …") through the step's red frame, so the voice explaining the
+// failure always has its R# on screen. Cleared when a new step starts.
+let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
 // A goto WIPES the injected bar — and real flows navigate mid-beat (a cross-page read). Repaint
 // after every main-frame navigation so the narration is consistently on screen, not only until
 // the first goto. One listener per page, installed lazily on first paint.
@@ -241,7 +256,7 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     const lines = (HUD.detail ? HUD.detail.split('\n') : []).concat(String(s.appendDetail).split('\n'))
     HUD.detail = lines.slice(-DETAIL_MAX_LINES).join('\n')
   }
-  await page.evaluate(({ head, detail, failed, chips, band }) => {
+  await page.evaluate(({ head, detail, failed, chips, band, proving }) => {
     let el = document.getElementById('__specboard-hud')
     if (!el) {
       el = document.createElement('div')
@@ -261,10 +276,14 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
       c.id = '__specboard-hud-reqs'
       c.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px'
       row.append(h, c)
+      const p = document.createElement('div')
+      p.id = '__specboard-hud-proving'
+      p.style.cssText = 'font-weight:600;font-size:15px;line-height:1.45;letter-spacing:.01em;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
       const d = document.createElement('div')
       d.id = '__specboard-hud-detail'
       d.style.cssText = 'font-weight:400;font-size:14px;line-height:1.55;opacity:.92;white-space:pre-line'
-      el.append(row, d)
+      el.append(row, p, d)
       // Hang the bar off <html>, NOT <body>. Under a recording the body is transformed down by the
       // band height so the bar sits ABOVE the site instead of on top of it — nothing is ever
       // covered, and because a transformed body becomes the containing block for its fixed
@@ -283,6 +302,16 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     const dt = document.getElementById('__specboard-hud-detail')
     if (hd) hd.textContent = head
     if (dt) { dt.textContent = detail; dt.style.display = detail ? '' : 'none' }
+    // the requirement being proven, labeled as such — paper while running, koke on proven,
+    // bengara-tint on failed (every state also carries its mark, per the design rule)
+    const pv = document.getElementById('__specboard-hud-proving')
+    if (pv) {
+      pv.style.display = proving ? '' : 'none'
+      if (proving) {
+        pv.textContent = proving.text
+        pv.style.color = proving.state === 'fail' ? '#e8a18a' : proving.state === 'pass' ? '#bcc4a8' : '#f4f1ea'
+      }
+    }
     // The requirement chips — rebuilt each paint (a handful of spans; idempotent and cheap). Every
     // state wears a MARK as well as a colour: ▸ active, ✓ passed, ✕ failed, pending bare (design
     // rule: hue names a state but never carries it alone). The palette mirrors the design tokens the
@@ -314,7 +343,8 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     chips: REQ_CHIPS.map(c => ({ ...c })),
     // the band-and-shift layout only under a recording — a plain suite run must leave the page
     // geometry exactly alone (tests may assert on positions, and nobody is watching anyway)
-    band: process.env.BOARD_RECORD ? BAND_H : 0
+    band: process.env.BOARD_RECORD ? BAND_H : 0,
+    proving: PROVING ? { ...PROVING } : null
   }).catch(() => {})
 }
 
@@ -480,7 +510,10 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
   const n = ++FLOW_N
   await paceGate('step', n + '. ' + title)
   beat('step', n + '. ' + title)
-  await paintHud({ head: n + '. ' + title })
+  PROVING = null                                             // a new step starts with no requirement claimed
+  // the head names its numbering system — "Step 1 ·", never a bare "1." a watcher could confuse
+  // with a requirement number (the beat label keeps the stable machine format)
+  await paintHud({ head: 'Step ' + n + ' · ' + title })
   await hideFocus()                                          // a new step starts clean — no ring until it reveals a value
   FLOW_DEPTH++
   try {
@@ -491,13 +524,17 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     await test.step(title, async () => { await fn() })
     await paceGate('step-done', '✓ ' + n + '. ' + title, false)
     beat('step-done', '✓ ' + n + '. ' + title)
-    await paintHud({ head: '✓ ' + n + '. ' + title, detail: HUD.detail })
+    await paintHud({ head: '✓ Step ' + n + ' · ' + title, detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
     await paceGate('step-done', '✗ ' + n + '. ' + title, false)
     beat('step-done', '✗ ' + n + '. ' + title)
-    await paintHud({ head: '✗ FAILED — ' + n + '. ' + title, detail: HUD.detail, failed: true })
-    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(900).catch(() => {})  // hold the red frame
+    await paintHud({ head: '✗ Step ' + n + ' failed — ' + title, detail: HUD.detail, failed: true })
+    // Hold the red frame long enough to READ: the last detail line is the failing check's own
+    // got-vs-expected, and under a recording the pause stretches by the watch pace so the failure
+    // is a scene, not a flash. (A narrated run holds longer still — the pace gate keeps this frame
+    // up until the fail line has been spoken.)
+    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(900 + recordHold(0)).catch(() => {})
     // deliberately NOT re-thrown — the flow runs on
   } finally {
     FLOW_DEPTH--
@@ -518,6 +555,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   await paceGate('req', id + (title ? ' — ' + title : ''))
   setChip(id, 'active')
   beat('req', id + (title ? ' — ' + title : ''))
+  PROVING = { state: 'active', text: '▸ proving ' + id + (title ? ' — ' + title : '') }
   if (nested) {
     // inside a flowStep: run the proof in its `proves` step and let a failure PROPAGATE — the
     // enclosing flowStep catches it, records it, paints the red frame and continues the flow. The
@@ -527,11 +565,15 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
+      PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
       await paceGate('req-done', id + ' pass', false)
       beat('req-done', id + ' pass')
       await paintHud({})
     } catch (err) {
+      // the verdict stays on the bar through the step's red frame — the voice explaining WHY this
+      // requirement failed must always have its R# on screen, whatever the step head says
       setChip(id, 'fail')
+      PROVING = { state: 'fail', text: '✕ ' + id + ' failed' + (title ? ' — ' + title : '') }
       await paceGate('req-done', id + ' fail', false)
       beat('req-done', id + ' fail')
       throw err
@@ -545,16 +587,18 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   try {
     await test.step('proves ' + id, async () => { await fn() })
     setChip(id, 'pass')
+    PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
     await paceGate('req-done', id + ' pass', false)
     beat('req-done', id + ' pass')
     await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
   } catch (err) {
     STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
     setChip(id, 'fail')
+    PROVING = { state: 'fail', text: '✕ ' + id + ' failed' + (title ? ' — ' + title : '') }
     await paceGate('req-done', id + ' fail', false)
     beat('req-done', id + ' fail')
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
-    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700).catch(() => {})
+    if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700 + recordHold(0)).catch(() => {})
   }
 }
 export function coverReqs (...ids: string[]): void {

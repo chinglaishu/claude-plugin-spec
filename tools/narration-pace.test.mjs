@@ -76,6 +76,33 @@ test('pace file + beat log: the second step waits out the failed first step’s 
   assert.ok(step2 - fail1 >= 1500, `the next step waited out the fail line (${step2 - fail1}ms >= 1500)`)
 })
 
+test('introMs reserves the intro line at test start — the first step waits it out', () => {
+  const paceFile = join(ROOT, '.pace-intro.json')
+  const beatFile = join(ROOT, '.pace-intro-beats.jsonl')
+  writeFileSync(paceFile, JSON.stringify({ gap: 100, introMs: 1500, cues: [] }))
+  rmSync(beatFile, { force: true })
+  const r = run((dir) =>
+    `import { test, expect, flowStep } from ${JSON.stringify(BASE)}\n` +
+    `import { writeFileSync } from 'node:fs'\n` +
+    `const TABLE = ${JSON.stringify(TABLE)}\n` +
+    `test('intro reserved', async ({ page }) => {\n` +
+    `  const t0 = Date.now()\n` +
+    `  await page.goto(TABLE)\n` +
+    `  await flowStep('First step', async () => { await expect(page.locator('#t')).toHaveText('4.00%') })\n` +
+    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({ t0 }))\n` +
+    `})\n`,
+  { BOARD_NARRATION_PACE: paceFile, BOARD_BEAT_LOG: beatFile }, 'intro reserved')
+  const beats = existsSync(beatFile)
+    ? readFileSync(beatFile, 'utf8').trim().split('\n').map(l => JSON.parse(l))
+    : []
+  rmSync(paceFile, { force: true }); rmSync(beatFile, { force: true })
+  assert.equal(r.status, 0, `intro run should pass:\n${r.stdout}\n${r.stderr}`)
+  const step1 = beats.find(b => b.kind === 'step')
+  assert.ok(step1 && r.side, 'beat + start time recorded')
+  assert.ok(step1.t - r.side.t0 >= 1200,
+    `the first step waited out the intro (${step1.t - r.side.t0}ms >= ~1500 reserved before the test body began)`)
+})
+
 test('under BOARD_RECORD the HUD is a band that pushes the site down; without it the page is untouched', () => {
   const recDir = join(ROOT, '.pace-rec-out')
   const spec = (dir) =>
@@ -101,9 +128,9 @@ test('under BOARD_RECORD the HUD is a band that pushes the site down; without it
   const s = rec.side
   assert.ok(s, 'the spec wrote its observations')
   assert.equal(s.parent, 'HTML', 'the HUD hangs off <html>, outside the shifted body')
-  assert.equal(Math.round(s.height), 118, 'the HUD is a fixed-height band')
-  assert.match(String(s.bodyTransform), /matrix\(1, 0, 0, 1, 0, 118\)/, 'the body is shifted down by the band height')
-  assert.ok(s.tableTop >= 118, `page content starts below the band (top ${s.tableTop})`)
+  assert.equal(Math.round(s.height), 142, 'the HUD is a fixed-height band (incl. the proving line)')
+  assert.match(String(s.bodyTransform), /matrix\(1, 0, 0, 1, 0, 142\)/, 'the body is shifted down by the band height')
+  assert.ok(s.tableTop >= 142, `page content starts below the band (top ${s.tableTop})`)
 
   const off = run(spec, {}, 'band layout')
   assert.equal(off.status, 0, `plain run should pass:\n${off.stdout}\n${off.stderr}`)

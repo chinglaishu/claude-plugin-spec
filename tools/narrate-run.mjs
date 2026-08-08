@@ -70,7 +70,9 @@ if (cmd === 'pace') {
     const { dur } = synth(c.spoken)
     return { on: c.on, match: c.match, ms: Math.round(dur * 1000) + pad }
   })
-  writeFileSync(out, JSON.stringify({ gap: 250, cues }, null, 1))
+  // the intro has no beat — the run reserves it at test start so the first beat waits it out
+  const introMs = pack.intro ? Math.round(synth(pack.intro.spoken).dur * 1000) + pad : 0
+  writeFileSync(out, JSON.stringify({ gap: 250, introMs, cues }, null, 1))
   console.log(`pace rules for ${cues.length} lines -> ${out}`)
   process.exit(0)
 }
