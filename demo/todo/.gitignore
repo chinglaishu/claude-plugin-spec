@@ -1,0 +1,31 @@
+# Tsumiki commits only its AUTHORED files: the app (app/), its requirements + flow + narration
+# (spec/todo/), the board config (spec/_config.json), the app-base helper (spec/_app.ts), the static
+# server (serve-app.mjs), package.json and this README. Everything below is VENDORED specboard code —
+# a byte copy of the plugin's own tools/harness that `npm run setup` re-creates — so it is not
+# committed a second time inside the same repo. Regenerate it with:  npm run setup
+node_modules/
+
+# vendored skeleton (from tools/scaffold.mjs)
+/tools/
+/playwright.board.ts
+/board.html
+/spec/_base.ts
+/spec/_design.css
+/spec/_fixture.ts
+/spec/_state-guard.ts
+/spec/_state-guard-teardown.ts
+/spec/_results-reporter.mjs
+/spec/_auth.setup.ts
+/spec/_seed.ts
+/spec/_escapes.md
+/spec/_specboard.json
+
+# transient run state
+/spec/_results-index.json
+/spec/_results.json
+/spec/_runs.json
+/spec/_runs/
+/spec/_run-report.json
+/spec/_state-snapshot.*.json
+/spec/_dir-snapshot.*.json
+/spec/_auth-state.json

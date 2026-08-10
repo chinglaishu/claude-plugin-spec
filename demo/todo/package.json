@@ -1,0 +1,17 @@
+{
+  "name": "tsumiki-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "board": "node --watch tools/serve-board.mjs --port 4175",
+    "board:build": "node tools/build-board.mjs",
+    "staff": "node tools/staff.mjs",
+    "proof": "node tools/proof-integrity.mjs",
+    "e2e": "playwright test --config=playwright.board.ts",
+    "setup": "node ../../tools/scaffold.mjs . --force"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^22.0.0"
+  }
+}

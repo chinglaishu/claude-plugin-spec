@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tsumiki · task tracker</title>
+<style>
+  :root {
+    --ink:#1e2330; --dim:#5a6376; --mute:#8b93a5; --faint:#aeb4c2;
+    --line:#eceef2; --line2:#dfe2e9; --bg:#f4f5f8; --card:#ffffff; --rail:#fbfbfd;
+    --brand:#4f46e5; --brand-2:#6d64f0; --brand-soft:#eceafe; --brand-ring:#dcd8fb;
+    --done:#12a06a; --done-soft:#e4f5ec;
+    --over:#d64b34; --over-soft:#fbe9e4; --today:#c07d15; --today-soft:#f9f0dc;
+    --sh-sm:0 1px 2px rgba(20,25,40,.05); --sh-md:0 4px 16px rgba(20,25,40,.07);
+    --sh-lg:0 10px 34px rgba(20,25,40,.10);
+  }
+  * { box-sizing:border-box; margin:0; }
+  html,body { height:100%; }
+  body { font:400 15px/1.5 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Inter,system-ui,sans-serif;
+    color:var(--ink); background:var(--bg); -webkit-font-smoothing:antialiased; }
+  button { font:inherit; cursor:pointer; }
+  .app { display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
+
+  /* sidebar */
+  aside { background:var(--rail); border-right:1px solid var(--line); padding:22px 16px; display:flex; flex-direction:column; gap:4px; }
+  .brand { display:flex; align-items:center; gap:10px; padding:2px 8px 18px; }
+  .logo { width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    display:flex; align-items:center; justify-content:center; box-shadow:var(--sh-sm); }
+  .logo svg { width:16px; height:16px; }
+  .brand .nm { font-weight:650; font-size:16px; letter-spacing:-.01em; }
+  .brand .tg { font-size:11px; color:var(--mute); margin-top:1px; }
+  .navlbl { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); padding:12px 10px 4px; }
+  .nav { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:8px 10px; border:0; border-radius:9px;
+    background:transparent; color:var(--dim); font-size:14px; }
+  .nav:hover { background:var(--line); }
+  .nav.on { background:var(--brand-soft); color:var(--brand); font-weight:600; }
+  .nav .ic { width:18px; height:18px; flex:none; display:flex; }
+  .nav .ic svg { width:18px; height:18px; }
+  .nav .lb { flex:1; }
+  .nav .ct { font-size:12px; color:var(--mute); font-variant-numeric:tabular-nums; }
+  .nav.on .ct { color:var(--brand); }
+  aside .spacer { flex:1; }
+  aside .foot { font-size:11px; color:var(--faint); padding:8px 10px; line-height:1.5; }
+
+  /* main */
+  main { padding:30px 40px 60px; max-width:820px; }
+  .head { display:flex; align-items:flex-end; gap:14px; margin-bottom:4px; }
+  .head h1 { font-size:26px; font-weight:650; letter-spacing:-.02em; }
+  .head .left { margin-left:auto; text-align:right; }
+  .head .left .n { font-size:22px; font-weight:650; color:var(--brand); font-variant-numeric:tabular-nums; }
+  .head .left .l { font-size:12px; color:var(--mute); }
+  .prog { height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin:16px 0 22px; }
+  .prog > i { display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2)); border-radius:99px; transition:width .3s; }
+
+  .addrow { display:flex; gap:8px; margin-bottom:20px; }
+  .addrow .field { flex:1; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line2);
+    border-radius:12px; padding:0 14px; box-shadow:var(--sh-sm); }
+  .addrow .field:focus-within { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-ring); }
+  .addrow .field svg { width:17px; height:17px; color:var(--faint); flex:none; }
+  .addrow input[type=text] { flex:1; font:inherit; padding:12px 0; border:0; outline:none; background:none; }
+  .addrow input[type=date] { font:inherit; font-size:13px; color:var(--dim); border:1px solid var(--line2); background:var(--card);
+    border-radius:12px; padding:0 12px; box-shadow:var(--sh-sm); }
+  .addrow .go { font-weight:600; padding:0 22px; border:0; border-radius:12px; background:var(--brand); color:#fff; box-shadow:var(--sh-sm); }
+  .addrow .go:disabled { opacity:.4; cursor:default; box-shadow:none; }
+
+  .list { display:flex; flex-direction:column; gap:10px; }
+  .task { background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--sh-sm); overflow:hidden; }
+  .task:hover { box-shadow:var(--sh-md); }
+  .trow { display:flex; align-items:center; gap:13px; padding:14px 16px; }
+  .cb { width:21px; height:21px; border-radius:7px; border:2px solid var(--line2); background:var(--card); flex:none; position:relative; padding:0; }
+  .cb:hover { border-color:var(--brand); }
+  .cb.on { background:var(--done); border-color:var(--done); }
+  .cb.on::after { content:""; position:absolute; left:6px; top:2px; width:5px; height:10px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .ring { width:26px; height:26px; flex:none; border:0; background:none; padding:0; position:relative; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring .pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; color:var(--brand); font-variant-numeric:tabular-nums; }
+  .ring.full .pct { color:var(--done); }
+  .body { flex:1; min-width:0; }
+  .ttl { font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .done .ttl { text-decoration:line-through; color:var(--mute); }
+  .meta { font-size:11.5px; color:var(--faint); margin-top:2px; display:flex; gap:7px; }
+  .meta b { color:var(--done); font-weight:500; }
+  .edit { flex:1; font:inherit; font-size:15px; border:1px solid var(--brand); border-radius:8px; padding:5px 9px; outline:none; box-shadow:0 0 0 3px var(--brand-ring); }
+  .chip { flex:none; font-size:11.5px; border-radius:99px; padding:3px 10px; font-variant-numeric:tabular-nums; font-weight:600; }
+  .chip.due { background:#eef0f4; color:var(--dim); }
+  .chip.today { background:var(--today-soft); color:var(--today); }
+  .chip.over { background:var(--over-soft); color:var(--over); }
+  .iconbtn { flex:none; width:28px; height:28px; border-radius:8px; border:0; background:none; color:var(--faint); display:flex; align-items:center; justify-content:center; opacity:0; }
+  .task:hover .iconbtn { opacity:1; }
+  .iconbtn:hover { background:var(--line); color:var(--dim); }
+  .iconbtn.del:hover { background:var(--over-soft); color:var(--over); }
+  .iconbtn svg { width:16px; height:16px; }
+  .caret { flex:none; width:24px; height:24px; border:0; background:none; color:var(--mute); display:flex; align-items:center; justify-content:center; }
+  .caret svg { width:15px; height:15px; transition:transform .18s; }
+  .caret.open svg { transform:rotate(90deg); }
+
+  .subs { border-top:1px solid var(--line); padding:8px 16px 12px 54px; background:#fcfcfe; }
+  .subhead { display:flex; align-items:center; margin:2px 0 4px; }
+  .subhead .sl { font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); }
+  .bulk { margin-left:auto; font-size:12px; color:var(--brand); background:none; border:0; padding:2px 4px; font-weight:600; }
+  .bulk:hover { text-decoration:underline; }
+  .srow { display:flex; align-items:center; gap:11px; padding:6px 0; }
+  .scb { width:18px; height:18px; border-radius:6px; border:2px solid var(--line2); background:var(--card); flex:none; position:relative; padding:0; }
+  .scb:hover { border-color:var(--brand); }
+  .scb.on { background:var(--done); border-color:var(--done); }
+  .scb.on::after { content:""; position:absolute; left:5px; top:1px; width:4px; height:9px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .srow .st { flex:1; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .srow.sdone .st { text-decoration:line-through; color:var(--mute); }
+  .subadd { display:flex; gap:8px; margin-top:6px; }
+  .subadd input { flex:1; font:inherit; font-size:13.5px; padding:7px 11px; border:1px solid var(--line2); border-radius:9px; outline:none; background:var(--card); }
+  .subadd input:focus { border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-ring); }
+  .subadd button { font-size:13px; border:1px solid var(--line2); background:var(--card); border-radius:9px; padding:0 14px; color:var(--dim); }
+
+  .empty { text-align:center; padding:64px 20px; color:var(--mute); }
+  .empty .em { width:46px; height:46px; margin:0 auto 14px; color:var(--faint); }
+  .empty h3 { font-size:16px; font-weight:600; color:var(--dim); }
+  .empty p { font-size:13.5px; margin-top:4px; }
+  .foot { margin-top:26px; font-size:12px; color:var(--faint); }
+  .foot a { color:var(--brand); }
+  @media (max-width:720px) { .app { grid-template-columns:1fr; } aside { flex-direction:row; flex-wrap:wrap; align-items:center; } aside .spacer,.navlbl,.foot { display:none; } main { padding:22px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M4 7l8-4 8 4-8 4-8-4z" fill="#fff" opacity=".95"/><path d="M4 12l8 4 8-4M4 17l8 4 8-4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div><div class="nm">Tsumiki</div><div class="tg">stack it, finish it</div></div>
+    </div>
+    <div class="navlbl">Views</div>
+    <div id="nav"></div>
+    <div class="spacer"></div>
+    <div class="foot">Your data stays in this browser.<br><span id="clocknote"></span></div>
+  </aside>
+
+  <main>
+    <div class="head">
+      <h1 id="viewname">All tasks</h1>
+      <div class="left"><div class="n" id="left">0</div><div class="l">to do</div></div>
+    </div>
+    <div class="prog"><i id="progbar" style="width:0%"></i></div>
+
+    <div class="addrow">
+      <label class="field">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+        <input type="text" id="nt" placeholder="Add a task and press Enter…" oninput="syncAdd()" onkeydown="if(event.key==='Enter')addTask()">
+      </label>
+      <input type="date" id="nd" title="due date (optional)">
+      <button class="go" id="addbtn" onclick="addTask()" disabled>Add</button>
+    </div>
+
+    <div class="list" id="list"></div>
+    <p class="foot">The specboard demo app · <a href="requirements.html">its 8 requirements →</a></p>
+  </main>
+</div>
+
+<script>
+const qs = new URLSearchParams(location.search);
+const NOW = qs.get('now') ? new Date(qs.get('now')) : new Date();
+const nowISO = () => NOW.toISOString();
+const TODAY = nowISO().slice(0, 10);
+document.getElementById('clocknote').textContent = 'now = ' + nowISO().slice(0, 16).replace('T', ' ') + (qs.get('now') ? ' (frozen)' : '');
+const KEY = 'tsumiki-v2';
+let uid = 1; const nid = p => (p || 't') + (uid++);
+function addDays (iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+
+const SEED = () => ({ uid: 99, filter: 'all', tasks: [
+  { id: 'k1', title: 'Plan the team offsite', due: addDays(TODAY, 2), done: false, open: true,
+    createdAt: iso(-3), updatedAt: null, completedAt: null, subs: [
+    { id: 'k1a', title: 'Book the venue', done: true, createdAt: iso(-3), completedAt: iso(-1) },
+    { id: 'k1b', title: 'Collect food preferences', done: false, createdAt: iso(-3), completedAt: null },
+    { id: 'k1c', title: 'Send the calendar invite', done: false, createdAt: iso(-2), completedAt: null } ] },
+  { id: 'k2', title: 'Pay the electricity bill', due: TODAY, done: false, open: false,
+    createdAt: iso(-1), updatedAt: null, completedAt: null, subs: [] },
+  { id: 'k3', title: 'Renew passport', due: addDays(TODAY, -2), done: false, open: false,
+    createdAt: iso(-5), updatedAt: null, completedAt: null, subs: [] },
+  { id: 'k4', title: 'Ship the Q3 report', due: addDays(TODAY, 9), done: false, open: false,
+    createdAt: iso(-1), updatedAt: null, completedAt: null, subs: [] },
+  { id: 'k5', title: 'Buy a birthday gift for Mia', due: null, done: true, open: false,
+    createdAt: iso(-4), updatedAt: null, completedAt: iso(-1), subs: [] }
+] });
+function iso (dayOffset) { const d = new Date(NOW); d.setUTCDate(d.getUTCDate() + dayOffset); return d.toISOString(); }
+
+let state = load();
+function load () { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.tasks) { uid = s.uid || 99; return s; } } catch {} return SEED(); }
+function save () { state.uid = Math.max(uid, 99); localStorage.setItem(KEY, JSON.stringify(state)); }
+
+/* ---- derived helpers ---- */
+const isContainer = t => t.subs.length > 0;
+const openLeaves = () => state.tasks.reduce((n, t) => n + (isContainer(t) ? t.subs.filter(s => !s.done).length : (t.done ? 0 : 1)), 0);
+const totalLeaves = () => state.tasks.reduce((n, t) => n + (isContainer(t) ? t.subs.length : 1), 0);
+function inView (t, v) {
+  if (v === 'all') return true;
+  if (v === 'completed') return t.done;
+  if (v === 'active') return !t.done;
+  if (v === 'today') return !t.done && t.due && t.due <= TODAY;
+  return true;
+}
+const viewCount = v => state.tasks.filter(t => inView(t, v)).length;
+
+/* ---- mutations ---- */
+function reflow (t) {                       // a container's done-state is DERIVED from its children
+  if (!isContainer(t)) return;
+  const all = t.subs.every(s => s.done);
+  if (all && !t.done) { t.done = true; t.completedAt = nowISO(); }
+  else if (!all && t.done) { t.done = false; t.completedAt = null; }
+}
+function syncAdd () { document.getElementById('addbtn').disabled = !document.getElementById('nt').value.trim(); }
+function addTask () {
+  const el = document.getElementById('nt'); const title = el.value.trim(); if (!title) return;
+  state.tasks.push({ id: nid(), title, due: document.getElementById('nd').value || null, done: false, open: false,
+    createdAt: nowISO(), updatedAt: null, completedAt: null, subs: [] });
+  el.value = ''; document.getElementById('nd').value = ''; syncAdd(); save(); render();
+}
+function toggleLeaf (id, v) { const t = state.tasks.find(t => t.id === id); t.done = v; t.completedAt = v ? nowISO() : null; save(); render(); }
+function addSub (tid) {
+  const el = document.getElementById('sub-' + tid); const title = el.value.trim(); if (!title) return;
+  const t = state.tasks.find(t => t.id === tid);
+  t.subs.push({ id: nid('s'), title, done: false, createdAt: nowISO(), completedAt: null });
+  reflow(t); save(); render(); document.getElementById('sub-' + tid)?.focus();
+}
+function toggleSub (tid, sid, v) {
+  const t = state.tasks.find(t => t.id === tid); const s = t.subs.find(s => s.id === sid);
+  s.done = v; s.completedAt = v ? nowISO() : null; reflow(t); save(); render();
+}
+function bulk (tid, v) {                      // explicit, labelled — never a surprise from one stray click
+  const t = state.tasks.find(t => t.id === tid);
+  t.subs.forEach(s => { if (s.done !== v) { s.done = v; s.completedAt = v ? nowISO() : null; } });
+  reflow(t); save(); render();
+}
+function delTask (id) { state.tasks = state.tasks.filter(t => t.id !== id); save(); render(); }
+function delSub (tid, sid) { const t = state.tasks.find(t => t.id === tid); t.subs = t.subs.filter(s => s.id !== sid); reflow(t); save(); render(); }
+function fold (id) { const t = state.tasks.find(t => t.id === id); t.open = !t.open; save(); render(); }
+function setFilter (v) { state.filter = v; save(); render(); }
+function startEdit (id) {
+  const t = state.tasks.find(t => t.id === id); t._edit = true; render();
+  const inp = document.getElementById('edit-' + id); if (inp) { inp.focus(); inp.select(); }
+}
+function commitEdit (id, val) {
+  const t = state.tasks.find(t => t.id === id); delete t._edit;
+  const nv = val.trim();
+  if (nv && nv !== t.title) { t.title = nv; t.updatedAt = nowISO(); }
+  save(); render();
+}
+function cancelEdit (id) { const t = state.tasks.find(t => t.id === id); delete t._edit; render(); }
+
+/* ---- time ---- */
+function rel (isoStr) {
+  if (!isoStr) return '';
+  const diff = (NOW - new Date(isoStr)) / 1000; const d = Math.floor(diff / 86400);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  if (d < 7) return d + 'd ago';
+  return new Date(isoStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+function metaLine (t) {
+  if (t.done && t.completedAt) return `<b>done ${rel(t.completedAt)}</b>`;
+  if (t.updatedAt) return `edited ${rel(t.updatedAt)}`;   // updatedAt is null until a real edit
+  return `added ${rel(t.createdAt)}`;
+}
+
+/* ---- ring ---- */
+function ring (t) {
+  const done = t.subs.filter(s => s.done).length, tot = t.subs.length, frac = done / tot;
+  const C = 2 * Math.PI * 9, off = C * (1 - frac);
+  return `<button class="ring ${done === tot ? 'full' : ''}" onclick="fold('${t.id}')" title="${done} of ${tot} done">
+    <svg width="26" height="26" viewBox="0 0 26 26">
+      <circle cx="13" cy="13" r="9" fill="none" stroke="var(--line2)" stroke-width="3"/>
+      <circle cx="13" cy="13" r="9" fill="none" stroke="${done === tot ? 'var(--done)' : 'var(--brand)'}" stroke-width="3"
+        stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+    </svg><span class="pct">${done}/${tot}</span></button>`;
+}
+function dueChip (t) {
+  if (!t.due || t.done) return '';
+  if (t.due < TODAY) return `<span class="chip over">overdue</span>`;
+  if (t.due === TODAY) return `<span class="chip today">today</span>`;
+  return `<span class="chip due">${new Date(t.due + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>`;
+}
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* ---- render ---- */
+const VIEWS = [
+  { k: 'all', lb: 'All tasks', ic: '<path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/>' },
+  { k: 'today', lb: 'Today', ic: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M4 9h16M8 3v4M16 3v4" stroke-linecap="round"/>' },
+  { k: 'active', lb: 'Active', ic: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2" stroke-linecap="round"/>' },
+  { k: 'completed', lb: 'Completed', ic: '<circle cx="12" cy="12" r="8"/><path d="M8.5 12.5l2.5 2.5 4.5-5" stroke-linecap="round" stroke-linejoin="round"/>' }
+];
+function render () {
+  const f = state.filter;
+  document.getElementById('nav').innerHTML = VIEWS.map(v =>
+    `<button class="nav ${f === v.k ? 'on' : ''}" onclick="setFilter('${v.k}')" data-view="${v.k}">
+      <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${v.ic}</svg></span>
+      <span class="lb">${v.lb}</span><span class="ct" data-count="${v.k}">${viewCount(v.k)}</span></button>`).join('');
+  document.getElementById('viewname').textContent = VIEWS.find(v => v.k === f).lb;
+  const tot = totalLeaves(), left = openLeaves();
+  document.getElementById('left').textContent = left;
+  document.getElementById('progbar').style.width = tot ? Math.round((tot - left) / tot * 100) + '%' : '0%';
+
+  const shown = state.tasks.filter(t => inView(t, f));
+  const list = document.getElementById('list');
+  if (!shown.length) {
+    list.innerHTML = `<div class="empty"><svg class="em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" stroke-linecap="round"/></svg>
+      <h3>${f === 'completed' ? 'Nothing completed yet' : f === 'today' ? 'Nothing due today' : 'All clear'}</h3>
+      <p>${f === 'completed' ? 'Finished tasks land here.' : 'Add a task above to get started.'}</p></div>`;
+    return;
+  }
+  list.innerHTML = shown.map(t => {
+    const lead = isContainer(t) ? ring(t)
+      : `<button class="cb ${t.done ? 'on' : ''}" onclick="toggleLeaf('${t.id}', ${!t.done})" aria-label="complete"></button>`;
+    const title = t._edit
+      ? `<input class="edit" id="edit-${t.id}" value="${esc(t.title)}"
+           onkeydown="if(event.key==='Enter')this.blur(); if(event.key==='Escape')cancelEdit('${t.id}')"
+           onblur="commitEdit('${t.id}', this.value)">`
+      : `<div class="ttl" ondblclick="startEdit('${t.id}')" title="double-click to edit">${esc(t.title)}</div>`;
+    const caret = isContainer(t) ? '' :
+      `<button class="caret ${t.open ? 'open' : ''}" onclick="fold('${t.id}')" title="sub-tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round"/></svg></button>`;
+    let sub = '';
+    if (t.open) {
+      const allDone = isContainer(t) && t.subs.every(s => s.done);
+      sub = `<div class="subs"><div class="subhead"><span class="sl">Sub-tasks</span>` +
+        (isContainer(t) ? `<button class="bulk" onclick="bulk('${t.id}', ${!allDone})">${allDone ? 'Reopen all' : 'Complete all'}</button>` : '') +
+        `</div>` +
+        t.subs.map(s => `<div class="srow ${s.done ? 'sdone' : ''}" data-id="${s.id}" data-done="${s.done}">
+          <button class="scb ${s.done ? 'on' : ''}" onclick="toggleSub('${t.id}','${s.id}', ${!s.done})" aria-label="complete"></button>
+          <span class="st" title="${s.completedAt ? 'done ' + rel(s.completedAt) : 'added ' + rel(s.createdAt)}">${esc(s.title)}</span>
+          <button class="iconbtn del" onclick="delSub('${t.id}','${s.id}')" title="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg></button></div>`).join('') +
+        `<div class="subadd"><input id="sub-${t.id}" placeholder="Add a sub-task…" onkeydown="if(event.key==='Enter')addSub('${t.id}')"><button onclick="addSub('${t.id}')">Add</button></div></div>`;
+    }
+    return `<div class="task ${t.done ? 'done' : ''}" data-id="${t.id}" data-done="${t.done}" data-container="${isContainer(t)}"><div class="trow">
+      ${lead}
+      <div class="body">${title}${t._edit ? '' : `<div class="meta" data-created="${t.createdAt}" data-completed="${t.completedAt || ''}">${metaLine(t)}</div>`}</div>
+      ${dueChip(t)}
+      ${t._edit ? '' : `<button class="iconbtn" onclick="startEdit('${t.id}')" title="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13 5l4 4" stroke-linecap="round"/></svg></button>`}
+      ${caret}
+      <button class="iconbtn del" onclick="delTask('${t.id}')" title="delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14M9 7V5h6v2M10 11v6M14 11v6M6 7l1 13h10l1-13" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>${sub}</div>`;
+  }).join('');
+}
+render();
+</script>
+</body>
+</html>

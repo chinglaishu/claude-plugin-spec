@@ -1,0 +1,9 @@
+{
+  "mode": "attach",
+  "baseUrl": "http://localhost:4319",
+  "backendCommand": "",
+  "frontendCommand": "node serve-app.mjs",
+  "routes": ["/todo.html"],
+  "stepDelayMs": 1400,
+  "storage": { "where": "local", "push": false }
+}

@@ -1,0 +1,36 @@
+{
+  "_comment": "Narration pack for the Tsumiki demo (tools/narrate-run.mjs). Authored once; no model per video. Requirements are the ONLY numbers spoken (R1–R8). Every cue is one `text` string, so the subtitle IS the voice line. The counter climax carries pass AND fail variants keyed on the 'Finish the sub-tasks' step — a green run says the count dropped correctly; the broken-counter run explains the regression. `group` ties the variants so the road not taken is not warned about.",
+  "voice": "en_US-lessac-medium",
+  "intro": {
+    "text": "This is Tsumiki, a small task tracker, and specboard's own demo. One test proves its eight requirements — watch the R chips at the top turn green as each one is proven."
+  },
+  "outro": {
+    "text": "Eight requirements, one flow, every value read off the screen you just watched. Green only when proven."
+  },
+  "cues": [
+    { "on": "step", "match": "Add a task",
+      "text": "R1: adding a task. I type it, press Add, and it appears in the list with an added-just-now stamp." },
+    { "on": "req", "match": "^R2",
+      "text": "R2: editing. Double-click the title, rename it, and the row updates — the stamp flips to edited." },
+    { "on": "req", "match": "^R3",
+      "text": "R3: sub-tasks. A task that has them becomes a container with a progress ring instead of a checkbox. Adding one grows the ring by itself, from one of three to one of four." },
+    { "on": "step", "match": "Finish the sub-tasks",
+      "text": "R4: I complete the sub-tasks one at a time. Nobody ever clicks the parent." },
+    { "on": "note", "match": "seven leaves",
+      "text": "R5 is the subtle one. This counter is the real work left — open sub-tasks, plus standalone tasks. Seven right now." },
+    { "on": "note", "match": "drops by exactly one",
+      "text": "One sub-task done, and the count drops by exactly one." },
+    { "on": "step-done", "match": "^\\u2713.*Finish the sub-tasks", "group": "finish",
+      "text": "The last sub-task done — the container completes itself, and the count drops by two, not three. A container is scaffolding, never a task. R4 and R5 hold." },
+    { "on": "step-done", "match": "^\\u2717.*Finish the sub-tasks", "group": "finish",
+      "text": "The count is wrong. A finished container is still being counted as one item left — it shows five where it should show four. R5 is red, caught right on the screen." },
+    { "on": "step", "match": "Reopen a sub-task",
+      "text": "And the other direction: reopening a sub-task reopens the parent — the ring drops back to three of four, and the count climbs to five." },
+    { "on": "req", "match": "^R6",
+      "text": "R6: the smart views. For every view, the sidebar badge equals the rows you can actually see — I check each one." },
+    { "on": "req", "match": "^R7",
+      "text": "R7: due dates. Against a frozen clock, the past-due task reads overdue, and the one due today reads today." },
+    { "on": "step", "match": "Reload",
+      "text": "R8: a reload. The rename, the rolled-up ring, and every timestamp all come back — nothing lived only on screen." }
+  ]
+}

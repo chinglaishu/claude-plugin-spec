@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tsumiki — the 8 requirements</title>
+<style>
+  :root { --ink:#1e2330; --dim:#5a6376; --mute:#8b93a5; --faint:#aeb4c2; --line:#eceef2; --card:#fff; --bg:#f4f5f8;
+    --brand:#4f46e5; --brand-soft:#eceafe; --derived:#7a4fb0; --derived-soft:#f0e9f9; --done:#12a06a; }
+  * { box-sizing:border-box; margin:0; }
+  body { font:400 15px/1.55 -apple-system,BlinkMacSystemFont,"Helvetica Neue",Inter,system-ui,sans-serif;
+    color:var(--ink); background:var(--bg); padding:44px 20px; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:700px; margin:0 auto; }
+  h1 { font-size:25px; font-weight:650; letter-spacing:-.02em; }
+  .sub { font-size:14px; color:var(--mute); margin:6px 0 8px; }
+  .sub a { color:var(--brand); }
+  .legend { font-size:12.5px; color:var(--mute); margin:16px 0 24px; display:flex; align-items:center; gap:8px; }
+  .req { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:17px 22px; margin-bottom:11px;
+    display:flex; gap:18px; box-shadow:0 1px 2px rgba(20,25,40,.04); }
+  .rid { font-family:ui-monospace,Menlo,monospace; font-size:14px; color:var(--brand); font-weight:600; width:28px; flex:none; padding-top:2px; }
+  .req h2 { font-size:16px; font-weight:600; letter-spacing:-.01em; }
+  .req p { font-size:13.5px; color:var(--dim); margin-top:4px; }
+  .req .why { font-size:12.5px; color:var(--mute); margin-top:9px; padding-top:9px; border-top:1px solid var(--line); }
+  .why b { color:var(--derived); font-weight:600; }
+  .why code { font-family:ui-monospace,Menlo,monospace; font-size:.9em; color:var(--dim); background:#f1f2f6; padding:1px 5px; border-radius:4px; }
+  .tag { display:inline-block; font-size:10.5px; letter-spacing:.04em; font-weight:600; border-radius:99px; padding:2px 9px; margin-left:8px; vertical-align:2px; }
+  .tag.d { background:var(--derived-soft); color:var(--derived); }
+  .foot { font-size:12.5px; color:var(--faint); margin-top:22px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tsumiki — the 8 requirements</h1>
+  <p class="sub">The whole spec of <a href="todo.html">the task tracker</a>, in the order a demo proves them.</p>
+  <p class="legend"><span class="tag d" style="margin:0">derived</span> a value the app computes from other state — the kind that drifts silently, and the reason a demo of this is worth watching. Five of these eight are derived.</p>
+
+  <div class="req"><span class="rid">R1</span><div>
+    <h2>Adding a task puts it in the list</h2>
+    <p>Typing a task and pressing Add (or Enter) shows it as a new row, unchecked, at the bottom — exactly the text typed. An empty input adds nothing; the Add button is disabled.</p>
+    <div class="why">proof: the new row is read off the visible list, and its <code>added just now</code> stamp is present.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R2</span><div>
+    <h2>A task can be edited in place, and the change is stamped</h2>
+    <p>Double-clicking a task title (or the edit icon) makes it editable; Enter saves the new text in the row, Escape cancels. Saving a real change records an <code>edited</code> time.</p>
+    <div class="why">proof: rename a task on screen, read the new title back off the row, and confirm the meta line flipped from <code>added</code> to <code>edited just now</code>.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R3</span><div>
+    <h2>A task with sub-tasks is a container with a progress ring<span class="tag d">derived</span></h2>
+    <p>Sub-tasks live inside a task. A task that has them shows a progress ring counting them (2 of 3) instead of its own checkbox — you can’t tick a container by hand, only its sub-tasks.</p>
+    <div class="why">proof: add a sub-task on screen and the ring must move <b>2/3 → 2/4</b> by itself, with no checkbox on the parent to click.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R4</span><div>
+    <h2>Completion rolls up, both directions<span class="tag d">derived</span></h2>
+    <p>Completing the last open sub-task completes the container by itself; reopening any sub-task reopens the container. The explicit “Complete all / Reopen all” action flips every sub-task at once — nothing is ever toggled by a stray click on the parent.</p>
+    <div class="why">proof: tick the last sub-task and read the <b>parent</b> row’s done-state off the screen; then reopen one sub-task and watch the parent reopen. The dojostack inheritance story, in kindergarten words.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R5</span><div>
+    <h2>“To do” counts remaining leaves only<span class="tag d">derived</span></h2>
+    <p>The header count is the real amount of work left: open sub-tasks, plus open tasks that have no sub-tasks. A container is scaffolding — it never counts as a unit of work itself.</p>
+    <div class="why">proof: complete one sub-task → the count drops by exactly one. “Complete all” on a container of two open subs → it drops by exactly two, not three. The subtlest rule here, and the one the red demo breaks.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R6</span><div>
+    <h2>Smart views filter correctly, and the sidebar counts agree<span class="tag d">derived</span></h2>
+    <p>All shows everything; Active hides done tasks; Today shows only not-done tasks due on or before today; Completed shows only done tasks. Each view’s sidebar badge equals the number of rows it actually shows.</p>
+    <div class="why">proof: for each view, count the visible rows and compare with the sidebar badge — on screen, not in code.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R7</span><div>
+    <h2>Due dates derive an overdue / today chip<span class="tag d">derived</span></h2>
+    <p>A not-done task due before today wears the red “overdue” chip; due today wears “today”; a future date shows the date; done tasks wear no date chip.</p>
+    <div class="why">proof: deterministic via the <code>?now=</code> frozen clock, so the golden run pins the calendar and the same chips appear every run.</div>
+  </div></div>
+
+  <div class="req"><span class="rid">R8</span><div>
+    <h2>Everything survives a reload</h2>
+    <p>Tasks, sub-tasks, done-states, titles, due dates, order, and every created / edited / completed timestamp all come back after the page reloads.</p>
+    <div class="why">proof: reload the real page mid-flow and read the same structure — and the same <code>done · edited</code> stamps — off the fresh screen.</div>
+  </div></div>
+
+  <p class="foot">R2, R3, R4, R5, R6, R7 read values the app computes. R1 and R8 bookend them. One flow proves all eight.</p>
+</div>
+</body>
+</html>
