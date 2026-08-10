@@ -182,7 +182,11 @@ let STEP_FAILURES: { n: number, title: string, message: string }[] = []
 let REQ_CHIPS: { id: string, state: 'pending' | 'active' | 'pass' | 'fail' }[] = []
 function setChip (id: string, state: 'pending' | 'active' | 'pass' | 'fail'): void {
   const chip = REQ_CHIPS.find(c => c.id === id)
-  if (chip) chip.state = state
+  // A requirement proven by SEVERAL checks is proven only if every one passes — so a fail is
+  // terminal for the chip: once red, a later passing check of the same id cannot turn it green
+  // again (nor flip it back to ▸ active). The aggregate afterEach still fails the test regardless;
+  // this only keeps the strip honest when one id is checked more than once.
+  if (chip) { if (chip.state === 'fail') return; chip.state = state }
   else REQ_CHIPS.push({ id, state })
 }
 
