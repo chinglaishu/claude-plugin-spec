@@ -431,20 +431,78 @@ test('The detail offers a focus reader — one requirement per page, columns a c
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.cols')).toBeVisible()
     await expect(dt.locator('.testpane .test.open')).not.toHaveCount(0)
-    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
-    // flow (whatever its green state), and an UNCOVERED one (R14 — the proof-frames strip, which is
-    // not built yet, so no test tags it) says so and embeds nothing.
+    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement (the card
+    // opens on R1) names its flow whatever its green state — "Proven by" when green, still named when
+    // not. (Every board requirement is now covered by a test, so the uncovered "No test asserts this
+    // yet" branch is exercised on other projects' boards, not the dogfood — see the R14 strip test.)
     await dt.locator('.focusbtn').click()
     const ov3 = dt.locator('.focusov')
     const chip = await ov3.locator('.fcard .fchip').textContent()
     if (/proven/.test(chip || '') && !/unproven/.test(chip || '')) {
-      await expect(ov3.locator('.fcard .fpby')).toContainText('Proven by')
+      await expect(ov3.locator('.fcard .fpby')).toContainText('proved by')
     } else {
       await expect(ov3.locator('.fcard .fpby')).toBeVisible()   // covered but ungreen — still named
     }
-    await ov3.locator('.fdot[title^="R14 "]').click()
-    await expect(ov3.locator('.fcard .fpnone')).toContainText('No test asserts this yet')
-    await expect(ov3.locator('.fcard .fev')).toHaveCount(0)
+  })
+})
+
+test('The proof is scannable as frames, not only as video — a strip of stills per checked value', async ({ page }) => {
+  await coverReqs('R14')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  // R1 is covered by exactly ONE test, so it is that test's own row in the columns AND the primary flow
+  // its focus card embeds — the single place the stubbed frames must appear both times.
+  const R1_TITLE = 'Home lists every screen as a card'
+  await checkReq('R14', async () => {
+    // A run's record carries proof FRAMES — one still per checked value, cut from the recording at the
+    // instant the check fired, each with its got-vs-expected (red on a failure). Stub a record that has
+    // frames and drive it through the REAL client pipeline (the extraction that produces them is real
+    // and runs OUTSIDE this deterministic suite, exactly like the recording it cuts from). The imgs
+    // point at a served png so they load — this asserts the STRIP, not the pixels.
+    const frames = [
+      { img: 'spec/board/screen.png', ok: true,  cap: 'first value — got 7 · expected 7', req: 'R1' },
+      { img: 'spec/board/screen.png', ok: true,  cap: 'second value — got 6 · expected 6', req: 'R1' },
+      { img: 'spec/board/screen.png', ok: false, cap: 'third value — got 5 · expected 4', req: 'R1' }
+    ]
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rf', hasLog: false, at: '2026-08-13T00:00:00.000Z', ms: 6000,
+        ok: false, total: 1, failed: 1, shotsByTest: { [R1_TITLE]: {
+          shots: [], video: 'spec/_runs/rf/a.webm', frames, steps: [], log: 'x',
+          at: '2026-08-13T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
+        } } }]
+    } }))
+    await page.reload()
+    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+
+    // (1) IN THE TEST'S EVIDENCE (the columns): open the covering test → a scannable strip of stills,
+    // one per checked value, each captioned with its got-vs-expected; the failing value is marked red.
+    const tst = dt.locator('.test', { hasText: R1_TITLE }).first()
+    await tst.locator('.th').click()
+    const strip = tst.locator('.pfstrip')
+    await expect(strip).toBeVisible()
+    const fr = strip.locator('.pframe')
+    await expect(fr).toHaveCount(3)
+    await expect(fr.nth(0)).toContainText('got 7 · expected 7')
+    await expect(fr.nth(2)).toContainText('got 5 · expected 4')
+    await expect(fr.nth(0)).not.toHaveClass(/\bbad\b/)
+    await expect(fr.nth(2)).toHaveClass(/\bbad\b/)               // the failed value reads red
+    await expect(fr.nth(0).locator('img')).toHaveCount(1)        // frames OF the recording, as images
+    // a still is a thumbnail; a click opens it full in the existing lightbox (verify without pixels)
+    await fr.nth(2).locator('img').click()
+    await expect(page.locator('#lb')).toBeVisible()
+    await page.locator('#lbclose').click()
+
+    // (2) IN THE FOCUS CARD: the reader EMBEDS the primary covering test (R13), so the strip rides
+    // along — R1's card shows the same stills flat, without opening the columns.
+    await dt.locator('.focusbtn').click()
+    const ov = dt.locator('.focusov')
+    await ov.locator('.fdot[title^="R1 "]').click()             // "R1 —…" (the trailing space excludes R10+)
+    await expect(ov.locator('.fcard .fev .pfstrip .pframe')).toHaveCount(3)
+    await expect(ov.locator('.fcard .fev .pframe.bad')).toHaveCount(1)
+    // rendered flat like the reading layout: labelled sections, the header folded into the proof line
+    await expect(ov.locator('.fcard .fev .flabel', { hasText: 'Proof frames' })).toBeVisible()
+    await expect(ov.locator('.fcard .fev .test.infocus > .th')).toBeHidden()
   })
 })
 

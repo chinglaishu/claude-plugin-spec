@@ -200,6 +200,7 @@ const testRow = (s, plan, t) => {
           <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
         </span>
       </div>
+      <div class="pfstrip" data-title="${esc(plan.title)}"></div>
       ${t && t.error ? `<pre class="terr">${esc(t.error)}</pre>` : ''}
       <div class="fold"><div class="tststeps" data-title="${esc(plan.title)}" data-planned="1">${planned}</div></div>
       <div class="tstlog" data-title="${esc(plan.title)}"></div>
@@ -1328,14 +1329,30 @@ export function build () {
   .fpby b { font-weight:500; }
   .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
   .facts { display:flex; gap:var(--s2); margin-top:var(--s4); }
-  /* THE PROOF, embedded (board R13, enriched): the focus card carries the covering test's OWN row —
-     recording, Run/Watch/Logs/Steps controls and numbered steps — MOVED in from the columns, so the
-     reader takes in one whole test at a time without a separate player. A quiet frame sets it off from
-     the requirement prose above; the test row sheds its column divider inside it. */
-  .fev { margin-top:var(--s3); border:1px solid var(--hair); border-radius:var(--r-sm);
-    background:var(--paper); overflow:hidden; }
+  /* THE PROOF, embedded (board R13/R14): the focus card carries the covering test's OWN row — its
+     controls, its scannable proof frames and its numbered steps — MOVED in from the columns, then
+     rendered FLAT like the reading layout so the reader takes in one whole test at a time. The proof
+     line replaces the test's own header; the recording thumbnail gives way to the frames; the controls
+     become a plain row. Scoped to .infocus, so the columns' own rows are untouched. */
+  .fphead { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
+  .fphead .fplbl { flex:none; }
+  .fphead .fpby { font-size:var(--t-md); color:var(--ink-2); }
+  .fphead .fpby b { font-weight:500; }
+  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
+  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
+  .fev { margin-top:var(--s2); }
   .fev .test, .fev .test:last-child { border-bottom:0; }
-  .fev .test .tbody { padding-top:var(--s2); }
+  .fev .test.infocus { border:0; }
+  .fev .test.infocus > .th { display:none; }                     /* the proof line above is the header now */
+  .fev .test.infocus > .tbody { display:block; padding:var(--s4) 0 0; }
+  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
+  .fev .test.infocus .trow2 .rec { display:none; }               /* the frames (R14) replace the thumbnail */
+  .fev .test.infocus .trow2 .grow { display:none; }
+  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
+  .fev .test.infocus .fold { margin-top:0; }
+  .fev .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
+    color:var(--ink-4); margin:var(--s5) 0 var(--s3); }
+  .fev .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm); }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
@@ -1434,6 +1451,23 @@ export function build () {
   /* full log rides the actions row as a bordered button beside Watch — NOT indigo (indigo is
      "your turn" only): it wears the neutral .btn sm like Run/Watch. It opens a floating window. */
   .fold { margin-top:var(--s3); }
+
+  /* PROOF FRAMES (board R14): the recording read as a scannable STRIP of stills — one per checked
+     value, cut from the video at the instant that check fired, each carrying the topbar it burned in
+     and the ring on the value. A reviewer verifies by eye, in order, without pressing play; the video
+     (above) is kept for what a still can't show. loadRuns fills this from the run's own frames; a run
+     with no video has none, so an :empty strip collapses — never a faked or separately-captured strip. */
+  .pfstrip { display:flex; gap:var(--s3); margin-top:var(--s3); padding-bottom:var(--s2);
+    overflow-x:auto; scroll-snap-type:x proximity; }
+  .pfstrip:empty { display:none; }
+  .pframe { flex:none; width:210px; scroll-snap-align:start; margin:0;
+    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper); overflow:hidden; }
+  .pframe.bad { border-color:var(--bengara-line); }
+  .pframe img { display:block; width:100%; height:auto; cursor:zoom-in; border-bottom:1px solid var(--hair); }
+  .pfcap { padding:var(--s2) var(--s3); font:var(--t-xs) var(--mono); color:var(--ink-3);
+    line-height:1.4; display:flex; gap:6px; align-items:baseline; }
+  .pfcap .pfreq { flex:none; color:var(--ink-4); }
+  .pframe.bad .pfcap { color:var(--bengara); }
 
   /* the full log opens in a FLOATING window, not a full-viewport scrim — the board stays visible
      behind it. Close / Esc / a click off the card dismiss it (board R10). */

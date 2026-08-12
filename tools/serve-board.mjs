@@ -8,7 +8,7 @@
 import { createServer } from 'node:http'
 import { readFileSync, writeFileSync, existsSync, statSync, watch, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
-import { join, normalize, extname, resolve, dirname, basename } from 'node:path'
+import { join, normalize, extname, resolve, dirname, basename, relative } from 'node:path'
 import { homedir } from 'node:os'
 import {
   ROOT, SPEC, allScreens,
@@ -88,6 +88,105 @@ function collectRecord (dir) {
   const manifest = join(dir, 'shots.json')
   if (!existsSync(manifest)) return {}
   try { return JSON.parse(readFileSync(manifest, 'utf8')) } catch { return {} }
+}
+
+// PROOF FRAMES (board R14): cut one still per checked value from a run's recording, at the instant
+// that check fired — indexed by the step record's own video-time offsets (`t`, ms from the recording's
+// t=0, which the reporter stamps on every step). Each cut carries the topbar the run burned in and the
+// ring on the value, because it is a FRAME OF THE RECORDING, never a separate capture — so a run with
+// no video yields none, honestly (R14). Best-effort and bounded: a missing ffmpeg or a failed cut
+// drops that frame (or the whole strip), never the run. Mutates shotsByTest, adding `frames` per test.
+let FFMPEG
+function ffmpegOk () {
+  if (FFMPEG !== undefined) return FFMPEG
+  try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); FFMPEG = true } catch { FFMPEG = false }
+  return FFMPEG
+}
+const GOT_EXP = / — got .+? · expected /   // the hudCheck claim shape emitNote writes into a note step
+function frameSlug (s) {
+  return String(s || '').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'test'
+}
+// Turn a test's step record into the frames worth cutting: one per got-vs-expected CLAIM (the checked
+// values), plus one per `proves <id>` step that carried no such claim (a meta assertion still deserves
+// its verdict frame). Ordered by time and bounded, so a long flow cannot cut eighty stills.
+function frameAnchors (steps) {
+  const kept = (steps || []).filter(s => s && typeof s.t === 'number')
+  const proveBefore = i => {
+    for (let j = i - 1; j >= 0; j--) {
+      if (kept[j].depth < kept[i].depth) { const m = /^proves (\S+)$/.exec(kept[j].label || ''); return m ? m[1] : '' }
+    }
+    return ''
+  }
+  const nextT = i => (i + 1 < kept.length ? kept[i + 1].t : kept[i].t + (kept[i].d || 0) + 1500)
+  const anchors = []
+  const provenWithValue = new Set()
+  for (let i = 0; i < kept.length; i++) {
+    const s = kept[i]
+    if (s.cat === 'info' && GOT_EXP.test(s.label || '')) {
+      const req = proveBefore(i); if (req) provenWithValue.add(req)
+      // The claim + ring paint at ~s.t and HOLD for the run's pace; land mid-hold. Adaptive off the gap
+      // to the next step: a held check (proveVisible, ~2s hold → wide gap) samples ~1s in for a settled
+      // read; a bare hudCheck with no hold (narrow gap) samples just past the paint, so the frame still
+      // catches the claim before the flow moves on. Clamped so neither extreme misses.
+      const t = Math.round(s.t + Math.max(120, Math.min(1200, (nextT(i) - s.t) * 0.5)))
+      anchors.push({ t, ok: s.ok !== false, cap: String(s.label), req })
+    }
+  }
+  for (let i = 0; i < kept.length; i++) {
+    const m = kept[i].cat === 'test.step' && /^proves (\S+)$/.exec(kept[i].label || '')
+    if (m && !provenWithValue.has(m[1])) {
+      anchors.push({ t: Math.round(kept[i].t + Math.min(1500, (kept[i].d || 0) * 0.6)), ok: kept[i].ok !== false, cap: '', req: m[1] })
+    }
+  }
+  return anchors.sort((a, b) => a.t - b.t).slice(0, 12)
+}
+function cutFrame (videoAbs, t, out) {
+  // fast + accurate seek: a coarse pre-input seek to ~2s before, then decode the small remainder, so a
+  // sparse-keyframe MediaRecorder webm still lands on the right frame without decoding from t=0.
+  const coarse = Math.max(0, t - 2000) / 1000
+  const fine = Math.max(0, t / 1000 - coarse)
+  return new Promise(res => {
+    const args = ['-y', '-loglevel', 'error', '-ss', String(coarse), '-i', videoAbs,
+      '-ss', String(fine), '-frames:v', '1', '-vf', 'scale=760:-1', '-q:v', '3', out]
+    let done = false
+    const child = spawn('ffmpeg', args, { stdio: 'ignore' })
+    const finish = ok => { if (!done) { done = true; res(ok) } }
+    const timer = setTimeout(() => { try { child.kill('SIGKILL') } catch { /* already gone */ } finish(false) }, 20000)
+    child.on('error', () => { clearTimeout(timer); finish(false) })
+    child.on('close', code => { clearTimeout(timer); finish(code === 0) })
+  })
+}
+async function extractProofFrames (recordDir, shotsByTest) {
+  if (!ffmpegOk()) return
+  // one flat job list across all tests, run through a small pool so a run with many values does not
+  // spawn dozens of ffmpegs at once nor block the event loop (the panel keeps streaming meanwhile)
+  const jobs = []
+  for (const [title, recd] of Object.entries(shotsByTest)) {
+    if (!recd || !recd.video) continue
+    const videoAbs = join(ROOT, recd.video)
+    if (!existsSync(videoAbs)) continue
+    const anchors = frameAnchors(recd.steps)
+    if (!anchors.length) continue
+    const dir = join(recordDir, 'frames', frameSlug(title))
+    try { mkdirSync(dir, { recursive: true }) } catch { continue }
+    recd._frames = []   // staged; promoted to recd.frames only for the cuts that succeed, in order
+    anchors.forEach((a, i) => jobs.push({ recd, videoAbs, a, out: join(dir, i + '.png'), i }))
+  }
+  let next = 0
+  const worker = async () => {
+    while (next < jobs.length) {
+      const j = jobs[next++]
+      const ok = await cutFrame(j.videoAbs, j.a.t, j.out)
+      if (ok && existsSync(j.out)) j.recd._frames.push({ img: relative(ROOT, j.out), ok: j.a.ok, cap: j.a.cap, req: j.a.req, t: j.a.t, i: j.i })
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(4, jobs.length) }, worker))
+  for (const recd of Object.values(shotsByTest)) {
+    if (recd && recd._frames) {
+      if (recd._frames.length) recd.frames = recd._frames.sort((a, b) => a.i - b.i).map(({ i, ...f }) => f)
+      delete recd._frames
+    }
+  }
 }
 
 function recordRun (entry) {
@@ -504,6 +603,9 @@ function startRun (screen, opts = {}) {
     let hasLog = false
     try { writeFileSync(join(recordDir, 'run.log'), log.replace(/\x1b\[[0-9;]*m/g, '')); hasLog = true } catch { /* best effort: a missing log never fails a run */ }
     let shotsByTest = collectRecord(recordDir)
+    // Cut the proof frames (board R14) from this run's recordings BEFORE archiving, so the git/bucket
+    // ship carries them too. Best-effort: no ffmpeg or a failed cut just leaves a test without a strip.
+    try { await extractProofFrames(recordDir, shotsByTest) } catch (err) { console.error('proof-frame cut failed:', err) }
     // Ship the record where Setup says, if anywhere but local. Best effort: a failure records the
     // reason on the run and keeps the local copy, and never touches the verdict.
     let archive = null

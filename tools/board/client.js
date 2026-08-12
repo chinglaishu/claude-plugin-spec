@@ -193,13 +193,27 @@ const B = window.__BOARD__ || {}
     const borrowed = []
     function borrow (node, host) {
       borrowed.push({ node: node, parent: node.parentNode, next: node.nextSibling })
-      node.classList.add('open', 'infocus')   // open so its evidence shows; infocus marks it for the card
+      node.classList.add('open', 'infocus')   // open so its evidence shows; infocus flattens it for the card
       host.appendChild(node)
+    }
+    // The card renders the moved test FLAT, like the reading layout: a short uppercase section label
+    // above the frame strip and above the step flow. Injected into the moved node and stripped on
+    // restore, so the columns' own row is left exactly as it was.
+    function insertLabel (el, text) {
+      const prev = el.previousElementSibling
+      if (prev && prev.classList.contains('flabel')) { prev.textContent = text; return }
+      const l = document.createElement('div'); l.className = 'flabel'; l.textContent = text
+      el.parentNode.insertBefore(l, el)
     }
     function restoreBorrowed () {
       // reverse order so a saved sibling is back in place before the node that anchors to it
       for (let k = borrowed.length - 1; k >= 0; k--) {
-        const b = borrowed[k]; b.node.classList.remove('open', 'infocus')
+        const b = borrowed[k]
+        if (b.node.querySelectorAll) {
+          b.node.querySelectorAll('.flabel').forEach(function (el) { el.remove() })
+          b.node.querySelectorAll('.fhere').forEach(function (el) { el.classList.remove('fhere') })
+        }
+        b.node.classList.remove('open', 'infocus')
         if (b.next && b.next.parentNode === b.parent) b.parent.insertBefore(b.node, b.next)
         else if (b.parent) b.parent.appendChild(b.node)
       }
@@ -248,28 +262,45 @@ const B = window.__BOARD__ || {}
       const cov = coveringTests(r.id)
       const flows = cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
       const proof = document.createElement('div'); proof.className = 'fproof'
-      const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
-      proof.appendChild(plbl)
       if (cov.length) {
-        const by = document.createElement('div'); by.className = 'fpby'
-        // "Proven by" only when it actually is; a covered-but-ungreen requirement reads "Covered by …
-        // — not proven yet", so the word never overstates the green (rules 2 and 3).
-        by.innerHTML = (r.state === 'proven' ? 'Proven by ' : 'Covered by ') +
-          '<b>' + flows.map(eh).join('</b> · <b>') + '</b>' + (r.state === 'proven' ? '' : ' — not proven yet')
-        proof.appendChild(by)
-        // the covering test's real row(s), MOVED in and opened — the evidence itself, wired and whole
+        // ONE proof line and ONE flow's evidence — the reading view shows the PRIMARY covering test in
+        // full and names any others (the columns carry every one). The line reads "proved by <flow> ·
+        // <verdict>", the verdict off that test's own pass/fail; "proved by" only when it actually is,
+        // else "covered by … — not proven yet", so the word never overstates the green (rules 2 and 3).
+        const primary = cov[0]
+        const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
+        const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
+        const head = document.createElement('div'); head.className = 'fphead'
+        const plbl = document.createElement('span'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
+        const by = document.createElement('span'); by.className = 'fpby'
+        by.innerHTML = (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+          ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
+          (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
+          (r.state === 'proven' ? '' : ' — not proven yet')
+        head.appendChild(plbl); head.appendChild(by); proof.appendChild(head)
+        // the primary covering test's REAL row, MOVED in and opened, then flattened: its controls become
+        // a plain row, its recording gives way to the scannable frames, and its step flow is labelled —
+        // the evidence itself, wired and whole, never a rebuilt player (R13's "duplicate no player").
         const ev = document.createElement('div'); ev.className = 'fev'
         proof.appendChild(ev)
-        cov.forEach(function (t) { borrow(t, ev) })
+        borrow(primary, ev)
+        const strip = primary.querySelector('.pfstrip')
+        if (strip && strip.children.length) insertLabel(strip, 'Proof frames — one still per check, scan to verify')
+        const fold = primary.querySelector('.fold')
+        if (fold) insertLabel(fold, 'The flow, step by step')
+        // highlight the beat that proves THIS requirement, so the reader's eye lands on its own step
+        const here = primary.querySelector('.beat[data-key="' + r.id + '"]')
+        if (here) here.classList.add('fhere')
         // one quiet secondary action: see it back among the two columns, that test open (R13's "open the test")
         const acts = document.createElement('div'); acts.className = 'facts'
         const open = document.createElement('button'); open.className = 'btn sm fopen'; open.textContent = 'Open in columns ↗'
-        open.addEventListener('click', function () { openInColumns(cov[0], false) })
+        open.addEventListener('click', function () { openInColumns(primary, false) })
         acts.appendChild(open); proof.appendChild(acts)
       } else {
+        const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
         const none = document.createElement('div'); none.className = 'fpnone'
         none.textContent = 'No test asserts this yet — honestly ungreen, not hidden.'
-        proof.appendChild(none)
+        proof.appendChild(plbl); proof.appendChild(none)
       }
       card.appendChild(proof)
 
@@ -1110,6 +1141,24 @@ const B = window.__BOARD__ || {}
           slot.classList.remove('playable'); slot.onclick = null
           slot.innerHTML = label                     // a still (or nothing) — honestly not playable
         }
+      }
+      // PROOF FRAMES (board R14): the recording read as a scannable STRIP — one still per checked
+      // value, cut from the recording at the instant that check fired, each captioned with its
+      // got-vs-expected and reddened on a failure. Drawn from the newest record that actually HAS
+      // frames (a later video-less CLI run must not blank them), exactly like the cover above. A run
+      // with no video captures no frames, so the strip stays empty and collapses (:empty) — never a
+      // faked or separately-captured strip. Each still is an <img>, so the existing lightbox zooms it.
+      for (const slot of panel.querySelectorAll('.pfstrip')) {
+        const host = slot.closest('.test')
+        const hist = rec[host && host.dataset.title] || []
+        const withFrames = hist.find(x => x.frames && x.frames.length)
+        const frames = (withFrames && withFrames.frames) || []
+        slot.innerHTML = frames.map(f =>
+          '<figure class="pframe' + (f.ok === false ? ' bad' : '') + '">' +
+          '<img loading="lazy" src="' + eh(f.img) + '" alt="' + eh(f.cap || f.req || 'proof frame') + '">' +
+          '<figcaption class="pfcap">' + (f.req ? '<span class="pfreq">' + eh(f.req) + '</span>' : '') +
+          '<span>' + eh(f.cap || '') + '</span></figcaption></figure>'
+        ).join('')
       }
       // The INLINE evidence of each case (board R10): the plan rows are BAKED from the test source
       // (planRow), so the full numbered story shows before the test ever runs. This loop OVERLAYS
