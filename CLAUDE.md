@@ -81,6 +81,9 @@ spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by conte
 tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/unproven
 tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
 tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
+tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
+                             .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
+                             Edit/lint it like normal JS; no template-literal escaping traps.
 tools/serve-board.mjs        server: static allowlist, runs, scan, rewrite, crawl, SSE, watch (no accept endpoint — the gate is gone, board R8)
 tools/crawl.mjs              the Init crawler — INVENTORY ONLY (a real browser; rows + crawl.png, no drafting; outside the suite)
 tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
@@ -141,10 +144,16 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
   qualified tag (`x:R3`) proves another screen's requirement, so the fold is board-wide, not per-file.
-- **`board.html`'s script is emitted inside a JS template literal.** An unescaped `\n` or a backtick
-  becomes literal whitespace and silently breaks every listener while the page still renders.
-  `build()` parses the emitted script with `new Function()` and refuses to write a broken board —
-  **keep that guard**, and write `\\n` and avoid backticks in emitted strings.
+- **The board's CLIENT BEHAVIOUR now lives in `tools/board/client.js`** — real JavaScript, read in
+  verbatim by `build-board.mjs` and paired with a JSON island (`window.__BOARD__`) that carries its
+  three build-time values (screens, skill ids, waiting indices). Because that code is no longer
+  inside a template literal, backticks, `${}` and `\n` are ordinary characters there — edit it like
+  any `.js` file, and lint/type-check it (`node --check` at minimum) to catch the logic errors the
+  `new Function()` guard cannot. The MARKUP and CSS in `build-board.mjs` are **still** emitted inside
+  a template literal, so the old caution still applies THERE: an unescaped `\n` or a backtick becomes
+  literal whitespace and silently breaks the page while it still renders. `build()` parses every
+  emitted `<script>` with `new Function()` and refuses to write a broken board — **keep that guard**,
+  and in any string still emitted from the template write `\\n` and avoid backticks.
 - **The server must not import the builder.** `build()` runs as a **child process**; Node's module
   cache would otherwise overwrite fresh output with stale code. Editing `tools/spec-store.mjs` or
   `serve-board.mjs` needs a fresh server process — but `npm run board` runs under `node --watch`, so it

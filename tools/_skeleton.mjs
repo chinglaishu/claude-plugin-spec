@@ -11,6 +11,7 @@ import { join } from 'node:path'
 // spec/<screen>/ — those are the target's own screens, never shipped.
 export const FILES = [
   'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/journey.mjs', 'tools/build-board.mjs',
+  'tools/board/client.js',
   'tools/serve-board.mjs',
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
   'playwright.board.ts',
