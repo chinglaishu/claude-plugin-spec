@@ -147,6 +147,8 @@ const B = window.__BOARD__ || {}
   // closing the detail also tears down an open focus reader and restores the columns for next time
   function closeFocus () {
     for (const o of document.querySelectorAll('.focusov')) {
+      if (o._restore) o._restore()          // put any borrowed test rows back before tearing down —
+      // else o.remove() would destroy the real test node the columns still need
       const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
       if (cx) cx.style.display = ''
       o.remove()
@@ -182,10 +184,31 @@ const B = window.__BOARD__ || {}
     function coveringTests (rid) {
       return tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + rid + '"]') })
     }
-    // Both actions RESTORE the columns and reveal the real test element (reusing its own open/play
-    // handlers — no duplicated player). "Watch" also clicks its recording, which plays only when a
-    // board-started run captured a .webm (the .rec goes 'playable'); otherwise it just opens.
+    // A covered requirement's card EMBEDS the covering test's OWN row — recording, Run/Watch/Logs/
+    // Steps controls, numbered steps, error — by MOVING the real node in. Never a clone: the play
+    // handler, the Logs/Steps windows and the folded pass/fail outcomes are all wired onto the LIVE
+    // node (properties and delegated listeners a clone would not carry). On leave the node is moved
+    // back to exactly where it was, so the two columns stay whole. This is R13's "reuse the columns'
+    // machinery, duplicate no player" taken literally: the card shows the very same node.
+    const borrowed = []
+    function borrow (node, host) {
+      borrowed.push({ node: node, parent: node.parentNode, next: node.nextSibling })
+      node.classList.add('open', 'infocus')   // open so its evidence shows; infocus marks it for the card
+      host.appendChild(node)
+    }
+    function restoreBorrowed () {
+      // reverse order so a saved sibling is back in place before the node that anchors to it
+      for (let k = borrowed.length - 1; k >= 0; k--) {
+        const b = borrowed[k]; b.node.classList.remove('open', 'infocus')
+        if (b.next && b.next.parentNode === b.parent) b.parent.insertBefore(b.node, b.next)
+        else if (b.parent) b.parent.appendChild(b.node)
+      }
+      borrowed.length = 0
+    }
+    // The one secondary action: restore the columns and open the covering test there (reusing its own
+    // open/play handlers — no duplicated player). Puts any borrowed node back first, THEN opens it.
     function openInColumns (testEl, play) {
+      restoreBorrowed()
       ov.remove(); cols.style.display = ''
       if (!testEl) return
       testEl.classList.add('open')
@@ -194,6 +217,7 @@ const B = window.__BOARD__ || {}
     }
     let cur = 0
     const ov = document.createElement('div'); ov.className = 'focusov'
+    ov._restore = restoreBorrowed          // closeFocus / detail-close use this to reclaim borrowed rows
     const head = document.createElement('div'); head.className = 'foch'
     const count = document.createElement('span'); count.className = 'fcount'
     const back = document.createElement('button'); back.className = 'btn fcols'; back.textContent = 'Columns'
@@ -206,7 +230,8 @@ const B = window.__BOARD__ || {}
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
     function render () {
       const r = reqs[cur]
-      card.innerHTML = ''
+      restoreBorrowed()          // reclaim the previous card's embedded test row BEFORE wiping the card,
+      card.innerHTML = ''        // else innerHTML='' would destroy the real node the columns still need
       const top = document.createElement('div'); top.className = 'ftop'
       const idEl = document.createElement('span'); idEl.className = 'fid'; idEl.textContent = r.id
       const chip = document.createElement('span'); chip.className = 'fchip ' + r.state
@@ -216,31 +241,35 @@ const B = window.__BOARD__ || {}
       const b = document.createElement('div'); b.className = 'fbody'; b.innerHTML = r.body
       card.appendChild(top); card.appendChild(h); card.appendChild(b)
 
-      // the proof footer — proof source + the actions that reach the evidence
+      // THE PROOF — the whole single-test detail, not a link to it. A requirement a test tags carries
+      // that test's OWN evidence embedded below (recording, Run/Watch/Logs/Steps, numbered steps); one
+      // that nothing tags says so honestly (rule 3). The proof line is COVERAGE-honest, not state-gated:
+      // a tagged-but-ungreen requirement still names its flow rather than claiming no test touches it.
       const cov = coveringTests(r.id)
+      const flows = cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
       const proof = document.createElement('div'); proof.className = 'fproof'
       const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
       proof.appendChild(plbl)
-      if (r.state === 'proven' && cov.length) {
+      if (cov.length) {
         const by = document.createElement('div'); by.className = 'fpby'
-        by.textContent = 'Proven by ' + cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean).join(' · ')
+        // "Proven by" only when it actually is; a covered-but-ungreen requirement reads "Covered by …
+        // — not proven yet", so the word never overstates the green (rules 2 and 3).
+        by.innerHTML = (r.state === 'proven' ? 'Proven by ' : 'Covered by ') +
+          '<b>' + flows.map(eh).join('</b> · <b>') + '</b>' + (r.state === 'proven' ? '' : ' — not proven yet')
         proof.appendChild(by)
+        // the covering test's real row(s), MOVED in and opened — the evidence itself, wired and whole
+        const ev = document.createElement('div'); ev.className = 'fev'
+        proof.appendChild(ev)
+        cov.forEach(function (t) { borrow(t, ev) })
+        // one quiet secondary action: see it back among the two columns, that test open (R13's "open the test")
+        const acts = document.createElement('div'); acts.className = 'facts'
+        const open = document.createElement('button'); open.className = 'btn sm fopen'; open.textContent = 'Open in columns ↗'
+        open.addEventListener('click', function () { openInColumns(cov[0], false) })
+        acts.appendChild(open); proof.appendChild(acts)
       } else {
         const none = document.createElement('div'); none.className = 'fpnone'
         none.textContent = 'No test asserts this yet — honestly ungreen, not hidden.'
         proof.appendChild(none)
-      }
-      // Both actions appear for any COVERED requirement (a test tags it), whatever its state — you
-      // watch a proof when it is green, and watch WHY when it is not (the recording narrates either).
-      const acts = document.createElement('div'); acts.className = 'facts'
-      if (cov.length) {
-        const watch = document.createElement('button'); watch.className = 'btn fwatch'
-        watch.textContent = r.state === 'proven' ? '▶ Watch the proof' : '▶ Watch the run'
-        watch.addEventListener('click', function () { openInColumns(cov[0], true) })
-        const open = document.createElement('button'); open.className = 'btn fopen'; open.textContent = 'Open test'
-        open.addEventListener('click', function () { openInColumns(cov[0], false) })
-        acts.appendChild(watch); acts.appendChild(open)
-        proof.appendChild(acts)
       }
       card.appendChild(proof)
 
@@ -256,7 +285,7 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    back.addEventListener('click', function () { ov.remove(); cols.style.display = '' })
+    back.addEventListener('click', function () { restoreBorrowed(); ov.remove(); cols.style.display = '' })
     ov.appendChild(head); ov.appendChild(card); ov.appendChild(pager)
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }

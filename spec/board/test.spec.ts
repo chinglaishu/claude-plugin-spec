@@ -402,34 +402,49 @@ test('The detail offers a focus reader — one requirement per page, columns a c
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.cols')).toBeVisible()
 
-    // THE PROOF is on the card, not just the requirement: every requirement a test covers names its
-    // proof source and offers the two actions that reach the evidence — and they are FUNCTIONAL.
+    // THE PROOF is on the card, not just the requirement — and the card now carries the WHOLE
+    // single-test detail (board R13, enriched): for a covered requirement it EMBEDS that test's own
+    // evidence — its recording, its Run/Logs/Steps controls, and its numbered story steps — MOVED in
+    // from the columns, so no player is duplicated (R13's "reuse the columns' machinery").
     // (Robust to the dogfood lag: a board requirement may read proven OR unproven on any given run,
     // so this asserts the machinery, not a specific green state.)
     await dt.locator('.focusbtn').click()
     const ov2 = dt.locator('.focusov')
     await expect(ov2.locator('.fcard .fproof')).toBeVisible()
-    // R1 is covered by a test (whatever its proven state), so the card names its proof source…
+    // R1 (the card opens on it) is covered by a test, so the card names its proof source once…
     await expect(ov2.locator('.fcard .fpby, .fcard .fpnone')).toHaveCount(1)
-    // …and carries both actions
-    await expect(ov2.locator('.fcard .fwatch')).toBeVisible()   // ▶ Watch the proof / Watch the run
+    await expect(ov2.locator('.fcard .fpby')).toBeVisible()
+    // …and EMBEDS that test's full evidence, opened: the recording, the numbered steps, and the
+    // Logs/Steps window controls are all present INSIDE the card, not a screen away.
+    const ev = ov2.locator('.fcard .fev .test').first()
+    await expect(ev).toBeVisible()
+    await expect(ev).toHaveClass(/\bopen\b/)
+    await expect(ov2.locator('.fcard .fev .beat').first()).toBeVisible()
+    await expect(ov2.locator('.fcard .fev .rec')).toHaveCount(1)
+    await expect(ov2.locator('.fcard .fev [data-steps]')).toHaveCount(1)
+    await expect(ov2.locator('.fcard .fev [data-log]')).toHaveCount(1)
+    // a single secondary action returns to the columns with that test open — and it is FUNCTIONAL,
+    // MOVING the embedded test back into the pane intact (so the columns are whole again afterwards)
     const openBtn = ov2.locator('.fcard .fopen')
     await expect(openBtn).toBeVisible()
-    // Open test is FUNCTIONAL: it restores the columns and opens the covering test
     await openBtn.click()
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.cols')).toBeVisible()
     await expect(dt.locator('.testpane .test.open')).not.toHaveCount(0)
-    // the proof source is state-honest: a proven card says "Proven by <flow>", an unproven one says
-    // no test asserts it yet — whichever this run derived, it is never a bare title row
+    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
+    // flow (whatever its green state), and an UNCOVERED one (R14 — the proof-frames strip, which is
+    // not built yet, so no test tags it) says so and embeds nothing.
     await dt.locator('.focusbtn').click()
     const ov3 = dt.locator('.focusov')
     const chip = await ov3.locator('.fcard .fchip').textContent()
     if (/proven/.test(chip || '') && !/unproven/.test(chip || '')) {
       await expect(ov3.locator('.fcard .fpby')).toContainText('Proven by')
     } else {
-      await expect(ov3.locator('.fcard .fpnone')).toContainText('No test asserts this yet')
+      await expect(ov3.locator('.fcard .fpby')).toBeVisible()   // covered but ungreen — still named
     }
+    await ov3.locator('.fdot[title^="R14 "]').click()
+    await expect(ov3.locator('.fcard .fpnone')).toContainText('No test asserts this yet')
+    await expect(ov3.locator('.fcard .fev')).toHaveCount(0)
   })
 })
 

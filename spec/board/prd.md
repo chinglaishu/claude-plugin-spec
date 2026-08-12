@@ -196,15 +196,21 @@ requirement at a time** — its id, its state, its title and full description, o
 (prev · dots · next) to move between them and a "Columns" control to return to the two-column view.
 It is a way to *read* the requirements one-per-page for people who find the dense two columns hard to
 absorb at a glance; it adds no state and changes no requirement — the same derived states the columns
-show, one screenful each. Each card also carries its **proof**: the flow that proves it (or that no
-test asserts it yet), with the two actions that reach the evidence — *watch the run* (plays the
-covering test's recording, which burns expected-vs-got into its own frames) and *open the test* (which
-returns to the columns and opens that test). Both reuse the columns' own machinery; the focus reader
-duplicates no player.
+show, one screenful each. Each card also carries its **proof** — not a link to it but the covering
+test's own evidence, **embedded**. It names the flow that proves it (or, honestly, that no test asserts
+it yet), and for a covered requirement the *very test row from the columns* is moved into the card and
+opened: its self-narrating recording (which burns expected-vs-got into its own frames), its Run / Watch
+/ Logs / Steps controls, and its numbered story steps — so the reader takes in one whole test at a time
+rather than a teaser. A single *Open in columns* returns to the two-column view with that test open. It
+is the same node the columns show, moved and moved back, never a copy — so the focus reader duplicates
+no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.
 
-*Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page");
-the default view stays the two columns, this is the opt-in focus reader. Wording awaits the human's
-gate; the test asserts behaviour.*
+*Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page").
+Enriched 2026-08-13 (still the human's direction: "don't hide too much — the card should show one whole
+test detail at once") so the card carries the WHOLE single-test detail — steps, recording, controls —
+by reusing the real column node, not a thin summary that hid what the two columns already showed. The
+default view stays the two columns; this is the opt-in focus reader. Wording awaits the human's gate;
+the test asserts behaviour.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

@@ -1328,6 +1328,14 @@ export function build () {
   .fpby b { font-weight:500; }
   .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
   .facts { display:flex; gap:var(--s2); margin-top:var(--s4); }
+  /* THE PROOF, embedded (board R13, enriched): the focus card carries the covering test's OWN row —
+     recording, Run/Watch/Logs/Steps controls and numbered steps — MOVED in from the columns, so the
+     reader takes in one whole test at a time without a separate player. A quiet frame sets it off from
+     the requirement prose above; the test row sheds its column divider inside it. */
+  .fev { margin-top:var(--s3); border:1px solid var(--hair); border-radius:var(--r-sm);
+    background:var(--paper); overflow:hidden; }
+  .fev .test, .fev .test:last-child { border-bottom:0; }
+  .fev .test .tbody { padding-top:var(--s2); }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
