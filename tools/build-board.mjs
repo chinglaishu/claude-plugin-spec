@@ -1363,6 +1363,10 @@ export function build () {
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .tmeta:empty { display:none; }
   .tmeta .failat { color:var(--bengara); }
+  /* the commit a result ran against, on the result itself (dispatch R8) — so which commit a case
+     passed or failed in is legible without opening its log */
+  .tmeta .tsha { font-family:var(--mono); color:var(--ink-3); border:1px solid var(--hair);
+    border-radius:var(--r-sm); padding:0 4px; background:var(--paper); }
 
   /* requirements — the TITLE until clicked, then the full markdown (board R3) */
   /* highlight the WHOLE item (header + expanded body), and fade it in/out */

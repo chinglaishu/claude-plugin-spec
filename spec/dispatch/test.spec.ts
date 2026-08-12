@@ -264,6 +264,10 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
   await page.goto('/#/board')
   const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
   await openCase(one)
+  // The commit is CLEAR on the result itself, not only inside the opened log (the human, 2026-08-13):
+  // the case's always-visible meta line names the commit it last ran against, so which commit a case
+  // passed or failed in is answerable at a glance — the whole point of stamping the commit.
+  await expect(one.locator('.tmeta .tsha')).toHaveText(/[0-9a-f]{6,}/)
   // the folded history is recorded into the hidden .tstlog first (loadRuns); THEN the whole log opens
   // in ONE floating window (board R10), which copies that history in — read it there, where it shows.
   await expect(one.locator('.tstlog .lghist > li').first()).toBeAttached()

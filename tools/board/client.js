@@ -1234,19 +1234,23 @@ const B = window.__BOARD__ || {}
             row.classList.add('p'); if (mk) mk.textContent = '✓'   // passed run, unrecorded plan row
           }
         }
-        // the meta line SHOUTS the failure: how many steps broke, and which — not just the first
+        // the meta line SHOUTS the failure: how many steps broke, and which — not just the first. It
+        // also NAMES THE COMMIT the result ran against (dispatch R8), so which commit a case passed or
+        // failed in is legible on the result itself, not only inside the opened log.
         if (meta) {
           const took = one && one.ms != null ? fmt(one.ms) : ''
+          const sha = one && one.commit
+            ? ' · <span class="tsha" title="the commit this result ran against">' + eh(one.commit) + '</span>' : ''
           if (!one) meta.textContent = 'not run yet'
           else if (one.ok === false) {
             const nF = failNames.length || 1
             const names = failNames.slice(0, 2).join(' · ') + (failNames.length > 2 ? ' · …' : '')
             meta.innerHTML = '<span class="failat">✕ ' + nF + ' step' + (nF === 1 ? '' : 's') +
-              ' failed' + (names ? ' — ' + eh(names) : '') + '</span>' + (took ? ' · ' + eh(took) : '')
+              ' failed' + (names ? ' — ' + eh(names) : '') + '</span>' + (took ? ' · ' + eh(took) : '') + sha
           } else {
             const np = beats.filter(b => /^proves /.test(b.head.label || '')).length
-            meta.textContent = (np ? 'proves ' + np + ' requirement' + (np === 1 ? '' : 's') + ' · ' : '') +
-              steps.filter(s => s.cat !== 'note').length + ' steps' + (took ? ' · ' + took : '')
+            meta.innerHTML = (np ? 'proves ' + np + ' requirement' + (np === 1 ? '' : 's') + ' · ' : '') +
+              steps.filter(s => s.cat !== 'note').length + ' steps' + (took ? ' · ' + eh(took) : '') + sha
           }
         }
       }

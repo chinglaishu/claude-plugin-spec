@@ -107,7 +107,10 @@ case*.
 A case keeps its **last ten runs**, not just the newest, each headed with when it ran, how long it
 took and the commit it ran against. One run says whether it passes today; ten say whether it has
 been flaky, when it started failing, and which commit changed it — which is the question you
-actually have when a test goes red.
+actually have when a test goes red. The **commit is named on the result itself**, not only inside the
+opened log *(added 2026-08-13 on the human's direction — "make it clear which commit version each run
+result is")*: a case's always-visible meta line carries the short commit it last ran against, so which
+commit a case passed or failed in is legible at a glance without opening anything.
 
 Evidence must be real evidence. A screenshot of a page that was never driven proves nothing, and a
 picture that no longer exists is worse than no picture: both read as "here is what the test saw"
