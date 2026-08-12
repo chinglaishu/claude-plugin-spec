@@ -183,3 +183,16 @@ CTA says so. There is no home-screen checklist.
 
 *Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier
 six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.*
+
+## R13 — The detail offers a focus reader: one requirement at a time, the columns a click away
+
+The two-column detail (R2) is the default, but a "Focus" control opens a reader that shows **one
+requirement at a time** — its id, its state, its title and full description, on its own — with a pager
+(prev · dots · next) to move between them and a "Columns" control to return to the two-column view.
+It is a way to *read* the requirements one-per-page for people who find the dense two columns hard to
+absorb at a glance; it adds no state and changes no requirement — the same derived states the columns
+show, one screenful each.
+
+*Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page");
+the default view stays the two columns, this is the opt-in focus reader. Wording awaits the human's
+gate; the test asserts behaviour.*

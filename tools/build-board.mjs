@@ -1153,6 +1153,7 @@ export function build () {
     <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · ${s.reqs.filter(r => r.state === 'proven').length} proven · spec/${esc(s.name)}/</span>
     <span class="grow"></span>
     ${runAll(s.name)}
+    <button class="btn focusbtn" data-i="${i}">Focus</button>
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -1280,6 +1281,34 @@ export function build () {
     font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4);
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
+
+  /* THE FOCUS READER (board R13): one requirement per page, the columns a click away. It replaces the
+     .cols in the same content area — a calm single card so a dense two-column screen becomes readable
+     one screenful at a time. No new state; the same derived chips the columns show. */
+  .focusov { width:100%; max-width:760px; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
+  .foch { flex:none; display:flex; align-items:center; gap:var(--s3); }
+  .foch .fcount { font:var(--t-xs) var(--mono); color:var(--ink-4); }
+  .foch .fcols { margin-left:auto; }
+  .fcard { flex:1; min-height:0; overflow-y:auto; background:var(--card); border:1px solid var(--hair);
+    border-radius:var(--r-md); padding:var(--s6) var(--s6) var(--s5); }
+  .fcard .ftop { display:flex; align-items:center; gap:var(--s3); }
+  .fcard .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
+  .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
+  .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
+  .fcard .fttl { font-size:26px; line-height:1.25; letter-spacing:-.02em; margin:var(--s3) 0 var(--s4); }
+  .fcard .fbody { font-size:var(--t-lg); line-height:1.65; color:var(--ink-2); max-width:60ch; }
+  .fcard .fbody p { margin:0 0 var(--s3); }
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s4); padding-bottom:var(--s3); }
+  .fnav { width:36px; height:36px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+    color:var(--ink-2); font-size:16px; line-height:1; }
+  .fnav:disabled { opacity:.35; cursor:default; }
+  .fdots { display:flex; gap:var(--s2); flex-wrap:wrap; justify-content:center; }
+  .fdot { width:26px; height:26px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+    color:var(--ink-3); font:var(--t-xs) var(--mono); }
+  .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
+  .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
+  .fdot.unproven { background:var(--wash); }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
@@ -2512,8 +2541,74 @@ ${detail}
       if (e.target.closest('img, button, a, input, label')) return
       open(c.dataset.i)
     })
+  // closing the detail also tears down an open focus reader and restores the columns for next time
+  function closeFocus () {
+    for (const o of document.querySelectorAll('.focusov')) {
+      const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
+      if (cx) cx.style.display = ''
+      o.remove()
+    }
+  }
   for (const b of document.querySelectorAll('.close'))
-    b.addEventListener('click', () => { closeAll(); history.pushState(null, '', location.pathname) })
+    b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
+
+  // THE FOCUS READER (board R13): replace the two columns with a one-requirement-per-page reader,
+  // built from the screen's own requirement rows, and put the columns back on "Columns". No new
+  // state — the same derived chips the columns show, one screenful each.
+  function buildFocus (dt) {
+    const cols = dt.querySelector('.cols'); const scroll = dt.querySelector('.dtscroll')
+    if (!cols || !scroll) return
+    const reqs = [].slice.call(dt.querySelectorAll('.reqpane .req')).map(function (r) {
+      const idEl = r.querySelector('.id'); const ttlEl = r.querySelector('.rt'); const bodyEl = r.querySelector('.body')
+      return {
+        id: idEl ? idEl.textContent : '',
+        state: r.getAttribute('data-state') || 'unproven',
+        title: ttlEl ? ttlEl.textContent : '',
+        body: bodyEl ? bodyEl.innerHTML : ''
+      }
+    })
+    if (!reqs.length) return
+    let cur = 0
+    const ov = document.createElement('div'); ov.className = 'focusov'
+    const head = document.createElement('div'); head.className = 'foch'
+    const count = document.createElement('span'); count.className = 'fcount'
+    const back = document.createElement('button'); back.className = 'btn fcols'; back.textContent = 'Columns'
+    head.appendChild(count); head.appendChild(back)
+    const card = document.createElement('div'); card.className = 'fcard'
+    const pager = document.createElement('div'); pager.className = 'fpager'
+    const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
+    const dots = document.createElement('div'); dots.className = 'fdots'
+    const next = document.createElement('button'); next.className = 'fnav next'; next.textContent = '›'
+    pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
+    function render () {
+      const r = reqs[cur]
+      card.innerHTML = ''
+      const top = document.createElement('div'); top.className = 'ftop'
+      const idEl = document.createElement('span'); idEl.className = 'fid'; idEl.textContent = r.id
+      const chip = document.createElement('span'); chip.className = 'fchip ' + r.state
+      chip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      top.appendChild(idEl); top.appendChild(chip)
+      const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
+      const b = document.createElement('div'); b.className = 'fbody'; b.innerHTML = r.body
+      card.appendChild(top); card.appendChild(h); card.appendChild(b)
+      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
+      prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
+      dots.innerHTML = ''
+      reqs.forEach(function (rr, i) {
+        const d = document.createElement('button'); d.className = 'fdot ' + rr.state + (i === cur ? ' cur' : '')
+        d.textContent = String(i + 1); d.title = rr.id + ' — ' + rr.title
+        d.addEventListener('click', function () { cur = i; render() })
+        dots.appendChild(d)
+      })
+    }
+    prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
+    next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
+    back.addEventListener('click', function () { ov.remove(); cols.style.display = '' })
+    ov.appendChild(head); ov.appendChild(card); ov.appendChild(pager)
+    cols.style.display = 'none'; scroll.appendChild(ov); render()
+  }
+  for (const fb of document.querySelectorAll('.focusbtn'))
+    fb.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) { closeFocus(); buildFocus(dt) } })
 
   // A requirement is a title that EXPANDS to its full description (board R3); a test collapses to a
   // title + tags + status and opens to its evidence (R10). One click on the header toggles either.

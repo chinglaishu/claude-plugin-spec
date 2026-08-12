@@ -369,6 +369,39 @@ test('No acceptance gate — the detail is the two columns, nothing to accept', 
   })
 })
 
+test('The detail offers a focus reader — one requirement per page, columns a click away', async ({ page }) => {
+  await coverReqs('R13')
+  await openDetail(page)
+  await checkReq('R13', async () => {
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    // default is the two columns (R2); the focus reader is opt-in
+    await expect(dt.locator('.cols')).toBeVisible()
+    await expect(dt.locator('.focusov')).toHaveCount(0)
+    // open Focus → the columns give way to a single-requirement reader
+    await dt.locator('.focusbtn').click()
+    const ov = dt.locator('.focusov')
+    await expect(ov).toBeVisible()
+    await expect(dt.locator('.cols')).toBeHidden()
+    // exactly ONE requirement on screen — its id, state, title and full body
+    await expect(ov.locator('.fcard')).toHaveCount(1)
+    await expect(ov.locator('.fcard .fid')).not.toBeEmpty()
+    await expect(ov.locator('.fcard .fchip')).toHaveClass(/proven|unproven/)
+    await expect(ov.locator('.fcard .fttl')).not.toBeEmpty()
+    await expect(ov.locator('.fcard .fbody p, .fcard .fbody ul').first()).toBeVisible()
+    // a pager with one dot per requirement; next advances to a different requirement
+    const dots = ov.locator('.fdots .fdot')
+    const reqCount = await dt.locator('.reqpane .req').count()
+    await expect(dots).toHaveCount(reqCount)
+    const firstId = (await ov.locator('.fcard .fid').textContent())!.trim()
+    await ov.locator('.fnav.next').click()
+    await expect(ov.locator('.fcard .fid')).not.toHaveText(firstId)
+    // Columns returns to the two-column view
+    await ov.locator('.fcols').click()
+    await expect(dt.locator('.focusov')).toHaveCount(0)
+    await expect(dt.locator('.cols')).toBeVisible()
+  })
+})
+
 test('Searching requirement text hides groups that miss', async ({ page }) => {
   await coverReqs('R9')
   await checkReq('R9', async () => {
