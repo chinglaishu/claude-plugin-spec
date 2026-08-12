@@ -128,15 +128,20 @@ meta line (R3) — so the failure is visible without digging; the **whole run lo
 untruncated tail, not only that case's bounded stdout (the per-case log alone was the gap that read as
 "it doesn't show the whole log"); and a record **per run**, each keeping its own **recording** (its
 cover the last asserted frame — the end state it proved, not the blank first frame), the time, the
-duration, the commit and the verdict. A still screenshot is kept only as the fallback cover when a run
-has no video (a headless CLI run, or the recording was pruned) — the recording is the primary
-artifact, so there is no separate screenshot column. The recording **narrates itself from inside the
+duration, the commit and the verdict. A still is kept as the fallback cover when a run has no video (a
+headless CLI run, or the recording was pruned). The recording stays the primary artifact and narrates
+itself — and where it exists, its key moments are also surfaced as scannable **proof frames (R14)**.
+Those frames are frames *of* the recording, never an independent capture, so there is still no second,
+disagreeing screenshot source — only the one recording, read two ways: played, or scanned. The
+recording **narrates itself from inside the
 video**: while a run executes, the harness paints a **topbar into the page under test** — burned into
 the recording and its cover, not overlaid by the board. The bar is **large enough to read at a
 glance** — a bold title line naming the current story step (or the requirement being proven, id and
-title), with the announced **got-vs-expected values** stacked beneath it, accumulating within a step
-the way a person would list them; on a failing check the bar turns red and names it, so the video
-alone explains what was being tested and which part failed. One consistent topbar, always in the
+title), and beneath it the current check as **one clear claim**: its label, then its **expected and
+got as two values** (not a dense stacked list — the full got-vs-expected of every check is recorded
+as the test's step evidence instead). On a failing check the got reddens and the bar turns red and
+names it, so the video alone explains what was being tested and which part failed. One consistent
+topbar, always in the
 same place — never a floating caption card in the middle of the frame. The recording is captured at
 the **app's real size** (not a shrunken thumbnail), and a step that asserts on a value **scrolls
 that value into view and holds** before asserting, so the frame actually shows what is being proven
@@ -200,3 +205,20 @@ duplicates no player.
 *Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page");
 the default view stays the two columns, this is the opt-in focus reader. Wording awaits the human's
 gate; the test asserts behaviour.*
+
+## R14 — The proof is scannable as frames, not only as video
+
+A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording,
+its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at
+the instant that check fired (indexed by the run's own beat log), each carrying the same
+self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the
+ring on the exact value asserted. They show as a **scannable strip** — in the test's evidence and in
+the focus card — so a person verifies the asserted values by eye, in order, without pressing play; the
+**video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
+frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
+no strip, never a faked or separately-captured one.
+
+*Drafted 2026-08-12 on the human's direction and accepted the same turn: the recording is fast to
+trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the
+video kept for what a picture cannot carry. It amends R10's "no separate screenshot column" — the
+frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*

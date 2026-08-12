@@ -107,15 +107,17 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
 
   await checkReq('R10', async () => {
     // the recording narrates from INSIDE the page: this very checkReq painted the topbar, naming
-    // the requirement by id AND title, and hudCheck lines ACCUMULATE the way a person lists them
+    // the requirement by id AND title, and the LATEST check shows as one CLAIM — its label plus
+    // expected-vs-got as two values (the full got/expected of every check is recorded as the test's
+    // step evidence, checked below on the mocked run, not stacked on the bar).
     const hud = page.locator('#__specboard-hud')
     await expect(hud).toBeVisible()
     await expect(hud).toContainText('R10')
     await expect(hud).toContainText(await titleOf('R10'))
     await hudCheck('first check', 1, 1)
     await hudCheck('second check', 2, 2)
-    await expect(hud).toContainText('first check — got 1 · expected 1')
-    await expect(hud).toContainText('second check — got 2 · expected 2')
+    await expect(hud).toContainText('second check')            // the latest check's label…
+    await expect(hud).toContainText('expected 2 · got 2')      // …and its expected-vs-got claim
 
     // (1) STEPS COME FROM THE DEFINITION — with NO run at all, the full plan still shows, pending.
     await page.route('**/api/runs', r => r.fulfill({ json: { watch: false, running: false, runs: [] } }))
