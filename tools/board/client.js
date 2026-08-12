@@ -163,14 +163,35 @@ const B = window.__BOARD__ || {}
     if (!cols || !scroll) return
     const reqs = [].slice.call(dt.querySelectorAll('.reqpane .req')).map(function (r) {
       const idEl = r.querySelector('.id'); const ttlEl = r.querySelector('.rt'); const bodyEl = r.querySelector('.body')
+      // strip the row's own "no test asserts this yet" note — the proof footer below owns that now,
+      // so it is not shown twice
+      let body = ''
+      if (bodyEl) { const c = bodyEl.cloneNode(true); const cov = c.querySelector('.covers'); if (cov) cov.remove(); body = c.innerHTML }
       return {
         id: idEl ? idEl.textContent : '',
         state: r.getAttribute('data-state') || 'unproven',
         title: ttlEl ? ttlEl.textContent : '',
-        body: bodyEl ? bodyEl.innerHTML : ''
+        body: body
       }
     })
     if (!reqs.length) return
+    // THE PROOF SIDE. A requirement's proof is the test(s) that TAG it (the many-to-many wire, R5) —
+    // so the focus card can carry the same proof the columns show: which flow proves it, and the two
+    // actions that reach the evidence (the recording burns expected-vs-got into its own frames, R10).
+    const tests = [].slice.call(dt.querySelectorAll('.testpane .test'))
+    function coveringTests (rid) {
+      return tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + rid + '"]') })
+    }
+    // Both actions RESTORE the columns and reveal the real test element (reusing its own open/play
+    // handlers — no duplicated player). "Watch" also clicks its recording, which plays only when a
+    // board-started run captured a .webm (the .rec goes 'playable'); otherwise it just opens.
+    function openInColumns (testEl, play) {
+      ov.remove(); cols.style.display = ''
+      if (!testEl) return
+      testEl.classList.add('open')
+      testEl.scrollIntoView({ block: 'center' })
+      if (play) { const rec = testEl.querySelector('.rec'); if (rec && rec.classList.contains('playable')) rec.click() }
+    }
     let cur = 0
     const ov = document.createElement('div'); ov.className = 'focusov'
     const head = document.createElement('div'); head.className = 'foch'
@@ -194,6 +215,35 @@ const B = window.__BOARD__ || {}
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const b = document.createElement('div'); b.className = 'fbody'; b.innerHTML = r.body
       card.appendChild(top); card.appendChild(h); card.appendChild(b)
+
+      // the proof footer — proof source + the actions that reach the evidence
+      const cov = coveringTests(r.id)
+      const proof = document.createElement('div'); proof.className = 'fproof'
+      const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
+      proof.appendChild(plbl)
+      if (r.state === 'proven' && cov.length) {
+        const by = document.createElement('div'); by.className = 'fpby'
+        by.textContent = 'Proven by ' + cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean).join(' · ')
+        proof.appendChild(by)
+      } else {
+        const none = document.createElement('div'); none.className = 'fpnone'
+        none.textContent = 'No test asserts this yet — honestly ungreen, not hidden.'
+        proof.appendChild(none)
+      }
+      // Both actions appear for any COVERED requirement (a test tags it), whatever its state — you
+      // watch a proof when it is green, and watch WHY when it is not (the recording narrates either).
+      const acts = document.createElement('div'); acts.className = 'facts'
+      if (cov.length) {
+        const watch = document.createElement('button'); watch.className = 'btn fwatch'
+        watch.textContent = r.state === 'proven' ? '▶ Watch the proof' : '▶ Watch the run'
+        watch.addEventListener('click', function () { openInColumns(cov[0], true) })
+        const open = document.createElement('button'); open.className = 'btn fopen'; open.textContent = 'Open test'
+        open.addEventListener('click', function () { openInColumns(cov[0], false) })
+        acts.appendChild(watch); acts.appendChild(open)
+        proof.appendChild(acts)
+      }
+      card.appendChild(proof)
+
       count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''

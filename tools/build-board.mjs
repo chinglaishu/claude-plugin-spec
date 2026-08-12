@@ -1321,6 +1321,13 @@ export function build () {
   .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }
+  /* the focus card's PROOF footer: which flow proves it, and the actions that reach the evidence */
+  .fproof { margin-top:var(--s5); padding-top:var(--s4); border-top:1px solid var(--hair); }
+  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); }
+  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
+  .fpby b { font-weight:500; }
+  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
+  .facts { display:flex; gap:var(--s2); margin-top:var(--s4); }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }

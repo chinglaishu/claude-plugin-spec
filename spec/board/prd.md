@@ -191,7 +191,11 @@ requirement at a time** — its id, its state, its title and full description, o
 (prev · dots · next) to move between them and a "Columns" control to return to the two-column view.
 It is a way to *read* the requirements one-per-page for people who find the dense two columns hard to
 absorb at a glance; it adds no state and changes no requirement — the same derived states the columns
-show, one screenful each.
+show, one screenful each. Each card also carries its **proof**: the flow that proves it (or that no
+test asserts it yet), with the two actions that reach the evidence — *watch the run* (plays the
+covering test's recording, which burns expected-vs-got into its own frames) and *open the test* (which
+returns to the columns and opens that test). Both reuse the columns' own machinery; the focus reader
+duplicates no player.
 
 *Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page");
 the default view stays the two columns, this is the opt-in focus reader. Wording awaits the human's
