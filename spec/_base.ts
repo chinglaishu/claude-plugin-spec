@@ -76,7 +76,7 @@ export const test = windowed.extend<{ page: Page }>({
     FAILED_PAINTED = false
     STEP_FAILURES = []
     REQ_CHIPS = []
-    PROVING = null
+    PROVING = null; CLAIM = null; NOTE = ''
     // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
     // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
     // out like any other line, so the opening narration finishes before the bar starts moving.
@@ -217,8 +217,14 @@ function reqTitle (qid: string): string {
 // The bar is a designed, glanceable card (board R10): a bold title line for the current story
 // step, the announced values stacked beneath — accumulating within a step the way a person would
 // list them, capped so the bar cannot swallow the frame.
-const HUD = { head: '', detail: '' }
-const DETAIL_MAX_LINES = 3
+const HUD = { head: '' }
+// The latest check as a structured CLAIM — a muted label plus expected vs got as two prominent
+// values — so the topbar reads as ONE clear claim instead of a dense running list of got/expected
+// lines. The full text still goes to the board as a `note:` step (emitNote); this is only how the
+// burn-in shows it. `ok` reddens `got` the instant the values disagree, before the assertion throws.
+let CLAIM: { label: string, expected: string, got: string, ok: boolean } | null = null
+// One freeform line (hudNote), or the afterEach failure summary (multi-line, pre-wrapped).
+let NOTE = ''
 // The band's fixed height under a recording. Fixed on purpose: the page below is shifted by
 // exactly this much, and a bar that grew with its detail lines would bounce the whole app on
 // every narration line.
@@ -250,17 +256,12 @@ function repaintOnNav (page: Page): void {
       .catch(() => {})
   })
 }
-async function paintHud (s: { head?: string, detail?: string, appendDetail?: string, failed?: boolean }): Promise<void> {
+async function paintHud (s: { head?: string, failed?: boolean }): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   repaintOnNav(page)
-  if (s.head !== undefined) { HUD.head = s.head; HUD.detail = '' }   // a new step starts a fresh list
-  if (s.detail !== undefined) HUD.detail = s.detail
-  if (s.appendDetail !== undefined) {
-    const lines = (HUD.detail ? HUD.detail.split('\n') : []).concat(String(s.appendDetail).split('\n'))
-    HUD.detail = lines.slice(-DETAIL_MAX_LINES).join('\n')
-  }
-  await page.evaluate(({ head, detail, failed, chips, band, proving }) => {
+  if (s.head !== undefined) HUD.head = s.head   // CLAIM / NOTE are cleared by flowStep at step start
+  await page.evaluate(({ head, claim, note, failed, chips, band, proving }) => {
     let el = document.getElementById('__specboard-hud')
     if (!el) {
       el = document.createElement('div')
@@ -282,12 +283,30 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
       row.append(h, c)
       const p = document.createElement('div')
       p.id = '__specboard-hud-proving'
-      p.style.cssText = 'font-weight:600;font-size:15px;line-height:1.45;letter-spacing:.01em;' +
+      p.style.cssText = 'font-weight:600;font-size:15px;line-height:1.4;letter-spacing:.01em;' +
         'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
-      const d = document.createElement('div')
-      d.id = '__specboard-hud-detail'
-      d.style.cssText = 'font-weight:400;font-size:14px;line-height:1.55;opacity:.92;white-space:pre-line'
-      el.append(row, p, d)
+      // THE CLAIM — one line: a muted label, then expected vs got as two prominent values. Replaces
+      // the old dense stack of got/expected note lines so the bar is glanceable.
+      const cl = document.createElement('div')
+      cl.id = '__specboard-hud-claim'
+      cl.style.cssText = 'display:flex;align-items:baseline;white-space:nowrap;overflow:hidden'
+      const clLbl = document.createElement('span')
+      clLbl.id = '__specboard-hud-claim-lbl'
+      // margin-right, not flex gap — the separation must survive regardless of the app's own reset
+      clLbl.style.cssText = 'font-size:13px;color:rgba(244,241,234,.72);overflow:hidden;' +
+        'text-overflow:ellipsis;flex:0 1 auto;margin-right:20px'
+      const clVals = document.createElement('span')
+      clVals.style.cssText = 'font-size:16px;font-weight:600;flex:none;letter-spacing:-.005em'
+      clVals.innerHTML =
+        '<span style="font-size:12px;font-weight:400;color:rgba(244,241,234,.6)">expected </span>' +
+        '<span id="__specboard-hud-exp"></span>' +
+        '<span style="font-size:12px;font-weight:400;color:rgba(244,241,234,.6)">  ·  got </span>' +
+        '<span id="__specboard-hud-got"></span>'
+      cl.append(clLbl, clVals)
+      const nt = document.createElement('div')
+      nt.id = '__specboard-hud-note'
+      nt.style.cssText = 'font-weight:400;font-size:14px;line-height:1.5;opacity:.9;white-space:pre-line'
+      el.append(row, p, cl, nt)
       // Hang the bar off <html>, NOT <body>. Under a recording the body is transformed down by the
       // band height so the bar sits ABOVE the site instead of on top of it — nothing is ever
       // covered, and because a transformed body becomes the containing block for its fixed
@@ -303,9 +322,22 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     el.style.background = failed ? 'rgba(122,47,29,.96)' : 'rgba(28,27,24,.94)'
     el.style.borderBottomColor = failed ? 'rgba(232,161,138,.65)' : 'rgba(244,241,234,.30)'
     const hd = document.getElementById('__specboard-hud-head')
-    const dt = document.getElementById('__specboard-hud-detail')
     if (hd) hd.textContent = head
-    if (dt) { dt.textContent = detail; dt.style.display = detail ? '' : 'none' }
+    // the claim — expected in paper, got in koke on a match and bengara the instant it disagrees
+    const clEl = document.getElementById('__specboard-hud-claim')
+    if (clEl) {
+      clEl.style.display = claim ? '' : 'none'
+      if (claim) {
+        const lbl = document.getElementById('__specboard-hud-claim-lbl')
+        const exp = document.getElementById('__specboard-hud-exp')
+        const got = document.getElementById('__specboard-hud-got')
+        if (lbl) lbl.textContent = claim.label
+        if (exp) { exp.textContent = claim.expected; exp.style.color = '#f4f1ea' }
+        if (got) { got.textContent = claim.got; got.style.color = claim.ok ? '#bcc4a8' : '#e8a18a' }
+      }
+    }
+    const ntEl = document.getElementById('__specboard-hud-note')
+    if (ntEl) { ntEl.textContent = note; ntEl.style.display = note ? '' : 'none' }
     // the requirement being proven, labeled as such — paper while running, koke on proven,
     // bengara-tint on failed (every state also carries its mark, per the design rule)
     const pv = document.getElementById('__specboard-hud-proving')
@@ -342,7 +374,8 @@ async function paintHud (s: { head?: string, detail?: string, appendDetail?: str
     }
   }, {
     head: HUD.head,
-    detail: HUD.detail,
+    claim: CLAIM ? { ...CLAIM } : null,
+    note: NOTE,
     failed: !!s.failed,
     chips: REQ_CHIPS.map(c => ({ ...c })),
     // the band-and-shift layout only under a recording — a plain suite run must leave the page
@@ -416,23 +449,27 @@ async function hideFocus (): Promise<void> {
   }).catch(() => {})
 }
 
-// A narration line does TWO things at once: it stacks onto the topbar (into the video), and it is
-// RECORDED as a `note: ` step so the board can show it as the step's expandable detail — the same
-// got/expected line in both places, from one call (board R10).
-async function narrate (text: string): Promise<void> {
+// A narration line is RECORDED as a `note: ` step so the board can show it as the step's expandable
+// evidence, it feeds the beat log a `note` beat, and it pace-gates (a narrated run holds on it). The
+// VISUAL is painted separately by the caller (the CLAIM for a check, the NOTE line for a sentence),
+// so the burn-in stays glanceable while the board keeps the full text (board R10).
+async function emitNote (text: string): Promise<void> {
   await paceGate('note', text)
   beat('note', text)
-  await test.step('note: ' + text, async () => {
-    await paintHud({ appendDetail: text })
-  })
+  await test.step('note: ' + text, async () => {})
 }
-// Announce the got vs expected values of the current check.
+// Announce the got vs expected values of the current check — as the structured CLAIM (two prominent
+// values) on the bar, and the full got/expected line as board evidence.
 export async function hudCheck (label: string, expected: unknown, actual: unknown): Promise<void> {
-  await narrate(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
+  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok: String(expected) === String(actual) }
+  await emitNote(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
+  await paintHud({})
 }
-// Freeform variant, for a sentence the author wants on the bar.
+// Freeform variant, for a sentence the author wants on the bar (shown on the note line).
 export async function hudNote (text: string): Promise<void> {
-  await narrate(String(text))
+  NOTE = String(text)
+  await emitNote(String(text))
+  await paintHud({})
 }
 
 // How long a RECORDING holds on a narrated beat so the burned-in value is readable on playback. It
@@ -514,7 +551,7 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
   const n = ++FLOW_N
   await paceGate('step', n + '. ' + title)
   beat('step', n + '. ' + title)
-  PROVING = null                                             // a new step starts with no requirement claimed
+  PROVING = null; CLAIM = null; NOTE = ''                    // a new step starts clean
   // The head is the step's plain ACTION, unnumbered. Requirements (R#) are the only numbering a
   // watcher sees — on the chips and the proving line — because two number systems side by side is
   // how the first narrated cut got misread ("✗ 1." on the bar while the voice said "requirement
@@ -530,13 +567,13 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     await test.step(title, async () => { await fn() })
     await paceGate('step-done', '✓ ' + n + '. ' + title, false)
     beat('step-done', '✓ ' + n + '. ' + title)
-    await paintHud({ head: '✓ ' + title, detail: HUD.detail })
+    await paintHud({ head: '✓ ' + title })
   } catch (err) {
     STEP_FAILURES.push({ n, title, message: String((err as Error).message || err) })
     await paceGate('step-done', '✗ ' + n + '. ' + title, false)
     beat('step-done', '✗ ' + n + '. ' + title)
-    await paintHud({ head: '✗ Failed — ' + title, detail: HUD.detail, failed: true })
-    // Hold the red frame long enough to READ: the last detail line is the failing check's own
+    await paintHud({ head: '✗ Failed — ' + title, failed: true })
+    // Hold the red frame long enough to READ: the CLAIM still shows the failing check's own
     // got-vs-expected, and under a recording the pause stretches by the watch pace so the failure
     // is a scene, not a flash. (A narrated run holds longer still — the pace gate keeps this frame
     // up until the fail line has been spoken.)
@@ -567,7 +604,8 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // enclosing flowStep catches it, records it, paints the red frame and continues the flow. The
     // narration line names the requirement being proven (the chip alone is an id, not a meaning),
     // and the chip advances ▸ → ✓/✕ so the strip tracks the proof through the whole flow.
-    await narrate('▸ proving ' + id + (title ? ' — ' + title : ''))
+    await emitNote('▸ proving ' + id + (title ? ' — ' + title : ''))
+    await paintHud({})
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
@@ -589,6 +627,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // top-level (a requirement-enumeration test, e.g. the board's own suite): continue-on-failure
   // here too, so the test runs through EVERY requirement and the board shows each one's verdict,
   // not just the first that broke. The test still fails — afterEach throws the aggregate.
+  CLAIM = null; NOTE = ''
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
   try {
     await test.step('proves ' + id, async () => { await fn() })
@@ -596,14 +635,14 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
     await paceGate('req-done', id + ' pass', false)
     beat('req-done', id + ' pass')
-    await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : ''), detail: HUD.detail })
+    await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : '') })
   } catch (err) {
     STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
     setChip(id, 'fail')
     PROVING = { state: 'fail', text: '✕ ' + id + ' failed' + (title ? ' — ' + title : '') }
     await paceGate('req-done', id + ' fail', false)
     beat('req-done', id + ' fail')
-    await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), detail: HUD.detail, failed: true })
+    await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700 + recordHold(0)).catch(() => {})
   }
 }
@@ -621,11 +660,13 @@ test.afterEach(async ({}, testInfo) => {
   if (!STEP_FAILURES.length) return
   const f = STEP_FAILURES
   if (CURRENT_PAGE) {
+    // titles only, no ordinals — beside a strip of R-chips, a "✗ 2." reads like a requirement
+    // number and the whole point of the card is to be unmistakable. The failed list goes on the
+    // note line; the claim is cleared so a stale got/expected doesn't front the summary.
+    CLAIM = null
+    NOTE = f.map(s => '✗ ' + s.title).slice(0, 6).join('\n')
     await paintHud({
-      // titles only, no ordinals — beside a strip of R-chips, a "✗ 2." reads like a requirement
-      // number and the whole point of the card is to be unmistakable
       head: '✗ ' + f.length + ' of this test’s steps failed',
-      detail: f.map(s => '✗ ' + s.title).slice(0, 6).join('\n'),
       failed: true
     }).catch(() => {})
     await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})

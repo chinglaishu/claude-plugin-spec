@@ -94,6 +94,33 @@ test('the chip strip advances pending → active → passed, and the beat log re
   assert.match(String(s.provingAfter), /✓ R1 proven/, 'the proving line reports the verdict after the check')
 })
 
+test('the claim line shows expected vs got as two values, and got reddens on a mismatch', () => {
+  const r = run((dir) =>
+    `import { test, expect, hudCheck } from ${JSON.stringify(BASE)}\n` +
+    `import { writeFileSync } from 'node:fs'\n` +
+    `const TABLE = ${JSON.stringify(TABLE)}\n` +
+    `test('claim', async ({ page }) => {\n` +
+    `  await page.goto(TABLE)\n` +
+    `  await hudCheck('R&M growth', '4.00%', '4.00%')\n` +
+    `  const okColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
+    `  const okGot = await page.locator('#__specboard-hud-got').textContent()\n` +
+    `  const exp = await page.locator('#__specboard-hud-exp').textContent()\n` +
+    `  await hudCheck('R&M growth', '4.00%', '9.99%')\n` +
+    `  const badColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
+    `  const badGot = await page.locator('#__specboard-hud-got').textContent()\n` +
+    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({ okColor, okGot, exp, badColor, badGot }))\n` +
+    `})\n`,
+  {}, 'claim')
+  assert.equal(r.status, 0, `the claim spec should pass:\n${r.stdout}\n${r.stderr}`)
+  const s = LAST.side
+  assert.ok(s, 'observations written')
+  assert.equal(s.exp, '4.00%', 'the claim shows the expected value on its own')
+  assert.equal(s.okGot, '4.00%', 'the claim shows the got value on its own')
+  assert.equal(s.badGot, '9.99%', 'the got value updates to the mismatching read')
+  assert.match(String(s.badColor), /232, 161, 138/, 'got reddens (bengara) the moment it disagrees')
+  assert.ok(!/232, 161, 138/.test(String(s.okColor)), 'got is not red on a match')
+})
+
 test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
   const r = run((dir) =>
     `import { test, expect, checkReq, coverReqs, flowStep } from ${JSON.stringify(BASE)}\n` +
