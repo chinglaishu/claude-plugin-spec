@@ -1166,7 +1166,6 @@ export function build () {
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth dbarhook">
     <h2>${esc(s.title)}</h2>
-    <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · ${s.reqs.filter(r => r.state === 'proven').length} proven · spec/${esc(s.name)}/</span>
     <span class="grow"></span>
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
@@ -1174,7 +1173,6 @@ export function build () {
       <button class="vseg" data-view="list" data-i="${i}">List</button>
       <button class="vseg on" data-view="columns" data-i="${i}">Columns</button>
     </div>
-    <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
   <div class="dtscroll">
@@ -1334,14 +1332,35 @@ export function build () {
     box-shadow:0 1px 3px rgba(28,27,24,.05); }
   .fread { padding:var(--s6) var(--s6) var(--s5); }
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
-  .fread .fttl { font-size:24px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
-  .fread .fbody { font-size:var(--t-md); line-height:1.62; color:var(--ink-2); }
+  .fread .fttl { font-size:27px; line-height:1.24; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  .fread .fbody { font-size:var(--t-md); line-height:1.64; color:var(--ink-2); }
   .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
-  .fread .fsteps { margin-top:var(--s5); }
-  .fread .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm);
-    padding-left:var(--s3); }
+  .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
+  .fread .fsteps { margin-top:var(--s6); }
   .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
-    color:var(--ink-4); display:block; margin-bottom:var(--s3); }
+    color:var(--ink-4); display:block; margin-bottom:var(--s4); }
+
+  /* MATCH THE READING MOCKUP (board R13). The reader reuses the columns' WIRED components — the cloned
+     steps carry the columns' compact beat rows, the moved controls carry the small buttons — so they
+     must be RESTYLED here to the mockup's roomier look (rounded step cards, pill buttons, a framed
+     highlight on THIS requirement's step). Scoped to the reader, so the columns' rows stay untouched. */
+  .fread .fstepclone { margin:0; display:flex; flex-direction:column; gap:8px; }
+  .fread .fstepclone .beat { border:1px solid var(--hair); border-radius:9px; background:var(--card);
+    margin:0; padding:0; font-size:14px; color:var(--ink); overflow:hidden; }
+  .fread .fstepclone .beat.f { color:var(--ink); }            /* only the mark + detail redden, not the label */
+  .fread .fstepclone .beat.nr { border-style:solid; }
+  .fread .fstepclone .beat.fhere { border-color:var(--hair-2); box-shadow:inset 3px 0 0 var(--ink); }
+  .fread .fstepclone .beat .bh { padding:12px 15px; gap:13px; align-items:center; }
+  .fread .fstepclone .beat .bnum { min-width:13px; }
+  .fread .fstepclone .beat .blbl { font-size:14px; color:var(--ink); }
+  .fread .fstepclone .beat.skip .blbl { color:var(--ink-4); }
+  .fread .fstepclone .beat .bchev { color:var(--line3); font-size:15px; }
+  .fread .fstepclone .beat .bdet { margin:0 15px 12px 42px; }
+  .fread .fstepclone .beat .byou { flex:none; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; white-space:nowrap; }
+  .feval .fev .tacts { gap:8px; }
+  .feval .fev .tacts .btn, .feval .fev .tacts .btn.sm {
+    font-size:12.5px; padding:8px 15px; border-radius:999px; }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }

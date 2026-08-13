@@ -297,7 +297,16 @@ const B = window.__BOARD__ || {}
               return p.textContent.replace(/^proves\s+/, '').split('·')[0].trim() === r.id
             })
           })
-          if (hereBeat) hereBeat.classList.add('fhere')
+          if (hereBeat) {
+            hereBeat.classList.add('fhere')
+            // the mockup's "this requirement" pill on the highlighted step (the clone is disposable)
+            const bh = hereBeat.querySelector('.bh')
+            if (bh && !bh.querySelector('.byou')) {
+              const tag = document.createElement('span'); tag.className = 'byou'; tag.textContent = 'this requirement'
+              const chev = bh.querySelector('.bchev')
+              if (chev) bh.insertBefore(tag, chev); else bh.appendChild(tag)
+            }
+          }
           fs.appendChild(sl); fs.appendChild(clone); read.appendChild(fs)
         }
       } else {
@@ -447,7 +456,7 @@ const B = window.__BOARD__ || {}
       closeAll(); history.pushState(null, '', location.pathname)
     }
     const openDt = [...document.querySelectorAll('.dt')].find(d => !d.hidden)
-    if (openDt && (e.key === 'j' || e.key === 'ArrowRight')) openDt.querySelector('.nextw').click()
+    if (openDt && (e.key === 'j' || e.key === 'ArrowRight')) { const nw = openDt.querySelector('.nextw'); if (nw) nw.click() }
     if (openDt && e.key === 'r') { const b = openDt.querySelector('.runbtn'); if (b) b.click() }
   })
 
