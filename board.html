@@ -459,10 +459,16 @@ ins { color:var(--koke); text-decoration:none; }
   /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */
   .fdot { width:23px; height:23px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
     color:var(--ink-3); font:var(--t-xs) var(--mono); flex:none; padding:0;
-    display:inline-flex; align-items:center; justify-content:center; }
-  .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
+    display:inline-flex; align-items:center; justify-content:center;
+    transition:transform .15s var(--sc-e, ease), box-shadow .15s ease, border-color .15s ease; }
+  .fdot:hover { border-color:var(--line3); }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }
+  /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
+     ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
+     Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */
+  .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:600; transform:scale(1.22);
+    box-shadow:0 2px 8px rgba(28,27,24,.18); position:relative; z-index:1; }
 
   /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
