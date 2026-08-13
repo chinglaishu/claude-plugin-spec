@@ -1426,8 +1426,8 @@ export function build () {
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
      ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
      Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */
-  .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:600; transform:scale(1.22);
-    box-shadow:0 2px 8px rgba(28,27,24,.18); position:relative; z-index:1; }
+  .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
+    box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
 
   /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
