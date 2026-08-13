@@ -222,8 +222,7 @@ const B = window.__BOARD__ || {}
     const head = document.createElement('div'); head.className = 'fhead'
     const fid = document.createElement('span'); fid.className = 'fid'
     const fchip = document.createElement('span'); fchip.className = 'fchip'
-    const count = document.createElement('span'); count.className = 'fcount'
-    head.appendChild(fid); head.appendChild(fchip); head.appendChild(count)
+    head.appendChild(fid); head.appendChild(fchip)
     const page = document.createElement('div'); page.className = 'fpage'
     const pager = document.createElement('div'); pager.className = 'fpager'
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
@@ -237,7 +236,6 @@ const B = window.__BOARD__ || {}
       fid.textContent = r.id
       fchip.className = 'fchip ' + r.state
       fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
-      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
 
       // LEFT — the reading
       const read = document.createElement('div'); read.className = 'fread'

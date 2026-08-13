@@ -133,7 +133,7 @@ export function renderBody (text) {
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
-  `<button class="btn pri runbtn" data-run="${esc(name)}">Run all<span class="kbd">r</span></button>`
+  `<button class="btn pri runbtn" data-run="${esc(name)}">▶ Run all<span class="kbd">r</span></button>`
 
 // LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
 // the long, formatted description collapses behind it and one click on the header reveals the full
@@ -1319,13 +1319,12 @@ export function build () {
   .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
   .fhead { flex:none; display:flex; align-items:center; gap:var(--s3); }
   .fhead .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
-  .fhead .fcount { margin-left:auto; font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
 
   /* the two containers, each a bordered, softly-shadowed card */
-  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 460px;
+  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 560px;
     gap:var(--s4); align-items:start; }
   @media (max-width:1080px) { .fpage { grid-template-columns:1fr; } }
   .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
@@ -1361,6 +1360,13 @@ export function build () {
   .feval .fev .tacts { gap:8px; }
   .feval .fev .tacts .btn, .feval .fev .tacts .btn.sm {
     font-size:12.5px; padding:8px 15px; border-radius:999px; }
+  /* the mockup's Run carries a ▶ glyph; the reader's Run is the moved per-test button, so add it here
+     (only the headless Run, not Watch) rather than mutate the shared node's text */
+  .feval .fev .tacts .runone:not([data-headed])::before { content:'\\25B6'; margin-right:6px; font-size:10px; }
+  /* the moved evidence card must NOT wear the columns' row-hover wash — the mockup card has no hover */
+  .feval .fev .test.infocus:hover { background:transparent; }
+  /* breathing room between the controls row and the "Proof frames" label (mockup section spacing) */
+  .feval .fev .flabel { margin-top:var(--s5); }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
@@ -1372,7 +1378,7 @@ export function build () {
   .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
   .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
   .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
-  .frecwrap .rec { width:100%; max-width:320px; }
+  .frecwrap .rec { width:100%; max-width:380px; }
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
      header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
   .fev { min-width:0; }
@@ -1386,7 +1392,7 @@ export function build () {
   .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
   .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
   .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
-  .feval .pfstrip .pframe { width:320px; }                  /* larger stills than the columns' 210px */
+  .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */
 
   /* the pager (prev · dots · next) stays under the two containers */
   .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s4); padding-bottom:var(--s3); }
@@ -1402,10 +1408,15 @@ export function build () {
 
   /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
-  .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:5px 14px; border:0; background:transparent;
-    color:var(--ink-3); cursor:pointer; letter-spacing:.02em; }
+  .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:0 16px; border:0; background:transparent;
+    color:var(--ink-3); cursor:pointer; letter-spacing:.02em; display:inline-flex; align-items:center; }
   .viewseg .vseg + .vseg { border-left:1px solid var(--hair-2); }
   .viewseg .vseg.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  /* Run all, the toggle and Close are ONE control family in the detail header (board R13, matching the
+     focus mockup): the same 34px height and the same pill radius. Run all stays the one inverted
+     element; Close is an outline; the toggle segments. Scoped to .dth so no other .btn is reshaped. */
+  .dth .btn { height:34px; border-radius:999px; padding:0 17px; }
+  .dth .viewseg { height:34px; }
 
   /* the LIST view — one compact line per requirement, a click opens it in Focus */
   .listview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
