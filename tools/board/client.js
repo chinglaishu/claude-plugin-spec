@@ -421,10 +421,15 @@ const B = window.__BOARD__ || {}
   // (the .tstlog the run machinery fills). No full-viewport scrim — the board stays visible behind it.
   const logsheet = document.getElementById('logsheet')
   const logbody = document.getElementById('logbody')
+  // The Logs / Steps buttons are RELOCATED out of their .test row into the focus reader's ⋯ menu
+  // (board R13/#4), so `closest('.test')` finds nothing there — fall back to the reader's moved test
+  // node (.feval .fev .test), which still carries the .tstlog / .tststeps slots the popups read.
+  const ownerTest = el => el.closest('.test') ||
+    (el.closest('.feval') ? el.closest('.feval').querySelector('.fev .test') : null)
   for (const l of document.querySelectorAll('[data-log]'))
     l.addEventListener('click', e => {
       e.stopPropagation()
-      const testEl = l.closest('.test')
+      const testEl = ownerTest(l); if (!testEl) return
       document.getElementById('logtitle').textContent = 'Full log — ' + (testEl.querySelector('.ttl').textContent || '')
       const src = testEl.querySelector('.tstlog')
       logbody.innerHTML = src ? src.innerHTML : ''
@@ -449,7 +454,7 @@ const B = window.__BOARD__ || {}
   for (const l of document.querySelectorAll('[data-steps]'))
     l.addEventListener('click', e => {
       e.stopPropagation()
-      const testEl = l.closest('.test')
+      const testEl = ownerTest(l); if (!testEl) return
       const slot = testEl.querySelector('.tststeps')
       const steps = (slot && slot._steps) || []
       document.getElementById('stepstitle').textContent =

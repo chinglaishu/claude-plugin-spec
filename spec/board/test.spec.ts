@@ -411,6 +411,17 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(ov.locator('.feval .fpacts .fmenu .fmenubtn')).toHaveCount(1) // the rest behind ⋯
     await expect(ov.locator('.feval .fmenupop [data-steps]')).toHaveCount(1)
     await expect(ov.locator('.feval .fmenupop [data-log]')).toHaveCount(1)
+    // the ⋯ menu's Logs and Steps must actually OPEN their windows from here — the buttons are moved
+    // out of their test row, so the handlers have to resolve the record off the reader's moved node
+    // (this is the whole point of relocating them; a broken resolver leaves the menu dead)
+    await ov.locator('.feval .fmenubtn').click()
+    await ov.locator('.feval .fmenupop [data-log]').click()
+    await expect(page.locator('#logsheet')).toHaveClass(/\bon\b/)
+    await page.locator('#logsheet [data-logclose]').click()
+    await ov.locator('.feval .fmenubtn').click()
+    await ov.locator('.feval .fmenupop [data-steps]').click()
+    await expect(page.locator('#stepsheet')).toHaveClass(/\bon\b/)
+    await page.locator('#stepsheet [data-stepsclose]').click()
     await expect(ov.locator('.fread .fsteps .fstepclone .beat').first()).toBeVisible()
     // there is NO in-reader Columns/Open button — the header toggle is the only way back
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
