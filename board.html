@@ -1455,7 +1455,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=1e0e57c27587" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=e912fda80a98" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -1477,7 +1477,7 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cards">
 <div class="card" data-screen="dispatch" data-i="2"
-     data-waiting="0" data-q="dispatch panel /run/:job one panel per job, opened by the cell you clicked the work is visible while it runs finishing updates the board without a reload one job at a time; a person's second job takes over, a nested run shares the slot cancel actually stops it the whole log is kept, not just the verdict the panel stays open when the job ends a test run records each case on its own">
+     data-waiting="0" data-q="dispatch panel /run/:job one panel per job, opened by the cell you clicked the work is visible while it runs finishing updates the board without a reload one job at a time; a person's second job takes over, a nested run shares the slot cancel actually stops it the whole log is kept, not just the verdict the panel stays open when the job ends, and the board updates behind it a test run records each case on its own">
   <div class="cmain">
     <div class="cd"><span class="nm">Dispatch panel</span>
       
@@ -2476,6 +2476,27 @@ ins { color:var(--koke); text-decoration:none; }
   </div></div></div>
       <div class="tstlog" data-title="The proof is scannable as frames, not only as video — a strip of stills per checked value"></div>
     </div>
+  </div><div class="test tst u" data-t="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)" data-title="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip gone"><span class="mark o"></span>not run</span></div><div class="tmeta"></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab"></span></div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)" data-headed="1" title="run this test in a browser you can watch">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)" title="run this test headless, in the background">Run in background</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
+          <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
+        </span>
+      </div>
+      <div class="pfstrip" data-title="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)"></div>
+      
+      <div class="fold"><div class="tststeps" data-title="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)" data-planned="1"><div class="beat pending" data-step="prove" data-key="dispatch:R7">
+    <div class="bh"><span class="bnum">1</span><span class="bmk">○</span><span class="bid">dispatch:R7</span><span class="blbl">dispatch:R7</span><span class="bchev">›</span></div>
+    <ul class="bdet" hidden></ul>
+  </div></div></div>
+      <div class="tstlog" data-title="A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)"></div>
+    </div>
   </div><div class="test tst p" data-t="Searching requirement text hides groups that miss" data-title="Searching requirement text hides groups that miss">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
@@ -2864,8 +2885,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R6</span><div class="rmain"><span class="rt">The whole log is kept, not just the verdict</span><div class="rhint">Every line the job printed is saved with the run and can be read back in full afterwards — not a truncated snippet, and not only while you h…</div></div><span class="chev">›</span></div>
     <div class="body"><p>Every line the job printed is saved with the run and can be read back in full afterwards — not a truncated snippet, and not only while you happened to be watching it scroll past. &quot;7 of 7 passed&quot; is the headline; the reason a case failed lives in its output, so a run whose log is thrown away the moment it ends cannot be debugged after the fact. Each run's full log is reachable from the record kept under the case it covered (R8).</p><p><em>Narrowed 2026-07-30: R6 previously also required a screen-level &quot;recent runs&quot; list that disambiguated what each run covered (the screen, or the one case a scoped run named). Removed at the human's direction — every case already keeps its own last-ten-run history under the test (R8), each stamped with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the tests column. A run's log and its scope now live in the per-case record, nowhere else.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R7" data-state="unproven">
-    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R7</span><div class="rmain"><span class="rt">The panel stays open when the job ends</span><div class="rhint">Finishing does not close the panel or reload the page out from under it.</div></div><span class="chev">›</span></div>
-    <div class="body"><p>Finishing does not close the panel or reload the page out from under it. The log and the result stay on screen until you dismiss them, so the output is there to read for reference. There is no &quot;background&quot; that hides a running job behind a chip: a job runs in the open or is cancelled.</p><p><em>Corrected 2026-07-28: &quot;Run in background&quot; was removed. It hid a live job behind a header chip on the theory that a visible chip stops a double-start — but R4 already refuses a second job on the server, so the chip bought nothing, and a running job you could not read was more misleading than one you could. Keeping the panel open is what &quot;keep it visible&quot; was always meant to buy.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+    <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R7</span><div class="rmain"><span class="rt">The panel stays open when the job ends, and the board updates behind it</span><div class="rhint">Finishing does not close the panel or reload the page out from under it.</div></div><span class="chev">›</span></div>
+    <div class="body"><p>Finishing does not close the panel or reload the page out from under it. The log and the result stay on screen until you dismiss them, so the output is there to read for reference. <strong>The board behind the panel refreshes IN PLACE</strong> — a requirement's proven/unproven state, a test's verdict and its record all update the moment the run's rebuild lands, with no reload and no manual refresh <em>(the human, 2026-08-13 — the records already refreshed live, but the derived state was baked at build time and only reappeared on the reload a panel-close triggered, so the board sat stale under an open panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)</em>. There is no &quot;background&quot; that hides a running job behind a chip: a job runs in the open or is cancelled.</p><p><em>Corrected 2026-07-28: &quot;Run in background&quot; was removed. It hid a live job behind a header chip on the theory that a visible chip stops a double-start — but R4 already refuses a second job on the server, so the chip bought nothing, and a running job you could not read was more misleading than one you could. Keeping the panel open is what &quot;keep it visible&quot; was always meant to buy.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R8" data-state="unproven">
     <div class="h"><span class="chip gone" title="no passing assertion covers this yet"><span class="mark o"></span></span><span class="id">R8</span><div class="rmain"><span class="rt">A test run records each case on its own</span><div class="rhint">Running a screen's suite records every test case individually — its result, its duration, its steps and its own log — never one pass/fail fo…</div></div><span class="chev">›</span></div>
     <div class="body"><p>Running a screen's suite records every test case individually — its result, its duration, its steps and its own log — never one pass/fail folded over the whole file. Each case keeps its OWN most recent record and shows it under that case, and every case can always expand its steps, so &quot;which one failed, and what did it actually say&quot; is answerable without running it again.</p><p>Records <strong>fold across runs, they never replace</strong>. A run filtered to one test describes only that test, so reading every case's record out of the newest run blanks the steps and the log of every case that run did not include. Each case's record is the newest run that actually covered <em>that case</em>.</p><p>A case keeps its <strong>last ten runs</strong>, not just the newest, each headed with when it ran, how long it took and the commit it ran against. One run says whether it passes today; ten say whether it has been flaky, when it started failing, and which commit changed it — which is the question you actually have when a test goes red. The <strong>commit is named on the result itself</strong>, not only inside the opened log <em>(added 2026-08-13 on the human's direction — &quot;make it clear which commit version each run result is&quot;)</em>: a case's always-visible meta line carries the short commit it last ran against, so which commit a case passed or failed in is legible at a glance without opening anything.</p><p>Evidence must be real evidence. A screenshot of a page that was never driven proves nothing, and a picture that no longer exists is worse than no picture: both read as &quot;here is what the test saw&quot; while showing nothing. Neither is displayed.</p><p><em>Corrected 2026-07-28: this said each case keeps its record &quot;from the latest run&quot;, which is what got built and is wrong — running a single test left that one case with steps and stripped every other case on the screen down to nothing. It is the same trap as the results index, where a scoped run must fold rather than replace, and it needed saying here too.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -3113,7 +3134,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="lrid">R6</span><span class="lrt">The whole log is kept, not just the verdict</span><span class="lrchev">›</span>
     </button><button class="lrow" data-r="R7" data-state="unproven">
       <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
-      <span class="lrid">R7</span><span class="lrt">The panel stays open when the job ends</span><span class="lrchev">›</span>
+      <span class="lrid">R7</span><span class="lrt">The panel stays open when the job ends, and the board updates behind it</span><span class="lrchev">›</span>
     </button><button class="lrow" data-r="R8" data-state="unproven">
       <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
       <span class="lrid">R8</span><span class="lrt">A test run records each case on its own</span><span class="lrchev">›</span>
@@ -4654,6 +4675,47 @@ const B = window.__BOARD__ || {}
   }
   loadRuns()
 
+  // A run refreshes the RECORDS via loadRuns, but a requirement's DERIVED state (proven/unproven) and a
+  // test's pass/fail verdict are baked into board.html at build time — the client never recomputes them.
+  // dispatch R7 keeps the run panel open and does NOT reload the page, so the board behind the panel
+  // would sit stale until you closed it. Fetch the freshly-rebuilt board.html and sync the derived bits
+  // IN PLACE — state chips (reqpane + list rows), test pass/fail + status chip — no reload, panel intact.
+  async function syncDerived (dt) {
+    let html
+    try { html = await (await fetch('board.html', { cache: 'no-store' })).text() } catch (e) { return false }
+    const fresh = new DOMParser().parseFromString(html, 'text/html')
+      .querySelector('.dt[data-screen="' + (window.CSS && CSS.escape ? CSS.escape(dt.dataset.screen) : dt.dataset.screen) + '"]')
+    if (!fresh) return false
+    const cssEsc = v => (window.CSS && CSS.escape) ? CSS.escape(v) : String(v).replace(/"/g, '\\"')
+    const swapChip = (a, b, sel) => { const x = a.querySelector(sel), y = b.querySelector(sel); if (x && y) x.replaceWith(y.cloneNode(true)) }
+    dt.querySelectorAll('.reqpane .req').forEach(function (req) {
+      const f = fresh.querySelector('.reqpane .req[data-r="' + cssEsc(req.dataset.r) + '"]'); if (!f) return
+      req.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(req, f, '.h > .chip')
+    })
+    dt.querySelectorAll('.listview .lrow').forEach(function (row) {
+      const f = fresh.querySelector('.listview .lrow[data-r="' + cssEsc(row.dataset.r) + '"]'); if (!f) return
+      row.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(row, f, '.lrchip')
+    })
+    dt.querySelectorAll('.testpane .test').forEach(function (t) {
+      const f = fresh.querySelector('.testpane .test[data-title="' + cssEsc(t.dataset.title) + '"]'); if (!f) return
+      ;['p', 'f', 'u'].forEach(function (c) { t.classList.toggle(c, f.classList.contains(c)) })
+      swapChip(t, f, '.throw > .chip')
+    })
+    return true
+  }
+  // Refresh the whole open detail after a run WITHOUT a reload (R7): put any borrowed reader node back in
+  // its pane, sync the derived state, fold the fresh records, then reopen the reader on the SAME
+  // requirement so its verdict and record are both current.
+  async function refreshAfterRun () {
+    const dt = document.querySelector('.dt:not([hidden])'); if (!dt) return
+    const ov = dt.querySelector('.focusov'); const focusId = ov ? ov._curId : null
+    if (ov) closeFocus()
+    await syncDerived(dt)
+    await loadRuns()
+    if (focusId != null) setView(dt, 'focus', focusId)
+  }
+  window.__refreshDerived = refreshAfterRun   // a seam so the board's own test can drive this deterministically
+
   // lightbox -------------------------------------------------------------
   // Screenshots are a recording's evidence, and they render at a third of their real size.
   // What a test actually showed cannot be judged from a thumbnail.
@@ -4709,11 +4771,16 @@ const B = window.__BOARD__ || {}
     // reloading on each one makes the board flicker as though it is refreshing forever (the reported
     // "infinite refresh"). Coalesce a burst into ONE reaction once the writes go quiet.
     let changePending = null
+    // A finished run set this; the NEXT change (the board's rebuild landing) or a short fallback then
+    // syncs the board's derived state in place. One-shot, so a run refreshes the board exactly once.
+    let syncPending = false
+    const scheduleSync = () => { if (!syncPending) return; syncPending = false; refreshAfterRun() }
     es.addEventListener('change', () => {
       if (automation) return
-      // R7: an OPEN run panel is never reloaded away — not while a run streams into it, and not once
-      // it has finished. The log stays there to read; the board refreshes when you close the panel.
-      if (!panel.hidden) return
+      // R7: an OPEN run panel is never RELOADED away — not while a run streams into it, and not once it
+      // has finished. But a finished run DID change the derived state, so refresh it IN PLACE (records,
+      // state chips, verdicts, the reader) without a reload; the panel and its log stay put.
+      if (!panel.hidden) { scheduleSync(); return }
       clearTimeout(changePending)
       changePending = setTimeout(() => {
         // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
@@ -4756,6 +4823,9 @@ const B = window.__BOARD__ || {}
           ' · ' + Math.round(d.ms / 100) / 10 + 's\n'
         rplog.scrollTop = rplog.scrollHeight
         loadRuns()
+        // the run changed the board's derived state; with the panel open (R7: never reloaded away),
+        // sync it in place. Fire on the rebuild's change event, or a short fallback if none follows.
+        if (!panel.hidden && !automation) { syncPending = true; setTimeout(scheduleSync, 800) }
       }
     })
   } catch (e) { /* served statically — no live reload, everything else still works */ }

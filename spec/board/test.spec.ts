@@ -524,6 +524,31 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
   })
 })
 
+// dispatch R7 — a finished run keeps the panel open AND refreshes the board's DERIVED state (a
+// requirement's proven/unproven, a test's verdict) IN PLACE, without a reload. The records already
+// refreshed live; the derived state is baked at build time, so the client re-fetches the rebuilt
+// board.html and syncs it. Driven here through the exposed seam with a served board.html carrying the
+// change a run would produce, so the sync is deterministic (no real run, no timing).
+test('A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)', async ({ page }) => {
+  await coverReqs('dispatch:R7')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const before = await dt.locator('.reqpane .req[data-r="R1"]').getAttribute('data-state')
+  const flipped = before === 'proven' ? 'unproven' : 'proven'
+  // serve a board.html where R1's derived state has flipped — exactly what a run's rebuild would change
+  await page.route('**/board.html', async route => {
+    const real = await (await route.fetch()).text()
+    await route.fulfill({ contentType: 'text/html',
+      body: real.split('data-r="R1" data-state="' + before + '"').join('data-r="R1" data-state="' + flipped + '"') })
+  })
+  const url = page.url()
+  await checkReq('dispatch:R7', async () => {
+    await page.evaluate(() => (window as any).__refreshDerived())      // the SSE run-done/change path calls this
+    await expect(dt.locator('.reqpane .req[data-r="R1"]')).toHaveAttribute('data-state', flipped)  // synced in place
+    expect(page.url(), 'no reload — the open panel would survive').toBe(url)
+  })
+})
+
 test('Searching requirement text hides groups that miss', async ({ page }) => {
   await coverReqs('R9')
   await checkReq('R9', async () => {

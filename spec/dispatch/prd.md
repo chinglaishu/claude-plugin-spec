@@ -81,11 +81,16 @@ direction — every case already keeps its own last-ten-run history under the te
 with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the
 tests column. A run's log and its scope now live in the per-case record, nowhere else.*
 
-## R7 — The panel stays open when the job ends
+## R7 — The panel stays open when the job ends, and the board updates behind it
 
 Finishing does not close the panel or reload the page out from under it. The log and the result stay
-on screen until you dismiss them, so the output is there to read for reference. There is no
-"background" that hides a running job behind a chip: a job runs in the open or is cancelled.
+on screen until you dismiss them, so the output is there to read for reference. **The board behind
+the panel refreshes IN PLACE** — a requirement's proven/unproven state, a test's verdict and its
+record all update the moment the run's rebuild lands, with no reload and no manual refresh *(the
+human, 2026-08-13 — the records already refreshed live, but the derived state was baked at build time
+and only reappeared on the reload a panel-close triggered, so the board sat stale under an open
+panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)*. There
+is no "background" that hides a running job behind a chip: a job runs in the open or is cancelled.
 
 *Corrected 2026-07-28: "Run in background" was removed. It hid a live job behind a header chip on the
 theory that a visible chip stops a double-start — but R4 already refuses a second job on the server,

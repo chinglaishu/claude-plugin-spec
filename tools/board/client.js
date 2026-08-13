@@ -1361,6 +1361,47 @@ const B = window.__BOARD__ || {}
   }
   loadRuns()
 
+  // A run refreshes the RECORDS via loadRuns, but a requirement's DERIVED state (proven/unproven) and a
+  // test's pass/fail verdict are baked into board.html at build time — the client never recomputes them.
+  // dispatch R7 keeps the run panel open and does NOT reload the page, so the board behind the panel
+  // would sit stale until you closed it. Fetch the freshly-rebuilt board.html and sync the derived bits
+  // IN PLACE — state chips (reqpane + list rows), test pass/fail + status chip — no reload, panel intact.
+  async function syncDerived (dt) {
+    let html
+    try { html = await (await fetch('board.html', { cache: 'no-store' })).text() } catch (e) { return false }
+    const fresh = new DOMParser().parseFromString(html, 'text/html')
+      .querySelector('.dt[data-screen="' + (window.CSS && CSS.escape ? CSS.escape(dt.dataset.screen) : dt.dataset.screen) + '"]')
+    if (!fresh) return false
+    const cssEsc = v => (window.CSS && CSS.escape) ? CSS.escape(v) : String(v).replace(/"/g, '\\"')
+    const swapChip = (a, b, sel) => { const x = a.querySelector(sel), y = b.querySelector(sel); if (x && y) x.replaceWith(y.cloneNode(true)) }
+    dt.querySelectorAll('.reqpane .req').forEach(function (req) {
+      const f = fresh.querySelector('.reqpane .req[data-r="' + cssEsc(req.dataset.r) + '"]'); if (!f) return
+      req.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(req, f, '.h > .chip')
+    })
+    dt.querySelectorAll('.listview .lrow').forEach(function (row) {
+      const f = fresh.querySelector('.listview .lrow[data-r="' + cssEsc(row.dataset.r) + '"]'); if (!f) return
+      row.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(row, f, '.lrchip')
+    })
+    dt.querySelectorAll('.testpane .test').forEach(function (t) {
+      const f = fresh.querySelector('.testpane .test[data-title="' + cssEsc(t.dataset.title) + '"]'); if (!f) return
+      ;['p', 'f', 'u'].forEach(function (c) { t.classList.toggle(c, f.classList.contains(c)) })
+      swapChip(t, f, '.throw > .chip')
+    })
+    return true
+  }
+  // Refresh the whole open detail after a run WITHOUT a reload (R7): put any borrowed reader node back in
+  // its pane, sync the derived state, fold the fresh records, then reopen the reader on the SAME
+  // requirement so its verdict and record are both current.
+  async function refreshAfterRun () {
+    const dt = document.querySelector('.dt:not([hidden])'); if (!dt) return
+    const ov = dt.querySelector('.focusov'); const focusId = ov ? ov._curId : null
+    if (ov) closeFocus()
+    await syncDerived(dt)
+    await loadRuns()
+    if (focusId != null) setView(dt, 'focus', focusId)
+  }
+  window.__refreshDerived = refreshAfterRun   // a seam so the board's own test can drive this deterministically
+
   // lightbox -------------------------------------------------------------
   // Screenshots are a recording's evidence, and they render at a third of their real size.
   // What a test actually showed cannot be judged from a thumbnail.
@@ -1416,11 +1457,16 @@ const B = window.__BOARD__ || {}
     // reloading on each one makes the board flicker as though it is refreshing forever (the reported
     // "infinite refresh"). Coalesce a burst into ONE reaction once the writes go quiet.
     let changePending = null
+    // A finished run set this; the NEXT change (the board's rebuild landing) or a short fallback then
+    // syncs the board's derived state in place. One-shot, so a run refreshes the board exactly once.
+    let syncPending = false
+    const scheduleSync = () => { if (!syncPending) return; syncPending = false; refreshAfterRun() }
     es.addEventListener('change', () => {
       if (automation) return
-      // R7: an OPEN run panel is never reloaded away — not while a run streams into it, and not once
-      // it has finished. The log stays there to read; the board refreshes when you close the panel.
-      if (!panel.hidden) return
+      // R7: an OPEN run panel is never RELOADED away — not while a run streams into it, and not once it
+      // has finished. But a finished run DID change the derived state, so refresh it IN PLACE (records,
+      // state chips, verdicts, the reader) without a reload; the panel and its log stay put.
+      if (!panel.hidden) { scheduleSync(); return }
       clearTimeout(changePending)
       changePending = setTimeout(() => {
         // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
@@ -1463,6 +1509,9 @@ const B = window.__BOARD__ || {}
           ' · ' + Math.round(d.ms / 100) / 10 + 's\n'
         rplog.scrollTop = rplog.scrollHeight
         loadRuns()
+        // the run changed the board's derived state; with the panel open (R7: never reloaded away),
+        // sync it in place. Fire on the rebuild's change event, or a short fallback if none follows.
+        if (!panel.hidden && !automation) { syncPending = true; setTimeout(scheduleSync, 800) }
       }
     })
   } catch (e) { /* served statically — no live reload, everything else still works */ }
