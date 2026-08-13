@@ -371,77 +371,71 @@ test('No acceptance gate — the detail is the two columns, nothing to accept', 
   })
 })
 
-test('The detail offers a focus reader — one requirement per page, columns a click away', async ({ page }) => {
+test('The detail offers a three-view toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
   await coverReqs('R13')
   await openDetail(page)
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-    // default is the two columns (R2); the focus reader is opt-in
+    const reqCount = await dt.locator('.reqpane .req').count()
+    // default is the two columns (R2); the header toggle offers Focus / List / Columns, Columns active
     await expect(dt.locator('.cols')).toBeVisible()
     await expect(dt.locator('.focusov')).toHaveCount(0)
-    // open Focus → the columns give way to a single-requirement reader
-    await dt.locator('.focusbtn').click()
+    await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveClass(/\bon\b/)
+
+    // FOCUS → the columns give way to a one-requirement reader laid out as TWO containers
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
     await expect(dt.locator('.cols')).toBeHidden()
-    // exactly ONE requirement on screen — its id, state, title and full body
-    await expect(ov.locator('.fcard')).toHaveCount(1)
-    await expect(ov.locator('.fcard .fid')).not.toBeEmpty()
-    await expect(ov.locator('.fcard .fchip')).toHaveClass(/proven|unproven/)
-    await expect(ov.locator('.fcard .fttl')).not.toBeEmpty()
-    await expect(ov.locator('.fcard .fbody p, .fcard .fbody ul').first()).toBeVisible()
+    await expect(ov.locator('.fpage')).toHaveCount(1)
+    // its id, state, title and full body on the LEFT container
+    await expect(ov.locator('.fhead .fid')).not.toBeEmpty()
+    await expect(ov.locator('.fhead .fchip')).toHaveClass(/proven|unproven/)
+    await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
+    await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    // THE PROOF on the RIGHT container — the primary covering test's OWN evidence, MOVED in and wired
+    // (no player rebuilt, R13): its controls (Run/Logs/Steps) and its frame strip live here. The LEFT
+    // container carries the flow steps as a display clone. (Robust to the dogfood lag — asserts the
+    // machinery, not a specific green state: R1, the page opens on it, is covered whatever its state.)
+    await expect(ov.locator('.feval .fphead')).toBeVisible()
+    await expect(ov.locator('.feval .fpby')).toBeVisible()
+    await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
+    await expect(ov.locator('.feval .fev [data-steps]')).toHaveCount(1)
+    await expect(ov.locator('.feval .fev [data-log]')).toHaveCount(1)
+    await expect(ov.locator('.fread .fsteps .fstepclone .beat').first()).toBeVisible()
+    // there is NO in-reader Columns/Open button — the header toggle is the only way back
+    await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
+
     // a pager with one dot per requirement; next advances to a different requirement
     const dots = ov.locator('.fdots .fdot')
-    const reqCount = await dt.locator('.reqpane .req').count()
     await expect(dots).toHaveCount(reqCount)
-    const firstId = (await ov.locator('.fcard .fid').textContent())!.trim()
+    const firstId = (await ov.locator('.fhead .fid').textContent())!.trim()
     await ov.locator('.fnav.next').click()
-    await expect(ov.locator('.fcard .fid')).not.toHaveText(firstId)
-    // Columns returns to the two-column view
-    await ov.locator('.fcols').click()
-    await expect(dt.locator('.focusov')).toHaveCount(0)
-    await expect(dt.locator('.cols')).toBeVisible()
+    await expect(ov.locator('.fhead .fid')).not.toHaveText(firstId)
 
-    // THE PROOF is on the card, not just the requirement — and the card now carries the WHOLE
-    // single-test detail (board R13, enriched): for a covered requirement it EMBEDS that test's own
-    // evidence — its recording, its Run/Logs/Steps controls, and its numbered story steps — MOVED in
-    // from the columns, so no player is duplicated (R13's "reuse the columns' machinery").
-    // (Robust to the dogfood lag: a board requirement may read proven OR unproven on any given run,
-    // so this asserts the machinery, not a specific green state.)
-    await dt.locator('.focusbtn').click()
-    const ov2 = dt.locator('.focusov')
-    await expect(ov2.locator('.fcard .fproof')).toBeVisible()
-    // R1 (the card opens on it) is covered by a test, so the card names its proof source once…
-    await expect(ov2.locator('.fcard .fpby, .fcard .fpnone')).toHaveCount(1)
-    await expect(ov2.locator('.fcard .fpby')).toBeVisible()
-    // …and EMBEDS that test's full evidence, opened: the recording, the numbered steps, and the
-    // Logs/Steps window controls are all present INSIDE the card, not a screen away.
-    const ev = ov2.locator('.fcard .fev .test').first()
-    await expect(ev).toBeVisible()
-    await expect(ev).toHaveClass(/\bopen\b/)
-    await expect(ov2.locator('.fcard .fev .beat').first()).toBeVisible()
-    await expect(ov2.locator('.fcard .fev .rec')).toHaveCount(1)
-    await expect(ov2.locator('.fcard .fev [data-steps]')).toHaveCount(1)
-    await expect(ov2.locator('.fcard .fev [data-log]')).toHaveCount(1)
-    // a single secondary action returns to the columns with that test open — and it is FUNCTIONAL,
-    // MOVING the embedded test back into the pane intact (so the columns are whole again afterwards)
-    const openBtn = ov2.locator('.fcard .fopen')
-    await expect(openBtn).toBeVisible()
-    await openBtn.click()
+    // COLUMNS → back to the two columns; the moved test node is whole again in the pane
+    await dt.locator('.viewseg .vseg[data-view="columns"]').click()
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.cols')).toBeVisible()
-    await expect(dt.locator('.testpane .test.open')).not.toHaveCount(0)
-    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement (the card
-    // opens on R1) names its flow whatever its green state — "Proven by" when green, still named when
-    // not. (Every board requirement is now covered by a test, so the uncovered "No test asserts this
-    // yet" branch is exercised on other projects' boards, not the dogfood — see the R14 strip test.)
-    await dt.locator('.focusbtn').click()
-    const ov3 = dt.locator('.focusov')
-    const chip = await ov3.locator('.fcard .fchip').textContent()
+    await expect(dt.locator('.testpane .test')).not.toHaveCount(0)
+
+    // LIST → one compact line per requirement; a row opens it straight into Focus
+    await dt.locator('.viewseg .vseg[data-view="list"]').click()
+    const list = dt.locator('.listview')
+    await expect(list).toBeVisible()
+    await expect(dt.locator('.cols')).toBeHidden()
+    await expect(list.locator('.lrow')).toHaveCount(reqCount)
+    await list.locator('.lrow').first().click()
+    await expect(dt.locator('.focusov')).toBeVisible()
+    await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
+
+    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
+    // flow — "proved by" when green, still named when not.
+    const chip = await dt.locator('.focusov .fhead .fchip').textContent()
     if (/proven/.test(chip || '') && !/unproven/.test(chip || '')) {
-      await expect(ov3.locator('.fcard .fpby')).toContainText('proved by')
+      await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
     } else {
-      await expect(ov3.locator('.fcard .fpby')).toBeVisible()   // covered but ungreen — still named
+      await expect(dt.locator('.focusov .feval .fpby')).toBeVisible()   // covered but ungreen — still named
     }
   })
 })
@@ -493,16 +487,16 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
     await expect(page.locator('#lb')).toBeVisible()
     await page.locator('#lbclose').click()
 
-    // (2) IN THE FOCUS CARD: the reader EMBEDS the primary covering test (R13), so the strip rides
-    // along — R1's card shows the same stills flat, without opening the columns.
-    await dt.locator('.focusbtn').click()
+    // (2) IN THE FOCUS READER: the RIGHT container EMBEDS the primary covering test (R13), so the strip
+    // rides along — R1's reader shows the same stills, without opening the columns.
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const ov = dt.locator('.focusov')
     await ov.locator('.fdot[title^="R1 "]').click()             // "R1 —…" (the trailing space excludes R10+)
-    await expect(ov.locator('.fcard .fev .pfstrip .pframe')).toHaveCount(3)
-    await expect(ov.locator('.fcard .fev .pframe.bad')).toHaveCount(1)
-    // rendered flat like the reading layout: labelled sections, the header folded into the proof line
-    await expect(ov.locator('.fcard .fev .flabel', { hasText: 'Proof frames' })).toBeVisible()
-    await expect(ov.locator('.fcard .fev .test.infocus > .th')).toBeHidden()
+    await expect(ov.locator('.feval .fev .pfstrip .pframe')).toHaveCount(3)
+    await expect(ov.locator('.feval .fev .pframe.bad')).toHaveCount(1)
+    // the strip is labelled and the moved test's own header is folded away (the proof line replaces it)
+    await expect(ov.locator('.feval .fev .flabel', { hasText: 'Proof frames' })).toBeVisible()
+    await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
   })
 })
 

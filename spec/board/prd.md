@@ -189,28 +189,29 @@ CTA says so. There is no home-screen checklist.
 *Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier
 six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.*
 
-## R13 — The detail offers a focus reader: one requirement at a time, the columns a click away
+## R13 — Three views of a screen's requirements: Focus, List, Columns
 
-The two-column detail (R2) is the default, but a "Focus" control opens a reader that shows **one
-requirement at a time** — its id, its state, its title and full description, on its own — with a pager
-(prev · dots · next) to move between them and a "Columns" control to return to the two-column view.
-It is a way to *read* the requirements one-per-page for people who find the dense two columns hard to
-absorb at a glance; it adds no state and changes no requirement — the same derived states the columns
-show, one screenful each. Each card also carries its **proof** — not a link to it but the covering
-test's own evidence, **embedded**. It names the flow that proves it (or, honestly, that no test asserts
-it yet), and for a covered requirement the *very test row from the columns* is moved into the card and
-opened: its self-narrating recording (which burns expected-vs-got into its own frames), its Run / Watch
-/ Logs / Steps controls, and its numbered story steps — so the reader takes in one whole test at a time
-rather than a teaser. A single *Open in columns* returns to the two-column view with that test open. It
-is the same node the columns show, moved and moved back, never a copy — so the focus reader duplicates
-no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.
+The detail header carries a **three-way toggle — Focus / List / Columns** — three views of the same
+requirements, storing nothing new. **Columns** is the two-column default (R2). **List** is a compact
+index — one line per requirement (state · id · title) — to scan and jump into Focus from. **Focus**
+reads **one requirement at a time**, laid out as **two containers**: the *reading* on the left (its id,
+state, title, full description, and the flow step by step, this requirement's step highlighted) and the
+*evidence* on the right (the proof line — which flow proves it and its verdict, with the commit that
+result ran against — the Run / Watch / Logs / Steps controls, the scannable **proof-frame strip**, and
+the recording). A pager (prev · dots · next) moves between requirements; the toggle switches views —
+**there is no in-reader Columns button**, because the toggle already is one.
 
-*Drafted 2026-08-11 on the human's direction ("provide a less-text version — one requirement per page").
-Enriched 2026-08-13 (still the human's direction: "don't hide too much — the card should show one whole
-test detail at once") so the card carries the WHOLE single-test detail — steps, recording, controls —
-by reusing the real column node, not a thin summary that hid what the two columns already showed. The
-default view stays the two columns; this is the opt-in focus reader. Wording awaits the human's gate;
-the test asserts behaviour.*
+The evidence is not a link to the columns but the covering test's **own row, moved in** — its controls,
+its frame strip and its recording are the very wired nodes the columns show (its steps are shown on the
+left as a display clone, the moved node keeping the wired original), relocated and relocated back so the
+two columns are left whole. So the reader duplicates no player, and a requirement nothing tags reads
+honestly unproven rather than borrowing a green.
+
+*Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
+carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
+(read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle
+that replaces the old in-reader Columns button. The default view stays the two columns. Wording awaits
+the human's gate; the test asserts behaviour.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

@@ -93,6 +93,11 @@ const B = window.__BOARD__ || {}
     const tp = dt.querySelector('.testpane'); if (tp) tp.id = 'testpane'
     document.querySelectorAll('.dbarhook').forEach(b => b.classList.remove('dbar'))
     const bar = dt.querySelector('.dbarhook'); if (bar) bar.classList.add('dbar')
+    // open in the default Columns view (R2): clear any reader left over, reset the toggle and panes
+    closeFocus()
+    dt.querySelectorAll('.viewseg .vseg').forEach(b => b.classList.toggle('on', b.dataset.view === 'columns'))
+    const lv = dt.querySelector('.listview'); if (lv) lv.hidden = true
+    const cx = dt.querySelector('.cols'); if (cx) cx.style.display = ''
     safeFit()
   }
   const open = (i, push = true) => {
@@ -147,8 +152,8 @@ const B = window.__BOARD__ || {}
   // closing the detail also tears down an open focus reader and restores the columns for next time
   function closeFocus () {
     for (const o of document.querySelectorAll('.focusov')) {
-      if (o._restore) o._restore()          // put any borrowed test rows back before tearing down —
-      // else o.remove() would destroy the real test node the columns still need
+      if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
+      // else o.remove() would destroy the real nodes the columns still need
       const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
       if (cx) cx.style.display = ''
       o.remove()
@@ -157,86 +162,69 @@ const B = window.__BOARD__ || {}
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
-  // THE FOCUS READER (board R13): replace the two columns with a one-requirement-per-page reader,
-  // built from the screen's own requirement rows, and put the columns back on "Columns". No new
-  // state — the same derived chips the columns show, one screenful each.
-  function buildFocus (dt) {
+  // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
+  // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
+  // recording). One of three views (Focus / List / Columns) switched by the header toggle; no in-reader
+  // Columns button. No new state — the same derived chips the columns show, one screenful each.
+  function buildFocus (dt, startId) {
     const cols = dt.querySelector('.cols'); const scroll = dt.querySelector('.dtscroll')
     if (!cols || !scroll) return
     const reqs = [].slice.call(dt.querySelectorAll('.reqpane .req')).map(function (r) {
       const idEl = r.querySelector('.id'); const ttlEl = r.querySelector('.rt'); const bodyEl = r.querySelector('.body')
-      // strip the row's own "no test asserts this yet" note — the proof footer below owns that now,
-      // so it is not shown twice
       let body = ''
       if (bodyEl) { const c = bodyEl.cloneNode(true); const cov = c.querySelector('.covers'); if (cov) cov.remove(); body = c.innerHTML }
-      return {
-        id: idEl ? idEl.textContent : '',
-        state: r.getAttribute('data-state') || 'unproven',
-        title: ttlEl ? ttlEl.textContent : '',
-        body: body
-      }
+      return { id: idEl ? idEl.textContent : '', state: r.getAttribute('data-state') || 'unproven',
+        title: ttlEl ? ttlEl.textContent : '', body: body }
     })
     if (!reqs.length) return
-    // THE PROOF SIDE. A requirement's proof is the test(s) that TAG it (the many-to-many wire, R5) —
-    // so the focus card can carry the same proof the columns show: which flow proves it, and the two
-    // actions that reach the evidence (the recording burns expected-vs-got into its own frames, R10).
     const tests = [].slice.call(dt.querySelectorAll('.testpane .test'))
     function coveringTests (rid) {
       return tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + rid + '"]') })
     }
-    // A covered requirement's card EMBEDS the covering test's OWN row — recording, Run/Watch/Logs/
-    // Steps controls, numbered steps, error — by MOVING the real node in. Never a clone: the play
-    // handler, the Logs/Steps windows and the folded pass/fail outcomes are all wired onto the LIVE
-    // node (properties and delegated listeners a clone would not carry). On leave the node is moved
-    // back to exactly where it was, so the two columns stay whole. This is R13's "reuse the columns'
-    // machinery, duplicate no player" taken literally: the card shows the very same node.
-    const borrowed = []
-    function borrow (node, host) {
-      borrowed.push({ node: node, parent: node.parentNode, next: node.nextSibling })
-      node.classList.add('open', 'infocus')   // open so its evidence shows; infocus flattens it for the card
+    // The RIGHT card MOVES the primary covering test's real node in (controls + frame strip stay wired —
+    // no rebuilt player, R13) and RELOCATES its recording below the strip; the LEFT card shows a CLONE
+    // of its steps (display-only — the moved node keeps the original, hidden, so the Steps window still
+    // reads it). All moves are tracked and undone on leave, so the two columns are left exactly whole.
+    const moved = []
+    function move (node, host, flatten) {
+      moved.push({ node: node, parent: node.parentNode, next: node.nextSibling })
+      if (flatten) node.classList.add('open', 'infocus')
       host.appendChild(node)
     }
-    // The card renders the moved test FLAT, like the reading layout: a short uppercase section label
-    // above the frame strip and above the step flow. Injected into the moved node and stripped on
-    // restore, so the columns' own row is left exactly as it was.
-    function insertLabel (el, text) {
+    function insertLabel (el, text) {   // a section label injected INTO the moved node, stripped on leave
       const prev = el.previousElementSibling
       if (prev && prev.classList.contains('flabel')) { prev.textContent = text; return }
       const l = document.createElement('div'); l.className = 'flabel'; l.textContent = text
       el.parentNode.insertBefore(l, el)
     }
-    function restoreBorrowed () {
-      // reverse order so a saved sibling is back in place before the node that anchors to it
-      for (let k = borrowed.length - 1; k >= 0; k--) {
-        const b = borrowed[k]
-        if (b.node.querySelectorAll) {
-          b.node.querySelectorAll('.flabel').forEach(function (el) { el.remove() })
-          b.node.querySelectorAll('.fhere').forEach(function (el) { el.classList.remove('fhere') })
-        }
-        b.node.classList.remove('open', 'infocus')
+    function restoreMoved () {
+      // reverse order so a node whose parent is inside another moved node is put back first
+      for (let k = moved.length - 1; k >= 0; k--) {
+        const b = moved[k]
+        if (b.node.querySelectorAll) b.node.querySelectorAll('.flabel').forEach(function (el) { el.remove() })
+        if (b.node.classList) b.node.classList.remove('open', 'infocus')
         if (b.next && b.next.parentNode === b.parent) b.parent.insertBefore(b.node, b.next)
         else if (b.parent) b.parent.appendChild(b.node)
       }
-      borrowed.length = 0
+      moved.length = 0
     }
-    // The one secondary action: restore the columns and open the covering test there (reusing its own
-    // open/play handlers — no duplicated player). Puts any borrowed node back first, THEN opens it.
-    function openInColumns (testEl, play) {
-      restoreBorrowed()
-      ov.remove(); cols.style.display = ''
-      if (!testEl) return
-      testEl.classList.add('open')
-      testEl.scrollIntoView({ block: 'center' })
-      if (play) { const rec = testEl.querySelector('.rec'); if (rec && rec.classList.contains('playable')) rec.click() }
-    }
-    let cur = 0
+    let cur = Math.max(0, reqs.findIndex(function (r) { return r.id === startId }))
     const ov = document.createElement('div'); ov.className = 'focusov'
-    ov._restore = restoreBorrowed          // closeFocus / detail-close use this to reclaim borrowed rows
-    const head = document.createElement('div'); head.className = 'foch'
+    ov._restore = restoreMoved          // closeFocus / detail-close use this to reclaim the moved nodes
+    // a vertical wheel over the screenshot strip scrolls the STRIP sideways, not the page — so scanning
+    // the stills never moves the requirement out from under you (the page takes over only at the ends)
+    ov.addEventListener('wheel', function (e) {
+      const strip = e.target.closest && e.target.closest('.pfstrip')
+      if (!strip || !e.deltaY) return
+      const before = strip.scrollLeft; strip.scrollLeft += e.deltaY
+      if (strip.scrollLeft !== before) e.preventDefault()
+    }, { passive: false })
+    const head = document.createElement('div'); head.className = 'fhead'
+    const fid = document.createElement('span'); fid.className = 'fid'
+    const fchip = document.createElement('span'); fchip.className = 'fchip'
     const count = document.createElement('span'); count.className = 'fcount'
-    const back = document.createElement('button'); back.className = 'btn fcols'; back.textContent = 'Columns'
-    head.appendChild(count); head.appendChild(back)
-    const card = document.createElement('div'); card.className = 'fcard'
+    head.appendChild(fid); head.appendChild(fchip); head.appendChild(count)
+    const page = document.createElement('div'); page.className = 'fpage'
     const pager = document.createElement('div'); pager.className = 'fpager'
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
     const dots = document.createElement('div'); dots.className = 'fdots'
@@ -244,67 +232,74 @@ const B = window.__BOARD__ || {}
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
     function render () {
       const r = reqs[cur]
-      restoreBorrowed()          // reclaim the previous card's embedded test row BEFORE wiping the card,
-      card.innerHTML = ''        // else innerHTML='' would destroy the real node the columns still need
-      const top = document.createElement('div'); top.className = 'ftop'
-      const idEl = document.createElement('span'); idEl.className = 'fid'; idEl.textContent = r.id
-      const chip = document.createElement('span'); chip.className = 'fchip ' + r.state
-      chip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
-      top.appendChild(idEl); top.appendChild(chip)
-      const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
-      const b = document.createElement('div'); b.className = 'fbody'; b.innerHTML = r.body
-      card.appendChild(top); card.appendChild(h); card.appendChild(b)
+      restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
+      page.innerHTML = ''     // would destroy the real nodes the columns still need
+      fid.textContent = r.id
+      fchip.className = 'fchip ' + r.state
+      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
 
-      // THE PROOF — the whole single-test detail, not a link to it. A requirement a test tags carries
-      // that test's OWN evidence embedded below (recording, Run/Watch/Logs/Steps, numbered steps); one
-      // that nothing tags says so honestly (rule 3). The proof line is COVERAGE-honest, not state-gated:
-      // a tagged-but-ungreen requirement still names its flow rather than claiming no test touches it.
+      // LEFT — the reading
+      const read = document.createElement('div'); read.className = 'fread'
+      const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
+      const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
+      read.appendChild(h); read.appendChild(body)
+
+      // RIGHT — the evidence
+      const evl = document.createElement('div'); evl.className = 'feval'
       const cov = coveringTests(r.id)
       const flows = cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
-      const proof = document.createElement('div'); proof.className = 'fproof'
       if (cov.length) {
-        // ONE proof line and ONE flow's evidence — the reading view shows the PRIMARY covering test in
-        // full and names any others (the columns carry every one). The line reads "proved by <flow> ·
-        // <verdict>", the verdict off that test's own pass/fail; "proved by" only when it actually is,
-        // else "covered by … — not proven yet", so the word never overstates the green (rules 2 and 3).
         const primary = cov[0]
         const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
         const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
-        const head = document.createElement('div'); head.className = 'fphead'
-        const plbl = document.createElement('span'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
-        const by = document.createElement('span'); by.className = 'fpby'
-        by.innerHTML = (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+        // proof line — "proved by <flow> · <verdict>"; only "proved by" when it actually is (rules 2/3)
+        const ph = document.createElement('div'); ph.className = 'fphead'
+        ph.innerHTML = '<span class="fplbl">The proof</span>' +
+          '<div class="fpby">' + (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
           (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
-          (r.state === 'proven' ? '' : ' — not proven yet')
-        head.appendChild(plbl); head.appendChild(by); proof.appendChild(head)
-        // the primary covering test's REAL row, MOVED in and opened, then flattened: its controls become
-        // a plain row, its recording gives way to the scannable frames, and its step flow is labelled —
-        // the evidence itself, wired and whole, never a rebuilt player (R13's "duplicate no player").
+          (r.state === 'proven' ? '' : ' — not proven yet') + '</div>'
+        // the commit the result ran against (dispatch R8), read off the test's own meta chip
+        const shaEl = primary.querySelector('.tmeta .tsha')
+        if (shaEl && shaEl.textContent) {
+          const run = document.createElement('div'); run.className = 'fprun'
+          run.innerHTML = 'last run · <span class="tsha">' + eh(shaEl.textContent) + '</span>'
+          ph.appendChild(run)
+        }
+        evl.appendChild(ph)
+        // the moved test node — flattened to controls + frame strip (its header/steps/log hidden)
         const ev = document.createElement('div'); ev.className = 'fev'
-        proof.appendChild(ev)
-        borrow(primary, ev)
+        evl.appendChild(ev)
+        move(primary, ev, true)
         const strip = primary.querySelector('.pfstrip')
         if (strip && strip.children.length) insertLabel(strip, 'Proof frames — one still per check, scan to verify')
-        const fold = primary.querySelector('.fold')
-        if (fold) insertLabel(fold, 'The flow, step by step')
-        // highlight the beat that proves THIS requirement, so the reader's eye lands on its own step
-        const here = primary.querySelector('.beat[data-key="' + r.id + '"]')
-        if (here) here.classList.add('fhere')
-        // one quiet secondary action: see it back among the two columns, that test open (R13's "open the test")
-        const acts = document.createElement('div'); acts.className = 'facts'
-        const open = document.createElement('button'); open.className = 'btn sm fopen'; open.textContent = 'Open in columns ↗'
-        open.addEventListener('click', function () { openInColumns(primary, false) })
-        acts.appendChild(open); proof.appendChild(acts)
+        // the recording, RELOCATED below the strip (its play onclick survives the move) — only when it
+        // actually has one (a still or a playable video), so a video-less run shows no empty box
+        const rec = primary.querySelector('.rec')
+        if (rec && (rec.classList.contains('playable') || rec.style.backgroundImage)) {
+          const rw = document.createElement('div'); rw.className = 'frecwrap'
+          const rl = document.createElement('div'); rl.className = 'flabel'; rl.textContent = 'The recording'
+          rw.appendChild(rl); evl.appendChild(rw); move(rec, rw, false)
+        }
+        // LEFT gets the steps as a CLONE (display-only) — the moved node keeps the wired original
+        const steps = primary.querySelector('.tststeps')
+        if (steps) {
+          const fs = document.createElement('div'); fs.className = 'fsteps'
+          const sl = document.createElement('div'); sl.className = 'flabel'; sl.textContent = 'The flow, step by step'
+          const clone = steps.cloneNode(true); clone.classList.add('fstepclone')
+          const hereBeat = clone.querySelector('.beat[data-key="' + r.id + '"]')
+          if (hereBeat) hereBeat.classList.add('fhere')
+          fs.appendChild(sl); fs.appendChild(clone); read.appendChild(fs)
+        }
       } else {
-        const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
-        const none = document.createElement('div'); none.className = 'fpnone'
-        none.textContent = 'No test asserts this yet — honestly ungreen, not hidden.'
-        proof.appendChild(plbl); proof.appendChild(none)
+        const ph = document.createElement('div'); ph.className = 'fphead'
+        ph.innerHTML = '<span class="fplbl">The proof</span>' +
+          '<div class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</div>'
+        evl.appendChild(ph)
       }
-      card.appendChild(proof)
+      page.appendChild(read); page.appendChild(evl)
 
-      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''
       reqs.forEach(function (rr, i) {
@@ -316,12 +311,26 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    back.addEventListener('click', function () { restoreBorrowed(); ov.remove(); cols.style.display = '' })
-    ov.appendChild(head); ov.appendChild(card); ov.appendChild(pager)
+    ov.appendChild(head); ov.appendChild(page); ov.appendChild(pager)
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
-  for (const fb of document.querySelectorAll('.focusbtn'))
-    fb.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) { closeFocus(); buildFocus(dt) } })
+
+  // THE THREE-VIEW TOGGLE (board R13): Focus / List / Columns, one segmented control in the detail
+  // header. Columns is the default (R2); Focus opens the reader, List the compact index. Switching
+  // tears down any open reader (restoring its moved nodes) — there is no in-reader Columns button.
+  function setView (dt, view, startId) {
+    const cx = dt.querySelector('.cols'); const lv = dt.querySelector('.listview')
+    dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
+    closeFocus()
+    if (view === 'list') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = false }
+    else if (view === 'focus') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = true; buildFocus(dt, startId) }
+    else { if (cx) cx.style.display = ''; if (lv) lv.hidden = true }   // columns (default)
+  }
+  for (const b of document.querySelectorAll('.viewseg .vseg'))
+    b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })
+  // a List row opens that requirement straight into Focus
+  for (const b of document.querySelectorAll('.lrow'))
+    b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, 'focus', e.currentTarget.dataset.r) })
 
   // A requirement is a title that EXPANDS to its full description (board R3); a test collapses to a
   // title + tags + status and opens to its evidence (R10). One click on the header toggles either.

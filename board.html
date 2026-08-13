@@ -353,23 +353,62 @@ ins { color:var(--koke); text-decoration:none; }
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
 
-  /* THE FOCUS READER (board R13): one requirement per page, the columns a click away. It replaces the
-     .cols in the same content area — a calm single card so a dense two-column screen becomes readable
-     one screenful at a time. No new state; the same derived chips the columns show. */
-  .focusov { width:100%; max-width:760px; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
-  .foch { flex:none; display:flex; align-items:center; gap:var(--s3); }
-  .foch .fcount { font:var(--t-xs) var(--mono); color:var(--ink-4); }
-  .foch .fcols { margin-left:auto; }
-  .fcard { flex:1; min-height:0; overflow-y:auto; background:var(--card); border:1px solid var(--hair);
-    border-radius:var(--r-md); padding:var(--s6) var(--s6) var(--s5); }
-  .fcard .ftop { display:flex; align-items:center; gap:var(--s3); }
-  .fcard .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
+     description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
+     screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
+     the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
+  .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
+  .fhead { flex:none; display:flex; align-items:center; gap:var(--s3); }
+  .fhead .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  .fhead .fcount { margin-left:auto; font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
-  .fcard .fttl { font-size:26px; line-height:1.25; letter-spacing:-.02em; margin:var(--s3) 0 var(--s4); }
-  .fcard .fbody { font-size:var(--t-lg); line-height:1.65; color:var(--ink-2); max-width:60ch; }
-  .fcard .fbody p { margin:0 0 var(--s3); }
+
+  /* the two containers, each a bordered, softly-shadowed card */
+  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 460px;
+    gap:var(--s4); align-items:start; }
+  @media (max-width:1080px) { .fpage { grid-template-columns:1fr; } }
+  .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:0 1px 3px rgba(28,27,24,.05); }
+  .fread { padding:var(--s6) var(--s6) var(--s5); }
+  .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
+  .fread .fttl { font-size:24px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  .fread .fbody { font-size:var(--t-md); line-height:1.62; color:var(--ink-2); }
+  .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
+  .fread .fsteps { margin-top:var(--s5); }
+  .fread .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm);
+    padding-left:var(--s3); }
+  .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
+    color:var(--ink-4); display:block; margin-bottom:var(--s3); }
+
+  /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
+  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
+  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
+  .fpby b { font-weight:500; }
+  .fprun { font-size:var(--t-sm); color:var(--ink-4); margin-top:3px; }
+  .fprun .tsha { font-family:var(--mono); color:var(--ink-3); border:1px solid var(--hair);
+    border-radius:var(--r-sm); padding:0 4px; background:var(--paper); }
+  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
+  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
+  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
+  .frecwrap .rec { width:100%; max-width:320px; }
+  /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
+     header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
+  .fev { min-width:0; }
+  .fev .test, .fev .test:last-child { border-bottom:0; }
+  .fev .test.infocus { border:0; }
+  .fev .test.infocus > .th { display:none; }
+  .fev .test.infocus > .tbody { display:block; padding:0; }
+  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
+  .fev .test.infocus .trow2 .rec { display:none; }          /* relocated to .frecwrap below the strip */
+  .fev .test.infocus .trow2 .grow { display:none; }
+  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
+  .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
+  .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
+  .feval .pfstrip .pframe { width:320px; }                  /* larger stills than the columns' 210px */
+
+  /* the pager (prev · dots · next) stays under the two containers */
   .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s4); padding-bottom:var(--s3); }
   .fnav { width:36px; height:36px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
     color:var(--ink-2); font-size:16px; line-height:1; }
@@ -380,37 +419,26 @@ ins { color:var(--koke); text-decoration:none; }
   .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }
-  /* the focus card's PROOF footer: which flow proves it, and the actions that reach the evidence */
-  .fproof { margin-top:var(--s5); padding-top:var(--s4); border-top:1px solid var(--hair); }
-  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); }
-  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
-  .fpby b { font-weight:500; }
-  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
-  .facts { display:flex; gap:var(--s2); margin-top:var(--s4); }
-  /* THE PROOF, embedded (board R13/R14): the focus card carries the covering test's OWN row — its
-     controls, its scannable proof frames and its numbered steps — MOVED in from the columns, then
-     rendered FLAT like the reading layout so the reader takes in one whole test at a time. The proof
-     line replaces the test's own header; the recording thumbnail gives way to the frames; the controls
-     become a plain row. Scoped to .infocus, so the columns' own rows are untouched. */
-  .fphead { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
-  .fphead .fplbl { flex:none; }
-  .fphead .fpby { font-size:var(--t-md); color:var(--ink-2); }
-  .fphead .fpby b { font-weight:500; }
-  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
-  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
-  .fev { margin-top:var(--s2); }
-  .fev .test, .fev .test:last-child { border-bottom:0; }
-  .fev .test.infocus { border:0; }
-  .fev .test.infocus > .th { display:none; }                     /* the proof line above is the header now */
-  .fev .test.infocus > .tbody { display:block; padding:var(--s4) 0 0; }
-  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
-  .fev .test.infocus .trow2 .rec { display:none; }               /* the frames (R14) replace the thumbnail */
-  .fev .test.infocus .trow2 .grow { display:none; }
-  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
-  .fev .test.infocus .fold { margin-top:0; }
-  .fev .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
-    color:var(--ink-4); margin:var(--s5) 0 var(--s3); }
-  .fev .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm); }
+
+  /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
+  .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
+  .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:5px 14px; border:0; background:transparent;
+    color:var(--ink-3); cursor:pointer; letter-spacing:.02em; }
+  .viewseg .vseg + .vseg { border-left:1px solid var(--hair-2); }
+  .viewseg .vseg.on { background:var(--wash); color:var(--ink); font-weight:500; }
+
+  /* the LIST view — one compact line per requirement, a click opens it in Focus */
+  .listview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
+    border-radius:var(--r-md); overflow:hidden; width:100%; max-width:820px; margin:0 auto; }
+  .lrow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); border:0;
+    border-bottom:1px solid var(--hair); background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .lrow:last-child { border-bottom:0; }
+  .lrow:hover { background:var(--wash); }
+  .lrow .lrchip { flex:none; }
+  .lrow .lrid { font:var(--t-sm) var(--mono); color:var(--ink-3); width:34px; flex:none; }
+  .lrow .lrt { flex:1; min-width:0; font-size:var(--t-md); color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lrow .lrchev { color:var(--line3); font-size:15px; flex:none; }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
@@ -1360,14 +1388,14 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
   <div class="cards">
 <div class="card" data-screen="board" data-i="0"
-     data-waiting="0" data-q="board / one card per screen, not a row of cells the detail is two columns, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag few comprehensive tests — but never long-and-shallow specboard owns neither the wireframe nor the design no acceptance gate: requirements are the source of truth as written search across requirement text, grouped into areas a test opens to its full evidence, and can be run or watched the guide is the manager's story: without the tool, then with it the guide ends with the one next action, derived not stored the detail offers a focus reader: one requirement at a time, the columns a click away the proof is scannable as frames, not only as video">
+     data-waiting="0" data-q="board / one card per screen, not a row of cells the detail is two columns, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag few comprehensive tests — but never long-and-shallow specboard owns neither the wireframe nor the design no acceptance gate: requirements are the source of truth as written search across requirement text, grouped into areas a test opens to its full evidence, and can be run or watched the guide is the manager's story: without the tool, then with it the guide ends with the one next action, derived not stored three views of a screen's requirements: focus, list, columns the proof is scannable as frames, not only as video">
   <div class="cmain">
     <div class="cd"><span class="nm">Board</span>
       
       <span class="chip ok pcount"><span class="mark"></span>14 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=5de1a6abe86a" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=cc8a68542ffa" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -1377,7 +1405,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=831299adf134" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=b9fa924a16d3" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -1396,7 +1424,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=520009794f7b" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=060b050cb74f" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -1415,7 +1443,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is inventoried into rows: visited, screenshotted, nothing faked</li><li><span class="id">R3</span>A drafted PRD is marked as a guess until the human accepts it</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=961f08e45f4c" alt="Setup — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=4e46d01043d2" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>
@@ -2074,7 +2102,11 @@ ins { color:var(--koke); text-decoration:none; }
     <span class="m">14 requirements · 14 proven · spec/board/</span>
     <span class="grow"></span>
     <button class="btn pri runbtn" data-run="board">Run all<span class="kbd">r</span></button>
-    <button class="btn focusbtn" data-i="0">Focus</button>
+    <div class="viewseg" role="tablist" aria-label="View">
+      <button class="vseg" data-view="focus" data-i="0">Focus</button>
+      <button class="vseg" data-view="list" data-i="0">List</button>
+      <button class="vseg on" data-view="columns" data-i="0">Columns</button>
+    </div>
     <button class="btn turn nextw" data-i="0">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -2119,8 +2151,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R12</span><div class="rmain"><span class="rt">The guide ends with the one next action, derived not stored</span><div class="rhint">The walkthrough closes on a single next action for this project, derived from the tree on each build (config saved, rows exist, a prd.md dra…</div></div><span class="chev">›</span></div>
     <div class="body"><p>The walkthrough closes on a single next action for this project, derived from the tree on each build (config saved, rows exist, a prd.md drafted, a prd.md without <code>guess</code>, a requirement proven) — the same <code>journey()</code> derivation, with no six-step rail and nothing stored. A returning user opens the guide and sees their next concrete step (for example <code>/kg-deep &lt;screen&gt;</code>); when everything derivable is done, the CTA says so. There is no home-screen checklist.</p><p><em>Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.</em></p></div>
   </div><div class="req" data-r="R13" data-state="proven">
-    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R13</span><div class="rmain"><span class="rt">The detail offers a focus reader: one requirement at a time, the columns a click away</span><div class="rhint">The two-column detail (R2) is the default, but a &quot;Focus&quot; control opens a reader that shows one requirement at a time — its id, its state, it…</div></div><span class="chev">›</span></div>
-    <div class="body"><p>The two-column detail (R2) is the default, but a &quot;Focus&quot; control opens a reader that shows <strong>one requirement at a time</strong> — its id, its state, its title and full description, on its own — with a pager (prev · dots · next) to move between them and a &quot;Columns&quot; control to return to the two-column view. It is a way to <em>read</em> the requirements one-per-page for people who find the dense two columns hard to absorb at a glance; it adds no state and changes no requirement — the same derived states the columns show, one screenful each. Each card also carries its <strong>proof</strong> — not a link to it but the covering test's own evidence, <strong>embedded</strong>. It names the flow that proves it (or, honestly, that no test asserts it yet), and for a covered requirement the <em>very test row from the columns</em> is moved into the card and opened: its self-narrating recording (which burns expected-vs-got into its own frames), its Run / Watch / Logs / Steps controls, and its numbered story steps — so the reader takes in one whole test at a time rather than a teaser. A single <em>Open in columns</em> returns to the two-column view with that test open. It is the same node the columns show, moved and moved back, never a copy — so the focus reader duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.</p><p><em>Drafted 2026-08-11 on the human's direction (&quot;provide a less-text version — one requirement per page&quot;). Enriched 2026-08-13 (still the human's direction: &quot;don't hide too much — the card should show one whole test detail at once&quot;) so the card carries the WHOLE single-test detail — steps, recording, controls — by reusing the real column node, not a thin summary that hid what the two columns already showed. The default view stays the two columns; this is the opt-in focus reader. Wording awaits the human's gate; the test asserts behaviour.</em></p></div>
+    <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R13</span><div class="rmain"><span class="rt">Three views of a screen's requirements: Focus, List, Columns</span><div class="rhint">The detail header carries a three-way toggle — Focus / List / Columns — three views of the same requirements, storing nothing new.</div></div><span class="chev">›</span></div>
+    <div class="body"><p>The detail header carries a <strong>three-way toggle — Focus / List / Columns</strong> — three views of the same requirements, storing nothing new. <strong>Columns</strong> is the two-column default (R2). <strong>List</strong> is a compact index — one line per requirement (state · id · title) — to scan and jump into Focus from. <strong>Focus</strong> reads <strong>one requirement at a time</strong>, laid out as <strong>two containers</strong>: the <em>reading</em> on the left (its id, state, title, full description, and the flow step by step, this requirement's step highlighted) and the <em>evidence</em> on the right (the proof line — which flow proves it and its verdict, with the commit that result ran against — the Run / Watch / Logs / Steps controls, the scannable <strong>proof-frame strip</strong>, and the recording). A pager (prev · dots · next) moves between requirements; the toggle switches views — <strong>there is no in-reader Columns button</strong>, because the toggle already is one.</p><p>The evidence is not a link to the columns but the covering test's <strong>own row, moved in</strong> — its controls, its frame strip and its recording are the very wired nodes the columns show (its steps are shown on the left as a display clone, the moved node keeping the wired original), relocated and relocated back so the two columns are left whole. So the reader duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.</p><p><em>Drafted 2026-08-11 (&quot;provide a less-text version — one requirement per page&quot;); enriched 2026-08-13 to carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers (read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle that replaces the old in-reader Columns button. The default view stays the two columns. Wording awaits the human's gate; the test asserts behaviour.</em></p></div>
   </div><div class="req" data-r="R14" data-state="proven">
     <div class="h"><span class="chip ok" title="proven"><span class="mark"></span></span><span class="id">R14</span><div class="rmain"><span class="rt">The proof is scannable as frames, not only as video</span><div class="rhint">A reviewer shouldn't have to play a video to check a proven value.</div></div><span class="chev">›</span></div>
     <div class="body"><p>A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording, its <strong>proof frames</strong> are surfaced too — <strong>one still per checked value</strong>, taken from the recording at the instant that check fired (indexed by the run's own beat log), each carrying the same self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the ring on the exact value asserted. They show as a <strong>scannable strip</strong> — in the test's evidence and in the focus card — so a person verifies the asserted values by eye, in order, without pressing play; the <strong>video is reserved for what a still can't show</strong> — motion, a sequence, a dense flow. Because the frames are frames <em>of</em> the recording, they can never disagree with it: a run with no video simply has no strip, never a faked or separately-captured one.</p><p><em>Drafted 2026-08-12 on the human's direction and accepted the same turn: the recording is fast to trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the video kept for what a picture cannot carry. It amends R10's &quot;no separate screenshot column&quot; — the frames are the recording indexed, not a second capture, so the one-artifact rule still holds.</em></p></div>
@@ -2132,7 +2164,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Home lists every screen as a card</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">170ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">954ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" title="run only this test, headless">Run</button>
@@ -2153,7 +2185,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail opens as two independent columns</span><div class="tags"><span class="tag" data-r="R2">R2</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">150ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">242ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" title="run only this test, headless">Run</button>
@@ -2174,7 +2206,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement expands; a test leads with its flow name</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">234ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">265ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test, headless">Run</button>
@@ -2195,7 +2227,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">691ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">773ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself" title="run only this test, headless">Run</button>
@@ -2216,7 +2248,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Story-step evidence renders from the test definition</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">137ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">144ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Story-step evidence renders from the test definition" title="run only this test, headless">Run</button>
@@ -2243,7 +2275,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">132ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">189ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test, headless">Run</button>
@@ -2264,7 +2296,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">238ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">253ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test, headless">Run</button>
@@ -2285,7 +2317,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement names the tests that cover it</span><div class="tags"><span class="tag" data-r="R6">R6</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">146ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">144ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A requirement names the tests that cover it" title="run only this test, headless">Run</button>
@@ -2306,7 +2338,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail shows no wireframe or design affordance</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">124ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">123ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" title="run only this test, headless">Run</button>
@@ -2327,7 +2359,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">137ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">151ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test, headless">Run</button>
@@ -2344,32 +2376,32 @@ ins { color:var(--koke); text-decoration:none; }
   </div></div></div>
       <div class="tstlog" data-title="No acceptance gate — the detail is the two columns, nothing to accept"></div>
     </div>
-  </div><div class="test tst p" data-t="The detail offers a focus reader — one requirement per page, columns a click away" data-title="The detail offers a focus reader — one requirement per page, columns a click away">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail offers a focus reader — one requirement per page, columns a click away</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
+  </div><div class="test tst p" data-t="The detail offers a three-view toggle — Focus reads one requirement per page in two containers" data-title="The detail offers a three-view toggle — Focus reads one requirement per page in two containers">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail offers a three-view toggle — Focus reads one requirement per page in two containers</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">436ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">429ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="The detail offers a focus reader — one requirement per page, columns a click away" title="run only this test, headless">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="The detail offers a focus reader — one requirement per page, columns a click away" data-headed="1" title="watch only this test in a browser">Watch</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail offers a three-view toggle — Focus reads one requirement per page in two containers" title="run only this test, headless">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail offers a three-view toggle — Focus reads one requirement per page in two containers" data-headed="1" title="watch only this test in a browser">Watch</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
           <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
         </span>
       </div>
-      <div class="pfstrip" data-title="The detail offers a focus reader — one requirement per page, columns a click away"></div>
+      <div class="pfstrip" data-title="The detail offers a three-view toggle — Focus reads one requirement per page in two containers"></div>
       
-      <div class="fold"><div class="tststeps" data-title="The detail offers a focus reader — one requirement per page, columns a click away" data-planned="1"><div class="beat pending" data-step="prove" data-key="R13">
+      <div class="fold"><div class="tststeps" data-title="The detail offers a three-view toggle — Focus reads one requirement per page in two containers" data-planned="1"><div class="beat pending" data-step="prove" data-key="R13">
     <div class="bh"><span class="bnum">1</span><span class="bmk">○</span><span class="bid">R13</span><span class="blbl">R13</span><span class="bchev">›</span></div>
     <ul class="bdet" hidden></ul>
   </div></div></div>
-      <div class="tstlog" data-title="The detail offers a focus reader — one requirement per page, columns a click away"></div>
+      <div class="tstlog" data-title="The detail offers a three-view toggle — Focus reads one requirement per page in two containers"></div>
     </div>
   </div><div class="test tst p" data-t="The proof is scannable as frames, not only as video — a strip of stills per checked value" data-title="The proof is scannable as frames, not only as video — a strip of stills per checked value">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The proof is scannable as frames, not only as video — a strip of stills per checked value</span><div class="tags"><span class="tag" data-r="R14">R14</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">400ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">409ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The proof is scannable as frames, not only as video — a strip of stills per checked value" title="run only this test, headless">Run</button>
@@ -2390,7 +2422,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">168ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">181ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test, headless">Run</button>
@@ -2411,7 +2443,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">215ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">253ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" title="run only this test, headless">Run</button>
@@ -2432,7 +2464,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The guide opens as manager and staff — without, then with</span><div class="tags"><span class="tag" data-r="R11">R11</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">227ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">266ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The guide opens as manager and staff — without, then with" title="run only this test, headless">Run</button>
@@ -2453,7 +2485,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Acts 1 and 2 play once, hold, and stand still under reduced motion</span><div class="tags"><span class="tag" data-r="R11">R11</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">6.9s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">7.1s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Acts 1 and 2 play once, hold, and stand still under reduced motion" title="run only this test, headless">Run</button>
@@ -2495,7 +2527,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A deep-linked skill URL shows the skill detail on cold load</span><div class="tags"><span class="tag" data-r="R11">R11</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">131ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">128ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A deep-linked skill URL shows the skill detail on cold load" title="run only this test, headless">Run</button>
@@ -2516,7 +2548,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The guide ends with the derived next action, and there is no rail</span><div class="tags"><span class="tag" data-r="R12">R12</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">179ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">176ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The guide ends with the derived next action, and there is no rail" title="run only this test, headless">Run</button>
@@ -2536,6 +2568,51 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
     </div>
+    <div class="listview" hidden>
+  <button class="lrow" data-r="R1" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R1</span><span class="lrt">One card per screen, not a row of cells</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R2" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R2</span><span class="lrt">The detail is two columns, each scrolling on its own</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R3" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R3</span><span class="lrt">A requirement is a title that expands; a test is a title, a recording, and its tags</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R4" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R4</span><span class="lrt">Requirement state is computed and assertion-backed</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R5" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R5</span><span class="lrt">Requirements and tests are many-to-many, by tag</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R6" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R6</span><span class="lrt">Few comprehensive tests — but never long-and-shallow</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R7" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R7</span><span class="lrt">specboard owns neither the wireframe nor the design</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R8" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R8</span><span class="lrt">No acceptance gate: requirements are the source of truth as written</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R9" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R9</span><span class="lrt">Search across requirement text, grouped into areas</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R10" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R10</span><span class="lrt">A test opens to its full evidence, and can be run or watched</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R11" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R11</span><span class="lrt">The guide is the manager's story: without the tool, then with it</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R12" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R12</span><span class="lrt">The guide ends with the one next action, derived not stored</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R13" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R13</span><span class="lrt">Three views of a screen's requirements: Focus, List, Columns</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R14" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R14</span><span class="lrt">The proof is scannable as frames, not only as video</span><span class="lrchev">›</span>
+    </button>
+</div>
   </div>
 </section>
 <section class="dt" data-i="1" data-screen="conflicts" hidden>
@@ -2544,7 +2621,11 @@ ins { color:var(--koke); text-decoration:none; }
     <span class="m">5 requirements · 1 proven · spec/conflicts/</span>
     <span class="grow"></span>
     <button class="btn pri runbtn" data-run="conflicts">Run all<span class="kbd">r</span></button>
-    <button class="btn focusbtn" data-i="1">Focus</button>
+    <div class="viewseg" role="tablist" aria-label="View">
+      <button class="vseg" data-view="focus" data-i="1">Focus</button>
+      <button class="vseg" data-view="list" data-i="1">List</button>
+      <button class="vseg on" data-view="columns" data-i="1">Columns</button>
+    </div>
     <button class="btn turn nextw" data-i="1">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -2575,7 +2656,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R2 — both positions are shown in full, each naming where it came from</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">96ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">93ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R2 — both positions are shown in full, each naming where it came from" title="run only this test, headless">Run</button>
@@ -2593,7 +2674,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — the tool never picks: resolving is refused until you choose a side</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">130ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">118ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R3 — the tool never picks: resolving is refused until you choose a side" title="run only this test, headless">Run</button>
@@ -2611,7 +2692,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — resolving records which side lost, stays on Open, and offers the rewrite</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">469ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">449ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R4 — resolving records which side lost, stays on Open, and offers the rewrite" title="run only this test, headless">Run</button>
@@ -2632,7 +2713,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — a decision survives a rescan that reorders and swaps the sides</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">398ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">418ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — a decision survives a rescan that reorders and swaps the sides" title="run only this test, headless">Run</button>
@@ -2650,7 +2731,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — undo puts a settled conflict back, and the scanner is never asked to pick</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">952ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">757ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="conflicts" data-grep="R5 — undo puts a settled conflict back, and the scanner is never asked to pick" title="run only this test, headless">Run</button>
@@ -2670,6 +2751,24 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
     </div>
+    <div class="listview" hidden>
+  <button class="lrow" data-r="R1" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R1</span><span class="lrt">A conflict is one fact stated two incompatible ways</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R2" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R2</span><span class="lrt">Both positions are shown in full, with where each came from</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R3" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R3</span><span class="lrt">You pick which side is canon</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R4" data-state="proven">
+      <span class="chip ok lrchip"><span class="mark"></span>✓ proven</span>
+      <span class="lrid">R4</span><span class="lrt">Resolving dispatches the rewrite of the losing side</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R5" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R5</span><span class="lrt">Decisions survive a rescan</span><span class="lrchev">›</span>
+    </button>
+</div>
   </div>
 </section>
 <section class="dt" data-i="2" data-screen="dispatch" hidden>
@@ -2678,7 +2777,11 @@ ins { color:var(--koke); text-decoration:none; }
     <span class="m">8 requirements · 0 proven · spec/dispatch/</span>
     <span class="grow"></span>
     <button class="btn pri runbtn" data-run="dispatch">Run all<span class="kbd">r</span></button>
-    <button class="btn focusbtn" data-i="2">Focus</button>
+    <div class="viewseg" role="tablist" aria-label="View">
+      <button class="vseg" data-view="focus" data-i="2">Focus</button>
+      <button class="vseg" data-view="list" data-i="2">List</button>
+      <button class="vseg on" data-view="columns" data-i="2">Columns</button>
+    </div>
     <button class="btn turn nextw" data-i="2">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -2718,7 +2821,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1/R2 — the panel opens on the click and streams the job while it runs</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">27.8s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">26.4s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R1/R2 — the panel opens on the click and streams the job while it runs" title="run only this test, headless">Run</button>
@@ -2736,7 +2839,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — a person's second run takes over the running one: accepted, not refused</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">284ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">167ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R4 — a person's second run takes over the running one: accepted, not refused" title="run only this test, headless">Run</button>
@@ -2772,7 +2875,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">running one screen leaves every other screen's E2E result standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">23s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">21.7s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="running one screen leaves every other screen's E2E result standing" title="run only this test, headless">Run</button>
@@ -2790,7 +2893,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R6/R8 — a run saves its whole log, and records every test case on its own</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">199ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">20.4s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R6/R8 — a run saves its whole log, and records every test case on its own" title="run only this test, headless">Run</button>
@@ -2826,7 +2929,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — running ONE case leaves every other case's steps and log standing</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">23.4s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">23.7s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — running ONE case leaves every other case's steps and log standing" title="run only this test, headless">Run</button>
@@ -2862,7 +2965,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R8 — EVERY case that has run can expand its steps, not only the one you clicked</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">24.9s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">20.7s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R8 — EVERY case that has run can expand its steps, not only the one you clicked" title="run only this test, headless">Run</button>
@@ -2880,7 +2983,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the run panel offers no background run</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">129ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">112ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the run panel offers no background run" title="run only this test, headless">Run</button>
@@ -2898,7 +3001,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R7 — the panel and its log stay on screen after the run ends</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">25.3s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">23.3s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R7 — the panel and its log stay on screen after the run ends" title="run only this test, headless">Run</button>
@@ -2916,7 +3019,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — cancel stops the job, and cancelling nothing is refused not crashed</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">135ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">145ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="dispatch" data-grep="R5 — cancel stops the job, and cancelling nothing is refused not crashed" title="run only this test, headless">Run</button>
@@ -2933,6 +3036,33 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
     </div>
+    <div class="listview" hidden>
+  <button class="lrow" data-r="R1" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R1</span><span class="lrt">One panel per job, opened by the cell you clicked</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R2" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R2</span><span class="lrt">The work is visible while it runs</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R3" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R3</span><span class="lrt">Finishing updates the board without a reload</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R4" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R4</span><span class="lrt">One job at a time; a person's second job takes over, a nested run shares the slot</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R5" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R5</span><span class="lrt">Cancel actually stops it</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R6" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R6</span><span class="lrt">The whole log is kept, not just the verdict</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R7" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R7</span><span class="lrt">The panel stays open when the job ends</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R8" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R8</span><span class="lrt">A test run records each case on its own</span><span class="lrchev">›</span>
+    </button>
+</div>
   </div>
 </section>
 <section class="dt" data-i="3" data-screen="init" hidden>
@@ -2941,7 +3071,11 @@ ins { color:var(--koke); text-decoration:none; }
     <span class="m">5 requirements · 0 proven · spec/init/</span>
     <span class="grow"></span>
     <button class="btn pri runbtn" data-run="init">Run all<span class="kbd">r</span></button>
-    <button class="btn focusbtn" data-i="3">Focus</button>
+    <div class="viewseg" role="tablist" aria-label="View">
+      <button class="vseg" data-view="focus" data-i="3">Focus</button>
+      <button class="vseg" data-view="list" data-i="3">List</button>
+      <button class="vseg on" data-view="columns" data-i="3">Columns</button>
+    </div>
     <button class="btn turn nextw" data-i="3">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -2972,7 +3106,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the form persists what cannot be guessed, and reads it back</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">362ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">328ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the form persists what cannot be guessed, and reads it back" title="run only this test, headless">Run</button>
@@ -2990,7 +3124,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — the setup cards are single-column blocks, not the home two-column grid</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">157ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">109ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — the setup cards are single-column blocks, not the home two-column grid" title="run only this test, headless">Run</button>
@@ -3008,7 +3142,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R1 — start mode saves backend and frontend, in order</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">211ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">201ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R1 — start mode saves backend and frontend, in order" title="run only this test, headless">Run</button>
@@ -3026,7 +3160,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">140ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">135ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate" title="run only this test, headless">Run</button>
@@ -3044,7 +3178,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">99ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">92ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD" title="run only this test, headless">Run</button>
@@ -3062,7 +3196,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">R5 — rerunning marks new routes new and leaves a settled row alone</span><div class="tags"></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">162ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">160ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="init" data-grep="R5 — rerunning marks new routes new and leaves a settled row alone" title="run only this test, headless">Run</button>
@@ -3079,6 +3213,24 @@ ins { color:var(--koke); text-decoration:none; }
   </div>
 </div>
     </div>
+    <div class="listview" hidden>
+  <button class="lrow" data-r="R1" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R1</span><span class="lrt">Asks for what cannot be guessed, and nothing else</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R2" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R2</span><span class="lrt">An existing app is inventoried into rows: visited, screenshotted, nothing faked</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R3" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R3</span><span class="lrt">A drafted PRD is marked as a guess until the human accepts it</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R4" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R4</span><span class="lrt">An empty project is the same flow with nothing found</span><span class="lrchev">›</span>
+    </button><button class="lrow" data-r="R5" data-state="unproven">
+      <span class="chip gone lrchip"><span class="mark o"></span>○ unproven</span>
+      <span class="lrid">R5</span><span class="lrt">Rerunning finds new screens without touching settled ones</span><span class="lrchev">›</span>
+    </button>
+</div>
   </div>
 </section>
 
@@ -3178,6 +3330,11 @@ const B = window.__BOARD__ || {}
     const tp = dt.querySelector('.testpane'); if (tp) tp.id = 'testpane'
     document.querySelectorAll('.dbarhook').forEach(b => b.classList.remove('dbar'))
     const bar = dt.querySelector('.dbarhook'); if (bar) bar.classList.add('dbar')
+    // open in the default Columns view (R2): clear any reader left over, reset the toggle and panes
+    closeFocus()
+    dt.querySelectorAll('.viewseg .vseg').forEach(b => b.classList.toggle('on', b.dataset.view === 'columns'))
+    const lv = dt.querySelector('.listview'); if (lv) lv.hidden = true
+    const cx = dt.querySelector('.cols'); if (cx) cx.style.display = ''
     safeFit()
   }
   const open = (i, push = true) => {
@@ -3232,8 +3389,8 @@ const B = window.__BOARD__ || {}
   // closing the detail also tears down an open focus reader and restores the columns for next time
   function closeFocus () {
     for (const o of document.querySelectorAll('.focusov')) {
-      if (o._restore) o._restore()          // put any borrowed test rows back before tearing down —
-      // else o.remove() would destroy the real test node the columns still need
+      if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
+      // else o.remove() would destroy the real nodes the columns still need
       const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
       if (cx) cx.style.display = ''
       o.remove()
@@ -3242,86 +3399,69 @@ const B = window.__BOARD__ || {}
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
-  // THE FOCUS READER (board R13): replace the two columns with a one-requirement-per-page reader,
-  // built from the screen's own requirement rows, and put the columns back on "Columns". No new
-  // state — the same derived chips the columns show, one screenful each.
-  function buildFocus (dt) {
+  // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
+  // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
+  // recording). One of three views (Focus / List / Columns) switched by the header toggle; no in-reader
+  // Columns button. No new state — the same derived chips the columns show, one screenful each.
+  function buildFocus (dt, startId) {
     const cols = dt.querySelector('.cols'); const scroll = dt.querySelector('.dtscroll')
     if (!cols || !scroll) return
     const reqs = [].slice.call(dt.querySelectorAll('.reqpane .req')).map(function (r) {
       const idEl = r.querySelector('.id'); const ttlEl = r.querySelector('.rt'); const bodyEl = r.querySelector('.body')
-      // strip the row's own "no test asserts this yet" note — the proof footer below owns that now,
-      // so it is not shown twice
       let body = ''
       if (bodyEl) { const c = bodyEl.cloneNode(true); const cov = c.querySelector('.covers'); if (cov) cov.remove(); body = c.innerHTML }
-      return {
-        id: idEl ? idEl.textContent : '',
-        state: r.getAttribute('data-state') || 'unproven',
-        title: ttlEl ? ttlEl.textContent : '',
-        body: body
-      }
+      return { id: idEl ? idEl.textContent : '', state: r.getAttribute('data-state') || 'unproven',
+        title: ttlEl ? ttlEl.textContent : '', body: body }
     })
     if (!reqs.length) return
-    // THE PROOF SIDE. A requirement's proof is the test(s) that TAG it (the many-to-many wire, R5) —
-    // so the focus card can carry the same proof the columns show: which flow proves it, and the two
-    // actions that reach the evidence (the recording burns expected-vs-got into its own frames, R10).
     const tests = [].slice.call(dt.querySelectorAll('.testpane .test'))
     function coveringTests (rid) {
       return tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + rid + '"]') })
     }
-    // A covered requirement's card EMBEDS the covering test's OWN row — recording, Run/Watch/Logs/
-    // Steps controls, numbered steps, error — by MOVING the real node in. Never a clone: the play
-    // handler, the Logs/Steps windows and the folded pass/fail outcomes are all wired onto the LIVE
-    // node (properties and delegated listeners a clone would not carry). On leave the node is moved
-    // back to exactly where it was, so the two columns stay whole. This is R13's "reuse the columns'
-    // machinery, duplicate no player" taken literally: the card shows the very same node.
-    const borrowed = []
-    function borrow (node, host) {
-      borrowed.push({ node: node, parent: node.parentNode, next: node.nextSibling })
-      node.classList.add('open', 'infocus')   // open so its evidence shows; infocus flattens it for the card
+    // The RIGHT card MOVES the primary covering test's real node in (controls + frame strip stay wired —
+    // no rebuilt player, R13) and RELOCATES its recording below the strip; the LEFT card shows a CLONE
+    // of its steps (display-only — the moved node keeps the original, hidden, so the Steps window still
+    // reads it). All moves are tracked and undone on leave, so the two columns are left exactly whole.
+    const moved = []
+    function move (node, host, flatten) {
+      moved.push({ node: node, parent: node.parentNode, next: node.nextSibling })
+      if (flatten) node.classList.add('open', 'infocus')
       host.appendChild(node)
     }
-    // The card renders the moved test FLAT, like the reading layout: a short uppercase section label
-    // above the frame strip and above the step flow. Injected into the moved node and stripped on
-    // restore, so the columns' own row is left exactly as it was.
-    function insertLabel (el, text) {
+    function insertLabel (el, text) {   // a section label injected INTO the moved node, stripped on leave
       const prev = el.previousElementSibling
       if (prev && prev.classList.contains('flabel')) { prev.textContent = text; return }
       const l = document.createElement('div'); l.className = 'flabel'; l.textContent = text
       el.parentNode.insertBefore(l, el)
     }
-    function restoreBorrowed () {
-      // reverse order so a saved sibling is back in place before the node that anchors to it
-      for (let k = borrowed.length - 1; k >= 0; k--) {
-        const b = borrowed[k]
-        if (b.node.querySelectorAll) {
-          b.node.querySelectorAll('.flabel').forEach(function (el) { el.remove() })
-          b.node.querySelectorAll('.fhere').forEach(function (el) { el.classList.remove('fhere') })
-        }
-        b.node.classList.remove('open', 'infocus')
+    function restoreMoved () {
+      // reverse order so a node whose parent is inside another moved node is put back first
+      for (let k = moved.length - 1; k >= 0; k--) {
+        const b = moved[k]
+        if (b.node.querySelectorAll) b.node.querySelectorAll('.flabel').forEach(function (el) { el.remove() })
+        if (b.node.classList) b.node.classList.remove('open', 'infocus')
         if (b.next && b.next.parentNode === b.parent) b.parent.insertBefore(b.node, b.next)
         else if (b.parent) b.parent.appendChild(b.node)
       }
-      borrowed.length = 0
+      moved.length = 0
     }
-    // The one secondary action: restore the columns and open the covering test there (reusing its own
-    // open/play handlers — no duplicated player). Puts any borrowed node back first, THEN opens it.
-    function openInColumns (testEl, play) {
-      restoreBorrowed()
-      ov.remove(); cols.style.display = ''
-      if (!testEl) return
-      testEl.classList.add('open')
-      testEl.scrollIntoView({ block: 'center' })
-      if (play) { const rec = testEl.querySelector('.rec'); if (rec && rec.classList.contains('playable')) rec.click() }
-    }
-    let cur = 0
+    let cur = Math.max(0, reqs.findIndex(function (r) { return r.id === startId }))
     const ov = document.createElement('div'); ov.className = 'focusov'
-    ov._restore = restoreBorrowed          // closeFocus / detail-close use this to reclaim borrowed rows
-    const head = document.createElement('div'); head.className = 'foch'
+    ov._restore = restoreMoved          // closeFocus / detail-close use this to reclaim the moved nodes
+    // a vertical wheel over the screenshot strip scrolls the STRIP sideways, not the page — so scanning
+    // the stills never moves the requirement out from under you (the page takes over only at the ends)
+    ov.addEventListener('wheel', function (e) {
+      const strip = e.target.closest && e.target.closest('.pfstrip')
+      if (!strip || !e.deltaY) return
+      const before = strip.scrollLeft; strip.scrollLeft += e.deltaY
+      if (strip.scrollLeft !== before) e.preventDefault()
+    }, { passive: false })
+    const head = document.createElement('div'); head.className = 'fhead'
+    const fid = document.createElement('span'); fid.className = 'fid'
+    const fchip = document.createElement('span'); fchip.className = 'fchip'
     const count = document.createElement('span'); count.className = 'fcount'
-    const back = document.createElement('button'); back.className = 'btn fcols'; back.textContent = 'Columns'
-    head.appendChild(count); head.appendChild(back)
-    const card = document.createElement('div'); card.className = 'fcard'
+    head.appendChild(fid); head.appendChild(fchip); head.appendChild(count)
+    const page = document.createElement('div'); page.className = 'fpage'
     const pager = document.createElement('div'); pager.className = 'fpager'
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
     const dots = document.createElement('div'); dots.className = 'fdots'
@@ -3329,67 +3469,74 @@ const B = window.__BOARD__ || {}
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
     function render () {
       const r = reqs[cur]
-      restoreBorrowed()          // reclaim the previous card's embedded test row BEFORE wiping the card,
-      card.innerHTML = ''        // else innerHTML='' would destroy the real node the columns still need
-      const top = document.createElement('div'); top.className = 'ftop'
-      const idEl = document.createElement('span'); idEl.className = 'fid'; idEl.textContent = r.id
-      const chip = document.createElement('span'); chip.className = 'fchip ' + r.state
-      chip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
-      top.appendChild(idEl); top.appendChild(chip)
-      const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
-      const b = document.createElement('div'); b.className = 'fbody'; b.innerHTML = r.body
-      card.appendChild(top); card.appendChild(h); card.appendChild(b)
+      restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
+      page.innerHTML = ''     // would destroy the real nodes the columns still need
+      fid.textContent = r.id
+      fchip.className = 'fchip ' + r.state
+      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
 
-      // THE PROOF — the whole single-test detail, not a link to it. A requirement a test tags carries
-      // that test's OWN evidence embedded below (recording, Run/Watch/Logs/Steps, numbered steps); one
-      // that nothing tags says so honestly (rule 3). The proof line is COVERAGE-honest, not state-gated:
-      // a tagged-but-ungreen requirement still names its flow rather than claiming no test touches it.
+      // LEFT — the reading
+      const read = document.createElement('div'); read.className = 'fread'
+      const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
+      const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
+      read.appendChild(h); read.appendChild(body)
+
+      // RIGHT — the evidence
+      const evl = document.createElement('div'); evl.className = 'feval'
       const cov = coveringTests(r.id)
       const flows = cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
-      const proof = document.createElement('div'); proof.className = 'fproof'
       if (cov.length) {
-        // ONE proof line and ONE flow's evidence — the reading view shows the PRIMARY covering test in
-        // full and names any others (the columns carry every one). The line reads "proved by <flow> ·
-        // <verdict>", the verdict off that test's own pass/fail; "proved by" only when it actually is,
-        // else "covered by … — not proven yet", so the word never overstates the green (rules 2 and 3).
         const primary = cov[0]
         const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
         const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
-        const head = document.createElement('div'); head.className = 'fphead'
-        const plbl = document.createElement('span'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
-        const by = document.createElement('span'); by.className = 'fpby'
-        by.innerHTML = (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+        // proof line — "proved by <flow> · <verdict>"; only "proved by" when it actually is (rules 2/3)
+        const ph = document.createElement('div'); ph.className = 'fphead'
+        ph.innerHTML = '<span class="fplbl">The proof</span>' +
+          '<div class="fpby">' + (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
           (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
-          (r.state === 'proven' ? '' : ' — not proven yet')
-        head.appendChild(plbl); head.appendChild(by); proof.appendChild(head)
-        // the primary covering test's REAL row, MOVED in and opened, then flattened: its controls become
-        // a plain row, its recording gives way to the scannable frames, and its step flow is labelled —
-        // the evidence itself, wired and whole, never a rebuilt player (R13's "duplicate no player").
+          (r.state === 'proven' ? '' : ' — not proven yet') + '</div>'
+        // the commit the result ran against (dispatch R8), read off the test's own meta chip
+        const shaEl = primary.querySelector('.tmeta .tsha')
+        if (shaEl && shaEl.textContent) {
+          const run = document.createElement('div'); run.className = 'fprun'
+          run.innerHTML = 'last run · <span class="tsha">' + eh(shaEl.textContent) + '</span>'
+          ph.appendChild(run)
+        }
+        evl.appendChild(ph)
+        // the moved test node — flattened to controls + frame strip (its header/steps/log hidden)
         const ev = document.createElement('div'); ev.className = 'fev'
-        proof.appendChild(ev)
-        borrow(primary, ev)
+        evl.appendChild(ev)
+        move(primary, ev, true)
         const strip = primary.querySelector('.pfstrip')
         if (strip && strip.children.length) insertLabel(strip, 'Proof frames — one still per check, scan to verify')
-        const fold = primary.querySelector('.fold')
-        if (fold) insertLabel(fold, 'The flow, step by step')
-        // highlight the beat that proves THIS requirement, so the reader's eye lands on its own step
-        const here = primary.querySelector('.beat[data-key="' + r.id + '"]')
-        if (here) here.classList.add('fhere')
-        // one quiet secondary action: see it back among the two columns, that test open (R13's "open the test")
-        const acts = document.createElement('div'); acts.className = 'facts'
-        const open = document.createElement('button'); open.className = 'btn sm fopen'; open.textContent = 'Open in columns ↗'
-        open.addEventListener('click', function () { openInColumns(primary, false) })
-        acts.appendChild(open); proof.appendChild(acts)
+        // the recording, RELOCATED below the strip (its play onclick survives the move) — only when it
+        // actually has one (a still or a playable video), so a video-less run shows no empty box
+        const rec = primary.querySelector('.rec')
+        if (rec && (rec.classList.contains('playable') || rec.style.backgroundImage)) {
+          const rw = document.createElement('div'); rw.className = 'frecwrap'
+          const rl = document.createElement('div'); rl.className = 'flabel'; rl.textContent = 'The recording'
+          rw.appendChild(rl); evl.appendChild(rw); move(rec, rw, false)
+        }
+        // LEFT gets the steps as a CLONE (display-only) — the moved node keeps the wired original
+        const steps = primary.querySelector('.tststeps')
+        if (steps) {
+          const fs = document.createElement('div'); fs.className = 'fsteps'
+          const sl = document.createElement('div'); sl.className = 'flabel'; sl.textContent = 'The flow, step by step'
+          const clone = steps.cloneNode(true); clone.classList.add('fstepclone')
+          const hereBeat = clone.querySelector('.beat[data-key="' + r.id + '"]')
+          if (hereBeat) hereBeat.classList.add('fhere')
+          fs.appendChild(sl); fs.appendChild(clone); read.appendChild(fs)
+        }
       } else {
-        const plbl = document.createElement('div'); plbl.className = 'fplbl'; plbl.textContent = 'The proof'
-        const none = document.createElement('div'); none.className = 'fpnone'
-        none.textContent = 'No test asserts this yet — honestly ungreen, not hidden.'
-        proof.appendChild(plbl); proof.appendChild(none)
+        const ph = document.createElement('div'); ph.className = 'fphead'
+        ph.innerHTML = '<span class="fplbl">The proof</span>' +
+          '<div class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</div>'
+        evl.appendChild(ph)
       }
-      card.appendChild(proof)
+      page.appendChild(read); page.appendChild(evl)
 
-      count.textContent = r.id + ' · ' + (cur + 1) + ' of ' + reqs.length
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''
       reqs.forEach(function (rr, i) {
@@ -3401,12 +3548,26 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    back.addEventListener('click', function () { restoreBorrowed(); ov.remove(); cols.style.display = '' })
-    ov.appendChild(head); ov.appendChild(card); ov.appendChild(pager)
+    ov.appendChild(head); ov.appendChild(page); ov.appendChild(pager)
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
-  for (const fb of document.querySelectorAll('.focusbtn'))
-    fb.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) { closeFocus(); buildFocus(dt) } })
+
+  // THE THREE-VIEW TOGGLE (board R13): Focus / List / Columns, one segmented control in the detail
+  // header. Columns is the default (R2); Focus opens the reader, List the compact index. Switching
+  // tears down any open reader (restoring its moved nodes) — there is no in-reader Columns button.
+  function setView (dt, view, startId) {
+    const cx = dt.querySelector('.cols'); const lv = dt.querySelector('.listview')
+    dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
+    closeFocus()
+    if (view === 'list') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = false }
+    else if (view === 'focus') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = true; buildFocus(dt, startId) }
+    else { if (cx) cx.style.display = ''; if (lv) lv.hidden = true }   // columns (default)
+  }
+  for (const b of document.querySelectorAll('.viewseg .vseg'))
+    b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })
+  // a List row opens that requirement straight into Focus
+  for (const b of document.querySelectorAll('.lrow'))
+    b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, 'focus', e.currentTarget.dataset.r) })
 
   // A requirement is a title that EXPANDS to its full description (board R3); a test collapses to a
   // title + tags + status and opens to its evidence (R10). One click on the header toggles either.

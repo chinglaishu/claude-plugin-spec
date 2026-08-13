@@ -160,6 +160,20 @@ const reqPane = s => `<div class="pane reqpane">
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
+// The LIST view (board R13): the screen's requirements as one compact line each — state, id, title —
+// a quick index to scan and jump into Focus from. It is one of THREE views of the same requirements
+// (Focus, List, Columns), switched by the header toggle; it stores nothing new.
+const LIST_CHIP = { proven: ['ok', 'mark', '✓ proven'], unproven: ['gone', 'mark o', '○ unproven'] }
+const listPane = s => `<div class="listview" hidden>
+  ${s.reqs.map(r => {
+    const [tone, mark, label] = LIST_CHIP[r.state] || LIST_CHIP.unproven
+    return `<button class="lrow" data-r="${esc(r.id)}" data-state="${r.state}">
+      <span class="chip ${tone} lrchip"><span class="${mark}"></span>${label}</span>
+      <span class="lrid">${esc(r.id)}</span><span class="lrt">${esc(r.title)}</span><span class="lrchev">›</span>
+    </button>`
+  }).join('')}
+</div>`
+
 // One PLANNED story step, baked from the test's definition (board R10) so it shows before the test
 // has run. It renders "pending" (a hollow mark); loadRuns overlays the recorded outcome — passed,
 // failed, or not-reached. A flow step carries its author sentence; a prove step carries the
@@ -1155,7 +1169,11 @@ export function build () {
     <span class="m">${s.reqs.length} requirement${s.reqs.length === 1 ? '' : 's'} · ${s.reqs.filter(r => r.state === 'proven').length} proven · spec/${esc(s.name)}/</span>
     <span class="grow"></span>
     ${runAll(s.name)}
-    <button class="btn focusbtn" data-i="${i}">Focus</button>
+    <div class="viewseg" role="tablist" aria-label="View">
+      <button class="vseg" data-view="focus" data-i="${i}">Focus</button>
+      <button class="vseg" data-view="list" data-i="${i}">List</button>
+      <button class="vseg on" data-view="columns" data-i="${i}">Columns</button>
+    </div>
     <button class="btn turn nextw" data-i="${i}">Next waiting →<span class="kbd">j</span></button>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -1164,6 +1182,7 @@ export function build () {
       ${reqPane(s)}
       ${testPane(s)}
     </div>
+    ${listPane(s)}
   </div>
 </section>`).join('')
 
@@ -1295,23 +1314,62 @@ export function build () {
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
 
-  /* THE FOCUS READER (board R13): one requirement per page, the columns a click away. It replaces the
-     .cols in the same content area — a calm single card so a dense two-column screen becomes readable
-     one screenful at a time. No new state; the same derived chips the columns show. */
-  .focusov { width:100%; max-width:760px; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
-  .foch { flex:none; display:flex; align-items:center; gap:var(--s3); }
-  .foch .fcount { font:var(--t-xs) var(--mono); color:var(--ink-4); }
-  .foch .fcols { margin-left:auto; }
-  .fcard { flex:1; min-height:0; overflow-y:auto; background:var(--card); border:1px solid var(--hair);
-    border-radius:var(--r-md); padding:var(--s6) var(--s6) var(--s5); }
-  .fcard .ftop { display:flex; align-items:center; gap:var(--s3); }
-  .fcard .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
+     description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
+     screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
+     the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
+  .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
+  .fhead { flex:none; display:flex; align-items:center; gap:var(--s3); }
+  .fhead .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  .fhead .fcount { margin-left:auto; font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
-  .fcard .fttl { font-size:26px; line-height:1.25; letter-spacing:-.02em; margin:var(--s3) 0 var(--s4); }
-  .fcard .fbody { font-size:var(--t-lg); line-height:1.65; color:var(--ink-2); max-width:60ch; }
-  .fcard .fbody p { margin:0 0 var(--s3); }
+
+  /* the two containers, each a bordered, softly-shadowed card */
+  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 460px;
+    gap:var(--s4); align-items:start; }
+  @media (max-width:1080px) { .fpage { grid-template-columns:1fr; } }
+  .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:0 1px 3px rgba(28,27,24,.05); }
+  .fread { padding:var(--s6) var(--s6) var(--s5); }
+  .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
+  .fread .fttl { font-size:24px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  .fread .fbody { font-size:var(--t-md); line-height:1.62; color:var(--ink-2); }
+  .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
+  .fread .fsteps { margin-top:var(--s5); }
+  .fread .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm);
+    padding-left:var(--s3); }
+  .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
+    color:var(--ink-4); display:block; margin-bottom:var(--s3); }
+
+  /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
+  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
+  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
+  .fpby b { font-weight:500; }
+  .fprun { font-size:var(--t-sm); color:var(--ink-4); margin-top:3px; }
+  .fprun .tsha { font-family:var(--mono); color:var(--ink-3); border:1px solid var(--hair);
+    border-radius:var(--r-sm); padding:0 4px; background:var(--paper); }
+  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
+  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
+  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
+  .frecwrap .rec { width:100%; max-width:320px; }
+  /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
+     header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
+  .fev { min-width:0; }
+  .fev .test, .fev .test:last-child { border-bottom:0; }
+  .fev .test.infocus { border:0; }
+  .fev .test.infocus > .th { display:none; }
+  .fev .test.infocus > .tbody { display:block; padding:0; }
+  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
+  .fev .test.infocus .trow2 .rec { display:none; }          /* relocated to .frecwrap below the strip */
+  .fev .test.infocus .trow2 .grow { display:none; }
+  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
+  .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
+  .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
+  .feval .pfstrip .pframe { width:320px; }                  /* larger stills than the columns' 210px */
+
+  /* the pager (prev · dots · next) stays under the two containers */
   .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s4); padding-bottom:var(--s3); }
   .fnav { width:36px; height:36px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
     color:var(--ink-2); font-size:16px; line-height:1; }
@@ -1322,37 +1380,26 @@ export function build () {
   .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }
-  /* the focus card's PROOF footer: which flow proves it, and the actions that reach the evidence */
-  .fproof { margin-top:var(--s5); padding-top:var(--s4); border-top:1px solid var(--hair); }
-  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); }
-  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
-  .fpby b { font-weight:500; }
-  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
-  .facts { display:flex; gap:var(--s2); margin-top:var(--s4); }
-  /* THE PROOF, embedded (board R13/R14): the focus card carries the covering test's OWN row — its
-     controls, its scannable proof frames and its numbered steps — MOVED in from the columns, then
-     rendered FLAT like the reading layout so the reader takes in one whole test at a time. The proof
-     line replaces the test's own header; the recording thumbnail gives way to the frames; the controls
-     become a plain row. Scoped to .infocus, so the columns' own rows are untouched. */
-  .fphead { display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
-  .fphead .fplbl { flex:none; }
-  .fphead .fpby { font-size:var(--t-md); color:var(--ink-2); }
-  .fphead .fpby b { font-weight:500; }
-  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
-  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
-  .fev { margin-top:var(--s2); }
-  .fev .test, .fev .test:last-child { border-bottom:0; }
-  .fev .test.infocus { border:0; }
-  .fev .test.infocus > .th { display:none; }                     /* the proof line above is the header now */
-  .fev .test.infocus > .tbody { display:block; padding:var(--s4) 0 0; }
-  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
-  .fev .test.infocus .trow2 .rec { display:none; }               /* the frames (R14) replace the thumbnail */
-  .fev .test.infocus .trow2 .grow { display:none; }
-  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
-  .fev .test.infocus .fold { margin-top:0; }
-  .fev .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
-    color:var(--ink-4); margin:var(--s5) 0 var(--s3); }
-  .fev .beat.fhere { background:var(--wash); box-shadow:inset 3px 0 0 var(--ink-3); border-radius:var(--r-sm); }
+
+  /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
+  .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
+  .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:5px 14px; border:0; background:transparent;
+    color:var(--ink-3); cursor:pointer; letter-spacing:.02em; }
+  .viewseg .vseg + .vseg { border-left:1px solid var(--hair-2); }
+  .viewseg .vseg.on { background:var(--wash); color:var(--ink); font-weight:500; }
+
+  /* the LIST view — one compact line per requirement, a click opens it in Focus */
+  .listview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
+    border-radius:var(--r-md); overflow:hidden; width:100%; max-width:820px; margin:0 auto; }
+  .lrow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); border:0;
+    border-bottom:1px solid var(--hair); background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .lrow:last-child { border-bottom:0; }
+  .lrow:hover { background:var(--wash); }
+  .lrow .lrchip { flex:none; }
+  .lrow .lrid { font:var(--t-sm) var(--mono); color:var(--ink-3); width:34px; flex:none; }
+  .lrow .lrt { flex:1; min-width:0; font-size:var(--t-md); color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lrow .lrchev { color:var(--line3); font-size:15px; flex:none; }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
