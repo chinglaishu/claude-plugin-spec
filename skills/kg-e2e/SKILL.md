@@ -31,9 +31,14 @@ covers. Two helpers, both imported from `'../_base'`:
 `checkReq` also **narrates the recording**: it paints a topbar into the page under test naming the
 requirement being proven (id + title from the PRD), turning red on a failing check — so the video
 explains itself. Two optional helpers put the *numbers* on that bar, from `'../_base'` too:
-**`hudCheck(label, expected, actual)`** announces the current check's expected vs actual values, and
-**`hudNote(text)`** shows a freeform sentence. Never paint your own captions or overlays into the
-page — one consistent topbar, always in the same place, is the contract.
+**`hudCheck(label, expected, actual)`** paints the current check's expected vs actual values on the bar
+AND **asserts** them — it is a check, not a caption, so it throws on a mismatch. **Use it AS the
+assertion for every value you show**; do not pair it with a separate `expect()` on the same value. The
+trap it prevents: a display-only check plus a divergent `expect()` let a red run's bar show a
+passing-looking "expected 9% · got 9%" while some *other* `expect()` was the real failure — so the bar
+lied about why it broke. With `hudCheck` asserting, the bar always shows the check that actually failed.
+**`hudNote(text)`** shows a freeform sentence (no assertion). Never paint your own captions or overlays
+into the page — one consistent topbar, always in the same place, is the contract.
 
 That yields the three states the board derives per requirement: **pass** (a `proves` step ran and did
 not error), **fail** (it ran and errored), **not-reached** (declared in `coverReqs` but its step

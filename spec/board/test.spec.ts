@@ -549,6 +549,18 @@ test('A finished run refreshes the board in place — no reload, the panel stays
   })
 })
 
+// hudCheck is a CHECK, not a caption: it ASSERTS the got-vs-expected it paints on the recording's
+// topbar. Without this a red run could show a passing-looking "expected 9% · got 9%" while a SEPARATE
+// expect() elsewhere was the real failure — the confusing bar this guards against. (Harness guarantee,
+// so it lives here where the board's own recordings depend on it; no requirement of its own.)
+test('hudCheck asserts the value it paints — a mismatch throws, a match does not', async ({ page }) => {
+  await page.goto('/')
+  let threw = false
+  try { await hudCheck('deliberate mismatch', 'expected-A', 'got-B') } catch { threw = true }
+  expect(threw, 'hudCheck must throw when got !== expected').toBe(true)
+  await hudCheck('a real match', 'X', 'X')   // a matching check never throws
+})
+
 test('Searching requirement text hides groups that miss', async ({ page }) => {
   await coverReqs('R9')
   await checkReq('R9', async () => {

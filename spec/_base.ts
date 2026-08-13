@@ -460,10 +460,17 @@ async function emitNote (text: string): Promise<void> {
 }
 // Announce the got vs expected values of the current check — as the structured CLAIM (two prominent
 // values) on the bar, and the full got/expected line as board evidence.
+// hudCheck paints a got-vs-expected CLAIM on the recording's topbar AND asserts it. It is a CHECK, not
+// a caption: the value you show is the value you prove, so a red run's bar can never display a
+// passing-looking claim while some *separate* expect() elsewhere is the thing that actually broke (the
+// confusing "expected 9% · got 9%" under a red banner). Assert LAST — after the paint — so the failing
+// value is burned into the frame before the throw, and the enclosing checkReq/flowStep records it.
 export async function hudCheck (label: string, expected: unknown, actual: unknown): Promise<void> {
-  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok: String(expected) === String(actual) }
+  const ok = String(expected) === String(actual)
+  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok }
   await emitNote(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
   await paintHud({})
+  expect(String(actual), String(label)).toBe(String(expected))
 }
 // Freeform variant, for a sentence the author wants on the bar (shown on the note line).
 export async function hudNote (text: string): Promise<void> {
