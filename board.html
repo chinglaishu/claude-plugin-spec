@@ -450,10 +450,15 @@ ins { color:var(--koke); text-decoration:none; }
   .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
   .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */
 
-  /* the pager (prev · dots · next) stays under the two containers */
-  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); padding-bottom:0; }
-  .fnav { width:28px; height:28px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-2); font-size:14px; line-height:1; }
+  /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
+     page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
+     than floating on the background. Short, and its dots vertically centred. Focus-only (hidden else). */
+  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:6px var(--s6);
+    background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
+  .dtfoot[hidden] { display:none; }
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); }
+  .fnav { width:24px; height:24px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+    color:var(--ink-2); font-size:13px; line-height:1; }
   .fnav:disabled { opacity:.35; cursor:default; }
   .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
   /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */
@@ -1450,7 +1455,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=b57a294633fa" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=055b017dc414" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -2667,6 +2672,7 @@ ins { color:var(--koke); text-decoration:none; }
     </button>
 </div>
   </div>
+  <div class="dtfoot" hidden></div>
 </section>
 <section class="dt" data-i="1" data-screen="conflicts" hidden>
   <div class="dth dbarhook">
@@ -2821,6 +2827,7 @@ ins { color:var(--koke); text-decoration:none; }
     </button>
 </div>
   </div>
+  <div class="dtfoot" hidden></div>
 </section>
 <section class="dt" data-i="2" data-screen="dispatch" hidden>
   <div class="dth dbarhook">
@@ -3113,6 +3120,7 @@ ins { color:var(--koke); text-decoration:none; }
     </button>
 </div>
   </div>
+  <div class="dtfoot" hidden></div>
 </section>
 <section class="dt" data-i="3" data-screen="init" hidden>
   <div class="dth dbarhook">
@@ -3279,6 +3287,7 @@ ins { color:var(--koke); text-decoration:none; }
     </button>
 </div>
   </div>
+  <div class="dtfoot" hidden></div>
 </section>
 
 <script>window.__BOARD__ = {"screens":["board","conflicts","dispatch","init"],"skillIds":["kg-init","kg-deep","kg-e2e","kg-staff","kg-update"],"waiting":[]}</script>
@@ -3440,6 +3449,8 @@ const B = window.__BOARD__ || {}
       // else o.remove() would destroy the real nodes the columns still need
       const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
       if (cx) cx.style.display = ''
+      const foot = dtx && dtx.querySelector('.dtfoot')   // the pager lived here — clear and hide the footer
+      if (foot) { foot.innerHTML = ''; foot.hidden = true }
       o.remove()
     }
   }
@@ -3642,7 +3653,11 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    ov.appendChild(page); ov.appendChild(pager)
+    ov.appendChild(page)
+    // the pager lives in the detail's full-width FOOTER BAR (board R13), not inside the reader, so it
+    // reads as its own strip; shown only while focus is open, cleared by closeFocus
+    const foot = dt.querySelector('.dtfoot')
+    if (foot) { foot.innerHTML = ''; foot.appendChild(pager); foot.hidden = false }
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
 

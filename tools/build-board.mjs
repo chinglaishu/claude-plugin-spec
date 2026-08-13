@@ -1182,6 +1182,7 @@ export function build () {
     </div>
     ${listPane(s)}
   </div>
+  <div class="dtfoot" hidden></div>
 </section>`).join('')
 
   // The client behaviour lives in tools/board/client.js now — real JavaScript, not a string inside
@@ -1409,10 +1410,15 @@ export function build () {
   .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
   .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */
 
-  /* the pager (prev · dots · next) stays under the two containers */
-  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); padding-bottom:0; }
-  .fnav { width:28px; height:28px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-2); font-size:14px; line-height:1; }
+  /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
+     page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
+     than floating on the background. Short, and its dots vertically centred. Focus-only (hidden else). */
+  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:6px var(--s6);
+    background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
+  .dtfoot[hidden] { display:none; }
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); }
+  .fnav { width:24px; height:24px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+    color:var(--ink-2); font-size:13px; line-height:1; }
   .fnav:disabled { opacity:.35; cursor:default; }
   .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
   /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */

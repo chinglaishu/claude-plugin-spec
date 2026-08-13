@@ -416,11 +416,11 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
     // a pager of dots, capped at ten (a sliding window when a screen has more); next advances to a
-    // different requirement
-    const dots = ov.locator('.fdots .fdot')
+    // different requirement. The pager rides the detail's footer bar (dt), not the reader (ov).
+    const dots = dt.locator('.dtfoot .fdots .fdot')
     await expect(dots).toHaveCount(Math.min(reqCount, 10))
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
-    await ov.locator('.fnav.next').click()
+    await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
 
     // COLUMNS → back to the two columns; the moved test node is whole again in the pane
@@ -503,7 +503,7 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
     // rides along — R1's reader shows the same stills, without opening the columns.
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const ov = dt.locator('.focusov')
-    await ov.locator('.fdot[title^="R1 "]').click()             // "R1 —…" (the trailing space excludes R10+)
+    await dt.locator('.dtfoot .fdot[title^="R1 "]').click()     // "R1 —…" (the trailing space excludes R10+); pager is in the footer
     await expect(ov.locator('.feval .fev .pfstrip .pframe')).toHaveCount(3)
     await expect(ov.locator('.feval .fev .pframe.bad')).toHaveCount(1)
     // the strip carries no label now (#5 — the stills speak for themselves) and the moved test's own

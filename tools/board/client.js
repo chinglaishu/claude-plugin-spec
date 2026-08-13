@@ -156,6 +156,8 @@ const B = window.__BOARD__ || {}
       // else o.remove() would destroy the real nodes the columns still need
       const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
       if (cx) cx.style.display = ''
+      const foot = dtx && dtx.querySelector('.dtfoot')   // the pager lived here — clear and hide the footer
+      if (foot) { foot.innerHTML = ''; foot.hidden = true }
       o.remove()
     }
   }
@@ -358,7 +360,11 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    ov.appendChild(page); ov.appendChild(pager)
+    ov.appendChild(page)
+    // the pager lives in the detail's full-width FOOTER BAR (board R13), not inside the reader, so it
+    // reads as its own strip; shown only while focus is open, cleared by closeFocus
+    const foot = dt.querySelector('.dtfoot')
+    if (foot) { foot.innerHTML = ''; foot.appendChild(pager); foot.hidden = false }
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
 
