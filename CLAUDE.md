@@ -189,6 +189,17 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
   own coverage folds at that run's end). The standing rule survives the mechanism change: never drop a
   PRD's `guess:` flag, or edit a requirement's wording just to make its test go green — that is still
   the human's call, not yours.
+- **The Focus reader BORROWS a test node out of `.testpane`, but `loadRuns` only folds `.testpane`.**
+  The reader (board R13) MOVES the primary covering test's real node into the evidence card (and now,
+  since Focus is the default view, it does so the instant a screen opens — before `loadRuns`'s async
+  fetch returns). `loadRuns` walks `.testpane` to fill each case's recording/frames/steps, so a node
+  that is out in the reader is SKIPPED and left stale — on a fresh deep-link the reader shows a blank
+  recording until you navigate away. Fix, kept: `loadRuns` closes the reader first (node back in the
+  pane), folds every case, then reopens the reader on the same requirement (`ov._curId`). Any code
+  that opens the reader eagerly, or changes what `loadRuns` iterates, must preserve this close-fold-
+  reopen. Symptom in tests: assertions on the reader's evidence pass alone but fail under `checkReq`
+  (its paint/pace shifts them into the `loadRuns` window) — and a locator like `.feval .fpacts .runone`
+  quietly matches the ⋯-menu's copy too (the dropdown nests inside `.fpacts`); scope to `> .runone`.
 
 ## Authored vs measured
 
