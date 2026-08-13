@@ -415,9 +415,10 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     // there is NO in-reader Columns/Open button — the header toggle is the only way back
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
-    // a pager with one dot per requirement; next advances to a different requirement
+    // a pager of dots, capped at ten (a sliding window when a screen has more); next advances to a
+    // different requirement
     const dots = ov.locator('.fdots .fdot')
-    await expect(dots).toHaveCount(reqCount)
+    await expect(dots).toHaveCount(Math.min(reqCount, 10))
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await ov.locator('.fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)

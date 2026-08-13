@@ -1295,7 +1295,7 @@ export function build () {
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
     width:100%; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
-  .dth h2 { font-size:var(--t-xl); letter-spacing:-.02em; }
+  .dth h2 { font-size:17px; letter-spacing:-.02em; }
   .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
@@ -1341,7 +1341,7 @@ export function build () {
     box-shadow:0 1px 3px rgba(28,27,24,.05); overflow-y:auto; overflow-x:hidden; min-height:0; }
   .fread { padding:var(--s6) var(--s6) var(--s5); }
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
-  .fread .fttl { font-size:27px; line-height:1.24; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  .fread .fttl { font-size:22px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
   .fread .fbody { font-size:var(--t-md); line-height:1.64; color:var(--ink-2); }
   .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
   .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
@@ -1415,8 +1415,10 @@ export function build () {
     color:var(--ink-2); font-size:14px; line-height:1; }
   .fnav:disabled { opacity:.35; cursor:default; }
   .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */
   .fdot { width:23px; height:23px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-3); font:var(--t-xs) var(--mono); }
+    color:var(--ink-3); font:var(--t-xs) var(--mono); flex:none; padding:0;
+    display:inline-flex; align-items:center; justify-content:center; }
   .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }

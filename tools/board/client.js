@@ -340,12 +340,21 @@ const B = window.__BOARD__ || {}
 
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''
-      reqs.forEach(function (rr, i) {
+      // show at most ten dots — a window that slides to keep the current one roughly centred, clamped
+      // at each end. The dots stay labelled by their real number, so 3–12 reads as "there is more".
+      const DMAX = 10
+      let dstart = 0, dend = reqs.length
+      if (reqs.length > DMAX) {
+        dstart = Math.max(0, Math.min(cur - Math.floor(DMAX / 2), reqs.length - DMAX))
+        dend = dstart + DMAX
+      }
+      for (let i = dstart; i < dend; i++) {
+        const rr = reqs[i]
         const d = document.createElement('button'); d.className = 'fdot ' + rr.state + (i === cur ? ' cur' : '')
         d.textContent = String(i + 1); d.title = rr.id + ' — ' + rr.title
-        d.addEventListener('click', function () { cur = i; render() })
+        d.addEventListener('click', (function (idx) { return function () { cur = idx; render() } })(i))
         dots.appendChild(d)
-      })
+      }
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
