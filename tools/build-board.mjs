@@ -1300,11 +1300,6 @@ export function build () {
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
   .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
-  /* FOCUS scrolls INSIDE .fpage, so the fixed top padding of .dtscroll became a canvas band that
-     content slid under and got clipped by — a phantom "top bar". Drop that fixed band for focus and
-     move the breathing room INTO the scrolling page, where it rides up with the content instead. */
-  .dtscroll:has(> .focusov) { padding-top:0; }
-  .dtscroll:has(> .focusov) .fpage { padding-top:var(--s5); }
 
   /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
      other, neither scrolls the page, and both headers stay pinned (board R2) */
@@ -1323,7 +1318,7 @@ export function build () {
      the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
      the proof read cramped); centred, it keeps the two columns balanced with the proof the wider one */
-  .focusov { width:100%; max-width:1160px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
+  .focusov { width:100%; max-width:1160px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the columns eating vertical space, so both cards start at the top */
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
@@ -1332,12 +1327,18 @@ export function build () {
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
 
-  /* the two containers, each a bordered, softly-shadowed card */
-  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 600px;
-    gap:var(--s4); align-items:start; }
-  @media (max-width:1080px) { .fpage { grid-template-columns:1fr; } }
+  /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (like the
+     Columns panes, board R2): a fixed height from the grid, its own overflow — scrolling the evidence
+     never moves the requirement, and the page itself does not scroll. */
+  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 600px;
+    gap:var(--s4); align-items:stretch; }
+  /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead */
+  @media (max-width:1080px) {
+    .fpage { grid-template-columns:1fr; overflow-y:auto; }
+    .fpage > .fread, .fpage > .feval { overflow:visible; }
+  }
   .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:0 1px 3px rgba(28,27,24,.05); }
+    box-shadow:0 1px 3px rgba(28,27,24,.05); overflow-y:auto; overflow-x:hidden; min-height:0; }
   .fread { padding:var(--s6) var(--s6) var(--s5); }
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
   .fread .fttl { font-size:27px; line-height:1.24; letter-spacing:-.02em; margin:0 0 var(--s3); }
@@ -1409,12 +1410,12 @@ export function build () {
   .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */
 
   /* the pager (prev · dots · next) stays under the two containers */
-  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s4); padding-bottom:var(--s3); }
-  .fnav { width:36px; height:36px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-2); font-size:16px; line-height:1; }
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); padding-bottom:0; }
+  .fnav { width:28px; height:28px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+    color:var(--ink-2); font-size:14px; line-height:1; }
   .fnav:disabled { opacity:.35; cursor:default; }
-  .fdots { display:flex; gap:var(--s2); flex-wrap:wrap; justify-content:center; }
-  .fdot { width:26px; height:26px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
+  .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .fdot { width:23px; height:23px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
     color:var(--ink-3); font:var(--t-xs) var(--mono); }
   .fdot.cur { outline:2px solid var(--ink); outline-offset:2px; }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
