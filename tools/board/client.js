@@ -93,11 +93,11 @@ const B = window.__BOARD__ || {}
     const tp = dt.querySelector('.testpane'); if (tp) tp.id = 'testpane'
     document.querySelectorAll('.dbarhook').forEach(b => b.classList.remove('dbar'))
     const bar = dt.querySelector('.dbarhook'); if (bar) bar.classList.add('dbar')
-    // open in the default Columns view (R2): clear any reader left over, reset the toggle and panes
-    closeFocus()
-    dt.querySelectorAll('.viewseg .vseg').forEach(b => b.classList.toggle('on', b.dataset.view === 'columns'))
-    const lv = dt.querySelector('.listview'); if (lv) lv.hidden = true
-    const cx = dt.querySelector('.cols'); if (cx) cx.style.display = ''
+    // open in the default FOCUS view (board R13, the human's call 2026-08-13): the reader opens straight
+    // away on the first requirement. A screen with no requirements can't build a reader — fall back to
+    // the columns so it is never blank.
+    setView(dt, 'focus')
+    if (!dt.querySelector('.focusov')) setView(dt, 'columns')
     safeFit()
   }
   const open = (i, push = true) => {
@@ -227,6 +227,7 @@ const B = window.__BOARD__ || {}
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
     function render () {
       const r = reqs[cur]
+      ov._curId = r.id        // so a loadRuns fold can reopen this reader on the SAME requirement
       restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
       page.innerHTML = ''     // would destroy the real nodes the columns still need
       // LEFT — the reading: the id + state meta line rides INSIDE the card now (no standalone bar
@@ -249,14 +250,20 @@ const B = window.__BOARD__ || {}
         const primary = cov[0]
         const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
         const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
-        // proof line — "proved by <flow> · <verdict>"; only "proved by" when it actually is (rules 2/3)
+        // proof header — TOP ROW: the "The proof" label with the actions (Run always shown + a ⋯ menu
+        // holding the rest, board R13/#4); then "proved by <flow> · <verdict>" (only "proved by" when it
+        // actually is, rules 2/3); then the commit the result ran against (dispatch R8).
         const ph = document.createElement('div'); ph.className = 'fphead'
-        ph.innerHTML = '<span class="fplbl">The proof</span>' +
-          '<div class="fpby">' + (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+        const ptop = document.createElement('div'); ptop.className = 'fptop'
+        ptop.innerHTML = '<span class="fplbl">The proof</span>'
+        const acts = document.createElement('div'); acts.className = 'fpacts'
+        ptop.appendChild(acts); ph.appendChild(ptop)
+        const by = document.createElement('div'); by.className = 'fpby'
+        by.innerHTML = (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
           (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
-          (r.state === 'proven' ? '' : ' — not proven yet') + '</div>'
-        // the commit the result ran against (dispatch R8), read off the test's own meta chip
+          (r.state === 'proven' ? '' : ' — not proven yet')
+        ph.appendChild(by)
         const shaEl = primary.querySelector('.tmeta .tsha')
         if (shaEl && shaEl.textContent) {
           const run = document.createElement('div'); run.className = 'fprun'
@@ -264,12 +271,30 @@ const B = window.__BOARD__ || {}
           ph.appendChild(run)
         }
         evl.appendChild(ph)
-        // the moved test node — flattened to controls + frame strip (its header/steps/log hidden)
+        // the moved test node — flattened to just its frame strip (its header/steps/log/controls hidden
+        // or relocated). The frame strip carries NO label now (#5) — the stills speak for themselves.
         const ev = document.createElement('div'); ev.className = 'fev'
         evl.appendChild(ev)
         move(primary, ev, true)
-        const strip = primary.querySelector('.pfstrip')
-        if (strip && strip.children.length) insertLabel(strip, 'Proof frames — one still per check, scan to verify')
+        // relocate the wired per-test controls into the proof header: Run (watchable) always visible,
+        // Run in background / Logs / Steps behind the ⋯ menu. They are the real nodes, moved (and undone
+        // on leave) so the columns keep their working controls.
+        const tacts = primary.querySelector('.tacts')
+        const runWatch = tacts && tacts.querySelector('.runone[data-headed]')
+        const runBg = tacts && tacts.querySelector('.runone:not([data-headed])')
+        const logBtn = primary.querySelector('[data-log]')
+        const stepBtn = primary.querySelector('[data-steps]')
+        if (runWatch) move(runWatch, acts, false)
+        if (runBg || logBtn || stepBtn) {
+          const menu = document.createElement('div'); menu.className = 'fmenu'
+          const mbtn = document.createElement('button'); mbtn.className = 'btn sm fmenubtn'
+          mbtn.setAttribute('aria-label', 'more run and log actions'); mbtn.textContent = '⋯'
+          const pop = document.createElement('div'); pop.className = 'fmenupop'
+          menu.appendChild(mbtn); menu.appendChild(pop); acts.appendChild(menu)
+          ;[runBg, logBtn, stepBtn].forEach(function (b) { if (b) move(b, pop, false) })
+          mbtn.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open') })
+          pop.addEventListener('click', function () { menu.classList.remove('open') })  // any pick closes it
+        }
         // the recording, RELOCATED below the strip (its play onclick survives the move) — only when it
         // actually has one (a still or a playable video), so a video-less run shows no empty box
         const rec = primary.querySelector('.rec')
@@ -344,6 +369,10 @@ const B = window.__BOARD__ || {}
   // a List row opens that requirement straight into Focus
   for (const b of document.querySelectorAll('.lrow'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, 'focus', e.currentTarget.dataset.r) })
+  // a click anywhere outside an open ⋯ menu closes it (the toggle stops its own click bubbling here)
+  document.addEventListener('click', e => {
+    document.querySelectorAll('.fmenu.open').forEach(m => { if (!m.contains(e.target)) m.classList.remove('open') })
+  })
 
   // A requirement is a title that EXPANDS to its full description (board R3); a test collapses to a
   // title + tags + status and opens to its evidence (R10). One click on the header toggles either.
@@ -1040,7 +1069,7 @@ const B = window.__BOARD__ || {}
     } catch (err) { toast(err.message) }
   })
   for (const b of document.querySelectorAll('.runbtn'))
-    b.addEventListener('click', () => runTests(b.dataset.run))
+    b.addEventListener('click', () => runTests(b.dataset.run, { headed: b.dataset.headed === '1' }))
   // Watch it run: a real browser window opens and drives the app in front of you. This is what
   // people mean by watching a test — the re-run-on-save switch is a different thing entirely.
   for (const b of document.querySelectorAll('.headed'))
@@ -1090,6 +1119,14 @@ const B = window.__BOARD__ || {}
     try { data = await (await fetch('/api/runs')).json() } catch (e) { return }
     syncWatch(!!data.watch)
     setRunning(!!data.running)
+    // The FOCUS reader (board R13) borrows a test node OUT of the testpane, so this fold — which only
+    // walks .testpane — would skip it and leave the reader's recording / frames / steps stale (or, on
+    // a fresh deep-link, never filled). Close the reader first so its node is back in the pane and gets
+    // folded like the rest, then reopen it on the SAME requirement. The reader is derived, so this is a
+    // clean refresh, not lost state.
+    const openOv = document.querySelector('.dt:not([hidden]) .focusov')
+    const reopen = openOv ? { dt: openOv.closest('.dt'), id: openOv._curId } : null
+    if (reopen) closeFocus()
     for (const panel of document.querySelectorAll('.testpane')) {
       const dt = panel.closest('.dt')
       const screen = dt && dt.dataset.screen
@@ -1299,6 +1336,8 @@ const B = window.__BOARD__ || {}
           ' run' + (hist.length === 1 ? '' : 's') + '</summary><ol class="lghist">' + runs + '</ol></details>'
       }
     }
+    // reopen the reader now that its borrowed node has been folded back into the pane
+    if (reopen && reopen.dt) setView(reopen.dt, 'focus', reopen.id)
   }
   loadRuns()
 

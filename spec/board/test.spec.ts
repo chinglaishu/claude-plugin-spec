@@ -6,9 +6,17 @@ import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
 // the tests that prove them, with drift computed and one human gate. A test that asserted the page
 // "loaded" would pass with every requirement removed — a smoke alarm with the battery out.
 
+// Focus is the live default now (R13, the human's call 2026-08-13). Most tests below exercise the
+// COLUMNS view, so they switch to it after opening (or after a reload, which reopens in Focus); the
+// focus-default itself is asserted where it belongs, in the three-view test.
+const toColumns = async (page) => {
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
+  await expect(dt.locator('.cols')).toBeVisible()
+}
 const openDetail = async (page) => {
   await page.goto('/#/board')
-  await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+  await toColumns(page)
 }
 
 test.beforeEach(async ({ page }) => {
@@ -122,7 +130,7 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // (1) STEPS COME FROM THE DEFINITION — with NO run at all, the full plan still shows, pending.
     await page.route('**/api/runs', r => r.fulfill({ json: { watch: false, running: false, runs: [] } }))
     await page.reload()
-    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    await toColumns(page)
     const story = dt.locator('.test', { hasText: STORY_TITLE }).first()
     await story.locator('.th').click()
     const srows = story.locator('.tststeps .beat')
@@ -157,7 +165,7 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
         } } }]
     } }))
     await page.reload()
-    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    await toColumns(page)
     const s2 = dt.locator('.test', { hasText: STORY_TITLE }).first()
     await s2.locator('.th').click()
     const rows = s2.locator('.tststeps .beat')
@@ -206,7 +214,7 @@ test('Story-step evidence renders from the test definition', async ({ page }) =>
   await coverReqs('R10')
   await flowStep('Open the board detail — the two columns are there', async () => {
     await page.goto('/#/board')
-    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    await toColumns(page)
     await checkReq('R10', async () => { await expect(page.locator('#reqpane')).toBeVisible() })
   })
   await flowStep('Announce a golden value on the narration bar', async () => {
@@ -373,19 +381,17 @@ test('No acceptance gate — the detail is the two columns, nothing to accept', 
 
 test('The detail offers a three-view toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
   await coverReqs('R13')
-  await openDetail(page)
+  // FOCUS is the default view now — the reader opens straight away (no columns-forcing openDetail here)
+  await page.goto('/#/board')
+  await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .focusov')
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
-    // default is the two columns (R2); the header toggle offers Focus / List / Columns, Columns active
-    await expect(dt.locator('.cols')).toBeVisible()
-    await expect(dt.locator('.focusov')).toHaveCount(0)
-    await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveClass(/\bon\b/)
-
-    // FOCUS → the columns give way to a one-requirement reader laid out as TWO containers
-    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    // the header toggle offers Focus / List / Columns, and Focus is active on open — a one-requirement
+    // reader laid out as TWO containers, no columns showing
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
+    await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
     await expect(dt.locator('.cols')).toBeHidden()
     await expect(ov.locator('.fpage')).toHaveCount(1)
     // its id, state, title and full body on the LEFT container
@@ -394,14 +400,17 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
     await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
     // THE PROOF on the RIGHT container — the primary covering test's OWN evidence, MOVED in and wired
-    // (no player rebuilt, R13): its controls (Run/Logs/Steps) and its frame strip live here. The LEFT
-    // container carries the flow steps as a display clone. (Robust to the dogfood lag — asserts the
-    // machinery, not a specific green state: R1, the page opens on it, is covered whatever its state.)
+    // (no player rebuilt, R13). The wired controls are relocated into the proof header (#4): Run is
+    // always shown, Run in background / Logs / Steps fold behind a ⋯ menu — still the real nodes, so
+    // the frame strip and the machinery are all here. The LEFT container carries the steps as a clone.
+    // (Robust to the dogfood lag — asserts the machinery, not a specific green state.)
     await expect(ov.locator('.feval .fphead')).toBeVisible()
     await expect(ov.locator('.feval .fpby')).toBeVisible()
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
-    await expect(ov.locator('.feval .fev [data-steps]')).toHaveCount(1)
-    await expect(ov.locator('.feval .fev [data-log]')).toHaveCount(1)
+    await expect(ov.locator('.feval .fpacts > .runone')).toBeVisible()        // Run always shown in the header
+    await expect(ov.locator('.feval .fpacts .fmenu .fmenubtn')).toHaveCount(1) // the rest behind ⋯
+    await expect(ov.locator('.feval .fmenupop [data-steps]')).toHaveCount(1)
+    await expect(ov.locator('.feval .fmenupop [data-log]')).toHaveCount(1)
     await expect(ov.locator('.fread .fsteps .fstepclone .beat').first()).toBeVisible()
     // there is NO in-reader Columns/Open button — the header toggle is the only way back
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
@@ -467,7 +476,9 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
         } } }]
     } }))
     await page.reload()
-    await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .cols')
+    // the reload reopened the detail in the Focus default; this half reads the test's own row
+    // in the COLUMNS, so switch there
+    await toColumns(page)
 
     // (1) IN THE TEST'S EVIDENCE (the columns): open the covering test → a scannable strip of stills,
     // one per checked value, each captioned with its got-vs-expected; the failing value is marked red.
@@ -494,8 +505,9 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
     await ov.locator('.fdot[title^="R1 "]').click()             // "R1 —…" (the trailing space excludes R10+)
     await expect(ov.locator('.feval .fev .pfstrip .pframe')).toHaveCount(3)
     await expect(ov.locator('.feval .fev .pframe.bad')).toHaveCount(1)
-    // the strip is labelled and the moved test's own header is folded away (the proof line replaces it)
-    await expect(ov.locator('.feval .fev .flabel', { hasText: 'Proof frames' })).toBeVisible()
+    // the strip carries no label now (#5 — the stills speak for themselves) and the moved test's own
+    // header is folded away (the proof line replaces it)
+    await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
   })
 })
@@ -522,7 +534,7 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
     const t = page.locator('#testpane .test').first()
     await t.locator('.th').click()                           // open the test
     await expect(t.locator('.tbody')).toBeVisible()
-    await expect(t.locator('[data-run]')).not.toHaveCount(0) // Run / Watch stay wherever a test is shown
+    await expect(t.locator('[data-run]')).not.toHaveCount(0) // Run / Run in background stay wherever a test is shown
     // its steps fold, scrollable so fifty read as clearly as five
     await expect(t.locator('.fold')).toHaveCount(1)
     // the whole log opens in a FLOATING window, not a full-viewport scrim (a scrim suppresses the

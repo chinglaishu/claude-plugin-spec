@@ -22,9 +22,11 @@ strip — that grid mostly repeated what the two ends already said.
 
 ## R2 — The detail is two columns, each scrolling on its own
 
-Opening a screen shows two columns: the requirements on the left, the E2E tests that prove them on
-the right. **Each column scrolls independently** — scrolling the tests never moves the requirements,
-and neither scrolls the page; both headers stay pinned. There is no wireframe column and no
+The **Columns** view of a screen is two columns: the requirements on the left, the E2E tests that
+prove them on the right. *(It is no longer what a screen opens on — Focus is the default now, R13; the
+human, 2026-08-13. Columns is one of the three views, a click away on the header toggle.)* **Each
+column scrolls independently** — scrolling the tests never moves the requirements, and neither scrolls
+the page; both headers stay pinned. There is no wireframe column and no
 built-screen column: the wireframe is not a specboard artifact at all (R7), and a test's evidence
 (recording, screenshot) lives inside the test (R3, R10).
 
@@ -105,7 +107,7 @@ Search matches screen names, routes and the text of every requirement; a group w
 hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order,
 never paginated — a board you page through can no longer answer "what is the state of everything".
 
-## R10 — A test opens to its full evidence, and can be run or watched
+## R10 — A test opens to its full evidence, and can be run — watchably or in the background
 
 A test row is not just a verdict. It opens to: the flow's **numbered story steps** — the author's
 own sentences of what a user does and what should happen ("Edit the draft — change Unit 01-02 Net
@@ -147,8 +149,12 @@ the **app's real size** (not a shrunken thumbnail), and a step that asserts on a
 that value into view and holds** before asserting, so the frame actually shows what is being proven
 rather than asking you to trust the topbar. A **failing run keeps its recording too** — the video is
 the best evidence of a failure, so it is never dropped just because the test went red. Every test can
-be **Run** (headless — nothing to watch, it just goes) or **Watched** (a real browser opens and
-drives the app in front of you). Run and Watch stay wherever a test is shown.
+be **Run** (a real browser opens and drives the app in front of you — the watchable run) or **Run in
+background** (headless — nothing to watch, it just goes). *(Renamed from Run / Watch — the human,
+2026-08-13: "Run" is now the watchable one, and the headless one says what it is. "Run all" in the
+detail header stays a background run — running the whole suite watchably is rarely what you want.)*
+Both stay wherever a test is shown; in the **Focus** reader (R13), Run is always shown in the proof
+header and Run in background folds into a **⋯ menu** with Logs and Steps.
 
 *Amended 2026-08-03 at the human's direction, four times. First: a flat "80 steps" fold was
 unreadable and a silent recording cannot explain a failure. Second: "proves R5" still meant nothing
@@ -192,14 +198,18 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 ## R13 — Three views of a screen's requirements: Focus, List, Columns
 
 The detail header carries a **three-way toggle — Focus / List / Columns** — three views of the same
-requirements, storing nothing new. **Columns** is the two-column default (R2). **List** is a compact
-index — one line per requirement (state · id · title) — to scan and jump into Focus from. **Focus**
-reads **one requirement at a time**, laid out as **two containers**: the *reading* on the left (its id,
-state, title, full description, and the flow step by step, this requirement's step highlighted) and the
-*evidence* on the right (the proof line — which flow proves it and its verdict, with the commit that
-result ran against — the Run / Watch / Logs / Steps controls, the scannable **proof-frame strip**, and
-the recording). A pager (prev · dots · next) moves between requirements; the toggle switches views —
-**there is no in-reader Columns button**, because the toggle already is one.
+requirements, storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
+— was Columns)*. **Columns** is the two-column view (R2). **List** is a compact index — one line per
+requirement (state · id · title) — to scan and jump into Focus from. **Focus** reads **one requirement
+at a time**, laid out as **two containers**: the *reading* on the left (its id and state on a meta line
+above the title, then the full description, and the flow step by step with this requirement's step
+highlighted) and the *evidence* on the right — a **proof header** whose top row carries the label and
+the actions (**Run** always shown, and a **⋯ menu** holding **Run in background · Logs · Steps**),
+then the proof line (which flow proves it and its verdict, with the commit that result ran against),
+the scannable **proof-frame strip** (no label — the stills speak for themselves, the human 2026-08-13),
+and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches views —
+**there is no in-reader Columns button**, because the toggle already is one. The header's Run all,
+toggle and Close are one control family — same height, same pill radius.
 
 The evidence is not a link to the columns but the covering test's **own row, moved in** — its controls,
 its frame strip and its recording are the very wired nodes the columns show (its steps are shown on the
@@ -210,8 +220,10 @@ honestly unproven rather than borrowing a green.
 *Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
 carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
 (read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle
-that replaces the old in-reader Columns button. The default view stays the two columns. Wording awaits
-the human's gate; the test asserts behaviour.*
+that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the human's direction:
+**Focus is now the default view**, the id + state fold into the reading card (no full-width bar), the
+evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows
+the human's spoken decisions; the tests assert the behaviour.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

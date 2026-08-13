@@ -133,7 +133,7 @@ export function renderBody (text) {
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
-  `<button class="btn pri runbtn" data-run="${esc(name)}">▶ Run all<span class="kbd">r</span></button>`
+  `<button class="btn pri runbtn" data-run="${esc(name)}" title="run every test in the background">▶ Run all<span class="kbd">r</span></button>`
 
 // LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
 // the long, formatted description collapses behind it and one click on the header reveals the full
@@ -208,8 +208,8 @@ const testRow = (s, plan, t) => {
         <div class="rec"><span class="play">▶</span><span class="lab">${t ? fmtMs(t.ms) : ''}</span></div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" title="run only this test, headless">Run</button>
-          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" data-headed="1" title="watch only this test in a browser">Watch</button>
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" data-headed="1" title="run this test in a browser you can watch">Run</button>
+          <button class="btn sm runone" data-run="${esc(s.name)}" data-grep="${esc(plan.title)}" title="run this test headless, in the background">Run in background</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
           <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
         </span>
@@ -1169,9 +1169,9 @@ export function build () {
     <span class="grow"></span>
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
-      <button class="vseg" data-view="focus" data-i="${i}">Focus</button>
+      <button class="vseg on" data-view="focus" data-i="${i}">Focus</button>
       <button class="vseg" data-view="list" data-i="${i}">List</button>
-      <button class="vseg on" data-view="columns" data-i="${i}">Columns</button>
+      <button class="vseg" data-view="columns" data-i="${i}">Columns</button>
     </div>
     <button class="close btn">Close<span class="kbd">esc</span></button>
   </div>
@@ -1300,6 +1300,11 @@ export function build () {
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
   .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
+  /* FOCUS scrolls INSIDE .fpage, so the fixed top padding of .dtscroll became a canvas band that
+     content slid under and got clipped by — a phantom "top bar". Drop that fixed band for focus and
+     move the breathing room INTO the scrolling page, where it rides up with the content instead. */
+  .dtscroll:has(> .focusov) { padding-top:0; }
+  .dtscroll:has(> .focusov) .fpage { padding-top:var(--s5); }
 
   /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
      other, neither scrolls the page, and both headers stay pinned (board R2) */
@@ -1359,16 +1364,24 @@ export function build () {
   .fread .fstepclone .beat .bdet { margin:0 15px 12px 42px; }
   .fread .fstepclone .beat .byou { flex:none; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; white-space:nowrap; }
-  .feval .fev .tacts { gap:8px; }
-  .feval .fev .tacts .btn, .feval .fev .tacts .btn.sm {
-    font-size:12.5px; padding:8px 15px; border-radius:999px; }
-  /* the mockup's Run carries a ▶ glyph; the reader's Run is the moved per-test button, so add it here
-     (only the headless Run, not Watch) rather than mutate the shared node's text */
-  .feval .fev .tacts .runone:not([data-headed])::before { content:'\\25B6'; margin-right:6px; font-size:10px; }
-  /* the moved evidence card must NOT wear the columns' row-hover wash — the mockup card has no hover */
+  /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
+     background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
+     controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
+  .feval .fptop { display:flex; align-items:center; gap:var(--s3); min-height:22px; }
+  .feval .fpacts { margin-left:auto; display:flex; align-items:center; gap:var(--s2); }
+  .feval .fpacts .btn, .feval .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; }
+  .feval .fpacts .runone::before { content:'\\25B6'; margin-right:6px; font-size:9px; }   /* the Run glyph */
+  .fmenu { position:relative; display:inline-flex; }
+  .fmenu .fmenubtn { font-size:15px; line-height:1; padding:4px 11px; border-radius:999px; }
+  .fmenupop { position:absolute; right:0; top:calc(100% + 7px); min-width:186px; background:var(--paper);
+    border:1px solid var(--hair-2); border-radius:var(--r-md); box-shadow:var(--sh-lg);
+    padding:6px; display:none; flex-direction:column; z-index:20; }
+  .fmenu.open .fmenupop { display:flex; }
+  .fmenupop .btn, .fmenupop .btn.sm { display:block; width:100%; text-align:left; justify-content:flex-start;
+    border:0; background:transparent; border-radius:8px; padding:9px 12px; font-size:var(--t-sm); color:var(--ink-2); }
+  .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
+  /* the moved evidence card must NOT wear the columns' row-hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
-  /* breathing room between the controls row and the "Proof frames" label (mockup section spacing) */
-  .feval .fev .flabel { margin-top:var(--s5); }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
@@ -1388,10 +1401,7 @@ export function build () {
   .fev .test.infocus { border:0; }
   .fev .test.infocus > .th { display:none; }
   .fev .test.infocus > .tbody { display:block; padding:0; }
-  .fev .test.infocus .trow2 { justify-content:flex-start; gap:var(--s2); }
-  .fev .test.infocus .trow2 .rec { display:none; }          /* relocated to .frecwrap below the strip */
-  .fev .test.infocus .trow2 .grow { display:none; }
-  .fev .test.infocus .tacts { justify-content:flex-start; opacity:1; }
+  .fev .test.infocus .trow2 { display:none; }               /* the rec and every control are relocated out of it */
   .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
   .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
   .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */

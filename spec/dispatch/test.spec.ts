@@ -29,6 +29,13 @@ const B_R1 = 'Home lists every screen as a card'
 const B_R2 = 'The detail opens as two independent columns'
 // Open a collapsed test row so its steps / log machinery (inside the .tbody) becomes visible.
 const openCase = async (loc: any) => { await loc.locator('.th').click() }
+// Focus is the live default now (board R13); these tests read a screen's COLUMNS — its test rows — so
+// switch there after opening. The run-all/close buttons in the header work in any view.
+const showCols = async (page: any, screen: string) => {
+  const dt = page.locator('.dt[data-screen="' + screen + '"]:not([hidden])')
+  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
+  await expect(dt.locator('.cols')).toBeVisible()
+}
 
 // Starting a run FROM this test process, named as nested inside the run executing this spec — the
 // same thing the page does with ?runid=. From a CLI run SELF_RUN is empty, the slot is free, and
@@ -166,6 +173,7 @@ test('running one screen leaves every other screen\'s E2E result standing', asyn
   // blanked. Replacing the index instead of folding is the bug that made one Run empty every other
   // screen's column; here it would leave conflicts' test list empty.
   await page.goto('/#/conflicts')
+  await showCols(page, 'conflicts')
   await expect(page.locator('.dt[data-screen="conflicts"]:not([hidden]) .testpane .test').first()).toBeVisible()
 })
 
@@ -231,6 +239,7 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   await idle(request)
 
   await page.goto('/#/board')
+  await showCols(page, 'board')
   // the case that DID run keeps its record, of course (open it — the machinery lives in the .tbody)
   const ran = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R1 }).first()
   await openCase(ran)
@@ -262,6 +271,7 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
   }
 
   await page.goto('/#/board')
+  await showCols(page, 'board')
   const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
   await openCase(one)
   // The commit is CLEAR on the result itself, not only inside the opened log (the human, 2026-08-13):
@@ -296,6 +306,7 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   await idle(request)
 
   await page.goto('/#/board')
+  await showCols(page, 'board')
   // the OPEN detail view only — every screen's panel is in the DOM, so an unscoped .test would also
   // pick up screens this run never touched
   const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')

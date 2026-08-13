@@ -103,6 +103,7 @@ test('R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiti
     await expect(async () => {
       build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/#/' + name)
+      await dt.locator('.viewseg .vseg[data-view="columns"]').click()   // Focus is the default now; this test reads the columns
       await expect(dt.locator('.cols')).toBeVisible()
     }).toPass({ timeout: 15000 })
     await expect(dt.locator('.gate')).toHaveCount(0)                // no acceptance gate (board R8)

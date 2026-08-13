@@ -106,7 +106,9 @@ async function settleAt (page: any, url: string, ready: any) {
 test('renders — the detail is the two columns, with NO gate and no accept button', async ({ page }) => {
   const { name } = makeScreen('probe-render')
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-  await settleAt(page, '/#/' + name, dt.locator('.cols'))
+  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+  await dt.locator('.viewseg .vseg[data-view="columns"]').click()  // Focus is the default now; this test reads the columns
+  await expect(dt.locator('.cols')).toBeVisible()
   await expect(dt.locator('.cols .pane')).toHaveCount(2)            // two columns (board R2)
   await expect(dt.locator('.gate')).toHaveCount(0)                 // no acceptance gate (board R8)
   await expect(dt.locator('[data-act="accept"]')).toHaveCount(0)   // nothing to accept
