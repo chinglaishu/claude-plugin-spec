@@ -1413,7 +1413,7 @@ export function build () {
   /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
      page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
      than floating on the background. Short, and its dots vertically centred. Focus-only (hidden else). */
-  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:6px var(--s6);
+  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:var(--s5) var(--s6);
     background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
   .dtfoot[hidden] { display:none; }
   .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); }
