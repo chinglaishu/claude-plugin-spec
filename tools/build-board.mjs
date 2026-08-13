@@ -133,7 +133,7 @@ export function renderBody (text) {
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
-  `<button class="btn pri runbtn" data-run="${esc(name)}" title="run every test in the background">▶ Run all<span class="kbd">r</span></button>`
+  `<button class="btn pri runbtn" data-run="${esc(name)}" title="run every test in the background">▶ Run all in background</button>`
 
 // LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
 // the long, formatted description collapses behind it and one click on the header reveals the full
@@ -1030,7 +1030,7 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
     <h2>How does it work</h2>
     <span class="gbn">spec-driven development, made visible</span>
     <span class="grow"></span>
-    <button class="close btn">Close<span class="kbd">esc</span></button>
+    <button class="close btn">Close</button>
   </div>
   <div class="dtscroll cfscroll">
     <div class="howwrap">
@@ -1173,7 +1173,7 @@ export function build () {
       <button class="vseg" data-view="list" data-i="${i}">List</button>
       <button class="vseg" data-view="columns" data-i="${i}">Columns</button>
     </div>
-    <button class="close btn">Close<span class="kbd">esc</span></button>
+    <button class="close btn">Close</button>
   </div>
   <div class="dtscroll">
     <div class="cols">
@@ -1321,7 +1321,9 @@ export function build () {
      description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
      screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
      the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
-  .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
+  /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
+     the proof read cramped); centred, it keeps the two columns balanced with the proof the wider one */
+  .focusov { width:100%; max-width:1160px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the columns eating vertical space, so both cards start at the top */
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
@@ -1331,7 +1333,7 @@ export function build () {
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
 
   /* the two containers, each a bordered, softly-shadowed card */
-  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 560px;
+  .fpage { flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:minmax(0,1fr) 600px;
     gap:var(--s4); align-items:start; }
   @media (max-width:1080px) { .fpage { grid-template-columns:1fr; } }
   .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
@@ -2407,7 +2409,7 @@ export function build () {
       <button data-cf="open" class="on">Open</button><button data-cf="settled">Settled</button>
     </div>
     <button class="btn" id="cfscan">Rescan</button>
-    <button class="close btn">Close<span class="kbd">esc</span></button>
+    <button class="close btn">Close</button>
   </div>
   <div class="dtscroll cfscroll">
     <div class="cfwrap">
@@ -2434,7 +2436,7 @@ export function build () {
     <h2>Set up the board</h2>
     <span class="gbn">point at your app, then crawl it into rows</span>
     <span class="grow"></span>
-    <button class="close btn">Close<span class="kbd">esc</span></button>
+    <button class="close btn">Close</button>
   </div>
   <div class="dtscroll cfscroll">
     <div class="updsetup" id="updsetup" hidden></div>
@@ -2528,7 +2530,7 @@ ${howView(ctaAction)}
 <div class="lb" id="lb" hidden>
   <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
     <button class="btn sm" id="lbzoom">Actual size</button>
-    <button class="btn sm gh" id="lbclose">Close<span class="kbd">esc</span></button></div>
+    <button class="btn sm gh" id="lbclose">Close</button></div>
   <div class="lbstage" id="lbstage"><img id="lbimg" alt=""></div>
 </div>
 
@@ -2537,7 +2539,7 @@ ${howView(ctaAction)}
 <div class="sheet" id="logsheet">
   <div class="box">
     <div class="bh"><strong id="logtitle">Full log</strong><span class="grow"></span>
-      <button class="btn sm" data-logclose>Close<span class="kbd">esc</span></button></div>
+      <button class="btn sm" data-logclose>Close</button></div>
     <div class="bb" id="logbody"></div>
   </div>
 </div>
@@ -2548,7 +2550,7 @@ ${howView(ctaAction)}
 <div class="sheet" id="stepsheet">
   <div class="box">
     <div class="bh"><strong id="stepstitle">All steps</strong><span class="grow"></span>
-      <button class="btn sm" data-stepsclose>Close<span class="kbd">esc</span></button></div>
+      <button class="btn sm" data-stepsclose>Close</button></div>
     <div class="bb" id="stepsbody"></div>
   </div>
 </div>
