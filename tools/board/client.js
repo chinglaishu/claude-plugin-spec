@@ -219,10 +219,6 @@ const B = window.__BOARD__ || {}
       const before = strip.scrollLeft; strip.scrollLeft += e.deltaY
       if (strip.scrollLeft !== before) e.preventDefault()
     }, { passive: false })
-    const head = document.createElement('div'); head.className = 'fhead'
-    const fid = document.createElement('span'); fid.className = 'fid'
-    const fchip = document.createElement('span'); fchip.className = 'fchip'
-    head.appendChild(fid); head.appendChild(fchip)
     const page = document.createElement('div'); page.className = 'fpage'
     const pager = document.createElement('div'); pager.className = 'fpager'
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
@@ -233,15 +229,17 @@ const B = window.__BOARD__ || {}
       const r = reqs[cur]
       restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
       page.innerHTML = ''     // would destroy the real nodes the columns still need
-      fid.textContent = r.id
-      fchip.className = 'fchip ' + r.state
-      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
-
-      // LEFT — the reading
+      // LEFT — the reading: the id + state meta line rides INSIDE the card now (no standalone bar
+      // above the columns), so the title and the proof block both start at the top
       const read = document.createElement('div'); read.className = 'fread'
+      const rmeta = document.createElement('div'); rmeta.className = 'frmeta'
+      const fid = document.createElement('span'); fid.className = 'fid'; fid.textContent = r.id
+      const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.state
+      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      rmeta.appendChild(fid); rmeta.appendChild(fchip)
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
-      read.appendChild(h); read.appendChild(body)
+      read.appendChild(rmeta); read.appendChild(h); read.appendChild(body)
 
       // RIGHT — the evidence
       const evl = document.createElement('div'); evl.className = 'feval'
@@ -326,7 +324,7 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    ov.appendChild(head); ov.appendChild(page); ov.appendChild(pager)
+    ov.appendChild(page); ov.appendChild(pager)
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
 

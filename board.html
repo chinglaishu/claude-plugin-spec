@@ -358,8 +358,10 @@ ins { color:var(--koke); text-decoration:none; }
      screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
      the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
   .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
-  .fhead { flex:none; display:flex; align-items:center; gap:var(--s3); }
-  .fhead .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
+     above the columns eating vertical space, so both cards start at the top */
+  .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
+  .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
@@ -1427,7 +1429,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip ok pcount"><span class="mark"></span>14 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=91e668be8345" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=2d8498302f2b" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1"
      data-waiting="0" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
@@ -2194,7 +2196,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Home lists every screen as a card</span><div class="tags"><span class="tag" data-r="R1">R1</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">608ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">230ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Home lists every screen as a card" title="run only this test, headless">Run</button>
@@ -2215,7 +2217,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail opens as two independent columns</span><div class="tags"><span class="tag" data-r="R2">R2</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">162ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">144ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail opens as two independent columns" title="run only this test, headless">Run</button>
@@ -2236,7 +2238,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A requirement expands; a test leads with its flow name</span><div class="tags"><span class="tag" data-r="R3">R3</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">247ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">227ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A requirement expands; a test leads with its flow name" title="run only this test, headless">Run</button>
@@ -2257,7 +2259,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">711ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">679ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself" title="run only this test, headless">Run</button>
@@ -2278,7 +2280,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Story-step evidence renders from the test definition</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">135ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">136ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Story-step evidence renders from the test definition" title="run only this test, headless">Run</button>
@@ -2305,7 +2307,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Requirement state is computed and assertion-backed</span><div class="tags"><span class="tag" data-r="R4">R4</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">133ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">155ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Requirement state is computed and assertion-backed" title="run only this test, headless">Run</button>
@@ -2326,7 +2328,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Hovering a test lights up the requirements it covers</span><div class="tags"><span class="tag" data-r="R5">R5</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">213ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">238ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Hovering a test lights up the requirements it covers" title="run only this test, headless">Run</button>
@@ -2368,7 +2370,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail shows no wireframe or design affordance</span><div class="tags"><span class="tag" data-r="R7">R7</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">115ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">117ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail shows no wireframe or design affordance" title="run only this test, headless">Run</button>
@@ -2389,7 +2391,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">No acceptance gate — the detail is the two columns, nothing to accept</span><div class="tags"><span class="tag" data-r="R8">R8</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">204ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">140ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="No acceptance gate — the detail is the two columns, nothing to accept" title="run only this test, headless">Run</button>
@@ -2410,7 +2412,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail offers a three-view toggle — Focus reads one requirement per page in two containers</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">440ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">397ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The detail offers a three-view toggle — Focus reads one requirement per page in two containers" title="run only this test, headless">Run</button>
@@ -2431,7 +2433,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The proof is scannable as frames, not only as video — a strip of stills per checked value</span><div class="tags"><span class="tag" data-r="R14">R14</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">390ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">394ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The proof is scannable as frames, not only as video — a strip of stills per checked value" title="run only this test, headless">Run</button>
@@ -2452,7 +2454,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Searching requirement text hides groups that miss</span><div class="tags"><span class="tag" data-r="R9">R9</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">167ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">170ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="Searching requirement text hides groups that miss" title="run only this test, headless">Run</button>
@@ -2473,7 +2475,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A test opens to its evidence and the log opens in a window</span><div class="tags"><span class="tag" data-r="R10">R10</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">218ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">216ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A test opens to its evidence and the log opens in a window" title="run only this test, headless">Run</button>
@@ -2536,7 +2538,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The walkthrough steps on click and holds — never auto-advances</span><div class="tags"><span class="tag" data-r="R11">R11</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">1.4s</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">1.5s</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The walkthrough steps on click and holds — never auto-advances" title="run only this test, headless">Run</button>
@@ -2557,7 +2559,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">A deep-linked skill URL shows the skill detail on cold load</span><div class="tags"><span class="tag" data-r="R11">R11</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">127ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">125ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="A deep-linked skill URL shows the skill detail on cold load" title="run only this test, headless">Run</button>
@@ -2578,7 +2580,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The guide ends with the derived next action, and there is no rail</span><div class="tags"><span class="tag" data-r="R12">R12</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
-        <div class="rec"><span class="play">▶</span><span class="lab">172ms</span></div>
+        <div class="rec"><span class="play">▶</span><span class="lab">194ms</span></div>
         <span class="grow"></span>
         <span class="tacts">
           <button class="btn sm runone" data-run="board" data-grep="The guide ends with the derived next action, and there is no rail" title="run only this test, headless">Run</button>
@@ -3480,10 +3482,6 @@ const B = window.__BOARD__ || {}
       const before = strip.scrollLeft; strip.scrollLeft += e.deltaY
       if (strip.scrollLeft !== before) e.preventDefault()
     }, { passive: false })
-    const head = document.createElement('div'); head.className = 'fhead'
-    const fid = document.createElement('span'); fid.className = 'fid'
-    const fchip = document.createElement('span'); fchip.className = 'fchip'
-    head.appendChild(fid); head.appendChild(fchip)
     const page = document.createElement('div'); page.className = 'fpage'
     const pager = document.createElement('div'); pager.className = 'fpager'
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
@@ -3494,15 +3492,17 @@ const B = window.__BOARD__ || {}
       const r = reqs[cur]
       restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
       page.innerHTML = ''     // would destroy the real nodes the columns still need
-      fid.textContent = r.id
-      fchip.className = 'fchip ' + r.state
-      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
-
-      // LEFT — the reading
+      // LEFT — the reading: the id + state meta line rides INSIDE the card now (no standalone bar
+      // above the columns), so the title and the proof block both start at the top
       const read = document.createElement('div'); read.className = 'fread'
+      const rmeta = document.createElement('div'); rmeta.className = 'frmeta'
+      const fid = document.createElement('span'); fid.className = 'fid'; fid.textContent = r.id
+      const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.state
+      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      rmeta.appendChild(fid); rmeta.appendChild(fchip)
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
-      read.appendChild(h); read.appendChild(body)
+      read.appendChild(rmeta); read.appendChild(h); read.appendChild(body)
 
       // RIGHT — the evidence
       const evl = document.createElement('div'); evl.className = 'feval'
@@ -3587,7 +3587,7 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
-    ov.appendChild(head); ov.appendChild(page); ov.appendChild(pager)
+    ov.appendChild(page); ov.appendChild(pager)
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
 

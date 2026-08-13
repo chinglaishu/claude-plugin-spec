@@ -1317,8 +1317,10 @@ export function build () {
      screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
      the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
   .focusov { width:100%; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s4); }
-  .fhead { flex:none; display:flex; align-items:center; gap:var(--s3); }
-  .fhead .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
+     above the columns eating vertical space, so both cards start at the top */
+  .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
+  .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }

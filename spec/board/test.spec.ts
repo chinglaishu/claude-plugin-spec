@@ -389,8 +389,8 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(dt.locator('.cols')).toBeHidden()
     await expect(ov.locator('.fpage')).toHaveCount(1)
     // its id, state, title and full body on the LEFT container
-    await expect(ov.locator('.fhead .fid')).not.toBeEmpty()
-    await expect(ov.locator('.fhead .fchip')).toHaveClass(/proven|unproven/)
+    await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/proven|unproven/)
     await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
     await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
     // THE PROOF on the RIGHT container — the primary covering test's OWN evidence, MOVED in and wired
@@ -409,9 +409,9 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     // a pager with one dot per requirement; next advances to a different requirement
     const dots = ov.locator('.fdots .fdot')
     await expect(dots).toHaveCount(reqCount)
-    const firstId = (await ov.locator('.fhead .fid').textContent())!.trim()
+    const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await ov.locator('.fnav.next').click()
-    await expect(ov.locator('.fhead .fid')).not.toHaveText(firstId)
+    await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
 
     // COLUMNS → back to the two columns; the moved test node is whole again in the pane
     await dt.locator('.viewseg .vseg[data-view="columns"]').click()
@@ -431,7 +431,7 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
 
     // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
     // flow — "proved by" when green, still named when not.
-    const chip = await dt.locator('.focusov .fhead .fchip').textContent()
+    const chip = await dt.locator('.focusov .fread .frmeta .fchip').textContent()
     if (/proven/.test(chip || '') && !/unproven/.test(chip || '')) {
       await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
     } else {
