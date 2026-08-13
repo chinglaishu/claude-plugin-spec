@@ -288,7 +288,15 @@ const B = window.__BOARD__ || {}
           const fs = document.createElement('div'); fs.className = 'fsteps'
           const sl = document.createElement('div'); sl.className = 'flabel'; sl.textContent = 'The flow, step by step'
           const clone = steps.cloneNode(true); clone.classList.add('fstepclone')
-          const hereBeat = clone.querySelector('.beat[data-key="' + r.id + '"]')
+          // highlight the beat that proves THIS requirement. A checkReq-only test's beat IS the prove
+          // step (data-key = the id); a flowStep test's top-level beat is the flow sentence (data-key =
+          // the text) and names the requirement in a `proves <id>` sub-step — so fall back to that.
+          let hereBeat = clone.querySelector('.beat[data-key="' + r.id + '"]')
+          if (!hereBeat) hereBeat = [].slice.call(clone.querySelectorAll('.beat')).find(function (bt) {
+            return [].slice.call(bt.querySelectorAll('.bprove')).some(function (p) {
+              return p.textContent.replace(/^proves\s+/, '').split('·')[0].trim() === r.id
+            })
+          })
           if (hereBeat) hereBeat.classList.add('fhere')
           fs.appendChild(sl); fs.appendChild(clone); read.appendChild(fs)
         }
