@@ -25,9 +25,18 @@ has not settled. There is no acceptance gate. Read it before the first line of c
 
 ## 2. Stop and ask the human in exactly three cases
 
-- **Nothing governs it.** The briefing says `⛔ Ungoverned` — no requirement exists. **Stop.** Do
-  not write code the next person has no guideline for. Ask the human for a requirement (offer a
-  **kg-deep** pass on the screen — it drafts the PRD, marked unapproved, for them to correct).
+- **Nothing governs it.** The briefing says `⛔ Ungoverned` — no requirement exists. **Stop before
+  code — but "stop" is not "describe the missing requirement in the chat and wait."** Draft it **into
+  the board**, where the human reviews it: write the requirement into `spec/<screen>/prd.md` as an
+  **unapproved draft** — a single new `## R<n>` block for one, or a **kg-deep** pass (which drafts the
+  whole screen with `guess: true`) when the screen needs many — then rebuild (`npm run board:build`)
+  and point the human at that screen to correct and accept it. **Drafting is yours to do now; the
+  human's gate is *acceptance* — correcting the text and dropping the flag — not permission to draft.**
+  A proposed requirement that lives only in the chat transcript is invisible to the board and gone by
+  the next session; that is not proposing it, that is losing it. (The `guess` flag is screen-level, so
+  a lone new block on an already-accepted screen shows no screen-wide ⚠ — lead its body with a visible
+  **(DRAFT — awaiting your acceptance)** and name the `R<n>` to the human, so the unsettled one is
+  unmistakable.)
 - **The requirement is a guess.** The briefing says `⚠ guess` — a drafted proposal (a kg-deep draft)
   the human has not yet accepted. It cannot be trusted until they correct it and drop the flag. A
   requirement read off an implementation records the implementation's bugs as intent.
@@ -39,8 +48,10 @@ Everything else, decide and move.
 ## 3. The order a change must happen in
 
 1. **Change the requirement first, never the code first.** If behaviour should change, the PRD text
-   changes first — and changed requirement *meaning* is the human's to decide, so propose it, don't
-   commit it.
+   changes first. **Propose it, don't commit it** — and *propose* means **write the new or changed
+   requirement into `spec/<screen>/prd.md` as an unapproved draft** (a `## R<n>` block, or `guess:
+   true` for a drafted screen) so it shows in the board, then rebuild; never leave the proposal only
+   in chat. **Committing it** — marking it accepted, dropping the guess flag — stays the human's.
 2. **Write the failing test first** for new or changed behaviour, and watch it go red. A test written
    after the code can only confirm it, never contradict it.
 3. **Make it pass without weakening the test.** Never skip, delete, or loosen an assertion to go
