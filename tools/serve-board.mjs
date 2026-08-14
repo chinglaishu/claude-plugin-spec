@@ -15,7 +15,7 @@ import {
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
   RUNS, readRuns, recordRunEntry, reEscape, runVerdict,
-  shouldVoice, narrationPack
+  shouldVoice, narrationPack, voiceReadiness, voicesDir
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
@@ -102,6 +102,37 @@ function ffmpegOk () {
   if (FFMPEG !== undefined) return FFMPEG
   try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); FFMPEG = true } catch { FFMPEG = false }
   return FFMPEG
+}
+let FFPROBE
+function ffprobeOk () {
+  if (FFPROBE !== undefined) return FFPROBE
+  try { execFileSync('ffprobe', ['-version'], { stdio: 'ignore' }); FFPROBE = true } catch { FFPROBE = false }
+  return FFPROBE
+}
+
+// VOICE READINESS PROBE (init R6). Setup asks "can this box actually voice a run?" so it can disable
+// the switch until it can. Read live off the machine — a PATH scan (not running piper, which would
+// block on stdin) and a readdir — so a re-check reflects a just-installed piper or a just-dropped model
+// WITHOUT restarting the board (env-var config is fixed at launch; PATH and files are not). The pure
+// gate + its human reason live in spec-store.voiceReadiness (unit-tested).
+function onPath (bin) {
+  for (const d of (process.env.PATH || '').split(':')) {
+    if (!d) continue
+    try { const s = statSync(join(d, bin)); if (s.isFile()) return true } catch { /* not here */ }
+  }
+  return false
+}
+function hasVoiceModel () {
+  try { return readdirSync(voicesDir()).some(f => f.endsWith('.onnx')) } catch { return false }
+}
+function voiceStatus () {
+  return voiceReadiness({
+    ffmpeg: ffmpegOk(),
+    ffprobe: ffprobeOk(),
+    // a configured BOARD_SYNTH_CMD (e.g. a docker piper) counts as a synthesizer without piper on PATH
+    synth: !!process.env.BOARD_SYNTH_CMD || onPath('piper'),
+    voiceModel: hasVoiceModel()
+  })
 }
 const GOT_EXP = / — got .+? · expected /   // the hudCheck claim shape emitNote writes into a note step
 function frameSlug (s) {
@@ -1044,6 +1075,15 @@ const server = createServer(async (req, res) => {
   if (url.pathname === '/api/update-status') {
     res.writeHead(200, { 'content-type': 'application/json' })
     res.end(JSON.stringify(updateStatus()))
+    return
+  }
+
+  // Whether this box can voice a watchable run (init R6) — probed live so Setup can disable the switch
+  // until piper + ffmpeg + a voice model are all present, and a Re-check re-probes without a restart.
+  // JSON only, like the other status endpoints — safe before the static allowlist without widening it.
+  if (url.pathname === '/api/voice-status') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify(voiceStatus()))
     return
   }
 

@@ -125,15 +125,22 @@ test('R4 — nothing found is the greenfield case: no rows, a prompt to write th
   await expect(view.locator('#initfound .frow')).toHaveCount(0)
 })
 
+// A voice-ready machine, faked so the toggle is enabled regardless of what is (or isn't) installed
+// on the box running the suite — piper is never assumed present (board R10 rule 3).
+const VOICE_READY = { ready: true, ffmpeg: true, ffprobe: true, synth: true, voiceModel: true, missing: [], reason: '' }
+
 test('R6 — voice-over is a saved, per-project switch, off by default', async ({ page }) => {
   // The whole of R6: a Setup switch that is OFF by default, PERSISTS to the project's own config, and
   // reads back on a fresh load. Start from no config so the default and the round-trip are both real.
   if (existsSync(CONFIG)) rmSync(CONFIG)
+  // the switch is disabled until voicing is possible; fake it ready so this test can actually toggle it
+  await page.route('**/api/voice-status', r => r.fulfill({ json: VOICE_READY }))
   await page.goto('/#init')
   await expect(page.locator('#initview')).toBeVisible()
   const box = page.locator('#initvoiceover')
 
   await checkReq('R6', async () => {
+    await expect(box).toBeEnabled()   // piper is "present", so the switch is live
     // OFF by default — a fresh project shows it unchecked (and never wrote it on)
     await expect(box).not.toBeChecked()
 
@@ -151,6 +158,33 @@ test('R6 — voice-over is a saved, per-project switch, off by default', async (
     await page.locator('#initvoiceover').uncheck()
     await page.locator('#initsave').click()
     await expect.poll(() => config()?.voiceOver).toBe(false)
+  })
+})
+
+test('R6 — the switch is disabled until piper is ready, with a copyable install helper', async ({ page }) => {
+  // "off because you chose to" must never be confused with "off because it cannot run yet": until
+  // ffmpeg + a synthesizer + a voice model are all detected, the switch is DISABLED and Setup shows
+  // what is missing plus a one-click way to fix it (a Claude prompt and a shell block). Deterministic
+  // via a stubbed /api/voice-status — piper is never assumed installed on the box running the suite.
+  await checkReq('R6', async () => {
+    // NOT ready → disabled switch, a status line naming the gap, and the install helper visible
+    await page.route('**/api/voice-status', r => r.fulfill({ json:
+      { ready: false, ffmpeg: true, ffprobe: true, synth: false, voiceModel: false, missing: ['synth', 'voiceModel'], reason: 'piper not found' } }))
+    await page.goto('/')
+    await page.goto('/#init')
+    await expect(page.locator('#initview')).toBeVisible()
+    await expect(page.locator('#initvoiceover')).toBeDisabled()
+    await expect(page.locator('#initvoicestatus')).toContainText(/piper/i)
+    const help = page.locator('#initvoicehelp')
+    await expect(help).toBeVisible()
+    await expect(help.locator('#initvoiceprompt')).toContainText(/piper/i)   // the copyable Claude prompt
+    await expect(help.locator('#initvoiceshell')).toContainText(/spec\/_voices/i) // the shell fallback
+
+    // Re-check re-probes without a reload: now READY → the switch enables itself and the helper hides
+    await page.route('**/api/voice-status', r => r.fulfill({ json: VOICE_READY }))
+    await page.locator('#initvoicerecheck').click()
+    await expect(page.locator('#initvoiceover')).toBeEnabled()
+    await expect(help).toBeHidden()
   })
 })
 

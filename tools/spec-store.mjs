@@ -478,6 +478,30 @@ export function shouldVoice ({ voiceOver, screen, grep, packExists, ffmpeg } = {
 // Where a screen's narration pack lives, if authored. Absent ⇒ that screen simply plays silent.
 export const narrationPack = screen => join(SPEC, String(screen || ''), 'narration.json')
 
+// The project's piper voice models live in a FIXED spec/_voices/ (so Setup's detection, the install
+// helper, and the run all agree without an env var), unless BOARD_PIPER_VOICES points elsewhere.
+export const voicesDir = () => process.env.BOARD_PIPER_VOICES || join(SPEC, '_voices')
+
+// Pure: is this machine ready to VOICE a run? Setup disables the switch until every piece is present
+// (init R6) — you cannot silently opt into something that can only stay silent. ffmpeg+ffprobe mux
+// and measure; a synthesizer (piper on PATH, or a BOARD_SYNTH_CMD) speaks the lines; a voice model
+// (*.onnx) is what it speaks with. Split from the live probe (serve-board) so the gate + its reason
+// are unit-testable (tools/voiceover.test.mjs). Returns the same booleans back so the UI can be exact.
+export function voiceReadiness ({ ffmpeg, ffprobe, synth, voiceModel } = {}) {
+  const missing = []
+  if (!ffmpeg || !ffprobe) missing.push('ffmpeg')
+  if (!synth) missing.push('synth')
+  if (!voiceModel) missing.push('voiceModel')
+  const reason = missing.length === 0 ? ''
+    : missing.includes('synth') ? 'piper not found — no synthesizer to speak the lines'
+      : missing.includes('voiceModel') ? 'no voice model (*.onnx) in spec/_voices/'
+        : 'ffmpeg not found'
+  return {
+    ready: missing.length === 0, missing, reason,
+    ffmpeg: !!ffmpeg, ffprobe: !!ffprobe, synth: !!synth, voiceModel: !!voiceModel
+  }
+}
+
 // A route becomes a directory name. '/product/:id' has to survive as something a filesystem and a
 // URL hash both accept, and two different routes must never collapse to one folder.
 export const slugify = route => {
@@ -527,7 +551,7 @@ const flat = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ')
 // sides before hashing is what makes an a/b swap the same conflict rather than a new one.
 export const conflictKey = f => {
   const side = x => flat(x?.source) + '' + flat(x?.quote)
-  return sha([flat(f?.subject), ...[side(f?.a), side(f?.b)].sort()].join(' '))
+  return sha([flat(f?.subject), ...[side(f?.a), side(f?.b)].sort()].join('\0'))
 }
 
 export const readDecisions = () =>

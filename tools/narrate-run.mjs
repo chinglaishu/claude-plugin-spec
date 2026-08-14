@@ -36,7 +36,12 @@ const die = (m) => { console.error('narrate-run: ' + m); process.exit(1) }
 const packFile = opt('pack') || die('--pack <narration.json> is required')
 const pack = JSON.parse(readFileSync(packFile, 'utf8'))
 const CACHE = resolve(process.env.BOARD_NARRATION_CACHE || join(dirname(resolve(packFile)), '_narration-cache'))
-const VOICES = resolve(process.env.BOARD_PIPER_VOICES || CACHE)
+// A project-level spec/_voices/ (the pack is spec/<screen>/narration.json, so its grandparent is
+// spec/) is the conventional home for voice models — so Setup's readiness check, the install helper,
+// and the run all agree WITHOUT an env var. An explicit BOARD_PIPER_VOICES still wins; the pack's own
+// cache dir is the last resort (a model dropped beside the cache still works, as before).
+const SPEC_VOICES = join(dirname(dirname(resolve(packFile))), '_voices')
+const VOICES = resolve(process.env.BOARD_PIPER_VOICES || (existsSync(SPEC_VOICES) ? SPEC_VOICES : CACHE))
 const SYNTH = process.env.BOARD_SYNTH_CMD || 'piper -m {model} -f {wav} < {txt}'
 mkdirSync(CACHE, { recursive: true })
 

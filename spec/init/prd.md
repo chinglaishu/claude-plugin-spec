@@ -60,6 +60,20 @@ beat times (board R10); off, or with no pack or no synthesizer present, the reco
 before**, never faked. The switch is the only new thing Setup owns here — the voice pipeline lives
 with the run and the pack lives with the screen (board R10).
 
+The switch **knows whether it can actually voice**, and says so. Voicing needs three things present
+on the machine: `ffmpeg`/`ffprobe`, a synthesizer (`piper` on PATH, or a `BOARD_SYNTH_CMD`), and a
+**voice model** (`*.onnx`, looked for in `spec/_voices/` or `BOARD_PIPER_VOICES`). Until all three are
+detected the switch is **disabled** — you cannot silently opt into something that can only stay silent
+— and Setup shows what is missing plus a one-click way to fix it: a **copyable Claude prompt** (hand
+it to the agent and it installs piper and a voice into `spec/_voices/`) and a **copyable shell**
+fallback, with a **Re-check** that re-probes without restarting the board. The moment the three are
+present the switch enables itself.
+
 *Drafted 2026-08-14 on the human's direction and accepted the same turn: voice-over was asked for as
 a saved, per-project toggle, default off. The pipeline (pace → render, piper → ffmpeg) already
 existed for the CLI; this makes the board's own watchable run drive it.*
+
+*Amended 2026-08-15 on the human's direction: the switch auto-detects its prerequisites and is
+disabled until piper, ffmpeg and a voice model are all present, with a copyable install helper (Claude
+prompt + shell) and a re-check — so "off because you chose to" is never confused with "off because it
+cannot run yet".*

@@ -1716,6 +1716,16 @@ export function build () {
   .watchtog { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm);
     color:var(--ink-3); cursor:pointer; }
   .watchtog input { accent-color:var(--ai); width:13px; height:13px; }
+  .watchtog.off { opacity:.5; cursor:default; }
+  .watchtog.off input { cursor:default; }
+  /* voice-over readiness + install helper (init R6) */
+  .vhelp { border:1px solid var(--hair); border-radius:var(--r); padding:var(--s3) var(--s4);
+    background:var(--canvas); margin-top:var(--s3); }
+  .vhlabel { font-size:var(--t-xs); color:var(--ink-4); margin-bottom:4px; }
+  .vhpre { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-2); background:var(--paper);
+    border:1px solid var(--hair); border-radius:var(--r); padding:var(--s3);
+    white-space:pre-wrap; word-break:break-word; margin:0 0 6px; max-width:100%; overflow-x:auto; }
+  .vhrow { display:flex; align-items:center; gap:var(--s3); }
   .toast { position:fixed; left:50%; bottom:var(--s5); transform:translateX(-50%); z-index:60;
     background:var(--ink); color:var(--paper); padding:var(--s3) var(--s4);
     font-size:var(--t-sm); max-width:70vw; border-radius:var(--r); box-shadow:var(--sh-lg); }
@@ -2512,6 +2522,19 @@ export function build () {
             </div>
             <label class="watchtog sm" id="initvoicewrap" style="margin-top:var(--s3)">
               <input type="checkbox" id="initvoiceover"> narrate a watchable run aloud — voice &amp; subtitles, for a screen that has a narration pack</label>
+            <div class="h" id="initvoicestatus" hidden style="margin-top:6px"></div>
+            <div class="vhelp" id="initvoicehelp" hidden>
+              <div class="vhlabel">Voice-over needs <b>piper</b> + a voice model. Do one of these, then Re-check:</div>
+              <div class="vhlabel">Hand this to Claude</div>
+              <pre class="vhpre" id="initvoiceprompt"></pre>
+              <div class="vhlabel">…or run it yourself</div>
+              <pre class="vhpre" id="initvoiceshell"></pre>
+              <div class="vhrow">
+                <button class="btn sm" type="button" data-copy="initvoiceprompt">Copy prompt</button>
+                <button class="btn sm" type="button" data-copy="initvoiceshell">Copy shell</button>
+                <button class="btn sm" type="button" id="initvoicerecheck">Re-check</button>
+              </div>
+            </div>
           </div>
           <div class="fld" style="margin-bottom:0">
             <div class="l">Where to keep run screenshots &amp; video</div>

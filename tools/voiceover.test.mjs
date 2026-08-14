@@ -10,7 +10,7 @@ import { mkdtempSync, writeFileSync, existsSync, rmSync, mkdirSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { shouldVoice } from './spec-store.mjs'
+import { shouldVoice, voiceReadiness } from './spec-store.mjs'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const RUN = join(HERE, 'narrate-run.mjs')
@@ -28,6 +28,32 @@ test('shouldVoice: on only with the switch, a screen, a named flow, a pack, and 
   assert.equal(shouldVoice({ ...on, screen: null }), false, 'a whole-suite run ⇒ silent')
   assert.equal(shouldVoice({ ...on, ffmpeg: false }), false, 'no ffmpeg to mux ⇒ silent')
   assert.equal(shouldVoice({}), false, 'nothing set ⇒ silent')
+})
+
+// ── the readiness gate (Setup disables the switch until all three are present) ───────────
+test('voiceReadiness: ready only when ffmpeg, ffprobe, synth AND a voice model are all present', () => {
+  const all = { ffmpeg: true, ffprobe: true, synth: true, voiceModel: true }
+  assert.equal(voiceReadiness(all).ready, true, 'all present ⇒ ready')
+
+  // the synthesizer (piper) is the headline the user asked us to detect
+  const noSynth = voiceReadiness({ ...all, synth: false })
+  assert.equal(noSynth.ready, false)
+  assert.match(noSynth.reason, /piper|synth/i, 'names the missing synthesizer')
+  assert.ok(noSynth.missing.includes('synth'))
+
+  const noModel = voiceReadiness({ ...all, voiceModel: false })
+  assert.equal(noModel.ready, false)
+  assert.match(noModel.reason, /voice model/i, 'names the missing voice model')
+
+  assert.equal(voiceReadiness({ ...all, ffmpeg: false }).ready, false, 'no ffmpeg ⇒ not ready')
+  assert.equal(voiceReadiness({ ...all, ffprobe: false }).ready, false, 'no ffprobe ⇒ not ready')
+
+  // every missing piece is listed, so the UI can say precisely what to fix
+  assert.deepEqual(
+    voiceReadiness({ ffmpeg: true, ffprobe: true, synth: false, voiceModel: false }).missing.sort(),
+    ['synth', 'voiceModel'])
+  // nothing present ⇒ not ready, and it never throws on a bare call
+  assert.equal(voiceReadiness({}).ready, false)
 })
 
 // ── the mux ─────────────────────────────────────────────────────────────────────────────

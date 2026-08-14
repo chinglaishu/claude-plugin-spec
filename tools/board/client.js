@@ -117,7 +117,7 @@ const B = window.__BOARD__ || {}
     if (location.hash === '#init') {
       closeAll()
       document.getElementById('initview').hidden = false
-      loadConfig(); loadCrawl()
+      loadConfig(); loadCrawl(); loadVoiceStatus()
       return
     }
     // #howitworks — the method overview; #howitworks/<skillId> — one skill's flowchart, focused. A
@@ -743,6 +743,40 @@ const B = window.__BOARD__ || {}
     document.getElementById('initbucket').value = st.bucketUrl || ''
   }
 
+  // Voice-over readiness (init R6). The switch is DISABLED until piper + ffmpeg + a voice model are all
+  // present; when they are not, Setup names what is missing and offers a one-click fix — a copyable
+  // Claude prompt (primary) and a shell fallback — plus a Re-check that re-probes without a restart.
+  const VOICE_PROMPT = 'Install piper text-to-speech and a voice model so specboard can narrate ' +
+    'watchable runs aloud. Put the voice model (e.g. en_US-lessac-medium.onnx and its .json) in this ' +
+    "project's spec/_voices/ folder, and make sure the piper binary is on PATH. Then tell me it is ready."
+  const VOICE_SHELL = [
+    '# 1) install piper (pick what fits your OS)',
+    'pipx install piper-tts        # Python, cross-platform',
+    '# or grab a release binary: https://github.com/rhasspy/piper/releases',
+    '',
+    '# 2) drop a voice model into spec/_voices/',
+    'mkdir -p spec/_voices',
+    'base=https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium',
+    'curl -L -o spec/_voices/en_US-lessac-medium.onnx      "$base/en_US-lessac-medium.onnx"',
+    'curl -L -o spec/_voices/en_US-lessac-medium.onnx.json "$base/en_US-lessac-medium.onnx.json"'
+  ].join('\n')
+  async function loadVoiceStatus () {
+    const box = document.getElementById('initvoiceover')
+    if (!box) return
+    document.getElementById('initvoiceprompt').textContent = VOICE_PROMPT
+    document.getElementById('initvoiceshell').textContent = VOICE_SHELL
+    let st
+    try { st = await (await fetch('/api/voice-status')).json() } catch (e) { return }
+    box.disabled = !st.ready
+    document.getElementById('initvoicewrap').classList.toggle('off', !st.ready)
+    const status = document.getElementById('initvoicestatus')
+    status.hidden = false
+    status.textContent = st.ready
+      ? 'piper detected — voice-over can run.'
+      : (st.reason || 'voice-over prerequisites are missing') + ' — install below, then Re-check.'
+    document.getElementById('initvoicehelp').hidden = !!st.ready
+  }
+
   function foundRow (r) {
     // 'yours' — a real PRD the human wrote — is never touched; a guessed row already on the board is
     // still a guess; a route with no screen yet is new. R5: rerunning leaves settled work alone.
@@ -820,6 +854,21 @@ const B = window.__BOARD__ || {}
   document.getElementById('initbtn').addEventListener('click', () => {
     history.pushState(null, '', '#init'); route()
   })
+
+  // Copy-to-clipboard for any [data-copy] block (the voice-over install helper's prompt and shell).
+  document.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-copy]')
+    if (!b) return
+    const el = document.getElementById(b.dataset.copy)
+    if (!el) return
+    try {
+      await navigator.clipboard.writeText(el.textContent)
+      const was = b.textContent; b.textContent = 'Copied ✓'
+      setTimeout(() => { b.textContent = was }, 1200)
+    } catch (err) { toast('could not copy — select the text and copy manually') }
+  })
+  // Re-check re-probes /api/voice-status live, so a just-installed piper flips the switch on with no reload.
+  document.getElementById('initvoicerecheck').addEventListener('click', loadVoiceStatus)
 
   // update available -> update -------------------------------------------
   // The vendored board is brought to a new specboard release with a CLICK, never a terminal command.
