@@ -426,10 +426,15 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     // there is NO in-reader Columns/Open button — the header toggle is the only way back
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
-    // a pager of dots, capped at ten (a sliding window when a screen has more); next advances to a
-    // different requirement. The pager rides the detail's footer bar (dt), not the reader (ov).
+    // a WINDOWED pager (board R14): with more than ten requirements the window slides around the
+    // current one, but the FIRST and LAST page always anchor the ends so you can jump to req 1 or the
+    // last from anywhere, with an ellipsis marking each gap. (Was a plain ten-cap sliding window that
+    // hid both ends.) The pager rides the detail's footer bar (dt), not the reader (ov).
     const dots = dt.locator('.dtfoot .fdots .fdot')
-    await expect(dots).toHaveCount(Math.min(reqCount, 10))
+    expect(await dots.count()).toBeLessThan(reqCount)                              // windowed, not all reqCount
+    await expect(dt.locator('.dtfoot .fdot[title^="R1 "]')).toHaveCount(1)         // first page always reachable
+    await expect(dt.locator(`.dtfoot .fdot[title^="R${reqCount} "]`)).toHaveCount(1) // last page always reachable
+    await expect(dt.locator('.dtfoot .fdotgap')).not.toHaveCount(0)                // an ellipsis marks the gap
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)

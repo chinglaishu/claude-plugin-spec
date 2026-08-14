@@ -122,9 +122,17 @@ export function renderBody (text) {
     .replace(/`([^`]+)`/g, (_, c) => stash(`<code>${esc(c)}</code>`))
   const out = src.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(b => {
     const lines = b.split(/\n/)
-    // a block whose every line is a `- ` item is a list; anything else is a paragraph
-    if (lines.every(l => /^\s*[-*]\s+/.test(l)))
-      return `<ul>${lines.map(l => `<li>${inline(l.replace(/^\s*[-*]\s+/, ''))}</li>`).join('')}</ul>`
+    // a block whose FIRST line is a `- ` item is a list. A wrapped item soft-wraps onto
+    // continuation lines that do NOT start with a dash — fold those into the current item, so a
+    // long bullet stays one <li> instead of collapsing the whole block into a dash-run paragraph.
+    if (/^\s*[-*]\s+/.test(lines[0])) {
+      const items = []
+      for (const l of lines) {
+        if (/^\s*[-*]\s+/.test(l)) items.push(l.replace(/^\s*[-*]\s+/, ''))
+        else if (items.length) items[items.length - 1] += ' ' + l.trim()
+      }
+      return `<ul>${items.map(it => `<li>${inline(it)}</li>`).join('')}</ul>`
+    }
     return `<p>${inline(b.replace(/\n/g, ' '))}</p>`
   }).join('')
   return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
@@ -1429,6 +1437,10 @@ export function build () {
   .fdot:hover { border-color:var(--line3); }
   .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
   .fdot.unproven { background:var(--wash); }
+  /* the gap between a jump-anchor (first/last page) and the sliding window — an inert ellipsis,
+     muted so it reads as "there is more between" without competing with the numbered dots. */
+  .fdotgap { flex:none; align-self:center; color:var(--ink-3); font:var(--t-xs) var(--mono);
+    padding:0 1px; user-select:none; }
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
      ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
      Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */

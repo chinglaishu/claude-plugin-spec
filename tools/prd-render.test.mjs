@@ -33,6 +33,17 @@ test('a dash list renders as <ul><li>, never literal dashes', () => {
   assert.doesNotMatch(h, /- Base always/)
 })
 
+test('a dash list whose items WRAP onto continuation lines stays a list, never one dash-run paragraph', () => {
+  // the real R13 shape: a bullet whose prose wraps across soft-wrapped lines that do NOT start
+  // with a dash. The old renderer required EVERY line to be a bullet, so a wrapped list collapsed
+  // into a <p> with the dashes stranded mid-sentence.
+  const h = renderBody('- A line that follows House View shows the mark\n  on every one of its cells\n- A line the property overrode\n  shows the override mark')
+  assert.match(h, /<ul>/)
+  assert.equal([...h.matchAll(/<li>/g)].length, 2)
+  assert.match(h, /<li>A line that follows House View shows the mark on every one of its cells<\/li>/)
+  assert.doesNotMatch(h, /- A line/)            // no literal dash survives into the prose
+})
+
 test('an HTML author-note is STRIPPED from the display — a requirement is human intent, not a code log', () => {
   const h = renderBody('run the plan <!-- migration foo.sql; services/x.py:12 (author grounding) --> to recompute')
   assert.doesNotMatch(h, /<!--/)               // no raw comment delimiter reaches the page

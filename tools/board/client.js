@@ -342,21 +342,35 @@ const B = window.__BOARD__ || {}
 
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''
-      // show at most ten dots — a window that slides to keep the current one roughly centred, clamped
-      // at each end. The dots stay labelled by their real number, so 3–12 reads as "there is more".
+      // The first and last page are ALWAYS reachable — they anchor the ends so you can jump to req 1
+      // or the last req from anywhere. Between them a window slides around the current one; the gap to
+      // an anchor is drawn as an inert ellipsis so "1 … 4 5 6 7 8 … 13" reads as "there is more each
+      // way". (The old pager showed a plain sliding window that hid both ends once there were >10.)
+      const N = reqs.length
       const DMAX = 10
-      let dstart = 0, dend = reqs.length
-      if (reqs.length > DMAX) {
-        dstart = Math.max(0, Math.min(cur - Math.floor(DMAX / 2), reqs.length - DMAX))
-        dend = dstart + DMAX
+      let idxs
+      if (N <= DMAX) {
+        idxs = []
+        for (let i = 0; i < N; i++) idxs.push(i)
+      } else {
+        const set = {}
+        set[0] = set[N - 1] = 1
+        for (let k = cur - 2; k <= cur + 2; k++) if (k >= 0 && k < N) set[k] = 1
+        idxs = Object.keys(set).map(Number).sort(function (a, b) { return a - b })
       }
-      for (let i = dstart; i < dend; i++) {
+      let prevIdx = -1
+      idxs.forEach(function (i) {
+        if (prevIdx >= 0 && i - prevIdx > 1) {
+          const gap = document.createElement('span'); gap.className = 'fdotgap'; gap.textContent = '…'
+          dots.appendChild(gap)
+        }
         const rr = reqs[i]
         const d = document.createElement('button'); d.className = 'fdot ' + rr.state + (i === cur ? ' cur' : '')
         d.textContent = String(i + 1); d.title = rr.id + ' — ' + rr.title
         d.addEventListener('click', (function (idx) { return function () { cur = idx; render() } })(i))
         dots.appendChild(d)
-      }
+        prevIdx = i
+      })
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
