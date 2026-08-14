@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test'
 import { readFileSync, existsSync } from 'node:fs'
+import { buildAuthProjects } from './tools/auth-projects.mjs'
 
 // Tests live NEXT TO the screen they prove — spec/<screen>/test.spec.ts — because that is the
 // only arrangement where a screen with no test is visibly a screen with no test. A central
@@ -25,13 +26,19 @@ const baseURL = EXTERNAL || `http://localhost:${PORT}`
 // authenticated. With NO signIn (specboard's own suite, or any unauthenticated target) there are no
 // projects and the suite runs as a single default one, exactly as before — this must stay invisible
 // to the no-auth case, which is why it is a spread, not an always-on projects list.
-const STORAGE = './spec/_auth-state.json'
-const signIn = (() => {
+//
+// A target with a fixture only a SECOND account can reach (an isolated org, an admin area) declares
+// that login as a named `authProfiles` entry in _config.json (name + signIn + the screen dirs it
+// owns). buildAuthProjects then gives that account its own setup+screens pair, so it too signs in ONCE
+// and its screens reuse the session instead of re-logging-in inside every test's beforeEach. The
+// mapping is a pure, unit-tested function (tools/auth-projects.test.mjs).
+const cfg = (() => {
   try {
     const p = './spec/_config.json'
-    return existsSync(p) ? String(JSON.parse(readFileSync(p, 'utf8')).signIn || '').trim() : ''
-  } catch { return '' }
+    return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {}
+  } catch { return {} }
 })()
+const authProjects = buildAuthProjects(String(cfg.signIn || '').trim(), cfg.authProfiles)
 
 export default defineConfig({
   testDir: './spec',
@@ -42,19 +49,12 @@ export default defineConfig({
   // screen is not failed for being slow. (specboard's own specs are fast; this only bounds the wait.)
   expect: { timeout: 15000 },
   timeout: 60000,
-  // Present only when the target has a signIn. The setup project authenticates and saves the session;
-  // the screens project reuses it. testMatch on setup is the auth file only; screens keeps the normal
-  // per-screen match. Absent signIn this whole key is gone and the default single project runs.
-  ...(signIn ? {
-    projects: [
-      // The login is PLUMBING, not a scene to watch: it must never inherit the watch pace. slowMo is
-      // set on the top-level `use` below (so a watched run of the SCREENS is paced), which would also
-      // slow every keystroke of the sign-in — at 2000ms the login crawls. Pin this project's slowMo to
-      // 0 so it always signs in at full speed, whatever the pace of the run it precedes.
-      { name: 'setup', testMatch: /_auth\.setup\.ts$/, use: { launchOptions: { slowMo: 0 } } },
-      { name: 'screens', testMatch: '*/test.spec.ts', dependencies: ['setup'], use: { storageState: STORAGE } }
-    ]
-  } : {}),
+  // Present only when the target has a signIn. Each `setup` project authenticates one account and
+  // saves its session; each `screens` project reuses the matching session. Setup runs the login at
+  // full speed (slowMo:0) — it is plumbing, not a scene to watch. Absent any signIn this key is gone
+  // and the default single project runs. See buildAuthProjects (tools/auth-projects.mjs) for the exact
+  // routing, including the second-account `authProfiles` case.
+  ...(authProjects ? { projects: authProjects } : {}),
   // Your approvals are not test fixtures. The specs drive real gates, so they write real state —
   // snapshot it before and restore it after, or running the suite quietly approves screens you
   // never reviewed and the board starts lying about exactly what it exists to be honest about.

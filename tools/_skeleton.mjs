@@ -14,6 +14,9 @@ export const FILES = [
   'tools/board/client.js',
   'tools/serve-board.mjs',
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
+  // pure: maps _config.json's signIn + named authProfiles into Playwright projects (imported by
+  // playwright.board.ts). Unit-tested in tools/auth-projects.test.mjs.
+  'tools/auth-projects.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
