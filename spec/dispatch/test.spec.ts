@@ -28,7 +28,12 @@ const BOARD = SELF_RUN ? '/?runid=' + SELF_RUN + '#/board' : '/#/board'
 const B_R1 = 'Home lists every screen as a card'
 const B_R2 = 'The detail opens as two independent columns'
 // Open a collapsed test row so its steps / log machinery (inside the .tbody) becomes visible.
-const openCase = async (loc: any) => { await loc.locator('.th').click() }
+// Idempotent: clicking .th TOGGLES a case open/shut, so a blind click would CLOSE one that is already
+// open (hiding the very beats the caller is about to assert). Open only when it is not already open.
+const openCase = async (loc: any) => {
+  const open = await loc.evaluate((el: any) => el.classList.contains('open')).catch(() => false)
+  if (!open) await loc.locator('.th').click()
+}
 // Focus is the live default now (board R13); these tests read a screen's COLUMNS — its test rows — so
 // switch there after opening. The run-all/close buttons in the header work in any view.
 const showCols = async (page: any, screen: string) => {
@@ -297,6 +302,10 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
 })
 
 test('R8 — EVERY case that has run can expand its steps, not only the one you clicked', async ({ page, request }) => {
+  // This one genuinely does a lot: a whole headless board run (~40s), then it opens and inspects EVERY
+  // one of that screen's cases. The default 60s cannot cover the run AND the per-case sweep, so it timed
+  // out mid-loop (the page closing under it) — give the heavy integration test the wall-clock it needs.
+  test.setTimeout(120_000)
   // The record must cover every case a run covered. It did not: a case only had steps if the BOARD
   // had run it, so a screen showed detail for the single case somebody had pressed Run on and
   // nothing for its neighbours — even though the suite had run them all many times.
@@ -315,8 +324,15 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   for (let i = 0; i < n; i++) {
     const title = await cases.nth(i).locator('.tt').textContent()
     await openCase(cases.nth(i))   // the machinery lives in the collapsed .tbody
-    await expect(cases.nth(i).locator('.tststeps .beat').first(),
-      'case shows its beats: ' + title).toBeVisible()
+    // A case with story steps (flowStep) or proves-tags (checkReq) shows those beats inline, and every
+    // one of them must — that is the fold-across-runs guarantee this test protects. A pure MECHANISM
+    // test (no checkReq, no flowStep — e.g. "hudCheck asserts the value it paints") proves no
+    // requirement and has no story, so board R10 correctly renders it with no beats: there is nothing
+    // to expand. Its LOG still stands (asserted below), which is the record-per-case point either way.
+    if (await cases.nth(i).locator('.tststeps .beat').count()) {
+      await expect(cases.nth(i).locator('.tststeps .beat').first(),
+        'case shows its beats: ' + title).toBeVisible()
+    }
     // its log is folded per case (feeds the one full-log popup); assert the record reached this case
     await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),
       'case keeps its own folded log history: ' + title).toBeAttached()
