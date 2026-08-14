@@ -156,6 +156,21 @@ detail header stays a background run — running the whole suite watchably is ra
 Both stay wherever a test is shown; in the **Focus** reader (R13), Run is always shown in the proof
 header and Run in background folds into a **⋯ menu** with Logs and Steps.
 
+The self-narrating topbar can also be **spoken aloud**. When voice-over is on (a Setup switch, init
+R6 — **off by default, saved per project**) and the running screen has a **narration pack**
+(`spec/<screen>/narration.json`, authored once with pass *and* fail lines), a single watchable run is
+**paced to the narration** and its recording is **voiced**: piper synthesizes each line and it is
+muxed at the beat times, the same words shown as subtitles — and the player then plays that **voiced
+recording** in place of the silent one. With no pack, no voice-over, or no synthesizer present, the
+recording stays **silent** — the voice is never faked (rule 3), and a screen with no pack simply
+plays silent.
+
+*Amended 2026-08-14 at the human's direction: the recording can be VOICED, not only subtitled. A
+per-project Setup switch (init R6, off by default) turns it on; a single watchable run of a screen
+that has a narration pack is paced to its lines and piper's synthesis is muxed onto the recording at
+the beat times, and the player plays the voiced file. No pack or no synthesizer ⇒ silent, never
+faked.*
+
 *Amended 2026-08-03 at the human's direction, four times. First: a flat "80 steps" fold was
 unreadable and a silent recording cannot explain a failure. Second: "proves R5" still meant nothing
 without cross-referencing R5, the setup beat was repeated noise, and the narration belongs INSIDE

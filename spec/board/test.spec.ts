@@ -225,6 +225,36 @@ test('Story-step evidence renders from the test definition', async ({ page }) =>
   })
 })
 
+test('R10 — the player plays the VOICED recording when a run produced one', async ({ page }) => {
+  // Voice-over (init R6): a voiced run's record carries BOTH the silent video and a voiced mp4, and
+  // the player must play the voiced one. Deterministic through the REAL client pipeline via a stubbed
+  // /api/runs — a real voiced run needs piper, which the suite cannot assume (board R10 rule 3).
+  await coverReqs('R10')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await checkReq('R10', async () => {
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rv', hasLog: false, at: '2026-08-14T00:00:00.000Z', ms: 4000,
+        ok: true, total: 1, failed: 0, shotsByTest: { [STORY_TITLE]: {
+          shots: [], video: 'spec/_runs/rv/a.webm', voiced: 'spec/_runs/rv/a.voiced.mp4',
+          steps: [{ label: STORY[0], cat: 'test.step', depth: 0, ok: true, t: 0, d: 100 }],
+          at: '2026-08-14T00:00:00.000Z', ms: 4000, ok: true, commit: 'abc1234'
+        } } }]
+    } }))
+    await page.reload()
+    await toColumns(page)
+    const tc = dt.locator('.test', { hasText: STORY_TITLE }).first()
+    await tc.locator('.th').click()                 // expand the row so its recording slot is reachable
+    await expect(tc.locator('.rec')).toBeVisible()  // folded from the stubbed run (has a video ⇒ playable)
+    await tc.locator('.rec').click()
+    // the VOICED cut is what plays — the same record's silent a.webm would play without init R6
+    const src = await tc.locator('.rec video').getAttribute('src')
+    expect(src).toContain('a.voiced.mp4')
+    expect(src).not.toContain('a.webm')
+  })
+})
+
 test('Requirement state is computed and assertion-backed', async ({ page }) => {
   await coverReqs('R4')
   await openDetail(page)

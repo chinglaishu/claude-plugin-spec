@@ -2510,6 +2510,8 @@ export function build () {
               <input class="input" id="initstepdelay" type="number" min="0" max="5000" step="50" style="width:110px" placeholder="300">
               <span class="gbn">ms between each step, so you can follow along</span>
             </div>
+            <label class="watchtog sm" id="initvoicewrap" style="margin-top:var(--s3)">
+              <input type="checkbox" id="initvoiceover"> narrate a watchable run aloud — voice &amp; subtitles, for a screen that has a narration pack</label>
           </div>
           <div class="fld" style="margin-bottom:0">
             <div class="l">Where to keep run screenshots &amp; video</div>

@@ -408,6 +408,10 @@ export const DEFAULT_CONFIG = {
   routes: [], signIn: '',
   // how long a watchable run pauses between actions, so a person can actually follow it
   stepDelayMs: 300,
+  // narrate a watchable run's recording ALOUD (piper voice + subtitles), not only burn its topbar.
+  // OFF by default and saved per project (init R6); only bites a single watchable run of a screen
+  // that has a narration pack (board R10) — otherwise the recording is silent, exactly as before.
+  voiceOver: false,
   // where a run's screenshots and videos are kept. 'local' = spec/_runs/ in this repo (default).
   // 'git' = committed to a branch of this repo (pushed to origin only if push:true). A bucket = a
   // base URL uploads are PUT to.
@@ -445,6 +449,8 @@ export function cleanConfig (cfg = {}, cur = {}) {
     signIn: str(src.signIn, 4000),
     // clamped: 0 means "as fast as it can", and a giant value would hang a watch forever
     stepDelayMs: Math.max(0, Math.min(5000, Number(src.stepDelayMs) || 0)) || (src.stepDelayMs === 0 ? 0 : 300),
+    // a real boolean on disk — a stale form or a truthy string can never pin a half-on state
+    voiceOver: !!src.voiceOver,
     storage: {
       where: ['local', 'git', 'bucket'].includes(src.storage?.where) ? src.storage.where : 'local',
       gitBranch: str(src.storage?.gitBranch, 120).trim(),
@@ -459,6 +465,18 @@ export function writeConfig (cfg) {
   writeJson(CONFIG, clean)
   return clean
 }
+
+// Pure: should THIS run be voiced? Voice-over is deliberately narrow — a single WATCHABLE FLOW (one
+// named test, `grep`, on a real screen) that HAS a narration pack, with the switch on and ffmpeg
+// present to mux. "Run all" (no grep), a whole-suite run (no screen), a screen with no pack, or a
+// box without ffmpeg all stay SILENT — the honest default (init R6, board R10 rule 3). Split out so
+// the decision is unit-testable without a running board (tools/voiceover.test.mjs).
+export function shouldVoice ({ voiceOver, screen, grep, packExists, ffmpeg } = {}) {
+  return !!(voiceOver && screen && String(grep || '').trim() && packExists && ffmpeg)
+}
+
+// Where a screen's narration pack lives, if authored. Absent ⇒ that screen simply plays silent.
+export const narrationPack = screen => join(SPEC, String(screen || ''), 'narration.json')
 
 // A route becomes a directory name. '/product/:id' has to survive as something a filesystem and a
 // URL hash both accept, and two different routes must never collapse to one folder.

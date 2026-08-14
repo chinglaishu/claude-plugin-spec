@@ -1,14 +1,14 @@
 {
   "board": {
-    "total": 18,
+    "total": 22,
     "failed": 0,
     "tests": [
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 190,
+        "ms": 897,
         "error": null,
-        "line": 19,
+        "line": 27,
         "reqs": {
           "board:R1": "pass"
         }
@@ -16,9 +16,9 @@
       {
         "title": "The detail opens as two independent columns",
         "ok": true,
-        "ms": 162,
+        "ms": 476,
         "error": null,
-        "line": 35,
+        "line": 43,
         "reqs": {
           "board:R2": "pass"
         }
@@ -26,9 +26,9 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 274,
+        "ms": 485,
         "error": null,
-        "line": 54,
+        "line": 62,
         "reqs": {
           "board:R3": "pass"
         }
@@ -36,19 +36,29 @@
       {
         "title": "Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself",
         "ok": true,
-        "ms": 15856,
+        "ms": 1355,
         "error": null,
-        "line": 100,
+        "line": 108,
         "reqs": {
-          "board:R10": "fail"
+          "board:R10": "pass"
         }
       },
       {
         "title": "Story-step evidence renders from the test definition",
         "ok": true,
-        "ms": 296,
+        "ms": 559,
         "error": null,
-        "line": 203,
+        "line": 213,
+        "reqs": {
+          "board:R10": "pass"
+        }
+      },
+      {
+        "title": "R10 — the player plays the VOICED recording when a run produced one",
+        "ok": true,
+        "ms": 731,
+        "error": null,
+        "line": 228,
         "reqs": {
           "board:R10": "pass"
         }
@@ -56,9 +66,9 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 244,
+        "ms": 653,
         "error": null,
-        "line": 218,
+        "line": 258,
         "reqs": {
           "board:R4": "pass"
         }
@@ -66,9 +76,9 @@
       {
         "title": "Hovering a test lights up the requirements it covers",
         "ok": true,
-        "ms": 294,
+        "ms": 791,
         "error": null,
-        "line": 284,
+        "line": 324,
         "reqs": {
           "board:R5": "pass"
         }
@@ -76,9 +86,9 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 178,
+        "ms": 823,
         "error": null,
-        "line": 300,
+        "line": 340,
         "reqs": {
           "board:R6": "pass"
         }
@@ -86,9 +96,9 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 154,
+        "ms": 451,
         "error": null,
-        "line": 342,
+        "line": 382,
         "reqs": {
           "board:R7": "pass"
         }
@@ -96,29 +106,57 @@
       {
         "title": "No acceptance gate — the detail is the two columns, nothing to accept",
         "ok": true,
-        "ms": 190,
+        "ms": 501,
         "error": null,
-        "line": 354,
+        "line": 394,
         "reqs": {
           "board:R8": "pass"
         }
       },
       {
-        "title": "The detail offers a focus reader — one requirement per page, columns a click away",
+        "title": "The detail offers a three-view toggle — Focus reads one requirement per page in two containers",
         "ok": true,
-        "ms": 395,
+        "ms": 1029,
         "error": null,
-        "line": 372,
+        "line": 412,
         "reqs": {
           "board:R13": "pass"
         }
       },
       {
+        "title": "The proof is scannable as frames, not only as video — a strip of stills per checked value",
+        "ok": true,
+        "ms": 886,
+        "error": null,
+        "line": 499,
+        "reqs": {
+          "board:R14": "pass"
+        }
+      },
+      {
+        "title": "A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)",
+        "ok": true,
+        "ms": 931,
+        "error": null,
+        "line": 567,
+        "reqs": {
+          "dispatch:R7": "pass"
+        }
+      },
+      {
+        "title": "hudCheck asserts the value it paints — a mismatch throws, a match does not",
+        "ok": true,
+        "ms": 324,
+        "error": null,
+        "line": 591,
+        "reqs": {}
+      },
+      {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 223,
+        "ms": 430,
         "error": null,
-        "line": 405,
+        "line": 599,
         "reqs": {
           "board:R9": "pass"
         }
@@ -126,9 +164,9 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 438,
+        "ms": 591,
         "error": null,
-        "line": 420,
+        "line": 614,
         "reqs": {
           "board:R10": "pass"
         }
@@ -136,9 +174,9 @@
       {
         "title": "The guide opens as manager and staff — without, then with",
         "ok": true,
-        "ms": 425,
+        "ms": 674,
         "error": null,
-        "line": 444,
+        "line": 638,
         "reqs": {
           "board:R11": "pass"
         }
@@ -146,9 +184,9 @@
       {
         "title": "Acts 1 and 2 play once, hold, and stand still under reduced motion",
         "ok": true,
-        "ms": 6879,
+        "ms": 7427,
         "error": null,
-        "line": 530,
+        "line": 724,
         "reqs": {
           "board:R11": "pass"
         }
@@ -156,9 +194,9 @@
       {
         "title": "The walkthrough steps on click and holds — never auto-advances",
         "ok": true,
-        "ms": 1425,
+        "ms": 1836,
         "error": null,
-        "line": 574,
+        "line": 768,
         "reqs": {
           "board:R11": "pass"
         }
@@ -166,9 +204,9 @@
       {
         "title": "A deep-linked skill URL shows the skill detail on cold load",
         "ok": true,
-        "ms": 132,
+        "ms": 480,
         "error": null,
-        "line": 599,
+        "line": 793,
         "reqs": {
           "board:R11": "pass"
         }
@@ -176,15 +214,15 @@
       {
         "title": "The guide ends with the derived next action, and there is no rail",
         "ok": true,
-        "ms": 191,
+        "ms": 479,
         "error": null,
-        "line": 613,
+        "line": 807,
         "reqs": {
           "board:R12": "pass"
         }
       }
     ],
-    "ranAt": 1786519973677
+    "ranAt": 1786713174828
   },
   "conflicts": {
     "total": 5,
@@ -341,13 +379,13 @@
     "ranAt": 1786519973677
   },
   "init": {
-    "total": 6,
+    "total": 7,
     "failed": 0,
     "tests": [
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 322,
+        "ms": 885,
         "error": null,
         "line": 23,
         "reqs": {}
@@ -355,7 +393,7 @@
       {
         "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
         "ok": true,
-        "ms": 120,
+        "ms": 286,
         "error": null,
         "line": 48,
         "reqs": {}
@@ -363,7 +401,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 175,
+        "ms": 391,
         "error": null,
         "line": 60,
         "reqs": {}
@@ -371,7 +409,7 @@
       {
         "title": "R3 — a drafted PRD lands as a guess: one CARD, visibly a guess and waiting, with no gate",
         "ok": true,
-        "ms": 129,
+        "ms": 577,
         "error": null,
         "line": 80,
         "reqs": {}
@@ -379,21 +417,31 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 95,
+        "ms": 234,
         "error": null,
-        "line": 117,
+        "line": 118,
         "reqs": {}
+      },
+      {
+        "title": "R6 — voice-over is a saved, per-project switch, off by default",
+        "ok": true,
+        "ms": 1111,
+        "error": null,
+        "line": 128,
+        "reqs": {
+          "init:R6": "pass"
+        }
       },
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 152,
+        "ms": 361,
         "error": null,
-        "line": 127,
+        "line": 157,
         "reqs": {}
       }
     ],
-    "ranAt": 1786519973677
+    "ranAt": 1786713174828
   },
   "_modes": {
     "total": 7,

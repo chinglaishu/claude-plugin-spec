@@ -1,4 +1,4 @@
-import { test, expect } from '../_base'
+import { test, expect, checkReq } from '../_base'
 import { writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -123,6 +123,35 @@ test('R4 — nothing found is the greenfield case: no rows, a prompt to write th
   await expect(view.locator('#initempty')).toContainText(/first PRD/i)
   // greenfield is the ZERO case of the same flow — the found table is simply empty, not a mode
   await expect(view.locator('#initfound .frow')).toHaveCount(0)
+})
+
+test('R6 — voice-over is a saved, per-project switch, off by default', async ({ page }) => {
+  // The whole of R6: a Setup switch that is OFF by default, PERSISTS to the project's own config, and
+  // reads back on a fresh load. Start from no config so the default and the round-trip are both real.
+  if (existsSync(CONFIG)) rmSync(CONFIG)
+  await page.goto('/#init')
+  await expect(page.locator('#initview')).toBeVisible()
+  const box = page.locator('#initvoiceover')
+
+  await checkReq('R6', async () => {
+    // OFF by default — a fresh project shows it unchecked (and never wrote it on)
+    await expect(box).not.toBeChecked()
+
+    // turn it on, save → it persists to spec/_config.json (per project, like the run pace)
+    await box.check()
+    await page.locator('#initsave').click()
+    await expect.poll(() => config()?.voiceOver).toBe(true)
+
+    // read-back: a fresh load of the page shows the switch still on, from disk — not a defaulted false
+    await page.goto('/')
+    await page.goto('/#init')
+    await expect(page.locator('#initvoiceover')).toBeChecked()
+
+    // and it switches back off — the toggle is a real two-way switch, not a one-shot opt-in
+    await page.locator('#initvoiceover').uncheck()
+    await page.locator('#initsave').click()
+    await expect.poll(() => config()?.voiceOver).toBe(false)
+  })
 })
 
 test('R5 — rerunning marks new routes new and leaves a settled row alone', async ({ page }) => {

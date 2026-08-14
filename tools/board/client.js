@@ -735,6 +735,7 @@ const B = window.__BOARD__ || {}
     document.getElementById('initroutes').value = (cfg.routes || []).join('\n')
     document.getElementById('initsignin').value = cfg.signIn || ''
     document.getElementById('initstepdelay').value = cfg.stepDelayMs == null ? 300 : cfg.stepDelayMs
+    document.getElementById('initvoiceover').checked = !!cfg.voiceOver
     const st = cfg.storage || { where: 'local' }
     setStore(st.where || 'local')
     document.getElementById('initgitbranch').value = st.gitBranch || ''
@@ -781,6 +782,7 @@ const B = window.__BOARD__ || {}
       routes: document.getElementById('initroutes').value,
       signIn: document.getElementById('initsignin').value,
       stepDelayMs: Number(document.getElementById('initstepdelay').value),
+      voiceOver: document.getElementById('initvoiceover').checked,
       storage: {
         where: storeWhere(),
         gitBranch: document.getElementById('initgitbranch').value,
@@ -1216,8 +1218,9 @@ const B = window.__BOARD__ || {}
             // No board-side overlay on the player: the recording NARRATES ITSELF — the harness
             // paints a topbar into the page while the test runs (spec/_base.ts checkReq/hudCheck),
             // so what-is-being-proven and expected-vs-actual are burned into the video's own
-            // frames and its cover (board R10).
-            slot.innerHTML = '<video controls autoplay playsinline src="' + one.video + '"></video>' + label
+            // frames and its cover (board R10). When voice-over produced a VOICED cut, play that in
+            // place of the silent one (init R6) — it carries the same frames plus narration audio.
+            slot.innerHTML = '<video controls autoplay playsinline src="' + (one.voiced || one.video) + '"></video>' + label
             const v = slot.querySelector('video')
             // MediaRecorder webm has no duration header, so the timeline starts unscrubbable.
             // Force the browser's end-of-file probe (needs the server's Range support): jump far

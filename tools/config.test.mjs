@@ -48,3 +48,19 @@ test('a storage-only save keeps the top-level fields, and vice-versa', () => {
 test('with no current config, an omitted stepDelayMs falls to the 300 default', () => {
   assert.equal(cleanConfig({ baseUrl: 'http://x' }, {}).stepDelayMs, 300)
 })
+
+test('voiceOver is off by default, round-trips on, and survives a partial save', () => {
+  // Default OFF — a project that never set it must read false, not undefined (init R6).
+  assert.strictEqual(cleanConfig({}, {}).voiceOver, false, 'absent ⇒ off by default')
+  // Turning it on persists; a real boolean, never a stray truthy string on disk.
+  assert.strictEqual(cleanConfig({ voiceOver: true }, FULL).voiceOver, true, 'on persists')
+  assert.strictEqual(cleanConfig({ voiceOver: 'yes' }, {}).voiceOver, true, 'coerced to a boolean')
+  // The stepDelayMs bug, for voiceOver: a save that omits it must NOT reset it to the default.
+  assert.strictEqual(
+    cleanConfig({ baseUrl: 'http://x' }, { ...FULL, voiceOver: true }).voiceOver, true,
+    'preserved through a partial save that never mentions it')
+  // An explicit falsy in the payload turns it off (the switch can always be switched back).
+  assert.strictEqual(
+    cleanConfig({ voiceOver: false }, { ...FULL, voiceOver: true }).voiceOver, false,
+    'an explicit false turns it off')
+})

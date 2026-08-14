@@ -1,0 +1,28 @@
+{
+  "voice": "en_US-lessac-medium",
+  "intro": { "text": "This is the specboard board screen, proving its own requirements." },
+  "cues": [
+    { "on": "step", "match": "^1\\.", "text": "First, open the board detail — the two columns appear." },
+    { "on": "step", "match": "^2\\.", "text": "Then announce a golden value on the narration bar." },
+    { "on": "step", "match": "^3\\.", "text": "Finally, confirm the tests column is present." },
+
+    { "on": "req-done", "match": "^R1 pass", "text": "R1 holds: every screen is one card, not a row of cells." },
+    { "on": "req-done", "match": "^R1 fail", "text": "R1 broke: a screen is no longer a single card." },
+
+    { "on": "req-done", "match": "^R4 pass", "text": "R4 holds: every requirement's state is computed and assertion-backed." },
+    { "on": "req-done", "match": "^R4 fail", "text": "R4 broke: a requirement's state was not derived from its proof." },
+
+    { "on": "req-done", "match": "^R8 pass", "text": "R8 holds: there is no acceptance gate — a requirement is canon the moment it is written." },
+    { "on": "req-done", "match": "^R8 fail", "text": "R8 broke: an acceptance gate has come back." },
+
+    { "on": "req-done", "match": "^R10 pass", "text": "R10 holds: a test opens to its full evidence, and the recording narrates itself." },
+    { "on": "req-done", "match": "^R10 fail", "text": "R10 broke: the evidence or the self-narration is missing." },
+
+    { "on": "req-done", "match": "^R13 pass", "text": "R13 holds: three views of a screen — focus, list, and columns." },
+    { "on": "req-done", "match": "^R13 fail", "text": "R13 broke: one of the three views is gone." },
+
+    { "on": "req-done", "match": "^R14 pass", "text": "R14 holds: the proof is scannable as frames, not only as video." },
+    { "on": "req-done", "match": "^R14 fail", "text": "R14 broke: the proof frames are missing." }
+  ],
+  "outro": { "text": "That is the board, proving itself." }
+}

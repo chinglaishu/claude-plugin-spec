@@ -49,3 +49,17 @@ crawl, not a separate mode with separate code.
 ## R5 — Rerunning finds new screens without touching settled ones
 
 Routes already on the board keep their PRD, their approvals and their pins.
+
+## R6 — Setup carries a voice-over switch: off by default, saved with the project
+
+A single watchable run can be **narrated aloud**, not only subtitled — so Setup has a **voice-over
+switch**. It is **off by default** and **persists in the project's config** (`spec/_config.json`,
+like the run pace), so the choice is **per project**, never a global setting. On, a watchable run of
+a screen that has a **narration pack** produces a **voiced recording** — piper synthesis muxed at the
+beat times (board R10); off, or with no pack or no synthesizer present, the recording is **silent as
+before**, never faked. The switch is the only new thing Setup owns here — the voice pipeline lives
+with the run and the pack lives with the screen (board R10).
+
+*Drafted 2026-08-14 on the human's direction and accepted the same turn: voice-over was asked for as
+a saved, per-project toggle, default off. The pipeline (pace → render, piper → ffmpeg) already
+existed for the CLI; this makes the board's own watchable run drive it.*

@@ -14,7 +14,8 @@ import {
   ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
-  RUNS, readRuns, recordRunEntry, reEscape, runVerdict
+  RUNS, readRuns, recordRunEntry, reEscape, runVerdict,
+  shouldVoice, narrationPack
 } from './spec-store.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
@@ -187,6 +188,30 @@ async function extractProofFrames (recordDir, shotsByTest) {
       delete recd._frames
     }
   }
+}
+
+// Voice-over render (board R10). Lay the screen's narration onto the run's recording — piper voice
+// muxed at the beat times, the same words burned in as subtitles — and point the record at the
+// voiced mp4 so the player plays it in place of the silent one. Only when EXACTLY ONE test recorded a
+// video: voice is a single-flow artifact, and one shared beat log cannot time two interleaved flows.
+// The voiced file sits beside the recording (pruned and shipped with the run). Returns the voiced
+// path on success, null when there was nothing to voice; THROWS only on a real render failure so the
+// caller can report it and leave the silent recording in place. narrate-run's render is unit-proven
+// to add an audio track (tools/voiceover.test.mjs).
+function renderVoiced (shotsByTest, beatsFile, packFile) {
+  if (!existsSync(beatsFile) || !existsSync(packFile)) return null   // no beats / no pack ⇒ nothing to voice
+  const withVideo = Object.values(shotsByTest).filter(r => r && r.video)
+  if (withVideo.length !== 1) return null                            // not a single flow ⇒ leave silent
+  const recd = withVideo[0]
+  const videoAbs = join(ROOT, recd.video)
+  if (!existsSync(videoAbs)) return null
+  const outAbs = videoAbs.replace(/\.\w+$/, '') + '.voiced.mp4'
+  execFileSync(process.execPath, [join(ROOT, 'tools/narrate-run.mjs'), 'render',
+    '--video', videoAbs, '--beats', beatsFile, '--pack', packFile, '--out', outAbs],
+  { cwd: ROOT, stdio: 'pipe', env: { ...process.env, FORCE_COLOR: '0' } })
+  if (!existsSync(outAbs)) return null
+  recd.voiced = relative(ROOT, outAbs)     // spread through the run record → the player reads one.voiced
+  return recd.voiced
 }
 
 function recordRun (entry) {
@@ -531,6 +556,24 @@ function startRun (screen, opts = {}) {
   const runId = String(started)
   const recordDir = join(RUNDIR, runId)
   mkdirSync(recordDir, { recursive: true })
+  // VOICE-OVER (init R6 / board R10). A single watchable flow (a named test on a screen) whose screen
+  // has a narration pack, when the switch is on and ffmpeg is here to mux. Decided up front so the run
+  // is PACED to the voice (BOARD_NARRATION_PACE) and logs its beats (BOARD_BEAT_LOG) — sync by
+  // construction. The pace step SYNTHESIZES the lines (piper), so a box with no piper or no voice model
+  // degrades HERE to a silent recording, honestly and loudly, rather than failing the run.
+  const packFile = narrationPack(screen)
+  const paceFile = join(recordDir, 'pace.json')
+  const beatsFile = join(recordDir, 'beats.jsonl')
+  let voice = shouldVoice({ voiceOver: cfg.voiceOver, screen, grep, packExists: existsSync(packFile), ffmpeg: ffmpegOk() })
+  if (voice) {
+    try {
+      execFileSync(process.execPath, [join(ROOT, 'tools/narrate-run.mjs'), 'pace', '--pack', packFile, '--out', paceFile],
+        { cwd: ROOT, stdio: 'pipe', env: { ...process.env, FORCE_COLOR: '0' } })
+    } catch (err) {
+      voice = false
+      push('run', { state: 'line', line: 'voice-over is on, but the narration could not be synthesized (piper / voice model?) — recording silent' })
+    }
+  }
   // A run started BY the board writes to its OWN report file. Scoped to one screen it would
   // otherwise overwrite spec/_results.json — the file a concurrent full run (or the suite itself)
   // is also writing — and erase every other screen's result. It folds into the per-screen index
@@ -561,6 +604,10 @@ function startRun (screen, opts = {}) {
       BOARD_PORT: String(PORT),
       ...(cfg.baseUrl && cfg.mode === 'attach' ? { BOARD_URL: cfg.baseUrl } : {}),
       ...(slowMo ? { BOARD_SLOWMO: String(slowMo) } : {}),
+      // voice-over: hold each beat until its narrated line has been spoken (BOARD_NARRATION_PACE) and
+      // log the run's beat timeline (BOARD_BEAT_LOG) so render can lay the audio at the beat times.
+      // Both only when the run is actually being voiced — otherwise this is exactly a silent run.
+      ...(voice ? { BOARD_NARRATION_PACE: paceFile, BOARD_BEAT_LOG: beatsFile } : {}),
       // watching means ONE window that runs through every case — not a window flashing open and
       // shut between them
       ...(opts.headed ? { BOARD_ONE_WINDOW: '1' } : {}),
@@ -606,6 +653,17 @@ function startRun (screen, opts = {}) {
     // Cut the proof frames (board R14) from this run's recordings BEFORE archiving, so the git/bucket
     // ship carries them too. Best-effort: no ffmpeg or a failed cut just leaves a test without a strip.
     try { await extractProofFrames(recordDir, shotsByTest) } catch (err) { console.error('proof-frame cut failed:', err) }
+    // Voice-over: mux the narration onto this run's recording, producing a voiced mp4 the player
+    // prefers. BEFORE archiving, so a git ship carries it too. Best-effort: a render failure leaves
+    // the silent recording untouched and says so on the run — never a failed run (board R10 rule 3).
+    if (voice) {
+      try {
+        const voiced = renderVoiced(shotsByTest, beatsFile, packFile)
+        if (voiced) push('run', { state: 'line', line: 'voiced the recording — ' + voiced })
+      } catch (err) {
+        push('run', { state: 'line', line: 'voice render failed — recording left silent: ' + (err.message || err) })
+      }
+    }
     // Ship the record where Setup says, if anywhere but local. Best effort: a failure records the
     // reason on the run and keeps the local copy, and never touches the verdict.
     let archive = null
