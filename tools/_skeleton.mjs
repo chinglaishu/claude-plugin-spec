@@ -13,6 +13,11 @@ export const FILES = [
   'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/journey.mjs', 'tools/build-board.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
+  // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs
+  // is the pure cue/subtitle/timing logic, narrate-run.mjs the piper+ffmpeg shell. Vendored so a
+  // scaffolded project's own watchable run can actually voice — without them serve-board's voice wiring
+  // has nothing to call and every run degrades to silent, even with piper installed.
+  'tools/narrate.mjs', 'tools/narrate-run.mjs',
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
   // pure: maps _config.json's signIn + named authProfiles into Playwright projects (imported by
   // playwright.board.ts). Unit-tested in tools/auth-projects.test.mjs.
