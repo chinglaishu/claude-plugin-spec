@@ -465,12 +465,16 @@ async function emitNote (text: string): Promise<void> {
 // passing-looking claim while some *separate* expect() elsewhere is the thing that actually broke (the
 // confusing "expected 9% · got 9%" under a red banner). Assert LAST — after the paint — so the failing
 // value is burned into the frame before the throw, and the enclosing checkReq/flowStep records it.
-export async function hudCheck (label: string, expected: unknown, actual: unknown): Promise<void> {
+// `assert:false` paints and records the claim but does NOT throw — for a caller (proveVisible) that
+// must paint MORE than the bar (its red ring) before the throw, and then asserts the SAME shown vs
+// expected itself. Every other caller uses the default and asserts here, so the bar always names the
+// check that broke (76714c5).
+export async function hudCheck (label: string, expected: unknown, actual: unknown, opts: { assert?: boolean } = {}): Promise<void> {
   const ok = String(expected) === String(actual)
   CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok }
   await emitNote(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
   await paintHud({})
-  expect(String(actual), String(label)).toBe(String(expected))
+  if (opts.assert !== false) expect(String(actual), String(label)).toBe(String(expected))
 }
 // Freeform variant, for a sentence the author wants on the bar (shown on the note line).
 export async function hudNote (text: string): Promise<void> {
@@ -540,10 +544,12 @@ export async function proveVisible (
 ): Promise<void> {
   await reveal(target, { hold: 0 })                         // centre it now, ring it in ink; the readable hold comes after we read
   const shown = ((await target.first().textContent()) || '').trim()
-  await hudCheck(label, expected, shown)
+  await hudCheck(label, expected, shown, { assert: false }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
   const ok = opts.match ? !!opts.match(shown) : shown === expected
   // A wrong value turns the ring bengara BEFORE we throw, and we hold on that red frame, so the
-  // recording shows exactly which cell failed rather than cutting away at the assertion.
+  // recording shows exactly which cell failed rather than cutting away at the assertion. hudCheck
+  // gained its own assert (76714c5); it must run with assert:false here or it would throw before this
+  // reddening, leaving the ring ink on a failure — which is exactly what regressed.
   if (!ok) await paintFocus(target, { failed: true })
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
   if (opts.match) expect(ok, `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)

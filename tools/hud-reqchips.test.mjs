@@ -105,10 +105,11 @@ test('the claim line shows expected vs got as two values, and got reddens on a m
     `  const okColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
     `  const okGot = await page.locator('#__specboard-hud-got').textContent()\n` +
     `  const exp = await page.locator('#__specboard-hud-exp').textContent()\n` +
-    `  await hudCheck('R&M growth', '4.00%', '9.99%')\n` +
+    `  let threw = false\n` +
+    `  try { await hudCheck('R&M growth', '4.00%', '9.99%') } catch { threw = true }\n` +  // hudCheck now ASSERTS (76714c5): it paints the red claim, THEN throws — catch it and read the frame it left
     `  const badColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
     `  const badGot = await page.locator('#__specboard-hud-got').textContent()\n` +
-    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({ okColor, okGot, exp, badColor, badGot }))\n` +
+    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({ okColor, okGot, exp, badColor, badGot, threw }))\n` +
     `})\n`,
   {}, 'claim')
   assert.equal(r.status, 0, `the claim spec should pass:\n${r.stdout}\n${r.stderr}`)
@@ -119,6 +120,7 @@ test('the claim line shows expected vs got as two values, and got reddens on a m
   assert.equal(s.badGot, '9.99%', 'the got value updates to the mismatching read')
   assert.match(String(s.badColor), /232, 161, 138/, 'got reddens (bengara) the moment it disagrees')
   assert.ok(!/232, 161, 138/.test(String(s.okColor)), 'got is not red on a match')
+  assert.equal(s.threw, true, 'a mismatching hudCheck still throws — it paints the red claim, THEN asserts (76714c5)')
 })
 
 test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
