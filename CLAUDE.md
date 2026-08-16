@@ -62,10 +62,12 @@ covers — qualified (`asset-plan:R5`), so a flow can prove another screen's req
 
 `spec/_results-reporter.mjs` folds each run's per-requirement pass/fail/not-reached into
 `spec/_results-index.json`; `tools/coverage.mjs` (pure, unit-tested) and `tools/spec-store.mjs`
-derive each requirement's **proven / unproven** state. Aim for **few comprehensive** tests
-— one flow proving several requirements — but every requirement still needs a real assertion (rule
-2), so "fewer tests" can never buy a false green. A flow's *file* lives in the screen it **starts**
-on; a requirement lists every test that covers it wherever that file lives.
+derive each requirement's **proven / unproven** state. Tests come in **two kinds, both first-class**
+(board R6, the human 2026-08-17): a **unit** test proves one screen or component displaying and
+acting right; a **flow** test crosses screens along a chosen path and reads as the units it
+connects. Every requirement still needs a real assertion (rule 2), so neither kind can buy a false
+green. A flow's *file* lives in the screen it **starts** on; a requirement lists every test that
+covers it wherever that file lives.
 
 ## Architecture
 

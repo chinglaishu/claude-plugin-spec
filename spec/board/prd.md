@@ -68,12 +68,21 @@ lives in the **test**, which tags the requirement ids it covers — qualified (e
 so a flow can cover another screen's requirement. A flow's file lives in the screen it **starts** on;
 coverage is by tag, so a requirement lists every test that covers it, wherever that file lives.
 
-## R6 — Few comprehensive tests — but never long-and-shallow
+## R6 — Two kinds of test, unit and flow — never long-and-shallow
 
-The aim is fewer tests each covering more (edit on Asset Plan → assert the value → open Tenancy
-Schedule → assert it reflects, with the right number), not one shallow walk that touches everything
-and proves nothing. A test may tag many requirements, but each still needs an assertion that would
-fail without it (R4) — so "fewer tests" can never buy itself a false green.
+A screen's proof comes in two kinds, both first-class. A **unit** test proves one screen — or one
+component on it — displaying right and acting right in each state that matters. A **flow** test
+crosses screens along a chosen path (edit on Asset Plan → assert the value → open Tenancy Schedule
+→ assert it reflects, with the right number) and reads as the units it connects. Neither kind may
+be a shallow walk that touches everything and proves nothing: a test may tag many requirements, but
+each still needs an assertion that would fail without it (R4) — so neither kind can buy itself a
+false green.
+
+*Amended 2026-08-17 at the human's direction: this previously read "few comprehensive tests" — one
+flow proving several requirements was the whole aim. The unit/flow split supersedes it:
+comprehensiveness now lives in a unit test's coverage of its own screen, and flows prove the
+connections between screens. The guard survives unchanged — coverage is bought by a tag plus an
+assertion, never by a test merely existing.*
 
 ## R7 — specboard owns neither the wireframe nor the design
 

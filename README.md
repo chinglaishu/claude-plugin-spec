@@ -101,9 +101,9 @@ specboard's method is five Claude Code skills:
 1. **kg-init** — scaffold the board into a project and inventory its screens. A real browser visits
    every route it can reach and leaves each one a row with no PRD — visibly, honestly ungoverned. It
    never drafts requirements or tests; that is a separate, deeper job.
-2. **kg-deep** — take ONE screen from a bare row to deep, human-confirmed requirements proven by a
-   few comprehensive E2E flows: study the real screen, seed deterministic golden data, draft the PRD
-   for the human to confirm, then author the proving flows. Run it screen by screen, most important
+2. **kg-deep** — take ONE screen from a bare row to deep, human-confirmed requirements proven by
+   unit and flow E2E tests: study the real screen, seed deterministic golden data, draft the PRD
+   for the human to confirm, then author the proving tests. Run it screen by screen, most important
    first — this is what makes a row *true*.
 3. **kg-e2e** — author the E2E test that proves a screen's requirements, tagging each one it covers
    with `checkReq`/`coverReqs` and asserting something that would fail without it. Used standalone, or

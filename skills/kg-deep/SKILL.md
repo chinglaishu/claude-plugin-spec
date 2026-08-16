@@ -1,6 +1,6 @@
 ---
 name: kg-deep
-description: Use to take ONE screen from a bare row (or no row) to deep, human-accepted requirements proven by a few comprehensive E2E flows. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD for the human to confirm, then author checkReq-tagged flows with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
+description: Use to take ONE screen from a bare row (or no row) to deep, human-accepted requirements proven by unit and flow E2E tests. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD for the human to confirm, then author checkReq-tagged unit and flow tests with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
 ---
 
 # kg-deep — one screen, made deep
@@ -52,7 +52,7 @@ draft of their meaning. **Stop here for the human**: they correct the wording an
 that acceptance is the whole of what waits on them here. Requirement ids are stable forever — later
 passes append, never renumber.
 
-## Phase 4 — Flows: few, comprehensive, checkReq-tagged
+## Phase 4 — Tests: unit and flow, checkReq-tagged
 
 **Every exact value a flow asserts must be VISIBLE in the recording** (kg-e2e rule 5). A deep test's
 whole point is a video a human can trust, so do not read a number off a grid API and assert it while
@@ -62,8 +62,11 @@ item (year by year, row by row). `proveVisible(locator, expected, label)` from `
 call. The API read is for PRECISION behind the on-screen proof, never a substitute for it. Finishing
 check: with the sound off, can you SEE every number the flow claims?
 
-Coverage is many-to-many at assertion granularity, so write a FEW flow tests that each prove MANY
-requirements — the human reviews flows, the board still derives every requirement's state:
+Coverage is many-to-many at assertion granularity, and tests come in two kinds, both first-class
+(board R6, amended 2026-08-17 — this previously said "a FEW flows that each prove MANY"): **unit**
+tests prove this screen's own behaviours — each state that matters, each action's outcome — and
+**flow** tests cross screens along a chosen path. The human reviews tests, the board still derives
+every requirement's state:
 
 ```ts
 test('Reading the screen — every surface holds its exact golden numbers', async ({ page }) => {

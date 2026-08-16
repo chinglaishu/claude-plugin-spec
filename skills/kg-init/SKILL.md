@@ -59,8 +59,8 @@ The crawl drives a **real browser** over the running app one route at a time, ca
 whole job. It deliberately does **not** draft requirements or tests: a guessed requirement records
 the implementation's bugs as intent, and a shallow auto-test is a false green that makes the board
 *look* finished while proving nothing. Depth is a per-screen decision a human sponsors — that is
-**kg-deep** (study → golden fixture → PRD draft → the human's acceptance → a few comprehensive
-proving flows). Run it screen by screen, most important screen first.
+**kg-deep** (study → golden fixture → PRD draft → the human's acceptance → unit and flow proving
+tests). Run it screen by screen, most important screen first.
 
 - A row with no PRD is the board saying "this screen exists and nothing governs it yet" — exactly
   the honest state. `crawl.png` is its evidence and its cover until a kg-deep pass replaces both

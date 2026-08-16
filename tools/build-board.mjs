@@ -273,8 +273,8 @@ const WORKFLOW = {
           p: 'One requirement per behaviour, grounded in what the screen really does — a proposal, flagged <span class="mono">guess</span>.' },
         { gate: true, glbl: 'Your turn', h: 'Are these what I meant?', cmp: 'guess → accepted',
           p: 'The one thing that waits on you here. Correct the wording, drop the flag — accepted requirements are the source of truth.' },
-        { skill: 'kg-deep', file: 'test.spec.ts', h: 'Prove with a few comprehensive flows', arrow: 'checkReq tags carry coverage',
-          p: 'A handful of flow tests prove MANY requirements each — exact golden values, safe cross-page round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.' }
+        { skill: 'kg-deep', file: 'test.spec.ts', h: 'Prove with unit and flow tests', arrow: 'checkReq tags carry coverage',
+          p: 'Unit tests prove the screen&#39;s own behaviours; flow tests cross screens along a chosen path — exact golden values, safe round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.' }
       ],
       band: {
         label: 'then, before &amp; after every change — forever',
@@ -930,7 +930,7 @@ const HOW_FLOWS = [
       { id: 'k2', type: 'step', cx: HOW_Cx, top: 188, w: 316, h: 58, title: 'Phase 2 · golden fixture + capture', state: 'running', tags: ['_seed.ts · golden.json'] },
       { id: 'k3', type: 'step', cx: HOW_Cx, top: 276, w: 300, h: 58, title: 'Phase 3 · draft the requirements', tags: ['prd.md · guess'] },
       { id: 'g1', type: 'gate', cx: HOW_Cx, top: 364, w: 300, h: 68, title: 'Are these what I meant?', cmp: 'guess → accepted' },
-      { id: 'k4', type: 'step', cx: HOW_Cx, top: 466, w: 316, h: 58, title: 'Phase 4 · a few comprehensive flows', tags: ['checkReq · exact numbers'] },
+      { id: 'k4', type: 'step', cx: HOW_Cx, top: 466, w: 316, h: 58, title: 'Phase 4 · unit + flow tests', tags: ['checkReq · exact numbers'] },
       { id: 'k5', type: 'step', cx: HOW_Cx, top: 554, w: 350, h: 62, title: 'Writer flow LAST — round trip, self-restoring', note: 'discovery-first on every write path' },
       { id: 'k6', type: 'step', cx: HOW_Cx, top: 650, w: 316, h: 58, title: 'Phase 5 · settle on the board + review', state: 'settled' }
     ],

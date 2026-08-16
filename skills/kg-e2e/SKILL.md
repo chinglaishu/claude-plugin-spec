@@ -94,8 +94,9 @@ way. Read it before writing your first one.
    you SEE every number the test claims? If not, it is not done** — this is the single most common way a
    green test still fails its one job (a recording a human can trust).
 
-Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — "fewer tests" never buys
-a false green: every requirement still needs a real assertion that would fail without it. When a test
+Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — neither a unit nor a
+flow test can buy a false green: every requirement still needs a real assertion that would fail
+without it. When a test
 breaks after a change, first find which of the two — the test or the code — is wrong, before editing
 either.
 
@@ -178,7 +179,9 @@ Two things that will cost you an afternoon otherwise:
 
 A screen's test proves the screen works, not that it painted. One "the heading is visible" case per
 requirement is the shallow trap that makes a board look finished while proving almost nothing. The
-board's model rewards the opposite: **few tests, each proving more** (R6). Write FEW deep flows:
+board's model rewards depth in both of its test kinds (R6, amended 2026-08-17): **unit** tests that
+prove this screen's own behaviours, and **flow** tests that cross screens along a chosen path. Write
+deep tests, whichever the kind:
 
 - **The surface renders REAL data** — every metric/tile carries a value (a digit, money, a %), the
   grid/list is populated with rows, the chart is present, the controls exist. Wait for the data (see
