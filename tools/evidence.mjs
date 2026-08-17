@@ -23,3 +23,8 @@ export function ffmpegClipArgs (srcRel, { from, to }, outRel) {
     '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', outRel
   ]
 }
+
+export function ffmpegFrameArgs (srcRel, atMs, outRel) {
+  const secs = String(Math.round(atMs) / 1000)
+  return ['-y', '-ss', secs, '-i', srcRel, '-frames:v', '1', '-vf', 'scale=640:-2:flags=lanczos', outRel]
+}

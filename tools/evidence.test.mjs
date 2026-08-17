@@ -1,7 +1,7 @@
 // tools/evidence.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { clipWindow, ffmpegClipArgs } from './evidence.mjs'
+import { clipWindow, ffmpegClipArgs, ffmpegFrameArgs } from './evidence.mjs'
 
 const steps = [
   { label: 'Open /todo.html', cat: 'pw:api', t: 0, d: 400 },
@@ -31,4 +31,14 @@ test('ffmpegClipArgs seeks, clamps a minimum duration, scales and loops', () => 
 test('ffmpegClipArgs clamps a sub-0.4s window up to 0.4s', () => {
   const args = ffmpegClipArgs('v.webm', { from: 100, to: 200 }, 'o.webp')
   assert.equal(args[args.indexOf('-t') + 1], '0.4')
+})
+test('ffmpegFrameArgs extracts a single frame at a timestamp, scaled', () => {
+  assert.deepEqual(
+    ffmpegFrameArgs('runs/x/video.webm', 2000, 'runs/x/R5-before.png'),
+    ['-y', '-ss', '2', '-i', 'runs/x/video.webm', '-frames:v', '1', '-vf', 'scale=640:-2:flags=lanczos', 'runs/x/R5-before.png']
+  )
+})
+test('ffmpegFrameArgs renders sub-second offsets with millisecond precision', () => {
+  const args = ffmpegFrameArgs('v.webm', 1200, 'f.png')
+  assert.equal(args[args.indexOf('-ss') + 1], '1.2')
 })
