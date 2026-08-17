@@ -70,6 +70,20 @@ test('a proof that predates the source no longer proves — editing the PRD IS t
   expect(isWaiting(s)).toBe(false)
 })
 
+// board R4's four-word `status` must apply the SAME staleness rule `state` does — a pass that
+// predates the source is not current, and deriveReqStatus must never see it either. Fixed
+// 2026-08-18 (fix round 1, finding 2): `status` was computed from the RAW aggregated entries,
+// bypassing the staleness filter `hasCurrentPass` uses two lines above it — a stale-only pass
+// read Passed even while `state` correctly read unproven, a real green the code exists to prevent
+// (rule 3, never fake a green).
+test('a stale-only pass does not read Passed either — status honours the same staleness filter as state', () => {
+  const { name } = makeScreen('probe-stale-status')
+  const s = readScreen(name, stalePass(name) as any)!
+  expect(s.reqs[0].state).toBe('unproven')     // unchanged behaviour, re-asserted for context
+  expect(s.reqs[0].status).not.toBe('passed')  // the stale pass must not count for status either
+  expect(s.reqs[0].status).toBe('untested')    // nothing else covers it once the stale pass is dropped
+})
+
 test('state is only ever proven or unproven — there is no reworded / accept state', () => {
   // with a proof and without one, the computed state is one of exactly two — never a third
   // "changed since accepted" value, because there is no acceptance to change against (board R8)

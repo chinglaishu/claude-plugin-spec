@@ -434,7 +434,9 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(ov.locator('.fpage')).toHaveCount(1)
     // its id, state, title and full body on the LEFT container
     await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
-    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/proven|unproven/)
+    // The Focus reader's chip reads the SAME four-word vocabulary as Columns/List (board R4, amended
+    // 2026-08-17) — no separate binary proven/unproven surface left anywhere in the detail.
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested/)
     await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
     await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
     // THE PROOF on the RIGHT container — the primary covering test's OWN evidence, MOVED in and wired
@@ -496,7 +498,7 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
     // flow — "proved by" when green, still named when not.
     const chip = await dt.locator('.focusov .fread .frmeta .fchip').textContent()
-    if (/proven/.test(chip || '') && !/unproven/.test(chip || '')) {
+    if (/^Passed\b/.test((chip || '').trim())) {
       await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
     } else {
       await expect(dt.locator('.focusov .feval .fpby')).toBeVisible()   // covered but ungreen — still named

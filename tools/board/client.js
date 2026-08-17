@@ -164,6 +164,13 @@ const B = window.__BOARD__ || {}
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
+  // The four-word requirement vocabulary (board R4, amended 2026-08-17) — the SAME mapping
+  // build-board.mjs's REQ_CHIP/LIST_CHIP render server-side, reproduced here because the Focus
+  // reader is built client-side from the baked `.req` node's data-status attribute.
+  var FCHIP = {
+    passed: '✓ Passed', failed: '✗ Failed', 'not-reached': '◌ Not reached', untested: '○ Untested'
+  }
+
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
   // recording). One of three views (Focus / List / Columns) switched by the header toggle; no in-reader
@@ -176,6 +183,7 @@ const B = window.__BOARD__ || {}
       let body = ''
       if (bodyEl) { const c = bodyEl.cloneNode(true); const cov = c.querySelector('.covers'); if (cov) cov.remove(); body = c.innerHTML }
       return { id: idEl ? idEl.textContent : '', state: r.getAttribute('data-state') || 'unproven',
+        status: r.getAttribute('data-status') || 'untested',
         title: ttlEl ? ttlEl.textContent : '', body: body }
     })
     if (!reqs.length) return
@@ -237,8 +245,8 @@ const B = window.__BOARD__ || {}
       const read = document.createElement('div'); read.className = 'fread'
       const rmeta = document.createElement('div'); rmeta.className = 'frmeta'
       const fid = document.createElement('span'); fid.className = 'fid'; fid.textContent = r.id
-      const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.state
-      fchip.textContent = r.state === 'proven' ? '✓ proven' : '○ unproven'
+      const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.status
+      fchip.textContent = FCHIP[r.status] || FCHIP.untested
       rmeta.appendChild(fid); rmeta.appendChild(fchip)
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
@@ -260,11 +268,13 @@ const B = window.__BOARD__ || {}
         ptop.innerHTML = '<span class="fplbl">The proof</span>'
         const acts = document.createElement('div'); acts.className = 'fpacts'
         ptop.appendChild(acts); ph.appendChild(ptop)
+        // "proved by" tracks r.status (board R4), not r.state — the same fold that names the chip
+        // names this line, so the two never read two different verdicts for the same requirement.
         const by = document.createElement('div'); by.className = 'fpby'
-        by.innerHTML = (r.state === 'proven' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+        by.innerHTML = (r.status === 'passed' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
           (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
-          (r.state === 'proven' ? '' : ' — not proven yet')
+          (r.status === 'passed' ? '' : ' — not passed yet')
         ph.appendChild(by)
         const shaEl = primary.querySelector('.tmeta .tsha')
         if (shaEl && shaEl.textContent) {
@@ -1442,7 +1452,9 @@ const B = window.__BOARD__ || {}
     const swapChip = (a, b, sel) => { const x = a.querySelector(sel), y = b.querySelector(sel); if (x && y) x.replaceWith(y.cloneNode(true)) }
     dt.querySelectorAll('.reqpane .req').forEach(function (req) {
       const f = fresh.querySelector('.reqpane .req[data-r="' + cssEsc(req.dataset.r) + '"]'); if (!f) return
-      req.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(req, f, '.h > .chip')
+      req.setAttribute('data-state', f.getAttribute('data-state') || '')
+      req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
+      swapChip(req, f, '.h > .chip')
     })
     dt.querySelectorAll('.listview .lrow').forEach(function (row) {
       const f = fresh.querySelector('.listview .lrow[data-r="' + cssEsc(row.dataset.r) + '"]'); if (!f) return

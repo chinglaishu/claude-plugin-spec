@@ -163,7 +163,7 @@ const reqRow = r => {
   const covers = r.state === 'proven'
     ? ''
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}">
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBody(r.body)}${covers}</div>
   </div>`
@@ -1345,8 +1345,13 @@ export function build () {
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
   .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
-  .fchip.proven { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
-  .fchip.unproven { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
+  /* board R4, amended 2026-08-17: the same four-word vocabulary as REQ_CHIP/LIST_CHIP above — the
+     Focus reader is the detail's DEFAULT view, so it may never be the one surface still speaking the
+     old binary proven/unproven while Columns and List have moved on. */
+  .fchip.passed  { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
+  .fchip.failed  { color:var(--bengara); background:var(--bengara-tint); border-color:var(--bengara-line); }
+  .fchip.not-reached { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
+  .fchip.untested { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
 
   /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (like the
      Columns panes, board R2): a fixed height from the grid, its own overflow — scrolling the evidence

@@ -266,7 +266,13 @@ function enrichReqs (reqs, screen, results) {
       stale: e.status === 'pass' && e.ranAt != null && e.ranAt < srcMs(e.screen)
     }))
     const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
-    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(entries), tests }
+    // deriveReqStatus must see the SAME staleness filter hasCurrentPass does — a stale pass is
+    // dropped before the fold, not just ignored by state, or a requirement whose only proof
+    // predates a PRD/test edit would read Passed here while state correctly reads unproven (a real
+    // green the code above exists to prevent, rule 3). Fail entries are never marked stale (`stale`
+    // is defined only for status === 'pass'), so a current failure still wins regardless.
+    const liveEntries = entries.filter((e, i) => !tests[i].stale)
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(liveEntries), tests }
   })
 }
 
