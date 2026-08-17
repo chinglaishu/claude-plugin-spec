@@ -193,13 +193,19 @@ ins { color:var(--koke); text-decoration:none; }
               box-shadow:inset 0 0 0 1px var(--koke-line); }
 .chip.rev   { background:var(--ai-tint); color:var(--ai);
               box-shadow:inset 0 0 0 1px var(--ai-line); }
-.chip.stale { background:var(--bengara-tint); color:var(--bengara);
+/* .fail reuses the same bengara tokens as .stale — a requirement's "Failed" (board R4) and a
+   card's "a guess" chip are different states that happen to share one hue (a re-look is owed),
+   named separately so neither reads as the other. */
+.chip.stale, .chip.fail { background:var(--bengara-tint); color:var(--bengara);
               box-shadow:inset 0 0 0 1px var(--bengara-line); }
 /* the deliberate exception, for the one place a count must carry the whole page */
 .chip.solid { background:var(--ai); color:var(--paper); box-shadow:none; }
 .chip.bad   { background:var(--bengara); color:var(--paper); }
 .chip.gone  { background:transparent; color:var(--ink-4); box-shadow:inset 0 0 0 1px var(--hair); }
-.chip.run   { background:var(--yamabuki-tint); color:var(--yamabuki);
+/* .wait reuses the same yamabuki tokens as .run — a requirement's "Not reached" (board R4) is a
+   third thing, like a job in flight: nothing is wrong and nothing is settled, named separately so
+   a not-reached requirement is never mistaken for an actually-running job. */
+.chip.run, .chip.wait { background:var(--yamabuki-tint); color:var(--yamabuki);
               box-shadow:inset 0 0 0 1px var(--yamabuki-line); }
 
 /* the mark: a 6px square whose FILL carries the state, so status survives greyscale,

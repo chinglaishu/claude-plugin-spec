@@ -8,7 +8,7 @@ import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameS
 import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { aggregateCoverage, deriveReqState, qualify } from './coverage.mjs'
+import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -237,6 +237,11 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
 // (board R8), so nothing else invalidates a proof — state is simply proven / unproven. aggregateCoverage
 // is memoised per results object, because allScreens hands every screen the same index and re-folding it
 // once per screen would be wasteful on a large board.
+//
+// `status` (added alongside `state`, board R4 amended 2026-08-17) is the same fold read through
+// deriveReqStatus — the four-word reader vocabulary (passed/failed/not-reached/untested, fail wins)
+// the board now RENDERS. `state` stays exactly as it was: the walkthrough and the home "N / M proven"
+// count still read it, and migrating those is a later task, not this one.
 const _aggCache = new WeakMap()
 function aggFor (results) {
   const key = results || {}
@@ -261,7 +266,7 @@ function enrichReqs (reqs, screen, results) {
       stale: e.status === 'pass' && e.ranAt != null && e.ranAt < srcMs(e.screen)
     }))
     const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
-    return { ...r, state: deriveReqState({ hasCurrentPass }), tests }
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(entries), tests }
   })
 }
 

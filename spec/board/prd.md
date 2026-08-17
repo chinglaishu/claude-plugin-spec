@@ -8,8 +8,9 @@ route: /
 *specboard's job is the one thing only it does — **requirements are the source of truth, and tests
 prove them against the real app** at assertion granularity, with drift computed. The board is two
 columns: the requirements, and the tests that prove them. There is **no wireframe** (R7) and **no
-acceptance gate** (R8) — a requirement is canon the moment it is written, and it reads simply proven
-or unproven by its tests. (History: an earlier four-column, wireframe-first board with two human gates
+acceptance gate** (R8) — a requirement is canon the moment it is written, and its state is read off
+its tests, never typed (R4 — Passed / Failed / Untested / Not reached since 2026-08-17). (History: an
+earlier four-column, wireframe-first board with two human gates
 was narrowed here across 2026-07-29/30 — the wireframe left the tool, and the last gate was removed as
 a rubber-stamp. The per-requirement "Narrowed …" notes below record each step.)*
 
@@ -51,15 +52,20 @@ needed the title / sub-line / hint layer this adds to be scannable.*
 
 ## R4 — Requirement state is computed and assertion-backed
 
-Each requirement is **proven** or **unproven** — computed from the tests, never typed. **Proven** means:
-a test that tags this requirement passed *on an assertion that would fail without it*. A long or
-cross-screen flow records pass / fail / **not-reached** per requirement, so a flow that stops early
-leaves the requirements it never reached honestly unproven — not green, and not red. "0 of 0 passing"
-reads green; not-reached must not.
+Each requirement reads one of **four words**, computed from the tests, never typed: **Passed** — a
+test that tags this requirement passed *on an assertion that would fail without it*; **Failed** — a
+test that tags it ran its assertion and it did not hold (**fail wins**: a requirement covered by one
+failing and one passing test still reads Failed, so a real failure is never masked by a second green);
+**Not reached** — a flow declared it would cover this requirement (`coverReqs`) but stopped before its
+assertion ran; **Untested** — no test tags it at all. "0 of 0 passing" reads green nowhere in this
+vocabulary — Not reached and Untested are both honestly ungreen, never conflated with a pass.
 
 *Narrowed 2026-07-30: this requirement previously carried a third **reworded** state tied to an
 acceptance gate (R8). The gate was removed (see R8), so there is no "changed since accepted" — a
 requirement is simply proven by a current test or it is not.*
+
+*Amended 2026-08-17 (the human's decision): the binary proven/unproven becomes Passed / Failed /
+Untested / Not reached — the same computed-from-tests state, named for what a reader needs.*
 
 ## R5 — Requirements and tests are many-to-many, by tag
 

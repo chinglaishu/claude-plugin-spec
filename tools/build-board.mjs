@@ -33,16 +33,21 @@ const excerpt = body => {
   return m ? m[0] : (flat.length > 140 ? flat.slice(0, 140).trimEnd() + '…' : flat)
 }
 
-// A requirement's derived state → its header chip (board R4). Two states, computed from the tests and
-// nothing else: proven=moss ✓ (a current passing assertion covers it), unproven=hollow ○ (honestly
-// ungreen, never faked). Title only, no label — the header stays compact; the word lives in the
-// tooltip. There is no acceptance gate (R8), so there is no "reworded" chip.
+// A requirement's derived STATUS → its header chip (board R4, amended 2026-08-17 at the human's
+// direction: the old binary proven/unproven becomes four words, folded by tools/coverage.mjs's
+// deriveReqStatus — fail wins, so a requirement covered by both a failing and a passing test still
+// reads failed). Every state carries a MARK as well as a hue (hue never alone): passed=moss filled ✓,
+// failed=iron half ✗, not-reached=gold hairline ◌ (a flow declared it but stopped before its assertion
+// ran), untested=hollow ink ○ (no test tags it at all). Title only, no visible label in Columns — the
+// header stays compact; the word lives in the tooltip (List's row spells it out, see LIST_CHIP below).
 const REQ_CHIP = {
-  proven: ['ok', 'mark', 'proven'],
-  unproven: ['gone', 'mark o', 'no passing assertion covers this yet']
+  passed: ['ok', 'mark', 'Passed — a current passing assertion covers this'],
+  failed: ['fail', 'mark h', 'Failed — the covering test failed its assertion'],
+  'not-reached': ['wait', 'mark n', 'Not reached — a flow that covers this stopped before it got here'],
+  untested: ['gone', 'mark o', 'Untested — no test asserts this yet']
 }
-const reqChip = state => {
-  const [tone, mark, title] = REQ_CHIP[state] || REQ_CHIP.unproven
+const reqChip = status => {
+  const [tone, mark, title] = REQ_CHIP[status] || REQ_CHIP.untested
   return `<span class="chip ${tone}" title="${title}"><span class="${mark}"></span></span>`
 }
 
@@ -159,7 +164,7 @@ const reqRow = r => {
     ? ''
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}">
-    <div class="h">${reqChip(r.state)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
+    <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBody(r.body)}${covers}</div>
   </div>`
 }
@@ -168,13 +173,20 @@ const reqPane = s => `<div class="pane reqpane">
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
-// The LIST view (board R13): the screen's requirements as one compact line each — state, id, title —
+// The LIST view (board R13): the screen's requirements as one compact line each — status, id, title —
 // a quick index to scan and jump into Focus from. It is one of THREE views of the same requirements
-// (Focus, List, Columns), switched by the header toggle; it stores nothing new.
-const LIST_CHIP = { proven: ['ok', 'mark', '✓ proven'], unproven: ['gone', 'mark o', '○ unproven'] }
+// (Focus, List, Columns), switched by the header toggle; it stores nothing new. The label spells the
+// four-word vocabulary out (board R4, amended 2026-08-17) since this row has room where Columns'
+// compact chip does not.
+const LIST_CHIP = {
+  passed: ['ok', 'mark', '✓ Passed'],
+  failed: ['fail', 'mark h', '✗ Failed'],
+  'not-reached': ['wait', 'mark n', '◌ Not reached'],
+  untested: ['gone', 'mark o', '○ Untested']
+}
 const listPane = s => `<div class="listview" hidden>
   ${s.reqs.map(r => {
-    const [tone, mark, label] = LIST_CHIP[r.state] || LIST_CHIP.unproven
+    const [tone, mark, label] = LIST_CHIP[r.status] || LIST_CHIP.untested
     return `<button class="lrow" data-r="${esc(r.id)}" data-state="${r.state}">
       <span class="chip ${tone} lrchip"><span class="${mark}"></span>${label}</span>
       <span class="lrid">${esc(r.id)}</span><span class="lrt">${esc(r.title)}</span><span class="lrchev">›</span>
