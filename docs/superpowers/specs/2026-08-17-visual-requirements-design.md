@@ -98,20 +98,62 @@ test nodes.
 - Cross-checks the mockup encodes: asserted values visible in evidence; player cannot end green on
   a failed flow.
 
+## Removed: the guess flag / draft / human gate (the human, 2026-08-17)
+
+The last remnant of the acceptance gate — the `guess:` frontmatter flag and its "your turn" /
+indigo treatment — is **removed**. New model: **a requirement is canon the moment it is written;
+you edit or remove it as freely as a test.** No draft status, no acceptance, nothing waiting on a
+person for requirement meaning. Rationale: it makes a screen easy to start (no ceremony), and the
+human still owns meaning by editing/removing requirements directly. This goes one step past board R8
+(which removed the *gate* but kept the *flag* for crawled/deep-drafted PRDs).
+
+This is coordinated, not a doc edit — the board dogfoods itself, so all of the following change
+together (requirement → failing test → code → docs), or the board contradicts its own suite:
+
+- **Requirements:** `spec/init/prd.md` **R3** ("A drafted PRD is marked as a guess until the human
+  accepts it") is deleted. Any board requirement that renders the guess chip / your-turn is reworded.
+- **Dogfood tests:** `spec/init/test.spec.ts` R3 and `spec/board/test.spec.ts` **R11** (the
+  walkthrough Act 2 asserts the guess flag animates and *drops*, and "you confirm the meaning") must
+  be rewritten to the new model *first, failing*, then the code changed.
+- **Board code:** `tools/spec-store.mjs` (`isWaiting`, the `guess` frontmatter parse — drop or
+  ignore), `tools/build-board.mjs` (guess chip, `yourTurn` count, waiting indices, the "nothing is
+  waiting" banner, the flow-diagram gate `g1`, the walkthrough **Act 2** — a real rewrite), and
+  `tools/board/client.js` (waiting handling, the `mine`/`a guess` state labels).
+- **Skills:** `kg-init` and `kg-deep` lose "draft the PRD for the human's gate" / "drop the flag";
+  the crawl is already inventory-only, so deep-drafted requirements are simply canon, editable later.
+- **Design system (CLAUDE.md):** the rule "**indigo means one thing only — your turn**" is retired;
+  indigo is freed (candidate: the **Changed** drift state introduced by this redesign).
+- **`guess:` demo data:** `demo/todo/spec/todo/prd.md` frontmatter drops `guess: true`.
+- **Queue banner** is repurposed from "your turn" to honest **drift** — "N need a look · X failed ·
+  Y changed since their proof" — or "all clear".
+
+Because these are the same files this redesign already rewrites (`build-board.mjs`, the walkthrough,
+the board/init tests), the gate removal is **folded into this redesign's implementation** — doing it
+standalone now would touch the riskiest files twice.
+
 ## Rollout
 
-1. Specboard's own board first (dogfood): mechanism + its 4 screens' PRDs reshaped — each PRD
-   migration goes to the human for acceptance.
+1. Specboard's own board first (dogfood): mechanism + the gate removal above + its 4 screens' PRDs
+   reshaped — each PRD migration goes to the human.
 2. Release + `kg-update`; skills updated where behavior changes (kg-e2e/kg-deep authoring guidance
    for behavior rows — philosophy lines already swept in 9fa2c57).
 3. dojostack via kg-update, then its screens' PRDs migrated screen-by-screen (verify on real data
    before releasing further).
 
+## Decided (the human, 2026-08-17)
+
+- **PRD behavior-block format** (Given/When/Then + prose) — agreed.
+- **Views: Focus / Grid / Flow** — three, not four. Grid replaces List; Columns dropped (its
+  requirement↔test link is folded into Focus's "proven by" selector).
+- **Guess flag / draft / human gate removed** — see the section above.
+- **Status vocabulary:** Passed / Failed / Untested / Not reached / Changed (drift).
+- **Test-authoring is prompt-handoff:** the board never writes/edits tests or requirements silently;
+  every add/edit/remove (test *and* requirement) hands the human a ready prompt for Claude.
+
 ## Open decisions (the human's)
 
-1. **Confirm the PRD behavior-block format above** — it is requirement wording, so the shape and
-   each screen's migration are yours to accept.
-2. **Rollout order confirmed?** Dogfood-first as listed, or dojostack earlier.
-3. **Grid replaces List, or joins it as a fourth view?** Recommendation: replace — List's
-   title-rows are the prose wall this redesign exists to retire; Columns already covers the
-   old two-pane reading.
+1. **Rollout order?** Dogfood-first as listed, or dojostack earlier.
+2. **`Changed` needs a definition** to implement: a content hash of the requirement text captured
+   when a test last passed, compared to the current text. Confirm that's the trigger.
+3. **Overlap aggregate:** a requirement covered by two tests reads **Failed if any covering test
+   fails** (fail-wins), so a real failure can't be masked by a second green test — confirm.
