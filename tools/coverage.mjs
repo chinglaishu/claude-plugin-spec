@@ -78,3 +78,15 @@ export function aggregateCoverage (index) {
 export function deriveReqState ({ hasCurrentPass }) {
   return hasCurrentPass ? 'proven' : 'unproven'
 }
+
+// The board's status words derive from folded coverage. FAIL WINS: a requirement covered by two
+// tests, one failing, reads failed — a real failure is never masked by a second green test. No
+// covering test at all is untested; a flow that declared it but stopped short is not-reached.
+// (`Changed` — a proof that predates a requirement edit — is added in the drift-state plan.)
+export function deriveReqStatus (entries) {
+  const list = entries || []
+  if (list.some(e => e.status === 'fail')) return 'failed'
+  if (list.some(e => e.status === 'pass')) return 'passed'
+  if (list.some(e => e.status === 'not-reached')) return 'not-reached'
+  return 'untested'
+}

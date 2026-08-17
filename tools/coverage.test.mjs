@@ -7,7 +7,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { coverageFromTest, aggregateCoverage, deriveReqState, qualify } from './coverage.mjs'
+import { coverageFromTest, aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
 
 // qualify -------------------------------------------------------------------
 test('a bare id is qualified with the test\'s own screen; a qualified id is left alone', () => {
@@ -99,4 +99,26 @@ test('a current passing proof makes a requirement proven', () => {
 
 test('no current passing proof leaves a requirement unproven — fail, not-reached and stale all count', () => {
   assert.equal(deriveReqState({ hasCurrentPass: false }), 'unproven')
+})
+
+// deriveReqStatus -----------------------------------------------------------
+test('deriveReqStatus: no covering test at all reads untested', () => {
+  assert.equal(deriveReqStatus(undefined), 'untested')
+  assert.equal(deriveReqStatus([]), 'untested')
+})
+
+test('deriveReqStatus: a single passing test reads passed', () => {
+  assert.equal(deriveReqStatus([{ status: 'pass' }]), 'passed')
+})
+
+test('deriveReqStatus: fail wins over a second passing test — no masking', () => {
+  assert.equal(deriveReqStatus([{ status: 'pass' }, { status: 'fail' }]), 'failed')
+})
+
+test('deriveReqStatus: only a not-reached declaration reads not-reached, not untested', () => {
+  assert.equal(deriveReqStatus([{ status: 'not-reached' }]), 'not-reached')
+})
+
+test('deriveReqStatus: a pass outranks a not-reached from another flow', () => {
+  assert.equal(deriveReqStatus([{ status: 'not-reached' }, { status: 'pass' }]), 'passed')
 })
