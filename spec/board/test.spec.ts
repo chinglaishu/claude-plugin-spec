@@ -495,14 +495,38 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
 
-    // the proof line is COVERAGE-honest and never a bare title row: a covered requirement names its
-    // flow — "proved by" when green, still named when not.
-    const chip = await dt.locator('.focusov .fread .frmeta .fchip').textContent()
-    if (/^Passed\b/.test((chip || '').trim())) {
-      await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
-    } else {
-      await expect(dt.locator('.focusov .feval .fpby')).toBeVisible()   // covered but ungreen — still named
-    }
+    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4, amended
+    // 2026-08-17; fix round 2, 2026-08-18): "proved by <flow>" only for a Passed requirement,
+    // "covered by <flow> … — not passed yet" for one that is covered but not Passed — the two lines
+    // must never disagree about the same requirement. Exercised on TWO real .req nodes from this
+    // screen's own tree, with data-status FORCED client-side to known values on each — not "whichever
+    // status the live board happens to carry today". Editing THIS test file makes the board screen's
+    // OWN proofs go stale until the suite folds a fresh run (the one-run dogfooding lag CLAUDE.md
+    // documents), so asserting against today's live status here would make the test hang on exactly
+    // that lag rather than test the render logic; forcing the input is the same technique R10's
+    // stubbed-record tests use to drive the real client pipeline deterministically. Both requirements
+    // keep their REAL coverage tags (untouched), so `.fpby` still renders off a genuine covering test —
+    // only the status read off `.req` is substituted. Both assertions below are the kind that would
+    // fail if buildFocus rendered the wrong line (proved red against a deliberately-broken client.js
+    // while writing this fix; see task-5-report.md).
+    const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
+      els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
+    expect(otherId, 'R13 needs at least two requirements to exercise both branches').toBeTruthy()
+    await dt.locator(`.reqpane .req[data-r="${passedId}"]`).evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator(`.reqpane .req[data-r="${otherId}"]`).evaluate(el => el.setAttribute('data-status', 'failed'))
+
+    await dt.locator('.viewseg .vseg[data-view="list"]').click()
+    await dt.locator(`.listview .lrow[data-r="${passedId}"]`).click()
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
+    await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
+
+    await dt.locator('.viewseg .vseg[data-view="list"]').click()
+    await dt.locator(`.listview .lrow[data-r="${otherId}"]`).click()
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
+    await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
+    await expect(dt.locator('.focusov .feval .fpby')).not.toContainText('proved by')
   })
 })
 
