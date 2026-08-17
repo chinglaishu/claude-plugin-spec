@@ -238,7 +238,104 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 ---
 
-## Roadmap — Plans 2–5 (detail each at its start)
+## Plan 2 — Evidence harvesting (additive; tools + reporter, not the board)
+
+The per-run record already carries each `proves <id>` step with `t` (ms offset from recording start) and `d` (duration) — see `spec/_results-reporter.mjs` `flattenSteps` — and the board records a `.webm`. Plan 2 turns those into per-requirement clip windows + ffmpeg cut args (pure, unit-tested), then wires a before/after frame capture. The board renders none of it until Plan 3.
+
+### Task 3: Evidence clip derivation (pure)
+
+**Files:**
+- Create: `tools/evidence.mjs`
+- Test: `tools/evidence.test.mjs`
+
+**Interfaces:**
+- Consumes: a test's flattened `steps` array — objects shaped `{ label, cat, depth, ok, t, d }` (from `flattenSteps`); the `proves <id>` step has `label === 'proves ' + id`.
+- Produces:
+  - `clipWindow(steps, id) => { from: number, to: number } | null` — the `[t, t+d]` window (ms) of the `proves <id>` step (matches the bare id after the last `:` too, so a qualified `board:R5` step or a bare `R5` step both resolve for `id='R5'`); `null` if absent or the step has no `t`.
+  - `ffmpegClipArgs(srcRel, { from, to }, outRel) => string[]` — args to cut a short muted animated webp from the recording: seek `from/1000`s, duration `max(0.4,(to-from)/1000)`s, scale to 640 wide keeping aspect, 12fps, loop forever. Pure array; the caller runs ffmpeg (auto-detected like piper; frame-pair fallback when absent — that fallback is a Plan-2 integration task, not this one).
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// tools/evidence.test.mjs
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { clipWindow, ffmpegClipArgs } from './evidence.mjs'
+
+const steps = [
+  { label: 'Open /todo.html', cat: 'pw:api', t: 0, d: 400 },
+  { label: 'proves R5', cat: 'test.step', t: 1200, d: 800 },
+  { label: 'proves board:R6', cat: 'test.step', t: 3000, d: 500 }
+]
+
+test('clipWindow finds the proves-step window by bare id', () => {
+  assert.deepEqual(clipWindow(steps, 'R5'), { from: 1200, to: 2000 })
+})
+test('clipWindow matches a qualified step by its bare id', () => {
+  assert.deepEqual(clipWindow(steps, 'R6'), { from: 3000, to: 3500 })
+})
+test('clipWindow returns null when the requirement was not reached (no step)', () => {
+  assert.equal(clipWindow(steps, 'R9'), null)
+})
+test('clipWindow returns null when the step has no timestamp', () => {
+  assert.equal(clipWindow([{ label: 'proves R1', cat: 'test.step' }], 'R1'), null)
+})
+test('ffmpegClipArgs seeks, clamps a minimum duration, scales and loops', () => {
+  const args = ffmpegClipArgs('runs/x/video.webm', { from: 1200, to: 2000 }, 'runs/x/R5.webp')
+  assert.deepEqual(args, [
+    '-y', '-ss', '1.2', '-t', '0.8', '-i', 'runs/x/video.webm',
+    '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', 'runs/x/R5.webp'
+  ])
+})
+test('ffmpegClipArgs clamps a sub-0.4s window up to 0.4s', () => {
+  const args = ffmpegClipArgs('v.webm', { from: 100, to: 200 }, 'o.webp')
+  assert.equal(args[args.indexOf('-t') + 1], '0.4')
+})
+```
+
+- [ ] **Step 2: Run to verify it fails** — `node --test tools/evidence.test.mjs` → FAIL (module missing).
+
+- [ ] **Step 3: Implement**
+
+```js
+// tools/evidence.mjs
+// The recording already exists (a board run's .webm) and each `proves <id>` step already carries
+// its offset+duration (spec/_results-reporter.mjs flattenSteps: t, d). This turns those into a
+// per-requirement clip window and the ffmpeg args to cut a short looping webp — the requirement's
+// gif face (visual-requirements redesign). Pure; the caller runs ffmpeg (frame-pair fallback when
+// it is absent is a separate integration task). Nothing renders this yet.
+const bare = id => String(id).slice(String(id).lastIndexOf(':') + 1)
+
+export function clipWindow (steps, id) {
+  const want = bare(id)
+  for (const s of steps || []) {
+    if (String(s.label || '') !== 'proves ' + want && bare(String(s.label || '').replace(/^proves /, '')) !== want) continue
+    if (typeof s.t !== 'number') return null
+    return { from: s.t, to: s.t + (typeof s.d === 'number' ? s.d : 0) }
+  }
+  return null
+}
+
+export function ffmpegClipArgs (srcRel, { from, to }, outRel) {
+  const secs = n => String(Math.round(n) / 1000)
+  const dur = Math.max(0.4, (to - from) / 1000)
+  return [
+    '-y', '-ss', secs(from), '-t', String(dur), '-i', srcRel,
+    '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', outRel
+  ]
+}
+```
+
+- [ ] **Step 4: Run to verify it passes** — `node --test tools/evidence.test.mjs` → PASS (6).
+- [ ] **Step 5: Confirm nothing rendered changed** — `npm run test:tools` green; `npm run board:build` succeeds (no importer yet).
+- [ ] **Step 6: Commit** — `feat(evidence): per-requirement clip window + ffmpeg cut args (pure)` with the Fable footer; stage only the two files.
+
+### Task 4 (roadmap, integration): capture before/after frames + fold evidence per requirement
+`spec/_base.ts` — under `BOARD_RECORD`, screenshot before the `proves` body runs and after it settles, save to the record dir as `<id>-before.png`/`<id>-after.png`. `spec/_results-reporter.mjs` — per requirement, attach `evidence: { frames: [before, after], clip }` (clip from `clipWindow`) into the per-run record's `reqs`, folded, and for **CLI runs too**. Optionally cut the webp via `ffmpegClipArgs` when ffmpeg is present (frame-pair fallback otherwise). Verified by the dogfood board suite staying green; a `tools/evidence.test.mjs` addition asserts the reporter's per-req evidence shape from a synthetic record. Detail at task start.
+
+---
+
+## Roadmap — Plans 3–5 (detail each at its start)
 
 Written concise here; expand to full test-first tasks when reached (several steps must quote code Plan 1 / earlier plans produce).
 
