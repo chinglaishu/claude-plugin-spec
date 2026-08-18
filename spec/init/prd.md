@@ -28,7 +28,7 @@ auto-test is a false green that makes the board look finished while proving noth
 per-screen, human-sponsored **kg-deep** pass — study, golden fixture, a drafted PRD for the human's
 gate, then a few comprehensive proving flows — run one screen at a time, most important first.*
 
-## R3 — A drafted PRD is canon the moment it is written
+## R3 — A drafted PRD is a requirement immediately, not a guess awaiting acceptance
 
 A PRD drafted on the human's behalf (a kg-deep pass's draft) is a requirement like any other the
 instant it exists: specboard drafts it as an ordinary starting point, and the human edits or removes
