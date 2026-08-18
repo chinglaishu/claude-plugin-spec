@@ -211,16 +211,29 @@ const GRID_CHIP = {
 // a stale pass never shows as proof (rule 3, never fake a green), so after it come a failure, a flow
 // that stopped short, and only then the stale pass, named honestly as stale. A cross-screen prover
 // names its screen (coverage is board-wide, folded by tag).
-const gridProof = (r, screenName) => {
+// The proof cell must AGREE with the chip. The chip is r.status — the board-wide fold, fail-wins
+// (deriveReqStatus): a requirement covered by two live tests where one fails reads Failed. So the
+// proof line is driven by r.status too, NOT by its own pass-first precedence — a green "✓ proved by"
+// shows ONLY when the requirement is actually Passed, never beside a Failed chip (rule 3, never look
+// greener than you are; Focus's .fpby does exactly this). We then name the test that speaks for that
+// status. A cross-screen prover names its screen (coverage is board-wide, folded by tag).
+// The proof cell must AGREE with the chip. The chip is r.status — the board-wide fold, fail-wins
+// (deriveReqStatus): a requirement covered by two live tests where one fails reads Failed. So the
+// proof line is driven by r.status too, NOT by its own pass-first precedence — a green "✓ proved by"
+// shows ONLY when the requirement is actually Passed, never beside a Failed chip (rule 3, never look
+// greener than you are; Focus's .fpby does exactly this). We then name the test that speaks for that
+// status. A cross-screen prover names its screen (coverage is board-wide, folded by tag).
+export const gridProof = (r, screenName) => {
   const tests = r.tests || []
   if (!tests.length) return '<span class="grproof none">no test asserts this yet</span>'
-  const cur = tests.find(t => t.status === 'pass' && !t.stale) ||
-    tests.find(t => t.status === 'fail') ||
-    tests.find(t => t.status === 'not-reached') || tests[0]
+  const cur = (r.status === 'passed' && tests.find(t => t.status === 'pass' && !t.stale)) ||
+    (r.status === 'failed' && tests.find(t => t.status === 'fail')) ||
+    (r.status === 'not-reached' && tests.find(t => t.status === 'not-reached')) ||
+    tests[0]
   const from = cur.screen && cur.screen !== screenName ? ` · ${esc(cur.screen)}` : ''
-  const line = cur.status === 'pass' && !cur.stale ? `✓ proved by ${esc(cur.title)}${from}`
-    : cur.status === 'fail' ? `✗ covered by ${esc(cur.title)}${from} — failed`
-      : cur.status === 'not-reached' ? `◌ covered by ${esc(cur.title)}${from} — not reached`
+  const line = r.status === 'passed' ? `✓ proved by ${esc(cur.title)}${from}`
+    : r.status === 'failed' ? `✗ covered by ${esc(cur.title)}${from} — failed`
+      : r.status === 'not-reached' ? `◌ covered by ${esc(cur.title)}${from} — not reached`
         : `○ covered by ${esc(cur.title)}${from} — stale, not re-proven since the screen changed`
   return `<span class="grproof">${line}</span>`
 }
