@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>specboard — requirement schematics</title>
+<style>
+:root{
+  --ink:#1c1b18; --ink-2:#46443f; --ink-3:#5f5d56; --ink-4:#6e6b64;
+  --paper:#fdfcf9; --canvas:#f4f1ea; --wash:#eae6dc;
+  --hair:#e2ddd1; --hair-2:#cdc7b8; --line3:#a8a59c;
+  --ai:#2f4a63; --ai-tint:#e6eaee; --ai-line:#b9c4ce;
+  --bengara:#8d4a38; --bengara-tint:#f2e8e4; --bengara-line:#d8c0b6;
+  --koke:#4d5c37; --koke-tint:#eaece1; --koke-line:#bcc4a8;
+  --yamabuki:#8a6412; --yamabuki-tint:#f6eeda; --yamabuki-line:#dfc98c;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --r-sm:4px; --r:6px; --r-md:10px;
+  --sans:"Helvetica Neue",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+*{box-sizing:border-box}
+body{margin:0 auto;width:1080px;background:var(--canvas);color:var(--ink);
+  font:400 var(--t-md)/1.6 var(--sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;font-weight:400;letter-spacing:-.02em}
+h1{font-size:var(--t-xl)}h2{font-size:var(--t-lg)}
+code,.mono{font-family:var(--mono);font-size:.86em}
+b,strong{font-weight:500}
+.lbl{font-size:var(--t-micro);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-4)}
+.top{display:flex;align-items:center;gap:var(--s4);padding:var(--s4) var(--s6);
+  border-bottom:1px solid var(--hair);background:var(--paper)}
+.brand{display:flex;align-items:center;gap:var(--s2);font-size:var(--t-lg)}
+.logo{width:13px;height:13px;background:var(--ai)}
+.crumb{font-size:var(--t-sm);color:var(--ink-4)}
+.grow{flex:1}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair-2);background:var(--paper);
+  color:var(--ink);border-radius:var(--r);padding:5px var(--s3);font:400 var(--t-xs)/1.3 var(--sans);cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.page{padding:var(--s5) var(--s6) var(--s7)}
+.intro{font-size:var(--t-md);color:var(--ink-2);max-width:760px;margin-bottom:var(--s5)}
+
+.req{display:grid;grid-template-columns:1fr 320px;gap:var(--s5);align-items:start;
+  border:1px solid var(--hair);border-radius:var(--r-md);background:var(--paper);padding:var(--s5);margin-bottom:var(--s4)}
+.reqmeta{display:flex;align-items:center;gap:var(--s3);margin-bottom:var(--s2)}
+.fid{font-family:var(--mono);font-size:var(--t-xs);color:var(--ink-4)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);padding:3px var(--s2);
+  border-radius:var(--r-sm);background:var(--wash);color:var(--ink-3)}
+.chip.ok{background:var(--koke-tint);color:var(--koke);box-shadow:inset 0 0 0 1px var(--koke-line)}
+.chip.fail{background:var(--bengara-tint);color:var(--bengara);box-shadow:inset 0 0 0 1px var(--bengara-line)}
+.mark{width:6px;height:6px;background:currentColor}
+.reqttl{font-size:var(--t-xl);margin-bottom:var(--s3)}
+.prose{font-size:var(--t-md);color:var(--ink-2);line-height:1.65}
+.prose p{margin:0 0 var(--s2)}
+.prose b{color:var(--ink)}
+
+.figure{position:relative}
+.figcap{display:flex;align-items:center;gap:6px;font-size:var(--t-micro);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:var(--s2)}
+.viz{border:1px solid var(--hair-2);border-radius:var(--r-md);background:var(--paper);overflow:hidden;position:relative}
+.viz svg{display:block;width:100%;height:auto}
+.figfoot{font-size:var(--t-xs);color:var(--ink-4);margin-top:6px;line-height:1.5}
+.figfoot .h{font-family:var(--mono)}
+.stale{position:absolute;inset:0;background:rgba(253,252,249,.72);display:none;align-items:center;
+  justify-content:center;flex-direction:column;gap:6px;text-align:center;padding:var(--s3)}
+.viz.isstale .stale{display:flex}
+.viz.isstale svg{filter:grayscale(1) opacity(.5)}
+.stale .sb{font-size:var(--t-sm);color:var(--bengara)}
+.stale .sd{font-size:var(--t-xs);color:var(--ink-3);max-width:220px}
+
+.pipe{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.pstep{flex:1;min-width:150px;border:1px solid var(--hair);border-radius:var(--r-sm);background:var(--paper);padding:var(--s3)}
+.pstep .pt{font-size:var(--t-sm);margin-bottom:2px}
+.pstep .pd{font-size:var(--t-xs);color:var(--ink-4);line-height:1.5}
+.sect{margin:var(--s7) 0 var(--s2)}
+.honest{border:1px solid var(--ai-line);background:var(--ai-tint);border-radius:var(--r-md);
+  padding:var(--s3) var(--s4);font-size:var(--t-sm);color:var(--ai);line-height:1.6;margin-top:var(--s4)}
+
+@media (prefers-reduced-motion: reduce){.viz svg *{animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo"></span>specboard</div>
+  <span class="crumb">requirement schematics — a Claude-drawn animation beside each requirement, so the idea reads without prose</span>
+</header>
+
+<main class="page">
+  <div class="intro">Each requirement keeps its authored text, and gains a small looping <b>schematic</b> drawn from that
+    text — generic shapes in one house style, not a copy of the real UI. It explains the <i>idea</i> of the action for
+    readers who don't want to parse the prose. It is decoupled from the app on purpose; what keeps it honest is that it
+    is pinned to the requirement <b>text</b> by a hash — reword the text and the board marks the picture <b>stale</b>
+    until staff redraws it (try the button on R2).</div>
+
+  <!-- ═══════════ R2 ═══════════ -->
+  <div class="req">
+    <div>
+      <div class="reqmeta"><span class="fid">R2</span><span class="chip fail"><span class="mark"></span>Failed</span>
+        <span class="grow"></span><button class="btn" id="rewordBtn">✎ reword this requirement</button></div>
+      <h2 class="reqttl">Checking a todo moves it under Done</h2>
+      <div class="prose">
+        <p>Completion is a <b>move, not a restyle</b>: when its box is checked, the item leaves the To-do list
+          entirely and settles under Done, struck through.</p>
+        <p>Done keeps history visible without cluttering what is still left to do, and the count of items left
+          drops by one the moment the box is checked.</p>
+      </div>
+    </div>
+    <div class="figure">
+      <div class="figcap">schematic <span class="muted" style="letter-spacing:0;text-transform:none">· the idea, not the real UI</span></div>
+      <div class="viz" id="r2viz">
+        <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="An item's checkbox is checked and the row moves from the To-do list down to the Done list, and the count ticks from 2 to 1.">
+          <style>
+            #r2 .lst{fill:none;stroke:#cdc7b8;stroke-width:1.4;rx:8}
+            #r2 .lbl{fill:#6e6b64;font:400 11px var(--sans);letter-spacing:.12em}
+            #r2 .bar{fill:#e2ddd1;rx:3}
+            #r2 .cbx{fill:none;stroke:#a8a59c;stroke-width:1.4;rx:2.5}
+            #r2 .cnt{fill:#eae6dc;rx:8}
+            #r2 .cntx{font:500 11px var(--mono);fill:#5f5d56}
+            #r2 #r2item{animation:r2move 5.4s cubic-bezier(.6,0,.2,1) infinite}
+            #r2 #r2box{animation:r2check 5.4s infinite}
+            #r2 #r2chk{animation:r2chk 5.4s infinite}
+            #r2 #r2strk{animation:r2strk 5.4s infinite}
+            #r2 #r2cur{animation:r2cur 5.4s ease-in-out infinite}
+            #r2 #r2c2{animation:r2c2 5.4s infinite}
+            #r2 #r2c1{animation:r2c1 5.4s infinite}
+            @keyframes r2move{0%,34%{transform:translateY(0);opacity:1}56%,86%{transform:translateY(92px);opacity:1}
+              91%{transform:translateY(92px);opacity:0}92%{transform:translateY(0);opacity:0}100%{transform:translateY(0);opacity:1}}
+            @keyframes r2check{0%,26%{fill:#fdfcf9;stroke:#a8a59c}31%,90%{fill:#2f4a63;stroke:#2f4a63}92%,100%{fill:#fdfcf9;stroke:#a8a59c}}
+            @keyframes r2chk{0%,27%{opacity:0}32%,90%{opacity:1}92%,100%{opacity:0}}
+            @keyframes r2strk{0%,33%{transform:scaleX(0)}42%,90%{transform:scaleX(1)}92%,100%{transform:scaleX(0)}}
+            @keyframes r2cur{0%{transform:translate(150px,150px);opacity:0}10%{opacity:.9}
+              22%{transform:translate(54px,58px);opacity:.9}26%{transform:translate(54px,61px)}30%{transform:translate(54px,58px)}
+              44%{transform:translate(150px,150px);opacity:0}100%{opacity:0}}
+            @keyframes r2c2{0%,48%{opacity:1}54%,100%{opacity:0}}
+            @keyframes r2c1{0%,48%{opacity:0}54%,90%{opacity:1}92%,100%{opacity:0}}
+          </style>
+          <g id="r2">
+            <text class="lbl" x="20" y="24">TO-DO</text>
+            <rect class="lst" x="16" y="30" width="268" height="66" rx="8"/>
+            <text class="lbl" x="20" y="128">DONE</text>
+            <rect class="lst" x="16" y="134" width="268" height="52" rx="8"/>
+            <rect class="cnt" x="228" y="12" width="56" height="18"/>
+            <text id="r2c2" class="cntx" x="238" y="25">2 left</text>
+            <text id="r2c1" class="cntx" x="238" y="25">1 left</text>
+            <!-- a settled item already in Done -->
+            <rect class="cbx" x="30" y="150" width="11" height="11" rx="2.5" fill="#2f4a63" stroke="#2f4a63"/>
+            <path d="M32.5 155.5 l2 2 l4 -4.5" fill="none" stroke="#fdfcf9" stroke-width="1.4"/>
+            <rect class="bar" x="50" y="151" width="150" height="8" rx="3" fill="#cdc7b8"/>
+            <!-- the moving item -->
+            <g id="r2item">
+              <rect id="r2box" class="cbx" x="30" y="52" width="11" height="11" rx="2.5"/>
+              <path id="r2chk" d="M32.5 57.5 l2 2 l4 -4.5" fill="none" stroke="#fdfcf9" stroke-width="1.4"/>
+              <rect class="bar" x="50" y="53" width="176" height="8" rx="3"/>
+              <rect id="r2strk" x="50" y="56.5" width="176" height="1.6" fill="#6e6b64" style="transform-origin:50px 57px"/>
+            </g>
+            <g id="r2cur"><path d="M0 0 L0 12 L3 9 L5 13 L7 12 L5 8 L9 8 Z" fill="#1c1b18" stroke="#fdfcf9" stroke-width="1"/></g>
+          </g>
+        </svg>
+        <div class="stale"><div class="sb">✎ stale — text changed</div><div class="sd">the requirement was reworded after this was drawn. Staff redraws it on the next viz pass.</div></div>
+      </div>
+      <div class="figfoot">drawn from the text · <span class="h" id="r2hash">viz@a1f7c3</span> · loops silently, pauses under reduced-motion</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ R4 ═══════════ -->
+  <div class="req">
+    <div>
+      <div class="reqmeta"><span class="fid">R4</span><span class="chip ok"><span class="mark"></span>Passed</span></div>
+      <h2 class="reqttl">The count always says how many are left to do</h2>
+      <div class="prose">
+        <p>A running count shows how many items remain in To-do. It is <b>derived from the list, never stored</b> —
+          so it can only be wrong if the list is.</p>
+        <p>The instant an item is checked off, the count re-reads one lower.</p>
+      </div>
+    </div>
+    <div class="figure">
+      <div class="figcap">schematic <span class="muted" style="letter-spacing:0;text-transform:none">· the idea, not the real UI</span></div>
+      <div class="viz">
+        <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Three items with a count of 3; one is checked and the count drops to 2.">
+          <style>
+            #r4 .lst{fill:none;stroke:#cdc7b8;stroke-width:1.4}
+            #r4 .lbl{fill:#6e6b64;font:400 11px var(--sans);letter-spacing:.12em}
+            #r4 .bar{fill:#e2ddd1}
+            #r4 .cbx{fill:none;stroke:#a8a59c;stroke-width:1.4}
+            #r4 .cntbig{font:500 30px var(--mono)}
+            #r4 .cntlbl{fill:#6e6b64;font:400 11px var(--sans);letter-spacing:.1em}
+            #r4 #r4box{animation:r4check 4.6s infinite}
+            #r4 #r4chk{animation:r4chk 4.6s infinite}
+            #r4 #r4strk{animation:r4strk 4.6s infinite}
+            #r4 #r4cur{animation:r4cur 4.6s ease-in-out infinite}
+            #r4 #r4n3{animation:r4n3 4.6s infinite}
+            #r4 #r4n2{animation:r4n2 4.6s infinite}
+            #r4 #r4pulse{animation:r4pulse 4.6s infinite}
+            @keyframes r4check{0%,34%{fill:#fdfcf9;stroke:#a8a59c}40%,90%{fill:#2f4a63;stroke:#2f4a63}93%,100%{fill:#fdfcf9;stroke:#a8a59c}}
+            @keyframes r4chk{0%,36%{opacity:0}41%,90%{opacity:1}93%,100%{opacity:0}}
+            @keyframes r4strk{0%,38%{transform:scaleX(0)}47%,90%{transform:scaleX(1)}93%,100%{transform:scaleX(0)}}
+            @keyframes r4cur{0%{transform:translate(150px,150px);opacity:0}12%{opacity:.9}
+              28%{transform:translate(40px,92px);opacity:.9}33%{transform:translate(40px,95px)}38%{transform:translate(40px,92px)}
+              52%{transform:translate(150px,150px);opacity:0}100%{opacity:0}}
+            @keyframes r4n3{0%,44%{opacity:1}50%,100%{opacity:0}}
+            @keyframes r4n2{0%,44%{opacity:0}50%,90%{opacity:1}93%,100%{opacity:0}}
+            @keyframes r4pulse{0%,44%{opacity:0}50%{opacity:1}64%{opacity:0}100%{opacity:0}}
+          </style>
+          <g id="r4">
+            <text class="lbl" x="20" y="24">TO-DO</text>
+            <rect class="lst" x="16" y="30" width="176" height="150" rx="8"/>
+            <rect class="cbx" x="30" y="52" width="11" height="11" rx="2.5"/>
+            <rect class="bar" x="50" y="53" width="120" height="8" rx="3"/>
+            <g><rect id="r4box" class="cbx" x="30" y="88" width="11" height="11" rx="2.5"/>
+               <path id="r4chk" d="M32.5 93.5 l2 2 l4 -4.5" fill="none" stroke="#fdfcf9" stroke-width="1.4"/>
+               <rect class="bar" x="50" y="89" width="120" height="8" rx="3"/>
+               <rect id="r4strk" x="50" y="92.5" width="120" height="1.6" fill="#6e6b64" style="transform-origin:50px 93px"/></g>
+            <rect class="cbx" x="30" y="124" width="11" height="11" rx="2.5"/>
+            <rect class="bar" x="50" y="125" width="120" height="8" rx="3"/>
+            <circle id="r4pulse" cx="244" cy="86" r="34" fill="none" stroke="#bcc4a8" stroke-width="1.4"/>
+            <text id="r4n3" class="cntbig" x="230" y="96" fill="#4d5c37">3</text>
+            <text id="r4n2" class="cntbig" x="230" y="96" fill="#4d5c37">2</text>
+            <text class="cntlbl" x="216" y="120">LEFT TO DO</text>
+            <g id="r4cur"><path d="M0 0 L0 12 L3 9 L5 13 L7 12 L5 8 L9 8 Z" fill="#1c1b18" stroke="#fdfcf9" stroke-width="1"/></g>
+          </g>
+        </svg>
+        <div class="stale"><div class="sb">✎ stale — text changed</div><div class="sd">redraw pending</div></div>
+      </div>
+      <div class="figfoot">drawn from the text · <span class="h">viz@9c02be</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ R3 ═══════════ -->
+  <div class="req">
+    <div>
+      <div class="reqmeta"><span class="fid">R3</span><span class="chip"><span class="mark" style="background:none;box-shadow:inset 0 0 0 1px currentColor"></span>Untested</span></div>
+      <h2 class="reqttl">Clearing completed removes every Done item</h2>
+      <div class="prose">
+        <p>Done is history, not an archive. One press of <b>Clear completed</b> empties it: every finished item is
+          removed from the page at once.</p>
+        <p>Nothing asks for confirmation, because the items were already dealt with.</p>
+      </div>
+    </div>
+    <div class="figure">
+      <div class="figcap">schematic <span class="muted" style="letter-spacing:0;text-transform:none">· authored even though never tested</span></div>
+      <div class="viz">
+        <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A Clear completed button is pressed and the two Done items fade away, leaving the list empty.">
+          <style>
+            #r3 .lst{fill:none;stroke:#cdc7b8;stroke-width:1.4}
+            #r3 .lbl{fill:#6e6b64;font:400 11px var(--sans);letter-spacing:.12em}
+            #r3 .bar{fill:#e2ddd1}
+            #r3 .cbx{fill:#2f4a63;stroke:#2f4a63}
+            #r3 .btn{fill:#fdfcf9;stroke:#8d4a38;stroke-width:1.4}
+            #r3 .btnx{font:400 10px var(--sans);fill:#8d4a38}
+            #r3 #r3items{animation:r3fade 4.8s infinite}
+            #r3 #r3empty{animation:r3empty 4.8s infinite}
+            #r3 #r3btn{animation:r3btn 4.8s infinite}
+            #r3 #r3cur{animation:r3cur 4.8s ease-in-out infinite}
+            @keyframes r3fade{0%,34%{opacity:1;transform:translateX(0)}52%,88%{opacity:0;transform:translateX(26px)}90%,100%{opacity:1;transform:translateX(0)}}
+            @keyframes r3empty{0%,40%{opacity:0}58%,88%{opacity:1}92%,100%{opacity:0}}
+            @keyframes r3btn{0%,30%{fill:#fdfcf9}34%,40%{fill:#f2e8e4}44%,100%{fill:#fdfcf9}}
+            @keyframes r3cur{0%{transform:translate(150px,150px);opacity:0}12%{opacity:.9}
+              28%{transform:translate(196px,44px);opacity:.9}33%{transform:translate(196px,47px)}38%{transform:translate(196px,44px)}
+              52%{transform:translate(150px,150px);opacity:0}100%{opacity:0}}
+          </style>
+          <g id="r3">
+            <text class="lbl" x="20" y="24">DONE</text>
+            <rect id="r3btn" class="btn" x="176" y="30" width="108" height="22" rx="6"/>
+            <text class="btnx" x="190" y="45">Clear completed</text>
+            <rect class="lst" x="16" y="60" width="268" height="120" rx="8"/>
+            <g id="r3items">
+              <rect class="cbx" x="30" y="82" width="11" height="11" rx="2.5"/>
+              <path d="M32.5 87.5 l2 2 l4 -4.5" fill="none" stroke="#fdfcf9" stroke-width="1.4"/>
+              <rect class="bar" x="50" y="83" width="180" height="8" rx="3"/>
+              <rect class="cbx" x="30" y="112" width="11" height="11" rx="2.5"/>
+              <path d="M32.5 117.5 l2 2 l4 -4.5" fill="none" stroke="#fdfcf9" stroke-width="1.4"/>
+              <rect class="bar" x="50" y="113" width="150" height="8" rx="3"/>
+            </g>
+            <text id="r3empty" class="lbl" x="118" y="128" style="letter-spacing:.06em">— empty —</text>
+            <g id="r3cur"><path d="M0 0 L0 12 L3 9 L5 13 L7 12 L5 8 L9 8 Z" fill="#1c1b18" stroke="#fdfcf9" stroke-width="1"/></g>
+          </g>
+        </svg>
+        <div class="stale"><div class="sb">✎ stale — text changed</div><div class="sd">redraw pending</div></div>
+      </div>
+      <div class="figfoot">drawn from the text · <span class="h">viz@4be1d0</span> · <span class="muted">no test yet — the schematic still explains the idea</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ pipeline ═══════════ -->
+  <h2 class="sect">How it's produced — and how it can't silently rot</h2>
+  <div class="pipe">
+    <div class="pstep"><div class="pt">1 · author the requirement</div><div class="pd">text is the source of truth, as always. Human owns the meaning</div></div>
+    <div class="pstep"><div class="pt">2 · staff draws the SVG</div><div class="pd">a claude pass turns the text into a house-style animated SVG (detached job, like scan/crawl)</div></div>
+    <div class="pstep"><div class="pt">3 · cache by text-hash</div><div class="pd">the SVG is committed beside the PRD, stamped with a hash of the text it was drawn from</div></div>
+    <div class="pstep"><div class="pt">4 · render beside the prose</div><div class="pd">the board inlines the SVG next to the requirement — read and watch together</div></div>
+    <div class="pstep"><div class="pt">5 · text changes → STALE</div><div class="pd">hash mismatch is computed on build; the picture is marked stale, never shown as if current</div></div>
+    <div class="pstep"><div class="pt">6 · staff redraws</div><div class="pd">a viz pass re-draws stale ones and re-stamps the hash. Human never chases it</div></div>
+  </div>
+  <div class="honest">The schematic is <b>decoupled from the app</b> (so ag-grid is never rebuilt) but <b>pinned to the
+    requirement text</b> by a hash. That hash is the honesty mechanism: this product computes drift and refuses to hide
+    it, and the picture is held to the same rule as everything else — reword the text and the board says the picture is
+    stale rather than letting a wrong picture pass for right. It explains the idea; it never claims to be the proof (the
+    test still owns that).</div>
+</main>
+
+<script>
+var btn=document.getElementById('rewordBtn'),viz=document.getElementById('r2viz'),hash=document.getElementById('r2hash');
+var stale=false;
+btn.addEventListener('click',function(){
+  stale=!stale;
+  viz.classList.toggle('isstale',stale);
+  hash.textContent=stale?'text@f30b91 ≠ viz@a1f7c3':'viz@a1f7c3';
+  btn.textContent=stale?'↺ redraw (staff)':'✎ reword this requirement';
+});
+</script>
+</body>
+</html>
