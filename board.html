@@ -811,8 +811,6 @@ ins { color:var(--koke); text-decoration:none; }
   .srow .w { color:var(--ink); }
   .cfempty { text-align:center; padding:var(--s8) var(--s4); color:var(--ink-3);
     font-size:var(--t-md); line-height:1.9; }
-  .gmark { margin-left:var(--s2); vertical-align:middle; }
-  .gdim { color:var(--bengara); }
 
   /* init ----------------------------------------------------------------- */
   .initwrap { max-width:1120px; margin:0 auto; display:grid;
@@ -1449,7 +1447,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip ok pcount"><span class="mark"></span>14 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=db1f87e72f4a" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=67c3663afa22" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
   <div class="cmain">
@@ -1457,7 +1455,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=3824e9123416" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=cf35a45651a7" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -1473,7 +1471,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=eb3cd1f2c0be" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=541c8c0c5fa7" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -1489,7 +1487,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 6 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is inventoried into rows: visited, screenshotted, nothing faked</li><li><span class="id">R3</span>A drafted PRD is a requirement immediately, not a guess awaiting acceptance</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li><li class="more">… 1 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=feae7ba6a23e" alt="Setup — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=bc5a816ea2a7" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>
@@ -3400,9 +3398,10 @@ const B = window.__BOARD__ || {}
   const safeFit = () => {}
 
   // search ---------------------------------------------------------------
-  // The whose-turn filter toggle was removed; search across requirement text is the only way to
-  // narrow the board now. Per-group "N waiting" cues and the queue-clear banner still say whose turn
-  // it is, so nothing about "is it my turn" was lost — only the button that filtered the whole page.
+  // Search across requirement text is the only way to narrow the board. The old whose-turn filter
+  // toggle is gone, and so — since the guess flag / human gate was removed (2026-08-17) — are the
+  // per-group "N waiting" cues and the whose-turn banner: there is no "is it my turn" state left to
+  // filter or point at, only requirement text to match.
   const q = document.getElementById('q')
   function apply () {
     const term = q.value.trim().toLowerCase()

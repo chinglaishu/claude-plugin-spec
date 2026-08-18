@@ -10,9 +10,10 @@ const B = window.__BOARD__ || {}
   const safeFit = () => {}
 
   // search ---------------------------------------------------------------
-  // The whose-turn filter toggle was removed; search across requirement text is the only way to
-  // narrow the board now. Per-group "N waiting" cues and the queue-clear banner still say whose turn
-  // it is, so nothing about "is it my turn" was lost — only the button that filtered the whole page.
+  // Search across requirement text is the only way to narrow the board. The old whose-turn filter
+  // toggle is gone, and so — since the guess flag / human gate was removed (2026-08-17) — are the
+  // per-group "N waiting" cues and the whose-turn banner: there is no "is it my turn" state left to
+  // filter or point at, only requirement text to match.
   const q = document.getElementById('q')
   function apply () {
     const term = q.value.trim().toLowerCase()

@@ -1750,8 +1750,6 @@ export function build () {
   .srow .w { color:var(--ink); }
   .cfempty { text-align:center; padding:var(--s8) var(--s4); color:var(--ink-3);
     font-size:var(--t-md); line-height:1.9; }
-  .gmark { margin-left:var(--s2); vertical-align:middle; }
-  .gdim { color:var(--bengara); }
 
   /* init ----------------------------------------------------------------- */
   .initwrap { max-width:1120px; margin:0 auto; display:grid;
