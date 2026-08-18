@@ -166,7 +166,7 @@ const B = window.__BOARD__ || {}
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
   // The four-word requirement vocabulary (board R4, amended 2026-08-17) — the SAME mapping
-  // build-board.mjs's REQ_CHIP/LIST_CHIP render server-side, reproduced here because the Focus
+  // build-board.mjs's REQ_CHIP/GRID_CHIP render server-side, reproduced here because the Focus
   // reader is built client-side from the baked `.req` node's data-status attribute.
   var FCHIP = {
     passed: '✓ Passed', failed: '✗ Failed', 'not-reached': '◌ Not reached', untested: '○ Untested'
@@ -174,7 +174,7 @@ const B = window.__BOARD__ || {}
 
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
-  // recording). One of three views (Focus / List / Columns) switched by the header toggle; no in-reader
+  // recording). One of three views (Focus / Grid / Columns) switched by the header toggle; no in-reader
   // Columns button. No new state — the same derived chips the columns show, one screenful each.
   function buildFocus (dt, startId) {
     const cols = dt.querySelector('.cols'); const scroll = dt.querySelector('.dtscroll')
@@ -393,21 +393,23 @@ const B = window.__BOARD__ || {}
     cols.style.display = 'none'; scroll.appendChild(ov); render()
   }
 
-  // THE THREE-VIEW TOGGLE (board R13): Focus / List / Columns, one segmented control in the detail
-  // header. Columns is the default (R2); Focus opens the reader, List the compact index. Switching
-  // tears down any open reader (restoring its moved nodes) — there is no in-reader Columns button.
+  // THE THREE-VIEW TOGGLE (board R13): Focus / Grid / Columns, one segmented control in the detail
+  // header. Focus is the default and opens the reader; Grid is the behavior grid (one row per
+  // requirement — Grid replaced the compact List, 2026-08-18); Columns is still present this step
+  // (Flow replaces it in a following change). Switching tears down any open reader (restoring its
+  // moved nodes) — there is no in-reader Columns button.
   function setView (dt, view, startId) {
-    const cx = dt.querySelector('.cols'); const lv = dt.querySelector('.listview')
+    const cx = dt.querySelector('.cols'); const gv = dt.querySelector('.gridview')
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
-    if (view === 'list') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = false }
-    else if (view === 'focus') { if (cx) cx.style.display = 'none'; if (lv) lv.hidden = true; buildFocus(dt, startId) }
-    else { if (cx) cx.style.display = ''; if (lv) lv.hidden = true }   // columns (default)
+    if (view === 'grid') { if (cx) cx.style.display = 'none'; if (gv) gv.hidden = false }
+    else if (view === 'focus') { if (cx) cx.style.display = 'none'; if (gv) gv.hidden = true; buildFocus(dt, startId) }
+    else { if (cx) cx.style.display = ''; if (gv) gv.hidden = true }   // columns
   }
   for (const b of document.querySelectorAll('.viewseg .vseg'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })
-  // a List row opens that requirement straight into Focus
-  for (const b of document.querySelectorAll('.lrow'))
+  // a Grid row opens that requirement straight into Focus
+  for (const b of document.querySelectorAll('.grrow'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, 'focus', e.currentTarget.dataset.r) })
   // a click anywhere outside an open ⋯ menu closes it (the toggle stops its own click bubbling here)
   document.addEventListener('click', e => {
@@ -1428,7 +1430,8 @@ const B = window.__BOARD__ || {}
   // test's pass/fail verdict are baked into board.html at build time — the client never recomputes them.
   // dispatch R7 keeps the run panel open and does NOT reload the page, so the board behind the panel
   // would sit stale until you closed it. Fetch the freshly-rebuilt board.html and sync the derived bits
-  // IN PLACE — state chips (reqpane + list rows), test pass/fail + status chip — no reload, panel intact.
+  // IN PLACE — state chips (reqpane + grid rows, the grid's proof cell too), test pass/fail + status
+  // chip — no reload, panel intact.
   async function syncDerived (dt) {
     let html
     try { html = await (await fetch('board.html', { cache: 'no-store' })).text() } catch (e) { return false }
@@ -1443,9 +1446,10 @@ const B = window.__BOARD__ || {}
       req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
       swapChip(req, f, '.h > .chip')
     })
-    dt.querySelectorAll('.listview .lrow').forEach(function (row) {
-      const f = fresh.querySelector('.listview .lrow[data-r="' + cssEsc(row.dataset.r) + '"]'); if (!f) return
-      row.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(row, f, '.lrchip')
+    dt.querySelectorAll('.gridview .grrow').forEach(function (row) {
+      const f = fresh.querySelector('.gridview .grrow[data-r="' + cssEsc(row.dataset.r) + '"]'); if (!f) return
+      row.setAttribute('data-state', f.getAttribute('data-state') || ''); swapChip(row, f, '.grchip')
+      swapChip(row, f, '.grproof')   // the proof cell is derived too — a run changes its verdict
     })
     dt.querySelectorAll('.testpane .test').forEach(function (t) {
       const f = fresh.querySelector('.testpane .test[data-title="' + cssEsc(t.dataset.title) + '"]'); if (!f) return

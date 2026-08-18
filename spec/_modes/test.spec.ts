@@ -184,4 +184,15 @@ test('renders — a Given/When/Then triple leads the requirement, and a prose-on
   await expect(dt.locator('.reqpane .req[data-r="R1"] .body')).toContainText('Supporting prose under the shape.')
   // and the prose-only requirement renders NO block — no wrapper, no empty grid
   await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
+
+  // GRID view (board R13, Grid replaced the compact List 2026-08-18): the behavior grid leads each
+  // row with the same shape, read from the same r.behavior — R1's row carries the triple's text, and
+  // prose-only R2 renders NO behavior cell content at all (the empty-string contract, a third time).
+  await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+  const g1 = dt.locator('.gridview .grrow[data-r="R1"]')
+  await expect(g1.locator('.behavior')).toHaveCount(1)
+  await expect(g1).toContainText('a list with two items')
+  await expect(g1).toContainText('you press Clear')
+  await expect(g1).toContainText('the list shows zero items')
+  await expect(dt.locator('.gridview .grrow[data-r="R2"] .behavior')).toHaveCount(0)
 })

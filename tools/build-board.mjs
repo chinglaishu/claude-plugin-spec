@@ -40,7 +40,7 @@ const excerpt = body => {
 // reads failed). Every state carries a MARK as well as a hue (hue never alone): passed=moss filled ✓,
 // failed=iron half ✗, not-reached=gold hairline ◌ (a flow declared it but stopped before its assertion
 // ran), untested=hollow ink ○ (no test tags it at all). Title only, no visible label in Columns — the
-// header stays compact; the word lives in the tooltip (List's row spells it out, see LIST_CHIP below).
+// header stays compact; the word lives in the tooltip (Grid's row spells it out, see GRID_CHIP below).
 const REQ_CHIP = {
   passed: ['ok', 'mark', 'Passed — a current passing assertion covers this'],
   failed: ['fail', 'mark h', 'Failed — the covering test failed its assertion'],
@@ -189,23 +189,49 @@ const reqPane = s => `<div class="pane reqpane">
   ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
-// The LIST view (board R13): the screen's requirements as one compact line each — status, id, title —
-// a quick index to scan and jump into Focus from. It is one of THREE views of the same requirements
-// (Focus, List, Columns), switched by the header toggle; it stores nothing new. The label spells the
-// four-word vocabulary out (board R4, amended 2026-08-17) since this row has room where Columns'
-// compact chip does not.
-const LIST_CHIP = {
+// The GRID view (board R13; Grid replaced the compact List, 2026-08-18): the behavior grid — one row
+// per requirement, scannable at a glance. Each row leads with the state chip, id and title (what List
+// carried), then the Given/When/Then shape the requirement leads with (r.behavior via renderBehavior —
+// absent entirely for a prose-only requirement, the same empty-string contract as the Columns body),
+// and its PROOF: the covering test and verdict from r.tests, or the honest "no test asserts this yet"
+// note (mirroring reqRow's .covers line). A row click opens that requirement in Focus. It is one of
+// THREE views of the same requirements (Focus, Grid, Columns), switched by the header toggle; it
+// stores nothing new. The label spells the four-word vocabulary out (board R4, amended 2026-08-17)
+// since this row has room where Columns' compact chip does not.
+// EVIDENCE BOUNDARY (deliberate, task 8a): a Grid row does NOT expand gif/frame evidence inline —
+// that needs the evidence-rendering infra (a later task hooks it here); a row that wants the full
+// evidence opens Focus.
+const GRID_CHIP = {
   passed: ['ok', 'mark', '✓ Passed'],
   failed: ['fail', 'mark h', '✗ Failed'],
   'not-reached': ['wait', 'mark n', '◌ Not reached'],
   untested: ['gone', 'mark o', '○ Untested']
 }
-const listPane = s => `<div class="listview" hidden>
+// The proof cell: the covering test that best speaks for the requirement NOW — a CURRENT pass wins;
+// a stale pass never shows as proof (rule 3, never fake a green), so after it come a failure, a flow
+// that stopped short, and only then the stale pass, named honestly as stale. A cross-screen prover
+// names its screen (coverage is board-wide, folded by tag).
+const gridProof = (r, screenName) => {
+  const tests = r.tests || []
+  if (!tests.length) return '<span class="grproof none">no test asserts this yet</span>'
+  const cur = tests.find(t => t.status === 'pass' && !t.stale) ||
+    tests.find(t => t.status === 'fail') ||
+    tests.find(t => t.status === 'not-reached') || tests[0]
+  const from = cur.screen && cur.screen !== screenName ? ` · ${esc(cur.screen)}` : ''
+  const line = cur.status === 'pass' && !cur.stale ? `✓ proved by ${esc(cur.title)}${from}`
+    : cur.status === 'fail' ? `✗ covered by ${esc(cur.title)}${from} — failed`
+      : cur.status === 'not-reached' ? `◌ covered by ${esc(cur.title)}${from} — not reached`
+        : `○ covered by ${esc(cur.title)}${from} — stale, not re-proven since the screen changed`
+  return `<span class="grproof">${line}</span>`
+}
+const gridPane = s => `<div class="gridview" hidden>
   ${s.reqs.map(r => {
-    const [tone, mark, label] = LIST_CHIP[r.status] || LIST_CHIP.untested
-    return `<button class="lrow" data-r="${esc(r.id)}" data-state="${r.state}">
-      <span class="chip ${tone} lrchip"><span class="${mark}"></span>${label}</span>
-      <span class="lrid">${esc(r.id)}</span><span class="lrt">${esc(r.title)}</span><span class="lrchev">›</span>
+    const [tone, mark, label] = GRID_CHIP[r.status] || GRID_CHIP.untested
+    const beh = renderBehavior(r.behavior)
+    return `<button class="grrow" data-r="${esc(r.id)}" data-state="${r.state}">
+      <span class="chip ${tone} grchip"><span class="${mark}"></span>${label}</span>
+      <span class="gr-id">${esc(r.id)}</span><span class="grt">${esc(r.title)}</span><span class="grchev">›</span>
+      ${beh ? `<span class="grbeh">${beh}</span>` : ''}${gridProof(r, s.name)}
     </button>`
   }).join('')}
 </div>`
@@ -1177,7 +1203,7 @@ export function build () {
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="${i}">Focus</button>
-      <button class="vseg" data-view="list" data-i="${i}">List</button>
+      <button class="vseg" data-view="grid" data-i="${i}">Grid</button>
       <button class="vseg" data-view="columns" data-i="${i}">Columns</button>
     </div>
     <button class="close btn">Close</button>
@@ -1187,7 +1213,7 @@ export function build () {
       ${reqPane(s)}
       ${testPane(s)}
     </div>
-    ${listPane(s)}
+    ${gridPane(s)}
   </div>
   <div class="dtfoot" hidden></div>
 </section>`).join('')
@@ -1330,9 +1356,9 @@ export function build () {
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
   .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
-  /* board R4, amended 2026-08-17: the same four-word vocabulary as REQ_CHIP/LIST_CHIP above — the
+  /* board R4, amended 2026-08-17: the same four-word vocabulary as REQ_CHIP/GRID_CHIP above — the
      Focus reader is the detail's DEFAULT view, so it may never be the one surface still speaking the
-     old binary proven/unproven while Columns and List have moved on. */
+     old binary proven/unproven while Columns and Grid have moved on. */
   .fchip.passed  { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.failed  { color:var(--bengara); background:var(--bengara-tint); border-color:var(--bengara-line); }
   .fchip.not-reached { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
@@ -1449,7 +1475,7 @@ export function build () {
   .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
     box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
 
-  /* the three-view TOGGLE in the detail header — Focus / List / Columns (board R13) */
+  /* the three-view TOGGLE in the detail header — Focus / Grid / Columns (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
   .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:0 16px; border:0; background:transparent;
     color:var(--ink-3); cursor:pointer; letter-spacing:.02em; display:inline-flex; align-items:center; }
@@ -1461,18 +1487,31 @@ export function build () {
   .dth .btn { height:34px; border-radius:999px; padding:0 17px; }
   .dth .viewseg { height:34px; }
 
-  /* the LIST view — one compact line per requirement, a click opens it in Focus */
-  .listview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
+  /* the GRID view — the behavior grid, one row per requirement: chip · id · title on the lead line,
+     then the Given/When/Then shape (when the requirement carries one) and the proof line under the
+     title. A click opens the row in Focus. .grrow, NOT .grow — .grow is the flex-spacer utility
+     (_design.css) and sharing the name would wire every spacer span as a row. All pairs re-measured:
+     --ink-3 on --card 6.42:1, on --wash (hover) 5.29:1 — AA. */
+  .gridview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
     border-radius:var(--r-md); overflow:hidden; width:100%; max-width:820px; margin:0 auto; }
-  .lrow { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); border:0;
+  .grrow { display:grid; grid-template-columns:max-content max-content 1fr max-content;
+    align-items:center; column-gap:var(--s3); row-gap:var(--s1); padding:var(--s3) var(--s4); border:0;
     border-bottom:1px solid var(--hair); background:transparent; cursor:pointer; text-align:left; font:inherit; }
-  .lrow:last-child { border-bottom:0; }
-  .lrow:hover { background:var(--wash); }
-  .lrow .lrchip { flex:none; }
-  .lrow .lrid { font:var(--t-sm) var(--mono); color:var(--ink-3); width:34px; flex:none; }
-  .lrow .lrt { flex:1; min-width:0; font-size:var(--t-md); color:var(--ink);
+  .grrow:last-child { border-bottom:0; }
+  .grrow:hover { background:var(--wash); }
+  .grrow .grchip { justify-self:start; }
+  .grrow .gr-id { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; }
+  .grrow .grt { min-width:0; font-size:var(--t-md); color:var(--ink);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .lrow .lrchev { color:var(--line3); font-size:15px; flex:none; }
+  .grrow .grchev { color:var(--line3); font-size:15px; }
+  /* the shape cell rides UNDER the title, subordinate structural text — the _design.css .behavior
+     block, compacted: no bottom rule (the row's own hairline separates), tighter type */
+  .grrow .grbeh { grid-column:3 / -1; min-width:0; }
+  .grrow .grbeh .behavior { margin:0; padding:0; border-bottom:0; }
+  .grrow .grbeh .btxt { font-size:var(--t-sm); line-height:1.45; }
+  /* the proof cell: which test speaks for this row and its verdict — quiet, one line, honest */
+  .grrow .grproof { grid-column:3 / -1; min-width:0; font-size:var(--t-sm); color:var(--ink-3);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }

@@ -232,12 +232,14 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 *Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
 `guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
 
-## R13 — Three views of a screen's requirements: Focus, List, Columns
+## R13 — Three views of a screen's requirements: Focus, Grid, Columns
 
-The detail header carries a **three-way toggle — Focus / List / Columns** — three views of the same
+The detail header carries a **three-way toggle — Focus / Grid / Columns** — three views of the same
 requirements, storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
-— was Columns)*. **Columns** is the two-column view (R2). **List** is a compact index — one line per
-requirement (state · id · title) — to scan and jump into Focus from. **Focus** reads **one requirement
+— was Columns)*. **Columns** is the two-column view (R2). **Grid** is the behavior grid — one row per
+requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement
+is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan
+at a glance; a row opens that requirement in Focus. **Focus** reads **one requirement
 at a time**, laid out as **two containers**: the *reading* on the left (its id and state on a meta line
 above the title, then the full description, and the flow step by step with this requirement's step
 highlighted) and the *evidence* on the right — a **proof header** whose top row carries the label and
@@ -261,6 +263,9 @@ that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the
 **Focus is now the default view**, the id + state fold into the reading card (no full-width bar), the
 evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows
 the human's spoken decisions; the tests assert the behaviour.*
+
+*Grid replaces the compact List, 2026-08-18 (the human) — the behavior grid; Flow replaces Columns in
+a following change.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

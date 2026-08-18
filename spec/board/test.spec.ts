@@ -425,7 +425,7 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
-    // the header toggle offers Focus / List / Columns, and Focus is active on open — a one-requirement
+    // the header toggle offers Focus / Grid / Columns, and Focus is active on open — a one-requirement
     // reader laid out as TWO containers, no columns showing
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
@@ -434,7 +434,7 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(ov.locator('.fpage')).toHaveCount(1)
     // its id, state, title and full body on the LEFT container
     await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
-    // The Focus reader's chip reads the SAME four-word vocabulary as Columns/List (board R4, amended
+    // The Focus reader's chip reads the SAME four-word vocabulary as Columns/Grid (board R4, amended
     // 2026-08-17) — no separate binary proven/unproven surface left anywhere in the detail.
     await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested/)
     await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
@@ -485,13 +485,17 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(dt.locator('.cols')).toBeVisible()
     await expect(dt.locator('.testpane .test')).not.toHaveCount(0)
 
-    // LIST → one compact line per requirement; a row opens it straight into Focus
-    await dt.locator('.viewseg .vseg[data-view="list"]').click()
-    const list = dt.locator('.listview')
-    await expect(list).toBeVisible()
+    // GRID → the behavior grid (Grid replaced the compact List, 2026-08-18): one row per requirement —
+    // state · id · title · the Given/When/Then shape it leads with · its proof — and a row opens it
+    // straight into Focus. Every row carries a proof cell (the covering test + verdict, or the honest
+    // "no test asserts this yet" note); the G/W/T cell is proven on a fixture screen in spec/_modes.
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    const grid = dt.locator('.gridview')
+    await expect(grid).toBeVisible()
     await expect(dt.locator('.cols')).toBeHidden()
-    await expect(list.locator('.lrow')).toHaveCount(reqCount)
-    await list.locator('.lrow').first().click()
+    await expect(grid.locator('.grrow')).toHaveCount(reqCount)
+    await expect(grid.locator('.grrow .grproof')).toHaveCount(reqCount)
+    await grid.locator('.grrow').first().click()
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
 
@@ -515,14 +519,14 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await dt.locator(`.reqpane .req[data-r="${passedId}"]`).evaluate(el => el.setAttribute('data-status', 'passed'))
     await dt.locator(`.reqpane .req[data-r="${otherId}"]`).evaluate(el => el.setAttribute('data-status', 'failed'))
 
-    await dt.locator('.viewseg .vseg[data-view="list"]').click()
-    await dt.locator(`.listview .lrow[data-r="${passedId}"]`).click()
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator(`.gridview .grrow[data-r="${passedId}"]`).click()
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
 
-    await dt.locator('.viewseg .vseg[data-view="list"]').click()
-    await dt.locator(`.listview .lrow[data-r="${otherId}"]`).click()
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator(`.gridview .grrow[data-r="${otherId}"]`).click()
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
