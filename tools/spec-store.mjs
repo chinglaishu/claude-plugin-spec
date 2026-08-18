@@ -9,6 +9,7 @@ import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
+import { parseBehavior } from './behavior.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -242,6 +243,11 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
 // deriveReqStatus — the four-word reader vocabulary (passed/failed/not-reached/untested, fail wins)
 // the board now RENDERS. `state` stays exactly as it was: the walkthrough and the home "N / M proven"
 // count still read it, and migrating those is a later task, not this one.
+//
+// `behavior` (added 2026-08-18, visual requirements) is the requirement's OWN body read through
+// parseBehavior — the optional Given/When/Then triple a requirement may lead with, or null when it
+// is prose-only. Attached here (not in the builder) so every reader of a requirement sees the same
+// parse; the builder only draws it. It is authored text re-shaped, never a derived state.
 const _aggCache = new WeakMap()
 function aggFor (results) {
   const key = results || {}
@@ -272,7 +278,7 @@ function enrichReqs (reqs, screen, results) {
     // green the code above exists to prevent, rule 3). Fail entries are never marked stale (`stale`
     // is defined only for status === 'pass'), so a current failure still wins regardless.
     const liveEntries = entries.filter((e, i) => !tests[i].stale)
-    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(liveEntries), tests }
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(liveEntries), behavior: parseBehavior(r.body), tests }
   })
 }
 

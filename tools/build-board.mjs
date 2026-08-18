@@ -140,6 +140,20 @@ export function renderBody (text) {
   return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
 }
 
+// The behavior SHAPE a requirement may lead with — the Given/When/Then triple parseBehavior
+// (tools/behavior.mjs) read off its body, attached in enrichReqs as r.behavior. Drawn as a labelled
+// grid ABOVE the prose, so the shape leads and the prose supports. A prose-only requirement
+// (behavior === null) returns '' exactly — no wrapper, no empty block, so the board is unchanged
+// wherever the triple is absent. The three values are UNTRUSTED PRD text (same as renderBody's
+// input), so each is escaped before a tag is emitted. Pure and exported, like renderBody, so it is
+// unit-testable without a browser (tools/behavior-render.test.mjs).
+export function renderBehavior (b) {
+  if (!b) return ''
+  const row = (k, label, text) =>
+    `<div class="brow b${k}"><span class="blab">${label}</span><span class="btxt">${esc(text)}</span></div>`
+  return `<div class="behavior">${row('given', 'Given', b.given)}${row('when', 'When', b.when)}${row('then', 'Then', b.then)}</div>`
+}
+
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
@@ -162,7 +176,7 @@ const reqRow = r => {
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}">
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
-    <div class="body">${renderBody(r.body)}${covers}</div>
+    <div class="body">${renderBehavior(r.behavior)}${renderBody(r.body)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">

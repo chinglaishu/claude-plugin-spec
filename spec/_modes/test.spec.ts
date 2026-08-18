@@ -145,3 +145,38 @@ test('renders — a leftover guess: frontmatter line renders exactly like a norm
   expect(await card.getAttribute('data-waiting')).toBeNull()   // no waiting attribute exists any more
   await expect(card.locator('.chip', { hasText: /guess/i })).toHaveCount(0)
 })
+
+// ── the behavior shape leads the detail (visual requirements, 2026-08-18) ──
+// A requirement MAY lead with a `- **Given** / - **When** / - **Then**` triple (tools/behavior.mjs
+// parses it; enrichReqs attaches it as r.behavior). The board renders that shape as a structured
+// block ABOVE the prose; a prose-only requirement renders NO block at all — the empty-string
+// contract, so nothing changes for every PRD that does not carry the triple. Focus must show the
+// same block because the reader clones the Columns .body verbatim (stripping only .covers) —
+// asserted here so a client.js change can never silently drop it.
+test('renders — a Given/When/Then triple leads the requirement, and a prose-only one gets no block', async ({ page }) => {
+  const { name } = makeScreen('probe-behavior',
+    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n\n' +
+    'Supporting prose under the shape.\n\n' +
+    '## R2 — A prose-only requirement\n\nOnly prose here — no triple, so no block.')
+  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+
+  // default FOCUS view: the reader's clone of the Columns .body carries the block untouched
+  const fbeh = dt.locator('.fread .fbody .behavior')
+  await expect(fbeh).toHaveCount(1)
+  await expect(fbeh.locator('.brow')).toHaveCount(3)
+  await expect(fbeh).toContainText('a list with two items')
+
+  // COLUMNS view: the block renders inside R1's .body, three labelled rows carrying the text
+  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
+  const beh = dt.locator('.reqpane .req[data-r="R1"] .body .behavior')
+  await expect(beh).toHaveCount(1)
+  await expect(beh.locator('.brow')).toHaveCount(3)
+  await expect(beh.locator('.brow').nth(0)).toContainText('a list with two items')
+  await expect(beh.locator('.brow').nth(1)).toContainText('you press Clear')
+  await expect(beh.locator('.brow').nth(2)).toContainText('the list shows zero items')
+  // the shape LEADS: the block is the body's first element, above the rendered prose
+  await expect(dt.locator('.reqpane .req[data-r="R1"] .body > :first-child')).toHaveClass(/behavior/)
+  // and the prose-only requirement renders NO block — no wrapper, no empty grid
+  await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
+})

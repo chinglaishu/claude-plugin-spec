@@ -222,6 +222,20 @@ ins { color:var(--koke); text-decoration:none; }
   box-shadow:inset 0 0 0 1px currentColor; }
 .mark.n { height:1px; }
 
+/* behavior ----------------------------------------------------------------
+   The Given/When/Then shape a requirement may LEAD with (2026-08-18): structural, not a status —
+   no hue, no chip, no fill (hairlines, never boxes: one bottom rule separates shape from prose).
+   Labels reuse the one label style (--t-micro tracked upper in --ink-3 — measured at the top of
+   this file, AA on both --paper and --canvas); the values carry the requirement's own ink at the
+   body size, so the block sits under the title and above the prose without shouting. */
+.behavior { display:grid; grid-template-columns:max-content 1fr; gap:var(--s1) var(--s3);
+  align-items:baseline; margin:0 0 var(--s3); padding:0 0 var(--s3);
+  border-bottom:1px solid var(--hair); }
+.brow { display:contents; }
+.blab { font-size:var(--t-micro); letter-spacing:.16em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:400; }
+.btxt { color:var(--ink); font-size:var(--t-md); line-height:1.55; }
+
 /* surfaces ---------------------------------------------------------------- */
 .card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md);
   overflow:hidden; }
@@ -1447,7 +1461,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip ok pcount"><span class="mark"></span>14 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>The detail is two columns, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=67c3663afa22" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=76345afee0b0" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
   <div class="cmain">
@@ -1455,7 +1469,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=cf35a45651a7" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=2737d14ffdc8" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -1471,7 +1485,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=541c8c0c5fa7" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=1ad1ce9d06c1" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -1487,7 +1501,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 6 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is inventoried into rows: visited, screenshotted, nothing faked</li><li><span class="id">R3</span>A drafted PRD is a requirement immediately, not a guess awaiting acceptance</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li><li class="more">… 1 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=bc5a816ea2a7" alt="Setup — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=378012096050" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>

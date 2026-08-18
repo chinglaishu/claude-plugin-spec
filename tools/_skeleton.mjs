@@ -11,6 +11,10 @@ import { join } from 'node:path'
 // spec/<screen>/ — those are the target's own screens, never shipped.
 export const FILES = [
   'tools/spec-store.mjs', 'tools/coverage.mjs', 'tools/journey.mjs', 'tools/build-board.mjs',
+  // pure Given/When/Then parser — imported by spec-store.mjs (enrichReqs attaches r.behavior), so a
+  // scaffolded project needs it or the vendored spec-store cannot load at all (update.test.mjs's
+  // every-relative-import-is-vendored guard is what catches this class of miss).
+  'tools/behavior.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs
