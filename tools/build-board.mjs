@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
 import {
-  ROOT, esc, designCss, allScreens, sortedAreas, isWaiting, writeText
+  ROOT, esc, designCss, allScreens, sortedAreas, writeText
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 
@@ -51,20 +51,19 @@ const reqChip = status => {
   return `<span class="chip ${tone}" title="${title}"><span class="${mark}"></span></span>`
 }
 
-// Home is one CARD per screen (board R1): its name, a guess chip if the PRD is still a crawl guess,
-// a proven-count chip, the requirement TITLES, and the latest run's recording cover (or the still).
-// There is NO PRD/draft/screen/E2E column strip — the card is titles + cover and nothing else.
+// Home is one CARD per screen (board R1): its name, a proven-count chip, the requirement TITLES, and
+// the latest run's recording cover (or the still). There is NO PRD/draft/screen/E2E column strip — the
+// card is titles + cover and nothing else. There is no guess/draft chip either (the human, 2026-08-17):
+// a drafted PRD is canon the instant it exists, so a card never distinguishes it from one a human wrote.
 const card = (s, i) => {
   const M = s.reqs.length
   const proven = s.reqs.filter(r => r.state === 'proven').length
   const done = M > 0 && proven === M
   const q = (s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase()
   return `
-<div class="card" data-screen="${esc(s.name)}" data-i="${i}"
-     data-waiting="${isWaiting(s) ? 1 : 0}" data-q="${esc(q)}">
+<div class="card" data-screen="${esc(s.name)}" data-i="${i}" data-q="${esc(q)}">
   <div class="cmain">
     <div class="cd"><span class="nm">${esc(s.title)}</span>
-      ${s.guess ? '<span class="chip stale gmark"><span class="mark h"></span>a guess</span>' : ''}
       <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span></div>
     <ul class="rl">${s.reqs.slice(0, 5).map(r => `<li><span class="id">${esc(r.id)}</span>${esc(r.title)}</li>`).join('')}${s.reqs.length > 5 ? `<li class="more">… ${s.reqs.length - 5} more</li>` : ''}</ul>
   </div>
@@ -75,13 +74,11 @@ const card = (s, i) => {
 }
 
 // A step that has no command of its own names the board control that does it, so the one next action
-// is a thing you can point at rather than an instruction to go read something. Confirming a draft is
-// the exception the board has no button for: it happens in the screen's own prd.md. Also feeds Act 4's
+// is a thing you can point at rather than an instruction to go read something. Also feeds Act 4's
 // derived CTA (board R12, repurposed) — see wCtaAction below.
 const J_ACT = {
   config: 'Set up',
   crawl: 'Crawl',
-  confirm: 'Delete the guess: line in that screen prd.md',
   prove: 'Run all'
 }
 // Every step's state, DERIVED in journey.mjs from the tree on this build, never stored. This function
@@ -95,7 +92,7 @@ const J_ACT = {
 export const journeyRail = j => `
 <div id="jrail"${j.folded ? ' hidden' : ''}>
   <div class="jhd"><span class="jttl">Getting started</span>
-    <span class="gbn">six steps, each one derived from the tree — nothing is stored</span></div>
+    <span class="gbn">five steps, each one derived from the tree — nothing is stored</span></div>
   <ol class="jsteps">${j.steps.map((s, n) => `
     <li class="jstep${s.done ? ' done' : s.current ? ' cur' : ''}" data-id="${esc(s.id)}">
       <span class="jtop"><span class="mark${s.done ? '' : s.current ? ' h' : ' o'}"></span><span class="jn">${n + 1}</span><span class="jt">${esc(s.title)}</span></span>
@@ -261,7 +258,6 @@ const testPane = s => {
 const WORKFLOW = {
   spine: [
     { num: '1 · REQUIREMENTS', h: 'What the screen must do', file: 'prd.md' },
-    { gate: 'YOUR TURN', h: 'Are these what I meant?', cmp: 'guess → accepted' },
     { num: '2 · E2E TESTS', h: 'The proof, against the real app', file: 'test.spec.ts' }
   ],
   lanes: [
@@ -281,10 +277,8 @@ const WORKFLOW = {
       steps: [
         { skill: 'kg-deep', file: 'study · golden.json', h: 'Study the real screen, seed golden data',
           p: 'Source, testids, existing tests, contracts — then a deterministic fixture, so tests can assert <b>exact numbers</b>, not that boxes exist.' },
-        { skill: 'kg-deep', file: 'prd.md · guess', h: 'Draft the requirements',
-          p: 'One requirement per behaviour, grounded in what the screen really does — a proposal, flagged <span class="mono">guess</span>.' },
-        { gate: true, glbl: 'Your turn', h: 'Are these what I meant?', cmp: 'guess → accepted',
-          p: 'The one thing that waits on you here. Correct the wording, drop the flag — accepted requirements are the source of truth.' },
+        { skill: 'kg-deep', file: 'prd.md', h: 'Draft the requirements',
+          p: 'One requirement per behaviour, grounded in what the screen really does — canon the moment it is written, edited freely like any other requirement.' },
         { skill: 'kg-deep', file: 'test.spec.ts', h: 'Prove with unit and flow tests', arrow: 'checkReq tags carry coverage',
           p: 'Unit tests prove the screen&#39;s own behaviours; flow tests cross screens along a chosen path — exact golden values, safe round trips, a writer flow that restores its own baseline. The board derives every requirement&#39;s state from the tags.' }
       ],
@@ -305,11 +299,7 @@ const WORKFLOW = {
 const howArrow = label =>
   `<div class="arrow${label ? ' lbl-arrow' : ''}"><svg width="14" height="30" viewBox="0 0 14 30"><path class="ln" d="M7 0 V20"/><path class="hd" d="M2.5 15 L7 22 L11.5 15"/></svg>${label ? `<span class="side">${label}</span>` : ''}</div>`
 
-const howNode = st => st.gate
-  ? `<div class="node gate">
-        <div class="ghead"><span class="dia"></span><span class="glbl">${st.glbl}</span></div>
-        <h3>${st.h}</h3><p>${st.p}</p><div class="cmp">${st.cmp}</div></div>`
-  : `<div class="node">
+const howNode = st => `<div class="node">
         <div class="kick"><span class="skill">${st.skill}</span><span class="file">${st.file}</span></div>
         <h3>${st.h}</h3><p>${st.p}</p></div>`
 
@@ -327,10 +317,7 @@ const howLane = lane => `<div class="lane">
         </div>` : ''}</div>
     </div>`
 
-const howSpineCol = c => c.gate
-  ? `<div class="col g"><div class="num">${c.gate}</div><h3>${c.h}</h3>
-        <div class="gate-tag"><span class="dia"></span>${c.cmp}</div></div>`
-  : `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
+const howSpineCol = c => `<div class="col"><div class="num">${c.num}</div><h3>${c.h}</h3>
         <div class="file">${c.file}</div></div>`
 
 // The guide (board R11) — a four-act, click-to-advance walkthrough that DEMONSTRATES the proof
@@ -345,16 +332,14 @@ const howSpineCol = c => c.gate
 // in words, so it can never be mistaken for live board state (authored vs measured); its goldens are
 // real values shown AS an illustration. The anatomy the old #how-anatomy taught — proven / unproven /
 // not-reached, the mark that rides every hue, coverage tags — is folded into the act copy below.
-//   INVERSION / INDIGO: indigo is spent only on Act 4 — the "you confirm the meaning" step (a tint)
-// and the closing CTA when (and ONLY when) there is a real next action to name (the one solid-indigo
-// "your turn" element, `.wcta-act`). Once the journey is folded — nothing left to derive — the CTA
-// names that instead and wears the settled/koke treatment (`.wcta-settled`, a tint, no inversion),
-// never indigo: CLAUDE.md is absolute that indigo means "your turn" and nothing else, and a folded
-// board has no turn left to take (board R12 fix; see wCtaAction / wCta below). Act 1's invisible-green
-// failure wears the board's own solid `chip bad`, the single inverted element of that act. Because the
-// acts step one at a time, each act is its own view with ONE inverted element; rendered
-// all-at-once here they read as two (when the CTA is in its 'turn' state), the same documented trade
-// the old anatomy chapter made.
+//   INVERSION / INDIGO: there is no more "your turn" state on this page (the human, 2026-08-17 —
+// the guess/gate mechanism is gone end to end), so indigo is not spent anywhere in the guide any
+// more; it is reserved, unused, for a future `Changed` drift state. Act 4's closing CTA (`.wcta-act`
+// when there is a real next action to name, `.wcta-settled` once the journey is folded) now wears the
+// board's neutral primary-action ink, never indigo (board R12 fix; see wCtaAction / wCta below). Act
+// 1's invisible-green failure wears the board's own solid `chip bad`, the single inverted element of
+// that act. Because the acts step one at a time, each act is its own view with at most ONE inverted
+// element.
 const WALKTHROUGH = {
   acts: [
     { n: 1, title: 'Without the tool', sub: 'a brilliant, fast hire whose work you cannot review',
@@ -371,7 +356,7 @@ const WALKTHROUGH = {
     { n: 2, title: 'With the tool', sub: 'the same hire, plus a system that makes work reviewable',
       steps: [
         { kind: 'scene', scene: 'req', label: 'Assigning work',
-          body: 'The task becomes a written requirement. You confirm the meaning — the one thing waiting on you.' },
+          body: 'The task becomes a written requirement — canon the instant it exists, immediately the source of truth.' },
         { kind: 'scene', scene: 'watch', label: 'Reviewing',
           body: 'The work arrives as a recording where every asserted number is on screen. You review by watching.' },
         { kind: 'scene', scene: 'drift', label: 'Two weeks later',
@@ -391,7 +376,7 @@ const WALKTHROUGH = {
       ] },
     { n: 4, title: 'Do it on your app', sub: 'the flow, and the full method underneath',
       steps: [
-        { kind: 'flow', chain: ['kg-init', 'kg-deep · per screen', 'you confirm the meaning', 'tests prove it'] },
+        { kind: 'flow', chain: ['kg-init', 'kg-deep · per screen', 'tests prove it'] },
         // action is no longer authored here (board R12, repurposed): it is DERIVED per build from
         // journey() — see wCtaAction — so a returning user always sees their real next step.
         { kind: 'cta', lead: 'Next on your board:' }
@@ -400,7 +385,7 @@ const WALKTHROUGH = {
 }
 
 // Marks ride every hue (design rule): reuse #howview .mk — a filled 6px square, hollow (.o) for an
-// absent state, a diamond (.d) for "your turn" — so the guide draws the board's own marks.
+// absent state — so the guide draws the board's own marks.
 const wMark = cls => '<span class="mk ' + cls + '"></span>'
 
 // One walkthrough step, carrying data-step (1-based) and data-wact (its act) for the stepping
@@ -444,9 +429,9 @@ const wMoment = s =>
 //   3. NOTHING LOOPS and every scene finishes inside ~3.5s, most beats in 1-2s. A viewer who just
 //      clicked must never wait on dead air, and a loop would turn a held conclusion into wallpaper.
 //
-// Colour follows the design system exactly: bengara names the failure beats, koke the settled ones,
-// and INDIGO is spent on one thing on this whole page — Act 2's guess flag and your confirmation of
-// it — because that is the one thing in the product that genuinely waits on a person.
+// Colour follows the design system exactly: bengara names the failure beats, koke the settled ones —
+// and indigo is spent NOWHERE on this page (the human, 2026-08-17: there is no more state that waits
+// on a person, so indigo is reserved, unused, for a future `Changed` drift state).
 const scene = (id, inner) => '<div class="scene s-' + id + '">' + inner + '</div>'
 
 // 1 · THE CHAT THAT SCROLLS AWAY. The task is spoken, answered instantly, and then the thread rides
@@ -552,17 +537,16 @@ const scBlind = () => scene('blind',
     '</div>' +
   '</div>')
 
-// 5 · THE FLAG THAT DROPS (the mirror of scene 1). The same spoken sentence becomes a written
-// requirement card; a `guess:` flag is pinned to it — indigo, because a guess is the one thing in
-// this product that waits on a person — and your confirmation drops it off the document.
+// 5 · CANON THE MOMENT IT'S WRITTEN (the mirror of scene 1). The same spoken sentence becomes a
+// written requirement card — there is no flag, no confirmation step (the human, 2026-08-17): the
+// document IS the requirement the instant it exists.
 const scReq = () => scene('req',
   '<div class="sc-morph">' +
     '<div class="sc-bub sc-you sc-mbub">Build the rent-edit feature.</div>' +
     '<div class="sc-card">' +
-      '<span class="wflag">' + wMark('d') + 'guess: true</span>' +
       '<div class="sc-ch"><span class="sc-t mono">spec/asset-plan/prd.md</span><span class="sc-id mono">R5</span></div>' +
       '<p class="sc-cb">Market rent edited on the plan carries to the tenancy schedule, to the penny.</p>' +
-      '<span class="wconfirm">' + wMark('d') + 'you confirm the meaning</span>' +
+      '<span class="sc-canon chip ok"><span class="mark"></span>canon the moment it&#39;s written</span>' +
     '</div>' +
   '</div>')
 
@@ -674,23 +658,20 @@ const wCrosspage = s =>
   '</div>' +
   '<p class="wnote">' + esc(s.note) + '</p>'
 
-// The flow as verb-phrase steps; the human's step ("you confirm the meaning") wears indigo = your turn.
+// The flow as verb-phrase steps — plain, uniform nodes, no state hue: nothing on this chain waits on
+// a person any more (the human, 2026-08-17).
 const wFlow = s =>
-  '<div class="wflow">' + s.chain.map((c, i) => {
-    const yours = /confirm/i.test(c)
-    const node = '<span class="wfn' + (yours ? ' yours' : '') + '">' + (yours ? wMark('d') : '') + esc(c) + '</span>'
-    return (i ? '<span class="wfa" aria-hidden="true">&#8594;</span>' : '') + node
-  }).join('') + '</div>'
+  '<div class="wflow">' + s.chain.map((c, i) =>
+    (i ? '<span class="wfa" aria-hidden="true">&#8594;</span>' : '') + '<span class="wfn">' + esc(c) + '</span>'
+  ).join('') + '</div>'
 
 // Act 4's closing CTA (board R12, repurposed): the first not-done journey() step's own action —
 // its cmd when it has one (deepen: '/kg-deep <screen>'), else the short verb J_ACT already names for
 // the board control that does it. Once nothing is left (folded), there is no next step to name, so
 // the CTA says so instead of pointing at one. Pure function of journey()'s facts — nothing stored.
-// Returns { text, state } rather than a bare string (fix, board R12): CLAUDE.md is absolute that
-// indigo means ONE thing — "your turn" — but the folded branch names nothing left to DO, so it
-// cannot share the 'turn' state a real next action gets. `state` rides the exact same `cur` branch
-// that picked `text`, so the renderer (wCta) never re-derives folded-vs-action from journey() itself
-// — one derivation, read twice, rather than two derivations that could disagree.
+// Returns { text, state } rather than a bare string (board R12): the renderer (wCta) uses `state` to
+// pick which of its two pill treatments to draw, so it never re-derives folded-vs-action from
+// journey() itself — one derivation, read twice, rather than two derivations that could disagree.
 // Exported so the DERIVATION is unit-tested against synthetic journey() shapes (tools/journey.test.mjs)
 // — this repo's own journey is always folded (everything proven), so the live board's own E2E can only
 // ever exercise the folded/settled branch below; the not-done/turn branches need a driven fixture.
@@ -700,16 +681,17 @@ export const wCtaAction = j => {
   return { text: cur.cmd || J_ACT[cur.id] || cur.title, state: 'turn' }
 }
 
-// Act 4's closing pill wears the state `cta` names (board R12 fix), not indigo unconditionally:
-// `cta.state === 'turn'` (a real next action) keeps the original solid "your turn" treatment — the
-// one inverted element of Act 4 — with the `.mk.d` your-turn diamond. `cta.state === 'settled'` (the
-// folded branch: every derivable fact already holds, nothing left to point at) renders instead as a
-// tint, the SAME koke/"ok" tokens the board already uses for proven/settled chips elsewhere on this
-// page (compare the legend's `chip ok` / `mk`), with a filled settled mark — no inversion, so a
-// folded board never shows two solid indigo elements competing on one screen.
+// Act 4's closing pill wears the state `cta` names (board R12), and neither treatment is indigo any
+// more (the human, 2026-08-17 — there is no "your turn" state left on the board): `cta.state === 'turn'`
+// (a real next action to run) is the neutral primary-action ink, the SAME solid `.btn.pri` treatment
+// the board already uses for "the main thing to do" — the one inverted element of Act 4.
+// `cta.state === 'settled'` (the folded branch: every derivable fact already holds, nothing left to
+// point at) renders instead as a tint, the SAME koke/"ok" tokens the board already uses for
+// proven/settled chips elsewhere on this page (compare the legend's `chip ok` / `mk`) — no inversion,
+// so a folded board never shows two solid elements competing on one screen.
 const wCta = (s, cta) => {
   const pill = cta.state === 'turn'
-    ? '<span class="wcta-act">' + wMark('d') + '<span class="mono">' + esc(cta.text) + '</span></span>'
+    ? '<span class="wcta-act"><span class="mk"></span><span class="mono">' + esc(cta.text) + '</span></span>'
     : '<span class="wcta-settled"><span class="mk"></span><span class="mono">' + esc(cta.text) + '</span></span>'
   return '<div class="wcta"><span class="wcta-lead">' + esc(s.lead) + '</span>' + pill + '</div>'
 }
@@ -731,9 +713,9 @@ const wStepInner = (s, ctaAction) => {
 }
 
 // Per-act stepper nav (board R11): Prev / a live "n / N" count / Next. Marks (the chevron glyphs and
-// the numeric count), never hue, carry the affordance; the buttons are quiet outlines, not a solid or
-// indigo element (indigo == your turn, spent only in Act 4). The controller wires these and clamps at
-// the ends; without JS the act simply shows its first step, which is honest.
+// the numeric count), never hue, carry the affordance; the buttons are quiet outlines, not a solid
+// element. The controller wires these and clamps at the ends; without JS the act simply shows its
+// first step, which is honest.
 const wNav = a =>
   '<div class="wnav">' +
     '<button class="wnavb" type="button" data-wprev aria-label="Previous step"><span class="wchev" aria-hidden="true">&#8249;</span>Prev</button>' +
@@ -810,22 +792,14 @@ function fStepBody (n) {
     ${tags || chip ? `<div class="nb-foot">${tags}${chip}</div>` : ''}
   </div>`
 }
-// A gate-shaped node draws one of two things, never both: `kind: 'turn'` (default) IS the guess
-// confirmation and keeps the your-turn/indigo treatment; `kind: 'stop'` is kg-staff's "stop and ask"
-// node, which is process discipline, not the board's reserved your-turn signal — it gets its own
-// neutral, non-indigo label and colouring so the two are never visually confused.
+// A gate-shaped node is kg-staff's "stop and ask the human" node (there is no other kind any more —
+// the guess/gate mechanism this used to also draw was removed, the human, 2026-08-17). Neutral, never
+// indigo: this is process discipline, not a status the board computes.
 function fGateBody (n) {
   const cmp = n.cmp ? `<div class="cmp mono">${esc(n.cmp)}</div>` : ''
-  if (n.kind === 'stop') {
-    return `<div ${XH} class="nb stop">
+  return `<div ${XH} class="nb stop">
     <div class="glbl stop"><span class="dia stop"></span>STOP &middot; ask the human</div>
     <div class="nb-title">${esc(n.title)}</div>
-    ${cmp}
-  </div>`
-  }
-  return `<div ${XH} class="nb gate">
-    <div class="glbl"><span class="dia"></span>YOUR TURN</div>
-    <div class="nb-title ai">${esc(n.title)}</div>
     ${cmp}
   </div>`
 }
@@ -933,25 +907,23 @@ const HOW_FLOWS = [
   },
   {
     id: 'kg-deep',
-    tagline: 'one screen → deep, accepted, proven',
+    tagline: 'one screen → deep and proven',
     when: 'per screen · most important first',
-    height: 734,
+    height: 632,
     nodes: [
       { id: 'k0', type: 'step', cx: HOW_Cx, top: 16, w: 300, h: 54, title: 'Phase 0 · what governs this screen?', tags: ['tools/staff.mjs'] },
       { id: 'k1', type: 'step', cx: HOW_Cx, top: 100, w: 316, h: 58, title: 'Phase 1 · study the real screen', tags: ['source · testids · existing tests'] },
       { id: 'k2', type: 'step', cx: HOW_Cx, top: 188, w: 316, h: 58, title: 'Phase 2 · golden fixture + capture', state: 'running', tags: ['_seed.ts · golden.json'] },
-      { id: 'k3', type: 'step', cx: HOW_Cx, top: 276, w: 300, h: 58, title: 'Phase 3 · draft the requirements', tags: ['prd.md · guess'] },
-      { id: 'g1', type: 'gate', cx: HOW_Cx, top: 364, w: 300, h: 68, title: 'Are these what I meant?', cmp: 'guess → accepted' },
-      { id: 'k4', type: 'step', cx: HOW_Cx, top: 466, w: 316, h: 58, title: 'Phase 4 · unit + flow tests', tags: ['checkReq · exact numbers'] },
-      { id: 'k5', type: 'step', cx: HOW_Cx, top: 554, w: 350, h: 62, title: 'Writer flow LAST — round trip, self-restoring', note: 'discovery-first on every write path' },
-      { id: 'k6', type: 'step', cx: HOW_Cx, top: 650, w: 316, h: 58, title: 'Phase 5 · settle on the board + review', state: 'settled' }
+      { id: 'k3', type: 'step', cx: HOW_Cx, top: 276, w: 300, h: 58, title: 'Phase 3 · draft the requirements — canon on write', tags: ['prd.md'] },
+      { id: 'k4', type: 'step', cx: HOW_Cx, top: 364, w: 316, h: 58, title: 'Phase 4 · unit + flow tests', tags: ['checkReq · exact numbers'] },
+      { id: 'k5', type: 'step', cx: HOW_Cx, top: 452, w: 350, h: 62, title: 'Writer flow LAST — round trip, self-restoring', note: 'discovery-first on every write path' },
+      { id: 'k6', type: 'step', cx: HOW_Cx, top: 548, w: 316, h: 58, title: 'Phase 5 · settle on the board + review', state: 'settled' }
     ],
     edges: [
       { from: 'k0', fromSide: 'bottom', to: 'k1', toSide: 'top', route: 'v' },
       { from: 'k1', fromSide: 'bottom', to: 'k2', toSide: 'top', route: 'v' },
       { from: 'k2', fromSide: 'bottom', to: 'k3', toSide: 'top', route: 'v' },
-      { from: 'k3', fromSide: 'bottom', to: 'g1', toSide: 'top', route: 'v' },
-      { from: 'g1', fromSide: 'bottom', to: 'k4', toSide: 'top', route: 'v' },
+      { from: 'k3', fromSide: 'bottom', to: 'k4', toSide: 'top', route: 'v' },
       { from: 'k4', fromSide: 'bottom', to: 'k5', toSide: 'top', route: 'v' },
       { from: 'k5', fromSide: 'bottom', to: 'k6', toSide: 'top', route: 'v' }
     ]
@@ -978,12 +950,12 @@ const HOW_FLOWS = [
   {
     id: 'kg-staff',
     tagline: 'the change discipline — before you touch a screen',
-    when: 'before every change · stop & ask in 3 cases',
+    when: 'before every change · stop & ask in 2 cases',
     height: 448,
     nodes: [
       { id: 'st1', type: 'step', cx: HOW_Cx, top: 16, w: 272, h: 54, title: 'Read what governs the screen', tags: ['staff briefing'] },
-      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 116, title: 'One of the three stop cases?' },
-      { id: 'a1', type: 'gate', kind: 'stop', cx: HOW_Rx, top: 119, w: 260, h: 86, title: 'Stop — the human decides', cmp: 'new meaning · guess · contradiction' },
+      { id: 'd1', type: 'diamond', cx: HOW_Cx, top: 104, w: 240, h: 116, title: 'One of the two stop cases?' },
+      { id: 'a1', type: 'gate', kind: 'stop', cx: HOW_Rx, top: 119, w: 260, h: 86, title: 'Stop — the human decides', cmp: 'new meaning · contradiction' },
       { id: 'o1', type: 'step', cx: HOW_Cx, top: 268, w: 340, h: 62, title: 'Requirement first · failing test · then green', note: 'the change order — never weaken a test' },
       { id: 'o2', type: 'step', cx: HOW_Cx, top: 364, w: 380, h: 58, title: 'Close the loop: whole suite · rescan · stale worklist', state: 'running' }
     ],
@@ -1081,10 +1053,8 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
           test <i>tags</i> it with an assertion that would fail without it. Edit a requirement and its
           proof goes stale; delete an assertion and the green honestly disappears. The board never
           stores state — it derives it, on every build.</p>
-        <span class="gates-badge"><span class="dia"></span>One thing waits on a person — accepting requirement meaning. Everything else, staff do.</span>
         <div class="legend">
           <span class="chip"><span class="mk o"></span>step / artifact</span>
-          <span class="chip rev"><span class="mk d"></span>your turn — a guess to confirm</span>
           <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
           <span class="chip run"><span class="mk"></span>running — a job in flight</span>
           <span class="chip gone"><span class="mk o"></span>unproven — needs a proof</span>
@@ -1136,7 +1106,6 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
           <div class="flow-legend legend">
             <span class="chip"><span class="mk o"></span>step / artifact</span>
             <span class="chip rev"><span class="mk d"></span>decision — a fork</span>
-            <span class="chip rev"><span class="mk d"></span>your turn — a guess to confirm</span>
             <span class="chip"><span class="mk o"></span>stop — ask the human</span>
             <span class="chip run"><span class="mk"></span>running — a job in flight</span>
             <span class="chip ok"><span class="mk"></span>settled — passing / approved</span>
@@ -1160,20 +1129,19 @@ export function build () {
   // direction); it feeds the walkthrough's closing CTA (Act 4) with the single derived next action.
   const j = journey()
   const ctaAction = wCtaAction(j)
-  // The one number that says whether it is your turn: how many screens are waiting on a human
-  // correction — in the no-gate model (board R8) that is only a crawl guess still to be confirmed.
-  const yourTurn = screens.filter(isWaiting).length
+  // There is no "your turn" any more (the human, 2026-08-17 — no guess, no gate). The one number the
+  // home banner reads is honest drift, not a person's queue: how many requirements are FAILING right
+  // now (board R4's four-word status) — everything else is simply proven or untested.
+  const failing = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'failed').length, 0)
 
   const groups = areas.map(a => {
     const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
-    const waiting = inArea.filter(x => isWaiting(x.s)).length
     return `
 <section class="grp" data-area="${esc(a)}">
   <div class="grph">
     <button class="tw" aria-label="collapse">—</button>
     <h2>${esc(a)}</h2>
     <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
-    ${waiting ? `<span class="gwait"><span class="dot"></span>${waiting} waiting</span>` : ''}
   </div>
   <div class="cards">${inArea.map(x => card(x.s, x.i)).join('')}</div>
 </section>`
@@ -1206,13 +1174,12 @@ export function build () {
 </section>`).join('')
 
   // The client behaviour lives in tools/board/client.js now — real JavaScript, not a string inside
-  // this template literal — and is read in verbatim below. The three build-time values it needs are
-  // handed over as a JSON ISLAND (window.__BOARD__), so code and data cross the seam cleanly: no
+  // this template literal — and is read in verbatim below. The build-time values it needs are handed
+  // over as a JSON ISLAND (window.__BOARD__), so code and data cross the seam cleanly: no
   // interpolation reaches into the script, so the backtick / ${} / \n escaping traps cannot happen.
   const BOARD_DATA = {
     screens: screens.map(s => s.name),
-    skillIds: HOW_FLOWS.map(f => f.id),
-    waiting: screens.map((s, i) => (isWaiting(s) ? i : -1)).filter(i => i >= 0)
+    skillIds: HOW_FLOWS.map(f => f.id)
   }
   const clientJs = readFileSync(join(ROOT, 'tools', 'board', 'client.js'), 'utf8')
 
@@ -1278,7 +1245,6 @@ export function build () {
   .grp.gone { display:none; }
   .grph { display:flex; align-items:center; gap:var(--s3); padding:var(--s6) 0 var(--s3); }
   .gc { font-size:var(--t-sm); color:var(--ink-4); }
-  .gwait { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm); color:var(--ai); }
   .tw { border:0; background:transparent; color:var(--ink-4); cursor:pointer;
     font-size:var(--t-sm); padding:0; width:12px; line-height:1; }
   .grp.shut .cards { display:none; }
@@ -1312,7 +1278,7 @@ export function build () {
   /* An author display declaration beats the hidden attribute's UA display:none, so a hidden detail
      really disappears rather than every one stacking. */
   .dt[hidden] { display:none; }
-  /* the ONE detail header, full-width: title · requirement count · … · Run all · Next waiting · Close */
+  /* the ONE detail header, full-width: title · … · Run all · view toggle · Close */
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
     width:100%; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
@@ -1581,14 +1547,15 @@ export function build () {
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tacts { flex-wrap:wrap; justify-content:flex-end; }
   .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
-  /* coverage refs — quiet, NEUTRAL metadata (indigo is reserved for "your turn"). They tint only
-     when you hover the test, tying it to the requirement on the left. */
+  /* coverage refs — quiet, NEUTRAL metadata at rest. They tint indigo only on hover, tying the test
+     to the requirement(s) it covers — the one place indigo is still spent on this board (a transient
+     link, not a status; "your turn" itself no longer exists, the human, 2026-08-17). */
   .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
     background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
   .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
   .test .tacts { opacity:1; margin-left:0; display:inline-flex; gap:var(--s2); }
-  /* full log rides the actions row as a bordered button beside Watch — NOT indigo (indigo is
-     "your turn" only): it wears the neutral .btn sm like Run/Watch. It opens a floating window. */
+  /* full log rides the actions row as a bordered button beside Watch — NOT indigo: it wears the
+     neutral .btn sm like Run/Watch. It opens a floating window. */
   .fold { margin-top:var(--s3); }
 
   /* PROOF FRAMES (board R14): the recording read as a scannable STRIP of stills — one per checked
@@ -1820,10 +1787,6 @@ export function build () {
   #howview .intro p { color:var(--ink-2); font-size:var(--t-lg); line-height:1.5; }
   #howview .intro .spine { color:var(--ink); }
   #howview .arrowtok { color:var(--ink-4); padding:0 2px; }
-  /* the ONE inverted element on this screen — the concept the whole tool turns on */
-  #howview .gates-badge { display:inline-flex; align-items:center; gap:var(--s2); margin-top:var(--s4);
-    background:var(--ai); color:var(--paper); border-radius:var(--r); padding:6px var(--s3); font-size:var(--t-sm); }
-  #howview .gates-badge .dia { width:8px; height:8px; background:var(--paper); transform:rotate(45deg); flex:none; }
 
   /* legend — every hue also carries a mark, never colour alone */
   #howview .legend { display:flex; flex-wrap:wrap; gap:var(--s2); margin-top:var(--s5); }
@@ -1923,9 +1886,9 @@ export function build () {
           the start to that same end with fill-mode both. So the reduced-motion block below only has
           to switch animation off: the finished picture is already what the rules describe;
        3. nothing loops; every scene lands inside ~3.5s.
-     Colour is the design system unchanged: bengara for the failure beats, koke for the settled ones,
-     and indigo on exactly one thing — the guess flag and its confirmation — because that is the one
-     thing in the product that waits on a person. Every hue still rides a mark. */
+     Colour is the design system unchanged: bengara for the failure beats, koke for the settled ones —
+     and indigo nowhere on this page any more (the human, 2026-08-17: there is no more state that
+     waits on a person). Every hue still rides a mark. */
   #howview .scene { --sc-e:cubic-bezier(.2,.7,.3,1);
     border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--canvas); padding:var(--s4); }
 
@@ -2029,7 +1992,7 @@ export function build () {
     animation:sc-mark .5s var(--sc-e) 1.75s both; }
   #howview .sc-stalec { align-self:flex-start; animation:sc-stamp .42s var(--sc-e) 2.65s both; }
 
-  /* 5 · the flag that drops — the ONE indigo in the guide, and the one inverted element at rest */
+  /* 5 · canon the moment it's written — a settled koke stamp, no indigo, no gate */
   #howview .sc-morph { position:relative; min-height:158px; display:flex; align-items:center; }
   #howview .sc-mbub { position:absolute; left:0; top:var(--s3); max-width:58%; opacity:0;
     animation:sc-become 1.35s var(--sc-e) both; }
@@ -2040,13 +2003,7 @@ export function build () {
   #howview .sc-id { font-size:var(--t-micro); color:var(--ink-3); padding:1px 6px;
     border-radius:var(--r-sm); box-shadow:inset 0 0 0 1px var(--hair-2); }
   #howview .sc-cb { font-size:var(--t-md); color:var(--ink); line-height:1.5; }
-  #howview .wflag { position:absolute; right:var(--s4); top:-11px; display:inline-flex; align-items:center;
-    gap:6px; padding:3px var(--s2); border-radius:var(--r-sm); background:var(--ai-tint); color:var(--ai);
-    box-shadow:inset 0 0 0 1px var(--ai-line); font-size:var(--t-xs); opacity:0;
-    transform:translateY(34px) rotate(-10deg); animation:sc-drop 1.9s var(--sc-e) 1.45s both; }
-  #howview .wconfirm { align-self:flex-start; display:inline-flex; align-items:center; gap:6px;
-    padding:5px var(--s3); border-radius:var(--r); background:var(--ai); color:var(--paper);
-    font-size:var(--t-sm); animation:sc-stamp .45s var(--sc-e) 2.9s both; }
+  #howview .sc-canon { align-self:flex-start; animation:sc-stamp .45s var(--sc-e) 1.7s both; }
 
   /* 6 · review by watching — a recording player whose miniature golden scene plays once */
   #howview .sc-player { border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper);
@@ -2150,10 +2107,6 @@ export function build () {
   @keyframes sc-become { 0% { opacity:0; transform:translateY(8px); } 16% { opacity:1; transform:none; }
     58% { opacity:1; transform:none; } 100% { opacity:0; transform:scale(1.04); } }
   @keyframes sc-grow { from { opacity:0; transform:scale(.94) translateY(10px); } to { opacity:1; transform:none; } }
-  @keyframes sc-drop { 0% { opacity:0; transform:translateY(-7px) scale(.9); }
-    11% { opacity:1; transform:none; } 56% { opacity:1; transform:none; }
-    72% { opacity:.7; transform:translateY(12px) rotate(-6deg); }
-    100% { opacity:0; transform:translateY(34px) rotate(-10deg); } }
   @keyframes sc-swapout { 0% { opacity:0; transform:translateX(12px); } 14% { opacity:1; transform:none; }
     74% { opacity:1; transform:none; } 100% { opacity:0; transform:translateX(-28px); } }
   @keyframes sc-swapin { from { opacity:0; transform:translateX(28px); } to { opacity:1; transform:none; } }
@@ -2197,18 +2150,18 @@ export function build () {
     background:var(--paper); padding:var(--s3); }
   #howview .wcp-v { font-size:var(--t-sm); color:var(--ink); }
 
-  /* Act 4 — do it: indigo is spent here and ONLY here (design rule: indigo == your turn) */
+  /* Act 4 — do it: no indigo any more (the human, 2026-08-17 — there is no "your turn" state left) */
   #howview .wflow { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s2); }
   #howview .wfn { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s3);
     border-radius:var(--r); background:var(--wash); font-size:var(--t-sm); color:var(--ink-2); }
-  #howview .wfn.yours { background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
   #howview .wcta { display:flex; flex-wrap:wrap; align-items:center; gap:var(--s3); margin-top:var(--s2); }
   #howview .wcta-lead { font-size:var(--t-md); color:var(--ink); }
+  /* a real next action: the same neutral primary-action ink as .btn.pri elsewhere on the board — the
+     one inverted element of Act 4 */
   #howview .wcta-act { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s4);
-    border-radius:var(--r); background:var(--ai); color:var(--paper); font-size:var(--t-sm); }
-  /* the folded/settled CTA (board R12 fix): nothing left to derive is not "your turn", so it never
-     wears indigo. Same shape as .wcta-act, same koke/"ok" tint every proven chip on this page already
-     uses (.chip.ok / .legend .chip.ok) — a tint, not a second solid inversion. */
+    border-radius:var(--r); background:var(--ink); color:var(--paper); font-size:var(--t-sm); }
+  /* the folded/settled CTA (board R12): nothing left to derive, so a tint, the same koke/"ok" every
+     proven chip on this page already uses (.chip.ok / .legend .chip.ok) — never a second inversion. */
   #howview .wcta-settled { display:inline-flex; align-items:center; gap:6px; padding:6px var(--s4);
     border-radius:var(--r); background:var(--koke-tint); color:var(--koke); font-size:var(--t-sm);
     box-shadow:inset 0 0 0 1px var(--koke-line); }
@@ -2232,10 +2185,6 @@ export function build () {
   #howview .col .num { font-size:var(--t-micro); color:var(--ink-4); letter-spacing:.16em; }
   #howview .col h3 { margin-top:2px; font-size:var(--t-md); }
   #howview .col .file { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-4); }
-  #howview .col.g { background:var(--ai-tint); }
-  #howview .gate-tag { display:inline-flex; align-items:center; gap:5px; margin-top:6px;
-    font-size:var(--t-micro); letter-spacing:.12em; text-transform:uppercase; color:var(--ai); }
-  #howview .gate-tag .dia { width:7px; height:7px; background:var(--ai); transform:rotate(45deg); flex:none; }
 
   /* two-lane workflow diagram */
   #howview .lanes { display:grid; grid-template-columns:1fr 1fr; gap:var(--s5); }
@@ -2257,13 +2206,6 @@ export function build () {
   #howview .node h3 { font-size:var(--t-md); }
   #howview .node p { color:var(--ink-2); font-size:var(--t-sm); margin-top:2px; }
   #howview .node .mono { font-family:var(--mono); font-size:.9em; }
-  /* the gate node — the human decision point, deliberately unlike a step */
-  #howview .node.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
-  #howview .node.gate .ghead { display:flex; align-items:center; gap:6px; margin-bottom:3px; }
-  #howview .node.gate .glbl { font-size:var(--t-micro); letter-spacing:.14em; text-transform:uppercase; color:var(--ai); }
-  #howview .node.gate .dia { width:9px; height:9px; background:var(--ai); transform:rotate(45deg); flex:none; }
-  #howview .node.gate h3 { color:var(--ai); }
-  #howview .node.gate .cmp { margin-top:6px; font-family:var(--mono); font-size:var(--t-xs); color:var(--ai); }
   /* the connector between nodes — a real drawn arrow */
   #howview .arrow { display:flex; justify-content:center; padding:var(--s1) 0; }
   #howview .arrow svg { display:block; }
@@ -2358,18 +2300,13 @@ export function build () {
   #howview .nb.s-relook { border-left:3px solid var(--bengara); }
   #howview .nb.s-redfail { border-left:3px solid var(--bengara); }
 
-  /* gate node — the human decision point, a tint (never a second inverted element). "your turn" is
-     reserved for the guess confirmation ONLY (design system rule); kg-staff's stop-and-ask node below
-     is process discipline, not that signal, so it is deliberately NOT indigo. */
-  #howview .nb.gate { background:var(--ai-tint); border:1px solid var(--ai-line); border-left:4px solid var(--ai); }
-  #howview .glbl { display:flex; align-items:center; gap:6px; font-size:var(--t-micro); letter-spacing:.13em;
-    text-transform:uppercase; color:var(--ai); }
-  #howview .glbl .dia { width:8px; height:8px; background:var(--ai); transform:rotate(45deg); flex:none; }
-  /* stop-and-ask node — neutral ink, never the your-turn indigo */
+  /* stop-and-ask node — kg-staff's process discipline, neutral ink, never indigo (the human,
+     2026-08-17: there is no more "your turn" gate state for indigo to signal) */
   #howview .nb.stop { background:var(--wash); border:1px solid var(--hair-2); border-left:4px solid var(--ink-3); }
-  #howview .glbl.stop { color:var(--ink-3); }
-  #howview .glbl.stop .dia { background:var(--ink-3); }
-  #howview .cmp { font-size:var(--t-micro); color:var(--ai); opacity:.85; }
+  #howview .glbl { display:flex; align-items:center; gap:6px; font-size:var(--t-micro); letter-spacing:.13em;
+    text-transform:uppercase; color:var(--ink-3); }
+  #howview .glbl .dia { width:8px; height:8px; background:var(--ink-3); transform:rotate(45deg); flex:none; }
+  #howview .cmp { font-size:var(--t-micro); color:var(--ink-3); opacity:.85; }
 
   /* diamond text */
   #howview .nb.dbody { align-items:center; text-align:center; justify-content:center; gap:2px; padding:0; background:transparent; }
@@ -2432,9 +2369,9 @@ export function build () {
 </div>
 
 <div class="wrap">
-  ${yourTurn === 0 && screens.length ? `<div class="clear">
-    <span class="chip ok"><span class="dot"></span>queue clear</span>
-    Nothing is waiting on you — only a crawled guess ever needs a look; everything else is proven or unproven by its tests.
+  ${screens.length ? `<div class="clear">
+    <span class="chip ${failing ? 'bad' : 'ok'}"><span class="dot"></span>${failing ? `${failing} failing` : 'nothing failing'}</span>
+    ${failing ? `${failing} requirement${failing === 1 ? '' : 's'} failing.` : 'All requirements are proven or untested — nothing is failing.'}
   </div>` : ''}
   <div id="home">
     ${groups}
@@ -2582,8 +2519,8 @@ export function build () {
           <div id="initfound"></div>
           <div class="cfempty" id="initempty" hidden></div>
           <div class="initnote">
-            <span class="chip stale"><span class="mark h"></span>a guess</span>
-            <span class="gbn">Read off the page, never canon. Correct it and drop the <span class="mono">guess:</span> flag to make it canon.</span>
+            <span class="chip gone"><span class="mark o"></span>new</span>
+            <span class="gbn">No PRD yet — visited and screenshotted, honestly uncovered. A screen that already has a PRD is the human's; a re-crawl leaves it completely alone.</span>
           </div>
         </div>
       </div>
@@ -2650,10 +2587,10 @@ ${detail}
   // Rename is atomic within a filesystem, so a reader sees either the whole old board or the whole
   // new one — the same guarantee the JSON writes have always had, for the same reason.
   writeText(join(ROOT, 'board.html'), html)
-  return { screens: screens.length, areas: areas.length, yourTurn, reqs: screens.reduce((n, s) => n + s.reqs.length, 0) }
+  return { screens: screens.length, areas: areas.length, failing, reqs: screens.reduce((n, s) => n + s.reqs.length, 0) }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const r = build()
-  console.log(`board.html — ${r.screens} screens in ${r.areas} areas, ${r.reqs} requirements, ${r.yourTurn} waiting`)
+  console.log(`board.html — ${r.screens} screens in ${r.areas} areas, ${r.reqs} requirements, ${r.failing} failing`)
 }

@@ -15,7 +15,6 @@ export function deriveJourney ({ configSaved, crawledAt, screens }) {
     { id: 'config', title: 'Point it at your app', fact: '_config.json saved', done: !!configSaved },
     { id: 'crawl', title: 'Inventory the app', fact: 'crawl ran, or rows exist', done: !!crawledAt || anyPrd },
     { id: 'deepen', title: 'Deepen one screen', fact: 'a prd.md exists', done: anyPrd, cmd: '/kg-deep <screen>' },
-    { id: 'confirm', title: 'Confirm the draft', fact: 'a prd.md without guess', done: screens.some(s => !s.guess) },
     { id: 'prove', title: 'Watch the proof', fact: 'a requirement is proven', done: proven }
   ]
   const cur = steps.find(s => !s.done)

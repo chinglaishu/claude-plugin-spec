@@ -501,20 +501,6 @@ const B = window.__BOARD__ || {}
       stepsheet.classList.remove('on')
   })
 
-  // Clearing the queue is the real motion — sit down, go through everything, leave. Without this
-  // every screen costs a close, a scroll and a hunt for the next one still showing something that
-  // needs you.
-  const WAITING = B.waiting
-  for (const b of document.querySelectorAll('.nextw')) {
-    if (WAITING.length < 2) { b.hidden = true; continue }
-    b.addEventListener('click', () => {
-      const here = Number(b.dataset.i)
-      const next = WAITING.find(i => i > here) ?? WAITING[0]
-      document.querySelectorAll('.dt').forEach(d => { d.hidden = true })
-      open(next)
-      scrollTo(0, 0)
-    })
-  }
   addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return
     if (e.key === 'Escape') {
@@ -525,7 +511,6 @@ const B = window.__BOARD__ || {}
       closeAll(); history.pushState(null, '', location.pathname)
     }
     const openDt = [...document.querySelectorAll('.dt')].find(d => !d.hidden)
-    if (openDt && (e.key === 'j' || e.key === 'ArrowRight')) { const nw = openDt.querySelector('.nextw'); if (nw) nw.click() }
     if (openDt && e.key === 'r') { const b = openDt.querySelector('.runbtn'); if (b) b.click() }
   })
 
@@ -788,9 +773,10 @@ const B = window.__BOARD__ || {}
   }
 
   function foundRow (r) {
-    // 'yours' — a real PRD the human wrote — is never touched; a guessed row already on the board is
-    // still a guess; a route with no screen yet is new. R5: rerunning leaves settled work alone.
-    const state = r.mine ? 'yours' : r.exists ? 'a guess, already on board' : 'new'
+    // 'yours' — a screen with a PRD, the human's, full stop — is never touched by a re-crawl; a route
+    // with no PRD yet is new. There is no guess distinction any more (the human, 2026-08-17). R5:
+    // rerunning leaves settled work alone.
+    const state = r.exists ? 'yours' : 'new'
     const thumb = r.exists || r.slug
       ? '<div class="fthumb"><img src="spec/' + eh(r.slug) + '/crawl.png" onerror="this.style.display=\'none\'" alt=""></div>'
       : '<div class="fthumb"></div>'

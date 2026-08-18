@@ -364,12 +364,6 @@ export function readScreen (name, results = null) {
   // proofs by source (enrichReqs) — so nothing is pinned or compared here.
   const reqStates = enrichReqs(reqs, name, allResults)
 
-  // A crawled PRD is a GUESS read off the running page, never canon (init R3). It is a proposal
-  // for the CEO to correct, so it must look different from a PRD a human wrote and it must not let
-  // the loop skip gate A. The flag lives in frontmatter because it travels with the document — the
-  // first time the CEO edits and means it, they delete the line, and the guess becomes theirs.
-  const guess = /^(1|true|yes)$/i.test(String(fm.guess || ''))
-
   // Optional: which source files this screen governs, as globs, so the staff briefing can answer
   // "what governs the file I am about to edit?" — the bridge from a route on the board to the code
   // that implements it. Comma- or space-separated in frontmatter.
@@ -380,7 +374,6 @@ export function readScreen (name, results = null) {
     area: fm.area || 'Other',
     title: fm.title || name,
     route: fm.route || '',
-    guess,
     governs,
     reqs: reqStates,
     prdText,
@@ -527,9 +520,9 @@ export const slugify = route => {
 export const CRAWL = join(SPEC, '_crawl.json')
 
 // Whether a route already has a screen on the board. Rerunning must find NEW routes without
-// touching settled ones (init R5), so this is the line between "create a guessed row" and "leave
-// the CEO's work alone" — and it is drawn by the route's slug, not by list position, so the same
-// route is the same screen across crawls.
+// touching settled ones (init R5), so this is the line between "still new" and "leave the human's
+// work alone" — and it is drawn by the route's slug, not by list position, so the same route is the
+// same screen across crawls.
 export const routeExists = route => existsSync(join(SPEC, slugify(route), 'prd.md'))
 
 export function readCrawl () {
@@ -537,11 +530,11 @@ export function readCrawl () {
   const routes = (raw.routes || []).map(r => {
     const route = typeof r === 'string' ? r : r.route
     const slug = slugify(route)
+    // a row already on the board keeps its own PRD — a crawl never overwrites it. There is no guess
+    // distinction any more (the human, 2026-08-17): a screen with a PRD is the human's, full stop, and
+    // is settled work the crawl must leave completely alone; a route with no PRD is still new.
     const exists = existsSync(join(SPEC, slug, 'prd.md'))
-    // a row already on the board keeps its own PRD — a crawl never overwrites it, and if that PRD
-    // is the CEO's (not a guess) it is settled work the crawl must leave completely alone
-    const mine = exists && !readScreen(slug)?.guess
-    return { ...(typeof r === 'string' ? {} : r), route, slug, exists, mine }
+    return { ...(typeof r === 'string' ? {} : r), route, slug, exists }
   })
   return { crawledAt: raw.crawledAt || null, ranAt: raw.crawledAt || null, routes }
 }
@@ -607,12 +600,6 @@ export function allScreens () {
     .map(n => readScreen(n, results))
     .filter(Boolean)
 }
-
-// "Waiting on you" is the ONE remaining human-correction case: a crawled GUESS the human has not yet
-// confirmed (init R3). There is no acceptance gate (board R8) — editing the PRD IS the change, and a
-// requirement's proven / unproven state is the tests' business, not a person's. A guess becomes canon
-// when the human corrects it and deletes the `guess:` frontmatter flag; until then it waits.
-export const isWaiting = s => !!s.guess
 
 export function sortedAreas (screens) {
   return [...new Set(screens.map(s => s.area))].sort((a, b) => {
