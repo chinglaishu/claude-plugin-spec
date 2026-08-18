@@ -11,8 +11,8 @@
  *   you actually look at it. No green-good / amber-warn: that convention is borrowed from every
  *   dashboard ever built and it makes this look like all of them.
  *
- *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. "Your turn" is INVERTED — solid indigo, paper text —
- *   so the loudest mark on any screen is always the thing waiting for you. Every state also
+ *   VALUE CARRIES STATUS, HUE ONLY NAMES IT. An inverted, solid fill is the loudest mark on any
+ *   screen, reserved for the one thing that most needs your attention there. Every state also
  *   carries a filled / half / hollow / dashed square, so status survives greyscale and low vision.
  *
  *   HAIRLINES, NEVER BOXES. 1px rules and negative space do the separating. No shadows, no
@@ -43,7 +43,9 @@
   --hair-2:#cdc7b8; --line2:#cdc7b8;
   --line3:#a8a59c;
 
-  /* 藍 ai — indigo. Your turn. The only colour permitted to fill a shape solid. */
+  /* 藍 ai — indigo. Reserved: no longer a status (the guess/gate "your turn" state it once named was
+     removed, the human, 2026-08-17); still tints on hover for many-to-many coverage linking, and
+     kept for a future `Changed` drift state. The only colour permitted to fill a shape solid. */
   --ai:#2f4a63; --acc:#2f4a63;
   --ai-tint:#e6eaee; --acc-bg:#e6eaee;
   --ai-line:#b9c4ce; --acc-line:#b9c4ce;
@@ -65,10 +67,10 @@
   --yamabuki-line:#dfc98c;
 
   /* WHY FOUR AND NOT ONE. Every interactive thing used to be indigo — primary buttons, the
-     active segment, the checkbox, the focus ring, AND the "your turn" chip — so colour told you
+     active segment, the checkbox, the focus ring, AND the old "your turn" chip — so colour told you
      something was interactive and never which thing it was. Now hue means one thing each:
-     指示 indigo = your turn · 苔 moss = approved · 弁柄 iron = sent back or moved ·
-     山吹 gold = running · 墨 ink = the neutral primary action.
+     苔 moss = approved · 弁柄 iron = sent back or moved · 山吹 gold = running ·
+     墨 ink = the neutral primary action · 藍 indigo = reserved (no status of its own right now).
      An action is coloured by the STATE IT PRODUCES, so "Looks right" is the green of approved. */
 
   /* 間 ma — 4px scale */
@@ -193,9 +195,9 @@ ins { color:var(--koke); text-decoration:none; }
               box-shadow:inset 0 0 0 1px var(--koke-line); }
 .chip.rev   { background:var(--ai-tint); color:var(--ai);
               box-shadow:inset 0 0 0 1px var(--ai-line); }
-/* .fail reuses the same bengara tokens as .stale — a requirement's "Failed" (board R4) and a
-   card's "a guess" chip are different states that happen to share one hue (a re-look is owed),
-   named separately so neither reads as the other. */
+/* .fail reuses the same bengara tokens as .stale — a requirement's "Failed" (board R4) and an open
+   conflict's "re-look" are different states that happen to share one hue (something needs a second
+   look), named separately so neither reads as the other. */
 .chip.stale, .chip.fail { background:var(--bengara-tint); color:var(--bengara);
               box-shadow:inset 0 0 0 1px var(--bengara-line); }
 /* the deliberate exception, for the one place a count must carry the whole page */

@@ -13,11 +13,13 @@ reads **unproven** — honestly ungreen (a flow that stops early also leaves a p
 for whatever it never got to). **There is no status field anywhere** — every requirement's state is
 *derived* solely from the folded test coverage against the current tree. **There is no acceptance
 gate** *(removed by the human 2026-07-30 — see board R8; a decision that is always yes is ceremony,
-not a gate)*: a requirement is canon the moment it is written; a PRD drafted on the human's behalf
-carries `guess: true`, and dropping that flag *is* the acceptance — the one thing on the board still
-waiting on a person (init R3). specboard owns **neither the wireframe nor the design** —
-it tracks requirements and their proof, nothing else (no design field, no external-artifact chip). The
-tool **dogfoods itself**: its own four screens are the cards on its own board.
+not a gate)* **and no draft/guess state either** *(removed by the human 2026-08-17 — see init R3)*: a
+requirement is canon the moment it is written, full stop — a PRD drafted on the human's behalf (a
+kg-deep pass) is an ordinary starting point the human edits or removes freely, exactly like one they
+wrote themselves, and nothing on the board waits on a person to confirm it. specboard owns **neither
+the wireframe nor the design** — it tracks requirements and their proof, nothing else (no design
+field, no external-artifact chip). The tool **dogfoods itself**: its own four screens are the cards on
+its own board.
 
 ## You are staff. The human decides meaning.
 
@@ -42,8 +44,7 @@ not do. Never take control away from the user (no auto-advancing after a verdict
    Several tests here were *correctly* broken by good changes and needed their assertions fixed;
    several others were genuinely wrong.
 5. **Requirement *semantics* wait on the human**: a new REQ, changed REQ text, a deleted REQ, or
-   choosing a canonical side. You edit prose; the human owns meaning — never drop a `guess:` flag on
-   the human's behalf.
+   choosing a canonical side. You edit prose; the human owns meaning.
 6. **Correct docs in place, with the reason attached.** When the code teaches you a requirement was
    wrong, fix the requirement and say why inline — conforming a doc silently to the code is how a
    requirement quietly becomes false.
@@ -72,7 +73,7 @@ covers it wherever that file lives.
 ## Architecture
 
 ```
-spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route[, guess])
+spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route)
 spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq (may also shoot screen.png as a fallback cover)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
@@ -123,9 +124,12 @@ moves the board's own port.
 `spec/_design.css` is the single source — traditional Japanese dye colours at low saturation on
 unbleached paper. **Never** introduce a raw hex colour, a font size outside the scale, or a radius
 outside the tokens, in the board. Hue names a state but never carries it alone (every chip also has a
-mark). **Indigo means one thing only — "your turn"** (a screen whose PRD still carries a `guess:`
-flag, waiting on the human's correction — there is no gate anymore, board R8); coverage
-tags are **neutral** and tint indigo only on hover to show the many-to-many link. Exactly **one**
+mark). **Indigo is currently unused as a status colour** — it used to mean "your turn" (a screen whose
+PRD still carried a `guess:` flag, waiting on the human's correction), but that state was removed
+along with the gate itself (board R8, init R3; the human, 2026-08-17): there is no draft/guess state
+left for it to signal. It stays defined and still tints on hover to show the many-to-many coverage
+link (a transient interaction cue, not a persistent status) — do not assign it to a new *status*
+without the human's sign-off; it is reserved for a future `Changed` drift state. Exactly **one**
 inverted element per screen. An action wears the colour of the state it produces. Every text/background
 pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
 
@@ -179,8 +183,8 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
   detached so Cancel can kill the whole process group. They are real and live **outside** the
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
   The crawl also runs detached and long, but it is **inventory-only** (a real browser, no claude):
-  it screenshots routes into rows with no PRD. Depth is the per-screen **kg-deep** skill, ending in
-  the human's confirmation.
+  it screenshots routes into rows with no PRD. Depth is the per-screen **kg-deep** skill, drafting the
+  PRD directly onto the board — canon the moment it is written, no confirmation step (init R3).
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
 - **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`
@@ -188,9 +192,8 @@ pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
   gate bar, no accept button) rather than transiently touching any file — the tests no longer write or
   restore `spec/board/state.json` (that file is a pre-redesign relic, see Architecture). Because the
   board proves itself, the *first* run after editing `board/test.spec.ts` can lag one run behind (its
-  own coverage folds at that run's end). The standing rule survives the mechanism change: never drop a
-  PRD's `guess:` flag, or edit a requirement's wording just to make its test go green — that is still
-  the human's call, not yours.
+  own coverage folds at that run's end). The standing rule survives the mechanism change: never edit a
+  requirement's wording just to make its test go green — that is still the human's call, not yours.
 - **The Focus reader BORROWS a test node out of `.testpane`, but `loadRuns` only folds `.testpane`.**
   The reader (board R13) MOVES the primary covering test's real node into the evidence card (and now,
   since Focus is the default view, it does so the instant a screen opens — before `loadRuns`'s async
