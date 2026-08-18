@@ -177,6 +177,11 @@ test('renders — a Given/When/Then triple leads the requirement, and a prose-on
   await expect(beh.locator('.brow').nth(2)).toContainText('the list shows zero items')
   // the shape LEADS: the block is the body's first element, above the rendered prose
   await expect(dt.locator('.reqpane .req[data-r="R1"] .body > :first-child')).toHaveClass(/behavior/)
+  // the triple is drawn ONCE, as the shape — the prose renderer must NOT re-emit the same three
+  // lines as a bullet list below it (renderBehavior draws it; the lead is stripped before renderBody)
+  await expect(dt.locator('.reqpane .req[data-r="R1"] .body ul li', { hasText: 'a list with two items' })).toHaveCount(0)
+  // …and the supporting prose that FOLLOWS the triple still renders, so the strip took the lead only
+  await expect(dt.locator('.reqpane .req[data-r="R1"] .body')).toContainText('Supporting prose under the shape.')
   // and the prose-only requirement renders NO block — no wrapper, no empty grid
   await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
 })

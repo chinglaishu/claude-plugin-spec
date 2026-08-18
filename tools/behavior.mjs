@@ -11,3 +11,13 @@ export function parseBehavior (body) {
   if (!g || !w || !t) return null
   return { given: g[1].trim(), when: w[1].trim(), then: t[1].trim() }
 }
+
+// parseBehavior's complement, for the render side: renderBehavior draws the triple as the shape, so
+// the prose renderer must NOT draw those same three lines a second time as a bullet list below it.
+// Strip the Given/When/Then triple lines, keep the prose that follows. A body without them is
+// returned unchanged (a no-op — the caller only strips when a full triple is present, so a prose-only
+// requirement stays byte-identical). Same `- **Label** ` line shape parseBehavior matches above.
+const TRIPLE_LINE = /^\s*-\s*\*\*(?:Given|When|Then)\*\*\s+.*$/gm
+export function stripBehaviorLead (body) {
+  return String(body || '').replace(TRIPLE_LINE, '').trimStart()
+}

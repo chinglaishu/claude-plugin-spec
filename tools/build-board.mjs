@@ -11,6 +11,7 @@ import {
   ROOT, esc, designCss, allScreens, sortedAreas, writeText
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
+import { stripBehaviorLead } from './behavior.mjs'
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
@@ -174,9 +175,13 @@ const reqRow = r => {
   const covers = r.state === 'proven'
     ? ''
     : '<div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div>'
+  // When the requirement leads with a Given/When/Then triple, renderBehavior draws it as the shape,
+  // so the prose renderer gets the body with that lead stripped — otherwise the triple renders twice
+  // (once as the shape, once as a bullet list). Gated on r.behavior so a prose-only body is untouched.
+  const prose = r.behavior ? stripBehaviorLead(r.body) : r.body
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}">
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
-    <div class="body">${renderBehavior(r.behavior)}${renderBody(r.body)}${covers}</div>
+    <div class="body">${renderBehavior(r.behavior)}${renderBody(prose)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
