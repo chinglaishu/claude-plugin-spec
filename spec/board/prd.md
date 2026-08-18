@@ -204,26 +204,33 @@ recording's cover frame is a red summary naming the failed steps, and the meta l
 #howitworks opens on two situations with the SAME three moments — assigning work, reviewing it, two
 weeks later. Without the tool: the task lives in a chat scroll ("Done, boss!"), review is a wall of
 code you approve blindly, and the same bug returns — closing on a green assertion shown beside the
-screen it fails to prove. With the tool: the task is a written requirement whose meaning you confirm,
-the work arrives as a recording where every asserted number is visible, and the moment a proof stops
-holding the requirement flips to unproven — proven is computed from the tests, never stored. Then the
-walkthrough shows it working for real (a labelled illustration asserting exact golden values held on
+screen it fails to prove. With the tool: the task is a written requirement, canon the instant it
+exists, the work arrives as a recording where every asserted number is visible, and the moment a proof
+stops holding the requirement flips to unproven — proven is computed from the tests, never stored. Then
+the walkthrough shows it working for real (a labelled illustration asserting exact golden values held on
 screen) and ends on this project's own derived next action. Click-to-advance; the mirror is the
 argument; the proof is demonstrated, never described.
 
 *Drafted 2026-08-05 transcribing design revision 3 (the manager/staff rebuild) — wording awaits the
 human; reword freely, the test asserts content not phrasing.*
 
+*Amended 2026-08-17 (the human's decision): dropped "whose meaning you confirm" — there is no guess
+flag or confirmation step left anywhere on the board. A written requirement is canon the moment it
+exists, full stop.*
+
 ## R12 — The guide ends with the one next action, derived not stored
 
 The walkthrough closes on a single next action for this project, derived from the tree on each build
-(config saved, rows exist, a prd.md drafted, a prd.md without `guess`, a requirement proven) — the same
-`journey()` derivation, with no six-step rail and nothing stored. A returning user opens the guide and
-sees their next concrete step (for example `/kg-deep <screen>`); when everything derivable is done, the
-CTA says so. There is no home-screen checklist.
+(config saved, rows exist, a prd.md drafted, a requirement proven) — the same `journey()` derivation,
+with no five-step rail and nothing stored. A returning user opens the guide and sees their next
+concrete step (for example `/kg-deep <screen>`); when everything derivable is done, the CTA says so.
+There is no home-screen checklist.
 
 *Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier
 six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.*
+
+*Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
+`guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
 
 ## R13 — Three views of a screen's requirements: Focus, List, Columns
 
