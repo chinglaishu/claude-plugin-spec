@@ -331,9 +331,10 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // CSS rule but no producer anywhere. It went green only while board happened to have ZERO proven
     // requirements — the one-run dogfooding lag — and red on the very next run.
     //   R5's "a requirement lists every test that covers it" is NOT lost with that line: the board
-    // serves it with the hover wire instead — hovering a requirement lights every test tagging it
-    // and vice versa (build-board.mjs ~1771/1779), which is what the R5 test above asserts. So the
-    // many-to-many listing is proven; it is simply proven where it now lives, not in a covers line.
+    // serves it in FOCUS — opening a requirement resolves its covering test by tag onto the proof
+    // line — which is what the R5 test above asserts. (It was served by a row-hover wire until the
+    // Columns view retired, 2026-08-18; that wire went with the view.) So the many-to-many listing
+    // is proven; it is simply proven where it now lives, not in a covers line.
     const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
       const scr = dt.getAttribute('data-screen')
       const rows = [...dt.querySelectorAll('.reqpane .req')]
@@ -413,7 +414,7 @@ test('A requirement names the tests that cover it', async ({ page }) => {
     // Corrected 2026-08-05: this used to open the first PROVEN requirement and assert a `.covers`
     // line in it. `.covers` is rendered for UNPROVEN rows only (see the note on R4's test, which
     // also explains why R5's "a requirement lists every test that covers it" survives that removal —
-    // the hover wire carries it). The old assertion was unsatisfiable the moment board had a single
+    // Focus's proof line carries it, resolved by tag). The old assertion was unsatisfiable the moment board had a single
     // proven requirement. Same per-pane / stripped-qualifier caveat as R4's check applies here.
     const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
       const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
@@ -467,7 +468,7 @@ test('No acceptance gate — nothing on the detail waits to be accepted', async 
   })
 })
 
-test('The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
+test('The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
   await coverReqs('R13')
   // FOCUS is the default view — the reader opens straight away
   await page.goto('/#/board')
@@ -475,13 +476,13 @@ test('The detail offers a Focus / Grid toggle — Focus reads one requirement pe
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
-    // the header toggle offers EXACTLY Focus / Grid (Columns retired as a view 2026-08-18 — its
-    // baked rows stay as the hidden shared source, asserted below), and Focus is active on open —
-    // a one-requirement reader laid out as TWO containers
+    // the header toggle offers EXACTLY Focus / Grid / Flow (Columns retired as a view 2026-08-18 —
+    // its baked rows stay as the hidden shared source, asserted below), and Focus is active on open
+    // — a one-requirement reader laid out as TWO containers
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
-    await expect(dt.locator('.viewseg .vseg')).toHaveCount(2)
-    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'Grid'])
+    await expect(dt.locator('.viewseg .vseg')).toHaveCount(3)
+    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'Grid', 'Flow'])
     await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveCount(0)
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
     await expect(dt.locator('.cols')).toBeHidden()
@@ -586,6 +587,108 @@ test('The detail offers a Focus / Grid toggle — Focus reads one requirement pe
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
     await expect(dt.locator('.focusov .feval .fpby')).not.toContainText('proved by')
+  })
+})
+
+// Board R13 — the FLOW view, proven against a DETERMINISTIC record (the R10 stub pattern): chapters
+// are derived SERVER-side (tools/flow.mjs) and ride the folded record like the proof frames do, so
+// the client is driven here with a fabricated record whose flow crosses screens and breaks mid-way.
+// The honesty guarantee is the point: a failing chapter stops the playback, and everything after it
+// — recorded green or never reached at all — reads NOT-REACHED, so a Flow view can never present a
+// broken run as fully green (rule 3).
+test('Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached', async ({ page }) => {
+  await coverReqs('R13')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await checkReq('R13', async () => {
+    // (0) the REAL /api/runs attaches server-derived chapters + kind to every record with steps —
+    // the data path the client reads; break the server wiring and this fails before any stub
+    const served = await page.evaluate(async () => {
+      const d = await (await fetch('/api/runs')).json()
+      const rec = (d.runs || []).flatMap((r: any) => Object.values(r.shotsByTest || {}))
+        .find((o: any) => Array.isArray(o.steps) && o.steps.length) as any
+      return rec ? { chapters: Array.isArray(rec.chapters), kind: typeof rec.kind } : null
+    })
+    expect(served, 'the committed run log should hold at least one record with steps').not.toBeNull()
+    expect(served!.chapters, '/api/runs must attach server-derived chapters to each record').toBe(true)
+    expect(served!.kind, '/api/runs must attach the derived unit/flow kind').toBe('string')
+
+    // (1) STUB a flow record: three reached chapters (fabricated in the exact shape flow.mjs emits),
+    // the SECOND one failing, plus a declared coverReqs set naming two screens the flow never
+    // reached — dispatch (has a card) and howitworks (a hash route with NO card; must never crash)
+    const chapters = [
+      { title: 'Open the board detail', screen: 'board', t: 0, reqs: ['R1'], ok: true },
+      { title: 'Cross to conflicts — the count agrees', screen: 'conflicts', t: 2000, reqs: ['R2'], ok: false },
+      { title: 'Back on the board', screen: 'board', t: 4000, reqs: ['R10'], ok: true }
+    ]
+    const steps = [
+      { label: 'Open the board detail', cat: 'test.step', depth: 0, ok: true, t: 0, d: 500 },
+      { label: 'proves R1', cat: 'test.step', depth: 1, ok: true, t: 100, d: 50 },
+      { label: 'Open /#conflicts', cat: 'pw:api', depth: 1, ok: true, t: 2000, d: 100 },
+      { label: 'proves conflicts:R2', cat: 'test.step', depth: 1, ok: false, t: 2100, d: 50 },
+      { label: 'The open count — got 1 · expected 2', cat: 'info', depth: 2, ok: false, t: 2150, d: 5 },
+      { label: 'Open /#/board', cat: 'pw:api', depth: 1, ok: true, t: 4000, d: 100 },
+      { label: 'proves R10', cat: 'test.step', depth: 1, ok: true, t: 4100, d: 50 }
+    ]
+    const caseRec = {
+      shots: [], video: 'spec/_runs/rfl/a.webm', steps, log: 'x', kind: 'flow', chapters,
+      reqs: ['board:R1', 'conflicts:R2', 'board:R10', 'dispatch:R7', 'howitworks:R2'],
+      at: '2026-08-18T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
+    }
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rfl', hasLog: false, at: '2026-08-18T00:00:00.000Z', ms: 6000,
+        ok: false, total: 1, failed: 1, shotsByTest: { [R1_TITLE]: caseRec } }]
+    } }))
+    await page.reload()
+    await expect(dt.locator('.focusov')).toBeVisible()
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()   // the fold settled
+
+    // (2) the toggle's third view — Flow — shows the chaptered player; no reader, no columns
+    await dt.locator('.viewseg .vseg[data-view="flow"]').click()
+    await expect(dt.locator('.viewseg .vseg[data-view="flow"]')).toHaveClass(/\bon\b/)
+    await expect(dt.locator('.focusov')).toHaveCount(0)
+    await expect(dt.locator('.cols')).toBeHidden()
+    const fv = dt.locator('.flowview')
+    await expect(fv).toBeVisible()
+
+    // (3) the first test's block: ONE recording, PAUSED at start (manual advance), read as chapters
+    const fl = fv.locator('.fltest').first()
+    await expect(fl.locator('.flttl')).toHaveText(R1_TITLE)
+    await expect(fl.locator('.flkind')).toHaveText('flow')
+    await expect(fl.locator('.flplayer video')).toHaveCount(1)      // ONE video, seeked — never cut
+    await expect(fl.locator('.flplayer video')).toHaveJSProperty('paused', true)
+    const chaps = fl.locator('.flchap')
+    await expect(chaps).toHaveCount(5)   // 3 reached + dispatch + howitworks, declared-never-reached
+    await expect(chaps.nth(0).locator('.flstage')).toHaveText('Open the board detail')
+    await expect(chaps.nth(1).locator('.flstage')).toHaveText('Cross to conflicts — the count agrees')
+    await expect(chaps.nth(0)).toHaveClass(/\bp\b/)
+    await expect(chaps.nth(0).locator('.flmk')).toHaveText('✓')
+    await expect(chaps.nth(0).locator('.flreq[data-r="R1"]')).toHaveCount(1)
+
+    // (4) the FAILING chapter is marked and NAMES its failing beat…
+    await expect(chaps.nth(1)).toHaveClass(/\bf\b/)
+    await expect(chaps.nth(1).locator('.flmk')).toHaveText('✗')
+    await expect(chaps.nth(1)).toContainText('got 1 · expected 2')
+    // …and RULE 3: the chapter AFTER it was recorded GREEN (ok:true in the stub) but follows a
+    // failure, so it must read NOT-REACHED — this fails if the player shows it green
+    await expect(chaps.nth(2)).toHaveClass(/\bnr\b/)
+    await expect(chaps.nth(2)).not.toHaveClass(/\bp\b/)
+    await expect(chaps.nth(2).locator('.flmk')).toHaveText('◌')
+    // the declared coverReqs screens the flow never reached trail as not-reached chapters —
+    // dispatch's chip is a real link (it has a card); howitworks renders its id INERTLY, no crash
+    await expect(chaps.nth(3)).toHaveClass(/\bnr\b/)
+    await expect(chaps.nth(3).locator('.flreq[data-r="R7"]')).toHaveCount(1)
+    await expect(chaps.nth(4)).toHaveClass(/\bnr\b/)
+    await expect(chaps.nth(4).locator('.flreq.inert')).toHaveCount(1)
+
+    // (5) a test with NO recorded run shows the honest placeholder — never fake chapters
+    await expect(fv.locator('.fltest .flnone').first()).toContainText('Not run yet')
+
+    // (6) a requirement chip opens that requirement in FOCUS
+    await chaps.nth(0).locator('.flreq[data-r="R1"]').click()
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R1')
+    await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
   })
 })
 

@@ -55,6 +55,12 @@ readable without opening anything.
 *Amended 2026-08-03 at the human's direction: the detail page read as bare title rows — the lists
 needed the title / sub-line / hint layer this adds to be scannable.*
 
+*Framing note 2026-08-18: this requirement is written in the retired "Left column / Right column"
+terms (the Columns view is gone, R13). Its anatomy — a requirement is a title that expands to its
+full text, a test leads with its flow name then recording then tags, both with a reading hierarchy —
+now lives in Grid rows and the Focus reader. The wording awaits the human's reword; the meaning is
+unchanged and the tests assert it against Grid/Focus.*
+
 ## R4 — Requirement state is computed and assertion-backed
 
 Each requirement reads one of **four words**, computed from the tests, never typed: **Passed** — a
@@ -237,10 +243,10 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 *Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
 `guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
 
-## R13 — Views of a screen's requirements: Focus and Grid
+## R13 — Three views of a screen's requirements: Focus, Grid, Flow
 
-The detail header carries a **toggle — Focus / Grid** — views of the same requirements, storing
-nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
+The detail header carries a **toggle — Focus / Grid / Flow** — three views of the same requirements,
+storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
 — was Columns)*. **Grid** is the behavior grid — one row per
 requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement
 is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan
@@ -254,11 +260,20 @@ the scannable **proof-frame strip** (no label — the stills speak for themselve
 and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches
 views. The header's Run all, toggle and Close are one control family — same height, same pill radius.
 
+**Flow** plays a screen's tests as their authored flows — each recording is one video seeked into
+chapters in order (a chapter per screen a flow crosses, or per step group on a single screen). A
+chapter strip carries the stage name, a still, and the requirement chips it proves — a chip opens
+that requirement in Focus. It stores nothing new: the chapters are derived from the run's own steps
+and timestamps, and the player seeks the one recording rather than cutting it. A chapter that fails
+stops the playback with the failing beat named, and every chapter after it reads not-reached — a
+flow never ends green on a run that broke.
+
 The evidence is not a pointer elsewhere but the covering test's **own row, moved in** — its controls,
 its frame strip and its recording are the very wired nodes the board bakes as the shared source for
-Focus and Grid (its steps are shown on the left as a display clone, the moved node keeping the wired
-original), relocated and relocated back so the source rows are left whole. So the reader duplicates no
-player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.
+Focus, Grid and Flow (its steps are shown on the left as a display clone, the moved node keeping the
+wired original), relocated and relocated back so the source rows are left whole. So the reader
+duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a
+green.
 
 *Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
 carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
@@ -268,11 +283,9 @@ that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the
 evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows
 the human's spoken decisions; the tests assert the behaviour.*
 
-*Grid replaces the compact List, 2026-08-18 (the human) — the behavior grid; Flow replaces Columns in
-a following change.*
-
-*Columns retired as a view 2026-08-18 (the human) — Grid and (next) Flow replace it; its baked
-requirement/test rows stay as the shared source Focus and Grid read.*
+*Reworked 2026-08-18 (the human): the three views are Focus / Grid / Flow — Grid replaced the compact
+List, Flow replaced the Columns view; the text follows the human's logged decision, the tests assert
+the behaviour.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

@@ -15,6 +15,10 @@ export const FILES = [
   // scaffolded project needs it or the vendored spec-store cannot load at all (update.test.mjs's
   // every-relative-import-is-vendored guard is what catches this class of miss).
   'tools/behavior.mjs',
+  // pure kind/chapter derivation for the Flow view (board R13) — imported by serve-board.mjs, which
+  // attaches chapters to every /api/runs record, so a scaffolded project's server cannot load
+  // without it (the same guard-caught class of miss as behavior.mjs above).
+  'tools/flow.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs

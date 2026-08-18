@@ -365,7 +365,7 @@ ins { color:var(--koke); text-decoration:none; }
 
   /* the two BAKED SOURCE PANES (requirements + tests). Their Columns VIEW was retired 2026-08-18
      (board R13): .cols ships hidden (inline display:none in the markup) and nothing un-hides it —
-     the rows stay in the DOM as the shared source Focus and Grid read. The .pane rules below are
+     the rows stay in the DOM as the shared source Focus, Grid and Flow read. The .pane rules below are
      kept: hidden reads and the restored/moved nodes still rely on this markup's structure. */
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
     min-height:340px; }
@@ -378,7 +378,7 @@ ins { color:var(--koke); text-decoration:none; }
 
   /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
      description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
-     screenshot strip, then the recording). One of the views — Focus / Grid — switched by the header
+     screenshot strip, then the recording). One of the views — Focus / Grid / Flow — switched by the header
      toggle. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
      the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
@@ -507,7 +507,7 @@ ins { color:var(--koke); text-decoration:none; }
   .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
     box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
 
-  /* the view TOGGLE in the detail header — Focus / Grid (board R13) */
+  /* the view TOGGLE in the detail header — Focus / Grid / Flow (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
   .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:0 16px; border:0; background:transparent;
     color:var(--ink-3); cursor:pointer; letter-spacing:.02em; display:inline-flex; align-items:center; }
@@ -545,6 +545,55 @@ ins { color:var(--koke); text-decoration:none; }
   .grrow .grproof { grid-column:3 / -1; min-width:0; font-size:var(--t-sm); color:var(--ink-3);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+  /* the FLOW view (board R13): each test's run played as its authored flow — ONE recording seeked
+     into chapters (derived by tools/flow.mjs, delivered on the folded record), never cut. The strip
+     carries stage name · still · requirement chips. Status is hue PLUS a mark, never hue alone:
+     ✓ passed (koke) · ✗ failed with its beat (bengara) · ◌ not-reached (ink-4). Pairs re-measured
+     for AA: --koke on --paper 7.0:1, --bengara on --paper 6.4:1, --ink-4 on --paper 5.2:1,
+     --ink-3 on --card 6.42:1, --ai on --ai-tint is the documented chip.rev pair. */
+  .flowview { display:flex; flex-direction:column; gap:var(--s4); width:100%; max-width:980px;
+    margin:0 auto; }
+  .flowview[hidden] { display:none; }
+  .fltest { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    padding:var(--s4); }
+  .flhead { display:flex; align-items:center; gap:var(--s3); }
+  .flttl { font-size:var(--t-md); font-weight:500; color:var(--ink); min-width:0; }
+  .flkind { font:var(--t-micro) var(--mono); color:var(--ink-3); border:1px solid var(--hair-2);
+    border-radius:999px; padding:1px 8px; flex:none; }
+  .flnone { font-size:var(--t-sm); color:var(--ink-3); margin-top:var(--s2); }
+  .flplayer { margin-top:var(--s3); }
+  .flplayer video { width:100%; max-height:430px; background:var(--ink); border-radius:var(--r);
+    border:1px solid var(--hair-2); object-fit:contain; display:block; }
+  .flstrip { display:flex; gap:var(--s2); overflow-x:auto; margin-top:var(--s3);
+    padding-bottom:var(--s1); }
+  .flchap { flex:0 0 190px; min-width:0; text-align:left; font:inherit; color:var(--ink-2);
+    background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm);
+    padding:var(--s2); display:flex; flex-direction:column; gap:var(--s1); }
+  button.flchap { cursor:pointer; }
+  button.flchap:hover { background:var(--wash); border-color:var(--hair-2); }
+  .flchap.on { border-color:var(--ink); }
+  .flchap img { width:100%; border-radius:var(--r-sm); border:1px solid var(--hair); display:block; }
+  .flchap .flmeta { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono); }
+  .flchap .flmk { font-weight:600; }
+  .flchap.p .flmk { color:var(--koke); }
+  .flchap.f .flmk, .flchap.f .flt { color:var(--bengara); }
+  .flchap.nr .flmk { color:var(--ink-4); }
+  .flchap .flt { color:var(--ink-4); }
+  .flchap .flstage { font-size:var(--t-sm); line-height:1.4; color:var(--ink); }
+  .flchap.nr .flstage { color:var(--ink-4); }
+  /* the failing beat, named on the chapter that stopped the flow (rule 3) */
+  .flchap .flbeat { font-size:var(--t-xs); line-height:1.4; color:var(--bengara); }
+  .flchap .flnr { font-size:var(--t-xs); color:var(--ink-4); }
+  .flreqs { display:flex; gap:5px; flex-wrap:wrap; margin-top:auto; }
+  /* the requirement chips a chapter proves — neutral metadata at rest; the transient INDIGO tint on
+     hover is the board's many-to-many coverage cue (it moved here from the retired Columns view's
+     row hover). A chip opens that requirement in Focus; an id whose screen has no card is inert. */
+  .flreq { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm); border:0;
+    background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
+  button.flreq { cursor:pointer; }
+  button.flreq:hover { background:var(--ai-tint); color:var(--ai); }
+  .flreq.inert { opacity:.75; }
+
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
   .rhint { font-size:var(--t-xs); color:var(--ink-4); white-space:nowrap; overflow:hidden;
@@ -565,7 +614,6 @@ ins { color:var(--koke); text-decoration:none; }
   .req:last-child { border-bottom:0; }
   .req > .h { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); cursor:pointer; }
   .req:hover { background:var(--wash); }
-  .req.hot { background:var(--ai-tint); }
   .req .h .chip { padding:3px; }
   .req .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
   .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -606,10 +654,11 @@ ins { color:var(--koke); text-decoration:none; }
   .test:last-child { border-bottom:0; }
   .test > .th { cursor:pointer; padding:var(--s3) var(--s4); }
   .throw { display:flex; align-items:center; gap:var(--s3); }
-  /* hover the item → grey; its linked item(s) → blue (.hot). The WHOLE item highlights (header +
-     expanded body), full-width, and fades in/out. Same both directions, reqs ↔ tests. */
+  /* hover the item → grey; the WHOLE item highlights (header + expanded body), full-width, and
+     fades in/out. (The old req ↔ test blue cross-light — .hot — left with the Columns view,
+     2026-08-18: these rows are the hidden shared source now, and the many-to-many cue lives on
+     Focus's proof line and the Flow chapters' requirement chips.) */
   .test:hover { background:var(--wash); }
-  .test.hot { background:var(--ai-tint); }
   .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -637,12 +686,11 @@ ins { color:var(--koke); text-decoration:none; }
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tacts { flex-wrap:wrap; justify-content:flex-end; }
   .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
-  /* coverage refs — quiet, NEUTRAL metadata at rest. They tint indigo only on hover, tying the test
-     to the requirement(s) it covers — the one place indigo is still spent on this board (a transient
-     link, not a status; "your turn" itself no longer exists, the human, 2026-08-17). */
+  /* coverage refs — quiet, NEUTRAL metadata. (Their indigo hover tint retired with the Columns
+     view, 2026-08-18 — these rows are hidden source now, and the transient indigo coverage cue
+     lives on the Flow chapters' .flreq chips above; still a link, never a status.) */
   .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
-    background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
-  .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
+    background:var(--wash); color:var(--ink-3); }
   .test .tacts { opacity:1; margin-left:0; display:inline-flex; gap:var(--s2); }
   /* full log rides the actions row as a bordered button beside Watch — NOT indigo: it wears the
      neutral .btn sm like Run/Watch. It opens a floating window. */
@@ -1470,13 +1518,13 @@ ins { color:var(--koke); text-decoration:none; }
     <span class="gc">2 screens</span>
   </div>
   <div class="cards">
-<div class="card" data-screen="board" data-i="0" data-q="board / one card per screen, not a row of cells a requirement and the tests that prove it are read side by side, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag two kinds of test, unit and flow — never long-and-shallow specboard owns neither the wireframe nor the design no acceptance gate: requirements are the source of truth as written search across requirement text, grouped into areas a test opens to its full evidence, and can be run — watchably or in the background the guide is the manager's story: without the tool, then with it the guide ends with the one next action, derived not stored views of a screen's requirements: focus and grid the proof is scannable as frames, not only as video">
+<div class="card" data-screen="board" data-i="0" data-q="board / one card per screen, not a row of cells a requirement and the tests that prove it are read side by side, each scrolling on its own a requirement is a title that expands; a test is a title, a recording, and its tags requirement state is computed and assertion-backed requirements and tests are many-to-many, by tag two kinds of test, unit and flow — never long-and-shallow specboard owns neither the wireframe nor the design no acceptance gate: requirements are the source of truth as written search across requirement text, grouped into areas a test opens to its full evidence, and can be run — watchably or in the background the guide is the manager's story: without the tool, then with it the guide ends with the one next action, derived not stored three views of a screen's requirements: focus, grid, flow the proof is scannable as frames, not only as video">
   <div class="cmain">
     <div class="cd"><span class="nm">Board</span>
       <span class="chip gone pcount"><span class="mark o"></span>0 / 14 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One card per screen, not a row of cells</li><li><span class="id">R2</span>A requirement and the tests that prove it are read side by side, each scrolling on its own</li><li><span class="id">R3</span>A requirement is a title that expands; a test is a title, a recording, and its tags</li><li><span class="id">R4</span>Requirement state is computed and assertion-backed</li><li><span class="id">R5</span>Requirements and tests are many-to-many, by tag</li><li class="more">… 9 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/board/screen.png?h=84ef88e85b40" alt="Board — latest run"></div>
+  <div class="cshot"><img src="spec/board/screen.png?h=73d31c4e3b4e" alt="Board — latest run"></div>
 </div>
 <div class="card" data-screen="conflicts" data-i="1" data-q="conflicts /conflicts a conflict is one fact stated two incompatible ways both positions are shown in full, with where each came from you pick which side is canon resolving dispatches the rewrite of the losing side decisions survive a rescan">
   <div class="cmain">
@@ -1484,7 +1532,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>1 / 5 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>A conflict is one fact stated two incompatible ways</li><li><span class="id">R2</span>Both positions are shown in full, with where each came from</li><li><span class="id">R3</span>You pick which side is canon</li><li><span class="id">R4</span>Resolving dispatches the rewrite of the losing side</li><li><span class="id">R5</span>Decisions survive a rescan</li></ul>
   </div>
-  <div class="cshot"><img src="spec/conflicts/screen.png?h=92ea4a232b0f" alt="Conflicts — latest run"></div>
+  <div class="cshot"><img src="spec/conflicts/screen.png?h=25a8a9450525" alt="Conflicts — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Running">
@@ -1500,7 +1548,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 8 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>One panel per job, opened by the cell you clicked</li><li><span class="id">R2</span>The work is visible while it runs</li><li><span class="id">R3</span>Finishing updates the board without a reload</li><li><span class="id">R4</span>One job at a time; a person's second job takes over, a nested run shares the slot</li><li><span class="id">R5</span>Cancel actually stops it</li><li class="more">… 3 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/dispatch/screen.png?h=765911e240a9" alt="Dispatch panel — latest run"></div>
+  <div class="cshot"><img src="spec/dispatch/screen.png?h=ca2348b30cfd" alt="Dispatch panel — latest run"></div>
 </div></div>
 </section>
 <section class="grp" data-area="Setup">
@@ -1516,7 +1564,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="chip gone pcount"><span class="mark o"></span>0 / 6 proven</span></div>
     <ul class="rl"><li><span class="id">R1</span>Asks for what cannot be guessed, and nothing else</li><li><span class="id">R2</span>An existing app is inventoried into rows: visited, screenshotted, nothing faked</li><li><span class="id">R3</span>A drafted PRD is a requirement immediately, not a guess awaiting acceptance</li><li><span class="id">R4</span>An empty project is the same flow with nothing found</li><li><span class="id">R5</span>Rerunning finds new screens without touching settled ones</li><li class="more">… 1 more</li></ul>
   </div>
-  <div class="cshot"><img src="spec/init/screen.png?h=2982da1eeed1" alt="Setup — latest run"></div>
+  <div class="cshot"><img src="spec/init/screen.png?h=64eeb88e1df0" alt="Setup — latest run"></div>
 </div></div>
 </section>
   </div>
@@ -2180,6 +2228,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="0">Focus</button>
       <button class="vseg" data-view="grid" data-i="0">Grid</button>
+      <button class="vseg" data-view="flow" data-i="0">Flow</button>
     </div>
     <button class="close btn">Close</button>
   </div>
@@ -2195,7 +2244,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="body"><p>The detail pairs a requirement with the evidence that proves it — the reading and its proof — as two regions that scroll independently: scrolling the proof never moves the reading, and neither scrolls the page; the headers stay pinned. This is the shape of the <strong>Focus</strong> reader (R13): the requirement on the left, its covering test's own controls, frames and recording on the right. There is no wireframe region and no built-screen region — the wireframe is not a specboard artifact at all (R7), and a test's evidence (recording, screenshot) lives inside the test (R3, R10).</p><p><em>Reworked 2026-08-18 (the human): this described a dedicated two-column &quot;Columns&quot; view. That view is retired now that Grid (and, next, Flow) replaces it (R13); the two-region reading-and-proof split it embodied now lives in Focus's two containers. The independent-scroll and no-wireframe guarantees are unchanged. NOTE to the human: this now overlaps R13's Focus description — you may want to merge R2 into R13.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R3" data-state="unproven" data-status="untested">
     <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R3</span><div class="rmain"><span class="rt">A requirement is a title that expands; a test is a title, a recording, and its tags</span><div class="rhint">Left column: each requirement shows only its title until clicked, then its full description — real requirements are long and formatted (head…</div></div><span class="chev">›</span></div>
-    <div class="body"><p>Left column: each requirement shows only its title until clicked, then its full description — real requirements are long and formatted (headings, lists, <code>code</code>, author notes), so the collapse is what keeps the column readable. Right column: each test leads with a <strong>prominent, descriptive title</strong> of the flow it runs — its own name, so it says what the test is <em>for</em> — then its latest <strong>recording</strong> (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a test title just repeating a requirement's, is gone: under many-to-many a test covers several requirements, so its title names the <em>flow</em> and the tags carry the requirement link.</p><p>Both lists carry a <strong>reading hierarchy</strong>, never bare title rows: each pane's header wears a quiet purpose hint; a requirement row shows a one-line <strong>excerpt</strong> of its body under the title (hidden once the row is open — the full text follows); a test row shows a quiet <strong>meta line</strong> under its title — what it proved, its step count and duration, and on a failure <strong>the failing beat in human words</strong>, readable without opening anything.</p><p><em>Amended 2026-08-03 at the human's direction: the detail page read as bare title rows — the lists needed the title / sub-line / hint layer this adds to be scannable.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+    <div class="body"><p>Left column: each requirement shows only its title until clicked, then its full description — real requirements are long and formatted (headings, lists, <code>code</code>, author notes), so the collapse is what keeps the column readable. Right column: each test leads with a <strong>prominent, descriptive title</strong> of the flow it runs — its own name, so it says what the test is <em>for</em> — then its latest <strong>recording</strong> (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a test title just repeating a requirement's, is gone: under many-to-many a test covers several requirements, so its title names the <em>flow</em> and the tags carry the requirement link.</p><p>Both lists carry a <strong>reading hierarchy</strong>, never bare title rows: each pane's header wears a quiet purpose hint; a requirement row shows a one-line <strong>excerpt</strong> of its body under the title (hidden once the row is open — the full text follows); a test row shows a quiet <strong>meta line</strong> under its title — what it proved, its step count and duration, and on a failure <strong>the failing beat in human words</strong>, readable without opening anything.</p><p><em>Amended 2026-08-03 at the human's direction: the detail page read as bare title rows — the lists needed the title / sub-line / hint layer this adds to be scannable.</em></p><p><em>Framing note 2026-08-18: this requirement is written in the retired &quot;Left column / Right column&quot; terms (the Columns view is gone, R13). Its anatomy — a requirement is a title that expands to its full text, a test leads with its flow name then recording then tags, both with a reading hierarchy — now lives in Grid rows and the Focus reader. The wording awaits the human's reword; the meaning is unchanged and the tests assert it against Grid/Focus.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R4" data-state="unproven" data-status="untested">
     <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R4</span><div class="rmain"><span class="rt">Requirement state is computed and assertion-backed</span><div class="rhint">Each requirement reads one of four words, computed from the tests, never typed: Passed — a test that tags this requirement passed on an asse…</div></div><span class="chev">›</span></div>
     <div class="body"><p>Each requirement reads one of <strong>four words</strong>, computed from the tests, never typed: <strong>Passed</strong> — a test that tags this requirement passed <em>on an assertion that would fail without it</em>; <strong>Failed</strong> — a test that tags it ran its assertion and it did not hold (<strong>fail wins</strong>: a requirement covered by one failing and one passing test still reads Failed, so a real failure is never masked by a second green); <strong>Not reached</strong> — a flow declared it would cover this requirement (<code>coverReqs</code>) but stopped before its assertion ran; <strong>Untested</strong> — no test tags it at all. &quot;0 of 0 passing&quot; reads green nowhere in this vocabulary — Not reached and Untested are both honestly ungreen, never conflated with a pass.</p><p><em>Narrowed 2026-07-30: this requirement previously carried a third <strong>reworded</strong> state tied to an acceptance gate (R8). The gate was removed (see R8), so there is no &quot;changed since accepted&quot; — a requirement is simply proven by a current test or it is not.</em></p><p><em>Amended 2026-08-17 (the human's decision): the binary proven/unproven becomes Passed / Failed / Untested / Not reached — the same computed-from-tests state, named for what a reader needs.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -2224,8 +2273,8 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R12</span><div class="rmain"><span class="rt">The guide ends with the one next action, derived not stored</span><div class="rhint">The walkthrough closes on a single next action for this project, derived from the tree on each build (config saved, rows exist, a prd.md dra…</div></div><span class="chev">›</span></div>
     <div class="body"><p>The walkthrough closes on a single next action for this project, derived from the tree on each build (config saved, rows exist, a prd.md drafted, a requirement proven) — the same <code>journey()</code> derivation, with no five-step rail and nothing stored. A returning user opens the guide and sees their next concrete step (for example <code>/kg-deep &lt;screen&gt;</code>); when everything derivable is done, the CTA says so. There is no home-screen checklist.</p><p><em>Drafted 2026-08-05 transcribing the approved onboarding walkthrough (design revision 2) — the earlier six-step rail was cut at the human's direction; wording awaits the human, the test asserts behaviour.</em></p><p><em>Amended 2026-08-17 (the human's decision): the rail's &quot;confirm the draft&quot; step (a prd.md without <code>guess</code>) is gone along with the guess flag it tracked — the derivation is five steps now, not six.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R13" data-state="unproven" data-status="untested">
-    <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R13</span><div class="rmain"><span class="rt">Views of a screen's requirements: Focus and Grid</span><div class="rhint">The detail header carries a toggle — Focus / Grid — views of the same requirements, storing nothing new.</div></div><span class="chev">›</span></div>
-    <div class="body"><p>The detail header carries a <strong>toggle — Focus / Grid</strong> — views of the same requirements, storing nothing new. <strong>Focus</strong> is the default a screen opens on <em>(the human, 2026-08-13 — was Columns)</em>. <strong>Grid</strong> is the behavior grid — one row per requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan at a glance; a row opens that requirement in Focus. <strong>Focus</strong> reads <strong>one requirement at a time</strong>, laid out as <strong>two containers</strong>: the <em>reading</em> on the left (its id and state on a meta line above the title, then the full description, and the flow step by step with this requirement's step highlighted) and the <em>evidence</em> on the right — a <strong>proof header</strong> whose top row carries the label and the actions (<strong>Run</strong> always shown, and a <strong>⋯ menu</strong> holding <strong>Run in background · Logs · Steps</strong>), then the proof line (which flow proves it and its verdict, with the commit that result ran against), the scannable <strong>proof-frame strip</strong> (no label — the stills speak for themselves, the human 2026-08-13), and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches views. The header's Run all, toggle and Close are one control family — same height, same pill radius.</p><p>The evidence is not a pointer elsewhere but the covering test's <strong>own row, moved in</strong> — its controls, its frame strip and its recording are the very wired nodes the board bakes as the shared source for Focus and Grid (its steps are shown on the left as a display clone, the moved node keeping the wired original), relocated and relocated back so the source rows are left whole. So the reader duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.</p><p><em>Drafted 2026-08-11 (&quot;provide a less-text version — one requirement per page&quot;); enriched 2026-08-13 to carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers (read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the human's direction: <strong>Focus is now the default view</strong>, the id + state fold into the reading card (no full-width bar), the evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows the human's spoken decisions; the tests assert the behaviour.</em></p><p><em>Grid replaces the compact List, 2026-08-18 (the human) — the behavior grid; Flow replaces Columns in a following change.</em></p><p><em>Columns retired as a view 2026-08-18 (the human) — Grid and (next) Flow replace it; its baked requirement/test rows stay as the shared source Focus and Grid read.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
+    <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R13</span><div class="rmain"><span class="rt">Three views of a screen's requirements: Focus, Grid, Flow</span><div class="rhint">The detail header carries a toggle — Focus / Grid / Flow — three views of the same requirements, storing nothing new.</div></div><span class="chev">›</span></div>
+    <div class="body"><p>The detail header carries a <strong>toggle — Focus / Grid / Flow</strong> — three views of the same requirements, storing nothing new. <strong>Focus</strong> is the default a screen opens on <em>(the human, 2026-08-13 — was Columns)</em>. <strong>Grid</strong> is the behavior grid — one row per requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan at a glance; a row opens that requirement in Focus. <strong>Focus</strong> reads <strong>one requirement at a time</strong>, laid out as <strong>two containers</strong>: the <em>reading</em> on the left (its id and state on a meta line above the title, then the full description, and the flow step by step with this requirement's step highlighted) and the <em>evidence</em> on the right — a <strong>proof header</strong> whose top row carries the label and the actions (<strong>Run</strong> always shown, and a <strong>⋯ menu</strong> holding <strong>Run in background · Logs · Steps</strong>), then the proof line (which flow proves it and its verdict, with the commit that result ran against), the scannable <strong>proof-frame strip</strong> (no label — the stills speak for themselves, the human 2026-08-13), and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches views. The header's Run all, toggle and Close are one control family — same height, same pill radius.</p><p><strong>Flow</strong> plays a screen's tests as their authored flows — each recording is one video seeked into chapters in order (a chapter per screen a flow crosses, or per step group on a single screen). A chapter strip carries the stage name, a still, and the requirement chips it proves — a chip opens that requirement in Focus. It stores nothing new: the chapters are derived from the run's own steps and timestamps, and the player seeks the one recording rather than cutting it. A chapter that fails stops the playback with the failing beat named, and every chapter after it reads not-reached — a flow never ends green on a run that broke.</p><p>The evidence is not a pointer elsewhere but the covering test's <strong>own row, moved in</strong> — its controls, its frame strip and its recording are the very wired nodes the board bakes as the shared source for Focus, Grid and Flow (its steps are shown on the left as a display clone, the moved node keeping the wired original), relocated and relocated back so the source rows are left whole. So the reader duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.</p><p><em>Drafted 2026-08-11 (&quot;provide a less-text version — one requirement per page&quot;); enriched 2026-08-13 to carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers (read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the human's direction: <strong>Focus is now the default view</strong>, the id + state fold into the reading card (no full-width bar), the evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows the human's spoken decisions; the tests assert the behaviour.</em></p><p><em>Reworked 2026-08-18 (the human): the three views are Focus / Grid / Flow — Grid replaced the compact List, Flow replaced the Columns view; the text follows the human's logged decision, the tests assert the behaviour.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
   </div><div class="req" data-r="R14" data-state="unproven" data-status="untested">
     <div class="h"><span class="chip gone" title="Untested — no test asserts this yet"><span class="mark o"></span></span><span class="id">R14</span><div class="rmain"><span class="rt">The proof is scannable as frames, not only as video</span><div class="rhint">A reviewer shouldn't have to play a video to check a proven value.</div></div><span class="chev">›</span></div>
     <div class="body"><p>A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording, its <strong>proof frames</strong> are surfaced too — <strong>one still per checked value</strong>, taken from the recording at the instant that check fired (indexed by the run's own beat log), each carrying the same self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the ring on the exact value asserted. They show as a <strong>scannable strip</strong> — in the test's evidence and in the focus card — so a person verifies the asserted values by eye, in order, without pressing play; the <strong>video is reserved for what a still can't show</strong> — motion, a sequence, a dense flow. Because the frames are frames <em>of</em> the recording, they can never disagree with it: a run with no video simply has no strip, never a faked or separately-captured one.</p><p><em>Drafted 2026-08-12 on the human's direction and accepted the same turn: the recording is fast to trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the video kept for what a picture cannot carry. It amends R10's &quot;no separate screenshot column&quot; — the frames are the recording indexed, not a second capture, so the one-artifact rule still holds.</em></p><div class="covers"><span class="nocov">no test asserts this yet — honestly ungreen, not hidden</span></div></div>
@@ -2470,26 +2519,47 @@ ins { color:var(--koke); text-decoration:none; }
   </div></div></div>
       <div class="tstlog" data-title="No acceptance gate — nothing on the detail waits to be accepted"></div>
     </div>
-  </div><div class="test tst u" data-t="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers" data-title="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers">
-    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip gone"><span class="mark o"></span>not run</span></div><div class="tmeta"></div></div>
+  </div><div class="test tst u" data-t="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers" data-title="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip gone"><span class="mark o"></span>not run</span></div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
         <div class="rec"><span class="play">▶</span><span class="lab"></span></div>
         <span class="grow"></span>
         <span class="tacts">
-          <button class="btn sm runone" data-run="board" data-grep="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers" data-headed="1" title="run this test in a browser you can watch">Run</button>
-          <button class="btn sm runone" data-run="board" data-grep="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers" title="run this test headless, in the background">Run in background</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers" data-headed="1" title="run this test in a browser you can watch">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers" title="run this test headless, in the background">Run in background</button>
           <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
           <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
         </span>
       </div>
-      <div class="pfstrip" data-title="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers"></div>
+      <div class="pfstrip" data-title="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers"></div>
       
-      <div class="fold"><div class="tststeps" data-title="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers" data-planned="1"><div class="beat pending" data-step="prove" data-key="R13">
+      <div class="fold"><div class="tststeps" data-title="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers" data-planned="1"><div class="beat pending" data-step="prove" data-key="R13">
     <div class="bh"><span class="bnum">1</span><span class="bmk">○</span><span class="bid">R13</span><span class="blbl">R13</span><span class="bchev">›</span></div>
     <ul class="bdet" hidden></ul>
   </div></div></div>
-      <div class="tstlog" data-title="The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers"></div>
+      <div class="tstlog" data-title="The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers"></div>
+    </div>
+  </div><div class="test tst u" data-t="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached" data-title="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached">
+    <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached</span><div class="tags"><span class="tag" data-r="R13">R13</span></div><span class="chip gone"><span class="mark o"></span>not run</span></div><div class="tmeta"></div></div>
+    <div class="tbody">
+      <div class="trow2">
+        <div class="rec"><span class="play">▶</span><span class="lab"></span></div>
+        <span class="grow"></span>
+        <span class="tacts">
+          <button class="btn sm runone" data-run="board" data-grep="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached" data-headed="1" title="run this test in a browser you can watch">Run</button>
+          <button class="btn sm runone" data-run="board" data-grep="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached" title="run this test headless, in the background">Run in background</button>
+          <button class="btn sm loglink" data-log title="open the full run log in a window">Logs</button>
+          <button class="btn sm stepslink" data-steps title="every recorded step of the newest run, in a window">Steps</button>
+        </span>
+      </div>
+      <div class="pfstrip" data-title="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached"></div>
+      
+      <div class="fold"><div class="tststeps" data-title="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached" data-planned="1"><div class="beat pending" data-step="prove" data-key="R13">
+    <div class="bh"><span class="bnum">1</span><span class="bmk">○</span><span class="bid">R13</span><span class="blbl">R13</span><span class="bchev">›</span></div>
+    <ul class="bdet" hidden></ul>
+  </div></div></div>
+      <div class="tstlog" data-title="Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached"></div>
     </div>
   </div><div class="test tst p" data-t="The proof is scannable as frames, not only as video — a strip of stills per checked value" data-title="The proof is scannable as frames, not only as video — a strip of stills per checked value">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">The proof is scannable as frames, not only as video — a strip of stills per checked value</span><div class="tags"><span class="tag" data-r="R14">R14</span></div><span class="chip ok"><span class="mark"></span>pass</span></div><div class="tmeta"></div></div>
@@ -2752,7 +2822,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grproof">○ covered by The guide ends with the derived next action, and there is no rail — stale, not re-proven since the screen changed</span>
     </button><button class="grrow" data-r="R13" data-state="unproven">
       <span class="chip gone grchip"><span class="mark o"></span>○ Untested</span>
-      <span class="gr-id">R13</span><span class="grt">Views of a screen's requirements: Focus and Grid</span><span class="grchev">›</span>
+      <span class="gr-id">R13</span><span class="grt">Three views of a screen's requirements: Focus, Grid, Flow</span><span class="grchev">›</span>
       <span class="grproof">○ covered by The detail offers a three-view toggle — Focus reads one requirement per page in two containers — stale, not re-proven since the screen changed</span>
     </button><button class="grrow" data-r="R14" data-state="unproven">
       <span class="chip gone grchip"><span class="mark o"></span>○ Untested</span>
@@ -2760,6 +2830,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grproof">○ covered by The proof is scannable as frames, not only as video — a strip of stills per checked value — stale, not re-proven since the screen changed</span>
     </button>
 </div>
+    <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>
@@ -2771,6 +2842,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="1">Focus</button>
       <button class="vseg" data-view="grid" data-i="1">Grid</button>
+      <button class="vseg" data-view="flow" data-i="1">Flow</button>
     </div>
     <button class="close btn">Close</button>
   </div>
@@ -2919,6 +2991,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grproof none">no test asserts this yet</span>
     </button>
 </div>
+    <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>
@@ -2930,6 +3003,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="2">Focus</button>
       <button class="vseg" data-view="grid" data-i="2">Grid</button>
+      <button class="vseg" data-view="flow" data-i="2">Flow</button>
     </div>
     <button class="close btn">Close</button>
   </div>
@@ -3219,6 +3293,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grproof none">no test asserts this yet</span>
     </button>
 </div>
+    <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>
@@ -3230,6 +3305,7 @@ ins { color:var(--koke); text-decoration:none; }
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="3">Focus</button>
       <button class="vseg" data-view="grid" data-i="3">Grid</button>
+      <button class="vseg" data-view="flow" data-i="3">Flow</button>
     </div>
     <button class="close btn">Close</button>
   </div>
@@ -3439,6 +3515,7 @@ ins { color:var(--koke); text-decoration:none; }
       <span class="grproof">○ covered by R6 — voice-over is a saved, per-project switch, off by default — stale, not re-proven since the screen changed</span>
     </button>
 </div>
+    <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>
@@ -3620,7 +3697,7 @@ const B = window.__BOARD__ || {}
 
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
-  // recording). One of the views (Focus / Grid) switched by the header toggle. No new state — the
+  // recording). One of the views (Focus / Grid / Flow) switched by the header toggle. No new state — the
   // same derived chips the baked source rows carry, one screenful each.
   function buildFocus (dt, startId) {
     const scroll = dt.querySelector('.dtscroll')
@@ -3839,17 +3916,227 @@ const B = window.__BOARD__ || {}
     scroll.appendChild(ov); render()   // .cols is baked hidden — the data source, never a view
   }
 
-  // THE VIEW TOGGLE (board R13): Focus / Grid, one segmented control in the detail header (Flow
-  // arrives next; the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the
-  // hidden shared source, and NOTHING un-hides .cols). Focus is the default and opens the reader;
-  // Grid is the behavior grid (one row per requirement — Grid replaced the compact List, 2026-08-18).
-  // Switching tears down any open reader (restoring its moved nodes).
+  // THE FLOW VIEW (board R13): each test's run played as its authored flow — ONE recording seeked
+  // into chapters, never cut. The chapters and the unit/flow kind are derived SERVER-side by the
+  // pure tools/flow.mjs and delivered on the folded /api/runs record (the same path the proof
+  // frames ride), so this only READS `one.chapters` / `one.kind` / `one.video` off the records
+  // loadRuns stashed. Flow builds its OWN player from the record's video path and never moves the
+  // shared .testpane nodes — those belong to Focus's borrow / close-fold-reopen contract, and a
+  // second borrower would fight it.
+  function buildFlow (dt) {
+    const fv = dt.querySelector('.flowview')
+    if (!fv) return
+    fv.innerHTML = ''
+    const screen = dt.dataset.screen
+    for (const t of dt.querySelectorAll('.testpane .test')) fv.appendChild(flowBlock(dt, screen, t))
+  }
+  // Compose the chapters the strip shows from ONE record's reached chapters + its declared set.
+  // flow.mjs deliberately returns only what RAN; the honesty is composed here (rule 3):
+  //   - a failing chapter stops the flow — it is marked with its failing beat, and EVERY chapter
+  //     after it reads not-reached, even one the recording ran green (a flow whose middle broke
+  //     proves nothing downstream, and a strip that ends green on a broken run is a fake green);
+  //   - a declared coverReqs id whose screen no reached chapter landed on trails as a not-reached
+  //     chapter, so what the flow never got to is visible rather than silently absent.
+  function flowChapters (one, screen) {
+    const reached = (one.chapters || [])
+    const steps = one.steps || []
+    const out = []
+    let broken = false   // once a chapter fails, nothing after it may read green (rule 3)
+    for (let i = 0; i < reached.length; i++) {
+      const c = reached[i]
+      if (broken) {
+        // recorded — even recorded GREEN — but downstream of the failure: the flow's state is no
+        // longer the authored one, so it reads not-reached, never a green the run did not earn
+        out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'nr', beat: '' })
+      } else if (c.ok === false) {
+        // name the beat that broke it: the first failing recorded step inside this chapter's range
+        // (skipping the bare `proves` markers — coverage grammar, not a beat a person named)
+        const end = i + 1 < reached.length ? reached[i + 1].t : null
+        const inRange = function (s) {
+          return s.ok === false && typeof s.t === 'number' && s.t >= c.t && (end == null || s.t < end)
+        }
+        const beat = steps.find(function (s) { return inRange(s) && !/^proves /.test(String(s.label || '')) }) ||
+          steps.find(inRange) || steps.find(function (s) { return s.ok === false })
+        out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'f', beat: beat ? String(beat.label || '') : '' })
+        broken = true
+      } else out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'p' })
+    }
+    const seen = {}
+    for (const c of reached) seen[c.screen] = 1
+    const miss = {}
+    const order = []
+    for (const id of one.reqs || []) {
+      const q = String(id); const k = q.indexOf(':')
+      const scr = k > 0 ? q.slice(0, k) : screen
+      const bare = k > 0 ? q.slice(k + 1) : q
+      if (seen[scr]) continue
+      if (!miss[scr]) { miss[scr] = []; order.push(scr) }
+      if (miss[scr].indexOf(bare) < 0) miss[scr].push(bare)
+    }
+    for (const scr of order) out.push({ title: scr, screen: scr, t: null, reqs: miss[scr], st: 'nr', beat: '' })
+    return out
+  }
+  function flowBlock (dt, screen, tnode) {
+    const slot = tnode.querySelector('.tststeps')
+    const hist = (slot && slot._hist) || []
+    // chapters and the video must come from the SAME record — the seek offsets are offsets into
+    // that recording; prefer the newest record carrying both, then one with chapters alone (a CLI
+    // run records steps but no video — the strip still reads honestly, with nothing to play)
+    const one = hist.find(function (x) { return x.video && x.chapters && x.chapters.length }) ||
+      hist.find(function (x) { return x.chapters && x.chapters.length }) || null
+    const box = document.createElement('div'); box.className = 'fltest'
+    const head = document.createElement('div'); head.className = 'flhead'
+    const ttl = document.createElement('span'); ttl.className = 'flttl'
+    ttl.textContent = tnode.dataset.title || ''
+    head.appendChild(ttl)
+    if (one && one.kind) {
+      const kind = document.createElement('span'); kind.className = 'flkind'; kind.textContent = one.kind
+      head.appendChild(kind)
+    }
+    box.appendChild(head)
+    if (!one) {
+      const none = document.createElement('div'); none.className = 'flnone'
+      none.textContent = 'Not run yet — Run to see its flow.'
+      box.appendChild(none)
+      return box
+    }
+    const chs = flowChapters(one, screen)
+    // the ONE recording, PAUSED at start — chapters seek it (the server's byte-range support makes
+    // a MediaRecorder webm seekable); manual advance only, nothing plays until a chapter is clicked
+    let video = null
+    let ready = false
+    let pending = null   // a chapter seek clicked before the metadata (and duration probe) landed
+    let endAt = null     // the current chapter's boundary — playback pauses there (manual advance)
+    if (one.video) {
+      const player = document.createElement('div'); player.className = 'flplayer'
+      video = document.createElement('video')
+      video.controls = true; video.playsInline = true; video.preload = 'metadata'
+      video.src = one.voiced || one.video
+      const settle = function () {
+        ready = true
+        if (pending != null) { video.currentTime = pending; pending = null; video.play().catch(function () {}) }
+        else video.currentTime = 0
+      }
+      video.addEventListener('loadedmetadata', function () {
+        if (video.duration === Infinity) {
+          // MediaRecorder webm carries no duration header — probe the file's end (the server
+          // answers Range requests) so chapter seeks can land, then settle on the pending chapter
+          // or back to the paused start
+          const back = function () { video.removeEventListener('seeked', back); settle() }
+          video.addEventListener('seeked', back)
+          video.currentTime = 1e9
+        } else settle()
+      })
+      video.addEventListener('timeupdate', function () {
+        // MANUAL ADVANCE: pause at the chapter boundary — the person advances by clicking the next
+        // chapter, and on a failed chapter this same pause is where playback STOPS for good
+        if (endAt != null && video.currentTime >= endAt) video.pause()
+      })
+      player.appendChild(video)
+      box.appendChild(player)
+    }
+    const strip = document.createElement('div'); strip.className = 'flstrip'
+    const fmtT = function (ms) {
+      const s = Math.max(0, Math.round(ms / 1000))
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+    }
+    const MARK = { p: '✓', f: '✗', nr: '◌' }
+    const seekChapter = function (i) {
+      const c = chs[i]
+      if (!video || c.t == null) return
+      for (const el of strip.querySelectorAll('.flchap.on')) el.classList.remove('on')
+      strip.children[i].classList.add('on')
+      // play THIS chapter only: the boundary is the next recorded chapter's start
+      endAt = null
+      for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { endAt = chs[k].t / 1000; break }
+      if (!ready) { pending = c.t / 1000; return }
+      video.currentTime = c.t / 1000
+      video.play().catch(function () {})
+    }
+    chs.forEach(function (c, i) {
+      // a not-reached chapter never plays — it is a rendered absence, not a segment
+      const el = document.createElement(c.st === 'nr' ? 'div' : 'button')
+      el.className = 'flchap ' + c.st
+      const meta = document.createElement('div'); meta.className = 'flmeta'
+      const mk = document.createElement('span'); mk.className = 'flmk'; mk.textContent = MARK[c.st]
+      meta.appendChild(mk)
+      if (c.t != null) { const tt = document.createElement('span'); tt.className = 'flt'; tt.textContent = fmtT(c.t); meta.appendChild(tt) }
+      el.appendChild(meta)
+      // the still: the proof frame nearest this chapter's seek point, when the record cut one
+      if (c.t != null) {
+        let end = null
+        for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { end = chs[k].t; break }
+        const frame = (one.frames || []).find(function (f) {
+          return typeof f.t === 'number' && f.t >= c.t && (end == null || f.t < end)
+        })
+        if (frame) {
+          const img = document.createElement('img')
+          img.loading = 'lazy'; img.src = frame.img; img.alt = frame.cap || 'chapter still'
+          el.appendChild(img)
+        }
+      }
+      const stage = document.createElement('div'); stage.className = 'flstage'; stage.textContent = c.title
+      el.appendChild(stage)
+      if (c.st === 'f' && c.beat) {
+        const beat = document.createElement('div'); beat.className = 'flbeat'
+        beat.textContent = '✗ failed at — ' + c.beat
+        el.appendChild(beat)
+      }
+      if (c.st === 'nr') {
+        const why = document.createElement('div'); why.className = 'flnr'
+        why.textContent = c.t == null ? 'declared, never reached' : 'after the failure — not reached'
+        el.appendChild(why)
+      }
+      // the requirement chips this chapter proves — each opens that requirement in Focus; a chapter
+      // can land on a hash route with no card (howitworks, a probe page), whose ids render INERTLY
+      const reqs = document.createElement('div'); reqs.className = 'flreqs'
+      for (const rid of c.reqs || []) {
+        const home = c.screen === screen ? dt : document.querySelector('.dt[data-screen="' + c.screen + '"]')
+        if (home) {
+          const chip = document.createElement('button'); chip.className = 'flreq'
+          chip.dataset.r = rid
+          chip.textContent = (c.screen === screen ? '' : c.screen + ':') + rid
+          chip.addEventListener('click', function (e) {
+            e.stopPropagation()
+            if (home === dt) { setView(dt, 'focus', rid); return }
+            const j = SCREENS.indexOf(c.screen)
+            if (j >= 0) { open(j); setView(home, 'focus', rid) }
+          })
+          reqs.appendChild(chip)
+        } else {
+          const chip = document.createElement('span'); chip.className = 'flreq inert'
+          chip.textContent = (c.screen ? c.screen + ':' : '') + rid
+          reqs.appendChild(chip)
+        }
+      }
+      if (reqs.children.length) el.appendChild(reqs)
+      if (c.st !== 'nr') el.addEventListener('click', function (e) {
+        if (e.target.closest('img')) return   // the still opens the zoom — a different intent
+        seekChapter(i)
+      })
+      strip.appendChild(el)
+    })
+    box.appendChild(strip)
+    return box
+  }
+
+  // THE VIEW TOGGLE (board R13): Focus / Grid / Flow, one segmented control in the detail header
+  // (the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the hidden shared
+  // source, and NOTHING un-hides .cols). Focus is the default and opens the reader; Grid is the
+  // behavior grid (one row per requirement — Grid replaced the compact List, 2026-08-18); Flow is
+  // the chaptered player over each test's recording, rebuilt from the folded records on every
+  // entry. Switching tears down any open reader (restoring its moved nodes).
   function setView (dt, view, startId) {
     const gv = dt.querySelector('.gridview')
+    const fv = dt.querySelector('.flowview')
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
-    if (view === 'grid') { if (gv) gv.hidden = false }
-    else { if (gv) gv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
+    if (view === 'grid') { if (gv) gv.hidden = false; if (fv) fv.hidden = true }
+    else if (view === 'flow') {
+      if (gv) gv.hidden = true
+      // build AFTER closeFocus put any borrowed test node back — Flow reads the whole pane
+      if (fv) { buildFlow(dt); fv.hidden = false }
+    } else { if (gv) gv.hidden = true; if (fv) fv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
   }
   for (const b of document.querySelectorAll('.viewseg .vseg'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })
@@ -3868,26 +4155,11 @@ const B = window.__BOARD__ || {}
   for (const h of document.querySelectorAll('.test > .th'))
     h.addEventListener('click', () => h.parentElement.classList.toggle('open'))
 
-  // The many-to-many link, lit on hover (board R5): hover a requirement and every test that tags it
-  // lights up; hover a test and every requirement it covers lights up. Leaving clears it. Scoped to
-  // the open detail so a hover never reaches across into a hidden screen's panes.
-  const clearHot = () => document.querySelectorAll('.hot').forEach(e => e.classList.remove('hot'))
-  for (const rq of document.querySelectorAll('.req')) {
-    rq.addEventListener('mouseenter', () => {
-      clearHot(); const r = rq.dataset.r; const pane = rq.closest('.dt')
-      if (pane) pane.querySelectorAll('.test .tag[data-r="' + r + '"]').forEach(t => t.closest('.test').classList.add('hot'))
-    })
-    rq.addEventListener('mouseleave', clearHot)
-  }
-  for (const ts of document.querySelectorAll('.test')) {
-    ts.addEventListener('mouseenter', () => {
-      clearHot(); const pane = ts.closest('.dt'); if (!pane) return
-      ts.querySelectorAll('.tag[data-r]').forEach(tag => {
-        const rq = pane.querySelector('.req[data-r="' + tag.dataset.r + '"]'); if (rq) rq.classList.add('hot')
-      })
-    })
-    ts.addEventListener('mouseleave', clearHot)
-  }
+  // (The many-to-many hover cross-light — hover a requirement, its tests lit indigo, and back —
+  // left with the Columns view, 2026-08-18: the .req/.test rows it wired are the hidden shared
+  // source now, unreachable by a pointer. The link itself is served visibly instead: Focus's proof
+  // line resolves a requirement's covering test by tag (board R5's test asserts it), and a Flow
+  // chapter's requirement chips carry the same indigo hover cue the rows used to.)
 
   // The full log opens in ONE floating window (board R10), populated from the test's own log history
   // (the .tstlog the run machinery fills). No full-viewport scrim — the board stays visible behind it.
@@ -4765,6 +5037,7 @@ const B = window.__BOARD__ || {}
         const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
         slot._steps = steps                    // the all-steps window reads the raw record here
+        slot._hist = rec[slot.dataset.title] || []   // the Flow view reads the folded records here
         const rows = [...slot.querySelectorAll('.beat')]
 
         // a prove-step's label is the requirement's TITLE (the id alone means nothing to a person)
@@ -4868,6 +5141,11 @@ const B = window.__BOARD__ || {}
     }
     // reopen the reader now that its borrowed node has been folded back into the pane
     if (reopen && reopen.dt) setView(reopen.dt, 'focus', reopen.id)
+    // an OPEN Flow view rebuilds off the fresh fold (it reads records and moves no shared nodes,
+    // so a rebuild is safe) — this is also what fills it in on a fresh deep-link, where the boot
+    // fold lands after the view was first built
+    const openFv = document.querySelector('.dt:not([hidden]) .flowview:not([hidden])')
+    if (openFv) buildFlow(openFv.closest('.dt'))
   }
   loadRuns()
 

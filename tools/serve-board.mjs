@@ -14,9 +14,11 @@ import {
   ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
-  RUNS, readRuns, recordRunEntry, reEscape, runVerdict,
+  RUNS, readRuns, recordRunEntry, reEscape, runVerdict, readResults,
   shouldVoice, narrationPack, voiceReadiness, voicesDir
 } from './spec-store.mjs'
+// pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
+import { deriveChapters, deriveKind } from './flow.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
 // BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
@@ -219,6 +221,41 @@ async function extractProofFrames (recordDir, shotsByTest) {
       delete recd._frames
     }
   }
+}
+
+// FLOW CHAPTERS (board R13): a test's kind (unit / flow) and its ordered chapters, DERIVED from the
+// run's own recorded steps by the pure tools/flow.mjs — computed on the way OUT of /api/runs and
+// never stored, so a CLI-recorded run and an old entry get theirs exactly like a board-started one
+// (contrast the proof frames above, which must be cut at run close because they produce files).
+// The qualified ids come from the committed index's per-test `reqs` keys; that declared set also
+// rides along as `reqs` so the client can compose the NOT-REACHED chapters (a declared coverReqs
+// screen no reached chapter ever landed on) — the reached chapters alone cannot say what a broken
+// flow never got to (rule 3). The baked test tags carry only BARE ids, so this is the one carrier
+// of the qualified set the player has.
+function decorateRuns (runs) {
+  let byTitle = null
+  const lookup = title => {
+    if (!byTitle) {
+      byTitle = {}
+      for (const [scr, r] of Object.entries(readResults())) {
+        for (const t of r.tests || []) byTitle[t.title] = { screen: scr, reqs: Object.keys(t.reqs || {}) }
+      }
+    }
+    return byTitle[title]
+  }
+  return runs.map(r => {
+    if (!r || !r.shotsByTest) return r
+    const shots = {}
+    for (const [title, one] of Object.entries(r.shotsByTest)) {
+      const hit = lookup(title)
+      // a title the index does not know (its screen never folded) still chapters against the run's
+      // own screen; an 'all' run with no index hit derives against '' — bare ids stay bare, no crash
+      const screen = (hit && hit.screen) || (r.screen !== 'all' ? r.screen : '')
+      const reqs = hit ? hit.reqs : []
+      shots[title] = { ...one, reqs, kind: deriveKind(reqs, screen), chapters: deriveChapters(one && one.steps, screen) }
+    }
+    return { ...r, shotsByTest: shots }
+  })
 }
 
 // Voice-over render (board R10). Lay the screen's narration onto the run's recording — piper voice
@@ -1053,7 +1090,7 @@ const server = createServer(async (req, res) => {
     // able to tell "something else is in the way" from "the thing in the way is me" — without it,
     // a spec started by the board waits for itself forever (R4).
     res.end(JSON.stringify({
-      runs: readRuns(),
+      runs: decorateRuns(readRuns()),
       running: running ? running.screen : null,
       runningId: running ? running.runId : null,
       watch: watchOn

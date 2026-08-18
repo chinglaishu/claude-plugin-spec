@@ -174,7 +174,7 @@ const B = window.__BOARD__ || {}
 
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
-  // recording). One of the views (Focus / Grid) switched by the header toggle. No new state — the
+  // recording). One of the views (Focus / Grid / Flow) switched by the header toggle. No new state — the
   // same derived chips the baked source rows carry, one screenful each.
   function buildFocus (dt, startId) {
     const scroll = dt.querySelector('.dtscroll')
@@ -393,17 +393,227 @@ const B = window.__BOARD__ || {}
     scroll.appendChild(ov); render()   // .cols is baked hidden — the data source, never a view
   }
 
-  // THE VIEW TOGGLE (board R13): Focus / Grid, one segmented control in the detail header (Flow
-  // arrives next; the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the
-  // hidden shared source, and NOTHING un-hides .cols). Focus is the default and opens the reader;
-  // Grid is the behavior grid (one row per requirement — Grid replaced the compact List, 2026-08-18).
-  // Switching tears down any open reader (restoring its moved nodes).
+  // THE FLOW VIEW (board R13): each test's run played as its authored flow — ONE recording seeked
+  // into chapters, never cut. The chapters and the unit/flow kind are derived SERVER-side by the
+  // pure tools/flow.mjs and delivered on the folded /api/runs record (the same path the proof
+  // frames ride), so this only READS `one.chapters` / `one.kind` / `one.video` off the records
+  // loadRuns stashed. Flow builds its OWN player from the record's video path and never moves the
+  // shared .testpane nodes — those belong to Focus's borrow / close-fold-reopen contract, and a
+  // second borrower would fight it.
+  function buildFlow (dt) {
+    const fv = dt.querySelector('.flowview')
+    if (!fv) return
+    fv.innerHTML = ''
+    const screen = dt.dataset.screen
+    for (const t of dt.querySelectorAll('.testpane .test')) fv.appendChild(flowBlock(dt, screen, t))
+  }
+  // Compose the chapters the strip shows from ONE record's reached chapters + its declared set.
+  // flow.mjs deliberately returns only what RAN; the honesty is composed here (rule 3):
+  //   - a failing chapter stops the flow — it is marked with its failing beat, and EVERY chapter
+  //     after it reads not-reached, even one the recording ran green (a flow whose middle broke
+  //     proves nothing downstream, and a strip that ends green on a broken run is a fake green);
+  //   - a declared coverReqs id whose screen no reached chapter landed on trails as a not-reached
+  //     chapter, so what the flow never got to is visible rather than silently absent.
+  function flowChapters (one, screen) {
+    const reached = (one.chapters || [])
+    const steps = one.steps || []
+    const out = []
+    let broken = false   // once a chapter fails, nothing after it may read green (rule 3)
+    for (let i = 0; i < reached.length; i++) {
+      const c = reached[i]
+      if (broken) {
+        // recorded — even recorded GREEN — but downstream of the failure: the flow's state is no
+        // longer the authored one, so it reads not-reached, never a green the run did not earn
+        out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'nr', beat: '' })
+      } else if (c.ok === false) {
+        // name the beat that broke it: the first failing recorded step inside this chapter's range
+        // (skipping the bare `proves` markers — coverage grammar, not a beat a person named)
+        const end = i + 1 < reached.length ? reached[i + 1].t : null
+        const inRange = function (s) {
+          return s.ok === false && typeof s.t === 'number' && s.t >= c.t && (end == null || s.t < end)
+        }
+        const beat = steps.find(function (s) { return inRange(s) && !/^proves /.test(String(s.label || '')) }) ||
+          steps.find(inRange) || steps.find(function (s) { return s.ok === false })
+        out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'f', beat: beat ? String(beat.label || '') : '' })
+        broken = true
+      } else out.push({ title: c.title, screen: c.screen, t: c.t, reqs: c.reqs, st: 'p' })
+    }
+    const seen = {}
+    for (const c of reached) seen[c.screen] = 1
+    const miss = {}
+    const order = []
+    for (const id of one.reqs || []) {
+      const q = String(id); const k = q.indexOf(':')
+      const scr = k > 0 ? q.slice(0, k) : screen
+      const bare = k > 0 ? q.slice(k + 1) : q
+      if (seen[scr]) continue
+      if (!miss[scr]) { miss[scr] = []; order.push(scr) }
+      if (miss[scr].indexOf(bare) < 0) miss[scr].push(bare)
+    }
+    for (const scr of order) out.push({ title: scr, screen: scr, t: null, reqs: miss[scr], st: 'nr', beat: '' })
+    return out
+  }
+  function flowBlock (dt, screen, tnode) {
+    const slot = tnode.querySelector('.tststeps')
+    const hist = (slot && slot._hist) || []
+    // chapters and the video must come from the SAME record — the seek offsets are offsets into
+    // that recording; prefer the newest record carrying both, then one with chapters alone (a CLI
+    // run records steps but no video — the strip still reads honestly, with nothing to play)
+    const one = hist.find(function (x) { return x.video && x.chapters && x.chapters.length }) ||
+      hist.find(function (x) { return x.chapters && x.chapters.length }) || null
+    const box = document.createElement('div'); box.className = 'fltest'
+    const head = document.createElement('div'); head.className = 'flhead'
+    const ttl = document.createElement('span'); ttl.className = 'flttl'
+    ttl.textContent = tnode.dataset.title || ''
+    head.appendChild(ttl)
+    if (one && one.kind) {
+      const kind = document.createElement('span'); kind.className = 'flkind'; kind.textContent = one.kind
+      head.appendChild(kind)
+    }
+    box.appendChild(head)
+    if (!one) {
+      const none = document.createElement('div'); none.className = 'flnone'
+      none.textContent = 'Not run yet — Run to see its flow.'
+      box.appendChild(none)
+      return box
+    }
+    const chs = flowChapters(one, screen)
+    // the ONE recording, PAUSED at start — chapters seek it (the server's byte-range support makes
+    // a MediaRecorder webm seekable); manual advance only, nothing plays until a chapter is clicked
+    let video = null
+    let ready = false
+    let pending = null   // a chapter seek clicked before the metadata (and duration probe) landed
+    let endAt = null     // the current chapter's boundary — playback pauses there (manual advance)
+    if (one.video) {
+      const player = document.createElement('div'); player.className = 'flplayer'
+      video = document.createElement('video')
+      video.controls = true; video.playsInline = true; video.preload = 'metadata'
+      video.src = one.voiced || one.video
+      const settle = function () {
+        ready = true
+        if (pending != null) { video.currentTime = pending; pending = null; video.play().catch(function () {}) }
+        else video.currentTime = 0
+      }
+      video.addEventListener('loadedmetadata', function () {
+        if (video.duration === Infinity) {
+          // MediaRecorder webm carries no duration header — probe the file's end (the server
+          // answers Range requests) so chapter seeks can land, then settle on the pending chapter
+          // or back to the paused start
+          const back = function () { video.removeEventListener('seeked', back); settle() }
+          video.addEventListener('seeked', back)
+          video.currentTime = 1e9
+        } else settle()
+      })
+      video.addEventListener('timeupdate', function () {
+        // MANUAL ADVANCE: pause at the chapter boundary — the person advances by clicking the next
+        // chapter, and on a failed chapter this same pause is where playback STOPS for good
+        if (endAt != null && video.currentTime >= endAt) video.pause()
+      })
+      player.appendChild(video)
+      box.appendChild(player)
+    }
+    const strip = document.createElement('div'); strip.className = 'flstrip'
+    const fmtT = function (ms) {
+      const s = Math.max(0, Math.round(ms / 1000))
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+    }
+    const MARK = { p: '✓', f: '✗', nr: '◌' }
+    const seekChapter = function (i) {
+      const c = chs[i]
+      if (!video || c.t == null) return
+      for (const el of strip.querySelectorAll('.flchap.on')) el.classList.remove('on')
+      strip.children[i].classList.add('on')
+      // play THIS chapter only: the boundary is the next recorded chapter's start
+      endAt = null
+      for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { endAt = chs[k].t / 1000; break }
+      if (!ready) { pending = c.t / 1000; return }
+      video.currentTime = c.t / 1000
+      video.play().catch(function () {})
+    }
+    chs.forEach(function (c, i) {
+      // a not-reached chapter never plays — it is a rendered absence, not a segment
+      const el = document.createElement(c.st === 'nr' ? 'div' : 'button')
+      el.className = 'flchap ' + c.st
+      const meta = document.createElement('div'); meta.className = 'flmeta'
+      const mk = document.createElement('span'); mk.className = 'flmk'; mk.textContent = MARK[c.st]
+      meta.appendChild(mk)
+      if (c.t != null) { const tt = document.createElement('span'); tt.className = 'flt'; tt.textContent = fmtT(c.t); meta.appendChild(tt) }
+      el.appendChild(meta)
+      // the still: the proof frame nearest this chapter's seek point, when the record cut one
+      if (c.t != null) {
+        let end = null
+        for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { end = chs[k].t; break }
+        const frame = (one.frames || []).find(function (f) {
+          return typeof f.t === 'number' && f.t >= c.t && (end == null || f.t < end)
+        })
+        if (frame) {
+          const img = document.createElement('img')
+          img.loading = 'lazy'; img.src = frame.img; img.alt = frame.cap || 'chapter still'
+          el.appendChild(img)
+        }
+      }
+      const stage = document.createElement('div'); stage.className = 'flstage'; stage.textContent = c.title
+      el.appendChild(stage)
+      if (c.st === 'f' && c.beat) {
+        const beat = document.createElement('div'); beat.className = 'flbeat'
+        beat.textContent = '✗ failed at — ' + c.beat
+        el.appendChild(beat)
+      }
+      if (c.st === 'nr') {
+        const why = document.createElement('div'); why.className = 'flnr'
+        why.textContent = c.t == null ? 'declared, never reached' : 'after the failure — not reached'
+        el.appendChild(why)
+      }
+      // the requirement chips this chapter proves — each opens that requirement in Focus; a chapter
+      // can land on a hash route with no card (howitworks, a probe page), whose ids render INERTLY
+      const reqs = document.createElement('div'); reqs.className = 'flreqs'
+      for (const rid of c.reqs || []) {
+        const home = c.screen === screen ? dt : document.querySelector('.dt[data-screen="' + c.screen + '"]')
+        if (home) {
+          const chip = document.createElement('button'); chip.className = 'flreq'
+          chip.dataset.r = rid
+          chip.textContent = (c.screen === screen ? '' : c.screen + ':') + rid
+          chip.addEventListener('click', function (e) {
+            e.stopPropagation()
+            if (home === dt) { setView(dt, 'focus', rid); return }
+            const j = SCREENS.indexOf(c.screen)
+            if (j >= 0) { open(j); setView(home, 'focus', rid) }
+          })
+          reqs.appendChild(chip)
+        } else {
+          const chip = document.createElement('span'); chip.className = 'flreq inert'
+          chip.textContent = (c.screen ? c.screen + ':' : '') + rid
+          reqs.appendChild(chip)
+        }
+      }
+      if (reqs.children.length) el.appendChild(reqs)
+      if (c.st !== 'nr') el.addEventListener('click', function (e) {
+        if (e.target.closest('img')) return   // the still opens the zoom — a different intent
+        seekChapter(i)
+      })
+      strip.appendChild(el)
+    })
+    box.appendChild(strip)
+    return box
+  }
+
+  // THE VIEW TOGGLE (board R13): Focus / Grid / Flow, one segmented control in the detail header
+  // (the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the hidden shared
+  // source, and NOTHING un-hides .cols). Focus is the default and opens the reader; Grid is the
+  // behavior grid (one row per requirement — Grid replaced the compact List, 2026-08-18); Flow is
+  // the chaptered player over each test's recording, rebuilt from the folded records on every
+  // entry. Switching tears down any open reader (restoring its moved nodes).
   function setView (dt, view, startId) {
     const gv = dt.querySelector('.gridview')
+    const fv = dt.querySelector('.flowview')
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
-    if (view === 'grid') { if (gv) gv.hidden = false }
-    else { if (gv) gv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
+    if (view === 'grid') { if (gv) gv.hidden = false; if (fv) fv.hidden = true }
+    else if (view === 'flow') {
+      if (gv) gv.hidden = true
+      // build AFTER closeFocus put any borrowed test node back — Flow reads the whole pane
+      if (fv) { buildFlow(dt); fv.hidden = false }
+    } else { if (gv) gv.hidden = true; if (fv) fv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
   }
   for (const b of document.querySelectorAll('.viewseg .vseg'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })
@@ -422,26 +632,11 @@ const B = window.__BOARD__ || {}
   for (const h of document.querySelectorAll('.test > .th'))
     h.addEventListener('click', () => h.parentElement.classList.toggle('open'))
 
-  // The many-to-many link, lit on hover (board R5): hover a requirement and every test that tags it
-  // lights up; hover a test and every requirement it covers lights up. Leaving clears it. Scoped to
-  // the open detail so a hover never reaches across into a hidden screen's panes.
-  const clearHot = () => document.querySelectorAll('.hot').forEach(e => e.classList.remove('hot'))
-  for (const rq of document.querySelectorAll('.req')) {
-    rq.addEventListener('mouseenter', () => {
-      clearHot(); const r = rq.dataset.r; const pane = rq.closest('.dt')
-      if (pane) pane.querySelectorAll('.test .tag[data-r="' + r + '"]').forEach(t => t.closest('.test').classList.add('hot'))
-    })
-    rq.addEventListener('mouseleave', clearHot)
-  }
-  for (const ts of document.querySelectorAll('.test')) {
-    ts.addEventListener('mouseenter', () => {
-      clearHot(); const pane = ts.closest('.dt'); if (!pane) return
-      ts.querySelectorAll('.tag[data-r]').forEach(tag => {
-        const rq = pane.querySelector('.req[data-r="' + tag.dataset.r + '"]'); if (rq) rq.classList.add('hot')
-      })
-    })
-    ts.addEventListener('mouseleave', clearHot)
-  }
+  // (The many-to-many hover cross-light — hover a requirement, its tests lit indigo, and back —
+  // left with the Columns view, 2026-08-18: the .req/.test rows it wired are the hidden shared
+  // source now, unreachable by a pointer. The link itself is served visibly instead: Focus's proof
+  // line resolves a requirement's covering test by tag (board R5's test asserts it), and a Flow
+  // chapter's requirement chips carry the same indigo hover cue the rows used to.)
 
   // The full log opens in ONE floating window (board R10), populated from the test's own log history
   // (the .tstlog the run machinery fills). No full-viewport scrim — the board stays visible behind it.
@@ -1319,6 +1514,7 @@ const B = window.__BOARD__ || {}
         const one = (rec[slot.dataset.title] || [])[0]
         const steps = (one && one.steps) || []
         slot._steps = steps                    // the all-steps window reads the raw record here
+        slot._hist = rec[slot.dataset.title] || []   // the Flow view reads the folded records here
         const rows = [...slot.querySelectorAll('.beat')]
 
         // a prove-step's label is the requirement's TITLE (the id alone means nothing to a person)
@@ -1422,6 +1618,11 @@ const B = window.__BOARD__ || {}
     }
     // reopen the reader now that its borrowed node has been folded back into the pane
     if (reopen && reopen.dt) setView(reopen.dt, 'focus', reopen.id)
+    // an OPEN Flow view rebuilds off the fresh fold (it reads records and moves no shared nodes,
+    // so a rebuild is safe) — this is also what fills it in on a fresh deep-link, where the boot
+    // fold lands after the view was first built
+    const openFv = document.querySelector('.dt:not([hidden]) .flowview:not([hidden])')
+    if (openFv) buildFlow(openFv.closest('.dt'))
   }
   loadRuns()
 

@@ -196,7 +196,7 @@ const reqPane = s => `<div class="pane reqpane">
 // absent entirely for a prose-only requirement, the same empty-string contract as the source row's body),
 // and its PROOF: the covering test and verdict from r.tests, or the honest "no test asserts this yet"
 // note (mirroring reqRow's .covers line). A row click opens that requirement in Focus. It is one of
-// the views of the same requirements (Focus, Grid — the Columns view retired 2026-08-18), switched by
+// the views of the same requirements (Focus, Grid, Flow — the Columns view retired 2026-08-18), switched by
 // the header toggle; it stores nothing new. The label spells the four-word vocabulary out (board R4,
 // amended 2026-08-17) since this row has room where the source row's compact chip does not.
 // EVIDENCE BOUNDARY (deliberate, task 8a): a Grid row does NOT expand gif/frame evidence inline —
@@ -1222,6 +1222,7 @@ export function build () {
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="${i}">Focus</button>
       <button class="vseg" data-view="grid" data-i="${i}">Grid</button>
+      <button class="vseg" data-view="flow" data-i="${i}">Flow</button>
     </div>
     <button class="close btn">Close</button>
   </div>
@@ -1231,6 +1232,7 @@ export function build () {
       ${testPane(s)}
     </div>
     ${gridPane(s)}
+    <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>`).join('')
@@ -1352,7 +1354,7 @@ export function build () {
 
   /* the two BAKED SOURCE PANES (requirements + tests). Their Columns VIEW was retired 2026-08-18
      (board R13): .cols ships hidden (inline display:none in the markup) and nothing un-hides it —
-     the rows stay in the DOM as the shared source Focus and Grid read. The .pane rules below are
+     the rows stay in the DOM as the shared source Focus, Grid and Flow read. The .pane rules below are
      kept: hidden reads and the restored/moved nodes still rely on this markup's structure. */
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
     min-height:340px; }
@@ -1365,7 +1367,7 @@ export function build () {
 
   /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
      description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
-     screenshot strip, then the recording). One of the views — Focus / Grid — switched by the header
+     screenshot strip, then the recording). One of the views — Focus / Grid / Flow — switched by the header
      toggle. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
      the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
@@ -1494,7 +1496,7 @@ export function build () {
   .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
     box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
 
-  /* the view TOGGLE in the detail header — Focus / Grid (board R13) */
+  /* the view TOGGLE in the detail header — Focus / Grid / Flow (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
   .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:0 16px; border:0; background:transparent;
     color:var(--ink-3); cursor:pointer; letter-spacing:.02em; display:inline-flex; align-items:center; }
@@ -1532,6 +1534,55 @@ export function build () {
   .grrow .grproof { grid-column:3 / -1; min-width:0; font-size:var(--t-sm); color:var(--ink-3);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+  /* the FLOW view (board R13): each test's run played as its authored flow — ONE recording seeked
+     into chapters (derived by tools/flow.mjs, delivered on the folded record), never cut. The strip
+     carries stage name · still · requirement chips. Status is hue PLUS a mark, never hue alone:
+     ✓ passed (koke) · ✗ failed with its beat (bengara) · ◌ not-reached (ink-4). Pairs re-measured
+     for AA: --koke on --paper 7.0:1, --bengara on --paper 6.4:1, --ink-4 on --paper 5.2:1,
+     --ink-3 on --card 6.42:1, --ai on --ai-tint is the documented chip.rev pair. */
+  .flowview { display:flex; flex-direction:column; gap:var(--s4); width:100%; max-width:980px;
+    margin:0 auto; }
+  .flowview[hidden] { display:none; }
+  .fltest { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    padding:var(--s4); }
+  .flhead { display:flex; align-items:center; gap:var(--s3); }
+  .flttl { font-size:var(--t-md); font-weight:500; color:var(--ink); min-width:0; }
+  .flkind { font:var(--t-micro) var(--mono); color:var(--ink-3); border:1px solid var(--hair-2);
+    border-radius:999px; padding:1px 8px; flex:none; }
+  .flnone { font-size:var(--t-sm); color:var(--ink-3); margin-top:var(--s2); }
+  .flplayer { margin-top:var(--s3); }
+  .flplayer video { width:100%; max-height:430px; background:var(--ink); border-radius:var(--r);
+    border:1px solid var(--hair-2); object-fit:contain; display:block; }
+  .flstrip { display:flex; gap:var(--s2); overflow-x:auto; margin-top:var(--s3);
+    padding-bottom:var(--s1); }
+  .flchap { flex:0 0 190px; min-width:0; text-align:left; font:inherit; color:var(--ink-2);
+    background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm);
+    padding:var(--s2); display:flex; flex-direction:column; gap:var(--s1); }
+  button.flchap { cursor:pointer; }
+  button.flchap:hover { background:var(--wash); border-color:var(--hair-2); }
+  .flchap.on { border-color:var(--ink); }
+  .flchap img { width:100%; border-radius:var(--r-sm); border:1px solid var(--hair); display:block; }
+  .flchap .flmeta { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono); }
+  .flchap .flmk { font-weight:600; }
+  .flchap.p .flmk { color:var(--koke); }
+  .flchap.f .flmk, .flchap.f .flt { color:var(--bengara); }
+  .flchap.nr .flmk { color:var(--ink-4); }
+  .flchap .flt { color:var(--ink-4); }
+  .flchap .flstage { font-size:var(--t-sm); line-height:1.4; color:var(--ink); }
+  .flchap.nr .flstage { color:var(--ink-4); }
+  /* the failing beat, named on the chapter that stopped the flow (rule 3) */
+  .flchap .flbeat { font-size:var(--t-xs); line-height:1.4; color:var(--bengara); }
+  .flchap .flnr { font-size:var(--t-xs); color:var(--ink-4); }
+  .flreqs { display:flex; gap:5px; flex-wrap:wrap; margin-top:auto; }
+  /* the requirement chips a chapter proves — neutral metadata at rest; the transient INDIGO tint on
+     hover is the board's many-to-many coverage cue (it moved here from the retired Columns view's
+     row hover). A chip opens that requirement in Focus; an id whose screen has no card is inert. */
+  .flreq { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm); border:0;
+    background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
+  button.flreq { cursor:pointer; }
+  button.flreq:hover { background:var(--ai-tint); color:var(--ai); }
+  .flreq.inert { opacity:.75; }
+
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
   .rhint { font-size:var(--t-xs); color:var(--ink-4); white-space:nowrap; overflow:hidden;
@@ -1552,7 +1603,6 @@ export function build () {
   .req:last-child { border-bottom:0; }
   .req > .h { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); cursor:pointer; }
   .req:hover { background:var(--wash); }
-  .req.hot { background:var(--ai-tint); }
   .req .h .chip { padding:3px; }
   .req .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
   .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -1593,10 +1643,11 @@ export function build () {
   .test:last-child { border-bottom:0; }
   .test > .th { cursor:pointer; padding:var(--s3) var(--s4); }
   .throw { display:flex; align-items:center; gap:var(--s3); }
-  /* hover the item → grey; its linked item(s) → blue (.hot). The WHOLE item highlights (header +
-     expanded body), full-width, and fades in/out. Same both directions, reqs ↔ tests. */
+  /* hover the item → grey; the WHOLE item highlights (header + expanded body), full-width, and
+     fades in/out. (The old req ↔ test blue cross-light — .hot — left with the Columns view,
+     2026-08-18: these rows are the hidden shared source now, and the many-to-many cue lives on
+     Focus's proof line and the Flow chapters' requirement chips.) */
   .test:hover { background:var(--wash); }
-  .test.hot { background:var(--ai-tint); }
   .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
@@ -1624,12 +1675,11 @@ export function build () {
     background:var(--paper); padding:0 5px; border-radius:3px; }
   .tacts { flex-wrap:wrap; justify-content:flex-end; }
   .tags { display:flex; gap:5px; align-items:center; flex-wrap:wrap; }
-  /* coverage refs — quiet, NEUTRAL metadata at rest. They tint indigo only on hover, tying the test
-     to the requirement(s) it covers — the one place indigo is still spent on this board (a transient
-     link, not a status; "your turn" itself no longer exists, the human, 2026-08-17). */
+  /* coverage refs — quiet, NEUTRAL metadata. (Their indigo hover tint retired with the Columns
+     view, 2026-08-18 — these rows are hidden source now, and the transient indigo coverage cue
+     lives on the Flow chapters' .flreq chips above; still a link, never a status.) */
   .tag { font:var(--t-micro) var(--mono); padding:1px 7px; border-radius:var(--r-sm);
-    background:var(--wash); color:var(--ink-3); transition:background .12s, color .12s; }
-  .test:hover .th .tag, .test.hot .th .tag { background:var(--ai-tint); color:var(--ai); }
+    background:var(--wash); color:var(--ink-3); }
   .test .tacts { opacity:1; margin-left:0; display:inline-flex; gap:var(--s2); }
   /* full log rides the actions row as a bordered button beside Watch — NOT indigo: it wears the
      neutral .btn sm like Run/Watch. It opens a floating window. */

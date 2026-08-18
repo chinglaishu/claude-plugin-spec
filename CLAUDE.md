@@ -127,11 +127,14 @@ outside the tokens, in the board. Hue names a state but never carries it alone (
 mark). **Indigo is currently unused as a status colour** — it used to mean "your turn" (a screen whose
 PRD still carried a `guess:` flag, waiting on the human's correction), but that state was removed
 along with the gate itself (board R8, init R3; the human, 2026-08-17): there is no draft/guess state
-left for it to signal. It stays defined and still tints on hover to show the many-to-many coverage
-link (a transient interaction cue, not a persistent status) — do not assign it to a new *status*
-without the human's sign-off; it is reserved for a future `Changed` drift state. Exactly **one**
-inverted element per screen. An action wears the colour of the state it produces. Every text/background
-pair must pass **WCAG AA (4.5:1)** — re-measure after any colour change.
+left for it to signal. It stays defined and is still spent only as a transient hover cue for the
+many-to-many coverage link — since the Columns view retired (2026-08-18) that cue lives on the Flow
+chapters' requirement chips (`.flreq`), not on row hover: the old `.req`/`.test` hover cross-light
+wired rows that are now the hidden shared source, so the wire was removed with the view. Do not
+assign indigo to a new *status* without the human's sign-off; it is reserved for a future `Changed`
+drift state. Exactly **one** inverted element per screen. An action wears the colour of the state it
+produces. Every text/background pair must pass **WCAG AA (4.5:1)** — re-measure after any colour
+change.
 
 ## Traps that have already cost hours — do not rediscover them
 
