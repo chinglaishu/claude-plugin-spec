@@ -26,20 +26,21 @@ const BOARD = SELF_RUN ? '/?runid=' + SELF_RUN + '#/board' : '/#/board'
 // Two of the board's OWN test titles — any real board case works as "a fast, deterministic run to
 // drive the panel". Kept in sync with spec/board/test.spec.ts; they are safe cases (no state writes).
 const B_R1 = 'Home lists every screen as a card'
-const B_R2 = 'The detail opens as two independent columns'
-// Open a collapsed test row so its steps / log machinery (inside the .tbody) becomes visible.
-// Idempotent: clicking .th TOGGLES a case open/shut, so a blind click would CLOSE one that is already
-// open (hiding the very beats the caller is about to assert). Open only when it is not already open.
-const openCase = async (loc: any) => {
-  const open = await loc.evaluate((el: any) => el.classList.contains('open')).catch(() => false)
-  if (!open) await loc.locator('.th').click()
-}
-// Focus is the live default now (board R13); these tests read a screen's COLUMNS — its test rows — so
-// switch there after opening. The run-all/close buttons in the header work in any view.
-const showCols = async (page: any, screen: string) => {
+const B_R2 = 'A requirement and its proof read side by side, each scrolling on its own'
+// Focus is the live default (board R13) and the Columns view is retired (2026-08-18): a screen's
+// test rows live baked in the HIDDEN source pane, which Focus borrows from and loadRuns folds into.
+// These tests read the per-case records off those hidden rows by count/text/attached (visibility
+// assertions do not apply to them). Switch to GRID first: it closes the reader, so every borrowed
+// node is back home and the whole pane can be read uniformly — and settle the boot fold before
+// switching, because loadRuns close-fold-reopens the reader and would flip a mid-fold view change
+// back to Focus. The fold fills every case's .tmeta in the same synchronous pass, so a filled meta
+// line means the fold is completely done.
+const toGrid = async (page: any, screen: string) => {
   const dt = page.locator('.dt[data-screen="' + screen + '"]:not([hidden])')
-  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
-  await expect(dt.locator('.cols')).toBeVisible()
+  // dt-scoped, not pane-scoped: on a one-test screen the reader may hold the only test node
+  await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
+  await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+  await expect(dt.locator('.gridview')).toBeVisible()
 }
 
 // Starting a run FROM this test process, named as nested inside the run executing this spec — the
@@ -176,10 +177,10 @@ test('running one screen leaves every other screen\'s E2E result standing', asyn
 
   // conflicts did not run, yet its E2E tests are STILL on the board — folded across runs, never
   // blanked. Replacing the index instead of folding is the bug that made one Run empty every other
-  // screen's column; here it would leave conflicts' test list empty.
+  // screen's test list; here it would leave conflicts' baked test rows empty.
   await page.goto('/#/conflicts')
-  await showCols(page, 'conflicts')
-  await expect(page.locator('.dt[data-screen="conflicts"]:not([hidden]) .testpane .test').first()).toBeVisible()
+  await toGrid(page, 'conflicts')
+  await expect(page.locator('.dt[data-screen="conflicts"]:not([hidden]) .testpane .test')).not.toHaveCount(0)
 })
 
 test('R6/R8 — a run saves its whole log, and records every test case on its own', async ({ request }) => {
@@ -199,7 +200,7 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
   // failure could be read back long after the panel that showed it live is gone
   expect(log).toContain('Home lists every screen as a card')
-  expect(log).toContain('The detail opens as two independent columns')
+  expect(log).toContain('A requirement and its proof read side by side, each scrolling on its own')
   expect(log.length).toBeGreaterThan(200)
 
   // R8: each case keeps its OWN record — a self-contained log leading with what it was and how it
@@ -244,22 +245,23 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   await idle(request)
 
   await page.goto('/#/board')
-  await showCols(page, 'board')
-  // the case that DID run keeps its record, of course (open it — the machinery lives in the .tbody)
+  await toGrid(page, 'board')
+  // the case that DID run keeps its record, of course — a beat with a recorded OUTCOME (not
+  // pending) proves the fold reached it (the rows are read hidden; board R10's rendering of them
+  // is proven on the board screen through the Focus reader)
   const ran = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R1 }).first()
-  await openCase(ran)
-  await expect(ran.locator('.tststeps .beat').first()).toBeVisible()   // ≥1 named beat inline (board R10)
+  await expect(ran.locator('.tststeps .beat:not(.pending)').first()).toBeAttached()   // ≥1 overlaid beat
   // and so does a case the filtered run never touched — this is the bit that was being blanked
   const untouched = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: B_R2 }).first()
-  await openCase(untouched)
-  await expect(untouched.locator('.tststeps .beat').first(), 'every case still shows its beats').toBeVisible()
-  await expect(untouched.locator('[data-steps]'), 'every case can open its raw steps').toBeVisible()
+  await expect(untouched.locator('.tststeps .beat:not(.pending)').first(),
+    'every case still shows its beats, outcome overlaid').toBeAttached()
+  await expect(untouched.locator('[data-steps]'), 'every case can open its raw steps').toHaveCount(1)
   // the whole log now opens in ONE place — the popup (board R10). The inline .tstlog is still FOLDED
   // for every case (this fold is the bit that was being blanked); its history feeds the popup and its
   // affordance is the full-log link. Assert the fold reached this untouched case, and the link is there.
   await expect(untouched.locator('.tstlog .lghist > li').first(),
     'every case still keeps its own folded log history').toBeAttached()
-  await expect(untouched.locator('.loglink'), 'every case can open its full log in a window').toBeVisible()
+  await expect(untouched.locator('.loglink'), 'every case can open its full log in a window').toHaveCount(1)
 })
 
 test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, request }) => {
@@ -276,28 +278,25 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
   }
 
   await page.goto('/#/board')
-  await showCols(page, 'board')
+  await toGrid(page, 'board')
   const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
-  await openCase(one)
   // The commit is CLEAR on the result itself, not only inside the opened log (the human, 2026-08-13):
-  // the case's always-visible meta line names the commit it last ran against, so which commit a case
-  // passed or failed in is answerable at a glance — the whole point of stamping the commit.
+  // the case's meta line names the commit it last ran against, so which commit a case passed or
+  // failed in is answerable at a glance — the whole point of stamping the commit.
   await expect(one.locator('.tmeta .tsha')).toHaveText(/[0-9a-f]{6,}/)
-  // the folded history is recorded into the hidden .tstlog first (loadRuns); THEN the whole log opens
-  // in ONE floating window (board R10), which copies that history in — read it there, where it shows.
+  // the folded history is recorded into the case's own .tstlog (loadRuns); the ONE floating log
+  // window (board R10 — its open-in-a-window behaviour is proven on the board screen, through the
+  // Focus reader's wired Logs button) COPIES this very list, so read the history where it is folded.
   await expect(one.locator('.tstlog .lghist > li').first()).toBeAttached()
-  await one.locator('.loglink').click()
-  const log = page.locator('#logsheet')
-  await expect(log).toHaveClass(/on/)
   // MORE THAN ONE run of this case is kept — the history, not just the newest. Not an exact count:
   // earlier full runs of this screen covered this case too, and they legitimately count.
-  await expect(log.locator('.logbox summary')).toContainText(/last \d+ runs/)
-  expect(await log.locator('.lghist > li').count(),
+  await expect(one.locator('.tstlog .logbox summary')).toContainText(/last \d+ runs/)
+  expect(await one.locator('.tstlog .lghist > li').count(),
     'the case keeps a history, not one entry').toBeGreaterThanOrEqual(2)
   // and it is capped, so a case cannot grow an unbounded wall of logs
-  expect(await log.locator('.lghist > li').count()).toBeLessThanOrEqual(10)
+  expect(await one.locator('.tstlog .lghist > li').count()).toBeLessThanOrEqual(10)
   // each stamped with when it ran and the commit it ran against
-  await expect(log.locator('.lghist > li').first().locator('.lgh'))
+  await expect(one.locator('.tstlog .lghist > li').first().locator('.lgh'))
     .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
 })
 
@@ -315,29 +314,32 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   await idle(request)
 
   await page.goto('/#/board')
-  await showCols(page, 'board')
+  await toGrid(page, 'board')
   // the OPEN detail view only — every screen's panel is in the DOM, so an unscoped .test would also
-  // pick up screens this run never touched
+  // pick up screens this run never touched. (The rows are read hidden — the record data, not the
+  // rendering, is what this test protects; the rendering is board R10's, proven on its screen.)
   const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')
   const n = await cases.count()
   expect(n, 'the screen has several cases').toBeGreaterThan(3)
   for (let i = 0; i < n; i++) {
     const title = await cases.nth(i).locator('.tt').textContent()
-    await openCase(cases.nth(i))   // the machinery lives in the collapsed .tbody
-    // A case with story steps (flowStep) or proves-tags (checkReq) shows those beats inline, and every
-    // one of them must — that is the fold-across-runs guarantee this test protects. A pure MECHANISM
-    // test (no checkReq, no flowStep — e.g. "hudCheck asserts the value it paints") proves no
-    // requirement and has no story, so board R10 correctly renders it with no beats: there is nothing
-    // to expand. Its LOG still stands (asserted below), which is the record-per-case point either way.
+    // the record reached THIS case: its meta line is filled by the fold, never left blank
+    await expect(cases.nth(i).locator('.tmeta'),
+      'case carries its run meta: ' + title).not.toBeEmpty()
+    // A case with story steps (flowStep) or proves-tags (checkReq) shows those beats inline WITH the
+    // run's outcome overlaid, and every one of them must — that is the fold-across-runs guarantee
+    // this test protects. A pure MECHANISM test (no checkReq, no flowStep — e.g. "hudCheck asserts
+    // the value it paints") proves no requirement and has no story, so board R10 correctly renders
+    // it with no beats. Its LOG still stands (asserted below), the record-per-case point either way.
     if (await cases.nth(i).locator('.tststeps .beat').count()) {
-      await expect(cases.nth(i).locator('.tststeps .beat').first(),
-        'case shows its beats: ' + title).toBeVisible()
+      await expect(cases.nth(i).locator('.tststeps .beat:not(.pending)').first(),
+        'case shows its beats, outcome overlaid: ' + title).toBeAttached()
     }
     // its log is folded per case (feeds the one full-log popup); assert the record reached this case
     await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),
       'case keeps its own folded log history: ' + title).toBeAttached()
     await expect(cases.nth(i).locator('.loglink'),
-      'case can open its full log in a window: ' + title).toBeVisible()
+      'case can open its full log in a window: ' + title).toHaveCount(1)
   }
 })
 

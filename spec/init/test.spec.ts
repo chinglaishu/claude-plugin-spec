@@ -99,16 +99,16 @@ test('R3 — a drafted PRD is canon the moment it is written: one CARD, no guess
     await expect(cardLoc.locator('.pcount')).toHaveCount(1)
     await expect(cardLoc.locator('.rl li')).not.toHaveCount(0)
 
-    // the detail is the two columns and NOTHING to accept — no gate anywhere. Retry the detail nav:
-    // right after the fixture lands, the watcher can briefly rebuild the board stale (no storefront in
-    // its SCREENS list yet), so re-goto until the detail actually shows this screen's columns — the
-    // same settle the _modes specs ride out, and the same one a real browser gets via live-reload.
+    // the detail carries NOTHING to accept — no gate anywhere. Retry the detail nav: right after
+    // the fixture lands, the watcher can briefly rebuild the board stale (no storefront in its
+    // SCREENS list yet), so re-goto until the detail actually opens this screen (the Focus reader
+    // visible — the default view; the Columns view is retired, board R13 2026-08-18) — the same
+    // settle the _modes specs ride out, and the same one a real browser gets via live-reload.
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
     await expect(async () => {
       build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
       await page.goto('/#/' + name)
-      await dt.locator('.viewseg .vseg[data-view="columns"]').click()   // Focus is the default now; this test reads the columns
-      await expect(dt.locator('.cols')).toBeVisible()
+      await expect(dt.locator('.focusov')).toBeVisible()
     }).toPass({ timeout: 15000 })
     await expect(dt.locator('.gate')).toHaveCount(0)                // no acceptance gate (board R8)
     await expect(dt.locator('[data-act="accept"]')).toHaveCount(0)  // nothing to accept

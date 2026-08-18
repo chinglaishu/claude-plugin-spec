@@ -21,15 +21,20 @@ Every screen is one card: its name, its requirement **titles**, and the latest t
 title's description lives one click away in the detail. There is no PRD / draft / screen / E2E column
 strip — that grid mostly repeated what the two ends already said.
 
-## R2 — The detail is two columns, each scrolling on its own
+## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own
 
-The **Columns** view of a screen is two columns: the requirements on the left, the E2E tests that
-prove them on the right. *(It is no longer what a screen opens on — Focus is the default now, R13; the
-human, 2026-08-13. Columns is one of the three views, a click away on the header toggle.)* **Each
-column scrolls independently** — scrolling the tests never moves the requirements, and neither scrolls
-the page; both headers stay pinned. There is no wireframe column and no
-built-screen column: the wireframe is not a specboard artifact at all (R7), and a test's evidence
-(recording, screenshot) lives inside the test (R3, R10).
+The detail pairs a requirement with the evidence that proves it — the reading and its proof — as two
+regions that scroll independently: scrolling the proof never moves the reading, and neither scrolls
+the page; the headers stay pinned. This is the shape of the **Focus** reader (R13): the requirement
+on the left, its covering test's own controls, frames and recording on the right. There is no
+wireframe region and no built-screen region — the wireframe is not a specboard artifact at all (R7),
+and a test's evidence (recording, screenshot) lives inside the test (R3, R10).
+
+*Reworked 2026-08-18 (the human): this described a dedicated two-column "Columns" view. That view is
+retired now that Grid (and, next, Flow) replaces it (R13); the two-region reading-and-proof split it
+embodied now lives in Focus's two containers. The independent-scroll and no-wireframe guarantees are
+unchanged. NOTE to the human: this now overlaps R13's Focus description — you may want to merge R2
+into R13.*
 
 ## R3 — A requirement is a title that expands; a test is a title, a recording, and its tags
 
@@ -232,11 +237,11 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 *Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
 `guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
 
-## R13 — Three views of a screen's requirements: Focus, Grid, Columns
+## R13 — Views of a screen's requirements: Focus and Grid
 
-The detail header carries a **three-way toggle — Focus / Grid / Columns** — three views of the same
-requirements, storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
-— was Columns)*. **Columns** is the two-column view (R2). **Grid** is the behavior grid — one row per
+The detail header carries a **toggle — Focus / Grid** — views of the same requirements, storing
+nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
+— was Columns)*. **Grid** is the behavior grid — one row per
 requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement
 is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan
 at a glance; a row opens that requirement in Focus. **Focus** reads **one requirement
@@ -246,15 +251,14 @@ highlighted) and the *evidence* on the right — a **proof header** whose top ro
 the actions (**Run** always shown, and a **⋯ menu** holding **Run in background · Logs · Steps**),
 then the proof line (which flow proves it and its verdict, with the commit that result ran against),
 the scannable **proof-frame strip** (no label — the stills speak for themselves, the human 2026-08-13),
-and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches views —
-**there is no in-reader Columns button**, because the toggle already is one. The header's Run all,
-toggle and Close are one control family — same height, same pill radius.
+and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches
+views. The header's Run all, toggle and Close are one control family — same height, same pill radius.
 
-The evidence is not a link to the columns but the covering test's **own row, moved in** — its controls,
-its frame strip and its recording are the very wired nodes the columns show (its steps are shown on the
-left as a display clone, the moved node keeping the wired original), relocated and relocated back so the
-two columns are left whole. So the reader duplicates no player, and a requirement nothing tags reads
-honestly unproven rather than borrowing a green.
+The evidence is not a pointer elsewhere but the covering test's **own row, moved in** — its controls,
+its frame strip and its recording are the very wired nodes the board bakes as the shared source for
+Focus and Grid (its steps are shown on the left as a display clone, the moved node keeping the wired
+original), relocated and relocated back so the source rows are left whole. So the reader duplicates no
+player, and a requirement nothing tags reads honestly unproven rather than borrowing a green.
 
 *Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
 carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
@@ -266,6 +270,9 @@ the human's spoken decisions; the tests assert the behaviour.*
 
 *Grid replaces the compact List, 2026-08-18 (the human) — the behavior grid; Flow replaces Columns in
 a following change.*
+
+*Columns retired as a view 2026-08-18 (the human) — Grid and (next) Flow replace it; its baked
+requirement/test rows stay as the shared source Focus and Grid read.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

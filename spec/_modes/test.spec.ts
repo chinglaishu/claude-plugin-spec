@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { readScreen } from '../../tools/spec-store.mjs'
 import { build } from '../../tools/build-board.mjs'
 
-// The ENGINE of the two-column board (board R4/R8). A requirement's state is COMPUTED — proven or
+// The ENGINE of the board's computed state (board R4/R8). A requirement's state is COMPUTED — proven or
 // unproven — from the tests alone, never typed, and there is NO acceptance gate: editing the PRD IS
 // the change, so a stale proof simply reads unproven. There is also no draft/guess state (the human,
 // 2026-08-17): a PRD is canon the moment it is written, full stop — nothing on a screen waits on a
@@ -120,13 +120,14 @@ async function settleAt (page: any, url: string, ready: any) {
   }).toPass({ timeout: 15000 })
 }
 
-test('renders — the detail is the two columns, with NO gate and no accept button', async ({ page }) => {
+test('renders — the detail carries NO gate and no accept button', async ({ page }) => {
   const { name } = makeScreen('probe-render')
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
-  await dt.locator('.viewseg .vseg[data-view="columns"]').click()  // Focus is the default now; this test reads the columns
-  await expect(dt.locator('.cols')).toBeVisible()
-  await expect(dt.locator('.cols .pane')).toHaveCount(2)            // two columns (board R2)
+  // the two baked source panes are in the DOM but HIDDEN — the Columns view is retired (board R13,
+  // 2026-08-18); Focus and Grid read these rows, and count/text assertions work on hidden nodes
+  await expect(dt.locator('.cols')).toBeHidden()
+  await expect(dt.locator('.cols .pane')).toHaveCount(2)           // the baked source panes (board R2)
   await expect(dt.locator('.gate')).toHaveCount(0)                 // no acceptance gate (board R8)
   await expect(dt.locator('[data-act="accept"]')).toHaveCount(0)   // nothing to accept
   await expect(dt.locator('[data-gate]')).toHaveCount(0)           // no gate B / draft gate either
@@ -151,8 +152,8 @@ test('renders — a leftover guess: frontmatter line renders exactly like a norm
 // parses it; enrichReqs attaches it as r.behavior). The board renders that shape as a structured
 // block ABOVE the prose; a prose-only requirement renders NO block at all — the empty-string
 // contract, so nothing changes for every PRD that does not carry the triple. Focus must show the
-// same block because the reader clones the Columns .body verbatim (stripping only .covers) —
-// asserted here so a client.js change can never silently drop it.
+// same block because the reader clones the baked source row's .body verbatim (stripping only
+// .covers) — asserted here so a client.js change can never silently drop it.
 test('renders — a Given/When/Then triple leads the requirement, and a prose-only one gets no block', async ({ page }) => {
   const { name } = makeScreen('probe-behavior',
     '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n\n' +
@@ -161,14 +162,14 @@ test('renders — a Given/When/Then triple leads the requirement, and a prose-on
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
 
-  // default FOCUS view: the reader's clone of the Columns .body carries the block untouched
+  // default FOCUS view: the reader's clone of the baked row's .body carries the block untouched
   const fbeh = dt.locator('.fread .fbody .behavior')
   await expect(fbeh).toHaveCount(1)
   await expect(fbeh.locator('.brow')).toHaveCount(3)
   await expect(fbeh).toContainText('a list with two items')
 
-  // COLUMNS view: the block renders inside R1's .body, three labelled rows carrying the text
-  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
+  // THE BAKED SOURCE ROW (hidden — the Columns view is retired; count/text reads work there): the
+  // block renders inside R1's .body, three labelled rows carrying the text
   const beh = dt.locator('.reqpane .req[data-r="R1"] .body .behavior')
   await expect(beh).toHaveCount(1)
   await expect(beh.locator('.brow')).toHaveCount(3)

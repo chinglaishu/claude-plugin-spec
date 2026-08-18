@@ -96,9 +96,9 @@ const B = window.__BOARD__ || {}
     const bar = dt.querySelector('.dbarhook'); if (bar) bar.classList.add('dbar')
     // open in the default FOCUS view (board R13, the human's call 2026-08-13): the reader opens straight
     // away on the first requirement. A screen with no requirements can't build a reader — fall back to
-    // the columns so it is never blank.
+    // the Grid (empty, but a real view; the Columns view is retired, board R13 2026-08-18).
     setView(dt, 'focus')
-    if (!dt.querySelector('.focusov')) setView(dt, 'columns')
+    if (!dt.querySelector('.focusov')) setView(dt, 'grid')
     safeFit()
   }
   const open = (i, push = true) => {
@@ -150,13 +150,13 @@ const B = window.__BOARD__ || {}
       if (e.target.closest('img, button, a, input, label')) return
       open(c.dataset.i)
     })
-  // closing the detail also tears down an open focus reader and restores the columns for next time
+  // closing the detail also tears down an open focus reader, returning every borrowed node to the
+  // baked source panes (.cols stays hidden — it is the data source, not a view; board R13 2026-08-18)
   function closeFocus () {
     for (const o of document.querySelectorAll('.focusov')) {
       if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
-      // else o.remove() would destroy the real nodes the columns still need
-      const dtx = o.closest('.dt'); const cx = dtx && dtx.querySelector('.cols')
-      if (cx) cx.style.display = ''
+      // else o.remove() would destroy the real nodes the source panes still need
+      const dtx = o.closest('.dt')
       const foot = dtx && dtx.querySelector('.dtfoot')   // the pager lived here — clear and hide the footer
       if (foot) { foot.innerHTML = ''; foot.hidden = true }
       o.remove()
@@ -174,11 +174,11 @@ const B = window.__BOARD__ || {}
 
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
-  // recording). One of three views (Focus / Grid / Columns) switched by the header toggle; no in-reader
-  // Columns button. No new state — the same derived chips the columns show, one screenful each.
+  // recording). One of the views (Focus / Grid) switched by the header toggle. No new state — the
+  // same derived chips the baked source rows carry, one screenful each.
   function buildFocus (dt, startId) {
-    const cols = dt.querySelector('.cols'); const scroll = dt.querySelector('.dtscroll')
-    if (!cols || !scroll) return
+    const scroll = dt.querySelector('.dtscroll')
+    if (!scroll) return
     const reqs = [].slice.call(dt.querySelectorAll('.reqpane .req')).map(function (r) {
       const idEl = r.querySelector('.id'); const ttlEl = r.querySelector('.rt'); const bodyEl = r.querySelector('.body')
       let body = ''
@@ -195,7 +195,7 @@ const B = window.__BOARD__ || {}
     // The RIGHT card MOVES the primary covering test's real node in (controls + frame strip stay wired —
     // no rebuilt player, R13) and RELOCATES its recording below the strip; the LEFT card shows a CLONE
     // of its steps (display-only — the moved node keeps the original, hidden, so the Steps window still
-    // reads it). All moves are tracked and undone on leave, so the two columns are left exactly whole.
+    // reads it). All moves are tracked and undone on leave, so the source rows are left exactly whole.
     const moved = []
     function move (node, host, flatten) {
       moved.push({ node: node, parent: node.parentNode, next: node.nextSibling })
@@ -240,9 +240,9 @@ const B = window.__BOARD__ || {}
       const r = reqs[cur]
       ov._curId = r.id        // so a loadRuns fold can reopen this reader on the SAME requirement
       restoreMoved()          // reclaim the previous page's moved nodes BEFORE wiping, or innerHTML=''
-      page.innerHTML = ''     // would destroy the real nodes the columns still need
+      page.innerHTML = ''     // would destroy the real nodes the source panes still need
       // LEFT — the reading: the id + state meta line rides INSIDE the card now (no standalone bar
-      // above the columns), so the title and the proof block both start at the top
+      // above the reader), so the title and the proof block both start at the top
       const read = document.createElement('div'); read.className = 'fread'
       const rmeta = document.createElement('div'); rmeta.className = 'frmeta'
       const fid = document.createElement('span'); fid.className = 'fid'; fid.textContent = r.id
@@ -274,7 +274,7 @@ const B = window.__BOARD__ || {}
         const by = document.createElement('div'); by.className = 'fpby'
         by.innerHTML = (r.status === 'passed' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
-          (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more in Columns</span>' : '') +
+          (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more cover it</span>' : '') +
           (r.status === 'passed' ? '' : ' — not passed yet')
         ph.appendChild(by)
         const shaEl = primary.querySelector('.tmeta .tsha')
@@ -291,7 +291,7 @@ const B = window.__BOARD__ || {}
         move(primary, ev, true)
         // relocate the wired per-test controls into the proof header: Run (watchable) always visible,
         // Run in background / Logs / Steps behind the ⋯ menu. They are the real nodes, moved (and undone
-        // on leave) so the columns keep their working controls.
+        // on leave) so the source rows keep their working controls.
         const tacts = primary.querySelector('.tacts')
         const runWatch = tacts && tacts.querySelector('.runone[data-headed]')
         const runBg = tacts && tacts.querySelector('.runone:not([data-headed])')
@@ -390,21 +390,20 @@ const B = window.__BOARD__ || {}
     // reads as its own strip; shown only while focus is open, cleared by closeFocus
     const foot = dt.querySelector('.dtfoot')
     if (foot) { foot.innerHTML = ''; foot.appendChild(pager); foot.hidden = false }
-    cols.style.display = 'none'; scroll.appendChild(ov); render()
+    scroll.appendChild(ov); render()   // .cols is baked hidden — the data source, never a view
   }
 
-  // THE THREE-VIEW TOGGLE (board R13): Focus / Grid / Columns, one segmented control in the detail
-  // header. Focus is the default and opens the reader; Grid is the behavior grid (one row per
-  // requirement — Grid replaced the compact List, 2026-08-18); Columns is still present this step
-  // (Flow replaces it in a following change). Switching tears down any open reader (restoring its
-  // moved nodes) — there is no in-reader Columns button.
+  // THE VIEW TOGGLE (board R13): Focus / Grid, one segmented control in the detail header (Flow
+  // arrives next; the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the
+  // hidden shared source, and NOTHING un-hides .cols). Focus is the default and opens the reader;
+  // Grid is the behavior grid (one row per requirement — Grid replaced the compact List, 2026-08-18).
+  // Switching tears down any open reader (restoring its moved nodes).
   function setView (dt, view, startId) {
-    const cx = dt.querySelector('.cols'); const gv = dt.querySelector('.gridview')
+    const gv = dt.querySelector('.gridview')
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
-    if (view === 'grid') { if (cx) cx.style.display = 'none'; if (gv) gv.hidden = false }
-    else if (view === 'focus') { if (cx) cx.style.display = 'none'; if (gv) gv.hidden = true; buildFocus(dt, startId) }
-    else { if (cx) cx.style.display = ''; if (gv) gv.hidden = true }   // columns
+    if (view === 'grid') { if (gv) gv.hidden = false }
+    else { if (gv) gv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
   }
   for (const b of document.querySelectorAll('.viewseg .vseg'))
     b.addEventListener('click', e => { const dt = e.currentTarget.closest('.dt'); if (dt) setView(dt, e.currentTarget.dataset.view) })

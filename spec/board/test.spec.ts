@@ -3,21 +3,27 @@ import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
 // were deleted. The redesigned board is two ends only: the requirements (the source of truth) and
-// the tests that prove them, with drift computed and one human gate. A test that asserted the page
+// the tests that prove them, with drift computed and no gate (R8). A test that asserted the page
 // "loaded" would pass with every requirement removed — a smoke alarm with the battery out.
 
-// Focus is the live default now (R13, the human's call 2026-08-13). Most tests below exercise the
-// COLUMNS view, so they switch to it after opening (or after a reload, which reopens in Focus); the
-// focus-default itself is asserted where it belongs, in the three-view test.
-const toColumns = async (page) => {
-  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  await dt.locator('.viewseg .vseg[data-view="columns"]').click()
-  await expect(dt.locator('.cols')).toBeVisible()
-}
+// Focus is the live default (R13, the human's call 2026-08-13), and the old Columns VIEW is retired
+// (2026-08-18) — its two panes stay baked inside the permanently-hidden .cols as the SHARED SOURCE
+// Focus and Grid read (Focus MOVES .testpane nodes into its reader). So tests reach a screen's rows
+// two ways now: count/text/class reads work on the hidden baked rows directly; anything that needs
+// a visible or interactive surface drives Focus or Grid.
 const openDetail = async (page) => {
   await page.goto('/#/board')
-  await toColumns(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await expect(dt.locator('.focusov')).toBeVisible()
+  // settle the boot fold: loadRuns close-fold-reopens the reader (CLAUDE.md), and a view switched
+  // mid-fold gets flipped back to Focus by that reopen. The fold fills every case's .tmeta in the
+  // same synchronous pass that reopens, so a filled meta line means the fold is completely done.
+  // (dt-scoped, not pane-scoped — the reopened reader has borrowed one test node back out.)
+  await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
 }
+// the first test in the file — R1's only prover, so it is also the node the default Focus page
+// (R1) borrows into its reader, and the title several stubbed-record tests key on
+const R1_TITLE = 'Home lists every screen as a card'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/')
@@ -40,22 +46,35 @@ test('Home lists every screen as a card', async ({ page }) => {
   await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
 })
 
-test('The detail opens as two independent columns', async ({ page }) => {
+test('A requirement and its proof read side by side, each scrolling on its own', async ({ page }) => {
   await coverReqs('R2')
   await openDetail(page)
   await checkReq('R2', async () => {
-    const panes = page.locator('.dt[data-screen="board"]:not([hidden]) .cols .pane')
-    await expect(panes).toHaveCount(2)
-    await expect(page.locator('#reqpane h2')).toContainText('Requirements')
-    await expect(page.locator('#testpane h2')).toContainText('tests')
-    // each pane scrolls INDEPENDENTLY — its own overflow, a bounded height, so scrolling one never
-    // moves the other and neither scrolls the page
-    for (const id of ['#reqpane', '#testpane']) {
-      const oflow = await page.locator(id).evaluate(el => getComputedStyle(el).overflowY)
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    // The two regions are the FOCUS reader's containers now (R2, reworked 2026-08-18): the reading
+    // on the left, the covering test's proof on the right — each with its OWN overflow, so scrolling
+    // the proof never moves the reading…
+    const ov = dt.locator('.focusov')
+    await expect(ov.locator('.fpage')).toHaveCount(1)
+    await expect(ov.locator('.fread')).toBeVisible()
+    await expect(ov.locator('.feval')).toBeVisible()
+    for (const sel of ['.fread', '.feval']) {
+      const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
       expect(['auto', 'scroll']).toContain(oflow)
-      const bounded = await page.locator(id).evaluate(el => el.clientHeight < el.scrollHeight + 1 && getComputedStyle(el).height !== 'auto')
-      expect(bounded).toBeTruthy()
     }
+    await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
+    expect(await ov.locator('.fread').evaluate(el => el.scrollTop)).toBe(0)
+    // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
+    expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
+    // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay
+    // baked as the hidden shared source (R13), and NO view the toggle offers ever shows them.
+    const segs = dt.locator('.viewseg .vseg')
+    const nseg = await segs.count()
+    for (let i = 0; i < nseg; i++) {
+      await segs.nth(i).click()
+      await expect(dt.locator('.cols')).toBeHidden()
+    }
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()   // leave the default view on
   })
 })
 
@@ -63,32 +82,41 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
   await coverReqs('R3')
   await openDetail(page)
   await checkReq('R3', async () => {
-    const req = page.locator('#reqpane .req').first()
-    const body = req.locator('.body')
-    await expect(req.locator('.rt')).not.toBeEmpty()        // the title always shows
-    await expect(body).toBeHidden()                          // the long description is collapsed
-    await req.locator('.h').click()
-    await expect(body).toBeVisible()                         // one click reveals the full markdown
-    await expect(body.locator('p, ul').first()).toBeVisible()
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    // The ROW ANATOMY lives on the baked source rows — hidden since the Columns view retired
+    // (board R13, 2026-08-18), but load-bearing: Focus moves these very nodes into its reader.
+    // Count/text reads work on hidden nodes.
+    const req = dt.locator('.reqpane .req').first()
+    await expect(req.locator('.rt')).not.toBeEmpty()        // the title always leads the row
+    // the READING HIERARCHY: never bare title rows. Each pane's header wears a quiet purpose hint;
+    // a requirement row carries a one-line excerpt of its body under the title.
+    await expect(dt.locator('.reqpane h2 .s')).not.toBeEmpty()
+    await expect(dt.locator('.testpane h2 .s')).not.toBeEmpty()
+    await expect(req.locator('.rhint')).not.toBeEmpty()
     // a test leads with a PROMINENT flow title and carries coverage tags — it does not just repeat a
-    // requirement's title
-    const t = page.locator('#testpane .test').first()
+    // requirement's title. (Read the first row still in the pane; the reader borrows R1's test.)
+    const t = dt.locator('.testpane .test').first()
     await expect(t.locator('.ttl')).not.toBeEmpty()
     const testTitle = (await t.locator('.ttl').textContent())?.trim()
-    const reqTitles = await page.locator('#reqpane .req .rt').allTextContents()
+    const reqTitles = await dt.locator('.reqpane .req .rt').allTextContents()
     expect(reqTitles.map(s => s.trim())).not.toContain(testTitle)
-
-    // the READING HIERARCHY: never bare title rows. Each pane's header wears a quiet purpose hint;
-    // a requirement row shows a one-line excerpt of its body under the title — and the excerpt
-    // yields to the full text once the row is open, never repeating it.
-    await expect(page.locator('#reqpane h2 .s')).not.toBeEmpty()
-    await expect(page.locator('#testpane h2 .s')).not.toBeEmpty()
-    const second = page.locator('#reqpane .req').nth(1)
-    await expect(second.locator('.rhint')).not.toBeEmpty()
-    await expect(second.locator('.rhint')).toBeVisible()
-    await expect(req.locator('.rhint')).toBeHidden()             // this row is open — the body follows
     // a test row carries a meta-line hook under its title (loadRuns fills it from the case's record)
     await expect(t.locator('.tmeta')).toBeAttached()
+
+    // VISIBLY, a requirement reads as its title until opened: the Grid row leads with the title and
+    // does NOT carry the long description; opening the row reveals the full FORMATTED markdown in
+    // Focus — real paragraphs and lists, not raw text.
+    const bodyFrag = (await req.locator('.body p').count())
+      ? (((await req.locator('.body p').first().textContent()) || '').trim().slice(0, 40)) : ''
+    const rid = await req.getAttribute('data-r')
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    const row = dt.locator(`.gridview .grrow[data-r="${rid}"]`)
+    await expect(row.locator('.grt')).toBeVisible()
+    if (bodyFrag) expect(await row.textContent()).not.toContain(bodyFrag)   // the title, not the description
+    await row.click()
+    const ov = dt.locator('.focusov')
+    await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
+    await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
   })
 })
 
@@ -100,16 +128,16 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
 // R10 test can fabricate a record whose beats line up with the baked plan by title.
 const STORY_TITLE = 'Story-step evidence renders from the test definition'
 const STORY = [
-  'Open the board detail — the two columns are there',
+  'Open the board detail — the reader is there',
   'Announce a golden value on the narration bar',
-  'Confirm the tests column is present'
+  'Confirm the baked test rows are present'
 ]
 
 test('Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself', async ({ page }) => {
   await coverReqs('R10')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  const t0 = (await page.locator('#testpane .test .ttl').nth(0).textContent())!.trim()   // proves R1
+  const t0 = R1_TITLE   // the first test — proves R1 (its node is the one the default reader borrows)
   const titleOf = async (rid: string) =>
     (await page.locator('#reqpane .req[data-r="' + rid + '"] .rt').textContent())!.trim()
 
@@ -128,11 +156,11 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(hud).toContainText('expected 2 · got 2')      // …and its expected-vs-got claim
 
     // (1) STEPS COME FROM THE DEFINITION — with NO run at all, the full plan still shows, pending.
+    // The rows live in the hidden baked pane now (Columns retired) — count/text/class reads work
+    // there; the `.test` locators are dt-scoped, not pane-scoped, so a reader-borrowed node matches.
     await page.route('**/api/runs', r => r.fulfill({ json: { watch: false, running: false, runs: [] } }))
     await page.reload()
-    await toColumns(page)
     const story = dt.locator('.test', { hasText: STORY_TITLE }).first()
-    await story.locator('.th').click()
     const srows = story.locator('.tststeps .beat')
     await expect(srows).toHaveCount(3)                              // its three flowStep sentences
     await expect(srows.nth(0)).toContainText(STORY[0])
@@ -140,7 +168,6 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(srows).toHaveClass([/pending/, /pending/, /pending/])  // none green, none red
     // a checkReq-only test plans one step per requirement, by TITLE, also before running
     const p0 = dt.locator('.test', { hasText: t0 }).first()
-    await p0.locator('.th').click()
     await expect(p0.locator('.tststeps .beat')).toContainText(await titleOf('R1'))
     await expect(p0.locator('.tststeps .beat.pending')).toHaveCount(1)
 
@@ -154,20 +181,22 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
       { label: 'IY2 — got 2338064 · expected 2396129', cat: 'info', depth: 1, ok: false, t: 900, d: 5 },
       { label: 'Check the result is what we expect', cat: 'expect', depth: 1, ok: false, t: 950, d: 5 },
       { label: STORY[2], cat: 'test.step', depth: 0, ok: false, t: 1400, d: 300 },
-      { label: 'Check the tests column is present', cat: 'expect', depth: 1, ok: false, t: 1500, d: 5 }
+      { label: 'Check the test rows are present', cat: 'expect', depth: 1, ok: false, t: 1500, d: 5 }
     ]
+    const caseRec = {
+      shots: [], video: 'spec/_runs/rt/a.webm', steps: rec, log: 'x',
+      at: '2026-08-03T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
+    }
+    // the same record rides BOTH titles: the story test's plan proves the overlay below, and R1's
+    // own test — the node the default reader embeds — gives the reader's wired Steps button and
+    // player a record to open (the visible path, now that the source rows live hidden)
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
       runs: [{ screen: 'board', runId: 'rt', hasLog: false, at: '2026-08-03T00:00:00.000Z', ms: 6000,
-        ok: false, total: 1, failed: 1, shotsByTest: { [STORY_TITLE]: {
-          shots: [], video: 'spec/_runs/rt/a.webm', steps: rec, log: 'x',
-          at: '2026-08-03T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
-        } } }]
+        ok: false, total: 1, failed: 1, shotsByTest: { [STORY_TITLE]: caseRec, [t0]: caseRec } }]
     } }))
     await page.reload()
-    await toColumns(page)
     const s2 = dt.locator('.test', { hasText: STORY_TITLE }).first()
-    await s2.locator('.th').click()
     const rows = s2.locator('.tststeps .beat')
     await expect(rows).toHaveCount(3)
     await expect(rows.nth(0)).toHaveClass(/\bp\b/)                  // step 1 passed
@@ -175,15 +204,21 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(rows.nth(2)).toHaveClass(/\bf\b/)                  // step 3 ALSO failed — not hidden
     // the meta line SHOUTS the count, not just the first failure
     await expect(s2.locator('.tmeta')).toContainText('2 steps failed')
-    // both failed steps arrive OPEN to their failing value; the passing step's detail expands on click
+    // both failed steps' details are rendered OPEN to their failing value; the passing step's detail
+    // is rendered too (revealed on click when the row is shown) — all of it readable off the row
     await expect(rows.nth(1).locator('.bdet .bnote')).toContainText('got 2338064 · expected 2396129')
-    await expect(rows.nth(2).locator('.bdet .braw')).toContainText('tests column')
-    await rows.nth(0).locator('.bh').click()
+    await expect(rows.nth(2).locator('.bdet .braw')).toContainText('test rows')
     await expect(rows.nth(0).locator('.bdet .bnote')).toContainText('Net Rent 40,000 → 60,000')
     await expect(rows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R10'))
 
-    // the complete raw record opens in the Steps WINDOW — a floating card, not a scrim
-    await s2.locator('[data-steps]').click()
+    // the complete raw record opens in the Steps WINDOW — reached the way a person reaches it now:
+    // the reader's ⋯ menu carries the covering test's own wired Steps button (R13). Wait for the
+    // relocated recording first — it only appears once the fold has reopened the reader with the
+    // stubbed record, so it marks the reader as settled.
+    const ov = dt.locator('.focusov')
+    await expect(ov.locator('.frecwrap .rec')).toBeVisible()
+    await ov.locator('.feval .fmenubtn').click()
+    await ov.locator('.feval .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
     await expect(sheet).toHaveClass(/on/)
     await expect(sheet).toContainText('Check the result is what we expect')   // raw check, marked
@@ -195,9 +230,10 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await sheet.locator('[data-stepsclose]').click()
 
     // the player never CROPS the frame: the narration topbar is burned into the video's top edge,
-    // and an object-fit that fills-and-crops (cover) sliced exactly that edge off in display
-    await s2.locator('.rec').click()
-    const fit = await s2.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
+    // and an object-fit that fills-and-crops (cover) sliced exactly that edge off in display.
+    // Play the reader's relocated recording — the same wired .rec node, moved in (R13).
+    await ov.locator('.frecwrap .rec').click()
+    const fit = await ov.locator('.frecwrap .rec video').evaluate(el => getComputedStyle(el).objectFit)
     expect(fit).toBe('contain')
 
     // the bar SURVIVES a navigation — a beat that walks to another page keeps its narration
@@ -212,16 +248,19 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
 // them from the source to show the plan before a run) — these three must stay equal to STORY above.
 test('Story-step evidence renders from the test definition', async ({ page }) => {
   await coverReqs('R10')
-  await flowStep('Open the board detail — the two columns are there', async () => {
+  await flowStep('Open the board detail — the reader is there', async () => {
     await page.goto('/#/board')
-    await toColumns(page)
-    await checkReq('R10', async () => { await expect(page.locator('#reqpane')).toBeVisible() })
+    await checkReq('R10', async () => {
+      await expect(page.locator('.dt[data-screen="board"]:not([hidden]) .focusov')).toBeVisible()
+    })
   })
   await flowStep('Announce a golden value on the narration bar', async () => {
     await hudCheck('cards on the home board', 4, await page.locator('#home .card').count())
   })
-  await flowStep('Confirm the tests column is present', async () => {
-    await expect(page.locator('#testpane')).toBeVisible()
+  await flowStep('Confirm the baked test rows are present', async () => {
+    // the source pane is hidden (the Columns view is retired) but its rows are the board's shared
+    // data source — a count that fails the moment they stop being baked
+    expect(await page.locator('#testpane .test').count()).toBeGreaterThan(0)
   })
 })
 
@@ -236,20 +275,21 @@ test('R10 — the player plays the VOICED recording when a run produced one', as
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
       runs: [{ screen: 'board', runId: 'rv', hasLog: false, at: '2026-08-14T00:00:00.000Z', ms: 4000,
-        ok: true, total: 1, failed: 0, shotsByTest: { [STORY_TITLE]: {
+        ok: true, total: 1, failed: 0, shotsByTest: { [R1_TITLE]: {
           shots: [], video: 'spec/_runs/rv/a.webm', voiced: 'spec/_runs/rv/a.voiced.mp4',
-          steps: [{ label: STORY[0], cat: 'test.step', depth: 0, ok: true, t: 0, d: 100 }],
+          steps: [{ label: 'proves R1', cat: 'test.step', depth: 0, ok: true, t: 0, d: 100 }],
           at: '2026-08-14T00:00:00.000Z', ms: 4000, ok: true, commit: 'abc1234'
         } } }]
     } }))
     await page.reload()
-    await toColumns(page)
-    const tc = dt.locator('.test', { hasText: STORY_TITLE }).first()
-    await tc.locator('.th').click()                 // expand the row so its recording slot is reachable
-    await expect(tc.locator('.rec')).toBeVisible()  // folded from the stubbed run (has a video ⇒ playable)
-    await tc.locator('.rec').click()
+    // the reload reopens the detail on the Focus default — R1's page, whose evidence is R1's own
+    // covering test moved in with its WIRED player (R13); the fold hands it the stubbed record and
+    // relocates the now-playable recording below the strip
+    const rec = dt.locator('.focusov .frecwrap .rec')
+    await expect(rec).toBeVisible()
+    await rec.click()
     // the VOICED cut is what plays — the same record's silent a.webm would play without init R6
-    const src = await tc.locator('.rec video').getAttribute('src')
+    const src = await rec.locator('video').getAttribute('src')
     expect(src).toContain('a.voiced.mp4')
     expect(src).not.toContain('a.webm')
   })
@@ -323,25 +363,32 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     }
     const unproven = page.locator('#reqpane .req[data-state="unproven"]').first()
     if (await unproven.count()) {
-      await unproven.locator('.h').click()
-      await expect(unproven.locator('.covers .nocov')).toBeVisible()
+      // the honest no-coverage line rides the baked row's body (read hidden — the same honesty
+      // shows on the visible surfaces: Grid's proof cell and Focus's "The proof")
+      await expect(unproven.locator('.covers .nocov')).toContainText('no test asserts this yet')
     }
   })
 })
 
-test('Hovering a test lights up the requirements it covers', async ({ page }) => {
+test('A test tags the requirements it covers — and Focus serves that link', async ({ page }) => {
   await coverReqs('R5')
   await openDetail(page)
   await checkReq('R5', async () => {
-    const test0 = page.locator('#testpane .test').first()
-    const tag = test0.locator('.tags .tag[data-r]').first()
-    await expect(tag).toBeVisible()                          // a test tags the requirement ids it covers
-    const rid = await tag.getAttribute('data-r')
-    // hovering the test lights up the requirement it covers (the many-to-many wire), and vice versa
-    await test0.hover()
-    await expect(page.locator(`#reqpane .req[data-r="${rid}"]`)).toHaveClass(/hot/)
-    await page.locator('.dbar').hover()                     // move off
-    await expect(page.locator(`#reqpane .req[data-r="${rid}"]`)).not.toHaveClass(/hot/)
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    // the link lives in the TEST: it tags the requirement ids it covers (R5) — read off the baked
+    // source rows, hidden since the Columns view retired (the reader borrows R1's test, so the
+    // first row still in the pane is read; either way the wire below must resolve it)
+    const test0 = dt.locator('.testpane .test').first()
+    await expect(test0.locator('.tags .tag[data-r]')).not.toHaveCount(0)
+    const rid = await test0.locator('.tags .tag[data-r]').first().getAttribute('data-r')
+    const flow = ((await test0.locator('.ttl').textContent()) || '').trim()
+    // …and the board SERVES the many-to-many wire: open that requirement in Focus — the proof line
+    // names this very test, resolved BY TAG (break the tag lookup and this fails)
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator(`.gridview .grrow[data-r="${rid}"]`).click()
+    const ov = dt.locator('.focusov')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid!)
+    await expect(ov.locator('.feval .fpby')).toContainText(flow)
   })
 })
 
@@ -351,8 +398,9 @@ test('A requirement names the tests that cover it', async ({ page }) => {
   await checkReq('R6', async () => {
     // Few, comprehensive: the model lets one test cover several requirements (tags carry the link),
     // and a requirement's detail names the tests that prove it — never a bare "7 of 7 passing".
+    // (The rows are read off the hidden baked pane — count/text works there.)
     const tests = page.locator('#testpane .test')
-    await expect(tests.first()).toBeVisible()
+    await expect(tests).not.toHaveCount(0)
     const anyMulti = await page.locator('#testpane .test').evaluateAll(
       els => els.some(el => el.querySelectorAll('.tags .tag[data-r]').length >= 1))
     expect(anyMulti).toBeTruthy()
@@ -399,7 +447,7 @@ test('The detail shows no wireframe or design affordance', async ({ page }) => {
   })
 })
 
-test('No acceptance gate — the detail is the two columns, nothing to accept', async ({ page }) => {
+test('No acceptance gate — nothing on the detail waits to be accepted', async ({ page }) => {
   await coverReqs('R8')
   await openDetail(page)
   await checkReq('R8', async () => {
@@ -408,27 +456,33 @@ test('No acceptance gate — the detail is the two columns, nothing to accept', 
     // detail has no gate bar and no accept button — nothing waits on a rubber-stamp.
     await expect(detail.locator('.gate')).toHaveCount(0)
     await expect(detail.locator('[data-act="accept"]')).toHaveCount(0)
-    // nor any "did you build it" / draft gate — none ever existed in the two-column model
+    // nor any "did you build it" / draft gate — none ever existed in the two-ends model
     await expect(detail.locator('[data-gate]')).toHaveCount(0)
     await expect(detail.getByText(/Matches the design|approved design|Open draft/i)).toHaveCount(0)
-    // the detail goes straight from its header to the two columns
-    await expect(detail.locator('.dtscroll > .cols')).toHaveCount(1)
+    // the detail goes straight from its header to the reader (Focus is the default view) — and the
+    // baked two-pane source stays in the DOM, hidden, feeding Focus and Grid (R13)
+    await expect(detail.locator('.dtscroll > .focusov')).toHaveCount(1)
     await expect(detail.locator('.cols .pane')).toHaveCount(2)
+    await expect(detail.locator('.cols')).toBeHidden()
   })
 })
 
-test('The detail offers a three-view toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
+test('The detail offers a Focus / Grid toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
   await coverReqs('R13')
-  // FOCUS is the default view now — the reader opens straight away (no columns-forcing openDetail here)
+  // FOCUS is the default view — the reader opens straight away
   await page.goto('/#/board')
   await page.waitForSelector('.dt[data-screen="board"]:not([hidden]) .focusov')
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
-    // the header toggle offers Focus / Grid / Columns, and Focus is active on open — a one-requirement
-    // reader laid out as TWO containers, no columns showing
+    // the header toggle offers EXACTLY Focus / Grid (Columns retired as a view 2026-08-18 — its
+    // baked rows stay as the hidden shared source, asserted below), and Focus is active on open —
+    // a one-requirement reader laid out as TWO containers
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
+    await expect(dt.locator('.viewseg .vseg')).toHaveCount(2)
+    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'Grid'])
+    await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveCount(0)
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
     await expect(dt.locator('.cols')).toBeHidden()
     await expect(ov.locator('.fpage')).toHaveCount(1)
@@ -463,7 +517,8 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await expect(page.locator('#stepsheet')).toHaveClass(/\bon\b/)
     await page.locator('#stepsheet [data-stepsclose]').click()
     await expect(ov.locator('.fread .fsteps .fstepclone .beat').first()).toBeVisible()
-    // there is NO in-reader Columns/Open button — the header toggle is the only way back
+    // there is NO in-reader view-escape button (.fcols/.fopen never came back) — the header toggle
+    // is the only view switch
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
     // a WINDOWED pager (board R14): with more than ten requirements the window slides around the
@@ -479,17 +534,17 @@ test('The detail offers a three-view toggle — Focus reads one requirement per 
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
 
-    // COLUMNS → back to the two columns; the moved test node is whole again in the pane
-    await dt.locator('.viewseg .vseg[data-view="columns"]').click()
-    await expect(dt.locator('.focusov')).toHaveCount(0)
-    await expect(dt.locator('.cols')).toBeVisible()
-    await expect(dt.locator('.testpane .test')).not.toHaveCount(0)
+    // LEAVING FOCUS RESTORES THE BORROWED NODE: while the reader is open it holds one test's row;
+    // switching views puts that node back WHOLE into the (hidden) source pane
+    const inPane = await dt.locator('.testpane .test').count()
 
     // GRID → the behavior grid (Grid replaced the compact List, 2026-08-18): one row per requirement —
     // state · id · title · the Given/When/Then shape it leads with · its proof — and a row opens it
     // straight into Focus. Every row carries a proof cell (the covering test + verdict, or the honest
     // "no test asserts this yet" note); the G/W/T cell is proven on a fixture screen in spec/_modes.
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await expect(dt.locator('.focusov')).toHaveCount(0)
+    await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)   // the borrowed row came home
     const grid = dt.locator('.gridview')
     await expect(grid).toBeVisible()
     await expect(dt.locator('.cols')).toBeHidden()
@@ -538,9 +593,8 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
   await coverReqs('R14')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  // R1 is covered by exactly ONE test, so it is that test's own row in the columns AND the primary flow
-  // its focus card embeds — the single place the stubbed frames must appear both times.
-  const R1_TITLE = 'Home lists every screen as a card'
+  // R1 is covered by exactly ONE test, so it is both the primary flow the default Focus page (R1)
+  // embeds AND a row of the hidden baked pane — the two places the stubbed frames must appear.
   await checkReq('R14', async () => {
     // A run's record carries proof FRAMES — one still per checked value, cut from the recording at the
     // instant the check fired, each with its got-vs-expected (red on a failure). Stub a record that has
@@ -561,17 +615,13 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
         } } }]
     } }))
     await page.reload()
-    // the reload reopened the detail in the Focus default; this half reads the test's own row
-    // in the COLUMNS, so switch there
-    await toColumns(page)
 
-    // (1) IN THE TEST'S EVIDENCE (the columns): open the covering test → a scannable strip of stills,
-    // one per checked value, each captioned with its got-vs-expected; the failing value is marked red.
-    const tst = dt.locator('.test', { hasText: R1_TITLE }).first()
-    await tst.locator('.th').click()
-    const strip = tst.locator('.pfstrip')
-    await expect(strip).toBeVisible()
-    const fr = strip.locator('.pframe')
+    // (1) IN THE FOCUS READER — the reload reopened the detail on the Focus DEFAULT, R1's page,
+    // whose RIGHT container EMBEDS the primary covering test (R13), so the strip rides along: a
+    // scannable strip of stills, one per checked value, each captioned with its got-vs-expected;
+    // the failing value is marked red. (The frame count also waits out loadRuns' close-fold-reopen.)
+    const ov = dt.locator('.focusov')
+    const fr = ov.locator('.feval .fev .pfstrip .pframe')
     await expect(fr).toHaveCount(3)
     await expect(fr.nth(0)).toContainText('got 7 · expected 7')
     await expect(fr.nth(2)).toContainText('got 5 · expected 4')
@@ -582,18 +632,17 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
     await fr.nth(2).locator('img').click()
     await expect(page.locator('#lb')).toBeVisible()
     await page.locator('#lbclose').click()
-
-    // (2) IN THE FOCUS READER: the RIGHT container EMBEDS the primary covering test (R13), so the strip
-    // rides along — R1's reader shows the same stills, without opening the columns.
-    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    const ov = dt.locator('.focusov')
-    await dt.locator('.dtfoot .fdot[title^="R1 "]').click()     // "R1 —…" (the trailing space excludes R10+); pager is in the footer
-    await expect(ov.locator('.feval .fev .pfstrip .pframe')).toHaveCount(3)
-    await expect(ov.locator('.feval .fev .pframe.bad')).toHaveCount(1)
-    // the strip carries no label now (#5 — the stills speak for themselves) and the moved test's own
+    // the strip carries no label (#5 — the stills speak for themselves) and the moved test's own
     // header is folded away (the proof line replaces it)
     await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
+
+    // (2) AND THE STRIP IS THE TEST'S OWN: leave Focus — the borrowed node returns whole to the
+    // hidden source pane, frames intact (count/class reads work on hidden rows)
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    const tst = dt.locator('.testpane .test', { hasText: R1_TITLE }).first()
+    await expect(tst.locator('.pfstrip .pframe')).toHaveCount(3)
+    await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
   })
 })
 
@@ -653,17 +702,20 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
   await coverReqs('R10')
   await openDetail(page)
   await checkReq('R10', async () => {
-    const t = page.locator('#testpane .test').first()
-    await t.locator('.th').click()                           // open the test
-    await expect(t.locator('.tbody')).toBeVisible()
-    await expect(t.locator('[data-run]')).not.toHaveCount(0) // Run / Run in background stay wherever a test is shown
-    // its steps fold, scrollable so fifty read as clearly as five
-    await expect(t.locator('.fold')).toHaveCount(1)
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    const ov = dt.locator('.focusov')
+    // a test's evidence is reached through the READER now (R13): the covering test's OWN node,
+    // moved in wired — its Run affordances ride along wherever the test is shown
+    await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
+    await expect(ov.locator('.feval .fpacts [data-run]')).not.toHaveCount(0)
+    // its steps fold rides the moved row (kept, hidden — the reading card shows the clone)
+    await expect(ov.locator('.feval .fev .test.infocus .fold')).toHaveCount(1)
     // the whole log opens in a FLOATING window, not a full-viewport scrim (a scrim suppresses the
-    // board's own paint) — the board stays visible behind the box
+    // board's own paint) — via the ⋯ menu's wired Logs button (the real node, relocated)
     const sheet = page.locator('#logsheet')
     await expect(sheet).toBeHidden()
-    await t.locator('.loglink').click()
+    await ov.locator('.feval .fmenubtn').click()
+    await ov.locator('.feval .fmenupop [data-log]').click()
     await expect(sheet).toHaveClass(/on/)
     const covers = await sheet.locator('.box').evaluate(el => {
       const r = el.getBoundingClientRect()

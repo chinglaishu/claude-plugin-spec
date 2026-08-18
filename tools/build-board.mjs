@@ -39,8 +39,8 @@ const excerpt = body => {
 // deriveReqStatus — fail wins, so a requirement covered by both a failing and a passing test still
 // reads failed). Every state carries a MARK as well as a hue (hue never alone): passed=moss filled ✓,
 // failed=iron half ✗, not-reached=gold hairline ◌ (a flow declared it but stopped before its assertion
-// ran), untested=hollow ink ○ (no test tags it at all). Title only, no visible label in Columns — the
-// header stays compact; the word lives in the tooltip (Grid's row spells it out, see GRID_CHIP below).
+// ran), untested=hollow ink ○ (no test tags it at all). Title only, no visible label on the source
+// row — it stays compact; the word lives in the tooltip (Grid's row spells it out, see GRID_CHIP below).
 const REQ_CHIP = {
   passed: ['ok', 'mark', 'Passed — a current passing assertion covers this'],
   failed: ['fail', 'mark h', 'Failed — the covering test failed its assertion'],
@@ -160,7 +160,8 @@ export function renderBehavior (b) {
 const runAll = name =>
   `<button class="btn pri runbtn" data-run="${esc(name)}" title="run every test in the background">▶ Run all in background</button>`
 
-// LEFT column (board R2/R3): one requirement per row — its state chip, id and TITLE, always shown;
+// The baked REQUIREMENTS pane (board R2/R3) — the left half of the hidden shared source (.cols):
+// one requirement per row — its state chip, id and TITLE, always shown;
 // the long, formatted description collapses behind it and one click on the header reveals the full
 // markdown. An UNPROVEN row's open body ends in an honest "no test asserts this yet" line (R6); a
 // proven one ends with the body. A requirement is never faked green.
@@ -192,12 +193,12 @@ const reqPane = s => `<div class="pane reqpane">
 // The GRID view (board R13; Grid replaced the compact List, 2026-08-18): the behavior grid — one row
 // per requirement, scannable at a glance. Each row leads with the state chip, id and title (what List
 // carried), then the Given/When/Then shape the requirement leads with (r.behavior via renderBehavior —
-// absent entirely for a prose-only requirement, the same empty-string contract as the Columns body),
+// absent entirely for a prose-only requirement, the same empty-string contract as the source row's body),
 // and its PROOF: the covering test and verdict from r.tests, or the honest "no test asserts this yet"
 // note (mirroring reqRow's .covers line). A row click opens that requirement in Focus. It is one of
-// THREE views of the same requirements (Focus, Grid, Columns), switched by the header toggle; it
-// stores nothing new. The label spells the four-word vocabulary out (board R4, amended 2026-08-17)
-// since this row has room where Columns' compact chip does not.
+// the views of the same requirements (Focus, Grid — the Columns view retired 2026-08-18), switched by
+// the header toggle; it stores nothing new. The label spells the four-word vocabulary out (board R4,
+// amended 2026-08-17) since this row has room where the source row's compact chip does not.
 // EVIDENCE BOUNDARY (deliberate, task 8a): a Grid row does NOT expand gif/frame evidence inline —
 // that needs the evidence-rendering infra (a later task hooks it here); a row that wants the full
 // evidence opens Focus.
@@ -261,7 +262,8 @@ const planRow = (st, i) =>
     <ul class="bdet" hidden></ul>
   </div>`
 
-// RIGHT column (board R3/R5/R10): one test per row, enumerated from the SOURCE plan (so a test
+// The baked TESTS pane (board R3/R5/R10) — the right half of the hidden shared source (.cols), and
+// the very nodes the Focus reader moves in: one test per row, enumerated from the SOURCE plan (so a test
 // shows even before it has run), merged with its latest run record `t` when there is one. Leads
 // with the flow title, the coverage tags, and a status chip; opens to the recording, the
 // Run/Watch/Logs/Steps buttons, and the numbered plan steps (loadRuns overlays outcomes). There is
@@ -1205,9 +1207,12 @@ export function build () {
 </section>`
   }).join('')
 
-  // The detail is two ends only (board R2): the requirements on the left, the tests that prove them
-  // on the right, each pane scrolling on its own — no acceptance gate above them (board R8), just the
-  // two columns and a Run-all in the bar. data-screen alongside data-i so the router can open it by name.
+  // The detail pairs the requirements with the tests that prove them (board R2), read in the Focus
+  // reader or the Grid — no acceptance gate anywhere (board R8). The two baked panes inside .cols are
+  // the SHARED DATA SOURCE those views read (Focus MOVES .testpane nodes into its reader; loadRuns
+  // folds records into them; syncDerived refreshes them) — the Columns VIEW that used to show them
+  // was retired 2026-08-18 (board R13), so .cols is permanently hidden, never a visible view.
+  // data-screen alongside data-i so the router can open it by name.
   const detail = screens.map((s, i) => `
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth dbarhook">
@@ -1217,12 +1222,11 @@ export function build () {
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="${i}">Focus</button>
       <button class="vseg" data-view="grid" data-i="${i}">Grid</button>
-      <button class="vseg" data-view="columns" data-i="${i}">Columns</button>
     </div>
     <button class="close btn">Close</button>
   </div>
   <div class="dtscroll">
-    <div class="cols">
+    <div class="cols" style="display:none">
       ${reqPane(s)}
       ${testPane(s)}
     </div>
@@ -1346,8 +1350,10 @@ export function build () {
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
   .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
 
-  /* two columns, each a FIXED height so each pane scrolls on its OWN — scrolling one never moves the
-     other, neither scrolls the page, and both headers stay pinned (board R2) */
+  /* the two BAKED SOURCE PANES (requirements + tests). Their Columns VIEW was retired 2026-08-18
+     (board R13): .cols ships hidden (inline display:none in the markup) and nothing un-hides it —
+     the rows stay in the DOM as the shared source Focus and Grid read. The .pane rules below are
+     kept: hidden reads and the restored/moved nodes still rely on this markup's structure. */
   .cols { display:grid; grid-template-columns:minmax(0,40%) minmax(0,60%); gap:var(--s4);
     min-height:340px; }
   .pane { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
@@ -1359,27 +1365,27 @@ export function build () {
 
   /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
      description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
-     screenshot strip, then the recording). One of THREE views — Focus / List / Columns — switched by
-     the header toggle; there is no in-reader Columns button. No new state; the same derived chips. */
+     screenshot strip, then the recording). One of the views — Focus / Grid — switched by the header
+     toggle. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
-     the proof read cramped); centred, it keeps the two columns balanced with the proof the wider one */
+     the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
   .focusov { width:100%; max-width:1160px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
-     above the columns eating vertical space, so both cards start at the top */
+     above the reader eating vertical space, so both cards start at the top */
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
   .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   /* board R4, amended 2026-08-17: the same four-word vocabulary as REQ_CHIP/GRID_CHIP above — the
      Focus reader is the detail's DEFAULT view, so it may never be the one surface still speaking the
-     old binary proven/unproven while Columns and Grid have moved on. */
+     old binary proven/unproven while the source rows and Grid have moved on. */
   .fchip.passed  { color:var(--koke); background:var(--koke-tint); border-color:var(--koke-line); }
   .fchip.failed  { color:var(--bengara); background:var(--bengara-tint); border-color:var(--bengara-line); }
   .fchip.not-reached { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
   .fchip.untested { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
 
-  /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (like the
-     Columns panes, board R2): a fixed height from the grid, its own overflow — scrolling the evidence
-     never moves the requirement, and the page itself does not scroll. */
+  /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (the
+     independent-scroll guarantee of board R2): a fixed height from the grid, its own overflow —
+     scrolling the evidence never moves the requirement, and the page itself does not scroll. */
   .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 600px;
     gap:var(--s4); align-items:stretch; }
   /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead */
@@ -1399,10 +1405,10 @@ export function build () {
   .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
     color:var(--ink-4); display:block; margin-bottom:var(--s4); }
 
-  /* MATCH THE READING MOCKUP (board R13). The reader reuses the columns' WIRED components — the cloned
-     steps carry the columns' compact beat rows, the moved controls carry the small buttons — so they
-     must be RESTYLED here to the mockup's roomier look (rounded step cards, pill buttons, a framed
-     highlight on THIS requirement's step). Scoped to the reader, so the columns' rows stay untouched. */
+  /* MATCH THE READING MOCKUP (board R13). The reader reuses the baked source rows' WIRED components —
+     the cloned steps carry their compact beat rows, the moved controls carry the small buttons — so
+     they must be RESTYLED here to the mockup's roomier look (rounded step cards, pill buttons, a framed
+     highlight on THIS requirement's step). Scoped to the reader, so the source rows stay untouched. */
   .fread .fstepclone { margin:0; display:flex; flex-direction:column; gap:8px; }
   .fread .fstepclone .beat { border:1px solid var(--hair); border-radius:9px; background:var(--card);
     margin:0; padding:0; font-size:14px; color:var(--ink); overflow:hidden; }
@@ -1433,7 +1439,7 @@ export function build () {
   .fmenupop .btn, .fmenupop .btn.sm { display:block; width:100%; text-align:left; justify-content:flex-start;
     border:0; background:transparent; border-radius:8px; padding:9px 12px; font-size:var(--t-sm); color:var(--ink-2); }
   .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
-  /* the moved evidence card must NOT wear the columns' row-hover wash — the reader card has no hover */
+  /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
@@ -1457,7 +1463,7 @@ export function build () {
   .fev .test.infocus .trow2 { display:none; }               /* the rec and every control are relocated out of it */
   .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
   .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
-  .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the columns' 210px */
+  .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the source row's 210px */
 
   /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
      page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
@@ -1488,7 +1494,7 @@ export function build () {
   .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
     box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
 
-  /* the three-view TOGGLE in the detail header — Focus / Grid / Columns (board R13) */
+  /* the view TOGGLE in the detail header — Focus / Grid (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
   .viewseg .vseg { font:inherit; font-size:var(--t-sm); padding:0 16px; border:0; background:transparent;
     color:var(--ink-3); cursor:pointer; letter-spacing:.02em; display:inline-flex; align-items:center; }
