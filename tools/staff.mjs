@@ -1,8 +1,8 @@
 // The staff briefing. An agent about to change a screen runs this FIRST, and it prints what governs
-// that screen — the requirements that are the source of truth, each one proven / unproven, whether it
-// is still a crawl guess to correct, what a test actually proves, and any contradiction the human has
-// not yet settled. A board nobody consults before coding is an expensive lint; this is the half that
-// makes an AI MAINTAIN the truth rather than just display it.
+// that screen — the requirements that are the source of truth, each one proven / unproven, what a
+// test actually proves, and any contradiction the human has not yet settled. A board nobody consults
+// before coding is an expensive lint; this is the half that makes an AI MAINTAIN the truth rather than
+// just display it.
 //
 //   node tools/staff.mjs                 — every screen, one line each: what governs it, what is open
 //   node tools/staff.mjs <screen>        — the full briefing for one screen
@@ -21,13 +21,10 @@ const stateWord = {
 }
 const countBy = (reqs, st) => reqs.filter(r => r.state === st).length
 
-// Whether anything waits on a human here. There is no acceptance gate (board R8): the only remaining
-// human-correction case is a crawl GUESS, which the human confirms by correcting it and deleting the
-// `guess:` flag. Everything else is the tests' business — proven / unproven, never a person's.
-function waitLine (s) {
-  if (s.guess) return 'a crawl GUESS — correct any requirement that is wrong, then delete the `guess:` flag to make it canon'
-  return 'requirements are the source of truth as written — no gate, nothing waiting on you'
-}
+// Whether anything waits on a human here. There is no acceptance gate (board R8), and no draft/guess
+// state either (the human, 2026-08-17) — a requirement is canon the moment it is written. Everything
+// is the tests' business — proven / unproven, never a person's.
+const waitLine = () => 'requirements are the source of truth as written — no gate, nothing waiting on you'
 
 // The findings whose either side lives in this screen's PRD. An OPEN one is a stop sign: the agent
 // must not pick a side, because picking silently is the disease the whole tool exists to cure.
@@ -52,11 +49,6 @@ function briefing (name) {
     L.push('this has no statement of how it should work, and that is where the bug is born.')
   } else {
     L.push(`## Requirements — the source of truth (${s.reqs.length})`)
-    if (s.guess) {
-      L.push('⚠ These are a GUESS the crawl read off the running page — NOT canon. Correct them, then')
-      L.push('  delete the `guess:` flag before you trust a word. A requirement read off an implementation')
-      L.push('  cannot contradict it, so if the code has a bug, this guess records the bug as intent.')
-    }
     for (const r of s.reqs) {
       L.push(`- ${r.id} ${stateMark[r.state] || '·'} ${r.state.padEnd(8)} — ${r.title}`)
       if (r.body) L.push(`    ${r.body.split('\n')[0]}`)
@@ -70,7 +62,7 @@ function briefing (name) {
     L.push(`- Requirements: ${countBy(s.reqs, 'proven')} proven · ` +
       `${countBy(s.reqs, 'unproven')} unproven`)
   }
-  L.push(`- Waiting on you: ${waitLine(s)}`)
+  L.push(`- Waiting on you: ${waitLine()}`)
   L.push(`- Tests: ${s.run
     ? `${s.run.total - s.run.failed} of ${s.run.total} passing` + (s.run.failed ? ' — some FAILING' : '')
     : 'no test has run against this screen yet — nothing is proven'}`)
@@ -97,7 +89,6 @@ function briefing (name) {
   L.push('   requirement it proves with checkReq(id, fn) so its proof is assertion-backed.')
   L.push('3. Never weaken a test to go green, and never rewrite what a requirement MEANS on the human\'s behalf.')
   if (!s.reqs.length) L.push('4. There is no requirement here — you cannot proceed. Ask the human.')
-  else if (s.guess) L.push('4. This PRD is a guess — get the human to correct it (and drop the `guess:` flag) before building to it.')
   else if (open.length) L.push('4. There is an open contradiction here — the human must pick canon before you build.')
   return L.join('\n')
 }
@@ -111,7 +102,6 @@ function list () {
   for (const s of screens) {
     const flags = []
     if (!s.reqs.length) flags.push('⛔ UNGOVERNED')
-    if (s.guess) flags.push('⚠ guess — correct & drop the flag')
     if (openBy.has(s.name)) flags.push('⚖ open conflict')
     const unproven = countBy(s.reqs, 'unproven')
     if (unproven) flags.push(`${unproven} unproven`)
@@ -136,7 +126,6 @@ function stale () {
   for (const s of screens) {
     const why = []
     if (!s.reqs.length) why.push('⛔ ungoverned — no requirement exists; nothing downstream can be trusted')
-    if (s.guess) why.push('⚠ PRD is a guess — the human must correct it, then drop the `guess:` flag')
     const unproven = s.reqs.filter(r => r.state === 'unproven')
     if (unproven.length) why.push(`· not proven by a test — ${unproven.map(r => r.id).join(', ')} — write or re-run the test that tags it`)
     if (s.run && s.run.failed) why.push(`✗ ${s.run.failed} test case(s) FAILING`)

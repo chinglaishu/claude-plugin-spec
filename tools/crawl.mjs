@@ -1,7 +1,8 @@
 // The crawl's browser half. Visits the project's own app one route at a time, screenshots each,
 // reads the page's title and headings, and writes the manifest the Init "what was found" table and
-// the PRD-drafting step both read. It writes NO prd.md — a guessed requirement is Claude's job,
-// drafted from what this captures. It never touches a screen that already exists.
+// the PRD-drafting step both read. It writes NO prd.md — drafting the requirement from what this
+// captures is a separate job (a kg-deep pass), not the crawl's. It never touches a screen that
+// already exists.
 //
 // This is real and side-effectful — a browser, possibly a spawned dev server — so it lives OUTSIDE
 // the deterministic suite, like every other job that reaches for the network or an agent.
@@ -88,8 +89,8 @@ async function main () {
   }
 
   // Explicit routes, or discover from the root by collecting same-origin links. Discovery is
-  // deliberately shallow — one hop from the root — because a guess the human has to correct is worth
-  // more when there are five of them than five hundred.
+  // deliberately shallow — one hop from the root — because a routes list the human has to prioritize
+  // for a kg-deep pass is worth more when there are five of them than five hundred.
   let routes = cfg.routes.length ? cfg.routes : await discover(page, base)
   routes = [...new Set(routes.map(normalise))].slice(0, 60)
   log(`${routes.length} route(s) to visit`)
@@ -105,8 +106,8 @@ async function main () {
     }
     const dir = join(SPEC, slug)
     mkdirSync(dir, { recursive: true })
-    // crawl.png, never screen.png: column 3 is a byproduct of a test, and this is evidence for a
-    // guess, not proof anyone checked the build.
+    // crawl.png, never screen.png: column 3 is a byproduct of a test, and this is inventory evidence
+    // for a future kg-deep pass, not proof anyone checked the build.
     await page.screenshot({ path: join(dir, 'crawl.png') })
     const meta = await page.evaluate(() => ({
       title: document.title || '',
@@ -130,8 +131,8 @@ const normalise = r => {
 
 // Discover routes by following same-origin links, BFS to a small depth. One hop from the root only
 // ever finds the TOP NAV; a real app hides most of itself a click deeper — an entity list links to
-// entity pages, a section to its sub-tabs. So we go two levels by default, capped, because a guess
-// the human must correct is worth more when there are a few dozen than a few hundred.
+// entity pages, a section to its sub-tabs. So we go two levels by default, capped, because a routes
+// list the human must prioritize is worth more when there are a few dozen than a few hundred.
 //
 // What this CANNOT find: entity-scoped routes with a concrete id (/thing/42/scenario) unless the app
 // links to one, and features reached by a CLICK rather than a link (wizards, modals, sub-tabs behind
