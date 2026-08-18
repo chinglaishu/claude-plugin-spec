@@ -1032,3 +1032,84 @@ test('The guide ends with the derived next action, and there is no rail', async 
     )
   })
 })
+
+// Board R15 — the board hands you a PROMPT; it never writes a requirement or a test itself. The ⋯
+// menus (one on the requirement in the Focus reader, one folded into the proof header's existing
+// menu) each open the prompt window: a READY Claude prompt carrying the screen, the exact file, the
+// target and the kg-e2e discipline, with a Copy button. The honesty half is asserted too: the prompt
+// lives in a read-only <pre> and the sheet carries no form/textarea — no in-board editor, no write.
+test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself', async ({ page }) => {
+  await coverReqs('R15')
+  await openDetail(page)
+  await checkReq('R15', async () => {
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    const ov = dt.locator('.focusov')
+    const sheet = page.locator('#promptsheet')
+    const body = page.locator('#promptbody')
+
+    // THE REQUIREMENT ⋯ (reading side): reword · add · remove — each a prompt, never an editor
+    const rmenu = ov.locator('.fread .frmeta .fmenu')
+    await expect(rmenu.locator('.fmenubtn')).toHaveCount(1)
+    await rmenu.locator('.fmenubtn').click()
+    await expect(rmenu.locator('.fmenupop [data-prompt="reword"]')).toContainText(/reword/i)
+    await expect(rmenu.locator('.fmenupop [data-prompt="addreq"]')).toContainText(/add a requirement/i)
+    await expect(rmenu.locator('.fmenupop [data-prompt="removereq"]')).toContainText(/remove/i)
+    const reqId = ((await ov.locator('.fread .frmeta .fid').textContent()) || '').trim()
+    await rmenu.locator('.fmenupop [data-prompt="reword"]').click()
+    await expect(sheet).toHaveClass(/\bon\b/)
+    // pre-loaded: the exact file, the target requirement, and the discipline — verbatim phrases
+    await expect(body).toContainText('spec/board/prd.md')
+    await expect(body).toContainText(reqId)
+    await expect(body).toContainText('write the failing test first')
+    await expect(body).toContainText('assert something that would fail without it')
+    await expect(body).toContainText('never weaken a test to go green')
+    // a Copy button rides the sheet header, wired to the shared [data-copy] handler
+    await expect(sheet.locator('.bh [data-copy="promptbody"]')).toBeVisible()
+    // HONESTY: the prompt is read-only — a <pre>, no form, no textarea, no input; the board writes nothing
+    expect(await body.evaluate(el => el.tagName)).toBe('PRE')
+    await expect(sheet.locator('form, textarea, input')).toHaveCount(0)
+    // the requirement picker shows only for the test prompts — empty here
+    await expect(page.locator('#promptpick .pmchip')).toHaveCount(0)
+    await sheet.locator('[data-promptclose]').click()
+    await expect(sheet).not.toHaveClass(/\bon\b/)
+
+    // THE TEST ⋯ — folded into the proof header's EXISTING menu, below Run-in-background/Logs/Steps,
+    // separated by a divider: add · edit · remove a test
+    const menu = ov.locator('.feval .fpacts .fmenu')
+    await menu.locator('.fmenubtn').click()
+    const pop = menu.locator('.fmenupop')
+    await expect(pop.locator('.fmdiv')).toHaveCount(1)
+    await expect(pop.locator('[data-prompt="addtest"]')).toContainText(/add a test/i)
+    await expect(pop.locator('[data-prompt="edittest"]')).toContainText(/edit/i)
+    await expect(pop.locator('[data-prompt="removetest"]')).toContainText(/remove/i)
+    // the run/log items still lead the menu — the divider sits between them and the authoring items
+    expect(await pop.locator('[data-steps]').count()).toBe(1)
+    await pop.locator('[data-prompt="addtest"]').click()
+    await expect(sheet).toHaveClass(/\bon\b/)
+    await expect(body).toContainText('spec/board/test.spec.ts')
+    await expect(body).toContainText('tag the requirement with checkReq')
+    await expect(body).toContainText('keep every asserted value visible in the recording')
+
+    // THE PICKER: every one of this screen's requirement ids as toggle chips; toggling one rewrites
+    // the prompt's "cover these requirements" line (the requirement LIST also names ids, so the
+    // assertion reads the cover line itself, not the whole prompt)
+    const reqCount = await dt.locator('.reqpane .req').count()
+    const chips = page.locator('#promptpick .pmchip')
+    await expect(chips).toHaveCount(reqCount)
+    const coverLine = async () =>
+      (((await body.textContent()) || '').split('\n').find(l => /cover these requirements/i.test(l)) || '')
+    const before = await coverLine()
+    expect(before).toContain(reqId)                     // the requirement being read is pre-selected
+    // pin the chip by its id — a live `:not(.on)` locator would re-resolve to the NEXT off chip
+    // the moment the click lands, and the .on assertion would read the wrong element
+    const offId = ((await page.locator('#promptpick .pmchip:not(.on)').first().textContent()) || '').trim()
+    const off = page.locator('#promptpick .pmchip').filter({ hasText: new RegExp('^' + offId + '$') })
+    expect(before).not.toContain(offId)
+    await off.click()
+    await expect(off).toHaveClass(/\bon\b/)
+    const after = await coverLine()
+    expect(after).not.toBe(before)                      // the toggle really rewrote the prompt
+    expect(after).toContain(offId)                      // and the cover line now names the toggled id
+    await sheet.locator('[data-promptclose]').click()
+  })
+})

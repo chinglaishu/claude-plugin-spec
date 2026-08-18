@@ -172,6 +172,116 @@ const B = window.__BOARD__ || {}
     passed: '✓ Passed', failed: '✗ Failed', 'not-reached': '◌ Not reached', untested: '○ Untested'
   }
 
+  // PROMPT HANDOFF (board R15): the board proposes work but never authors it. buildPrompt is PURE —
+  // a plain string builder composing a ready Claude prompt: the screen, the exact file, the target,
+  // the cover set and the kg-e2e discipline. No DOM, no fetch, no write — the human runs the prompt
+  // and keeps the words theirs.
+  var PROMPT_DISCIPLINE = 'The discipline that governs this change (kg-e2e — non-negotiable):\n' +
+    '- write the failing test first, and watch it go red\n' +
+    '- tag the requirement with checkReq\n' +
+    '- assert something that would fail without it\n' +
+    '- keep every asserted value visible in the recording\n' +
+    '- never weaken a test to go green'
+  function buildPrompt (action, ctx) {
+    const prd = 'spec/' + ctx.screen + '/prd.md'
+    const spec = 'spec/' + ctx.screen + '/test.spec.ts'
+    const req = (ctx.reqId || '') + (ctx.reqTitle ? ' — "' + ctx.reqTitle + '"' : '')
+    const list = (ctx.reqList || []).map(function (r) { return '  - ' + r.id + ' — ' + r.title }).join('\n')
+    const cover = 'Cover these requirements: ' + (ctx.coverIds && ctx.coverIds.length ? ctx.coverIds.join(', ') : '(pick at least one)')
+    const reqBlock = 'The screen\'s requirements:\n' + list
+    let head = ''
+    let body = ''
+    if (action === 'reword') {
+      head = 'In this specboard project, reword requirement ' + ctx.screen + ':' + ctx.reqId + '.'
+      body = 'File: ' + prd + '\nTarget: requirement ' + req + '\n\n' +
+        'Draft the new wording in place — requirement MEANING belongs to the human, so keep the ' +
+        'change to what they asked for and attach the reason inline (the house style: an italic ' +
+        '"*Amended <date> at the human\'s direction: …*" note). If the behaviour itself changes, ' +
+        'update the covering assertions in ' + spec + ' the same way.'
+    } else if (action === 'addreq') {
+      const last = (ctx.reqList || []).length ? ctx.reqList[ctx.reqList.length - 1].id : ''
+      head = 'In this specboard project, add a requirement to the ' + ctx.screen + ' screen.'
+      body = 'File: ' + prd + '\nTarget: a new requirement' + (last ? ' (the next id after ' + last + ')' : '') + '\n\n' +
+        'Write it as a "## R<n> — <title>" section in the human\'s words — it is canon the moment ' +
+        'it is written. Then prove it: add a covering test in ' + spec + '.\n\n' + reqBlock
+    } else if (action === 'removereq') {
+      head = 'In this specboard project, remove requirement ' + ctx.screen + ':' + ctx.reqId + '.'
+      body = 'File: ' + prd + '\nTarget: requirement ' + req + '\n\n' +
+        'Delete its section (or fold what survives into a neighbour, with the reason attached). ' +
+        'Then sweep ' + spec + ': a checkReq(\'' + ctx.reqId + '\') left behind proves a ' +
+        'requirement that no longer exists.'
+    } else if (action === 'addtest') {
+      head = 'In this specboard project, add a test (unit or flow) for the ' + ctx.screen + ' screen.'
+      body = 'File: ' + spec + '\nTarget: a new test\n' + cover + '\n\n' + reqBlock
+    } else if (action === 'edittest') {
+      head = 'In this specboard project, edit the test "' + (ctx.testTitle || '') + '".'
+      body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n' + cover + '\n\n' + reqBlock
+    } else if (action === 'removetest') {
+      head = 'In this specboard project, remove the test "' + (ctx.testTitle || '') + '".'
+      body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n\n' +
+        'Delete it whole. The requirements it covered' +
+        (ctx.coverIds && ctx.coverIds.length ? ' (' + ctx.coverIds.join(', ') + ')' : '') +
+        ' will read Untested unless another test tags them — leave them honestly ungreen or cover ' +
+        'them elsewhere; never fake their green.'
+    }
+    return head + '\n\n' + body + '\n\n' + PROMPT_DISCIPLINE + '\n'
+  }
+  // Opens the prompt window on a composed prompt. The picker (#promptpick) renders ONLY for the
+  // add/edit-test actions: the screen's requirement ids as toggle chips, a toggle re-running
+  // buildPrompt with the new cover set. The prompt lands as .textContent in a read-only <pre> —
+  // the board writes no file; Copy (the shared [data-copy] handler) hands it to the human. Best
+  // effort, it is also copied on open (R15), with the button as the reliable path.
+  function openPrompt (action, ctx) {
+    const sheet = document.getElementById('promptsheet')
+    const body = document.getElementById('promptbody')
+    const pick = document.getElementById('promptpick')
+    const TITLES = { reword: 'Reword this requirement', addreq: 'Add a requirement',
+      removereq: 'Remove this requirement', addtest: 'Add a test', edittest: 'Edit this test',
+      removetest: 'Remove this test' }
+    document.getElementById('prompttitle').textContent = TITLES[action] || 'Prompt'
+    pick.innerHTML = ''
+    if (action === 'addtest' || action === 'edittest') {
+      const on = {}
+      ;(ctx.coverIds || []).forEach(function (id) { on[id] = true })
+      // every one of the screen's ids as a chip, plus any covered id not in the list (a qualified
+      // cross-screen tag) so an existing cover set is never silently dropped by the first toggle
+      const ids = (ctx.reqList || []).map(function (r) { return r.id })
+      ;(ctx.coverIds || []).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id) })
+      ids.forEach(function (id) {
+        const c = document.createElement('button')
+        c.type = 'button'; c.className = 'pmchip' + (on[id] ? ' on' : ''); c.textContent = id
+        c.addEventListener('click', function () {
+          c.classList.toggle('on')
+          const picked = [].slice.call(pick.querySelectorAll('.pmchip.on')).map(function (el) { return el.textContent })
+          body.textContent = buildPrompt(action, Object.assign({}, ctx, { coverIds: picked }))
+        })
+        pick.appendChild(c)
+      })
+    }
+    body.textContent = buildPrompt(action, ctx)
+    sheet.classList.add('on')
+    try { navigator.clipboard.writeText(body.textContent).catch(function () {}) } catch (err) {}
+  }
+  // one ⋯ authoring menu, shared shape (mirrors the proof ⋯): items carry data-prompt so the
+  // sheet's backdrop-close can tell an opening click from an outside one
+  function promptMenu (aria, items) {
+    const menu = document.createElement('div'); menu.className = 'fmenu'
+    const mbtn = document.createElement('button'); mbtn.className = 'btn sm fmenubtn'
+    mbtn.setAttribute('aria-label', aria); mbtn.textContent = '⋯'
+    const pop = document.createElement('div'); pop.className = 'fmenupop'
+    menu.appendChild(mbtn); menu.appendChild(pop)
+    mbtn.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open') })
+    pop.addEventListener('click', function () { menu.classList.remove('open') })  // any pick closes it
+    items.forEach(function (it) { pop.appendChild(promptItem(it[0], it[1], it[2])) })
+    return menu
+  }
+  function promptItem (action, label, ctxFn) {
+    const b = document.createElement('button')
+    b.className = 'btn sm'; b.dataset.prompt = action; b.textContent = label
+    b.addEventListener('click', function () { openPrompt(action, ctxFn()) })
+    return b
+  }
+
   // THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
   // description, the flow steps), verify RIGHT (proof line, controls, the screenshot strip, the
   // recording). One of the views (Focus / Grid / Flow) switched by the header toggle. No new state — the
@@ -249,6 +359,17 @@ const B = window.__BOARD__ || {}
       const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.status
       fchip.textContent = FCHIP[r.status] || FCHIP.untested
       rmeta.appendChild(fid); rmeta.appendChild(fchip)
+      // the requirement's ⋯ authoring menu (board R15) — fresh reader chrome, no move/restore
+      // hazard: every action hands the human a ready prompt; the board never edits prd.md itself
+      const reqCtx = function () {
+        return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title,
+          reqList: reqs.map(function (x) { return { id: x.id, title: x.title } }) }
+      }
+      rmeta.appendChild(promptMenu('requirement authoring actions', [
+        ['reword', 'Reword this requirement', reqCtx],
+        ['addreq', 'Add a requirement', reqCtx],
+        ['removereq', 'Remove this requirement', reqCtx]
+      ]))
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body
       read.appendChild(rmeta); read.appendChild(h); read.appendChild(body)
@@ -298,13 +419,32 @@ const B = window.__BOARD__ || {}
         const logBtn = primary.querySelector('[data-log]')
         const stepBtn = primary.querySelector('[data-steps]')
         if (runWatch) move(runWatch, acts, false)
-        if (runBg || logBtn || stepBtn) {
+        // the proof ⋯ — the moved run/log controls lead (board R13/#4), then a divider and the test
+        // AUTHORING items (board R15): add / edit / remove each hand the human a ready prompt. The
+        // authoring buttons are FRESH reader chrome (never hung off the moved .test node — the
+        // close-fold-reopen contract), built like the ⋯ itself, so restoreMoved owes them nothing.
+        {
+          const testCtx = function () {
+            const ttlEl = primary.querySelector('.ttl')
+            return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title,
+              testTitle: primary.getAttribute('data-title') || (ttlEl ? ttlEl.textContent.trim() : ''),
+              coverIds: [].slice.call(primary.querySelectorAll('.tags .tag')).map(function (el) { return el.getAttribute('data-r') }),
+              reqList: reqs.map(function (x) { return { id: x.id, title: x.title } }) }
+          }
+          // a NEW test starts from the requirement being read — its id pre-picked in the cover set
+          const addCtx = function () { const c = testCtx(); c.coverIds = [r.id]; return c }
           const menu = document.createElement('div'); menu.className = 'fmenu'
           const mbtn = document.createElement('button'); mbtn.className = 'btn sm fmenubtn'
-          mbtn.setAttribute('aria-label', 'more run and log actions'); mbtn.textContent = '⋯'
+          mbtn.setAttribute('aria-label', 'run, log and authoring actions'); mbtn.textContent = '⋯'
           const pop = document.createElement('div'); pop.className = 'fmenupop'
           menu.appendChild(mbtn); menu.appendChild(pop); acts.appendChild(menu)
           ;[runBg, logBtn, stepBtn].forEach(function (b) { if (b) move(b, pop, false) })
+          if (runBg || logBtn || stepBtn) {
+            const d = document.createElement('div'); d.className = 'fmdiv'; pop.appendChild(d)
+          }
+          pop.appendChild(promptItem('addtest', 'Add a test', addCtx))
+          pop.appendChild(promptItem('edittest', 'Edit this test', testCtx))
+          pop.appendChild(promptItem('removetest', 'Remove this test', testCtx))
           mbtn.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open') })
           pop.addEventListener('click', function () { menu.classList.remove('open') })  // any pick closes it
         }
@@ -696,6 +836,18 @@ const B = window.__BOARD__ || {}
   document.addEventListener('click', e => {
     if (stepsheet.classList.contains('on') && !e.target.closest('.box') && !e.target.closest('[data-steps]'))
       stepsheet.classList.remove('on')
+  })
+
+  // The prompt-handoff window (board R15) closes like the other sheets: Close / Esc / a click off
+  // the card. The [data-prompt] guard keeps the opening click (a ⋯ menu item, outside the .box)
+  // from closing the sheet in the same bubble that opened it — the [data-log] pattern above.
+  const promptsheet = document.getElementById('promptsheet')
+  for (const b of document.querySelectorAll('[data-promptclose]'))
+    b.addEventListener('click', () => promptsheet.classList.remove('on'))
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') promptsheet.classList.remove('on') })
+  document.addEventListener('click', e => {
+    if (promptsheet.classList.contains('on') && !e.target.closest('.box') && !e.target.closest('[data-prompt]'))
+      promptsheet.classList.remove('on')
   })
 
   addEventListener('keydown', e => {

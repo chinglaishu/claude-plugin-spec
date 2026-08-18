@@ -303,3 +303,22 @@ no strip, never a faked or separately-captured one.
 trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the
 video kept for what a picture cannot carry. It amends R10's "no separate screenshot column" — the
 frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
+
+## R15 — The board hands you a prompt; it never writes a requirement or a test itself
+
+You are staff and the human owns meaning, so the board proposes work but never authors it. Every
+requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
+offers **reword · add a requirement · remove this requirement**; a test's menu offers **add · edit ·
+remove a test** (unit or flow), with a **picker for the requirements it should cover**. Each action
+opens a **ready prompt for Claude** — pre-loaded with the screen, the exact file
+(`spec/<screen>/prd.md` or `spec/<screen>/test.spec.ts`), the requirement or test in question, and
+the discipline that governs the change (**write the failing test first, tag the requirement with
+`checkReq`, assert something that would fail without it, keep every asserted value visible in the
+recording, and never weaken a test to go green**) — and copies it to the clipboard. You run it, read
+the diff, and keep the words yours. There is no in-board editor and no silent write: the board states
+the rule and hands off the work; a person, not the board, commits the meaning.
+
+*Drafted 2026-08-18 (formalizing the human's 2026-08-17 "test-authoring is prompt-handoff" decision):
+the board never writes or edits a requirement or a test — every add/edit/remove hands the human a
+ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
+awaits the human; the meaning is theirs, the tests assert the behaviour.*

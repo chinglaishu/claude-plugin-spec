@@ -1441,6 +1441,10 @@ export function build () {
   .fmenupop .btn, .fmenupop .btn.sm { display:block; width:100%; text-align:left; justify-content:flex-start;
     border:0; background:transparent; border-radius:8px; padding:9px 12px; font-size:var(--t-sm); color:var(--ink-2); }
   .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
+  /* board R15: the divider between the run/log items and the authoring items in the proof ⋯ menu */
+  .fmenupop .fmdiv { height:1px; margin:6px 4px; background:var(--hair); }
+  /* the requirement's own ⋯ (board R15) rides the reading card's meta line, pushed to its far edge */
+  .frmeta .fmenu { margin-left:auto; }
   /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
 
@@ -1719,6 +1723,18 @@ export function build () {
   .sheet .bh strong { font-size:var(--t-md); }
   .sheet .bb { padding:var(--s4); overflow:auto; }
   .sheet .bb:empty:before { content:"No runs recorded for this test yet."; color:var(--ink-4); font-size:var(--t-sm); }
+  /* the prompt window (board R15): the requirement PICKER as toggle chips (shown only for the test
+     prompts — empty hides itself), then the READ-ONLY prompt. Existing token pairs throughout:
+     the chip wears the .tag mono sizing, its .on state the .viewseg wash+ink pair (AA-measured). */
+  #promptpick { display:flex; flex-wrap:wrap; gap:var(--s2); margin-bottom:var(--s3); }
+  #promptpick:empty { display:none; }
+  #promptpick .pmchip { font:var(--t-micro) var(--mono); padding:3px 10px; border-radius:999px;
+    border:1px solid var(--hair-2); background:var(--paper); color:var(--ink-3); cursor:pointer; }
+  #promptpick .pmchip:hover { color:var(--ink); }
+  #promptpick .pmchip.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  #promptbody { font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-2); background:var(--paper);
+    border:1px solid var(--hair); border-radius:var(--r); padding:var(--s3);
+    white-space:pre-wrap; word-break:break-word; margin:0; max-width:100%; overflow-x:auto; }
   /* the INLINE evidence of a case (board R10): NUMBERED story rows in human words — the author's
      flow sentence, or the requirement's title for a proves-beat (with a quiet id chip). A row with
      recorded detail (the announced got/expected notes, the requirements it proved) expands on
@@ -2683,6 +2699,19 @@ ${howView(ctaAction)}
     <div class="bh"><strong id="stepstitle">All steps</strong><span class="grow"></span>
       <button class="btn sm" data-stepsclose>Close</button></div>
     <div class="bb" id="stepsbody"></div>
+  </div>
+</div>
+
+<!-- The prompt-handoff window (board R15): every ⋯ authoring action opens a READY Claude prompt
+     here — the screen, the exact file, the target and the kg-e2e discipline, with a requirement
+     picker for the test prompts. The board writes NO file: the prompt is a read-only pre and the
+     Copy button (the shared [data-copy] handler) hands it to the human. -->
+<div class="sheet" id="promptsheet">
+  <div class="box">
+    <div class="bh"><strong id="prompttitle">Prompt</strong><span class="grow"></span>
+      <button class="btn sm" data-copy="promptbody">Copy</button>
+      <button class="btn sm" data-promptclose>Close</button></div>
+    <div class="bb"><div id="promptpick"></div><pre id="promptbody"></pre></div>
   </div>
 </div>
 ${detail}
