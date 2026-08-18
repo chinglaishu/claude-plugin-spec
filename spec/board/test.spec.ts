@@ -715,13 +715,14 @@ test('The guide opens as manager and staff — without, then with', async ({ pag
     // the act's chips are the scene's chips — no second copy left over from the prose form
     await expect(w1.locator('.chip.ok')).toHaveCount(2)
     await expect(w1.locator('.chip.bad')).toHaveCount(1)
-    // 1 · the flag that drops — the bubble becomes a written requirement, and the ONE thing that
-    //     waits on a person is on it
+    // 1 · the written requirement — the bubble becomes a card that is canon the instant it exists
+    //     (the human, 2026-08-17): no guess flag, no confirmation step, nothing waits on a person
     const req = w2.locator('.scene.s-req')
     await expect(req.locator('.sc-bub')).toHaveCount(1)
     await expect(req.locator('.sc-card')).toHaveCount(1)
-    await expect(req.locator('.wflag')).toContainText('guess:')
-    await expect(req.locator('.wconfirm')).toContainText('you confirm the meaning')
+    await expect(req.locator('.wflag')).toHaveCount(0)
+    await expect(req.locator('.wconfirm')).toHaveCount(0)
+    await expect(req.locator('.sc-canon')).toContainText(/canon/i)
     // 2 · review by watching — a recording player whose miniature golden scene shows the numbers
     const watch = w2.locator('.scene.s-watch')
     await expect(watch.locator('.sc-bar')).toHaveCount(3)
@@ -769,10 +770,11 @@ test('Acts 1 and 2 play once, hold, and stand still under reduced motion', async
   await page.waitForSelector('#walkthrough .act[data-act="2"]')
   await checkReq('R11', async () => {
     const w2 = page.locator('.act[data-act="2"]')
-    const flag = w2.locator('.scene.s-req .wflag')
-    expect(await settle(flag)).toBeGreaterThan(0)      // it really animates, and it really finishes
-    expect(await op(flag)).toBeLessThan(0.1)           // the guess flag has dropped
-    expect(await op(w2.locator('.scene.s-req .wconfirm'))).toBe(1)   // your confirmation is held
+    const canon = w2.locator('.scene.s-req .sc-canon')
+    expect(await settle(canon)).toBeGreaterThan(0)      // it really animates, and it really finishes
+    expect(await op(canon)).toBe(1)                     // canon, and held — nothing waits on a person
+    await expect(w2.locator('.scene.s-req .wflag')).toHaveCount(0)
+    await expect(w2.locator('.scene.s-req .wconfirm')).toHaveCount(0)
     // revealing a later step RESTARTS its scene — the display toggle is the trigger, no JS timer
     await w2.locator('[data-wnext]').click()
     await w2.locator('[data-wnext]').click()
@@ -793,8 +795,9 @@ test('Acts 1 and 2 play once, hold, and stand still under reduced motion', async
     const req = page.locator('.act[data-act="2"] .scene.s-req')
     // no motion at all — and the end state is what you see
     expect(await req.evaluate((el: Element) => (el as any).getAnimations({ subtree: true }).length)).toBe(0)
-    expect(await op(req.locator('.wconfirm'))).toBe(1)
-    expect(await op(req.locator('.wflag'))).toBeLessThan(0.1)
+    expect(await op(req.locator('.sc-canon'))).toBe(1)
+    await expect(req.locator('.wflag')).toHaveCount(0)
+    await expect(req.locator('.wconfirm')).toHaveCount(0)
     await page.emulateMedia({ reducedMotion: null })
   })
 })

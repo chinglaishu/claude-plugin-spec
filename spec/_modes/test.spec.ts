@@ -2,15 +2,16 @@ import { test, expect } from '../_base'
 import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readScreen, isWaiting } from '../../tools/spec-store.mjs'
+import { readScreen } from '../../tools/spec-store.mjs'
 import { build } from '../../tools/build-board.mjs'
 
 // The ENGINE of the two-column board (board R4/R8). A requirement's state is COMPUTED — proven or
 // unproven — from the tests alone, never typed, and there is NO acceptance gate: editing the PRD IS
-// the change, so a stale proof simply reads unproven. The one thing that still waits on a human is a
-// crawl GUESS (init R3). These specs prove the derivation directly against the store, then that the
-// board renders those states and NO gate. (This is a `_`-prefixed pseudo-screen: Playwright runs it,
-// but it is not a row.)
+// the change, so a stale proof simply reads unproven. There is also no draft/guess state (the human,
+// 2026-08-17): a PRD is canon the moment it is written, full stop — nothing on a screen waits on a
+// person any more. These specs prove the derivation directly against the store, then that the board
+// renders those states and NO gate. (This is a `_`-prefixed pseudo-screen: Playwright runs it, but it
+// is not a row.)
 //
 // Fixtures are `probe-` screens. This file sorts BEFORE board/ (an underscore beats a letter), so a
 // leftover would be a phantom row while the board specs assert exact counts — clean up after EACH test
@@ -28,12 +29,13 @@ test.afterEach(() => {
 })
 
 // A screen with one requirement. There is nothing to "accept" (board R8) — a requirement is the
-// source of truth the moment it is written, and its state is computed from its tests. `guess` marks
-// it as a crawl guess (the one remaining human-correction case, init R3).
-function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { guess = false } = {}) {
+// source of truth the moment it is written, and its state is computed from its tests. `extra` lets a
+// test inject an arbitrary extra frontmatter line — used below to prove a pre-redesign `guess:` line
+// left over in an old PRD is now inert.
+function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { extra = '' } = {}) {
   const dir = join(SPEC, name); mkdirSync(dir, { recursive: true })
   const prd = `---\nscreen: ${name}\narea: Core\ntitle: ${name}\nroute: /${name}\n` +
-    (guess ? 'guess: true\n' : '') + `---\n\n## R1 — A first requirement\n\n${body}\n`
+    extra + `---\n\n## R1 — A first requirement\n\n${body}\n`
   writeFileSync(join(dir, 'prd.md'), prd)
   return { name, dir, prd }
 }
@@ -49,11 +51,10 @@ const stalePass = (name: string) =>
   ({ [name]: { ranAt: 1, tests: [{ title: 'x', ok: true, reqs: { [`${name}:R1`]: 'pass' } }] } })
 
 // ── the two requirement states (board R4) ─────────────────────────────────
-test('unproven — a requirement with no passing test reads unproven, and is not waiting', () => {
+test('unproven — a requirement with no passing test reads unproven', () => {
   const { name } = makeScreen('probe-unproven')
   const s = readScreen(name)!
   expect(s.reqs[0].state).toBe('unproven')   // no passing assertion covers it — honestly ungreen
-  expect(isWaiting(s)).toBe(false)           // no gate — a normal screen never waits on a person
 })
 
 test('proven — a current passing proof makes a requirement proven', () => {
@@ -67,7 +68,6 @@ test('a proof that predates the source no longer proves — editing the PRD IS t
   // a pass recorded before this prd.md was written describes a version that has moved on
   const s = readScreen(name, stalePass(name) as any)!
   expect(s.reqs[0].state).toBe('unproven')   // stale by source — no gate needed to notice
-  expect(isWaiting(s)).toBe(false)
 })
 
 // board R4's four-word `status` must apply the SAME staleness rule `state` does — a pass that
@@ -94,15 +94,18 @@ test('state is only ever proven or unproven — there is no reworded / accept st
   for (const s of [proven, bare]) expect(s.reqs[0].state).not.toBe('reworded')
 })
 
-// ── the ONE remaining human-correction case: a crawl guess (init R3) ───────
-test('a crawl guess is the only thing waiting; a normal screen never is', () => {
+// ── no more guess / draft state (the human, 2026-08-17) ────────────────────
+// A requirement is canon the moment it is written — there is no `guess:` flag, no waiting, no
+// acceptance. A pre-redesign PRD that still carries a leftover `guess: true` line (this repo's own
+// spec/init/state.json relic predates the change) must be read no differently from any other PRD: the
+// frontmatter key is simply unused now, not a distinguishing state.
+test('a leftover guess: frontmatter line is inert — the screen reads exactly like any other', () => {
   const normal = makeScreen('probe-normal')
-  expect(isWaiting(readScreen(normal.name)!)).toBe(false)   // accepted-or-not is irrelevant — no gate
-
-  const g = makeScreen('probe-guess', 'A guess read off the page.', { guess: true })
-  const gs = readScreen(g.name)!
-  expect(gs.guess).toBe(true)
-  expect(isWaiting(gs)).toBe(true)                          // a guess still waits on a human to confirm
+  const leftover = makeScreen('probe-leftover-guess', 'A drafted requirement.', { extra: 'guess: true\n' })
+  const ns = readScreen(normal.name)! as any
+  const ls = readScreen(leftover.name)! as any
+  expect(ns.guess).toBeUndefined()
+  expect(ls.guess).toBeUndefined()   // the flag is no longer read at all — canon either way
 })
 
 // ── the board renders proven/unproven and NO gate (board R2/R8) ────────────
@@ -135,10 +138,10 @@ test('renders — the detail is the two columns, with NO gate and no accept butt
     .toHaveCount(reqN)
 })
 
-test('renders — a crawl guess reads as waiting on the board (the one remaining human case)', async ({ page }) => {
-  const { name } = makeScreen('probe-render-guess', 'A guess.', { guess: true })
+test('renders — a leftover guess: frontmatter line renders exactly like a normal screen', async ({ page }) => {
+  const { name } = makeScreen('probe-render-guess', 'A drafted requirement.', { extra: 'guess: true\n' })
   const card = page.locator('#home .card[data-screen="' + name + '"]')
   await settleAt(page, '/', card)
-  expect(await card.getAttribute('data-waiting')).toBe('1')
-  await expect(card.locator('.chip', { hasText: /guess/i })).toHaveCount(1)
+  expect(await card.getAttribute('data-waiting')).toBeNull()   // no waiting attribute exists any more
+  await expect(card.locator('.chip', { hasText: /guess/i })).toHaveCount(0)
 })

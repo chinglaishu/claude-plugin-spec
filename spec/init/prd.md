@@ -28,18 +28,21 @@ auto-test is a false green that makes the board look finished while proving noth
 per-screen, human-sponsored **kg-deep** pass — study, golden fixture, a drafted PRD for the human's
 gate, then a few comprehensive proving flows — run one screen at a time, most important first.*
 
-## R3 — A drafted PRD is marked as a guess until the human accepts it
+## R3 — A drafted PRD is canon the moment it is written
 
-A PRD drafted on the human's behalf (a kg-deep pass's draft) carries `guess: true` — a proposal for
-them to correct, never canon, and visibly different from a PRD they wrote. A guess is the one thing
-on the board still waiting on a person; dropping the flag is the acceptance, and there is no other
-gate.
+A PRD drafted on the human's behalf (a kg-deep pass's draft) is a requirement like any other the
+instant it exists: specboard drafts it as an ordinary starting point, and the human edits or removes
+it freely, exactly as they would a PRD they typed themselves. A screen with no test yet simply reads
+Untested — that is the tests' business (board R4), not a person's.
 
 *Corrected 2026-07-27: this said "the draft and screen cells stay unapproved so the loop starts at
 gate A." That was the greenfield-only model — a screen with no wireframe has no gate A and no gate B.
-Corrected again 2026-07-31: the guess's SOURCE changed — the crawl no longer drafts PRDs (see R2), so
-a guess now comes from a kg-deep pass. What the human owns is unchanged: a drafted requirement is a
-guess to be corrected, never canon.*
+Corrected again 2026-07-31: the draft's SOURCE changed — the crawl no longer drafts PRDs (see R2), so
+a drafted requirement now comes from a kg-deep pass.*
+
+*Amended 2026-08-17 (the human's decision): the guess flag / acceptance is removed. A drafted PRD is
+canon immediately and edited/removed like any requirement — there is no draft state and nothing waits
+on a person to accept it.*
 
 ## R4 — An empty project is the same flow with nothing found
 

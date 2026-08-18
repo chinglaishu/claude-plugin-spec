@@ -34,20 +34,18 @@ export async function makeUnbuiltScreen (request: APIRequestContext, name: strin
   return name
 }
 
-// A DOCUMENT-MODE screen: a PRD (a crawled guess), the screen as it looks now, and a test — but no
-// wireframe. This is what kg-init lands for an existing app: PRD + screen + E2E, no draft. It exists
-// to prove the two-mode state machine, since specboard's own six screens are all design mode.
-// `screen.png` is copied from a real one so the row renders a genuine image; the test file only has
-// to EXIST for the E2E column to leave `waiting`. Rebuilds the board so the row is on it. The state
-// guard removes the directory (it did not exist before the run), so this leaves nothing behind.
-export function makeDocumentScreen (
-  name: string, { guess = true }: { guess?: boolean } = {}
-) {
+// A DOCUMENT-MODE screen: a PRD (a drafted requirement, canon the moment it is written — the human,
+// 2026-08-17), the screen as it looks now, and a test — but no wireframe. This is what kg-init lands
+// for an existing app: PRD + screen + E2E, no draft. It exists to prove the two-mode state machine,
+// since specboard's own six screens are all design mode. `screen.png` is copied from a real one so the
+// row renders a genuine image; the test file only has to EXIST for the E2E column to leave `waiting`.
+// Rebuilds the board so the row is on it. The state guard removes the directory (it did not exist
+// before the run), so this leaves nothing behind.
+export function makeDocumentScreen (name: string) {
   const dir = join(SPEC, name)
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'prd.md'),
-    `---\nscreen: ${name}\narea: Crawled\ntitle: ${name}\nroute: /${name}\n` +
-    (guess ? 'guess: true\n' : '') + '---\n\n' +
+    `---\nscreen: ${name}\narea: Crawled\ntitle: ${name}\nroute: /${name}\n---\n\n` +
     '## R1 — A requirement read off the running page\n\nOne behaviour the crawl inferred, so this reads as a real screen.\n')
   writeFileSync(join(dir, 'test.spec.ts'),
     "import { test, expect } from '../_base'\n\n" +
