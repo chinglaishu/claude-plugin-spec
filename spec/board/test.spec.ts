@@ -1073,6 +1073,22 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     await sheet.locator('[data-promptclose]').click()
     await expect(sheet).not.toHaveClass(/\bon\b/)
 
+    // R15 anatomy (2026-08-19, the human): "Add a test to cover it" rides the REQUIREMENT ⋯ too, so an
+    // UNTESTED requirement — the one that most needs a test — can ask for one without a test menu to
+    // start from. Opening it from a requirement pre-picks that requirement in the cover set.
+    await rmenu.locator('.fmenubtn').click()
+    const rAddTest = rmenu.locator('.fmenupop [data-prompt="addtest"]')
+    await expect(rAddTest).toHaveCount(1)
+    await expect(rAddTest).toContainText(/add a test/i)
+    await rAddTest.click()
+    await expect(sheet).toHaveClass(/\bon\b/)
+    await expect(body).toContainText('spec/board/test.spec.ts')
+    // the picker pre-picks the requirement being read — its id names the cover line
+    const rcover = (((await body.textContent()) || '').split('\n').find(l => /cover these requirements/i.test(l)) || '')
+    expect(rcover).toContain(reqId)
+    await sheet.locator('[data-promptclose]').click()
+    await expect(sheet).not.toHaveClass(/\bon\b/)
+
     // THE TEST ⋯ — folded into the proof header's EXISTING menu, below Run-in-background/Logs/Steps,
     // separated by a divider: add · edit · remove a test
     const menu = ov.locator('.feval .fpacts .fmenu')

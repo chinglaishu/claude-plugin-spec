@@ -365,10 +365,15 @@ const B = window.__BOARD__ || {}
         return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title,
           reqList: reqs.map(function (x) { return { id: x.id, title: x.title } }) }
       }
+      // "Add a test to cover it" (board R15, 2026-08-19) rides the requirement ⋯ too — an Untested
+      // requirement has no test menu, so this is the only place it can ask for the test it most needs.
+      // It pre-picks this requirement in the cover set.
+      const reqAddTestCtx = function () { const c = reqCtx(); c.coverIds = [r.id]; return c }
       rmeta.appendChild(promptMenu('requirement authoring actions', [
         ['reword', 'Reword this requirement', reqCtx],
         ['addreq', 'Add a requirement', reqCtx],
-        ['removereq', 'Remove this requirement', reqCtx]
+        ['removereq', 'Remove this requirement', reqCtx],
+        ['addtest', 'Add a test to cover it', reqAddTestCtx]
       ]))
       const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
       const body = document.createElement('div'); body.className = 'fbody'; body.innerHTML = r.body

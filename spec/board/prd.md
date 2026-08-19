@@ -23,43 +23,44 @@ strip — that grid mostly repeated what the two ends already said.
 
 ## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own
 
-The detail pairs a requirement with the evidence that proves it — the reading and its proof — as two
-regions that scroll independently: scrolling the proof never moves the reading, and neither scrolls
-the page; the headers stay pinned. This is the shape of the **Focus** reader (R13): the requirement
-on the left, its covering test's own controls, frames and recording on the right. There is no
-wireframe region and no built-screen region — the wireframe is not a specboard artifact at all (R7),
-and a test's evidence (recording, screenshot) lives inside the test (R3, R10).
+Wherever a requirement is opened, its **reading and its proof are shown together and scroll
+independently** — scrolling the proof never moves the reading, and neither scrolls the page; the
+headers stay pinned. And what sits beside the reading is the **proof itself** — the covering test's
+own controls, frames and recording — never a wireframe or a built-screen mock-up: the wireframe is
+not a specboard artifact at all (R7), and a test's evidence (recording, screenshot) lives inside the
+test (R3, R10). This is the durable shape the detail must keep; the particular **views that deliver
+it belong to R13** (Focus is the reader where it lives today).
 
-*Reworked 2026-08-18 (the human): this described a dedicated two-column "Columns" view. That view is
-retired now that Grid (and, next, Flow) replaces it (R13); the two-region reading-and-proof split it
-embodied now lives in Focus's two containers. The independent-scroll and no-wireframe guarantees are
-unchanged. NOTE to the human: this now overlaps R13's Focus description — you may want to merge R2
-into R13.*
+*Reworked 2026-08-19 (the human): R2 is the view-agnostic **principle** now — proof beside the
+reading, each scrolling on its own, no wireframe region — kept deliberately separate from R13, which
+owns the particular views (Focus / Grid / Flow) that embody it. It previously described a dedicated
+two-column "Columns" view, retired when Grid and Flow replaced it (R13); the earlier note asked
+whether to fold R2 into R13, and the human chose to keep it as the standalone principle.*
 
 ## R3 — A requirement is a title that expands; a test is a title, a recording, and its tags
 
-Left column: each requirement shows only its title until clicked, then its full description — real
+A requirement shows only its **title** until it is opened, then its full description — real
 requirements are long and formatted (headings, lists, `code`, author notes), so the collapse is what
-keeps the column readable. Right column: each test leads with a **prominent, descriptive title** of
-the flow it runs — its own name, so it says what the test is *for* — then its latest **recording**
+keeps them scannable: in **Grid** a requirement is a title row, and opening it hands it to the
+**Focus** reader, where the full text unfolds. A test leads with a **prominent, descriptive title**
+of the flow it runs — its own name, so it says what the test is *for* — then its latest **recording**
 (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a
 test title just repeating a requirement's, is gone: under many-to-many a test covers several
 requirements, so its title names the *flow* and the tags carry the requirement link.
 
-Both lists carry a **reading hierarchy**, never bare title rows: each pane's header wears a quiet
-purpose hint; a requirement row shows a one-line **excerpt** of its body under the title (hidden once
-the row is open — the full text follows); a test row shows a quiet **meta line** under its title —
-what it proved, its step count and duration, and on a failure **the failing beat in human words**,
-readable without opening anything.
+Everything carries a **reading hierarchy**, never bare title rows: a header wears a quiet purpose
+hint; a requirement row shows a one-line **excerpt** of its body under the title (hidden once the row
+is open — the full text follows); a test row shows a quiet **meta line** under its title — what it
+proved, its step count and duration, and on a failure **the failing beat in human words**, readable
+without opening anything.
 
 *Amended 2026-08-03 at the human's direction: the detail page read as bare title rows — the lists
 needed the title / sub-line / hint layer this adds to be scannable.*
 
-*Framing note 2026-08-18: this requirement is written in the retired "Left column / Right column"
-terms (the Columns view is gone, R13). Its anatomy — a requirement is a title that expands to its
-full text, a test leads with its flow name then recording then tags, both with a reading hierarchy —
-now lives in Grid rows and the Focus reader. The wording awaits the human's reword; the meaning is
-unchanged and the tests assert it against Grid/Focus.*
+*Reworded 2026-08-19 (the human): retired the "Left column / Right column" framing — the Columns view
+is gone (R13). The anatomy is unchanged (a requirement is a title that expands to its full text; a
+test leads with its flow name, then recording, then tags; both with a reading hierarchy) and now
+reads in Grid rows and the Focus reader, which the tests assert.*
 
 ## R4 — Requirement state is computed and assertion-backed
 
@@ -308,8 +309,10 @@ frames are the recording indexed, not a second capture, so the one-artifact rule
 
 You are staff and the human owns meaning, so the board proposes work but never authors it. Every
 requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
-offers **reword · add a requirement · remove this requirement**; a test's menu offers **add · edit ·
-remove a test** (unit or flow), with a **picker for the requirements it should cover**. Each action
+offers **reword · add a requirement · remove this requirement · add a test to cover it**; a test's
+menu offers **add · edit · remove a test** (unit or flow), with a **picker for the requirements it
+should cover**. Adding a test is reachable from a requirement even when nothing yet tags it — the
+requirement that most needs a test is the one with none. Each action
 opens a **ready prompt for Claude** — pre-loaded with the screen, the exact file
 (`spec/<screen>/prd.md` or `spec/<screen>/test.spec.ts`), the requirement or test in question, and
 the discipline that governs the change (**write the failing test first, tag the requirement with
@@ -322,3 +325,7 @@ the rule and hands off the work; a person, not the board, commits the meaning.
 the board never writes or edits a requirement or a test — every add/edit/remove hands the human a
 ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
 awaits the human; the meaning is theirs, the tests assert the behaviour.*
+
+*Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
+from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
+menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
