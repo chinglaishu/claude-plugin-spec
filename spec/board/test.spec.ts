@@ -551,6 +551,15 @@ test('The detail offers a Focus / Grid / Flow toggle — Focus reads one require
     await expect(dt.locator('.cols')).toBeHidden()
     await expect(grid.locator('.grrow')).toHaveCount(reqCount)
     await expect(grid.locator('.grrow .grproof')).toHaveCount(reqCount)
+    // The real board now leads several requirements with a Given/When/Then shape (2026-08-19) — Grid
+    // draws that behavior in a .grbeh cell for them, not only on the spec/_modes fixture screen. R9
+    // (search) is one of them; prose-only principle requirements still carry no .grbeh.
+    const gbeh = grid.locator('.grrow[data-r="R9"] .grbeh')
+    await expect(gbeh).toHaveCount(1)
+    await expect(gbeh.locator('.behavior .bgiven .btxt')).not.toBeEmpty()
+    await expect(gbeh).toContainText(/Given/)
+    await expect(gbeh).toContainText(/When/)
+    await expect(gbeh).toContainText(/Then/)
     await grid.locator('.grrow').first().click()
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)

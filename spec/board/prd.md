@@ -23,6 +23,10 @@ strip — that grid mostly repeated what the two ends already said.
 
 ## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own
 
+- **Given** a requirement and its proof shown together
+- **When** you scroll the proof
+- **Then** the reading stays still, and neither region scrolls the page
+
 Wherever a requirement is opened, its **reading and its proof are shown together and scroll
 independently** — scrolling the proof never moves the reading, and neither scrolls the page; the
 headers stay pinned. And what sits beside the reading is the **proof itself** — the covering test's
@@ -38,6 +42,10 @@ two-column "Columns" view, retired when Grid and Flow replaced it (R13); the ear
 whether to fold R2 into R13, and the human chose to keep it as the standalone principle.*
 
 ## R3 — A requirement is a title that expands; a test is a title, a recording, and its tags
+
+- **Given** a requirement showing only its title
+- **When** you open it
+- **Then** its full, formatted description unfolds — a Grid row opens into the Focus reader
 
 A requirement shows only its **title** until it is opened, then its full description — real
 requirements are long and formatted (headings, lists, `code`, author notes), so the collapse is what
@@ -129,6 +137,10 @@ state is now just proven / unproven; the "does the build match the intended desi
 a separate, interactive wireframe check (planned), not a gate.*
 
 ## R9 — Search across requirement text, grouped into areas
+
+- **Given** screens grouped into named areas
+- **When** you search a term
+- **Then** only cards matching a name, route, or requirement stay, and a group with no match hides
 
 Search matches screen names, routes and the text of every requirement; a group with no matching card
 hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order,
@@ -246,6 +258,10 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 
 ## R13 — Three views of a screen's requirements: Focus, Grid, Flow
 
+- **Given** a screen's requirements
+- **When** you toggle Focus / Grid / Flow
+- **Then** the same requirements render in that view, storing nothing new
+
 The detail header carries a **toggle — Focus / Grid / Flow** — three views of the same requirements,
 storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
 — was Columns)*. **Grid** is the behavior grid — one row per
@@ -306,6 +322,10 @@ video kept for what a picture cannot carry. It amends R10's "no separate screens
 frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
 
 ## R15 — The board hands you a prompt; it never writes a requirement or a test itself
+
+- **Given** a requirement or a test
+- **When** you pick an action from its ⋯ menu
+- **Then** a ready Claude prompt opens and is copied — the board writes no file
 
 You are staff and the human owns meaning, so the board proposes work but never authors it. Every
 requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
