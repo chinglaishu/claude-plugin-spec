@@ -10,6 +10,7 @@ import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
 import { parseBehavior } from './behavior.mjs'
+import { reqHash, meaningText, isChanged } from './reqhash.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -198,19 +199,67 @@ export function foldByScreen (fresh, { partial = false } = {}) {
   const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
   for (const [screen, r] of Object.entries(fresh)) {
     const prev = index[screen]
+    // `provenHashes` (Changed-drift, board R4's fifth word) rides the screen's index entry and is
+    // FOLDED like everything else here — a fresh report replaces the tests but must never clear the
+    // pins of requirements it did not pass this run, so the previous pins carry over and
+    // stampProvenHashes below re-stamps only what passed.
+    const pins = prev?.provenHashes
     if (partial && prev && Array.isArray(prev.tests)) {
       const byTitle = new Map(prev.tests.map(t => [t.title, t]))
       for (const t of r.tests) byTitle.set(t.title, t)
       const tests = [...byTitle.values()]
-      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt }
-    } else index[screen] = r
+      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt, ...(pins ? { provenHashes: pins } : {}) }
+    } else index[screen] = { ...r, ...(pins ? { provenHashes: pins } : {}) }
   }
+  // Pin the proof text (Changed-drift): for every requirement this run's tests touched whose folded
+  // status is now PASS, stamp a content hash of its wording at this moment. Compared at derive time
+  // (enrichReqs) against the current text — a mismatch on a still-passing requirement reads Changed.
+  stampProvenHashes(fresh, index)
   // drop screens whose directory is gone — a deleted screen should not haunt the column
   for (const screen of Object.keys(index)) if (!existsSync(join(SPEC, screen))) delete index[screen]
   // temp-then-rename: two runs can fold at once (a board-started run while the suite runs), and a
   // half-written index is worse than a stale one
   writeJson(RESULTS_INDEX, index)
   return index
+}
+
+// Stamp `provenHashes[reqId] = reqHash(meaningText(body))` for every requirement the FRESH run
+// touched whose folded status is passed. Only this run's ids are touched — a requirement not
+// passed this run keeps its previous pin (fold, never clear, the same rule as the rest of the
+// index). A qualified cross-screen tag (`x:R3`) stamps under screen x, because the pin belongs to
+// the REQUIREMENT's screen wherever the proving test's file lives. meaningText drops dated
+// author-notes, so a provenance edit never flips Changed. A requirement no longer in its PRD
+// (deleted, renamed) is simply not stamped.
+function stampProvenHashes (fresh, index) {
+  const touched = new Set()
+  for (const r of Object.values(fresh)) {
+    for (const t of r.tests || []) for (const id of Object.keys(t.reqs || {})) touched.add(id)
+  }
+  if (!touched.size) return
+  // folded status is board-wide (a second screen's test can cover the same id), so derive it from
+  // the whole just-folded index — the same fold enrichReqs reads, minus its mtime staleness filter
+  // (a pin stamped from a pass that later goes stale-by-source is harmless: staleness drops the
+  // pass before status, so the requirement is not Passed and Changed cannot fire).
+  const agg = aggregateCoverage(index)
+  const prdCache = {}
+  const reqsOf = scr => (prdCache[scr] ??= (() => {
+    const p = join(SPEC, scr, 'prd.md')
+    if (!existsSync(p)) return []
+    try { return parsePrd(readFileSync(p, 'utf8')).reqs } catch { return [] }
+  })())
+  for (const qid of touched) {
+    const i = qid.indexOf(':')
+    if (i < 0) continue                       // ids in t.reqs are always qualified; stay safe anyway
+    const scr = qid.slice(0, i)
+    const rid = qid.slice(i + 1)
+    if (deriveReqStatus(agg[qid] || []) !== 'passed') continue
+    const body = reqsOf(scr).find(r => r.id === rid)?.body
+    if (body == null) continue
+    // a cross-screen pin may land on a screen with no run entry yet — that pin-only entry carries
+    // no tests, and readScreen treats it as "never run" (the run guard there), never a fake green
+    const entry = (index[scr] ??= {})
+    entry.provenHashes = { ...(entry.provenHashes || {}), [rid]: reqHash(meaningText(body)) }
+  }
 }
 
 export const foldResults = (reportPath = RESULTS) => foldByScreen(parseReport(reportPath))
@@ -278,7 +327,16 @@ function enrichReqs (reqs, screen, results) {
     // green the code above exists to prevent, rule 3). Fail entries are never marked stale (`stale`
     // is defined only for status === 'pass'), so a current failure still wins regardless.
     const liveEntries = entries.filter((e, i) => !tests[i].stale)
-    return { ...r, state: deriveReqState({ hasCurrentPass }), status: deriveReqStatus(liveEntries), behavior: parseBehavior(r.body), tests }
+    // Changed — board R4's fifth word (2026-08-19), a spec-store layer ON TOP of deriveReqStatus
+    // (which stays the four proof words, like the staleness filter above): a requirement that is
+    // Passed, has a `provenHashes` pin from its last passing fold, and whose CURRENT meaning text
+    // no longer matches that pin, was proven against wording that has since moved — re-verify.
+    // Computed here, never stored as a status; Failed / Not-reached / Untested keep their word
+    // (isChanged is passed-only, pure, unit-tested in tools/reqhash.test.mjs).
+    const folded = deriveReqStatus(liveEntries)
+    const pin = results?.[screen]?.provenHashes?.[r.id]
+    const status = isChanged(folded, pin, r.body) ? 'changed' : folded
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status, behavior: parseBehavior(r.body), tests }
   })
 }
 
@@ -354,7 +412,12 @@ export function readScreen (name, results = null) {
 
   // A test that exists but has never run proves nothing, so it is not a pass — it is "never run".
   const allResults = results || readResults()
-  const run = allResults[name]
+  // The run guard: a cross-screen Changed-drift pin can create an index entry that carries ONLY
+  // `provenHashes` — no tests, no ranAt, because this screen itself has never run. Such an entry is
+  // not a run, and treating it as one would walk `run.failed`/`run.ranAt` off undefined and read
+  // the e2e cell green for a screen nothing ever tested (rule 3, never fake a green).
+  const entry = allResults[name]
+  const run = entry && Array.isArray(entry.tests) ? entry : undefined
   const ranBeforeEdit = run && run.ranAt < newestSource(dir)
   // E2E is identical in both modes once a test exists; the only thing the draft ever gated here was
   // whether the screen had STARTED, and a document-mode screen has (it is a finished screen). So a

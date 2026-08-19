@@ -43,6 +43,10 @@ const excerpt = body => {
 // row — it stays compact; the word lives in the tooltip (Grid's row spells it out, see GRID_CHIP below).
 const REQ_CHIP = {
   passed: ['ok', 'mark', 'Passed — a current passing assertion covers this'],
+  // Changed (board R4's fifth word, 2026-08-19) — a modifier on Passed: the assertion still holds,
+  // but the requirement text moved past the pin its last passing proof stamped. Wears the 藍 indigo
+  // long reserved for exactly this drift state, and its own ◈-shaped mark (hue never alone).
+  changed: ['changed', 'mark c', 'Changed — proved before; the text moved since, re-verify'],
   failed: ['fail', 'mark h', 'Failed — the covering test failed its assertion'],
   'not-reached': ['wait', 'mark n', 'Not reached — a flow that covers this stopped before it got here'],
   untested: ['gone', 'mark o', 'Untested — no test asserts this yet']
@@ -204,6 +208,7 @@ const reqPane = s => `<div class="pane reqpane">
 // evidence opens Focus.
 const GRID_CHIP = {
   passed: ['ok', 'mark', '✓ Passed'],
+  changed: ['changed', 'mark c', '◈ Changed'],
   failed: ['fail', 'mark h', '✗ Failed'],
   'not-reached': ['wait', 'mark n', '◌ Not reached'],
   untested: ['gone', 'mark o', '○ Untested']
@@ -227,15 +232,18 @@ const GRID_CHIP = {
 export const gridProof = (r, screenName) => {
   const tests = r.tests || []
   if (!tests.length) return '<span class="grproof none">no test asserts this yet</span>'
-  const cur = (r.status === 'passed' && tests.find(t => t.status === 'pass' && !t.stale)) ||
+  // `changed` (board R4's fifth word) is a modifier on Passed: the covering pass is still current,
+  // so it names the same passing test — but the line must SAY the text moved, never a plain green.
+  const cur = ((r.status === 'passed' || r.status === 'changed') && tests.find(t => t.status === 'pass' && !t.stale)) ||
     (r.status === 'failed' && tests.find(t => t.status === 'fail')) ||
     (r.status === 'not-reached' && tests.find(t => t.status === 'not-reached')) ||
     tests[0]
   const from = cur.screen && cur.screen !== screenName ? ` · ${esc(cur.screen)}` : ''
   const line = r.status === 'passed' ? `✓ proved by ${esc(cur.title)}${from}`
-    : r.status === 'failed' ? `✗ covered by ${esc(cur.title)}${from} — failed`
-      : r.status === 'not-reached' ? `◌ covered by ${esc(cur.title)}${from} — not reached`
-        : `○ covered by ${esc(cur.title)}${from} — stale, not re-proven since the screen changed`
+    : r.status === 'changed' ? `◈ proved by ${esc(cur.title)}${from} — but the requirement text moved since that proof, re-verify`
+      : r.status === 'failed' ? `✗ covered by ${esc(cur.title)}${from} — failed`
+        : r.status === 'not-reached' ? `◌ covered by ${esc(cur.title)}${from} — not reached`
+          : `○ covered by ${esc(cur.title)}${from} — stale, not re-proven since the screen changed`
   return `<span class="grproof">${line}</span>`
 }
 const gridPane = s => `<div class="gridview" hidden>
@@ -394,7 +402,8 @@ const howSpineCol = c => `<div class="col"><div class="num">${c.num}</div><h3>${
 // not-reached, the mark that rides every hue, coverage tags — is folded into the act copy below.
 //   INVERSION / INDIGO: there is no more "your turn" state on this page (the human, 2026-08-17 —
 // the guess/gate mechanism is gone end to end), so indigo is not spent anywhere in the guide any
-// more; it is reserved, unused, for a future `Changed` drift state. Act 4's closing CTA (`.wcta-act`
+// more; as a STATUS it now belongs to the `Changed` drift state (board R4's fifth word, 2026-08-19
+// — see REQ_CHIP/.chip.changed), which this static guide does not draw. Act 4's closing CTA (`.wcta-act`
 // when there is a real next action to name, `.wcta-settled` once the journey is folded) now wears the
 // board's neutral primary-action ink, never indigo (board R12 fix; see wCtaAction / wCta below). Act
 // 1's invisible-green failure wears the board's own solid `chip bad`, the single inverted element of
@@ -491,7 +500,8 @@ const wMoment = s =>
 //
 // Colour follows the design system exactly: bengara names the failure beats, koke the settled ones —
 // and indigo is spent NOWHERE on this page (the human, 2026-08-17: there is no more state that waits
-// on a person, so indigo is reserved, unused, for a future `Changed` drift state).
+// on a person; indigo now names the `Changed` drift state — board R4's fifth word, 2026-08-19 — and
+// these scenes do not draw it).
 const scene = (id, inner) => '<div class="scene s-' + id + '">' + inner + '</div>'
 
 // 1 · THE CHAT THAT SCROLLS AWAY. The task is spoken, answered instantly, and then the thread rides
@@ -1189,10 +1199,12 @@ export function build () {
   // direction); it feeds the walkthrough's closing CTA (Act 4) with the single derived next action.
   const j = journey()
   const ctaAction = wCtaAction(j)
-  // There is no "your turn" any more (the human, 2026-08-17 — no guess, no gate). The one number the
-  // home banner reads is honest drift, not a person's queue: how many requirements are FAILING right
-  // now (board R4's four-word status) — everything else is simply proven or untested.
+  // There is no "your turn" any more (the human, 2026-08-17 — no guess, no gate). The numbers the
+  // home banner reads are honest drift, not a person's queue: how many requirements are FAILING
+  // right now, and how many read CHANGED — proven before, text moved since (board R4's fifth word,
+  // 2026-08-19). Everything else is simply proven or untested, and zero of both stays "all clear".
   const failing = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'failed').length, 0)
+  const changed = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'changed').length, 0)
 
   const groups = areas.map(a => {
     const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
@@ -1384,6 +1396,14 @@ export function build () {
   .fchip.failed  { color:var(--bengara); background:var(--bengara-tint); border-color:var(--bengara-line); }
   .fchip.not-reached { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
   .fchip.untested { color:var(--ink-3); background:var(--wash); border-color:var(--hair-2); }
+  /* Changed — board R4's fifth word (2026-08-19). It claims the 藍 indigo reserved for exactly this
+     drift state: the same tint/line/ink pattern the passed chip spends koke on (--ai #2f4a63 on
+     --ai-tint #e6eaee measures 7.6:1 — WCAG AA). A tint like every status chip, never a second
+     inverted element. The ◈-shaped mark (a rotated hollow square) carries the state beside the hue
+     (hue never alone), distinct from ○ untested's straight hollow square. */
+  .fchip.changed { color:var(--ai); background:var(--ai-tint); border-color:var(--ai-line); }
+  .chip.changed  { background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
+  .mark.c { background:transparent; box-shadow:inset 0 0 0 1px currentColor; transform:rotate(45deg); }
 
   /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (the
      independent-scroll guarantee of board R2): a fixed height from the grid, its own overflow —
@@ -2511,8 +2531,11 @@ export function build () {
 
 <div class="wrap">
   ${screens.length ? `<div class="clear">
-    <span class="chip ${failing ? 'bad' : 'ok'}"><span class="dot"></span>${failing ? `${failing} failing` : 'nothing failing'}</span>
-    ${failing ? `${failing} requirement${failing === 1 ? '' : 's'} failing.` : 'All requirements are proven or untested — nothing is failing.'}
+    <span class="chip ${failing ? 'bad' : changed ? 'changed' : 'ok'}"><span class="dot"></span>${failing ? `${failing} failing` : changed ? `${changed} changed` : 'nothing failing'}</span>
+    ${failing || changed ? [
+      failing ? `${failing} requirement${failing === 1 ? '' : 's'} failing` : '',
+      changed ? `${changed} changed since their proof — re-verify` : ''
+    ].filter(Boolean).join(' · ') + '.' : 'All requirements are proven or untested — nothing is failing.'}
   </div>` : ''}
   <div id="home">
     ${groups}

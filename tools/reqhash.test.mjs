@@ -1,7 +1,7 @@
 // tools/reqhash.test.mjs — the shared requirement-text hash (two scopes, notes excluded)
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { normalize, stripNotes, meaningText, behaviorText, reqHash, isStale } from './reqhash.mjs'
+import { normalize, stripNotes, meaningText, behaviorText, reqHash, isStale, isChanged } from './reqhash.mjs'
 
 // -- normalize ---------------------------------------------------------------
 
@@ -98,6 +98,36 @@ test('isStale is false against the text\'s own hash, true against a stale stamp'
   const t = 'the requirement as written'
   assert.equal(isStale(reqHash(t), t), false)
   assert.equal(isStale('deadbeefdeadbeef', t), true)
+})
+
+// -- isChanged (Changed-drift — board R4's fifth word, 2026-08-19) -----------
+
+test('isChanged: a Passed requirement whose pin no longer matches the text is Changed', () => {
+  const body = 'The requirement as it reads today.'
+  assert.equal(isChanged('passed', 'deadbeefdeadbeef', body), true)
+})
+
+test('isChanged: a Passed requirement whose pin still matches is NOT Changed', () => {
+  const body = 'The requirement as it reads today.'
+  assert.equal(isChanged('passed', reqHash(meaningText(body)), body), false)
+})
+
+test('isChanged is a modifier on Passed ONLY — failed / not-reached / untested keep their word', () => {
+  for (const status of ['failed', 'not-reached', 'untested']) {
+    assert.equal(isChanged(status, 'deadbeefdeadbeef', 'moved text'), false, status)
+  }
+})
+
+test('isChanged: no pin → false — a requirement never proven cannot be Changed', () => {
+  assert.equal(isChanged('passed', null, 'any text'), false)
+  assert.equal(isChanged('passed', undefined, 'any text'), false)
+})
+
+test('isChanged: appending a dated author-note does not flip it — meaningText drops notes', () => {
+  const before = 'Prose that is the meaning.'
+  const pin = reqHash(meaningText(before))
+  const after = before + '\n\n*Amended 2026-08-19 (the human): provenance note only, meaning untouched.*'
+  assert.equal(isChanged('passed', pin, after), false)
 })
 
 // -- the two design-point tests ---------------------------------------------

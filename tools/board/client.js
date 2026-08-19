@@ -165,11 +165,14 @@ const B = window.__BOARD__ || {}
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
-  // The four-word requirement vocabulary (board R4, amended 2026-08-17) — the SAME mapping
-  // build-board.mjs's REQ_CHIP/GRID_CHIP render server-side, reproduced here because the Focus
-  // reader is built client-side from the baked `.req` node's data-status attribute.
+  // The five-word requirement vocabulary (board R4, amended 2026-08-17; `changed` added 2026-08-19)
+  // — the SAME mapping build-board.mjs's REQ_CHIP/GRID_CHIP render server-side, reproduced here
+  // because the Focus reader is built client-side from the baked `.req` node's data-status
+  // attribute. Missing `changed` here would read a Changed requirement as "○ Untested" in the
+  // detail's DEFAULT view — the one surface allowed to speak a wrong word is none of them.
   var FCHIP = {
-    passed: '✓ Passed', failed: '✗ Failed', 'not-reached': '◌ Not reached', untested: '○ Untested'
+    passed: '✓ Passed', changed: '◈ Changed', failed: '✗ Failed',
+    'not-reached': '◌ Not reached', untested: '○ Untested'
   }
 
   // PROMPT HANDOFF (board R15): the board proposes work but never authors it. buildPrompt is PURE —

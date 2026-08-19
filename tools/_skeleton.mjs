@@ -19,6 +19,9 @@ export const FILES = [
   // attaches chapters to every /api/runs record, so a scaffolded project's server cannot load
   // without it (the same guard-caught class of miss as behavior.mjs above).
   'tools/flow.mjs',
+  // pure requirement-text hashing (two scopes) — imported by spec-store.mjs for the Changed-drift
+  // pin (board R4's fifth word), so the vendored store cannot load without it (guard-caught too).
+  'tools/reqhash.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs

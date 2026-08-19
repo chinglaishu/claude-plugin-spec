@@ -54,3 +54,14 @@ export function reqHash (text) {
 export function isStale (stamp, text) {
   return reqHash(text) !== stamp
 }
+
+// Changed — board R4's fifth word (the human, 2026-08-19): a test proved this requirement before,
+// but its TEXT has moved since that proof. A MODIFIER ON PASSED ONLY — Failed / Not-reached /
+// Untested keep their word; a requirement with no pin was never proven, so it cannot be Changed.
+// `status` is the four-word fold (deriveReqStatus), `provenHash` the pin stamped at the last
+// passing fold, `currentBody` the requirement's body as it reads now (notes excluded via
+// meaningText, so a dated provenance edit never flips it). Pure, so spec-store's derivation is
+// unit-testable without a tree (tools/reqhash.test.mjs).
+export function isChanged (status, provenHash, currentBody) {
+  return status === 'passed' && provenHash != null && isStale(provenHash, meaningText(currentBody))
+}

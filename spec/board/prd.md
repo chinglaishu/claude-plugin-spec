@@ -72,13 +72,18 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 ## R4 — Requirement state is computed and assertion-backed
 
-Each requirement reads one of **four words**, computed from the tests, never typed: **Passed** — a
+Each requirement reads one of **five words**, computed from the tests, never typed: **Passed** — a
 test that tags this requirement passed *on an assertion that would fail without it*; **Failed** — a
 test that tags it ran its assertion and it did not hold (**fail wins**: a requirement covered by one
 failing and one passing test still reads Failed, so a real failure is never masked by a second green);
 **Not reached** — a flow declared it would cover this requirement (`coverReqs`) but stopped before its
-assertion ran; **Untested** — no test tags it at all. "0 of 0 passing" reads green nowhere in this
-vocabulary — Not reached and Untested are both honestly ungreen, never conflated with a pass.
+assertion ran; **Untested** — no test tags it at all; **Changed** — a test proved it before, but the
+requirement's *text has moved since that proof*, so what was verified is no longer what it says and it
+must be **re-verified**. The proof is pinned to a content hash of the wording it ran against (dated
+author-notes aside); when the text drifts past that pin the requirement reads Changed rather than a
+stale green. Changed is a **modifier on Passed** — a Failed, Not-reached or Untested requirement keeps
+that word. "0 of 0 passing" reads green nowhere in this vocabulary — Not reached and Untested are both
+honestly ungreen, never conflated with a pass.
 
 *Narrowed 2026-07-30: this requirement previously carried a third **reworded** state tied to an
 acceptance gate (R8). The gate was removed (see R8), so there is no "changed since accepted" — a
@@ -86,6 +91,13 @@ requirement is simply proven by a current test or it is not.*
 
 *Amended 2026-08-17 (the human's decision): the binary proven/unproven becomes Passed / Failed /
 Untested / Not reached — the same computed-from-tests state, named for what a reader needs.*
+
+*Amended 2026-08-19 (the human's decision): a fifth word, **Changed**, returns — but computed, not
+gated. The old "changed since accepted" above was tied to the removed acceptance gate; this one is
+tied to nothing a person types — a content hash of the requirement text captured at its last passing
+proof, compared to the current text. Editing a requirement's meaning after it was proven flips it to
+Changed (re-verify); adding a dated provenance note does not. It claims the **藍 indigo** long reserved
+for a status of its own.*
 
 ## R5 — Requirements and tests are many-to-many, by tag
 

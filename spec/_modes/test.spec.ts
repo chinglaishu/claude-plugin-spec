@@ -1,8 +1,9 @@
-import { test, expect } from '../_base'
-import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync } from 'node:fs'
+import { test, expect, checkReq } from '../_base'
+import { readdirSync, rmSync, statSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readScreen } from '../../tools/spec-store.mjs'
+import { reqHash, meaningText } from '../../tools/reqhash.mjs'
 import { build } from '../../tools/build-board.mjs'
 
 // The ENGINE of the board's computed state (board R4/R8). A requirement's state is COMPUTED — proven or
@@ -108,6 +109,49 @@ test('a leftover guess: frontmatter line is inert — the screen reads exactly l
   expect(ls.guess).toBeUndefined()   // the flag is no longer read at all — canon either way
 })
 
+// ── Changed — board R4's fifth word (2026-08-19) ───────────────────────────
+// A requirement a test PROVED before, whose TEXT has moved since that proof, reads Changed — a
+// modifier on Passed only, computed from the per-screen `provenHashes` pin the fold stamps at each
+// passing run (reqHash(meaningText(body)) at that moment) against the current body. Never stored as
+// a status; Failed / Not-reached / Untested keep their word.
+
+// A fresh, current PASS for this screen's R1 whose pin does NOT match the current body — the text
+// moved since the proof was pinned.
+const changedResult = (name: string) => ({
+  [name]: {
+    ranAt: Date.now() + 100000, total: 1, failed: 0,
+    tests: [{ title: 'x', ok: true, reqs: { [`${name}:R1`]: 'pass' } }],
+    provenHashes: { R1: 'deadbeefdeadbeef' }
+  }
+})
+
+test('changed — a current pass whose text-pin no longer matches reads Changed', () => {
+  const { name } = makeScreen('probe-changed-store')
+  const s = readScreen(name, changedResult(name) as any)!
+  expect(s.reqs[0].status).toBe('changed')
+  // a modifier ON Passed: the pass itself is still current, so `state` stays proven
+  expect(s.reqs[0].state).toBe('proven')
+})
+
+test('changed — a matching pin stays plainly Passed', () => {
+  const { name, prd } = makeScreen('probe-changed-same')
+  const body = prd.split(/\n## R1[^\n]*\n/)[1].trim()
+  const r = changedResult(name) as any
+  r[name].provenHashes.R1 = reqHash(meaningText(body))
+  const s = readScreen(name, r)!
+  expect(s.reqs[0].status).toBe('passed')
+})
+
+test('changed is a modifier on Passed only — a failing test keeps the requirement Failed', () => {
+  const { name } = makeScreen('probe-changed-fail')
+  const r = changedResult(name) as any
+  r[name].tests[0].ok = false
+  r[name].tests[0].reqs[`${name}:R1`] = 'fail'
+  r[name].failed = 1
+  const s = readScreen(name, r)!
+  expect(s.reqs[0].status).toBe('failed')   // fail wins; the moved pin changes nothing here
+})
+
 // ── the board renders proven/unproven and NO gate (board R2/R8) ────────────
 async function settleAt (page: any, url: string, ready: any) {
   // Re-assert the board each retry — the watcher can stale-overwrite board.html (a rebuild it began
@@ -196,4 +240,58 @@ test('renders — a Given/When/Then triple leads the requirement, and a prose-on
   await expect(g1).toContainText('you press Clear')
   await expect(g1).toContainText('the list shows zero items')
   await expect(dt.locator('.gridview .grrow[data-r="R2"] .behavior')).toHaveCount(0)
+})
+
+// ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
+// The board's own requirements are never naturally Changed (a fresh fold re-stamps their pins from
+// the current text), so these tests inject the state: a screen whose R1 is Passed in its folded
+// coverage but whose `provenHashes` pin does not match the current body. The index is written to
+// disk because build() reads it there; each test restores the exact prior bytes in `finally` (the
+// state guard does not snapshot the results index — it is meant to fold, so we put it back ourselves).
+const INDEX = join(SPEC, '_results-index.json')
+
+function injectIndex (name: string) {
+  const before = existsSync(INDEX) ? readFileSync(INDEX, 'utf8') : null
+  const idx = before ? JSON.parse(before) : {}
+  idx[name] = (changedResult(name) as any)[name]
+  writeFileSync(INDEX, JSON.stringify(idx, null, 2) + '\n')
+  return () => { if (before == null) rmSync(INDEX, { force: true }); else writeFileSync(INDEX, before) }
+}
+
+test('renders — a Changed requirement wears the indigo changed chip, never a plain Passed', async ({ page }) => {
+  const { name } = makeScreen('probe-changed')
+  const restore = injectIndex(name)
+  try {
+    const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+    await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+    await checkReq('board:R4', async () => {
+      // FOCUS (the default view): the reader chip carries the fifth word, in the changed class
+      await expect(dt.locator('.fread .fchip')).toHaveText('◈ Changed')
+      await expect(dt.locator('.fread .fchip')).toHaveClass(/changed/)
+      // the baked source row derives status "changed" and wears the chip with its own mark —
+      // hue never alone (design rule), so the mark class is asserted too
+      const req = dt.locator('.reqpane .req[data-r="R1"]')
+      await expect(req).toHaveAttribute('data-status', 'changed')
+      await expect(req.locator('.h .chip.changed .mark.c')).toHaveCount(1)
+      await expect(req.locator('.h .chip.ok')).toHaveCount(0)          // NOT a plain Passed chip
+      // GRID: the row chip spells it out, and the proof line says the text moved — not "✓ proved by"
+      await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+      const row = dt.locator('.gridview .grrow[data-r="R1"]')
+      await expect(row.locator('.grchip')).toHaveText('◈ Changed')
+      await expect(row.locator('.grchip')).toHaveClass(/changed/)
+      await expect(row.locator('.chip.ok')).toHaveCount(0)
+      await expect(row.locator('.grproof')).toContainText('text moved')
+    })
+  } finally { restore() }
+})
+
+test('renders — the home banner counts a Changed requirement as drift', async ({ page }) => {
+  const { name } = makeScreen('probe-changed-banner')
+  const restore = injectIndex(name)
+  try {
+    const card = page.locator('#home .card[data-screen="' + name + '"]')
+    await settleAt(page, '/', card)
+    // the drift banner names the changed count — "… 1 changed since their proof"
+    await expect(page.locator('.clear')).toContainText('1 changed since their proof')
+  } finally { restore() }
 })
