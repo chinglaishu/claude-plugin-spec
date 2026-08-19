@@ -124,15 +124,15 @@ moves the board's own port.
 `spec/_design.css` is the single source — traditional Japanese dye colours at low saturation on
 unbleached paper. **Never** introduce a raw hex colour, a font size outside the scale, or a radius
 outside the tokens, in the board. Hue names a state but never carries it alone (every chip also has a
-mark). **Indigo is currently unused as a status colour** — it used to mean "your turn" (a screen whose
-PRD still carried a `guess:` flag, waiting on the human's correction), but that state was removed
-along with the gate itself (board R8, init R3; the human, 2026-08-17): there is no draft/guess state
-left for it to signal. It stays defined and is still spent only as a transient hover cue for the
-many-to-many coverage link — since the Columns view retired (2026-08-18) that cue lives on the Flow
-chapters' requirement chips (`.flreq`), not on row hover: the old `.req`/`.test` hover cross-light
-wired rows that are now the hidden shared source, so the wire was removed with the view. Do not
-assign indigo to a new *status* without the human's sign-off; it is reserved for a future `Changed`
-drift state. Exactly **one** inverted element per screen. An action wears the colour of the state it
+mark). **Indigo is the `Changed` drift state** (board R4, the human 2026-08-19): a requirement proved
+before whose text has moved past its proof, awaiting re-verify — the status this hue was long held for.
+Before that it meant "your turn" (a screen whose PRD carried a `guess:` flag, waiting on the human's
+correction), but that state was removed along with the gate itself (board R8, init R3; the human,
+2026-08-17), and indigo stayed reserved for `Changed` until this claimed it. It also still tints on
+hover for the many-to-many coverage link — since the Columns view retired (2026-08-18) that cue lives
+on the Flow chapters' requirement chips (`.flreq`), not on row hover: the old `.req`/`.test` hover
+cross-light wired rows that are now the hidden shared source, so the wire was removed with the view. A
+*new* status colour still needs the human's sign-off before it is assigned. Exactly **one** inverted element per screen. An action wears the colour of the state it
 produces. Every text/background pair must pass **WCAG AA (4.5:1)** — re-measure after any colour
 change.
 

@@ -43,9 +43,10 @@
   --hair-2:#cdc7b8; --line2:#cdc7b8;
   --line3:#a8a59c;
 
-  /* 藍 ai — indigo. Reserved: no longer a status (the guess/gate "your turn" state it once named was
-     removed, the human, 2026-08-17); still tints on hover for many-to-many coverage linking, and
-     kept for a future `Changed` drift state. The only colour permitted to fill a shape solid. */
+  /* 藍 ai — indigo. The **Changed** drift state (board R4, the human 2026-08-19): a requirement proved
+     before whose text has moved past its proof, awaiting re-verify — the status this colour was long
+     held for. Also tints on hover for many-to-many coverage linking. The only colour permitted to
+     fill a shape solid. */
   --ai:#2f4a63; --acc:#2f4a63;
   --ai-tint:#e6eaee; --acc-bg:#e6eaee;
   --ai-line:#b9c4ce; --acc-line:#b9c4ce;

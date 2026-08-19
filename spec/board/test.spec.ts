@@ -309,13 +309,14 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     await expect(page.locator('#reqpane .req[data-state="proven"], #reqpane .req[data-state="unproven"]'))
       .toHaveCount(total)
 
-    // The chip's word is the FOUR-word vocabulary now (board R4, amended 2026-08-17, the human's
-    // decision): Passed / Failed / Untested / Not reached — deriveReqStatus's fail-wins fold
-    // (tools/coverage.mjs), never the old binary "proven"/"unproven" wording, and never typed in.
+    // The chip's word is the FIVE-word vocabulary now (board R4, amended 2026-08-19, the human's
+    // decision): Passed / Failed / Untested / Not reached / **Changed** — deriveReqStatus's fail-wins
+    // fold (tools/coverage.mjs) plus the spec-store Changed layer (a proven requirement whose text
+    // moved past its proof), never the old binary "proven"/"unproven" wording, and never typed in.
     const chipTitles = await page.locator('.dt[data-screen] .reqpane .req .h > .chip')
       .evaluateAll(els => els.map(el => el.getAttribute('title') || ''))
     expect(chipTitles.length).toBeGreaterThan(0)
-    for (const t of chipTitles) expect(t).toMatch(/^(Passed|Failed|Untested|Not reached)\b/)
+    for (const t of chipTitles) expect(t).toMatch(/^(Passed|Failed|Untested|Not reached|Changed)\b/)
 
     // …and that state is COMPUTED and ASSERTION-BACKED, never typed. Two things follow, and both are
     // checked board-wide (every screen's detail is baked into this document):

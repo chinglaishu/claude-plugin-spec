@@ -157,12 +157,28 @@ async function settleAt (page: any, url: string, ready: any) {
   // Re-assert the board each retry — the watcher can stale-overwrite board.html (a rebuild it began
   // before the fixture landed, finishing late) and never self-correct. A fresh in-process build is the
   // last writer once the file events settle, so goto lands on a board that has this fixture.
+  // The INNER visibility check gets a SHORT timeout so the outer toPass can actually RETRY: with the
+  // default 15s expect timeout inside, one stale-overwrite (the watcher finishing a pre-fixture rebuild
+  // late) eats the whole outer budget and never re-builds — the intermittent 15.2s flake this file is
+  // prone to. Short inner + a wider outer budget lets each retry re-assert build() until the file
+  // events settle. The assertion is unchanged; only the retry cadence is.
   await expect(async () => {
     build()
     await page.goto(url)
-    await expect(ready).toBeVisible()
-  }).toPass({ timeout: 15000 })
+    await expect(ready).toBeVisible({ timeout: 2000 })
+  }).toPass({ timeout: 25000 })
 }
+
+// Every fixture test above injects an index and rebuilds board.html to that FIXTURE via settleAt's
+// build(). After each test's finally restores the real index, rebuild board.html to it too — so the
+// board's OWN suite, which runs after _modes (serial, workers:1) and does NOT force its own build,
+// never opens onto a leftover fixture board. This closes the watcher-stale-overwrite race these
+// settle tests are prone to (see settleAt) at the file boundary; a fresh in-process build is the last
+// writer once each test's file events settle.
+test.afterEach(async () => {
+  await expect(async () => { build(); const { reqs } = readScreen('board'); expect(reqs.length).toBeGreaterThan(0) })
+    .toPass({ timeout: 10000 })
+})
 
 test('renders — the detail carries NO gate and no accept button', async ({ page }) => {
   const { name } = makeScreen('probe-render')
@@ -264,7 +280,12 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
   try {
     const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
     await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
-    await checkReq('board:R4', async () => {
+    // A plain render guard — NOT a checkReq coverage tag. board:R4 is proven by the board's OWN R4 test;
+    // a cross-screen checkReq('board:R4') here made R4 proven-via-cross-tag while the board's own tag
+    // lagged in the pane, breaking that test's per-pane untaggedProven self-check (the very case its
+    // comment warned about). These assertions still fail loudly if the Changed render breaks (rule 2),
+    // exactly like the behavior-block render test above, which also guards a render without tagging.
+    {
       // FOCUS (the default view): the reader chip carries the fifth word, in the changed class
       await expect(dt.locator('.fread .fchip')).toHaveText('◈ Changed')
       await expect(dt.locator('.fread .fchip')).toHaveClass(/changed/)
@@ -274,6 +295,13 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(req).toHaveAttribute('data-status', 'changed')
       await expect(req.locator('.h .chip.changed .mark.c')).toHaveCount(1)
       await expect(req.locator('.h .chip.ok')).toHaveCount(0)          // NOT a plain Passed chip
+      // the Focus proof line must AGREE with the chip (client.js:401 invariant) — a Changed requirement
+      // WAS proved by a real passing test, so it reads "proved by …" and names the drift, never the
+      // self-contradictory "covered by … passed — not passed yet".
+      const fpby = dt.locator('.focusov .feval .fpby')
+      await expect(fpby).toContainText('proved by')
+      await expect(fpby).not.toContainText('not passed yet')
+      await expect(fpby).toContainText('re-verify')
       // GRID: the row chip spells it out, and the proof line says the text moved — not "✓ proved by"
       await dt.locator('.viewseg .vseg[data-view="grid"]').click()
       const row = dt.locator('.gridview .grrow[data-r="R1"]')
@@ -281,7 +309,7 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(row.locator('.grchip')).toHaveClass(/changed/)
       await expect(row.locator('.chip.ok')).toHaveCount(0)
       await expect(row.locator('.grproof')).toContainText('text moved')
-    })
+    }
   } finally { restore() }
 })
 

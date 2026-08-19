@@ -400,11 +400,14 @@ const B = window.__BOARD__ || {}
         ptop.appendChild(acts); ph.appendChild(ptop)
         // "proved by" tracks r.status (board R4), not r.state — the same fold that names the chip
         // names this line, so the two never read two different verdicts for the same requirement.
+        // Changed is passed-family here (it WAS proved, the text just moved since) — mirroring the
+        // server-side gridProof — so the line never reads the self-contradictory "covered by … passed".
+        const proved = r.status === 'passed' || r.status === 'changed'
         const by = document.createElement('div'); by.className = 'fpby'
-        by.innerHTML = (r.status === 'passed' ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
+        by.innerHTML = (proved ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
           ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
           (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more cover it</span>' : '') +
-          (r.status === 'passed' ? '' : ' — not passed yet')
+          (r.status === 'changed' ? ' — text moved since that proof, re-verify' : (proved ? '' : ' — not passed yet'))
         ph.appendChild(by)
         const shaEl = primary.querySelector('.tmeta .tsha')
         if (shaEl && shaEl.textContent) {
