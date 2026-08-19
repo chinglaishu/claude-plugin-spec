@@ -488,7 +488,7 @@ ins { color:var(--koke); text-decoration:none; }
   @keyframes bd2 { 0%,48% { background:var(--line2); } 52%,96% { background:var(--ai); } }
   .schem .viz { position:relative; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
   .schem .viz svg { display:block; width:100%; height:auto; }
-  .schem.isstale .viz svg { filter:grayscale(1) opacity(.45); }
+  .schem.isstale .viz svg, .schem.isstale .sstills svg { filter:grayscale(1) opacity(.45); }
   .schem .staleov { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(253,252,249,.72); text-align:center; padding:0 20px; }
   .schem.isstale .staleov { display:flex; }
   .schem .staleov b { font-size:var(--t-sm); color:var(--dim); font-weight:500; }
@@ -496,10 +496,40 @@ ins { color:var(--koke); text-decoration:none; }
   .schem .figfoot { font-size:var(--t-xs); color:var(--mute); margin-top:6px; }
   .schem .figfoot .h { font-family:var(--mono); }
   .noschem { border:1px dashed var(--line2); border-radius:var(--r-sm); padding:var(--s4); font-size:var(--t-xs); color:var(--mute); text-align:center; }
-  .medbar { display:inline-flex; gap:2px; margin-left:auto; }
-  .medbar button { border:0; background:none; font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); padding:2px 8px; border-radius:var(--r-sm); cursor:pointer; }
+  /* the media switch — an explicit segmented control (human, 2026-08-20: make the handle visible) */
+  .medbar { display:inline-flex; margin-left:auto; border:1px solid var(--line2); border-radius:var(--r); overflow:hidden; background:var(--paper); flex:none; }
+  .medbar button { border:0; background:none; font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); padding:4px 11px; cursor:pointer; }
+  .medbar button + button { border-left:1px solid var(--hair); }
   .medbar button:hover { color:var(--ink); }
-  .medbar button.on { background:var(--paper); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line2); }
+  .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  /* schematic stills mode — the SAME drawn SVG frozen per phase (paused + negative delay) */
+  .sstills { display:flex; gap:8px; }
+  .sstills .sframe { flex:1; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  .sstills .sframe svg { display:block; width:100%; height:auto; }
+  .sstills .sframe svg * { animation-play-state:paused !important; animation-delay:var(--ph,0s) !important; }
+  .sstills .scap { font-family:var(--mono); font-size:10px; color:var(--mute); padding:3px 7px; border-top:1px solid var(--hair); background:var(--wash); }
+  /* flow: the path bar + chain connectors */
+  .pathbar { display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-family:var(--mono); font-size:var(--t-xs); color:var(--dim); margin:0 0 var(--s3); }
+  .pathbar .seg { padding:2px 9px; border:1px solid var(--line); border-radius:99px; background:var(--paper); }
+  .pathbar .seg.ok { color:var(--ok); border-color:var(--ok-line); background:var(--ok-bg); }
+  .pathbar .seg.bad { color:var(--bad); border-color:var(--bad-line); background:var(--bad-bg); }
+  .pathbar .seg.nr { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); border-style:dashed; }
+  .pathbar .parr { color:var(--line3); }
+  .chno { font-family:var(--mono); font-size:10px; color:var(--mute); margin-right:5px; }
+  .edge.nrE { color:var(--yamabuki-line); }
+  /* List view — collapsed Focus cards (human, 2026-08-20: Grid should be a list of Focus) */
+  .lst-card { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); margin-bottom:var(--s3); overflow:hidden; }
+  .lst-head { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4); cursor:pointer; }
+  .lst-head:hover { background:var(--wash); }
+  .lst-head .chev { font-family:var(--mono); color:var(--mute); width:14px; flex:none; transition:transform .15s; }
+  .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
+  .lst-head .lid { font-family:var(--mono); font-size:var(--t-xs); color:var(--mute); width:28px; flex:none; }
+  .lst-head .lttl { font-weight:500; }
+  .lst-head .lpf { margin-left:auto; font-size:var(--t-xs); white-space:nowrap; }
+  .lst-head .lpf .mono { color:var(--mute); }
+  .lst-body { border-top:1px solid var(--hair); padding:var(--s4); background:var(--wash); }
+  .lst-tools { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s3); }
+  .lst-tools .hint { font-size:var(--t-xs); color:var(--mute); margin-right:auto; }
   .fstrip { display:flex; gap:8px; padding:10px; background:var(--paper); }
   .fstrip .fcell { flex:1; min-width:0; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
   .fstrip .fcell.hot { border-color:var(--koke-line, var(--line2)); }
@@ -1078,8 +1108,8 @@ function detailHeader(id, view, n){
     <button class="switch ${autoPlay?'on':''}" id="apTog" aria-pressed="${autoPlay}" title="Auto-play evidence in every view">Auto-play<span class="sw"></span></button>
     <div class="seg">
       <button class="${view==='focus'?'on':''}" onclick="go('s/${id}/focus/${n||1}')">Focus</button>
-      <button class="${view==='grid'?'on':''}"  onclick="go('s/${id}/grid')">Grid</button>
-      <button class="${view==='flow'?'on':''}"  onclick="go('s/${id}/flow')">Flow</button>
+      <button class="${view==='grid'?'on':''}"  onclick="go('s/${id}/grid')">List</button>
+      <button class="${view==='flow'?'on':''}"  onclick="go('s/${id}/flow')">Flow</button><!-- 'grid' key kept; label is List (a list of Focus, human 2026-08-20) -->
     </div>
     <button class="btn" onclick="go('')">Close</button>
   </header>`;
@@ -1239,15 +1269,24 @@ const SCHEM = {
     </g>
   </svg>`,
 };
+// Frozen-still phases per schematic: negative animation-delay values that park the SAME drawn SVG
+// at [given, beat 1 · then, beat 2 · then, …] — the stills are the loop's own frames, never new art.
+const SCHEM_PHASES = { 'task-list:R4': [-0.05, -2.4, -5.95], 'task-list:R5': [-0.05, -4.4], 'task-list:R2': [-0.05, -0.05] };
+let schemMode = 'loop';   // loop ↔ stills — a view preference, never stored (D2's left-pane twin)
+function setSchem(m){ schemMode = m; if (curView==='list') renderGrid(curFocusId); else if (curFocusId) renderFocus(curFocusId, curFocusN); }
 function schematicHTML(id, r, st){
   const svg = SCHEM[id+':'+r.id];
   const beats = beatsOf(r);
-  const dots = beats.length>1 ? `<span class="beatdots ${beats.length===2&&svg?'b2':''}">${beats.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</span>` : '';
-  if (!svg) return `<div class="schem"><div class="figcap">schematic · the idea, not the real UI${dots}</div><div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div></div>`;
+  const seg = svg ? `<span class="medbar"><button class="${schemMode==='loop'?'on':''}" onclick="setSchem('loop')">loop</button><button class="${schemMode==='stills'?'on':''}" onclick="setSchem('stills')">stills</button></span>` : '';
+  const dots = schemMode==='loop' && beats.length>1 ? `<span class="beatdots ${beats.length===2&&svg?'b2':''}" style="margin-left:auto;margin-right:10px">${beats.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</span>` : '';
+  if (!svg) return `<div class="schem"><div class="figcap">schematic · the idea, not the real UI</div><div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div></div>`;
   const stale = st==='changed'; // the reword moved the text past viz@hash too
-  return `<div class="schem ${stale?'isstale':''}"><div class="figcap">schematic · the idea, not the real UI${dots}</div>
-    <div class="viz">${svg}<div class="staleov"><b>✎ stale — text changed</b><span>the requirement was reworded after this was drawn; staff redraws it on the next viz pass</span></div></div>
-    <div class="figfoot">drawn from the text · <span class="h">${stale?'text@f30b91 ≠ viz@a1f7c3':'viz@a1f7c3'}</span> · loops · pauses under reduced-motion</div></div>`;
+  const body = schemMode==='stills'
+    ? `<div class="sstills">${(SCHEM_PHASES[id+':'+r.id]||[-0.05]).map((ph,i)=>`<div class="sframe"><div style="--ph:${ph}s">${svg}</div><div class="scap">${i===0?'given':beats.length>1?`beat ${i} · then`:'then'}</div></div>`).join('')}</div>`
+    : `<div class="viz">${svg}<div class="staleov"><b>✎ stale — text changed</b><span>the requirement was reworded after this was drawn; staff redraws it on the next viz pass</span></div></div>`;
+  return `<div class="schem ${stale?'isstale':''}"><div class="figcap">schematic · the idea, not the real UI${dots}${dots?seg.replace('class="medbar"','class="medbar" style="margin-left:0"'):seg}</div>
+    ${body}
+    <div class="figfoot">drawn from the text · <span class="h">${stale?'text@f30b91 ≠ viz@a1f7c3':'viz@a1f7c3'}</span> · ${schemMode==='stills'?'the loop’s own frames, frozen per beat':'loops · pauses under reduced-motion'}</div></div>`;
 }
 
 /* ---- measured proof frames — placeholder sketches; real runs land harvested pixels here ---- */
@@ -1277,18 +1316,20 @@ function mediaFor(r, st){
   if (st==='bad' || st==='changed') return 'frames'; // failed: the red frame; changed: pinned-era stills
   return autoPlay ? 'clip' : 'frames';
 }
-function setMedia(m){ focusMedia = m; if (curFocusId) renderFocus(curFocusId, curFocusN); }
-function evidenceHTML(r, sel, st){
-  st = st || r.state;
+let curView = 'focus';
+function setMedia(m){ focusMedia = m; if (curView === 'list') renderGrid(curFocusId); else if (curFocusId) renderFocus(curFocusId, curFocusN); }
+function evidenceHTML(r, sel, st, sfx){
+  st = st || r.state; sfx = sfx || '';
   const run = (sel && sel.run) || 'ea389a6';
   const tname = sel ? esc(sel.name)+' · ' : '';
   if (st === 'nr') return `<div class="gif"><div class="gbar"><span>proves ${r.id} · run ${run}</span></div><div class="noev"><b class="st-nr">◌ Not reached</b><span class="sub">the flow stopped before this step — no evidence for this run</span></div></div>`;
   if (st === 'un') return `<div class="gif"><div class="gbar"><span>proves ${r.id}</span></div><div class="noev"><b class="st-un">○ Untested — no proof yet</b><span class="sub">the expected behaviour reads on the left; a failing test is the next move</span><button class="btn" style="margin-top:10px" onclick="openPromptModal({action:'add',screenId:'${curFocusId}',reqIds:['${r.id}'],kind:'unit'})">＋ write the failing test</button></div></div>`;
   const mode = mediaFor(r, st), beats = beatsOf(r);
+  const LBL = { frames:'stills', clip:'gif', video:'video' };   // the human's words (2026-08-20)
   const bar = `<div class="gbar"><span>${tname}proves ${r.id} · run ${run}${st==='changed'?' · <span class="st-changed">pinned era</span>':''}</span>
     <span class="medbar">${['frames','clip','video'].map(m=>{
       if (st==='bad' && m==='clip') return '';
-      return `<button class="${mode===m?'on':''}" onclick="setMedia('${m}')">${st==='bad'&&m==='video'?'video@fail':m}</button>`;
+      return `<button class="${mode===m?'on':''}" onclick="setMedia('${m}')">${st==='bad'&&m==='video'?'video@fail':LBL[m]}</button>`;
     }).join('')}</span></div>`;
   let body;
   if (mode === 'frames'){
@@ -1303,11 +1344,11 @@ function evidenceHTML(r, sel, st){
       body = `<div class="fstrip"><div class="fcell">${frameSketch('given')}<div class="fcap">before</div></div>
         <div class="fcell hot">${frameSketch('then')}<div class="fcap"><span class="st-ok">✓</span> after — the asserted value in frame</div></div></div>`;
   } else if (mode === 'video'){
-    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage"></div></div><div class="vbar"><span>▶</span><div class="track"><i></i></div><span>0:41 / ${sel?sel.dur:'1:04'} · the full recording, seeked to this beat</span></div>`
-                   : `<div class="noev"><span class="sub">no recording kept for this run — frames still stand</span></div>`;
+    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage${sfx}"></div></div><div class="vbar"><span>▶</span><div class="track"><i></i></div><span>0:41 / ${sel?sel.dur:'1:04'} · the full recording, seeked to this beat</span></div>`
+                   : `<div class="noev"><span class="sub">no recording kept for this run — stills still stand</span></div>`;
   } else {
-    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage"></div></div>`
-                   : `<div class="noev"><span class="sub">no clip for this run — frames still stand</span></div>`;
+    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage${sfx}"></div></div>`
+                   : `<div class="noev"><span class="sub">no gif for this run — stills still stand</span></div>`;
   }
   if (st === 'changed') body = `<div class="wmarkbox">${body}<div class="wmark"><span>✎ proof predates this text — re-run to re-verify</span></div></div>`;
   return `<div class="gif">${bar}${body}</div>`;
@@ -1317,9 +1358,9 @@ function openSheet(title, body){
 }
 function openSteps(id, tid, rid){ const t = testOf(id, tid); openSheet('All steps — ' + t.name, stepsHTML(id, t, rid)); }
 function openLogs(id, tid){ const t = testOf(id, tid); openSheet('Test log — ' + t.name, logsHTML(id, t)); }
-function mountEvidence(r){
+function mountEvidence(r, stageId){
   if (!r.scene) return;
-  const stage = document.getElementById('evStage');
+  const stage = document.getElementById(stageId || 'evStage');
   if (!stage) return;
   const box = stage.parentElement; // .stagebox
   if (isAnimated(r.scene)){
@@ -1442,30 +1483,34 @@ function runMenuItems(id, r, sel){
   }
   return m;
 }
-function renderFocus(id, n){
+// The one Focus body — requirement + schematic stacked left, proof right — shared VERBATIM by the
+// Focus view and the List view's expanded card (human, 2026-08-20: "List should be just a list of
+// Focus"). o = { sfx: id-suffix so two mounts never collide, selId: chosen covering test,
+// pickFn: the selector's click handler name, counter: the "n of N" chip html }.
+function focusBodyHTML(id, n, o){
+  o = o || {}; const sfx = o.sfx || '', pickFn = o.pickFn || 'pickFocusTest';
   const s = scr(id), r = s.reqs[n-1], st = stateOf(r,s);
   const cts = coveringTests(id, r);
-  let sel = cts.find(t=>t.id===focusTestId) || cts.find(t=>t.id===r.primary) || cts[0] || null;
-  focusTestId = sel ? sel.id : null;
+  const sel = cts.find(t=>t.id===o.selId) || cts.find(t=>t.id===r.primary) || cts[0] || null;
+  const selId = sel ? sel.id : null;
   const richHtml = r.rich || `<p>${esc(r.prose)}</p>`;
   // point 7 — when several tests prove one requirement, a selector picks whose evidence to view;
   // the requirement's own status (top-left chip) is the aggregate.
   const proofby = cts.length > 1
     ? `<div class="proofby"><span class="pl">proven by ${cts.length} tests</span>${cts.map(t=>{
         const mk = t.result==='fail'?'<span class="st-bad">✗</span>':t.result==='pass'?'<span class="st-ok">✓</span>':'<span class="st-nr">◌</span>';
-        return `<button class="tsel ${t.id===focusTestId?'on':''}" onclick="pickFocusTest('${id}',${n},'${t.id}')"><span class="tk ${t.kind}">${t.kind}</span>${esc(t.name)} ${mk}</button>`;
+        return `<button class="tsel ${t.id===selId?'on':''}" onclick="${pickFn}('${id}',${n},'${t.id}')"><span class="tk ${t.kind}">${t.kind}</span>${esc(t.name)} ${mk}</button>`;
       }).join('')}</div>`
     : cts.length === 1
       ? `<div class="proofby"><span class="pl">proven by</span><span class="tone"><span class="tk ${sel.kind}">${sel.kind}</span>${esc(sel.name)}</span></div>`
       : `<div class="proofby"><span class="pl none">no test covers this requirement yet</span></div>`;
   const stale = st==='changed' ? `<div class="stalenote">✎ the requirement was <b>edited after this proof ran</b> — re-run to re-verify</div>` : '';
-  curFocusId = id; curFocusN = n;
   const beats = beatsOf(r), many = beats.length > 1;
-  document.getElementById('root').innerHTML = `<div class="wrap"><div class="focus">
+  return { sel, r, html: `<div class="focus">
     <div class="fleft">
     <div class="fcard">
-      <div class="rhead"><span class="rid">${r.id}</span>${tagHtml(st)}<span style="margin-left:auto;font-size:var(--t-xs);color:var(--mute)">${n} of ${s.reqs.length}</span>
-        <div class="runwrap"><button class="iconbtn sm" onclick="toggleMenu(event,'reqmenu')" aria-label="requirement options">⋯</button><div class="rmenu" id="reqmenu" hidden>${reqMenuItems(id,r)}</div></div>
+      <div class="rhead"><span class="rid">${r.id}</span>${tagHtml(st)}${o.counter||''}
+        <div class="runwrap"${o.counter?'':' style="margin-left:auto"'}><button class="iconbtn sm" onclick="toggleMenu(event,'reqmenu${sfx}')" aria-label="requirement options">⋯</button><div class="rmenu" id="reqmenu${sfx}" hidden>${reqMenuItems(id,r)}</div></div>
       </div>
       <h1>${esc(r.title)}</h1>
       <p class="lbl">The behavior</p>
@@ -1483,17 +1528,25 @@ function renderFocus(id, n){
       <div class="fhead-row"><p class="lbl">The proof</p>
         <div class="runwrap">
           ${sel?`<button class="btn" onclick="toast('Simulated — runs just this spec, watchably')">▶ Run</button>`:''}
-          <button class="iconbtn" onclick="toggleMenu(event,'rmenu')" aria-label="test options">⋯</button>
-          <div class="rmenu" id="rmenu" hidden>${runMenuItems(id,r,sel)}</div>
+          <button class="iconbtn" onclick="toggleMenu(event,'rmenu${sfx}')" aria-label="test options">⋯</button>
+          <div class="rmenu" id="rmenu${sfx}" hidden>${runMenuItems(id,r,sel)}</div>
         </div>
       </div>
       ${proofby}
       ${stale}
-      <div class="evidence">${evidenceHTML(r, sel, st)}</div>
+      <div class="evidence">${evidenceHTML(r, sel, st, sfx)}</div>
     </div>
-  </div>
+  </div>` };
+}
+function renderFocus(id, n){
+  curView = 'focus'; curFocusId = id; curFocusN = n;
+  const s = scr(id);
+  const counter = `<span style="margin-left:auto;font-size:var(--t-xs);color:var(--mute)">${n} of ${s.reqs.length}</span>`;
+  const body = focusBodyHTML(id, n, { selId: focusTestId, counter });
+  focusTestId = body.sel ? body.sel.id : null;
+  document.getElementById('root').innerHTML = `<div class="wrap">${body.html}
   <div class="pager">${pagerHTML(id,n,s.reqs.length)}</div></div>`;
-  if (r.scene) mountEvidence(r);
+  if (body.r.scene) mountEvidence(body.r);
 }
 function pagerHTML(id,n,total){
   let out = `<button ${n===1?'disabled':''} onclick="go('s/${id}/focus/${n-1}')">‹</button>`;
@@ -1503,44 +1556,47 @@ function pagerHTML(id,n,total){
 }
 
 /* ---- GRID ---- */
-function renderGrid(id){
+/* ---- LIST — a list of Focus (human, 2026-08-20): every requirement as a collapsed header row,
+   and an open row IS the Focus body, verbatim (focusBodyHTML) — same information, expand/collapse.
+   One row open at a time (accordion), so element ids never collide. ---- */
+let listOpen = null, listTestId = null;
+function renderGrid(id){   // router key stays 'grid'; the view label is List
+  curView = 'list'; curFocusId = id;
   const s = scr(id);
   const rows = s.reqs.map((r,i) => {
-    const st = stateOf(r,s), col = STATE_COL[st], t = r.primary?testOf(id,r.primary):null;
-    const pf = st==='ok' ? `✓ Passed <span class="mono">· ${t?t.kind:''}</span>`
-             : st==='bad' ? `✗ Failed`
-             : st==='nr' ? `◌ Not reached`
-             : st==='changed' ? `✎ Changed`
-             : `○ Untested`;
-    return `<tr class="row" data-i="${i}" onclick="toggleEv('${id}',this)">
-      <td class="given">${esc(r.given)}${r.sub?`<span class="sub">${esc(r.sub)}</span>`:''}</td>
-      <td>${beatsOf(r).map((b,bi)=>`${beatsOf(r).length>1?`<span class="mono" style="color:var(--mute)">${bi+1} · </span>`:''}${esc(b.when)}`).join('<br>')}</td>
-      <td>${beatsOf(r).map((b,bi)=>`${beatsOf(r).length>1?`<span class="mono" style="color:var(--mute)">${bi+1} · </span>`:''}${esc(b.then)}`).join('<br>')}</td>
-      <td class="pf" style="color:${col}">${pf}</td></tr>
-    <tr class="evrow" style="display:none"><td colspan="4"></td></tr>`;
+    const st = stateOf(r,s), col = STATE_COL[st], [mk, word] = MK[st];
+    const t = r.primary ? testOf(id, r.primary) : null;
+    const open = listOpen === i+1;
+    const beats = beatsOf(r);
+    let body = '';
+    if (open){
+      const fb = focusBodyHTML(id, i+1, { sfx:'L', selId:listTestId, pickFn:'pickListTest' });
+      body = `<div class="lst-body">${fb.html}</div>`;
+    }
+    return `<div class="lst-card ${open?'open':''}" data-r="${r.id}">
+      <div class="lst-head" onclick="toggleList('${id}',${i+1})">
+        <span class="chev">›</span><span class="lid">${r.id}</span><span class="lttl">${esc(r.title)}</span>
+        ${beats.length>1?`<span class="mono" style="font-size:10px;color:var(--mute)">${beats.length} beats</span>`:''}
+        <span class="lpf" style="color:${col}">${mk} ${word}${t?` <span class="mono">· ${t.kind}</span>`:''}</span>
+      </div>
+      ${body}
+    </div>`;
   }).join('');
   document.getElementById('root').innerHTML = `<div class="wrap">
     ${coverageReminder(id)}
-    <div class="gcard">
-      <div class="chead"><h2>${esc(s.name)} — behaviors</h2><div style="display:flex;align-items:center;gap:14px"><span class="hint">a row exists only where an assertion could fail</span><button class="btn" onclick="openPromptModal({action:'add',screenId:'${id}'})">＋ Add test</button></div></div>
-      <table class="bgrid"><thead><tr><th style="width:24%">Given</th><th style="width:22%">When</th><th style="width:34%">Then</th><th style="width:20%">Proof</th></tr></thead><tbody>${rows}</tbody></table>
-    </div>
-    <p class="legend">✓ Passed · ✗ Failed · ○ Untested · ◌ Not reached · ✎ Changed — the requirement's status, computed from the folded runs and never stored. Click a row for its evidence; the gif is cut from the real recording at the proves-step.</p>
+    <div class="lst-tools"><span class="hint">every requirement of ${esc(s.name)}, scannable — open one and it reads exactly like Focus</span><button class="btn" onclick="openPromptModal({action:'add',screenId:'${id}'})">＋ Add test</button></div>
+    ${rows}
+    <p class="legend">✓ Passed · ✗ Failed · ○ Untested · ◌ Not reached · ✎ Changed — the requirement's status, computed from the folded runs and never stored. An open row is the full Focus card: behavior beats, the schematic, and the proof.</p>
   </div>`;
+  if (listOpen){ const r = s.reqs[listOpen-1]; if (r && r.scene) mountEvidence(r, 'evStageL'); }
 }
-function toggleEv(id, tr){
-  const s = scr(id), open = tr.classList.contains('open');
+function toggleList(id, n){
   if (stopScene){ stopScene(); stopScene = null; }
-  document.querySelectorAll('#root tr.row').forEach(x=>x.classList.remove('open'));
-  document.querySelectorAll('#root tr.evrow').forEach(x=>{ x.style.display='none'; x.firstElementChild.innerHTML=''; });
-  if (open) return;
-  tr.classList.add('open');
-  const r = s.reqs[+tr.dataset.i], ev = tr.nextElementSibling, cts = coveringTests(id, r), t = cts.find(x=>x.id===r.primary) || cts[0] || null, st = stateOf(r,s), n = +tr.dataset.i+1;
-  ev.style.display = '';
-  const side = `${cts.length?`proven by ${cts.length>1?`<b>${cts.length} tests</b>: `:''}${cts.map(x=>`<b>${esc(x.name)}</b> <span class="mono">(${x.kind})</span>`).join(', ')}`:'no test yet — add one from the ⋯ menu in Focus'}<br><br><a href="#/s/${id}/focus/${n}">open in Focus for options →</a>`;
-  ev.firstElementChild.innerHTML = `<div class="ev">${evidenceHTML(r, t, st)}<div class="side">${side}</div></div>`;
-  if (r.scene) mountEvidence(r);
+  listOpen = listOpen === n ? null : n; listTestId = null;
+  renderGrid(id);
+  if (listOpen){ const card = document.querySelector(`.lst-card.open`); if (card) card.scrollIntoView({ block:'nearest' }); }
 }
+function pickListTest(id, n, tid){ listTestId = tid; listOpen = n; renderGrid(id); }
 
 /* ---- COLUMNS (requirements ↔ tests, many-to-many hover) ---- */
 function renderColumns(id){
@@ -1593,18 +1649,30 @@ function renderFlow(id, flowId){
     <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="openPromptModal({action:'add',screenId:'${id}',kind:'flow'})">＋ New flow<span class="fk" style="color:var(--ai)">hand Claude a prompt</span></button></div>
     <div class="flowcard">
       <div class="fhead"><h2>${esc(F.name)}</h2><div style="display:flex;align-items:center;gap:12px"><span class="fmeta">flow ${F.id.toLowerCase()} · ${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''} · <a href="#" onclick="toast('Would open the full recording');return false">▶ recording</a></span><span style="color:var(--line3)">·</span><button class="linkbtn" onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'})">✎ Edit</button><button class="linkbtn danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'})">✕ Remove</button></div></div>
+      <div class="pathbar" id="pathBarLine"></div>
       <div class="playwrap">
         <div class="gif" style="margin:0">
-          <div class="gbar"><span id="playBar">flow recording · cut at proves-step timestamps · run ${F.run}</span><span class="rt"><button onclick="playFrom('${id}','${F.id}',0)">⟳ replay flow</button></span></div>
+          <div class="gbar"><span id="playBar">the ONE recording · cut at proves-step timestamps · run ${F.run}</span><span class="rt"><button onclick="playFrom('${id}','${F.id}',0)">⟳ replay flow</button></span></div>
           <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div></div>
         </div>
         <div class="pstat" id="playStatus"></div>
       </div>
       <div class="chstrip" id="chStrip"></div>
     </div>
-    <p class="legend">${cross?'A cross-screen flow — each chapter is a different screen. ':'A single-screen flow — each chapter is a step along the path. '}The flow plays as one story, its recording cut into chapters at the proves-step timestamps. The playhead stops where the flow stopped; click a chapter to seek, click its chips to open the requirement in Focus. Chapters and chips are derived from the steps and coverReqs — nothing here is stored.</p>
+    <p class="legend">A flow is <b>one path</b>: a Given once (the fixture), then a chain of beats — ${cross?'this one crosses screens, so each beat lands on a different screen':'each beat a step along the path'}. The chain below IS the path; the player above is its one recording, cut at the proves-steps. A failing beat stops the story and everything after it honestly reads not-reached. Click a beat to seek; click its requirement chip to open Focus. Everything here is derived from steps and coverReqs — nothing is stored.</p>
   </div>`;
-  // chapter strip + thumbnails
+  // the path bar — the flow's whole story in one line
+  let pbFailed = false;
+  document.getElementById('pathBarLine').innerHTML = `<span class="lbl" style="font-size:10px;letter-spacing:.12em">THE PATH</span>` + F.chapters.map((ch,i) => {
+    if (ch.kind === 'seed') return `<span class="seg">given · fixture</span>`;
+    const rid = (ch.reqs||[])[0] || '—';
+    const cls = (ch.kind==='nr' || pbFailed) ? 'nr' : ch.fail ? 'bad' : 'ok';
+    if (ch.fail) pbFailed = true;
+    const mk = cls==='nr' ? '◌' : cls==='bad' ? '✗' : '✓';
+    return `<span class="seg ${cls}">${esc(ch.name)} · ${rid} ${mk}</span>`;
+  }).join('<span class="parr">→</span>');
+  // chapter strip: the same path as CARDS with connectors — beats chained left to right
+  let stripFailed = false;
   document.getElementById('chStrip').innerHTML = F.chapters.map((ch,i) => {
     const chips = (ch.reqs||[]).length
       ? ch.reqs.map(rid => { const r = reqOf(id,rid) || crossReq(rid); const st = r?stateOf(r, r.__s||s):'ok'; const [mk]=MK[st];
@@ -1613,8 +1681,10 @@ function renderFlow(id, flowId){
     const thumb = ch.kind==='nr'
       ? `<div class="noev" style="height:72px;gap:1px;padding:0"><b class="st-nr" style="font-size:11px">◌</b><span class="sub" style="font-size:9px">not reached</span></div>`
       : '';
-    return `<div class="ch" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
-      ${ch.screen?`<div class="chscreen">${esc(ch.screen)}</div>`:''}
+    const edge = i===0 ? '' : `<div class="edge ${stripFailed?'nrE':''}">→</div>`;
+    if (ch.fail) stripFailed = true;
+    return edge + `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
+      <div><span class="chno">${ch.kind==='seed'?'given':'beat '+i}</span>${ch.screen?`<span class="chscreen">${esc(ch.screen)}</span>`:''}</div>
       <div class="thumb" data-ci="${i}">${thumb}</div>
       <div class="chname">${esc(ch.name)}</div><div class="chcomp">${esc(ch.comp||'')}</div><div class="chips">${chips}</div></div>`;
   }).join('');
@@ -1639,7 +1709,7 @@ function pausedFlow(id, flowId){
   const sc = ch0.kind==='seed' ? 'sceneSeed' : ch0.scene;
   const ctx = { stage, timers:[], t:0 }; if (sc) SCENE[sc](ctx); ctx.timers.forEach(clearTimeout);
   const c = stage.querySelector('.cur'); if (c) c.remove();
-  chEls().forEach((e,i)=>{ e.className='ch'+(F.chapters[i].kind==='nr'?' nr':''); });
+  chEls().forEach((e,i)=>{ e.className='ch'+(F.chapters[i].fail?' fail':'')+(F.chapters[i].kind==='nr'?' nr':''); });
   const box = stage.parentElement;
   const ov = el(`<div class="playov"><button>▶ play the flow</button></div>`);
   ov.querySelector('button').addEventListener('click', ()=>playFrom(id, flowId, 0));
@@ -1654,7 +1724,7 @@ function playFrom(id, flowId, start){
   const stage = document.getElementById('stPlay');
   function setStates(cur){
     chEls().forEach((e,i)=>{ const ch=F.chapters[i];
-      e.className = 'ch' + (i<cur?' done':i===cur?' cur':'') + (ch.kind==='nr'?' nr':''); });
+      e.className = 'ch' + (i<cur?' done':i===cur?' cur':'') + (ch.fail?' fail':'') + (ch.kind==='nr'?' nr':''); });
   }
   function status(i, extra){ document.getElementById('playStatus').innerHTML = `chapter ${i+1} of ${F.chapters.length} — <b style="font-weight:500;color:var(--ink)">${esc(F.chapters[i].name)}</b>${extra?' · '+extra:''}`; }
   function banner(html, kind){ const ov=document.getElementById('stopOv'); ov.innerHTML=html; ov.className='stopov show '+kind; }
