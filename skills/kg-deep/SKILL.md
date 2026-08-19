@@ -1,17 +1,19 @@
 ---
 name: kg-deep
-description: Use to take ONE screen from a bare row (or no row) to deep, human-accepted requirements proven by unit and flow E2E tests. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD for the human to confirm, then author checkReq-tagged unit and flow tests with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
+description: Use to take ONE screen from a bare row (or no row) to deep, human-owned requirements proven by unit and flow E2E tests. The depth pass of the specboard method — study the real screen, seed deterministic golden data, draft the PRD (canon on write — the human edits or removes it freely, there is no gate), then author checkReq-tagged unit and flow tests with exact-number assertions and safe cross-page round trips. Run it screen by screen, most important screen first; the Init crawl only inventories rows, this is what makes a row TRUE.
 ---
 
 # kg-deep — one screen, made deep
 
 The crawl gives you the **map**: a row per screen, honestly uncovered. This skill is the
-**territory**: it takes one screen to requirements the human has accepted and tests that would fail
-if the app stopped honouring them. Depth does not batch — run this per screen, most important first.
-Expect a real session per complex screen; that cost is the point, not a defect.
+**territory**: it takes one screen to requirements the human owns and tests that would fail if the app
+stopped honouring them. Depth does not batch — run this per screen, most important first. Expect a real
+session per complex screen; that cost is the point, not a defect.
 
-You are staff (kg-staff's rules apply throughout): you do everything, the human owns **meaning**.
-The one thing that's theirs is accepting the requirements. Never accept on their behalf.
+You are staff (kg-staff's rules apply throughout): you do everything, the human owns **meaning**. There
+is **no acceptance gate and no guess flag** — a requirement is canon the moment you write it; you draft
+it, and the human edits or removes it as freely as a test. Never invent or change what a requirement
+means on their behalf; when you draft or change one, **show them**.
 
 ## Phase 0 — Governance: read before you touch
 
@@ -21,8 +23,7 @@ node tools/staff.mjs <screen>     # what governs it, what is proven, what is wai
 
 - No row yet? Create `spec/<screen>/` yourself — entity-scoped routes (`/thing/[id]/…`) are
   invisible to the crawl, so your most important screens often start here.
-- An open contradiction or an unapproved guess from earlier work → stop and ask (kg-staff's three
-  stops). Otherwise proceed.
+- An open contradiction the human has not settled → stop and ask (kg-staff's stops). Otherwise proceed.
 
 ## Phase 1 — Study: ground the requirements in reality
 
@@ -44,13 +45,27 @@ A deep test asserts **exact values**, and exact values need deterministic data.
   browser context; commit only when byte-identical. Record identities too (row ids, unit ids), not
   just values — cross-page tests will need them.
 
-## Phase 3 — Draft the PRD → the human confirms
+## Phase 3 — Draft the PRD (canon on write, the human steers)
 
 Write `spec/<screen>/prd.md`: one `## R<n>` per requirement, each grounded in what phase 1/2 found,
-each annotated with the selector/testid its test will use. Mark the file `guess: true` — it is your
-draft of their meaning. **Stop here for the human**: they correct the wording and drop the flag;
-that acceptance is the whole of what waits on them here. Requirement ids are stable forever — later
-passes append, never renumber.
+each annotated with the selector/testid its test will use. **Lead a requirement with a Given / When /
+Then behaviour triple when it describes a testable state→action→outcome** — the board renders that
+triple as the requirement's shape — and keep prose alone for a principle, where there is no action to
+name:
+
+```markdown
+## R3 — the cell marks an override, keeping the house-view base
+- **Given** edit mode, and a value that differs from the house view
+- **When** you edit the value
+- **Then** the cell marks an override, and the house-view base is kept
+
+<the authored prose follows, one click away in the reader>
+```
+
+There is **no flag and no acceptance step** — the requirement is canon the moment you write it, so
+rebuild and **show the human**: they correct wording, edit, or remove any requirement as freely as a
+test, because the meaning is theirs. Requirement ids are stable forever — later passes append, never
+renumber.
 
 ## Phase 4 — Tests: unit and flow, checkReq-tagged
 
@@ -121,5 +136,6 @@ node tools/staff.mjs --stale      # clear every item your work caused
 ```
 
 Present the human a review table — requirement · flow that proves it · what the assertion pins ·
-verdict — plus the honest caveats and the not-covered list. What they accept is canon; what stays
-unproven stays visibly unproven. Never silence a red to finish the pass.
+verdict — plus the honest caveats and the not-covered list. The requirements are already canon (you
+wrote them); the human edits or removes any that read wrong. What stays unproven stays visibly
+unproven. Never silence a red to finish the pass.

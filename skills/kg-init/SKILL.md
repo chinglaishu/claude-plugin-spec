@@ -56,18 +56,19 @@ crawl produces *neither*. It produces the **map**:
 
 The crawl drives a **real browser** over the running app one route at a time, capturing each page
 (`crawl.png`) and listing it as a **row with no PRD** — visibly, honestly uncovered. That is the
-whole job. It deliberately does **not** draft requirements or tests: a guessed requirement records
-the implementation's bugs as intent, and a shallow auto-test is a false green that makes the board
-*look* finished while proving nothing. Depth is a per-screen decision a human sponsors — that is
-**kg-deep** (study → golden fixture → PRD draft → the human's acceptance → unit and flow proving
-tests). Run it screen by screen, most important screen first.
+whole job. It deliberately does **not** draft requirements or tests: a requirement reverse-engineered
+from the implementation records its bugs as intent, and a shallow auto-test is a false green that makes
+the board *look* finished while proving nothing. Depth is a per-screen decision a human sponsors — that
+is **kg-deep** (study → golden fixture → PRD draft, canon on write → unit and flow proving tests). Run
+it screen by screen, most important screen first.
 
 - A row with no PRD is the board saying "this screen exists and nothing governs it yet" — exactly
   the honest state. `crawl.png` is its evidence and its cover until a kg-deep pass replaces both
   with requirements and a recorded proving run.
-- Requirement state is **proven / unproven**, computed from checkReq-tagged tests (see `kg-e2e`).
-  The only thing ever *waiting* on a person is a drafted PRD still marked `guess:` — kg-deep
-  produces those; confirming it and dropping the flag is the human's one job here.
+- Requirement state is **proven / unproven**, computed from checkReq-tagged tests (see `kg-e2e`) —
+  never typed, never stored. **Nothing waits on a person to confirm it**: a PRD drafted by kg-deep is
+  canon the moment it is written, an ordinary starting point the human edits or removes freely (there
+  is no gate and no guess flag).
 - **Coverage is not automatic.** The crawl link-follows a couple of levels from the root, so it finds
   nav-reachable pages — but **not** entity-scoped routes with a concrete id (`/portfolio/42/scenario`)
   unless the app links to one, and **not** features reached by a *click* rather than a link (wizards,

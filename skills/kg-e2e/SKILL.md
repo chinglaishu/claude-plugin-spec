@@ -153,8 +153,8 @@ test('editing a line item recomputes the total and carries it to the schedule', 
 - **A project's own screen** — whether you are writing its test fresh, or characterizing an existing
   screen that kg-init crawled — navigates the **real running app** at its route, taken from
   `spec/_config.json` (`baseUrl` + the screen's `route`). The recording is then the app as it
-  actually is, and the assertions lock in its current behaviour as the baseline. The guessed PRD gives
-  that baseline meaning: when the human corrects the PRD to say the behaviour *should* differ, you
+  actually is, and the assertions lock in its current behaviour as the baseline. The drafted PRD gives
+  that baseline meaning: when the human edits the PRD to say the behaviour *should* differ, you
   update the test to the corrected PRD — and its failing against the current app is then a real bug
   surfaced, which is the point.
 
