@@ -3,12 +3,12 @@ screen: todo
 area: Tsumiki
 title: Tsumiki — a task tracker with sub-tasks
 route: /todo.html
-guess: true
 ---
 
 <!--
-DRAFTED on the human's behalf — a guess at what Tsumiki should mean, awaiting the human's gate
-(`guess: true`). Do not accept it for them.
+DRAFTED on the human's behalf — a starting point for what Tsumiki should mean. It is canon the moment
+it is written (there is no gate, no guess flag — removed 2026-08-17); edit or remove any requirement
+freely, exactly like a test.
 
 WHY THIS SCREEN EXISTS. Tsumiki is specboard's own teaching demo: a real, usable task tracker small
 enough that anyone reads its whole spec in a minute, but rich enough that testing it is meaningful.
