@@ -339,7 +339,14 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
       const scr = dt.getAttribute('data-screen')
       const rows = [...dt.querySelectorAll('.reqpane .req')]
-      const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
+      // Harvest tags from .test NODES, not from .testpane: the Focus reader (default view, eager
+      // since R13) BORROWS the primary covering test's node out of the pane, so a pane-scoped
+      // harvest intermittently missed that test's tags — its uniquely-tagged reqs then read
+      // "proven without a test tagging it" as a FALSE positive (the exact CLAUDE.md loadRuns-window
+      // symptom; bit ~half of full-suite folds, 2026-08-20). Only a real test node carries
+      // `.tags .tag[data-r]`, wherever it is currently parked (pane or reader), so the assertion
+      // keeps its full power: an untagged-proven requirement is still caught.
+      const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
         .map(el => el.getAttribute('data-r')))
       const card = document.querySelector('#home .card[data-screen="' + scr + '"] .pcount')
       return {
@@ -418,12 +425,14 @@ test('A requirement names the tests that cover it', async ({ page }) => {
     // Focus's proof line carries it, resolved by tag). The old assertion was unsatisfiable the moment board had a single
     // proven requirement. Same per-pane / stripped-qualifier caveat as R4's check applies here.
     const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
-      const tagged = new Set([...dt.querySelectorAll('.testpane .tags .tag[data-r]')]
+      // .test-scoped, not .testpane-scoped — same reader-borrow false positive as R4's walk (see
+      // the comment there; fixed together 2026-08-20). hasTests counts nodes the same way.
+      const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
         .map(el => el.getAttribute('data-r')))
       const rows = [...dt.querySelectorAll('.reqpane .req')]
       return {
         screen: dt.getAttribute('data-screen'),
-        hasTests: dt.querySelectorAll('.testpane .test').length > 0,
+        hasTests: dt.querySelectorAll('.test').length > 0,
         untagged: rows.filter(r => !tagged.has(r.getAttribute('data-r'))).length,
         untaggedGreen: rows
           .filter(r => !tagged.has(r.getAttribute('data-r')) && r.getAttribute('data-state') === 'proven')
