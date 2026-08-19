@@ -81,6 +81,30 @@ test('behaviorText(null) is the empty string — prose-only requirements have no
   assert.equal(behaviorText(null), '')
 })
 
+// beats (D1, spec 2026-08-20): given + every beat in document order, single-space joined.
+test('behaviorText serializes given + every When/Then beat in order', () => {
+  const parsed = {
+    given: 'edit mode',
+    beats: [
+      { when: 'edit the value', then: 'the cell marks an override' },
+      { when: 'press Reset', then: 'the override clears' }
+    ]
+  }
+  assert.equal(behaviorText(parsed), 'edit mode edit the value the cell marks an override press Reset the override clears')
+})
+
+// The byte-identity pin (task 12): no schematic pin is committed yet, but the guarantee is free —
+// a 1-beat block serializes EXACTLY as the old flat given-when-then form did, so any future
+// behaviorText hash stamped today never moves when the grammar did. The legacy flat shape maps to
+// one beat, so old fixtures/tests keep meaning what they said.
+test('PIN: a 1-beat block is byte-identical to the old flat given-when-then serialization', () => {
+  const oldForm = 'edit mode edit the value the cell marks an override'  // pre-beats output, verbatim
+  const oneBeat = { given: 'edit mode', beats: [{ when: 'edit the value', then: 'the cell marks an override' }] }
+  const legacy = { given: 'edit mode', when: 'edit the value', then: 'the cell marks an override' }
+  assert.equal(behaviorText(oneBeat), oldForm)
+  assert.equal(behaviorText(legacy), oldForm)
+})
+
 // -- reqHash / isStale -------------------------------------------------------
 
 test('reqHash is deterministic and 16 lowercase hex chars; different inputs differ', () => {

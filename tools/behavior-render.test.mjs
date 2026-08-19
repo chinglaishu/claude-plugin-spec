@@ -25,3 +25,22 @@ test('the three values are HTML-escaped — a PRD is untrusted text authored by 
   assert.doesNotMatch(h, /<script>/)       // the only tags in the output are the ones this function emits
   assert.match(h, /&lt;script&gt;/)
 })
+
+// ── beats (D1, spec 2026-08-20) ─────────────────────────────────────────────
+// Captured VERBATIM from renderBehavior BEFORE the beats change (task 12) — the byte-identity pin:
+// a 1-beat block must emit exactly what the flat triple emitted, so board.html (whose five behavior
+// blocks are all 1-beat) has zero churn. If this fixture ever needs editing, that IS the defect.
+const ONE_BEAT_FIXTURE = '<div class="behavior"><div class="brow bgiven"><span class="blab">Given</span><span class="btxt">a list with items</span></div><div class="brow bwhen"><span class="blab">When</span><span class="btxt">you clear</span></div><div class="brow bthen"><span class="blab">Then</span><span class="btxt">the list is empty</span></div></div>'
+
+test('PIN: a 1-beat block renders byte-identical to the pre-beats triple markup', () => {
+  const h = renderBehavior({ given: 'a list with items', beats: [{ when: 'you clear', then: 'the list is empty' }] })
+  assert.equal(h, ONE_BEAT_FIXTURE)
+})
+
+test('N beats render as 1 + 2N .brow rows, in beat order', () => {
+  const h = renderBehavior({ given: 'g', beats: [{ when: 'w1', then: 't1' }, { when: 'w2', then: 't2' }] })
+  assert.equal([...h.matchAll(/class="brow/g)].length, 5)     // Given + (When,Then) × 2
+  const order = [...h.matchAll(/class="brow b(\w+)"/g)].map(m => m[1])
+  assert.deepEqual(order, ['given', 'when', 'then', 'when', 'then'])
+  for (const s of ['w1', 't1', 'w2', 't2']) assert.match(h, new RegExp(s))
+})

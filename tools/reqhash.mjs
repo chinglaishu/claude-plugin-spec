@@ -3,9 +3,9 @@
 // Three features (Changed-drift, evidence rendering, requirement schematics) all need to know "the
 // requirement text moved". They share this ONE pure module, at TWO scopes:
 //   meaningText(body)      — the proof/Changed scope: the whole body, dated author-notes excluded.
-//   behaviorText(behavior) — the picture-pin scope: just the parsed Given/When/Then triple.
+//   behaviorText(behavior) — the picture-pin scope: just the parsed behavior block (given + beats).
 // Pure on purpose: node:crypto is the ONLY import. behaviorText takes an ALREADY-PARSED
-// {given, when, then} object (the caller passes r.behavior) so this module never imports
+// {given, beats} object (the caller passes r.behavior) so this module never imports
 // behavior.mjs, fs, or anything stateful.
 
 import crypto from 'node:crypto'
@@ -38,10 +38,15 @@ export function meaningText (body) {
   return normalize(stripNotes(body))
 }
 
-// The picture-pin scope: the parsed triple (or null → ''). Takes the parsed object, never the raw body.
+// The picture-pin scope: the parsed block (or null → ''). Takes the parsed object, never the raw
+// body. Serializes given + every When/Then beat in document order, single-space joined — for a
+// 1-beat block this is BYTE-IDENTICAL to the pre-beats `given when then` serialization (pinned in
+// tools/reqhash.test.mjs), so a hash stamped before the grammar grew never moves. The legacy flat
+// {given, when, then} shape (pre-D1 parses, old fixtures) is tolerated as exactly one beat.
 export function behaviorText (behavior) {
   if (behavior == null) return ''
-  return normalize(behavior.given + ' ' + behavior.when + ' ' + behavior.then)
+  const beats = behavior.beats || [{ when: behavior.when, then: behavior.then }]
+  return normalize([behavior.given, ...beats.flatMap(b => [b.when, b.then])].join(' '))
 }
 
 // Stable short digest of text AS GIVEN — callers pass meaningText(...) / behaviorText(...).

@@ -293,10 +293,11 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
 // the board now RENDERS. `state` stays exactly as it was: the walkthrough and the home "N / M proven"
 // count still read it, and migrating those is a later task, not this one.
 //
-// `behavior` (added 2026-08-18, visual requirements) is the requirement's OWN body read through
-// parseBehavior — the optional Given/When/Then triple a requirement may lead with, or null when it
-// is prose-only. Attached here (not in the builder) so every reader of a requirement sees the same
-// parse; the builder only draws it. It is authored text re-shaped, never a derived state.
+// `behavior` (added 2026-08-18, visual requirements; beats since 2026-08-20, D1) is the
+// requirement's OWN body read through parseBehavior — the optional Given + 1..N When/Then beats
+// block ({given, beats}) a requirement may lead with, or null when it is prose-only. Attached here
+// (not in the builder) so every reader of a requirement sees the same parse; the builder only
+// draws it. It is authored text re-shaped, never a derived state.
 const _aggCache = new WeakMap()
 function aggFor (results) {
   const key = results || {}

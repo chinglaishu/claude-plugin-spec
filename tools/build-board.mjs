@@ -145,18 +145,23 @@ export function renderBody (text) {
   return out.replace(new RegExp(SENT + '(\\d+)' + SENT, 'g'), (_, i) => holds[Number(i)])
 }
 
-// The behavior SHAPE a requirement may lead with — the Given/When/Then triple parseBehavior
-// (tools/behavior.mjs) read off its body, attached in enrichReqs as r.behavior. Drawn as a labelled
-// grid ABOVE the prose, so the shape leads and the prose supports. A prose-only requirement
-// (behavior === null) returns '' exactly — no wrapper, no empty block, so the board is unchanged
-// wherever the triple is absent. The three values are UNTRUSTED PRD text (same as renderBody's
-// input), so each is escaped before a tag is emitted. Pure and exported, like renderBody, so it is
-// unit-testable without a browser (tools/behavior-render.test.mjs).
+// The behavior SHAPE a requirement may lead with — Given + 1..N When/Then beats (D1, spec
+// 2026-08-20) parseBehavior (tools/behavior.mjs) read off its body, attached in enrichReqs as
+// r.behavior. Drawn as a labelled grid ABOVE the prose, so the shape leads and the prose supports:
+// one Given row, then one When and one Then row per beat, in document order — for a 1-beat block
+// the markup is BYTE-IDENTICAL to the pre-beats triple (pinned in behavior-render.test.mjs), so
+// the board has zero churn until a multi-beat PRD exists. A prose-only requirement (behavior ===
+// null) returns '' exactly — no wrapper, no empty block, so the board is unchanged wherever the
+// block is absent. The values are UNTRUSTED PRD text (same as renderBody's input), so each is
+// escaped before a tag is emitted. Pure and exported, like renderBody, so it is unit-testable
+// without a browser (tools/behavior-render.test.mjs).
 export function renderBehavior (b) {
   if (!b) return ''
   const row = (k, label, text) =>
     `<div class="brow b${k}"><span class="blab">${label}</span><span class="btxt">${esc(text)}</span></div>`
-  return `<div class="behavior">${row('given', 'Given', b.given)}${row('when', 'When', b.when)}${row('then', 'Then', b.then)}</div>`
+  const beats = (b.beats || [{ when: b.when, then: b.then }])
+    .map(bt => row('when', 'When', bt.when) + row('then', 'Then', bt.then)).join('')
+  return `<div class="behavior">${row('given', 'Given', b.given)}${beats}</div>`
 }
 
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
