@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>specboard — flow composer (prompt-handoff)</title>
+<style>
+:root{
+  --ink:#1c1b18; --ink-2:#46443f; --ink-3:#5f5d56; --ink-4:#6e6b64;
+  --paper:#fdfcf9; --canvas:#f4f1ea; --wash:#eae6dc;
+  --hair:#e2ddd1; --hair-2:#cdc7b8; --line3:#a8a59c;
+  --ai:#2f4a63; --ai-tint:#e6eaee; --ai-line:#b9c4ce;
+  --bengara:#8d4a38; --bengara-tint:#f2e8e4; --bengara-line:#d8c0b6;
+  --koke:#4d5c37; --koke-tint:#eaece1; --koke-line:#bcc4a8;
+  --yamabuki:#8a6412; --yamabuki-tint:#f6eeda; --yamabuki-line:#dfc98c;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --r-sm:4px; --r:6px; --r-md:10px;
+  --sans:"Helvetica Neue",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1240px;background:var(--canvas);color:var(--ink);
+  font:400 var(--t-md)/1.6 var(--sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;padding:0 var(--s5) var(--s7)}
+h1,h2,h3{margin:0;font-weight:400;letter-spacing:-.02em}
+h1{font-size:var(--t-xl)} h2{font-size:var(--t-lg)}
+b,strong{font-weight:500}
+code,.mono{font-family:var(--mono);font-size:.87em}
+.lbl{font-size:var(--t-micro);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.muted{color:var(--ink-4)}
+.top{display:flex;align-items:center;gap:var(--s3);padding:var(--s4) 0;border-bottom:1px solid var(--hair)}
+.logo{width:13px;height:13px;background:var(--ai)}
+.brand{font-size:var(--t-lg)}
+.crumb{font-size:var(--t-sm);color:var(--ink-4)}
+.intro{max-width:78ch;color:var(--ink-2);margin:var(--s4) 0 var(--s5)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--hair-2);background:var(--paper);
+  color:var(--ink);border-radius:var(--r);padding:5px var(--s3);font:400 var(--t-xs)/1.3 var(--sans);cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.wrap2{display:grid;grid-template-columns:308px 1fr;gap:var(--s4);align-items:start}
+.panel{border:1px solid var(--hair);border-radius:var(--r-md);background:var(--paper);padding:var(--s4)}
+.panel h2{margin-bottom:var(--s1)}
+.panel .sub{font-size:var(--t-xs);color:var(--ink-4);margin-bottom:var(--s3);line-height:1.55}
+
+/* node library */
+.libgrp{font-size:var(--t-micro);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin:var(--s3) 0 var(--s2)}
+.node{border:1px solid var(--hair-2);border-radius:var(--r);background:var(--paper);padding:var(--s2) var(--s3);margin-bottom:var(--s2);cursor:pointer;transition:border-color .15s, box-shadow .15s}
+.node:hover{border-color:var(--ai);box-shadow:0 1px 4px rgba(28,27,24,.06)}
+.node.hint{border-color:var(--yamabuki);box-shadow:0 0 0 2px var(--yamabuki-tint)}
+.node .nt{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);margin-bottom:3px}
+.node .nt .scrn{margin-left:auto;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;
+  padding:1px 6px;border-radius:var(--r-sm);background:var(--wash);color:var(--ink-3);flex:none}
+.node .gwt, .cnode .gwt{display:grid;grid-template-columns:32px 1fr;gap:1px 8px;font-size:10.5px;line-height:1.45}
+.gwt .k{font-family:var(--mono);font-size:8.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-4);padding-top:2px}
+.gwt .v{color:var(--ink-2)}
+.node .pr{margin-top:4px;font:400 9.5px var(--mono);color:var(--ai)}
+.idnote{border-top:1px dashed var(--hair-2);margin-top:var(--s3);padding-top:var(--s3);font-size:var(--t-xs);color:var(--ink-3);line-height:1.6}
+.idnote b{display:block;color:var(--ink-2)}
+
+/* the chain */
+.chainwrap{overflow-x:auto;padding:var(--s2) 0 var(--s3)}
+.chain{display:flex;align-items:stretch;min-width:max-content}
+.cnode{position:relative;width:212px;flex:none;border:1px solid var(--hair-2);border-radius:var(--r);background:var(--paper);padding:var(--s2) var(--s3)}
+.cnode.given{background:var(--wash);border-style:solid}
+.cnode .nt{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);margin-bottom:3px}
+.cnode .no{font-family:var(--mono);font-size:9px;color:var(--ink-4)}
+.cnode .x{margin-left:auto;border:0;background:none;color:var(--ink-4);cursor:pointer;font-size:12px;padding:0 2px}
+.cnode .x:hover{color:var(--bengara)}
+.cnode .pr{margin-top:4px;font:400 9.5px var(--mono);color:var(--ai)}
+.cnode .scrn{font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.clink{display:flex;flex-direction:column;justify-content:center;align-items:center;width:88px;flex:none;padding:0 4px;text-align:center}
+.clink .a{font-size:15px;line-height:1;color:var(--koke)}
+.clink .t{font:400 8.5px var(--mono);line-height:1.5;margin-top:3px;color:var(--koke)}
+.clink.gap .a{color:var(--yamabuki)}
+.clink.gap .t{color:var(--yamabuki)}
+.gapbar{border:1px solid var(--yamabuki-line);background:var(--yamabuki-tint);color:var(--yamabuki);
+  border-radius:var(--r-sm);padding:var(--s2) var(--s3);font-size:var(--t-xs);margin-bottom:var(--s3);display:none}
+.gapbar.show{display:block}
+.kchip{display:inline-block;font-family:var(--mono);font-size:9px;padding:0 5px;border-radius:var(--r-sm);background:var(--paper);border:1px solid var(--hair)}
+
+/* output */
+.outgrid{display:grid;grid-template-columns:1fr 340px;gap:var(--s4);margin-top:var(--s4);align-items:start}
+.prompt{border:1px solid var(--hair);border-radius:var(--r-md);background:var(--paper);overflow:hidden}
+.prompt .ph{display:flex;align-items:center;gap:var(--s2);padding:var(--s2) var(--s3);border-bottom:1px solid var(--hair);background:var(--wash);
+  font-family:var(--mono);font-size:var(--t-micro);color:var(--ink-3)}
+.prompt .ph .btn{margin-left:auto}
+.prompt pre{margin:0;padding:var(--s3) var(--s4);font:400 11px/1.7 var(--mono);color:var(--ink-2);white-space:pre-wrap;max-height:340px;overflow:auto}
+.honest{border:1px solid var(--ai-line);background:var(--ai-tint);border-radius:var(--r-md);
+  padding:var(--s3) var(--s4);font-size:var(--t-sm);color:var(--ai);line-height:1.65}
+.honest b{color:var(--ai)}
+.qa{margin-top:var(--s3);border:1px solid var(--hair);border-radius:var(--r-md);background:var(--paper);padding:var(--s3) var(--s4);font-size:var(--t-xs);color:var(--ink-3);line-height:1.6}
+.qa b{color:var(--ink-2)}
+@media (max-width:1000px){ .wrap2,.outgrid{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="logo"></span><span class="brand">specboard</span>
+  <span class="crumb">flow composer — chain unit beats into a flow; the board hands you the prompt, it never writes the test (R15)</span>
+</header>
+
+<p class="intro">Every unit test already proves a <b>beat</b> — a Given, a When, a Then. This composer treats each beat
+as a <b>node</b> and lets you chain nodes into a <b>flow</b>: click nodes from the library to append them, and the
+composer checks every joint — <b>beat N's Then must supply beat N+1's Given</b>. A joint that doesn't line up shows a
+<b>gap</b> and names the node that would fill it. When the path holds, the output is a ready <b>kg-e2e prompt</b> —
+the board composes the <i>spec</i> of the flow, never the flow test itself.</p>
+
+<div class="wrap2">
+  <!-- ═══ node library ═══ -->
+  <div class="panel">
+    <h2>Node library</h2>
+    <div class="sub">one node per <b>beat the screen's tests already prove</b> — derived from the unit tests and
+      behavior blocks, nothing hand-registered. Click a node to append it to the chain.</div>
+    <div id="lib"></div>
+    <div class="idnote"><b>what makes two nodes the same node</b>
+      element archetype (list item, toggle, picker) × state signature (an unchecked item ≠ a checked one) ×
+      structure signature (an item with sub-items ≠ one without). Two identical unchecked todos are ONE node.</div>
+  </div>
+
+  <!-- ═══ the chain + output ═══ -->
+  <div>
+    <div class="panel">
+      <h2>The flow — one path through the nodes</h2>
+      <div class="sub">starts from the screen's fixture Given. Every joint is checked: <span class="mono">Then ⊇ next Given</span>.
+        Try appending <b>“tick a sub-task from the detail”</b> before opening the detail — the joint gaps, and the library
+        highlights the node that fills it.</div>
+      <div class="gapbar" id="gapbar"></div>
+      <div class="chainwrap"><div class="chain" id="chain"></div></div>
+    </div>
+
+    <div class="outgrid">
+      <div class="prompt">
+        <div class="ph">the output — a ready kg-e2e prompt <button class="btn" onclick="copyPrompt()">⧉ Copy</button></div>
+        <pre id="prompt"></pre>
+      </div>
+      <div>
+        <div class="honest">The composer <b>writes nothing and runs nothing</b>. Flows stay authored (your 2026-08-17
+          decision): Claude writes the real test from this prompt, red-first, and the Flow <i>view</i> stays the player
+          of its one recording. No graph is stored — the node library derives from the tests, the chain lives only in
+          this prompt, and the authored flow test remains the only flow that exists.</div>
+        <div class="qa"><b>where this lives on the board</b> — the Flow view's “＋ New flow · hand Claude a prompt”
+          button opens this composer instead of a bare prompt. Same sheet family as the other ⋯ handoffs.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- the node library: one node per proven beat (screen, needs → gives are the joint tokens) ----
+const NODES = [
+  { id:'n-add',    screen:'task-list',   name:'add a task',                  given:'the list is seeded',                     when:'type a title, press Add',            then:'a new row at the bottom, unchecked',          proves:'R1', from:'F2', needs:['seeded'],                    gives:['task'] },
+  { id:'n-sub',    screen:'task-list',   name:'add a sub-task',              given:'a container task',                       when:'add a sub-task',                     then:'the ring counts one more by itself',          proves:'R3', from:'U1', needs:['seeded'],                    gives:['container','subtask-open'] },
+  { id:'n-tick',   screen:'task-list',   name:'tick the last open sub-task', given:'container · one open sub-task',          when:'tick the last open sub-task',        then:'the container completes by itself',           proves:'R4', from:'F1', needs:['subtask-open'],              gives:['container-done'] },
+  { id:'n-untick', screen:'task-list',   name:'untick that sub-task',        given:'a container completed by roll-up',       when:'untick that same sub-task',          then:'the container reopens by itself',             proves:'R4', from:'F1', needs:['container-done'],            gives:['subtask-open'] },
+  { id:'n-count',  screen:'task-list',   name:'check the remaining count',   given:'a container holds open sub-tasks',       when:'complete the container’s sub-tasks', then:'the count drops by the open-leaf count',      proves:'R5', from:'F1', needs:['subtask-open'],              gives:['count-checked'] },
+  { id:'n-open',   screen:'task-detail', name:'open the container’s detail', given:'a container exists',                     when:'open its detail page',               then:'the detail lists its sub-tasks',              proves:'D2', from:'F3', needs:['container'],                 gives:['detail-open'] },
+  { id:'n-dtick',  screen:'task-detail', name:'tick a sub-task from the detail', given:'detail open · an open sub-task',     when:'tick a sub-task here',               then:'the list page’s roll-up agrees on return',    proves:'D1', from:'F3', needs:['detail-open','subtask-open'], gives:['detail-ticked'] },
+  { id:'n-reload', screen:'task-list',   name:'reload the page',             given:'edits and completions made above',       when:'reload',                             then:'every task, state and stamp comes back',      proves:'R8', from:'F1', needs:[],                            gives:['reloaded'] },
+];
+const START = { name:'fixture', given:'frozen clock · storage cleared · seeded', gives:['seeded'] };
+let chain = ['n-sub','n-tick','n-untick'];   // the demo path — all joints valid
+
+const nodeOf = id => NODES.find(n => n.id === id);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+// ---- validation: state tokens accumulate along the path; a joint holds when needs ⊆ state ----
+function validate(){
+  let state = new Set(START.gives), out = [];
+  for (const id of chain){
+    const n = nodeOf(id);
+    const missing = n.needs.filter(t => !state.has(t));
+    out.push({ n, missing });
+    n.gives.forEach(t => state.add(t));
+  }
+  return out;
+}
+function fillerFor(missing){ return NODES.find(n => n.gives.some(g => missing.includes(g)) ); }
+
+function render(){
+  const v = validate();
+  // library (highlight the gap-filler when a gap exists)
+  const gap = v.find(x => x.missing.length);
+  const filler = gap ? fillerFor(gap.missing) : null;
+  const grps = {};
+  NODES.forEach(n => (grps[n.screen] = grps[n.screen] || []).push(n));
+  document.getElementById('lib').innerHTML = Object.entries(grps).map(([scr, ns]) =>
+    `<div class="libgrp">${scr}</div>` + ns.map(n => `
+      <div class="node ${filler && filler.id===n.id ? 'hint':''}" onclick="addNode('${n.id}')">
+        <div class="nt">${esc(n.name)}<span class="scrn">${scr.replace('task-','')}</span></div>
+        <div class="gwt"><span class="k">given</span><span class="v">${esc(n.given)}</span>
+          <span class="k">when</span><span class="v">${esc(n.when)}</span>
+          <span class="k">then</span><span class="v">${esc(n.then)}</span></div>
+        <div class="pr">proves ${n.proves} · from ${n.from}${filler && filler.id===n.id ? ' · ← fills the gap':''}</div>
+      </div>`).join('')
+  ).join('');
+  // chain
+  let html = `<div class="cnode given">
+      <div class="nt"><span class="no">GIVEN</span> ${esc(START.name)}</div>
+      <div class="gwt"><span class="k">state</span><span class="v">${esc(START.given)}</span></div>
+      <div class="pr">the flow's one Given — set once</div></div>`;
+  v.forEach((x, i) => {
+    const ok = !x.missing.length;
+    html += `<div class="clink ${ok?'':'gap'}"><span class="a">${ok?'→':'⇢'}</span><span class="t">${
+      ok ? 'then ⊇ given ✓' : 'GAP — given needs ' + x.missing.map(m=>`<span class="kchip">${m}</span>`).join(' ')}</span></div>`;
+    html += `<div class="cnode"${x.missing.length?' style="border-color:var(--yamabuki-line)"':''}>
+      <div class="nt"><span class="no">beat ${i+1}</span> ${esc(x.n.name)} <button class="x" title="remove" onclick="rmNode(${i})">✕</button></div>
+      <div class="gwt"><span class="k">when</span><span class="v">${esc(x.n.when)}</span>
+        <span class="k">then</span><span class="v">${esc(x.n.then)}</span></div>
+      <div class="pr">proves ${x.n.proves}</div><div class="scrn">${x.n.screen}</div></div>`;
+  });
+  document.getElementById('chain').innerHTML = html;
+  // gap bar
+  const gb = document.getElementById('gapbar');
+  if (gap){
+    const f = fillerFor(gap.missing);
+    gb.className = 'gapbar show';
+    gb.innerHTML = `⚠ the joint before <b>${esc(gap.n.name)}</b> does not hold — its Given needs ${gap.missing.map(m=>`<span class="kchip">${m}</span>`).join(' ')}${f?`; the library node <b>${esc(f.name)}</b> supplies it (highlighted) — click it to insert before the gap`:''}`;
+  } else gb.className = 'gapbar';
+  // prompt
+  const screens = [...new Set(chain.map(id => nodeOf(id).screen))];
+  const start = chain.length ? nodeOf(chain[0]).screen : 'task-list';
+  const covers = [...new Set(chain.map(id => { const n = nodeOf(id); return (n.screen===start? '' : n.screen+':') + n.proves; }))];
+  const beats = v.map((x,i) => `  beat ${i+1} — When ${x.n.when}\n           Then ${x.n.then}   (proves ${x.n.proves})`).join('\n');
+  document.getElementById('prompt').textContent =
+`Author a ${screens.length>1?'cross-screen ':''}flow test for the "${start}" screen.
+
+File: spec/${start}/test.spec.ts   (a flow lives in the screen it starts on)
+Declare up front: coverReqs(${covers.map(c=>`'${c}'`).join(', ')})
+
+Given (the fixture): ${START.given}
+${beats}
+
+Discipline (kg-e2e):
+- write the failing test FIRST and watch it go red
+- each beat's Then is a real assertion that would fail without its requirement
+- tag with checkReq('<id>', ...) inside the beat that proves it
+- assert exact numbers read off the screen; keep asserted values visible in the recording
+- a beat exists only where an assertion could fail — setup folds into the When`;
+}
+function addNode(id){
+  const v = validate();
+  const gapAt = v.findIndex(x => x.missing.length);
+  if (gapAt >= 0 && nodeOf(id).gives.some(g => v[gapAt].missing.includes(g))) chain.splice(gapAt, 0, id);
+  else chain.push(id);
+  render();
+}
+function rmNode(i){ chain.splice(i,1); render(); }
+function copyPrompt(){
+  const t = document.getElementById('prompt').textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).catch(()=>{});
+}
+render();
+</script>
+</body>
+</html>
