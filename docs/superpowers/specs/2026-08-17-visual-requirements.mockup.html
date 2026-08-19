@@ -474,6 +474,46 @@ ins { color:var(--koke); text-decoration:none; }
   .steplin { font-size:var(--t-xs); color:var(--mute); margin-top:var(--s3); }
   .steplin a { color:var(--dim); }
 
+  /* ============ beats spec 2026-08-20 — focus left stack, schematic pane, media toolbar ============ */
+  .fleft { display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
+  .bwt .brow.beatstart { border-top:2px solid var(--line2); }
+  .bwt .bk .bno { font-size:9px; color:var(--line3); margin-left:4px; }
+  .schem .figcap { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.08em; text-transform:uppercase; color:var(--mute); margin-bottom:8px; }
+  .schem .figcap .beatdots { margin-left:auto; display:inline-flex; gap:5px; }
+  .schem .figcap .beatdots i { width:6px; height:6px; border-radius:99px; background:var(--line2); }
+  .schem .figcap .beatdots i.on { background:var(--ai); }
+  .schem .figcap .beatdots.b2 i:nth-child(1) { animation:bd1 6s infinite; }
+  .schem .figcap .beatdots.b2 i:nth-child(2) { animation:bd2 6s infinite; }
+  @keyframes bd1 { 0%,48% { background:var(--ai); } 52%,96% { background:var(--line2); } }
+  @keyframes bd2 { 0%,48% { background:var(--line2); } 52%,96% { background:var(--ai); } }
+  .schem .viz { position:relative; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  .schem .viz svg { display:block; width:100%; height:auto; }
+  .schem.isstale .viz svg { filter:grayscale(1) opacity(.45); }
+  .schem .staleov { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:rgba(253,252,249,.72); text-align:center; padding:0 20px; }
+  .schem.isstale .staleov { display:flex; }
+  .schem .staleov b { font-size:var(--t-sm); color:var(--dim); font-weight:500; }
+  .schem .staleov span { font-size:var(--t-xs); color:var(--mute); }
+  .schem .figfoot { font-size:var(--t-xs); color:var(--mute); margin-top:6px; }
+  .schem .figfoot .h { font-family:var(--mono); }
+  .noschem { border:1px dashed var(--line2); border-radius:var(--r-sm); padding:var(--s4); font-size:var(--t-xs); color:var(--mute); text-align:center; }
+  .medbar { display:inline-flex; gap:2px; margin-left:auto; }
+  .medbar button { border:0; background:none; font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); padding:2px 8px; border-radius:var(--r-sm); cursor:pointer; }
+  .medbar button:hover { color:var(--ink); }
+  .medbar button.on { background:var(--paper); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line2); }
+  .fstrip { display:flex; gap:8px; padding:10px; background:var(--paper); }
+  .fstrip .fcell { flex:1; min-width:0; border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  .fstrip .fcell.hot { border-color:var(--koke-line, var(--line2)); }
+  .fstrip .fcell.hotbad { border-color:var(--bad); }
+  .fstrip .fcap { display:flex; align-items:center; gap:6px; font-family:var(--mono); font-size:10px; color:var(--mute); padding:4px 7px; border-top:1px solid var(--hair); background:var(--wash); }
+  .xva { border:1px solid var(--line); background:var(--bad-bg); border-radius:var(--r-sm); margin:10px; padding:8px 12px; font-family:var(--mono); font-size:var(--t-xs); color:var(--ink-2); line-height:1.8; }
+  .xva .xk { color:var(--mute); } .xva .xok { color:var(--ok); } .xva .xbad { color:var(--bad); }
+  .vbar { display:flex; align-items:center; gap:10px; padding:8px 10px; border-top:1px solid var(--hair); background:var(--wash); font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); }
+  .vbar .track { flex:1; height:3px; background:var(--line); border-radius:99px; position:relative; }
+  .vbar .track i { position:absolute; left:0; top:0; bottom:0; width:38%; background:var(--ai); border-radius:99px; }
+  .wmarkbox { position:relative; }
+  .wmarkbox .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(253,252,249,.55); z-index:5; pointer-events:none; }
+  .wmarkbox .wmark span { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line); border-radius:var(--r-sm); padding:4px 10px; }
+
   /* pagination */
   .pager { display:flex; align-items:center; justify-content:center; gap:6px; padding:var(--s5) 0 0; }
   .pager button { min-width:30px; height:30px; border:1px solid transparent; background:none; border-radius:99px; font-family:var(--mono); font-size:var(--t-sm); color:var(--dim); }
@@ -700,8 +740,12 @@ const SCREENS = {
         then:'the ring reads 1 of 3 by itself — the parent still has no checkbox',
         prose:'Sub-tasks live inside a task. A task that has them is a container: it shows a progress ring counting its sub-tasks (2 of 3) in place of its own checkbox, so it can never be completed by a stray click — only its sub-tasks can be. Adding a sub-task moves the ring by itself.' },
       { id:'R4', title:'Completion rolls up, both directions', state:'ok', primary:'F1', scene:'sceneR4',
-        given:'a container', sub:'2 of 3 done · one open sub-task', when:'tick the last open sub-task, then untick it',
-        then:'the container completes by itself, and reopens when the sub-task does',
+        given:'a container', sub:'2 of 3 done · one open sub-task',
+        // beats (spec 2026-08-20): one Given, then When→Then pairs — each an assertable outcome
+        beats:[
+          { when:'tick the last open sub-task', then:'the container completes by itself — ring reads 3 of 3, its row struck' },
+          { when:'untick that same sub-task', then:'the container reopens by itself — the done-state is derived, both directions' },
+        ],
         prose:'Completing the last open sub-task completes the container by itself; reopening any sub-task reopens the container. The container’s done-state is purely derived from its children — nobody ticks a container by hand.' },
       { id:'R5', title:'“To do” counts remaining leaves only', state:'bad', primary:'F1', scene:'sceneR5',
         given:'header reads 3 to do', sub:'a container holds 2 open sub-tasks', when:'complete the container’s two sub-tasks',
@@ -889,7 +933,7 @@ function buildPrompt(st){
   if (st.action==='reword'){
     const r = reqOf(st.screenId, st.reqId);
     return `Reword requirement ${r.id} — “${r.title}” — on the “${s.name}” screen (spec/${st.screenId}/prd.md).\n\n`
-      + `Current behaviour:\n  Given ${r.given}\n  When ${r.when}\n  Then ${r.then}\n\n`
+      + `Current behaviour:\n  Given ${r.given}\n` + beatsOf(r).map(b=>`  When ${b.when}\n  Then ${b.then}`).join('\n') + `\n\n`
       + `What to change:\n  ⟨describe the reword — what it should say instead⟩\n\n`
       + `Requirement ids are stable; don’t renumber. You draft the prose; I own the meaning (CLAUDE.md rule 5). If a test already proves this and the meaning shifts, it will read Changed until re-verified — that’s expected.`;
   }
@@ -921,7 +965,7 @@ function buildPrompt(st){
       + `  • Don't touch requirement wording — that's mine.`;
   }
   const reqs = st.reqIds.map(id=>reqOf(st.screenId,id)).filter(Boolean);
-  const behav = reqs.map(r=>`  ${r.id} — ${r.title}\n     Given ${r.given}${r.sub?` · ${r.sub}`:''}\n     When ${r.when}\n     Then ${r.then}`).join('\n');
+  const behav = reqs.map(r=>`  ${r.id} — ${r.title}\n     Given ${r.given}${r.sub?` · ${r.sub}`:''}\n` + beatsOf(r).map(b=>`     When ${b.when}\n     Then ${b.then}`).join('\n')).join('\n');
   if (st.kind==='flow'){
     const ids = reqs.map(r=>r.id);
     return `Add a FLOW test that starts on the "${s.name}" screen (${file}) and proves ${ids.join(' → ')||'<pick requirements>'} along one path.\n\n`
@@ -1111,18 +1155,162 @@ function renderDetail(id, view, arg){
   else renderFlow(id, arg);
 }
 
-/* ---- evidence embed (respects global autoPlay) ---- */
+/* ---- beats (spec 2026-08-20 D1: one Given, then 1..N When→Then) ---- */
+function beatsOf(r){ return r.beats || [{ when:r.when, then:r.then }]; }
+
+/* ---- the authored schematic (D3) — drawn from the text, hash-pinned, never captured media ---- */
+const SCHEM = {
+  'task-list:R4': `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ticking the last open sub-task fills the container's ring and strikes its row; unticking reopens it.">
+    <style>
+      #s4 #s4box{animation:s4box 6s infinite}
+      #s4 #s4chk{animation:s4chk 6s infinite}
+      #s4 #s4strk{animation:s4strk 6s infinite;transform-origin:48px 31px}
+      #s4 #s4r23{animation:s4r23 6s infinite}
+      #s4 #s4r33{animation:s4r33 6s infinite}
+      #s4 #s4cur{animation:s4cur 6s ease-in-out infinite}
+      @keyframes s4box{0%,16%{fill:var(--paper);stroke:var(--line3)}19%,63%{fill:var(--ai);stroke:var(--ai)}67%,100%{fill:var(--paper);stroke:var(--line3)}}
+      @keyframes s4chk{0%,17%{opacity:0}20%,63%{opacity:1}66%,100%{opacity:0}}
+      @keyframes s4strk{0%,19%{transform:scaleX(0)}25%,62%{transform:scaleX(1)}68%,100%{transform:scaleX(0)}}
+      @keyframes s4r23{0%,18%{opacity:1}20%,64%{opacity:0}67%,100%{opacity:1}}
+      @keyframes s4r33{0%,18%{opacity:0}20%,64%{opacity:1}67%,100%{opacity:0}}
+      @keyframes s4cur{0%{transform:translate(210px,120px);opacity:0}6%{opacity:.9}14%{transform:translate(38px,104px);opacity:.9}17%{transform:translate(38px,107px)}20%{transform:translate(38px,104px)}30%{transform:translate(210px,120px);opacity:0}50%{transform:translate(210px,120px);opacity:0}56%{opacity:.9}61%{transform:translate(38px,104px);opacity:.9}64%{transform:translate(38px,107px)}67%{transform:translate(38px,104px)}77%{transform:translate(210px,120px);opacity:0}100%{transform:translate(210px,120px);opacity:0}}
+    </style>
+    <g id="s4">
+      <g fill="none" stroke-width="2.4">
+        <circle id="s4r23" cx="30" cy="30" r="7" stroke="var(--line2)" stroke-dasharray="29.3 14.7" transform="rotate(-90 30 30)"/>
+        <circle id="s4r33" cx="30" cy="30" r="7" stroke="var(--ok)"/>
+      </g>
+      <rect x="48" y="26" width="170" height="8" rx="3" fill="var(--wash)"/>
+      <rect id="s4strk" x="48" y="29.5" width="170" height="1.6" fill="var(--mute)"/>
+      <rect x="36" y="52" width="10" height="10" rx="2" fill="var(--ai)" stroke="var(--ai)" stroke-width="1.3"/>
+      <path d="M38.5 57 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>
+      <rect x="54" y="53.5" width="130" height="7" rx="3" fill="var(--wash)"/>
+      <rect x="36" y="76" width="10" height="10" rx="2" fill="var(--ai)" stroke="var(--ai)" stroke-width="1.3"/>
+      <path d="M38.5 81 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>
+      <rect x="54" y="77.5" width="110" height="7" rx="3" fill="var(--wash)"/>
+      <rect id="s4box" x="36" y="100" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <path id="s4chk" d="M38.5 105 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>
+      <rect x="54" y="101.5" width="120" height="7" rx="3" fill="var(--wash)"/>
+      <g id="s4cur"><path d="M0 0 L0 12 L3 9 L5 13 L7 12 L5 8 L9 8 Z" fill="var(--ink)" stroke="var(--paper)" stroke-width="1"/></g>
+    </g>
+  </svg>`,
+  'task-list:R5': `<svg viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Completing the container's two open sub-tasks drops the remaining count from 3 to 1 — leaves only.">
+    <style>
+      #s5 #s5b2{animation:s5b2 5.5s infinite}#s5 #s5c2{animation:s5c2 5.5s infinite}
+      #s5 #s5b3{animation:s5b3 5.5s infinite}#s5 #s5c3{animation:s5c3 5.5s infinite}
+      #s5 #s5n3{animation:s5n3 5.5s infinite}#s5 #s5n2{animation:s5n2 5.5s infinite}#s5 #s5n1{animation:s5n1 5.5s infinite}
+      #s5 #s5cur{animation:s5cur 5.5s ease-in-out infinite}
+      @keyframes s5b2{0%,22%{fill:var(--paper);stroke:var(--line3)}26%,90%{fill:var(--ai);stroke:var(--ai)}94%,100%{fill:var(--paper);stroke:var(--line3)}}
+      @keyframes s5c2{0%,23%{opacity:0}27%,90%{opacity:1}94%,100%{opacity:0}}
+      @keyframes s5b3{0%,46%{fill:var(--paper);stroke:var(--line3)}50%,90%{fill:var(--ai);stroke:var(--ai)}94%,100%{fill:var(--paper);stroke:var(--line3)}}
+      @keyframes s5c3{0%,47%{opacity:0}51%,90%{opacity:1}94%,100%{opacity:0}}
+      @keyframes s5n3{0%,24%{opacity:1}28%,100%{opacity:0}}
+      @keyframes s5n2{0%,24%{opacity:0}28%,48%{opacity:1}52%,100%{opacity:0}}
+      @keyframes s5n1{0%,48%{opacity:0}52%,90%{opacity:1}94%,100%{opacity:0}}
+      @keyframes s5cur{0%{transform:translate(210px,125px);opacity:0}8%{opacity:.9}18%{transform:translate(34px,58px);opacity:.9}22%{transform:translate(34px,61px)}26%{transform:translate(34px,58px)}40%{transform:translate(34px,82px)}46%{transform:translate(34px,82px)}50%{transform:translate(34px,85px)}54%{transform:translate(34px,82px)}70%{transform:translate(210px,125px);opacity:0}100%{transform:translate(210px,125px);opacity:0}}
+    </style>
+    <g id="s5">
+      <rect x="16" y="16" width="160" height="118" rx="8" fill="none" stroke="var(--line)" stroke-width="1.4"/>
+      <rect x="30" y="30" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <rect x="48" y="31.5" width="100" height="7" rx="3" fill="var(--wash)"/>
+      <rect id="s5b2" x="30" y="54" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <path id="s5c2" d="M32.5 59 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>
+      <rect x="48" y="55.5" width="86" height="7" rx="3" fill="var(--wash)"/>
+      <rect id="s5b3" x="30" y="78" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <path id="s5c3" d="M32.5 83 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>
+      <rect x="48" y="79.5" width="92" height="7" rx="3" fill="var(--wash)"/>
+      <text id="s5n3" x="222" y="78" font-size="30" font-family="ui-monospace,monospace" fill="var(--ok)">3</text>
+      <text id="s5n2" x="222" y="78" font-size="30" font-family="ui-monospace,monospace" fill="var(--ok)">2</text>
+      <text id="s5n1" x="222" y="78" font-size="30" font-family="ui-monospace,monospace" fill="var(--ok)">1</text>
+      <text x="204" y="98" font-size="10" font-family="var(--sans),sans-serif" fill="var(--mute)" letter-spacing="1.5">LEFT</text>
+      <g id="s5cur"><path d="M0 0 L0 12 L3 9 L5 13 L7 12 L5 8 L9 8 Z" fill="var(--ink)" stroke="var(--paper)" stroke-width="1"/></g>
+    </g>
+  </svg>`,
+  'task-list:R2': `<svg viewBox="0 0 300 110" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A title is edited in place and the meta stamp flips to edited.">
+    <g>
+      <rect x="20" y="24" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <rect x="38" y="24" width="150" height="10" rx="3" fill="var(--wash)" stroke="var(--ai-line)" stroke-width="1"/>
+      <rect x="42" y="27" width="90" height="4" rx="2" fill="var(--line2)"/>
+      <rect x="196" y="22" width="52" height="15" rx="3" fill="var(--ai-tint)"/>
+      <text x="203" y="33" font-size="9" font-family="ui-monospace,monospace" fill="var(--ai)">edited</text>
+      <rect x="20" y="58" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+      <rect x="38" y="59.5" width="120" height="7" rx="3" fill="var(--wash)"/>
+      <text x="20" y="94" font-size="9" font-family="ui-monospace,monospace" fill="var(--line3)">double-click → type → Enter · the stamp flips</text>
+    </g>
+  </svg>`,
+};
+function schematicHTML(id, r, st){
+  const svg = SCHEM[id+':'+r.id];
+  const beats = beatsOf(r);
+  const dots = beats.length>1 ? `<span class="beatdots ${beats.length===2&&svg?'b2':''}">${beats.map((_,i)=>`<i class="${i===0?'on':''}"></i>`).join('')}</span>` : '';
+  if (!svg) return `<div class="schem"><div class="figcap">schematic · the idea, not the real UI${dots}</div><div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div></div>`;
+  const stale = st==='changed'; // the reword moved the text past viz@hash too
+  return `<div class="schem ${stale?'isstale':''}"><div class="figcap">schematic · the idea, not the real UI${dots}</div>
+    <div class="viz">${svg}<div class="staleov"><b>✎ stale — text changed</b><span>the requirement was reworded after this was drawn; staff redraws it on the next viz pass</span></div></div>
+    <div class="figfoot">drawn from the text · <span class="h">${stale?'text@f30b91 ≠ viz@a1f7c3':'viz@a1f7c3'}</span> · loops · pauses under reduced-motion</div></div>`;
+}
+
+/* ---- measured proof frames — placeholder sketches; real runs land harvested pixels here ---- */
+function frameSketch(kind){
+  const done = kind!=='given', bad = kind==='bad';
+  return `<svg viewBox="0 0 150 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="0" y="0" width="150" height="92" fill="var(--paper)"/>
+    <rect x="12" y="12" width="80" height="7" rx="3" fill="var(--wash)"/>
+    ${bad?`<rect x="106" y="7" width="32" height="16" rx="3" fill="var(--bad-bg)" stroke="var(--bad)" stroke-width="1"/><text x="114" y="19" font-size="9" font-family="ui-monospace,monospace" fill="var(--bad)">2 ✗</text>`
+        :`<rect x="112" y="8" width="26" height="15" rx="3" fill="var(--wash)"/>`}
+    <rect x="12" y="34" width="10" height="10" rx="2" fill="${done&&!bad?'var(--ai)':'var(--paper)'}" stroke="${done&&!bad?'var(--ai)':'var(--line3)'}" stroke-width="1.3"/>
+    ${done&&!bad?`<path d="M14.5 39 l2 2 l4 -4.5" fill="none" stroke="var(--paper)" stroke-width="1.3"/>`:''}
+    <rect x="30" y="36" width="96" height="6" rx="3" fill="var(--wash)"/>
+    ${done&&!bad?`<rect x="30" y="38.5" width="96" height="1.4" fill="var(--mute)"/>`:''}
+    <rect x="12" y="56" width="10" height="10" rx="2" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.3"/>
+    <rect x="30" y="58" width="76" height="6" rx="3" fill="var(--wash)"/>
+    <text x="12" y="84" font-size="7.5" font-family="ui-monospace,monospace" fill="var(--line3)">harvested frame — real app pixels land here</text>
+  </svg>`;
+}
+
+/* ---- evidence embed (D2: default derives from status × beats; the toolbar overrides; autoPlay prefers the clip) ---- */
+let focusMedia = null;   // the override — a view preference, never stored
+let curFocusId = null, curFocusN = 1;
+function mediaFor(r, st){
+  if (st==='un' || st==='nr') return null;
+  if (focusMedia) return focusMedia;
+  if (st==='bad' || st==='changed') return 'frames'; // failed: the red frame; changed: pinned-era stills
+  return autoPlay ? 'clip' : 'frames';
+}
+function setMedia(m){ focusMedia = m; if (curFocusId) renderFocus(curFocusId, curFocusN); }
 function evidenceHTML(r, sel, st){
   st = st || r.state;
   const run = (sel && sel.run) || 'ea389a6';
   const tname = sel ? esc(sel.name)+' · ' : '';
-  const stale = st==='changed' ? ' · <span class="st-changed">stale</span>' : '';
-  if (r.scene && isAnimated(r.scene))
-    return `<div class="gif"><div class="gbar"><span>${tname}proves ${r.id} · run ${run}${stale}</span><span class="rt"><button onclick="replayHere('${r.scene}')">⟳ replay</button></span></div><div class="stagebox"><div class="stage" id="evStage"></div></div></div>`;
-  if (r.scene) // static cover-frame proof — not every proof is a gif
-    return `<div class="gif"><div class="gbar"><span>${tname}cover frame · proves ${r.id} · run ${run}</span></div><div class="stagebox"><div class="stage" id="evStage"></div></div></div>`;
   if (st === 'nr') return `<div class="gif"><div class="gbar"><span>proves ${r.id} · run ${run}</span></div><div class="noev"><b class="st-nr">◌ Not reached</b><span class="sub">the flow stopped before this step — no evidence for this run</span></div></div>`;
-  return `<div class="gif"><div class="gbar"><span>proves ${r.id}</span></div><div class="noev"><b class="st-un">○ Untested</b><span class="sub">no test covers this requirement yet — add one from the ⋯ menu to prove it</span></div></div>`;
+  if (st === 'un') return `<div class="gif"><div class="gbar"><span>proves ${r.id}</span></div><div class="noev"><b class="st-un">○ Untested — no proof yet</b><span class="sub">the expected behaviour reads on the left; a failing test is the next move</span><button class="btn" style="margin-top:10px" onclick="openPromptModal({action:'add',screenId:'${curFocusId}',reqIds:['${r.id}'],kind:'unit'})">＋ write the failing test</button></div></div>`;
+  const mode = mediaFor(r, st), beats = beatsOf(r);
+  const bar = `<div class="gbar"><span>${tname}proves ${r.id} · run ${run}${st==='changed'?' · <span class="st-changed">pinned era</span>':''}</span>
+    <span class="medbar">${['frames','clip','video'].map(m=>{
+      if (st==='bad' && m==='clip') return '';
+      return `<button class="${mode===m?'on':''}" onclick="setMedia('${m}')">${st==='bad'&&m==='video'?'video@fail':m}</button>`;
+    }).join('')}</span></div>`;
+  let body;
+  if (mode === 'frames'){
+    if (st === 'bad')
+      body = `<div class="fstrip"><div class="fcell">${frameSketch('given')}<div class="fcap">given</div></div>
+        <div class="fcell hotbad">${frameSketch('bad')}<div class="fcap"><span class="st-bad">✗</span> the failing beat's red frame</div></div></div>
+        <div class="xva"><span class="xk">expect(count).toBe(expected)</span><br>Expected: <span class="xok">1</span> · Received: <span class="xbad">2</span> — <span class="xk">at checkReq('${r.id}')</span></div>`;
+    else if (beats.length > 1)
+      body = `<div class="fstrip"><div class="fcell">${frameSketch('given')}<div class="fcap">given</div></div>
+        ${beats.map((b,i)=>`<div class="fcell hot">${frameSketch('then')}<div class="fcap"><span class="st-ok">✓</span> beat ${i+1} · then</div></div>`).join('')}</div>`;
+    else
+      body = `<div class="fstrip"><div class="fcell">${frameSketch('given')}<div class="fcap">before</div></div>
+        <div class="fcell hot">${frameSketch('then')}<div class="fcap"><span class="st-ok">✓</span> after — the asserted value in frame</div></div></div>`;
+  } else if (mode === 'video'){
+    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage"></div></div><div class="vbar"><span>▶</span><div class="track"><i></i></div><span>0:41 / ${sel?sel.dur:'1:04'} · the full recording, seeked to this beat</span></div>`
+                   : `<div class="noev"><span class="sub">no recording kept for this run — frames still stand</span></div>`;
+  } else {
+    body = r.scene ? `<div class="stagebox"><div class="stage" id="evStage"></div></div>`
+                   : `<div class="noev"><span class="sub">no clip for this run — frames still stand</span></div>`;
+  }
+  if (st === 'changed') body = `<div class="wmarkbox">${body}<div class="wmark"><span>✎ proof predates this text — re-run to re-verify</span></div></div>`;
+  return `<div class="gif">${bar}${body}</div>`;
 }
 function openSheet(title, body){
   document.getElementById('modalRoot').innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" style="width:600px"><div class="mhead"><h3>${esc(title)}</h3><button class="mx" onclick="closeModal()" aria-label="close">✕</button></div><div class="mbody" style="padding:0"><div class="sheetscroll">${body}</div></div></div></div>`;
@@ -1271,7 +1459,10 @@ function renderFocus(id, n){
       ? `<div class="proofby"><span class="pl">proven by</span><span class="tone"><span class="tk ${sel.kind}">${sel.kind}</span>${esc(sel.name)}</span></div>`
       : `<div class="proofby"><span class="pl none">no test covers this requirement yet</span></div>`;
   const stale = st==='changed' ? `<div class="stalenote">✎ the requirement was <b>edited after this proof ran</b> — re-run to re-verify</div>` : '';
+  curFocusId = id; curFocusN = n;
+  const beats = beatsOf(r), many = beats.length > 1;
   document.getElementById('root').innerHTML = `<div class="wrap"><div class="focus">
+    <div class="fleft">
     <div class="fcard">
       <div class="rhead"><span class="rid">${r.id}</span>${tagHtml(st)}<span style="margin-left:auto;font-size:var(--t-xs);color:var(--mute)">${n} of ${s.reqs.length}</span>
         <div class="runwrap"><button class="iconbtn sm" onclick="toggleMenu(event,'reqmenu')" aria-label="requirement options">⋯</button><div class="rmenu" id="reqmenu" hidden>${reqMenuItems(id,r)}</div></div>
@@ -1280,11 +1471,13 @@ function renderFocus(id, n){
       <p class="lbl">The behavior</p>
       <div class="bwt">
         <div class="brow"><div class="bk">Given</div><div class="bv">${esc(r.given)}${r.sub?` <span class="sub">· ${esc(r.sub)}</span>`:''}</div></div>
-        <div class="brow"><div class="bk">When</div><div class="bv">${esc(r.when)}</div></div>
-        <div class="brow"><div class="bk">Then</div><div class="bv">${esc(r.then)}</div></div>
+        ${beats.map((b,i)=>`<div class="brow ${i>0?'beatstart':''}"><div class="bk">When${many?`<span class="bno">${i+1}</span>`:''}</div><div class="bv">${esc(b.when)}</div></div>
+        <div class="brow"><div class="bk">Then${many?`<span class="bno">${i+1}</span>`:''}</div><div class="bv">${esc(b.then)}</div></div>`).join('')}
       </div>
       <button class="prose-t" onclick="this.nextElementSibling.classList.toggle('open')">the authored requirement — in full</button>
       <div class="prose-b rich">${richHtml}</div>
+    </div>
+    <div class="fcard">${schematicHTML(id, r, st)}</div>
     </div>
     <div class="fcard">
       <div class="fhead-row"><p class="lbl">The proof</p>
@@ -1321,7 +1514,8 @@ function renderGrid(id){
              : `○ Untested`;
     return `<tr class="row" data-i="${i}" onclick="toggleEv('${id}',this)">
       <td class="given">${esc(r.given)}${r.sub?`<span class="sub">${esc(r.sub)}</span>`:''}</td>
-      <td>${esc(r.when)}</td><td>${esc(r.then)}</td>
+      <td>${beatsOf(r).map((b,bi)=>`${beatsOf(r).length>1?`<span class="mono" style="color:var(--mute)">${bi+1} · </span>`:''}${esc(b.when)}`).join('<br>')}</td>
+      <td>${beatsOf(r).map((b,bi)=>`${beatsOf(r).length>1?`<span class="mono" style="color:var(--mute)">${bi+1} · </span>`:''}${esc(b.then)}`).join('<br>')}</td>
       <td class="pf" style="color:${col}">${pf}</td></tr>
     <tr class="evrow" style="display:none"><td colspan="4"></td></tr>`;
   }).join('');
@@ -1354,7 +1548,7 @@ function renderColumns(id){
   const reqCol = s.reqs.map(r => { const st = stateOf(r,s);
     return `<div class="colreq" data-r="${r.id}" onclick="go('s/${id}/focus/${s.reqs.indexOf(r)+1}')">
       <div class="crhead"><span class="rid">${r.id}</span><span style="color:${STATE_COL[st]};font-family:var(--mono);font-size:11px">${MK[st][0]}</span><span class="crtitle">${esc(r.title)}</span></div>
-      <div class="crexc">${esc(r.given)} → ${esc(r.then)}</div></div>`;
+      <div class="crexc">${esc(r.given)} → ${esc(beatsOf(r)[beatsOf(r).length-1].then)}</div></div>`;
   }).join('');
   const testCol = s.tests.length ? s.tests.map(t => {
     const rc = t.result==='pass'?'var(--ok)':t.result==='fail'?'var(--bad)':'var(--mute)';
