@@ -25,6 +25,12 @@ export const AREA_ORDER = ['Core', 'Gates', 'Running', 'Setup']
 
 export const sha = s => createHash('sha256').update(s).digest('hex').slice(0, 12)
 
+// The screenshot cache-buster for board.html's ?h= param. A CONTENT hash, deliberately: hashing
+// mtime meant every checkout/restore/touch churned board.html even with identical pixels (the
+// restore-dance). Same bytes → same hash; a re-shot image still busts the cache. Missing file
+// throws (ENOENT), same as always — readScreen guards with hasShot before calling.
+export const shotHash = path => sha(readFileSync(path))
+
 // Write, then rename. writeFileSync truncates and refills, so anything reading at that moment sees
 // a half-written file — and every one of these files is read by another process while the server
 // writes it (the board, the suite, a concurrent run). Rename is atomic within a filesystem, so a
@@ -450,7 +456,7 @@ export function readScreen (name, results = null) {
     rejections,
     hasShot,
     // cache-bust the img so a re-shot screenshot is never served stale from the last run
-    shotHash: hasShot ? sha(String(statSync(join(dir, 'screen.png')).mtimeMs)) : '',
+    shotHash: hasShot ? shotHash(join(dir, 'screen.png')) : '',
     run,
     plans,
     prdHash,
