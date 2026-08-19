@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>specboard mockup — visual requirements</title>
+<link rel="stylesheet" href="_design.css">
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--canvas); color:var(--ink); font-family:var(--sans); font-size:var(--t-md); line-height:1.55; }
+  a { color:inherit; }
+  button { font:inherit; cursor:pointer; }
+  .mono { font-family:var(--mono); }
+
+  /* ============ shared control kit (aligned) ============ */
+  .btn { display:inline-flex; align-items:center; gap:7px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); font-size:var(--t-sm); padding:0 14px; height:34px; color:var(--dim); }
+  .btn:hover { border-color:var(--line3); color:var(--ink); }
+  .btn.dark { border:0; background:var(--sumi); color:var(--paper); }
+  .btn.dark:hover { background:#000; color:var(--paper); }
+  .seg { display:inline-flex; border:1px solid var(--line2); border-radius:var(--r); overflow:hidden; background:var(--paper); height:34px; }
+  .seg button { border:0; background:transparent; font-size:var(--t-sm); padding:0 15px; color:var(--mute); }
+  .seg button.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  .seg button:not(.on):hover { color:var(--dim); }
+  .switch { display:inline-flex; align-items:center; gap:9px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); height:34px; padding:0 12px 0 13px; font-size:var(--t-sm); color:var(--dim); }
+  .switch .sw { width:32px; height:18px; border-radius:99px; background:var(--line2); position:relative; transition:background .18s; flex:none; }
+  .switch .sw::after { content:""; position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%; background:var(--paper); transition:left .18s; box-shadow:var(--sh-sm); }
+  .switch.on { color:var(--ink); }
+  .switch.on .sw { background:var(--koke); }
+  .switch.on .sw::after { left:16px; }
+  .pill { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-xs); border-radius:99px; padding:2px 10px; border:1px solid var(--line2); color:var(--dim); background:var(--paper); }
+  .rid { font-family:var(--mono); font-size:var(--t-xs); color:var(--mute); border:1px solid var(--hair); border-radius:var(--r-sm); padding:1px 6px; }
+  .lbl { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.13em; text-transform:uppercase; color:var(--mute); margin:0 0 var(--s3); }
+
+  /* state marks */
+  .st-ok   { color:var(--ok); } .st-bad { color:var(--bad); } .st-nr { color:var(--yamabuki); } .st-un { color:var(--mute); } .st-turn { color:var(--ai); }
+  .tag { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-xs); border-radius:99px; padding:2px 10px; border:1px solid; }
+  .tag.ok   { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
+  .tag.bad  { color:var(--bad); background:var(--bad-bg); border-color:var(--bad-line); }
+  .tag.nr   { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
+  .tag.un   { color:var(--mute); background:var(--paper); border-color:var(--line2); }
+  .tag.turn { color:var(--ai); background:var(--ai-tint); border-color:var(--ai-line); }
+  .tag.changed { color:var(--ai); background:var(--ai-tint); border-color:var(--ai-line); }
+  .st-changed { color:var(--ai); }
+
+  /* ============ header ============ */
+  .topbar { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:var(--s3); padding:12px var(--s6); background:var(--paper); border-bottom:1px solid var(--hair); min-height:60px; }
+  .brand { display:flex; align-items:center; gap:11px; }
+  .brand .glyph { width:26px; height:26px; border-radius:7px; background:var(--sumi); }
+  .brand .nm { font-weight:600; font-size:var(--t-lg); }
+  .brand .sub { font-size:var(--t-xs); color:var(--mute); }
+  .mockflag { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.08em; text-transform:uppercase; color:var(--yamabuki); background:var(--yamabuki-tint); border:1px solid var(--yamabuki-line); border-radius:var(--r-sm); padding:2px 8px; }
+  .grow { flex:1; }
+  .search { display:flex; align-items:center; gap:8px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); height:34px; padding:0 12px; min-width:280px; color:var(--mute); }
+  .search input { border:0; outline:none; background:none; font:inherit; font-size:var(--t-sm); color:var(--ink); flex:1; }
+  .search:focus-within { border-color:var(--line3); }
+  .badge-n { font-size:var(--t-micro); background:var(--wash); border-radius:99px; padding:0 6px; color:var(--dim); margin-left:2px; }
+
+  /* detail top bar */
+  .dname { display:flex; flex-direction:column; gap:1px; }
+  .dname .t { font-weight:600; font-size:var(--t-lg); }
+  .dname .s { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); }
+
+  /* ============ layout ============ */
+  .wrap { max-width:1180px; margin:0 auto; padding:var(--s5) var(--s6) var(--s8); }
+
+  /* queue banner */
+  .queue { display:flex; align-items:center; gap:14px; border-radius:var(--r-md); padding:14px var(--s5); margin-bottom:var(--s5); font-size:var(--t-sm); }
+  .queue.clear { background:var(--koke-tint); border:1px solid var(--koke-line); color:var(--ink-2); }
+  .queue.attn  { background:var(--yamabuki-tint); border:1px solid var(--yamabuki-line); color:var(--ink-2); }
+  .queue .qk { font-family:var(--mono); font-size:var(--t-xs); border-radius:var(--r-sm); padding:3px 10px; white-space:nowrap; }
+  .queue.clear .qk { background:#fff; color:var(--koke); border:1px solid var(--koke-line); }
+  .queue.attn .qk  { background:#fff; color:var(--yamabuki); border:1px solid var(--yamabuki-line); }
+  .queue.attn a { color:var(--yamabuki); font-weight:500; }
+  .queue a { color:var(--ai); font-weight:500; }
+
+  /* area */
+  .area { margin-bottom:var(--s6); }
+  .area .ahead { display:flex; align-items:baseline; gap:10px; margin-bottom:var(--s4); }
+  .area .ahead h2 { font-size:var(--t-lg); font-weight:600; margin:0; }
+  .area .ahead .ct { font-size:var(--t-xs); color:var(--mute); }
+
+  /* screen card */
+  .card { display:grid; grid-template-columns:1fr 300px; gap:var(--s5); background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); padding:var(--s5); margin-bottom:var(--s4); cursor:pointer; transition:box-shadow .15s, border-color .15s; }
+  .card:hover { box-shadow:var(--sh-md); border-color:var(--line2); }
+  .card .cname { display:flex; align-items:center; gap:10px; margin-bottom:2px; }
+  .card .cname h3 { font-size:var(--t-xl); font-weight:600; margin:0; }
+  .card .croute { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); margin-bottom:var(--s3); }
+  .card ul { margin:var(--s2) 0 0; padding:0; list-style:none; font-size:var(--t-sm); color:var(--dim); }
+  .card li { display:flex; gap:9px; align-items:baseline; padding:4px 0; border-top:1px dashed var(--hair); }
+  .card li:first-child { border-top:0; }
+  .card li .rid2 { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); flex:none; width:22px; }
+  .card li.more { color:var(--mute); font-size:var(--t-xs); }
+  .card li mark { background:var(--yamabuki-tint); color:var(--ink); border-radius:3px; padding:0 2px; }
+  .card .right { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .card .metrics { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  .card .kinds { display:flex; gap:6px; }
+  .kchip { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-xs); border:1px solid var(--line2); border-radius:99px; padding:2px 9px; color:var(--dim); background:var(--paper); }
+  .kchip .km { font-family:var(--mono); font-weight:600; }
+  .kchip.unit .km { color:var(--ai); }
+  .kchip.flow .km { color:var(--koke); }
+  .cover { width:300px; height:150px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; background:#f4f5f8; position:relative; }
+  .cover .lrun { position:absolute; top:6px; left:8px; z-index:2; font-family:var(--mono); font-size:9px; color:#8b93a5; background:rgba(255,255,255,.75); border-radius:3px; padding:1px 5px; }
+
+  /* ============ focus ============ */
+  .focus { display:grid; grid-template-columns:1fr 1.12fr; gap:var(--s4); align-items:stretch; }
+  .fcard { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); padding:var(--s5); }
+  /* proof panel — fixed internal heights keep the block from jumping as you page */
+  .runwrap { position:relative; display:inline-flex; gap:6px; }
+  .iconbtn { width:34px; height:34px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); color:var(--dim); font-size:16px; line-height:1; }
+  .iconbtn:hover { border-color:var(--line3); color:var(--ink); }
+  .iconbtn.sm { width:26px; height:26px; font-size:14px; }
+  .rmenu { position:absolute; right:0; top:40px; z-index:30; background:var(--paper); border:1px solid var(--line2); border-radius:var(--r-md); box-shadow:var(--sh-md); min-width:188px; padding:4px; }
+  .rmenu button { display:flex; width:100%; text-align:left; align-items:center; gap:9px; border:0; background:none; font-size:var(--t-sm); padding:8px 10px; border-radius:var(--r-sm); color:var(--dim); }
+  .rmenu button:hover { background:var(--wash); color:var(--ink); }
+  .proofmeta { min-height:82px; }
+  .covtags { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin:8px 0 6px; }
+  .covtags .cl { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.06em; text-transform:uppercase; color:var(--mute); }
+  .covtags .ctag { font-family:var(--mono); font-size:var(--t-xs); border:1px solid var(--line2); border-radius:var(--r-sm); padding:1px 7px; color:var(--dim); background:var(--paper); text-decoration:none; }
+  .covtags .ctag:hover { border-color:var(--line3); color:var(--ink); }
+  .covtags .ctag.cur { border-color:var(--ink-3); background:var(--wash); color:var(--ink); font-weight:500; }
+  .evtabs { display:flex; gap:2px; border-bottom:1px solid var(--hair); }
+  .evtabs button { border:0; background:none; font-size:var(--t-xs); padding:7px 12px; color:var(--mute); border-bottom:2px solid transparent; margin-bottom:-1px; display:inline-flex; align-items:center; gap:6px; }
+  .evtabs button:hover { color:var(--dim); }
+  .evtabs button.on { color:var(--ink); border-bottom-color:var(--sumi); font-weight:500; }
+  .evtabs button .n { font-family:var(--mono); font-size:10px; background:var(--wash); border-radius:99px; padding:0 5px; color:var(--mute); }
+  .evpanel { height:270px; position:relative; margin-top:var(--s3); }
+  .evpanel > [data-panel] { height:100%; }
+  .evpanel > [data-panel="steps"], .evpanel > [data-panel="logs"] { border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; }
+  .steps { list-style:none; margin:0; padding:6px; font-size:var(--t-sm); }
+  .steps li { display:flex; align-items:flex-start; gap:9px; padding:6px 8px; border-radius:var(--r-sm); }
+  .steps li.cur { background:var(--ai-tint); }
+  .steps li .sm { flex:none; font-family:var(--mono); }
+  .steps li .curmark { font-family:var(--mono); font-size:10px; color:var(--ai); }
+  .steps li .sd { font-family:var(--mono); font-size:11px; color:var(--mute); margin-left:auto; flex:none; padding-left:8px; }
+  .logs { margin:0; padding:11px 13px; font-family:var(--mono); font-size:11px; line-height:1.75; color:var(--ink-2); background:#faf9f5; white-space:pre-wrap; }
+  .logs .lok { color:var(--ok); } .logs .lbad { color:var(--bad); } .logs .ldim { color:var(--mute); }
+  .emptypanel { height:100%; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 24px; font-size:var(--t-sm); color:var(--mute); }
+  .rhead { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  .fcard h1 { font-size:var(--t-xl); font-weight:600; margin:0 0 var(--s4); line-height:1.32; }
+  .bwt { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; margin-bottom:var(--s4); }
+  .bwt .brow { display:grid; grid-template-columns:72px 1fr; border-top:1px solid var(--hair); }
+  .bwt .brow:first-child { border-top:0; }
+  .bwt .bk { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.1em; text-transform:uppercase; color:var(--mute); padding:10px var(--s3); background:var(--wash); border-right:1px solid var(--hair); display:flex; align-items:flex-start; }
+  .bwt .bv { padding:9px var(--s3); font-size:var(--t-sm); }
+  .bwt .bv .sub { font-family:var(--mono); font-size:var(--t-xs); color:var(--mute); }
+  .prose-t { font-size:var(--t-xs); color:var(--mute); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .prose-b { display:none; font-size:var(--t-sm); color:var(--dim); border-top:1px dashed var(--hair); margin-top:var(--s3); padding-top:var(--s3); }
+  .prose-b.open { display:block; }
+  /* formatted requirement prose (point 4) */
+  .prose-b.rich p { margin:0 0 8px; }
+  .prose-b.rich p:last-child { margin-bottom:0; }
+  .prose-b.rich ul { margin:6px 0 8px; padding-left:20px; }
+  .prose-b.rich li { margin:3px 0; }
+  .prose-b.rich b { color:var(--ink); font-weight:500; }
+  .prose-b.rich .cbad { color:var(--bad); font-weight:500; }
+  .prose-b.rich .cwarn { color:var(--yamabuki); font-weight:500; }
+  .prose-b.rich .cmute { color:var(--mute); font-size:var(--t-xs); }
+  .prose-b.rich .rtab { border-collapse:collapse; margin:2px 0 8px; font-size:var(--t-sm); }
+  .prose-b.rich .rtab td { padding:4px 14px 4px 0; vertical-align:top; }
+  .prose-b.rich .rtab td:first-child { color:var(--ink); white-space:nowrap; }
+  /* proof panel — clean */
+  .proofby { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:34px; margin-bottom:var(--s2); }
+  .proofby .pl { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.06em; text-transform:uppercase; color:var(--mute); }
+  .proofby .pl.none { text-transform:none; letter-spacing:0; font-family:var(--sans); font-size:var(--t-sm); color:var(--mute); }
+  .proofby .tone { display:inline-flex; align-items:center; gap:6px; font-size:var(--t-sm); color:var(--ink); }
+  .tk { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em; border-radius:var(--r-sm); padding:1px 6px; margin-right:2px; }
+  .tk.unit { color:var(--ai); background:var(--ai-tint); } .tk.flow { color:var(--koke); background:var(--koke-tint); }
+  .tsel { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); font-size:var(--t-xs); padding:5px 10px; color:var(--dim); }
+  .tsel:hover { border-color:var(--line3); }
+  .tsel.on { border-color:var(--ink-3); background:var(--wash); color:var(--ink); font-weight:500; }
+  .stalenote { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line); border-radius:var(--r-sm); padding:6px 10px; margin-bottom:var(--s2); }
+  .evidence { min-height:262px; }
+  /* draft decision panel — the one human gate */
+  .decide { }
+  .dlead { font-size:var(--t-sm); color:var(--dim); margin:0 0 var(--s4); line-height:1.65; }
+  .dactions { display:flex; flex-direction:column; gap:8px; margin-bottom:var(--s4); }
+  .dactions .btn { justify-content:flex-start; height:40px; padding:0 14px; }
+  .btn.accept { border:0; background:var(--ai); color:var(--paper); }
+  .btn.accept:hover { background:#26405a; color:var(--paper); }
+  .dnote { display:block; margin-bottom:var(--s4); }
+  .dnote > span { display:block; font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-bottom:6px; }
+  .dnote textarea { width:100%; min-height:72px; font:inherit; font-size:var(--t-sm); border:1px solid var(--line2); border-radius:var(--r-md); padding:10px 12px; resize:vertical; background:var(--paper); color:var(--ink); outline:none; }
+  .dnote textarea:focus { border-color:var(--line3); }
+  .dhint { font-size:var(--t-xs); color:var(--mute); line-height:1.6; margin:0; }
+  .rmenu-div { height:1px; background:var(--hair); margin:4px 6px; }
+  .rmenu button.danger { color:var(--bad); }
+  .rmenu button.danger:hover { background:var(--bad-bg); }
+  .sheetscroll { max-height:64vh; overflow:auto; }
+  .sheetscroll .steps, .sheetscroll .logs { border:0; border-radius:0; }
+  .covered { font-size:var(--t-sm); color:var(--dim); margin-bottom:var(--s3); }
+  .covered .tn { font-weight:500; color:var(--ink); }
+  .covered .kindtag { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; border-radius:var(--r-sm); padding:1px 6px; margin-left:4px; }
+  .kindtag.unit { color:var(--ai); background:var(--ai-tint); }
+  .kindtag.flow { color:var(--koke); background:var(--koke-tint); }
+  .beatline { color:var(--bad); font-size:var(--t-sm); margin-bottom:var(--s3); }
+  .fhead-row { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  .fhead-row .lbl { margin:0; margin-right:auto; }
+
+  /* gif embed */
+  .gif { border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  .gif .gbar { display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); padding:6px 10px; border-bottom:1px solid var(--hair); background:var(--wash); }
+  .gif .gbar .rt { margin-left:auto; display:inline-flex; gap:10px; }
+  .gif .gbar .rt button { border:0; background:none; color:var(--dim); font-family:var(--mono); font-size:var(--t-micro); padding:0; }
+  .gif .gbar .rt button:hover { color:var(--ink); }
+  .stagebox { position:relative; }
+  .stagebox .playov { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(28,27,24,.22); z-index:6; }
+  .stagebox .playov button { display:inline-flex; align-items:center; gap:8px; border:0; border-radius:99px; background:var(--paper); color:var(--ink); font-size:var(--t-sm); font-weight:500; padding:9px 20px; box-shadow:var(--sh-lg); }
+  .noev { height:230px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; padding:0 24px; background:repeating-linear-gradient(-45deg,var(--paper),var(--paper) 10px,var(--wash) 10px,var(--wash) 11px); }
+  .noev.turn { background:repeating-linear-gradient(-45deg,var(--ai-tint),var(--ai-tint) 10px,#dfe6ec 10px,#dfe6ec 11px); }
+  .noev b { font-weight:500; } .noev .st-turn { color:var(--ai); }
+  .noev .sub { font-size:var(--t-xs); color:var(--mute); }
+  .steplin { font-size:var(--t-xs); color:var(--mute); margin-top:var(--s3); }
+  .steplin a { color:var(--dim); }
+
+  /* pagination */
+  .pager { display:flex; align-items:center; justify-content:center; gap:6px; padding:var(--s5) 0 0; }
+  .pager button { min-width:30px; height:30px; border:1px solid transparent; background:none; border-radius:99px; font-family:var(--mono); font-size:var(--t-sm); color:var(--dim); }
+  .pager button:hover { border-color:var(--line2); }
+  .pager button.cur { background:var(--sumi); color:var(--paper); }
+  .pager button:disabled { opacity:.35; }
+  .pager .pk { color:var(--mute); font-size:var(--t-xs); margin-left:var(--s3); }
+
+  /* ============ grid ============ */
+  .gcard { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); overflow:hidden; }
+  .gcard .chead { display:flex; align-items:baseline; justify-content:space-between; gap:var(--s4); padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); }
+  .gcard .chead h2 { font-size:var(--t-lg); font-weight:600; margin:0; }
+  .gcard .chead .hint { font-size:var(--t-xs); color:var(--mute); }
+  table.bgrid { width:100%; border-collapse:collapse; font-size:var(--t-sm); }
+  .bgrid th { text-align:left; font-weight:500; color:var(--mute); font-size:var(--t-micro); letter-spacing:.08em; text-transform:uppercase; padding:9px var(--s4); border-bottom:1px solid var(--hair); }
+  .bgrid td { padding:10px var(--s4); border-bottom:1px solid var(--hair); vertical-align:top; }
+  .bgrid tr.row { cursor:pointer; }
+  .bgrid tr.row:hover td, .bgrid tr.row.open td { background:var(--wash); }
+  .bgrid .given { color:var(--dim); }
+  .bgrid .given .sub { font-family:var(--mono); font-size:var(--t-xs); color:var(--mute); display:block; margin-top:2px; }
+  .bgrid td.pf { white-space:nowrap; font-size:var(--t-xs); }
+  .bgrid td.pf .mono { font-size:var(--t-xs); }
+  .evrow td { padding:0 !important; background:var(--wash); }
+  .ev { padding:var(--s4); border-top:1px dashed var(--line2); display:flex; gap:var(--s4); align-items:flex-start; }
+  .ev .gif { flex:0 0 430px; }
+  .ev .side { font-size:var(--t-xs); color:var(--mute); padding-top:2px; }
+  .ev .side b { font-weight:500; color:var(--ink); }
+  .ev .side a { color:var(--dim); }
+  .legend { font-size:var(--t-xs); color:var(--mute); margin:var(--s4) 0 0; }
+
+  /* ============ columns (requirements ↔ tests) ============ */
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); align-items:start; }
+  .colpane { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); display:flex; flex-direction:column; max-height:calc(100vh - 150px); overflow:hidden; }
+  .colhead { display:flex; align-items:center; gap:8px; padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); font-weight:600; font-size:var(--t-md); flex:none; }
+  .colhead .ch-n { font-family:var(--mono); font-size:var(--t-xs); background:var(--wash); border-radius:99px; padding:0 7px; color:var(--dim); }
+  .colhead .colhint { font-weight:400; font-size:var(--t-xs); color:var(--mute); }
+  .colbody { overflow-y:auto; padding:var(--s2); }
+  .colreq, .coltest { padding:10px 12px; border-radius:var(--r-sm); border:1px solid transparent; cursor:pointer; }
+  .colreq:hover, .coltest:hover { background:var(--wash); }
+  .colreq.hot, .coltest.hot { background:var(--ai-tint); border-color:var(--ai-line); }
+  .crhead { display:flex; align-items:center; gap:8px; }
+  .crtitle { font-size:var(--t-sm); }
+  .crexc { font-size:var(--t-xs); color:var(--mute); margin-top:3px; margin-left:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cthead { display:flex; align-items:center; gap:8px; }
+  .cttitle { font-size:var(--t-sm); font-weight:500; }
+  .ctmeta { font-size:var(--t-xs); color:var(--mute); margin-top:4px; }
+  .ctmeta .ctag2 { font-family:var(--mono); border:1px solid var(--line2); border-radius:var(--r-sm); padding:0 5px; margin-left:3px; color:var(--dim); }
+
+  /* ============ flow player ============ */
+  .flowsel { display:flex; gap:var(--s2); margin-bottom:var(--s3); flex-wrap:wrap; }
+  .fsel { display:flex; flex-direction:column; align-items:flex-start; gap:1px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); padding:7px 14px; color:var(--dim); }
+  .fsel .fk { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); }
+  .fsel.on { border-color:var(--line3); background:var(--wash); color:var(--ink); font-weight:500; }
+  .flowcard { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); padding:var(--s4); }
+  .fhead { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); flex-wrap:wrap; }
+  .fhead h2 { font-size:var(--t-lg); font-weight:600; margin:0; }
+  .fmeta { font-size:var(--t-xs); color:var(--mute); font-family:var(--mono); }
+  .fmeta a { color:var(--dim); }
+  .playwrap { max-width:640px; margin:0 auto var(--s4); }
+  .pstat { font-size:var(--t-xs); color:var(--mute); margin-top:var(--s2); text-align:center; }
+  .stopov { position:absolute; left:8px; right:8px; bottom:8px; border-radius:var(--r); padding:8px 12px; font-size:var(--t-sm); font-weight:500; opacity:0; transition:opacity .3s; pointer-events:none; display:flex; align-items:center; gap:8px; z-index:7; }
+  .stopov.show { opacity:1; pointer-events:auto; }
+  .stopov.bad { background:var(--bad-bg); color:var(--bad); border:1px solid var(--bad-line); }
+  .stopov.ok  { background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-line); }
+  .stopov.neutral { background:var(--paper); color:var(--dim); border:1px solid var(--line2); }
+  .stopov .runone { border:1px solid currentColor; background:none; color:inherit; border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; opacity:.85; }
+  .chstrip { display:flex; gap:var(--s2); overflow-x:auto; padding:2px; }
+  .ch { flex:1; min-width:140px; border:1px solid var(--line); border-radius:var(--r-md); padding:8px; background:var(--paper); cursor:pointer; opacity:.72; transition:opacity .2s, border-color .2s; }
+  .ch:hover { border-color:var(--line3); opacity:1; }
+  .ch.cur { border-color:var(--ink-3); opacity:1; box-shadow:var(--sh-sm); }
+  .ch.done { opacity:1; }
+  .ch.done .chname::after { content:" ✓"; color:var(--ok); }
+  .ch.fail { border-color:var(--bad-line); background:var(--bad-bg); opacity:1; }
+  .ch.nr { border-style:dashed; border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
+  .thumb { position:relative; height:72px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:6px; background:#f4f5f8; }
+  .chscreen { font-family:var(--mono); font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--mute); }
+  .chname { font-size:var(--t-sm); font-weight:600; }
+  .chcomp { font-size:var(--t-micro); color:var(--mute); margin:1px 0 5px; }
+  .chips { display:flex; flex-wrap:wrap; gap:4px; }
+  .mchip { font-family:var(--mono); font-size:var(--t-micro); border-radius:var(--r-sm); padding:1px 6px; border:1px solid var(--line); color:var(--dim); background:var(--paper); text-decoration:none; }
+  .mchip.ok { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
+  .mchip.bad { color:var(--bad); background:var(--bad-bg); border-color:var(--bad-line); }
+  .mchip.nr { color:var(--yamabuki); background:var(--yamabuki-tint); border-color:var(--yamabuki-line); }
+  .edge { display:flex; align-items:center; justify-content:center; min-width:34px; color:var(--line3); font-size:var(--t-lg); flex:none; }
+  .emptyview { text-align:center; padding:64px 20px; color:var(--mute); }
+  .emptyview h3 { font-size:var(--t-lg); font-weight:600; color:var(--dim); margin:0 0 4px; }
+  .emptyview p { font-size:var(--t-sm); margin:0; }
+
+  /* test-authoring affordances */
+  .testmgmt { display:flex; align-items:center; gap:12px; border-top:1px dashed var(--hair); margin-top:var(--s3); padding-top:var(--s3); flex-wrap:wrap; }
+  .testmgmt .tmlbl { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin-right:auto; }
+  .linkbtn { border:0; background:none; color:var(--ai); font-size:var(--t-xs); padding:0; display:inline-flex; align-items:center; gap:4px; }
+  .linkbtn:hover { text-decoration:underline; }
+  .linkbtn.danger { color:var(--bad); }
+  .linkbtn.plain { color:var(--dim); }
+  .remind { display:flex; align-items:center; gap:12px; background:var(--paper); border:1px solid var(--line2); border-radius:var(--r-md); padding:10px 16px; margin-bottom:var(--s4); font-size:var(--t-sm); color:var(--dim); }
+  .remind .rk2 { display:inline-flex; gap:8px; }
+  .remind .rk2 b { font-weight:500; }
+  .remind .grow2 { flex:1; }
+
+  /* prompt modal */
+  .modal-backdrop { position:fixed; inset:0; background:rgba(28,27,24,.44); z-index:60; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .modal { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-lg); box-shadow:var(--sh-lg); width:660px; max-width:100%; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+  .modal .mhead { display:flex; align-items:flex-start; gap:12px; padding:var(--s4) var(--s5); border-bottom:1px solid var(--hair); }
+  .modal .mhead h3 { font-size:var(--t-lg); font-weight:600; margin:0; }
+  .modal .mhead p { font-size:var(--t-xs); color:var(--mute); margin:3px 0 0; line-height:1.5; max-width:520px; }
+  .modal .mx { margin-left:auto; border:0; background:none; color:var(--mute); font-size:16px; line-height:1; padding:2px 4px; }
+  .modal .mbody { padding:var(--s5); overflow-y:auto; }
+  .modal .mfoot { display:flex; align-items:center; gap:10px; padding:var(--s4) var(--s5); border-top:1px solid var(--hair); }
+  .modal .mfoot .hint { font-family:var(--mono); font-size:var(--t-xs); color:var(--mute); margin-right:auto; }
+  .field-lbl { font-family:var(--mono); font-size:var(--t-micro); letter-spacing:.1em; text-transform:uppercase; color:var(--mute); margin:0 0 8px; }
+  .reqpick { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:var(--s4); }
+  .reqpick button { font-size:var(--t-xs); border:1px solid var(--line2); background:var(--paper); border-radius:99px; padding:3px 11px; color:var(--dim); }
+  .reqpick button.on { border-color:var(--ink-3); background:var(--wash); color:var(--ink); font-weight:500; }
+  .reqpick button .rk { font-family:var(--mono); margin-right:4px; }
+  .modal .seg.wide { margin-bottom:16px; height:36px; }
+  .modal .seg.wide button { flex:1; }
+  .prompt-ta { width:100%; min-height:230px; font-family:var(--mono); font-size:12px; line-height:1.6; color:var(--ink); background:var(--wash); border:1px solid var(--line2); border-radius:var(--r-md); padding:12px 14px; resize:vertical; outline:none; }
+  .prompt-ta:focus { border-color:var(--line3); }
+  .mnote { font-size:var(--t-xs); color:var(--mute); margin-top:10px; display:flex; gap:8px; line-height:1.5; }
+  .mnote .i { color:var(--ai); flex:none; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--sumi); color:var(--paper); font-size:var(--t-sm); border-radius:var(--r); padding:9px 18px; opacity:0; transition:opacity .25s; pointer-events:none; z-index:80; }
+  .toast.show { opacity:1; }
+  .hidden { display:none !important; }
+  @media (max-width:920px){ .focus { grid-template-columns:1fr; } .card { grid-template-columns:1fr; } .cover { width:100%; } .ev { flex-direction:column; } .ev .gif { flex:none; width:100%; } }
+
+  /* ============ Tsumiki mini-app (real app palette, as the recording shows it) ============ */
+  .stage { background:#f4f5f8; font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Inter,system-ui,sans-serif; font-size:13px; color:#1e2330; min-height:230px; }
+  .stage.short { min-height:0; }
+  .stage * { box-sizing:border-box; }
+  .stage .pad { padding:14px 16px; }
+  .stage .hd { display:flex; align-items:baseline; margin-bottom:8px; }
+  .stage .hd .h { font-size:15px; font-weight:650; }
+  .stage .hd .n { margin-left:auto; font-size:16px; font-weight:650; color:#4f46e5; font-variant-numeric:tabular-nums; }
+  .stage .hd .l { font-size:10px; color:#8b93a5; margin-left:5px; }
+  .stage .crumb { font-size:11px; color:#8b93a5; margin-bottom:8px; }
+  .stage .crumb b { color:#5a6376; }
+  .stage .addrow { display:flex; gap:6px; margin-bottom:10px; }
+  .stage .field { flex:1; display:flex; align-items:center; background:#fff; border:1px solid #dfe2e9; border-radius:8px; padding:7px 10px; color:#8b93a5; min-height:32px; }
+  .stage .field.filled { color:#1e2330; }
+  .stage .caret-i { display:inline-block; width:1px; height:14px; background:#4f46e5; margin-left:1px; animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity:0; } }
+  .stage .go { font-weight:600; font-size:12.5px; padding:0 14px; border:0; border-radius:8px; background:#4f46e5; color:#fff; }
+  .stage .go.dis { opacity:.4; }
+  .stage .trow { display:flex; align-items:center; gap:9px; background:#fff; border:1px solid #eceef2; border-radius:10px; padding:8px 11px; margin-bottom:6px; box-shadow:0 1px 2px rgba(20,25,40,.05); }
+  .stage .trow.new { animation:slidein .35s ease-out; }
+  @keyframes slidein { from { opacity:0; transform:translateY(6px); } }
+  .stage .cb { width:16px; height:16px; border-radius:5px; border:2px solid #dfe2e9; background:#fff; flex:none; position:relative; }
+  .stage .cb.on { background:#12a06a; border-color:#12a06a; }
+  .stage .cb.on::after { content:""; position:absolute; left:4px; top:0; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .stage .ring { width:22px; height:22px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:#4f46e5; border:2.5px solid #dcd8fb; font-variant-numeric:tabular-nums; }
+  .stage .ring.full { color:#12a06a; border-color:#12a06a; }
+  .stage .tb { flex:1; min-width:0; }
+  .stage .ttl2 { font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .stage .trow.tdone .ttl2, .stage .srow2.sdone .st2 { text-decoration:line-through; color:#8b93a5; }
+  .stage .meta2 { font-size:10px; color:#aeb4c2; margin-top:1px; }
+  .stage .meta2 b { color:#12a06a; font-weight:500; }
+  .stage .dchip { flex:none; font-size:10px; border-radius:99px; padding:2px 8px; font-weight:600; background:#eef0f4; color:#5a6376; }
+  .stage .dchip.over { background:#fbe9e4; color:#d64b34; }
+  .stage .dchip.today { background:#f9f0dc; color:#c07d15; }
+  .stage .subs2 { border-top:1px solid #eceef2; margin-top:6px; padding:5px 0 0 26px; }
+  .stage .srow2 { display:flex; align-items:center; gap:8px; padding:3px 0; }
+  .stage .scb2 { width:14px; height:14px; border-radius:4px; border:2px solid #dfe2e9; background:#fff; flex:none; position:relative; }
+  .stage .scb2.on { background:#12a06a; border-color:#12a06a; }
+  .stage .scb2.on::after { content:""; position:absolute; left:3px; top:0; width:3px; height:7px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg); }
+  .stage .st2 { font-size:12px; }
+  .stage .subadd2 { display:flex; gap:5px; margin-top:4px; }
+  .stage .subadd2 .sf { flex:1; font-size:11.5px; padding:4px 8px; border:1px solid #dfe2e9; border-radius:6px; background:#fff; color:#8b93a5; min-height:24px; }
+  .stage .subadd2 .sf.filled { color:#1e2330; }
+  .stage .subadd2 .sgo { font-size:11px; border:1px solid #dfe2e9; background:#fff; border-radius:6px; padding:0 9px; color:#5a6376; }
+  .stage .siderow { display:flex; gap:8px; margin-bottom:10px; }
+  .stage .navp { display:flex; align-items:center; gap:6px; font-size:11.5px; color:#5a6376; border-radius:7px; padding:4px 9px; }
+  .stage .navp .ct2 { color:#8b93a5; font-variant-numeric:tabular-nums; }
+  .stage .navp.on { background:#eceafe; color:#4f46e5; font-weight:600; }
+  .stage .navp.on .ct2 { color:#4f46e5; }
+  .stage .edit2 { flex:1; font-size:13px; border:1px solid #4f46e5; border-radius:6px; padding:3px 7px; box-shadow:0 0 0 3px #dcd8fb; background:#fff; }
+  .stage .frow { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #eceef2; border-radius:10px; padding:10px 12px; margin-bottom:8px; box-shadow:0 1px 2px rgba(20,25,40,.05); }
+  .stage .frow label { font-size:12.5px; flex:1; }
+  .stage .ftoggle { width:34px; height:19px; border-radius:99px; background:#dfe2e9; position:relative; flex:none; }
+  .stage .ftoggle.on { background:#12a06a; }
+  .stage .ftoggle::after { content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff; transition:left .2s; }
+  .stage .ftoggle.on::after { left:17px; }
+  .stage .inp { background:#fff; border:1px solid #dfe2e9; border-radius:8px; padding:9px 11px; font-size:12.5px; color:#1e2330; margin-bottom:8px; }
+  .stage .inp.bad { border-color:#d64b34; }
+  .stage .inperr { font-size:11px; color:#d64b34; margin:-4px 0 8px 2px; }
+  .stage .signbtn { width:100%; text-align:center; font-weight:600; font-size:13px; padding:9px; border-radius:8px; background:#4f46e5; color:#fff; }
+  .stage .signbtn.dis { opacity:.4; }
+  .stage .cur { position:absolute; width:14px; height:14px; z-index:5; transition:left .55s cubic-bezier(.4,0,.2,1), top .55s cubic-bezier(.4,0,.2,1); pointer-events:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,.35)); }
+  .stage .cur.clicking { animation:clickp .3s; }
+  @keyframes clickp { 40% { transform:scale(.78); } }
+  .stage .assert { position:absolute; left:8px; right:8px; bottom:8px; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:600; opacity:0; transition:opacity .3s; z-index:4; }
+  .stage .assert.ok { background:#e4f5ec; color:#0d7a51; border:1px solid #b7e4cd; }
+  .stage .assert.bad { background:#fbe9e4; color:#b23a26; border:1px solid #f0c5ba; }
+  .stage .assert.show { opacity:1; }
+  .thumb .stage, .cover .stage { min-height:0; }
+</style>
+</head>
+<body>
+<div id="hdr"></div>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+<div id="modalRoot"></div>
+
+<script>
+/* =================================================================== */
+/* DATA — Tsumiki demo project: 4 screens, 2 areas, unit + flow tests   */
+/* =================================================================== */
+
+/* -- requirements per screen (behavior rows + prose + computed state) -- */
+const SCREENS = {
+  'task-list': {
+    area:'Tasks', name:'Task list', route:'/todo.html', cover:'coverTaskList',
+    reqs:[
+      { id:'R1', title:'Adding a task puts it in the list', state:'ok', primary:'F2', scene:'sceneR1',
+        given:'the list is seeded', sub:'input empty → Add disabled', when:'type “Water the plants”, press Add',
+        then:'a new row at the bottom, unchecked, meta reads “added just now”',
+        prose:'Typing a task and pressing Add (or Enter) shows it as a new row at the bottom of the list, unchecked, carrying exactly the text that was typed. An empty input adds nothing — the Add button is disabled until there is text.' },
+      { id:'R2', title:'A task can be edited in place, and the edit is stamped', state:'ok', primary:'F2', scene:'sceneR2',
+        given:'a task exists', sub:'meta reads “added”', when:'double-click the title, type, press Enter',
+        then:'the same row shows the new text; meta flips to “edited just now”',
+        prose:'Double-clicking a task’s title (or its edit icon) makes it editable; Enter saves the new text in the same row, Escape cancels. Saving a real change records an “edited” time, replacing the “added” one.' },
+      { id:'R3', title:'A task with sub-tasks is a container with a derived progress ring', state:'ok', primary:'U1', also:['F1'], scene:'sceneR3',
+        given:'a container task', sub:'ring reads 1 of 2 · no checkbox', when:'add a sub-task',
+        then:'the ring reads 1 of 3 by itself — the parent still has no checkbox',
+        prose:'Sub-tasks live inside a task. A task that has them is a container: it shows a progress ring counting its sub-tasks (2 of 3) in place of its own checkbox, so it can never be completed by a stray click — only its sub-tasks can be. Adding a sub-task moves the ring by itself.' },
+      { id:'R4', title:'Completion rolls up, both directions', state:'ok', primary:'F1', scene:'sceneR4',
+        given:'a container', sub:'2 of 3 done · one open sub-task', when:'tick the last open sub-task, then untick it',
+        then:'the container completes by itself, and reopens when the sub-task does',
+        prose:'Completing the last open sub-task completes the container by itself; reopening any sub-task reopens the container. The container’s done-state is purely derived from its children — nobody ticks a container by hand.' },
+      { id:'R5', title:'“To do” counts remaining leaves only', state:'bad', primary:'F1', scene:'sceneR5',
+        given:'header reads 3 to do', sub:'a container holds 2 open sub-tasks', when:'complete the container’s two sub-tasks',
+        then:'the count drops by exactly two, to 1 — the container is never a unit of work',
+        beat:'expected “1 to do”, got “2” — the container was counted as a unit of work',
+        prose:'The header count is the real amount of work left: open sub-tasks, plus open tasks that have no sub-tasks. A container is scaffolding — it is never counted as a unit of work itself, and completing one drops the count by its open-leaf count, not by one. The single most drift-prone rule here — the one the red demo deliberately breaks.' },
+      { id:'R6', title:'Smart views filter correctly, and the sidebar counts agree', state:'ok', primary:'F2', scene:'sceneR6',
+        given:'All shows 4 tasks', sub:'badges All 4 · Active 3 · Today 1 · Done 1', when:'click the Today view',
+        then:'only not-done tasks due on/before today remain — and the badge equals the rows shown',
+        prose:'All shows every task; Active hides done tasks; Today shows only not-done tasks due on or before today; Completed shows only done tasks. Each view’s sidebar badge equals the number of task rows that view actually shows.' },
+      { id:'R7', title:'A due date derives an overdue or today chip', state:'ok', primary:'U2', scene:'sceneR7',
+        given:'the clock is frozen via ?now=', sub:'seeded tasks span past · today · later', when:'read the visible date chips',
+        then:'past-due wears red “overdue”, due-today wears “today”, later shows its date, done wears none',
+        prose:'A not-done task due before today wears the red “overdue” chip; a task due today wears the “today” chip; a task due later shows its date; a done task wears no date chip.' },
+      { id:'R8', title:'Everything survives a reload', state:'nr', primary:'F1', scene:null,
+        given:'edits, completions and stamps made above', sub:'', when:'reload the page',
+        then:'every task, state and timestamp comes back — nothing lived only on screen',
+        prose:'Tasks, sub-tasks, done-states, edited titles, due dates, order, and every created / edited / completed timestamp all come back after the page reloads — nothing lived only on screen.' },
+    ],
+    tests:[
+      { id:'F1', kind:'flow', name:'Roll-up round trip', dur:'1m 04s', run:'ea389a6', result:'fail', covers:['R3','R4','R5','R8'],
+        chapters:[
+          { name:'fixture', comp:'frozen clock · storage cleared', screen:'Task list', kind:'seed' },
+          { name:'add a sub-task', comp:'container', screen:'Task list', reqs:['R3'], scene:'sceneR3' },
+          { name:'roll up', comp:'container · sub-tasks', screen:'Task list', reqs:['R4'], scene:'sceneR4' },
+          { name:'count remaining', comp:'header count', screen:'Task list', reqs:['R5'], scene:'sceneR5', fail:true },
+          { name:'reload', comp:'whole screen', screen:'Task list', reqs:['R8'], kind:'nr' },
+        ]},
+      { id:'F2', kind:'flow', name:'First run — add, edit, filter', dur:'52s', run:'ea389a6', result:'pass', covers:['R1','R2','R6'],
+        chapters:[
+          { name:'fixture', comp:'frozen clock · storage cleared', screen:'Task list', kind:'seed' },
+          { name:'add a task', comp:'task list · header', screen:'Task list', reqs:['R1'], scene:'sceneR1' },
+          { name:'edit in place', comp:'task row', screen:'Task list', reqs:['R2'], scene:'sceneR2' },
+          { name:'filter to Today', comp:'smart views', screen:'Task list', reqs:['R6'], scene:'sceneR6' },
+        ]},
+      { id:'U1', kind:'unit', name:'The progress ring counts sub-tasks', dur:'8s', run:'ea389a6', result:'pass', covers:['R3'], scene:'sceneR3' },
+      { id:'U2', kind:'unit', name:'Date chips read the frozen clock', dur:'11s', run:'ea389a6', result:'pass', covers:['R7'], scene:'sceneR7' },
+    ],
+  },
+  'task-detail': {
+    area:'Tasks', name:'Task detail', route:'/todo.html?task=', cover:'coverTaskDetail',
+    reqs:[
+      { id:'D1', title:'Sub-tasks are checkable from the detail view', state:'ok', primary:'F3', scene:'sceneDetailComplete',
+        given:'a container opened on its own page', sub:'breadcrumb back to the list', when:'tick a sub-task here',
+        then:'the sub-task completes and the detail ring advances',
+        prose:'Opening a task shows its own page: a breadcrumb back to the list, the title, and each sub-task with its own checkbox. Ticking one here completes it exactly as it would in the list.' },
+      { id:'D2', title:'A change here reflects in the list on return', state:'ok', primary:'F3', scene:'sceneListReflects',
+        given:'a sub-task completed in the detail', sub:'cross-screen — starts on the list', when:'navigate back to the list',
+        then:'the task’s ring on the list shows the completed sub-task',
+        prose:'A completion made in the detail view is the same state as the list — returning to the list shows the task’s ring advanced. This is a cross-screen requirement: the flow that proves it starts on the Task list, opens the detail, and returns.' },
+      { id:'D3', title:'An unknown task id shows an empty state, not an error', state:'un', primary:null, scene:null,
+        given:'a task id that does not exist', sub:'', when:'open the detail for it',
+        then:'a calm empty state with a link back — never a stack trace or a blank page',
+        prose:'Opening a detail for a task that was deleted or never existed shows an empty state with a way back to the list. It must never throw or render blank.' },
+    ],
+    tests:[
+      { id:'F3', kind:'flow', name:'Complete from the detail view', dur:'38s', run:'ea389a6', result:'pass', covers:['D1','D2'], startsOn:'Task list',
+        chapters:[
+          { name:'open the task', comp:'a container row', screen:'Task list', scene:'sceneOpenDetail' },
+          { name:'complete a sub-task', comp:'detail · sub-tasks', screen:'Task detail', reqs:['D1'], scene:'sceneDetailComplete' },
+          { name:'return to the list', comp:'the list reflects it', screen:'Task list', reqs:['D2'], scene:'sceneListReflects' },
+        ]},
+    ],
+  },
+  'settings': {
+    area:'Account', name:'Settings', route:'/settings.html', cover:'coverSettings',
+    reqs:[
+      { id:'G1', title:'Dark mode persists across a reload', state:'ok', primary:'U3', scene:'coverSettings',
+        given:'dark mode is on', sub:'', when:'reload the page',
+        then:'the app comes back in dark mode',
+        prose:'Toggling dark mode is remembered — after a reload the app is still in the mode you left it.' },
+      { id:'G2', title:'Clear all data asks to confirm first', state:'un', primary:null, scene:null,
+        given:'the “clear all data” button', sub:'', when:'click it',
+        then:'a confirm step appears before anything is deleted',
+        prose:'Destructive actions confirm first. Clicking “clear all data” opens a confirmation; nothing is deleted until it is accepted.' },
+    ],
+    tests:[
+      { id:'U3', kind:'unit', name:'Dark mode survives a reload', dur:'9s', run:'ea389a6', result:'pass', covers:['G1'], scene:'coverSettings' },
+    ],
+  },
+  'sign-in': {
+    area:'Account', name:'Sign in', route:'/signin.html', cover:'coverSignin',
+    reqs:[
+      { id:'S1', title:'Sign in stays disabled until the email is valid', state:'un', primary:null, scene:null,
+        given:'the sign-in form', sub:'', when:'the email is not a valid address',
+        then:'the Sign in button stays disabled',
+        prose:'The Sign in button only enables once the email field holds a valid-looking address.' },
+      { id:'S2', title:'A wrong password shows one inline message', state:'un', primary:null, scene:null,
+        given:'a wrong password', sub:'', when:'submit',
+        then:'one inline message shows, and the page does not reload',
+        prose:'A failed sign-in shows a single inline error next to the field — no full-page reload, no stacked messages.' },
+      { id:'S3', title:'“Remember me” keeps the session after a reload', state:'un', primary:null, scene:null,
+        given:'“remember me” checked', sub:'', when:'reload after signing in',
+        then:'the session persists',
+        prose:'With “remember me” checked, a reload keeps the user signed in.' },
+    ],
+    tests:[],
+  },
+};
+const AREAS = ['Tasks','Account'];
+const SCREEN_ORDER = ['task-list','task-detail','settings','sign-in'];
+
+/* formatted requirement text (point 4) — bullets, bold, and colour for the load-bearing rule */
+const RICH = {
+  R1:`<p>Typing a task and pressing <b>Add</b> (or Enter) appends it to the list.</p>
+      <ul><li>Lands as a <b>new row at the bottom</b>, unchecked, with exactly the typed text</li>
+      <li>Its meta reads <b>“added just now”</b></li>
+      <li><span class="cbad">An empty input adds nothing</span> — Add stays disabled until there’s text</li></ul>`,
+  R2:`<p><b>Double-clicking</b> a title (or the edit icon) makes it editable.</p>
+      <ul><li><b>Enter</b> saves in the same row · <b>Escape</b> cancels</li>
+      <li>A real change stamps <b>“edited just now”</b>, replacing “added”</li></ul>`,
+  R3:`<p>A task with sub-tasks becomes a <b>container</b> — it shows a <b>progress ring</b> (e.g. 2 of 3) in place of its own checkbox.</p>
+      <ul><li><span class="cbad">No checkbox on the parent</span> — it can’t be completed by a stray click</li>
+      <li>Adding a sub-task <b>moves the ring by itself</b></li></ul>`,
+  R4:`<p>The container’s done-state is <b>purely derived from its children</b>.</p>
+      <ul><li>Completing the <b>last open sub-task</b> completes the container</li>
+      <li>Reopening any sub-task <b>reopens</b> it</li>
+      <li>Nobody ticks a container by hand</li></ul>`,
+  R5:`<p>The header count is the <b>real work left</b>: open sub-tasks, plus open tasks with no sub-tasks.</p>
+      <ul><li>A container is <b>scaffolding</b> — <span class="cbad">never counted as a unit itself</span></li>
+      <li>Completing a container drops the count by its <b>open-leaf count</b>, not by one</li></ul>
+      <p class="cmute">The single most drift-prone rule — the one the red demo breaks.</p>`,
+  R6:`<table class="rtab"><tr><td><b>All</b></td><td>every task</td></tr>
+      <tr><td><b>Active</b></td><td>hides done</td></tr>
+      <tr><td><b>Today</b></td><td>not-done, due on/before today</td></tr>
+      <tr><td><b>Completed</b></td><td>done only</td></tr></table>
+      <p>Each view’s <b>sidebar badge equals the rows it shows</b>.</p>`,
+  R7:`<p>Date chips derive from the <b>frozen clock</b> (<span class="mono">?now=</span>):</p>
+      <ul><li>Due before today → <span class="cbad">overdue</span></li>
+      <li>Due today → <span class="cwarn">today</span></li>
+      <li>Due later → its date · done → <b>no chip</b></li></ul>`,
+  R8:`<p><b>Everything persists</b> across a reload — nothing lives only on screen.</p>
+      <ul><li>Tasks, sub-tasks, done-states, edited titles, due dates, order</li>
+      <li>Every created / edited / completed <b>timestamp</b></li></ul>`,
+};
+SCREENS['task-list'].reqs.forEach(r => { if (RICH[r.id]) r.rich = RICH[r.id]; });
+// demo the "Changed" (drift) state: R2 was proven, but its wording was edited since
+SCREENS['task-list'].reqs.find(r => r.id === 'R2').state = 'changed';
+
+const MK = { ok:['✓','Passed'], bad:['✗','Failed'], nr:['◌','Not reached'], un:['○','Untested'], changed:['✎','Changed'] };
+const STATE_COL = { ok:'var(--ok)', bad:'var(--bad)', nr:'var(--yamabuki)', un:'var(--mute)', changed:'var(--ai)' };
+
+/* global UI state */
+let autoPlay = true;
+let stopScene = null;
+let searchQ = '';
+
+/* helpers */
+function scr(id){ return SCREENS[id]; }
+function reqOf(id, rid){ return scr(id).reqs.find(r => r.id === rid); }
+function testOf(id, tid){ return scr(id).tests.find(t => t.id === tid); }
+function stateOf(r, s){ return r.state; }
+function provenCount(s){ return s.reqs.filter(r => r.state === 'ok').length; }
+function kindCounts(s){ return { unit:s.tests.filter(t=>t.kind==='unit').length, flow:s.tests.filter(t=>t.kind==='flow').length }; }
+function esc(t){ return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function hl(t){ if(!searchQ) return esc(t); const i = t.toLowerCase().indexOf(searchQ.toLowerCase()); if(i<0) return esc(t); return esc(t.slice(0,i))+'<mark>'+esc(t.slice(i,i+searchQ.length))+'</mark>'+esc(t.slice(i+searchQ.length)); }
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstElementChild; }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+function tagHtml(state){ const [mk,tx]=MK[state]; return `<span class="tag ${state}">${mk} ${tx}</span>`; }
+
+/* =================================================================== */
+/* TEST-AUTHORING PROMPTS — the board hands you an instruction for Claude */
+/* =================================================================== */
+let modalState = null;
+function openPromptModal(cfg){
+  modalState = Object.assign({ action:'add', kind:'unit', reqIds:[], screenId:null, testId:null }, cfg);
+  if (modalState.action==='add' && modalState.kind==='flow' && !modalState.reqIds.length){
+    const s = scr(modalState.screenId); modalState.reqIds = s.reqs.slice(0, Math.min(3, s.reqs.length)).map(r=>r.id);
+  }
+  renderModal();
+}
+function closeModal(){ document.getElementById('modalRoot').innerHTML=''; modalState=null; }
+function setModalKind(k){ modalState.kind=k; if(k==='unit' && modalState.reqIds.length>1) modalState.reqIds=[modalState.reqIds[0]]; renderModal(); }
+function toggleModalReq(id){ const a=modalState.reqIds, i=a.indexOf(id);
+  if(i>=0){ a.splice(i,1); } else { if(modalState.kind==='unit') modalState.reqIds=[id]; else a.push(id); }
+  renderModal();
+}
+function copyPrompt(){ const ta=document.getElementById('promptTA'); ta.focus(); ta.select();
+  const done=()=>toast('Prompt copied — paste it into Claude');
+  if(navigator.clipboard){ navigator.clipboard.writeText(ta.value).then(done).catch(()=>{document.execCommand('copy');done();}); }
+  else { document.execCommand('copy'); done(); }
+}
+function buildPrompt(st){
+  const s = scr(st.screenId), file = `spec/${st.screenId}/test.spec.ts`;
+  if (st.action==='reword'){
+    const r = reqOf(st.screenId, st.reqId);
+    return `Reword requirement ${r.id} — “${r.title}” — on the “${s.name}” screen (spec/${st.screenId}/prd.md).\n\n`
+      + `Current behaviour:\n  Given ${r.given}\n  When ${r.when}\n  Then ${r.then}\n\n`
+      + `What to change:\n  ⟨describe the reword — what it should say instead⟩\n\n`
+      + `Requirement ids are stable; don’t renumber. You draft the prose; I own the meaning (CLAUDE.md rule 5). If a test already proves this and the meaning shifts, it will read Changed until re-verified — that’s expected.`;
+  }
+  if (st.action==='removereq'){
+    const r = reqOf(st.screenId, st.reqId);
+    return `Remove requirement ${r.id} — “${r.title}” — from the “${s.name}” screen (spec/${st.screenId}/prd.md). It isn’t a real requirement.\n\n`
+      + `Delete it from prd.md. Leave the other ids as they are — ids are stable, never renumbered. If any test tagged only ${r.id}, note that the test now covers nothing and ask me whether to drop it too.`;
+  }
+  if (st.action==='addreq'){
+    return `Add a new requirement to the “${s.name}” screen (spec/${st.screenId}/prd.md).\n\n`
+      + `What it should say:\n  ⟨the behaviour — Given / When / Then⟩\n\n`
+      + `Append it with the next free id (ids are stable, never reused). Ground it in what the screen really does; then it’s canon and ready for a test. You draft the prose; I own the meaning.`;
+  }
+  if (st.action==='remove'){
+    const t = testOf(st.screenId, st.testId), cov = t.covers.join(', '), many = t.covers.length>1;
+    return `Remove the ${t.kind} test "${t.name}" from the "${s.name}" screen (${file}).\n\n`
+      + `Delete its checkReq block(s) for ${cov}. After removal, ${many?'those requirements':cov} will read UNPROVEN until another test covers ${many?'them':'it'} — that is the honest state, not a regression to paper over.\n\n`
+      + `Before deleting: confirm no other requirement was proven ONLY by this test. Never weaken or fake coverage elsewhere to compensate (CLAUDE.md rule 3).`;
+  }
+  if (st.action==='edit'){
+    const t = testOf(st.screenId, st.testId);
+    return `Edit the ${t.kind} test "${t.name}" on the "${s.name}" screen (${file}). It currently covers ${t.covers.join(', ')}.\n\n`
+      + `What to change:\n  ⟨describe the change — e.g. also assert the empty state, cover one more requirement, tighten a number⟩\n\n`
+      + `Rules (kg-e2e / CLAUDE.md):\n`
+      + `  • If an assertion now breaks, first decide whether the TEST or the CODE is wrong before editing either (rule 4).\n`
+      + `  • Keep every checkReq tag unless a requirement is genuinely no longer covered.\n`
+      + `  • Never weaken, skip, or delete an assertion just to go green (rule 3).\n`
+      + `  • Every asserted number must be visible in the recording.\n`
+      + `  • Don't touch requirement wording — that's mine.`;
+  }
+  const reqs = st.reqIds.map(id=>reqOf(st.screenId,id)).filter(Boolean);
+  const behav = reqs.map(r=>`  ${r.id} — ${r.title}\n     Given ${r.given}${r.sub?` · ${r.sub}`:''}\n     When ${r.when}\n     Then ${r.then}`).join('\n');
+  if (st.kind==='flow'){
+    const ids = reqs.map(r=>r.id);
+    return `Add a FLOW test that starts on the "${s.name}" screen (${file}) and proves ${ids.join(' → ')||'<pick requirements>'} along one path.\n\n`
+      + `Requirements to prove:\n${behav||'  ⟨choose the requirements this flow should reach⟩'}\n\n`
+      + `Follow the kg-e2e / kg-deep discipline:\n`
+      + `  1. Declare coverage up front: coverReqs(${ids.map(i=>`'${i}'`).join(', ')}) — so an early failure leaves later ones NOT-REACHED, not silently absent.\n`
+      + `  2. Write the failing test FIRST and watch it go red.\n`
+      + `  3. One checkReq('<id>', …) per requirement, each asserting something that would fail without it.\n`
+      + `  4. Cross-screen requirements use qualified tags (e.g. other-screen:R3).\n`
+      + `  5. Every asserted number must be VISIBLE in the recording; the writer flow restores its own baseline.\n\n`
+      + `Keep requirement ids stable. Don't change any requirement's wording — that's mine.`;
+  }
+  const r = reqs[0];
+  return `Add a UNIT test for the "${s.name}" screen (${file}) that proves ${r?r.id:'<requirement>'}${r?` — ${r.title}`:''}.\n\n`
+    + `Behaviour to prove:\n${behav||'  ⟨choose the requirement this test should prove⟩'}\n\n`
+    + `Follow the kg-e2e discipline:\n`
+    + `  1. Write the failing assertion FIRST and watch it go red.\n`
+    + `  2. Tag it: checkReq('${r?r.id:'Rn'}', async () => { … }).\n`
+    + `  3. Assert something that would fail WITHOUT this requirement — read the value off the visible UI and assert the exact number (before → after).\n`
+    + `  4. Every asserted number must be visible in the recording.\n\n`
+    + `Keep requirement ids stable. Don't touch the requirement wording — that's mine.`;
+}
+function renderModal(){
+  const st = modalState, s = scr(st.screenId), isAdd = st.action==='add';
+  const isReq = st.action==='reword' || st.action==='removereq' || st.action==='addreq';
+  const title = isAdd ? 'Author a test with Claude'
+    : st.action==='reword' ? 'Reword the requirement with Claude'
+    : st.action==='removereq' ? 'Remove the requirement with Claude'
+    : st.action==='addreq' ? 'Add a requirement with Claude'
+    : st.action==='edit' ? 'Revise a test with Claude' : 'Remove a test with Claude';
+  const blurb = isReq
+    ? `You own the meaning — this hands Claude a prompt to <b>${st.action==='removereq'?'delete':st.action==='addreq'?'draft':'reword'}</b> the requirement. A requirement is canon the moment it’s written; edit or remove it as freely as a test.`
+    : `specboard never writes tests silently — it hands you a ready prompt. Copy it into Claude; Claude writes the <b>failing test first</b>, tags the requirement, and asserts something that would fail without it. You stay the one who decides.`;
+  const kindSeg = isAdd ? `<p class="field-lbl">Kind of test</p><div class="seg wide" style="display:flex"><button class="${st.kind==='unit'?'on':''}" onclick="setModalKind('unit')">Unit — one screen or state</button><button class="${st.kind==='flow'?'on':''}" onclick="setModalKind('flow')">Flow — a path across states / screens</button></div>` : '';
+  const reqPick = isAdd ? `<p class="field-lbl">Covers ${st.kind==='flow'?'(pick the requirements the path reaches)':'(one requirement)'}</p><div class="reqpick">${s.reqs.map(r=>{const t=r.title.length>36?r.title.slice(0,34)+'…':r.title; return `<button class="${st.reqIds.includes(r.id)?'on':''}" onclick="toggleModalReq('${r.id}')"><span class="rk">${r.id}</span>${esc(t)}</button>`;}).join('')}</div>` : '';
+  document.getElementById('modalRoot').innerHTML = `
+  <div class="modal-backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <div class="mhead"><div><h3>${title}</h3><p>${blurb}</p></div><button class="mx" onclick="closeModal()" aria-label="close">✕</button></div>
+      <div class="mbody">
+        ${kindSeg}${reqPick}
+        <p class="field-lbl">Prompt for Claude${isAdd||st.action==='removereq'?'':' · fill the ⟨…⟩ line'}</p>
+        <textarea class="prompt-ta" id="promptTA" spellcheck="false">${esc(buildPrompt(st))}</textarea>
+        <div class="mnote"><span class="i">◆</span><span>${isReq?'Nothing changes until you send this and review Claude’s edit — you own the meaning, so the prose is yours to approve.':'Nothing changes until you send this and review Claude’s work — the failing test goes red before it goes green, so a fake pass can’t slip through.'}</span></div>
+      </div>
+      <div class="mfoot"><span class="hint">${esc(s.name)} · ${st.action}${isAdd?' · '+st.kind:''}</span><button class="btn" onclick="closeModal()">Cancel</button><button class="btn dark" onclick="copyPrompt()">⧉ Copy prompt</button></div>
+    </div>
+  </div>`;
+}
+function coverageReminder(id){
+  const s = scr(id);
+  const fail    = s.reqs.filter(r=>r.state==='bad').length;
+  const nr      = s.reqs.filter(r=>r.state==='nr').length;
+  const changed = s.reqs.filter(r=>r.state==='changed').length;
+  const un      = s.reqs.filter(r=>r.state==='un').length;
+  const gaps = [];
+  if (fail)    gaps.push(`<b class="st-bad">${fail} Failed</b>`);
+  if (changed) gaps.push(`<b class="st-changed">${changed} Changed</b>`);
+  if (nr)      gaps.push(`<b class="st-nr">${nr} Not reached</b>`);
+  if (un)      gaps.push(`<b class="st-un">${un} Untested</b>`);
+  if (!gaps.length) return '';
+  return `<div class="remind"><span class="rk2">${gaps.join('<span style="color:var(--line3)">·</span>')}</span><span class="grow2">— add or revise a test to close the gap. specboard drafts the prompt; Claude writes it.</span><button class="btn" onclick="openPromptModal({action:'add',screenId:'${id}'})">＋ Author a test</button></div>`;
+}
+
+/* =================================================================== */
+/* ROUTER                                                              */
+/* =================================================================== */
+function go(h){ location.hash = '#/' + h; }
+function route(){
+  if (stopScene){ stopScene(); stopScene = null; }
+  const h = location.hash.replace(/^#\/?/, '');
+  const m = h.match(/^s\/([^/]+)\/(focus|grid|flow)(?:\/(.+))?$/);
+  if (m && SCREENS[m[1]]) renderDetail(m[1], m[2], m[3]);
+  else renderHome();
+}
+window.addEventListener('hashchange', route);
+window.addEventListener('keydown', e => {
+  const m = location.hash.match(/^#\/s\/([^/]+)\/focus\/(\d+)/);
+  if (!m) return;
+  const s = scr(m[1]), n = +m[2];
+  if (e.key === 'ArrowRight' && n < s.reqs.length) go(`s/${m[1]}/focus/${n+1}`);
+  if (e.key === 'ArrowLeft'  && n > 1)             go(`s/${m[1]}/focus/${n-1}`);
+});
+
+/* =================================================================== */
+/* HEADER                                                              */
+/* =================================================================== */
+function homeHeader(){
+  document.getElementById('hdr').innerHTML = `
+  <header class="topbar">
+    <div class="brand"><div class="glyph"></div><div><div class="nm">specboard</div><div class="sub">Tsumiki · task-tracker demo</div></div></div>
+    <span class="mockflag">mockup · 2026-08-17</span>
+    <div class="grow"></div>
+    <label class="search"><span style="color:var(--mute)">⌕</span><input id="searchIn" placeholder="Search screens and requirements" value="${esc(searchQ)}"></label>
+    <button class="btn" onclick="toast('Conflicts panel — not wired in this mockup')">Conflicts<span class="badge-n">1</span></button>
+    <button class="btn" onclick="toast('Set up — not wired in this mockup')">Set up</button>
+    <button class="btn" onclick="toast('How does it work — the guide')">How does it work</button>
+  </header>`;
+  const inp = document.getElementById('searchIn');
+  inp.addEventListener('input', () => { searchQ = inp.value; renderHome(true); document.getElementById('searchIn').focus(); });
+}
+function detailHeader(id, view, n){
+  const s = scr(id);
+  document.getElementById('hdr').innerHTML = `
+  <header class="topbar">
+    <div class="dname"><span class="t">${esc(s.name)}</span><span class="s">${esc(s.area)} · ${esc(s.route)}</span></div>
+    <span class="mockflag">mockup</span>
+    <div class="grow"></div>
+    <button class="btn dark" onclick="toast('Simulated — starts the whole suite')">▶ Run all in background</button>
+    <button class="switch ${autoPlay?'on':''}" id="apTog" aria-pressed="${autoPlay}" title="Auto-play evidence in every view">Auto-play<span class="sw"></span></button>
+    <div class="seg">
+      <button class="${view==='focus'?'on':''}" onclick="go('s/${id}/focus/${n||1}')">Focus</button>
+      <button class="${view==='grid'?'on':''}"  onclick="go('s/${id}/grid')">Grid</button>
+      <button class="${view==='flow'?'on':''}"  onclick="go('s/${id}/flow')">Flow</button>
+    </div>
+    <button class="btn" onclick="go('')">Close</button>
+  </header>`;
+  document.getElementById('apTog').addEventListener('click', () => {
+    autoPlay = !autoPlay;
+    route();
+  });
+}
+
+/* =================================================================== */
+/* HOME                                                                */
+/* =================================================================== */
+function renderHome(keepHeader){
+  if (!keepHeader) homeHeader();
+  const q = searchQ.toLowerCase();
+  const match = id => { const s = scr(id); if (!q) return true;
+    return s.name.toLowerCase().includes(q) || s.reqs.some(r => r.title.toLowerCase().includes(q)); };
+  const visible = SCREEN_ORDER.filter(match);
+
+  const attn = [];
+  SCREEN_ORDER.forEach(id => scr(id).reqs.forEach(r => { if (r.state==='bad' || r.state==='changed') attn.push({ id, r }); }));
+  const failed = attn.filter(a=>a.r.state==='bad').length, changed = attn.filter(a=>a.r.state==='changed').length;
+  const a0 = attn[0];
+  const queue = attn.length
+    ? `<div class="queue attn"><span class="qk">${attn.length} need a look</span><span>${[failed?`<b class="st-bad">${failed} failed</b>`:'', changed?`<b class="st-changed">${changed} changed since their proof</b>`:''].filter(Boolean).join(' · ')} — the honest drift, computed from the runs. <a href="#/s/${a0.id}/focus/${scr(a0.id).reqs.indexOf(a0.r)+1}">Open ${a0.r.id} →</a></span></div>`
+    : `<div class="queue clear"><span class="qk">✓ all clear</span><span>Every requirement is passed or untested — nothing has failed or drifted. You write requirements; specboard just tracks their proof.</span></div>`;
+
+  let html = queue;
+  for (const area of AREAS){
+    const ids = visible.filter(id => scr(id).area === area);
+    if (!ids.length) continue;
+    html += `<section class="area"><div class="ahead"><h2>${esc(area)}</h2><span class="ct">${ids.length} screen${ids.length>1?'s':''}</span></div>`
+      + ids.map(screenCard).join('') + `</section>`;
+  }
+  if (!visible.length) html += `<div class="emptyview"><h3>Nothing matches</h3><p>No screen or requirement contains “${esc(searchQ)}”.</p></div>`;
+  document.getElementById('root').innerHTML = `<div class="wrap">${html}</div>`;
+  // paint covers
+  visible.forEach(id => { const box = document.querySelector(`.cover[data-cover="${id}"]`); if (box) mountStill(box, scr(id).cover, 0.62, 484, 242); });
+}
+function screenCard(id){
+  const s = scr(id), kc = kindCounts(s), pv = provenCount(s);
+  const rows = s.reqs.slice(0,5).map(r => {
+    const st = stateOf(r,s);
+    return `<li><span class="rid2">${r.id}</span><span style="color:${STATE_COL[st]};flex:none">${MK[st][0]}</span><span>${hl(r.title)}</span></li>`;
+  }).join('') + (s.reqs.length>5 ? `<li class="more">… ${s.reqs.length-5} more</li>` : '');
+  const provenCol = pv === s.reqs.length ? 'var(--ok)' : pv === 0 ? 'var(--mute)' : 'var(--ink)';
+  const kinds = (kc.unit||kc.flow)
+    ? `<span class="kchip unit"><span class="km">${kc.unit}</span> unit</span><span class="kchip flow"><span class="km">${kc.flow}</span> flow</span>`
+    : `<span class="kchip">no tests yet</span>`;
+  return `<div class="card" onclick="go('s/${id}/focus/1')">
+    <div>
+      <div class="cname"><h3>${hl(s.name)}</h3></div>
+      <div class="croute">${esc(s.route)}</div>
+      <ul>${rows}</ul>
+    </div>
+    <div class="right">
+      <div class="metrics">
+        <span class="pill" style="color:${provenCol}">${pv} / ${s.reqs.length} passed</span>
+        <div class="kinds">${kinds}</div>
+      </div>
+      <div class="cover" data-cover="${id}"><span class="lrun">latest run · ea389a6</span></div>
+    </div>
+  </div>`;
+}
+
+/* =================================================================== */
+/* DETAIL — Focus / Grid / Flow                                        */
+/* =================================================================== */
+function renderDetail(id, view, arg){
+  detailHeader(id, view, view==='focus' ? (+arg||1) : null);
+  if (view === 'focus') renderFocus(id, Math.min(scr(id).reqs.length, Math.max(1, +arg||1)));
+  else if (view === 'grid') renderGrid(id);
+  else renderFlow(id, arg);
+}
+
+/* ---- evidence embed (respects global autoPlay) ---- */
+function evidenceHTML(r, sel, st){
+  st = st || r.state;
+  const run = (sel && sel.run) || 'ea389a6';
+  const tname = sel ? esc(sel.name)+' · ' : '';
+  const stale = st==='changed' ? ' · <span class="st-changed">stale</span>' : '';
+  if (r.scene && isAnimated(r.scene))
+    return `<div class="gif"><div class="gbar"><span>${tname}proves ${r.id} · run ${run}${stale}</span><span class="rt"><button onclick="replayHere('${r.scene}')">⟳ replay</button></span></div><div class="stagebox"><div class="stage" id="evStage"></div></div></div>`;
+  if (r.scene) // static cover-frame proof — not every proof is a gif
+    return `<div class="gif"><div class="gbar"><span>${tname}cover frame · proves ${r.id} · run ${run}</span></div><div class="stagebox"><div class="stage" id="evStage"></div></div></div>`;
+  if (st === 'nr') return `<div class="gif"><div class="gbar"><span>proves ${r.id} · run ${run}</span></div><div class="noev"><b class="st-nr">◌ Not reached</b><span class="sub">the flow stopped before this step — no evidence for this run</span></div></div>`;
+  return `<div class="gif"><div class="gbar"><span>proves ${r.id}</span></div><div class="noev"><b class="st-un">○ Untested</b><span class="sub">no test covers this requirement yet — add one from the ⋯ menu to prove it</span></div></div>`;
+}
+function openSheet(title, body){
+  document.getElementById('modalRoot').innerHTML = `<div class="modal-backdrop" onclick="if(event.target===this)closeModal()"><div class="modal" style="width:600px"><div class="mhead"><h3>${esc(title)}</h3><button class="mx" onclick="closeModal()" aria-label="close">✕</button></div><div class="mbody" style="padding:0"><div class="sheetscroll">${body}</div></div></div></div>`;
+}
+function openSteps(id, tid, rid){ const t = testOf(id, tid); openSheet('All steps — ' + t.name, stepsHTML(id, t, rid)); }
+function openLogs(id, tid){ const t = testOf(id, tid); openSheet('Test log — ' + t.name, logsHTML(id, t)); }
+function mountEvidence(r){
+  if (!r.scene) return;
+  const stage = document.getElementById('evStage');
+  if (!stage) return;
+  const box = stage.parentElement; // .stagebox
+  if (isAnimated(r.scene)){
+    if (autoPlay) stopScene = play(stage, SCENE[r.scene]);
+    else showPlayOverlay(box, stage, r.scene);
+  } else {
+    // static cover-frame proof — render the frame, no play controls
+    const ctx = { stage, timers:[], t:0 }; SCENE[r.scene](ctx); ctx.timers.forEach(clearTimeout);
+    const c = stage.querySelector('.cur'); if (c) c.remove();
+  }
+}
+function showPlayOverlay(box, stage, sceneName){
+  const ctx = { stage, timers:[], t:0 }; SCENE[sceneName](ctx); ctx.timers.forEach(clearTimeout);
+  const c = stage.querySelector('.cur'); if (c) c.remove();
+  const ov = el(`<div class="playov"><button>▶ play</button></div>`);
+  ov.querySelector('button').addEventListener('click', () => {
+    ov.remove();
+    stopScene = play(stage, SCENE[sceneName], { loop:false, onEnd:() => { showReplayOverlay(box, stage, sceneName); } });
+  });
+  box.appendChild(ov);
+}
+function showReplayOverlay(box, stage, sceneName){
+  const ov = el(`<div class="playov"><button>⟳ replay</button></div>`);
+  ov.querySelector('button').addEventListener('click', () => { ov.remove(); showPlayOverlay(box, stage, sceneName); });
+  box.appendChild(ov);
+}
+function replayHere(sceneName){
+  const stage = document.getElementById('evStage'); if (!stage) return;
+  if (stopScene) stopScene();
+  document.querySelectorAll('.playov').forEach(o=>o.remove());
+  stopScene = play(stage, SCENE[sceneName]);
+}
+
+/* ---- full evidence: steps + logs (R10) ---- */
+function buildSteps(id, t, curReqId){
+  if (!t) return [];
+  const out = [];
+  if (t.kind === 'flow'){
+    t.chapters.forEach(c => {
+      if (c.kind === 'seed'){ out.push({ state:'ok', txt:'fixture — clear storage, pin clock ?now=2026-08-17', dur:'0.1s' }); return; }
+      const rid = (c.reqs||[])[0];
+      if (c.kind === 'nr'){ out.push({ state:'nr', txt:`proves ${rid} — ${c.name}`, cur:rid===curReqId }); return; }
+      out.push({ state:c.fail?'bad':'ok', txt:`proves ${rid} — ${c.name}`, cur:rid===curReqId, dur:'0.'+(3+(rid?rid.length:2))+'s' });
+    });
+  } else {
+    out.push({ state:'ok', txt:`open ${scr(id).route}?now=2026-08-17, wait for data`, dur:'0.4s' });
+    out.push({ state:t.result==='fail'?'bad':'ok', txt:`proves ${t.covers[0]} — read the value off screen, assert the exact number`, cur:t.covers[0]===curReqId, dur:'0.3s' });
+  }
+  return out;
+}
+function stepsHTML(id, t, curReqId){
+  const list = buildSteps(id, t, curReqId);
+  if (!list.length) return `<div class="emptypanel">no test covers this requirement yet — no steps to show.</div>`;
+  return `<ol class="steps">${list.map(s => {
+    const mk = s.state==='ok'?'✓':s.state==='bad'?'✗':'◌';
+    return `<li class="${s.cur?'cur':''}"><span class="sm" style="color:${STATE_COL[s.state]}">${mk}</span><span>${esc(s.txt)}${s.cur?' <span class="curmark">← this requirement</span>':''}</span>${s.dur?`<span class="sd">${s.dur}</span>`:''}</li>`;
+  }).join('')}</ol>`;
+}
+function logsHTML(id, t){
+  if (!t) return `<div class="emptypanel">no test covers this requirement yet — nothing to log.</div>`;
+  const s = scr(id), L = [];
+  L.push(`<span class="ldim">$ npx playwright test -g "${esc(t.name)}"</span>`);
+  L.push(`<span class="ldim">Running 1 test using 1 worker</span>`);
+  L.push('');
+  L.push(`  ${esc(s.name)} › ${esc(t.name)}`);
+  L.push(`  <span class="ldim">→</span> page.goto('${s.route}?now=2026-08-17')`);
+  buildSteps(id, t).forEach(st => {
+    if (st.state === 'nr'){ L.push(`  <span class="ldim">↷ skipped (not reached) — ${esc(st.txt)}</span>`); return; }
+    const c = st.state==='bad'?'lbad':'lok', mk = st.state==='bad'?'✗':'✓';
+    L.push(`  <span class="${c}">${mk}</span> ${esc(st.txt)}`);
+  });
+  L.push('');
+  if (t.result === 'fail'){
+    L.push(`  <span class="lbad">✗  ${esc(s.name)} › ${esc(t.name)}  (${t.dur})</span>`);
+    L.push(`     <span class="lbad">Error: expect(received).toBe(expected)</span>`);
+    L.push(`       Expected: <span class="lok">1</span>`);
+    L.push(`       Received: <span class="lbad">2</span>`);
+    L.push(`     <span class="ldim">at checkReq('R5') — spec/${id}/test.spec.ts</span>`);
+    L.push('');
+    L.push(`  <span class="lbad">1 failed</span>  <span class="ldim">(${t.dur})</span>`);
+  } else {
+    L.push(`  <span class="lok">✓  ${esc(s.name)} › ${esc(t.name)}  (${t.dur})</span>`);
+    L.push(`  <span class="lok">1 passed</span>  <span class="ldim">(${t.dur})</span>`);
+  }
+  return `<pre class="logs">${L.join('\n')}</pre>`;
+}
+function proofTab(tab){
+  document.querySelectorAll('.evtabs button').forEach(b => b.classList.toggle('on', b.dataset.tab===tab));
+  document.querySelectorAll('.evpanel > [data-panel]').forEach(p => { p.hidden = p.getAttribute('data-panel')!==tab; });
+}
+function toggleMenu(e, mid){ e.stopPropagation(); document.querySelectorAll('.rmenu').forEach(m=>{ if(m.id!==mid) m.hidden=true; }); const m=document.getElementById(mid); if(!m) return; m.hidden=!m.hidden; if(!m.hidden) setTimeout(()=>document.addEventListener('click', closeMenusOnce), 0); }
+function closeMenus(){ document.querySelectorAll('.rmenu').forEach(m=>m.hidden=true); }
+function closeMenusOnce(){ closeMenus(); document.removeEventListener('click', closeMenusOnce); }
+// requirement-level actions — a requirement is canon; reword or remove it freely, like a test
+function reqMenuItems(id, r){
+  return `<button onclick="openPromptModal({action:'reword',screenId:'${id}',reqId:'${r.id}'});closeMenus()">✎ Reword this requirement</button>`
+    + `<button onclick="openPromptModal({action:'addreq',screenId:'${id}'});closeMenus()">＋ Add a requirement</button>`
+    + `<div class="rmenu-div"></div>`
+    + `<button class="danger" onclick="openPromptModal({action:'removereq',screenId:'${id}',reqId:'${r.id}'});closeMenus()">✕ Remove this requirement</button>`;
+}
+
+/* ---- FOCUS ---- */
+let focusTestId = null;
+function coveringTests(id, r){ return scr(id).tests.filter(t => t.covers.includes(r.id)); }
+function pickFocusTest(id, n, tid){ focusTestId = tid; renderFocus(id, n); }
+function runMenuItems(id, r, sel){
+  let m = '';
+  if (sel){
+    m += `<button onclick="toast('Simulated — runs in the background');closeRunMenu()">▶ Run in background</button>`;
+    m += `<button onclick="openSteps('${id}','${sel.id}','${r.id}');closeRunMenu()">≣ View steps</button>`;
+    m += `<button onclick="openLogs('${id}','${sel.id}');closeRunMenu()">▤ View log</button>`;
+    m += `<button onclick="toast('Would open the full recording');closeRunMenu()">⧉ Open full recording</button>`;
+    m += `<div class="rmenu-div"></div>`;
+    m += `<button onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${sel.id}'});closeRunMenu()">✎ Edit this test</button>`;
+    m += `<button class="danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${sel.id}'});closeRunMenu()">✕ Remove this test</button>`;
+    m += `<button onclick="openPromptModal({action:'add',screenId:'${id}',reqIds:['${r.id}'],kind:'unit'});closeRunMenu()">＋ Add another test</button>`;
+  } else {
+    m += `<button onclick="openPromptModal({action:'add',screenId:'${id}',reqIds:['${r.id}'],kind:'unit'});closeRunMenu()">＋ Add a unit test</button>`;
+    m += `<button onclick="openPromptModal({action:'add',screenId:'${id}',reqIds:['${r.id}'],kind:'flow'});closeRunMenu()">＋ Add a flow test</button>`;
+  }
+  return m;
+}
+function renderFocus(id, n){
+  const s = scr(id), r = s.reqs[n-1], st = stateOf(r,s);
+  const cts = coveringTests(id, r);
+  let sel = cts.find(t=>t.id===focusTestId) || cts.find(t=>t.id===r.primary) || cts[0] || null;
+  focusTestId = sel ? sel.id : null;
+  const richHtml = r.rich || `<p>${esc(r.prose)}</p>`;
+  // point 7 — when several tests prove one requirement, a selector picks whose evidence to view;
+  // the requirement's own status (top-left chip) is the aggregate.
+  const proofby = cts.length > 1
+    ? `<div class="proofby"><span class="pl">proven by ${cts.length} tests</span>${cts.map(t=>{
+        const mk = t.result==='fail'?'<span class="st-bad">✗</span>':t.result==='pass'?'<span class="st-ok">✓</span>':'<span class="st-nr">◌</span>';
+        return `<button class="tsel ${t.id===focusTestId?'on':''}" onclick="pickFocusTest('${id}',${n},'${t.id}')"><span class="tk ${t.kind}">${t.kind}</span>${esc(t.name)} ${mk}</button>`;
+      }).join('')}</div>`
+    : cts.length === 1
+      ? `<div class="proofby"><span class="pl">proven by</span><span class="tone"><span class="tk ${sel.kind}">${sel.kind}</span>${esc(sel.name)}</span></div>`
+      : `<div class="proofby"><span class="pl none">no test covers this requirement yet</span></div>`;
+  const stale = st==='changed' ? `<div class="stalenote">✎ the requirement was <b>edited after this proof ran</b> — re-run to re-verify</div>` : '';
+  document.getElementById('root').innerHTML = `<div class="wrap"><div class="focus">
+    <div class="fcard">
+      <div class="rhead"><span class="rid">${r.id}</span>${tagHtml(st)}<span style="margin-left:auto;font-size:var(--t-xs);color:var(--mute)">${n} of ${s.reqs.length}</span>
+        <div class="runwrap"><button class="iconbtn sm" onclick="toggleMenu(event,'reqmenu')" aria-label="requirement options">⋯</button><div class="rmenu" id="reqmenu" hidden>${reqMenuItems(id,r)}</div></div>
+      </div>
+      <h1>${esc(r.title)}</h1>
+      <p class="lbl">The behavior</p>
+      <div class="bwt">
+        <div class="brow"><div class="bk">Given</div><div class="bv">${esc(r.given)}${r.sub?` <span class="sub">· ${esc(r.sub)}</span>`:''}</div></div>
+        <div class="brow"><div class="bk">When</div><div class="bv">${esc(r.when)}</div></div>
+        <div class="brow"><div class="bk">Then</div><div class="bv">${esc(r.then)}</div></div>
+      </div>
+      <button class="prose-t" onclick="this.nextElementSibling.classList.toggle('open')">the authored requirement — in full</button>
+      <div class="prose-b rich">${richHtml}</div>
+    </div>
+    <div class="fcard">
+      <div class="fhead-row"><p class="lbl">The proof</p>
+        <div class="runwrap">
+          ${sel?`<button class="btn" onclick="toast('Simulated — runs just this spec, watchably')">▶ Run</button>`:''}
+          <button class="iconbtn" onclick="toggleMenu(event,'rmenu')" aria-label="test options">⋯</button>
+          <div class="rmenu" id="rmenu" hidden>${runMenuItems(id,r,sel)}</div>
+        </div>
+      </div>
+      ${proofby}
+      ${stale}
+      <div class="evidence">${evidenceHTML(r, sel, st)}</div>
+    </div>
+  </div>
+  <div class="pager">${pagerHTML(id,n,s.reqs.length)}</div></div>`;
+  if (r.scene) mountEvidence(r);
+}
+function pagerHTML(id,n,total){
+  let out = `<button ${n===1?'disabled':''} onclick="go('s/${id}/focus/${n-1}')">‹</button>`;
+  for (let i=1;i<=total;i++) out += `<button class="${i===n?'cur':''}" onclick="go('s/${id}/focus/${i}')">${i}</button>`;
+  out += `<button ${n===total?'disabled':''} onclick="go('s/${id}/focus/${n+1}')">›</button><span class="pk">← → to review one by one</span>`;
+  return out;
+}
+
+/* ---- GRID ---- */
+function renderGrid(id){
+  const s = scr(id);
+  const rows = s.reqs.map((r,i) => {
+    const st = stateOf(r,s), col = STATE_COL[st], t = r.primary?testOf(id,r.primary):null;
+    const pf = st==='ok' ? `✓ Passed <span class="mono">· ${t?t.kind:''}</span>`
+             : st==='bad' ? `✗ Failed`
+             : st==='nr' ? `◌ Not reached`
+             : st==='changed' ? `✎ Changed`
+             : `○ Untested`;
+    return `<tr class="row" data-i="${i}" onclick="toggleEv('${id}',this)">
+      <td class="given">${esc(r.given)}${r.sub?`<span class="sub">${esc(r.sub)}</span>`:''}</td>
+      <td>${esc(r.when)}</td><td>${esc(r.then)}</td>
+      <td class="pf" style="color:${col}">${pf}</td></tr>
+    <tr class="evrow" style="display:none"><td colspan="4"></td></tr>`;
+  }).join('');
+  document.getElementById('root').innerHTML = `<div class="wrap">
+    ${coverageReminder(id)}
+    <div class="gcard">
+      <div class="chead"><h2>${esc(s.name)} — behaviors</h2><div style="display:flex;align-items:center;gap:14px"><span class="hint">a row exists only where an assertion could fail</span><button class="btn" onclick="openPromptModal({action:'add',screenId:'${id}'})">＋ Add test</button></div></div>
+      <table class="bgrid"><thead><tr><th style="width:24%">Given</th><th style="width:22%">When</th><th style="width:34%">Then</th><th style="width:20%">Proof</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>
+    <p class="legend">✓ Passed · ✗ Failed · ○ Untested · ◌ Not reached · ✎ Changed — the requirement's status, computed from the folded runs and never stored. Click a row for its evidence; the gif is cut from the real recording at the proves-step.</p>
+  </div>`;
+}
+function toggleEv(id, tr){
+  const s = scr(id), open = tr.classList.contains('open');
+  if (stopScene){ stopScene(); stopScene = null; }
+  document.querySelectorAll('#root tr.row').forEach(x=>x.classList.remove('open'));
+  document.querySelectorAll('#root tr.evrow').forEach(x=>{ x.style.display='none'; x.firstElementChild.innerHTML=''; });
+  if (open) return;
+  tr.classList.add('open');
+  const r = s.reqs[+tr.dataset.i], ev = tr.nextElementSibling, cts = coveringTests(id, r), t = cts.find(x=>x.id===r.primary) || cts[0] || null, st = stateOf(r,s), n = +tr.dataset.i+1;
+  ev.style.display = '';
+  const side = `${cts.length?`proven by ${cts.length>1?`<b>${cts.length} tests</b>: `:''}${cts.map(x=>`<b>${esc(x.name)}</b> <span class="mono">(${x.kind})</span>`).join(', ')}`:'no test yet — add one from the ⋯ menu in Focus'}<br><br><a href="#/s/${id}/focus/${n}">open in Focus for options →</a>`;
+  ev.firstElementChild.innerHTML = `<div class="ev">${evidenceHTML(r, t, st)}<div class="side">${side}</div></div>`;
+  if (r.scene) mountEvidence(r);
+}
+
+/* ---- COLUMNS (requirements ↔ tests, many-to-many hover) ---- */
+function renderColumns(id){
+  const s = scr(id);
+  const reqCol = s.reqs.map(r => { const st = stateOf(r,s);
+    return `<div class="colreq" data-r="${r.id}" onclick="go('s/${id}/focus/${s.reqs.indexOf(r)+1}')">
+      <div class="crhead"><span class="rid">${r.id}</span><span style="color:${STATE_COL[st]};font-family:var(--mono);font-size:11px">${MK[st][0]}</span><span class="crtitle">${esc(r.title)}</span></div>
+      <div class="crexc">${esc(r.given)} → ${esc(r.then)}</div></div>`;
+  }).join('');
+  const testCol = s.tests.length ? s.tests.map(t => {
+    const rc = t.result==='pass'?'var(--ok)':t.result==='fail'?'var(--bad)':'var(--mute)';
+    const tags = t.covers.map(rid=>`<span class="ctag2" data-r="${rid}">${rid}</span>`).join('');
+    return `<div class="coltest" data-covers="${t.covers.join(' ')}" onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${t.id}'})">
+      <div class="cthead"><span class="kindtag ${t.kind}">${t.kind}</span><span class="cttitle">${esc(t.name)}</span></div>
+      <div class="ctmeta"><span style="color:${rc};font-weight:500">${t.result==='pass'?'✓ Passed':t.result==='fail'?'✗ Failed':t.result}</span> · ${t.dur} · proves ${tags}</div></div>`;
+  }).join('') : `<div class="emptypanel" style="height:140px">No tests on this screen yet.${s.guess?' Its requirements are a drafted guess.':''}<br><a href="#" onclick="openPromptModal({action:'add',screenId:'${id}'});return false" style="color:var(--ai)">Author one →</a></div>`;
+  document.getElementById('root').innerHTML = `<div class="wrap">
+    <div class="cols">
+      <div class="colpane"><div class="colhead">Requirements <span class="ch-n">${s.reqs.length}</span><span class="colhint">the source of truth</span></div><div class="colbody" id="reqCol">${reqCol}</div></div>
+      <div class="colpane"><div class="colhead">Tests <span class="ch-n">${s.tests.length}</span><span class="colhint">the proof · hover to trace the link</span><button class="btn" style="margin-left:auto;height:28px" onclick="openPromptModal({action:'add',screenId:'${id}'})">＋ Add test</button></div><div class="colbody" id="testCol">${testCol}</div></div>
+    </div>
+    <p class="legend">Two columns, each scrolling on its own (board R2). Hover a test to light the requirements it proves — or a requirement to light every test that covers it — the many-to-many link (board R5). Coverage is by tag, folded across runs; nothing here is stored.</p>
+  </div>`;
+  wireColumnsHover();
+}
+function wireColumnsHover(){
+  const clear = () => document.querySelectorAll('.colreq.hot, .coltest.hot').forEach(e=>e.classList.remove('hot'));
+  document.querySelectorAll('#testCol .coltest').forEach(tc => {
+    const covers = tc.dataset.covers.split(' ').filter(Boolean);
+    tc.addEventListener('mouseenter', () => { tc.classList.add('hot'); covers.forEach(r=>{ const el=document.querySelector(`#reqCol .colreq[data-r="${r}"]`); if(el) el.classList.add('hot'); }); });
+    tc.addEventListener('mouseleave', clear);
+  });
+  document.querySelectorAll('#reqCol .colreq').forEach(rc => {
+    const rid = rc.dataset.r;
+    rc.addEventListener('mouseenter', () => { rc.classList.add('hot'); document.querySelectorAll('#testCol .coltest').forEach(tc=>{ if(tc.dataset.covers.split(' ').includes(rid)) tc.classList.add('hot'); }); });
+    rc.addEventListener('mouseleave', clear);
+  });
+}
+
+/* ---- FLOW (player) ---- */
+function renderFlow(id, flowId){
+  const s = scr(id), flows = s.tests.filter(t => t.kind === 'flow');
+  if (!flows.length){
+    document.getElementById('root').innerHTML = `<div class="wrap"><div class="emptyview"><h3>No flow tests on this screen</h3><p>${esc(s.name)} is proven by ${kindCounts(s).unit} unit test${kindCounts(s).unit===1?'':'s'}. A flow crosses states or screens along a path.</p><p style="margin-top:16px"><button class="btn dark" onclick="openPromptModal({action:'add',screenId:'${id}',kind:'flow'})">＋ Author a flow test</button></p></div></div>`;
+    return;
+  }
+  const F = flows.find(f => f.id === flowId) || flows[0];
+  const cross = new Set(F.chapters.map(c=>c.screen)).size > 1;
+  document.getElementById('root').innerHTML = `<div class="wrap">
+    <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="openPromptModal({action:'add',screenId:'${id}',kind:'flow'})">＋ New flow<span class="fk" style="color:var(--ai)">hand Claude a prompt</span></button></div>
+    <div class="flowcard">
+      <div class="fhead"><h2>${esc(F.name)}</h2><div style="display:flex;align-items:center;gap:12px"><span class="fmeta">flow ${F.id.toLowerCase()} · ${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''} · <a href="#" onclick="toast('Would open the full recording');return false">▶ recording</a></span><span style="color:var(--line3)">·</span><button class="linkbtn" onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'})">✎ Edit</button><button class="linkbtn danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'})">✕ Remove</button></div></div>
+      <div class="playwrap">
+        <div class="gif" style="margin:0">
+          <div class="gbar"><span id="playBar">flow recording · cut at proves-step timestamps · run ${F.run}</span><span class="rt"><button onclick="playFrom('${id}','${F.id}',0)">⟳ replay flow</button></span></div>
+          <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div></div>
+        </div>
+        <div class="pstat" id="playStatus"></div>
+      </div>
+      <div class="chstrip" id="chStrip"></div>
+    </div>
+    <p class="legend">${cross?'A cross-screen flow — each chapter is a different screen. ':'A single-screen flow — each chapter is a step along the path. '}The flow plays as one story, its recording cut into chapters at the proves-step timestamps. The playhead stops where the flow stopped; click a chapter to seek, click its chips to open the requirement in Focus. Chapters and chips are derived from the steps and coverReqs — nothing here is stored.</p>
+  </div>`;
+  // chapter strip + thumbnails
+  document.getElementById('chStrip').innerHTML = F.chapters.map((ch,i) => {
+    const chips = (ch.reqs||[]).length
+      ? ch.reqs.map(rid => { const r = reqOf(id,rid) || crossReq(rid); const st = r?stateOf(r, r.__s||s):'ok'; const [mk]=MK[st];
+          return `<a class="mchip ${st}" href="${r&&r.__focus?r.__focus:('#/s/'+id+'/focus/'+((s.reqs.findIndex(x=>x.id===rid))+1))}" style="text-decoration:none">${mk} ${rid}</a>`; }).join('')
+      : `<span class="mchip">${ch.kind==='seed'?'fixture':'—'}</span>`;
+    const thumb = ch.kind==='nr'
+      ? `<div class="noev" style="height:72px;gap:1px;padding:0"><b class="st-nr" style="font-size:11px">◌</b><span class="sub" style="font-size:9px">not reached</span></div>`
+      : '';
+    return `<div class="ch" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
+      ${ch.screen?`<div class="chscreen">${esc(ch.screen)}</div>`:''}
+      <div class="thumb" data-ci="${i}">${thumb}</div>
+      <div class="chname">${esc(ch.name)}</div><div class="chcomp">${esc(ch.comp||'')}</div><div class="chips">${chips}</div></div>`;
+  }).join('');
+  F.chapters.forEach((ch,i) => {
+    const box = document.querySelector(`#chStrip .thumb[data-ci="${i}"]`);
+    if (!box) return;
+    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.29, 460, 248);
+    else if (ch.scene) mountStill(box, ch.scene, 0.29, 460, 248);
+  });
+  if (autoPlay) playFrom(id, F.id, 0); else pausedFlow(id, F.id);
+}
+function crossReq(rid){
+  for (const sid of SCREEN_ORDER){ const r = reqOf(sid, rid); if (r){ r.__s = scr(sid); r.__focus = `#/s/${sid}/focus/${scr(sid).reqs.findIndex(x=>x.id===rid)+1}`; return r; } }
+  return null;
+}
+function chEls(){ return [...document.querySelectorAll('#chStrip .ch')]; }
+function pausedFlow(id, flowId){
+  const F = testOf(id, flowId);
+  document.getElementById('stopOv').className = 'stopov';
+  document.querySelectorAll('.playov').forEach(o=>o.remove());
+  const stage = document.getElementById('stPlay'), ch0 = F.chapters[0];
+  const sc = ch0.kind==='seed' ? 'sceneSeed' : ch0.scene;
+  const ctx = { stage, timers:[], t:0 }; if (sc) SCENE[sc](ctx); ctx.timers.forEach(clearTimeout);
+  const c = stage.querySelector('.cur'); if (c) c.remove();
+  chEls().forEach((e,i)=>{ e.className='ch'+(F.chapters[i].kind==='nr'?' nr':''); });
+  const box = stage.parentElement;
+  const ov = el(`<div class="playov"><button>▶ play the flow</button></div>`);
+  ov.querySelector('button').addEventListener('click', ()=>playFrom(id, flowId, 0));
+  box.appendChild(ov);
+  document.getElementById('playStatus').innerHTML = 'paused — press play, or click any chapter';
+}
+function playFrom(id, flowId, start){
+  const F = testOf(id, flowId);
+  if (stopScene){ stopScene(); stopScene = null; }
+  document.getElementById('stopOv').className = 'stopov';
+  document.querySelectorAll('.playov').forEach(o=>o.remove());
+  const stage = document.getElementById('stPlay');
+  function setStates(cur){
+    chEls().forEach((e,i)=>{ const ch=F.chapters[i];
+      e.className = 'ch' + (i<cur?' done':i===cur?' cur':'') + (ch.kind==='nr'?' nr':''); });
+  }
+  function status(i, extra){ document.getElementById('playStatus').innerHTML = `chapter ${i+1} of ${F.chapters.length} — <b style="font-weight:500;color:var(--ink)">${esc(F.chapters[i].name)}</b>${extra?' · '+extra:''}`; }
+  function banner(html, kind){ const ov=document.getElementById('stopOv'); ov.innerHTML=html; ov.className='stopov show '+kind; }
+  function runChapter(i){
+    if (i >= F.chapters.length) return;
+    const ch = F.chapters[i]; setStates(i);
+    if (ch.kind === 'nr'){
+      stage.innerHTML = `<div class="noev" style="min-height:230px"><b class="st-nr">◌ not reached</b><span class="sub">the flow stopped before this chapter — no evidence for this run</span></div>`;
+      status(i, 'not reached'); return;
+    }
+    const sc = ch.kind==='seed' ? 'sceneSeed' : ch.scene;
+    const rid = (ch.reqs||[])[0];
+    status(i, rid ? `proves ${rid}` : '');
+    stopScene = play(stage, SCENE[sc], { loop:false, onEnd:() => {
+      if (ch.fail){
+        chEls()[i].className = 'ch fail';
+        const nr = F.chapters.findIndex(c=>c.kind==='nr'); if (nr>=0) chEls()[nr].className = 'ch nr';
+        banner(`✗ the flow stopped here — ${ch.reqs[0]} failed · everything after is not reached <button class="runone" onclick="playFrom('${id}','${flowId}',0)">⟳ replay</button>`, 'bad');
+        return;
+      }
+      chEls()[i].classList.remove('cur'); chEls()[i].classList.add('done');
+      if (i+1 >= F.chapters.length) banner(`✓ flow complete — every tagged requirement proven <button class="runone" onclick="playFrom('${id}','${flowId}',0)">⟳ replay</button>`, 'ok');
+      else if (!autoPlay) banner(`chapter done <button class="runone" onclick="playFrom('${id}','${flowId}',${i+1})">▶ play next — ${esc(F.chapters[i+1].name)}</button>`, 'neutral');
+      else runChapter(i+1);
+    }});
+  }
+  runChapter(start);
+}
+
+/* =================================================================== */
+/* GIF ENGINE                                                          */
+/* =================================================================== */
+function play(stage, build, opts){
+  opts = opts || {}; let timers = [], dead = false;
+  function cycle(){
+    if (dead) return;
+    stage.innerHTML = '';
+    const ctx = { stage, timers, t:0 };
+    const dur = build(ctx);
+    if (opts.loop === false) timers.push(setTimeout(()=>{ if(!dead && opts.onEnd) opts.onEnd(); }, dur + 700));
+    else timers.push(setTimeout(cycle, dur + 1500));
+  }
+  cycle();
+  return () => { dead = true; timers.forEach(clearTimeout); };
+}
+function mountStill(box, sceneName, scale, w, h){
+  box.querySelectorAll('.stage').forEach(x=>x.remove());
+  const st = document.createElement('div');
+  st.className = 'stage short';
+  st.style.cssText = `width:${w}px;height:${h}px;transform:scale(${scale});transform-origin:top left;`;
+  box.appendChild(st);
+  const ctx = { stage:st, timers:[], t:0 };
+  SCENE[sceneName](ctx);
+  ctx.timers.forEach(clearTimeout);
+  const c = st.querySelector('.cur'); if (c) c.remove();
+  st.querySelectorAll('.assert').forEach(a=>a.remove());
+}
+function at(ctx, d, fn){ ctx.t += d; ctx.timers.push(setTimeout(fn, ctx.t)); }
+function cursor(ctx){
+  const c = el(`<div class="cur" style="left:20px;top:20px"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M1 1 L1 11.5 L4 8.8 L6 13 L8 12 L6 8 L10 8 Z" fill="#1e2330" stroke="#fff" stroke-width="1"/></svg></div>`);
+  ctx.stage.appendChild(c); return c;
+}
+function moveTo(ctx, c, t, dx=4, dy=4){ if(!t) return; const s=ctx.stage.getBoundingClientRect(), r=t.getBoundingClientRect(); c.style.left=(r.left-s.left+r.width/2-dx)+'px'; c.style.top=(r.top-s.top+r.height/2-dy)+'px'; }
+function click(c){ c.classList.add('clicking'); setTimeout(()=>c.classList.remove('clicking'),320); }
+function typeInto(ctx, field, text, per=45){
+  field.classList.add('filled'); field.innerHTML='<span class="caret-i"></span>';
+  for (let i=1;i<=text.length;i++) ctx.timers.push(setTimeout(()=>{ field.innerHTML=text.slice(0,i)+'<span class="caret-i"></span>'; }, per*i));
+  ctx.timers.push(setTimeout(()=>{ field.textContent=text; }, per*text.length+150));
+}
+function assertBox(ctx, kind, text, after){ const a=el(`<div class="assert ${kind}">${text}</div>`); ctx.stage.appendChild(a); at(ctx, after||10, ()=>a.classList.add('show')); }
+
+const ANIMATED = new Set(['sceneR1','sceneR2','sceneR3','sceneR4','sceneR5','sceneR6','sceneR7','sceneOpenDetail','sceneDetailComplete','sceneListReflects']);
+function isAnimated(name){ return ANIMATED.has(name); }
+
+/* =================================================================== */
+/* SCENES                                                              */
+/* =================================================================== */
+const SCENE = {};
+SCENE.sceneSeed = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:230px;gap:6px;color:#5a6376">
+    <div style="font-weight:650;font-size:14px;color:#1e2330">fixture</div>
+    <div style="font-size:12px">storage cleared · clock pinned to <b style="font-weight:600">?now=2026-08-17</b></div>
+    <div style="font-size:11px;color:#8b93a5">every run starts from the same board</div></div>`;
+  return 1400;
+};
+SCENE.sceneR1 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd"><span class="h">Tsumiki</span><span class="n" id="cnt">3</span><span class="l">to do</span></div>
+    <div class="addrow"><div class="field" id="f1">Add a task…</div><button class="go dis" id="go1">Add</button></div>
+    <div id="list1">
+      <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Buy compost</div><div class="meta2">added 2d ago</div></div></div>
+      <div class="trow"><span class="cb on"></span><div class="tb"><div class="ttl2" style="text-decoration:line-through;color:#8b93a5">Sharpen shears</div><div class="meta2"><b>completed</b> yesterday</div></div></div>
+    </div></div>`;
+  const c = cursor(ctx);
+  at(ctx,400,()=>moveTo(ctx,c,ctx.stage.querySelector('#f1')));
+  at(ctx,700,()=>{ click(c); typeInto(ctx,ctx.stage.querySelector('#f1'),'Water the plants'); });
+  at(ctx,300,()=>ctx.stage.querySelector('#go1').classList.remove('dis'));
+  at(ctx,900,()=>moveTo(ctx,c,ctx.stage.querySelector('#go1')));
+  at(ctx,650,()=>{ click(c);
+    ctx.stage.querySelector('#f1').textContent='Add a task…'; ctx.stage.querySelector('#f1').classList.remove('filled');
+    ctx.stage.querySelector('#go1').classList.add('dis');
+    ctx.stage.querySelector('#list1').appendChild(el(`<div class="trow new"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div><div class="meta2">added just now</div></div></div>`));
+    ctx.stage.querySelector('#cnt').textContent='4';
+  });
+  assertBox(ctx,'ok','✓ proves R1 — new row “Water the plants”, unchecked, “added just now”',500);
+  return ctx.t+900;
+};
+SCENE.sceneR2 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad" style="padding-top:30px">
+    <div class="trow"><span class="cb"></span><div class="tb" id="tb2"><div class="ttl2" id="t2">Buy compost</div><div class="meta2" id="m2">added 2d ago</div></div></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div><div class="meta2">added just now</div></div></div></div>`;
+  const c = cursor(ctx);
+  at(ctx,400,()=>moveTo(ctx,c,ctx.stage.querySelector('#t2')));
+  at(ctx,650,()=>{ click(c); setTimeout(()=>click(c),180); });
+  at(ctx,450,()=>{ ctx.stage.querySelector('#tb2').innerHTML=`<div class="edit2 field filled" id="e2" style="min-height:24px">Buy compost</div><div class="meta2">editing — Enter saves · Esc cancels</div>`; });
+  at(ctx,400,()=>{ typeInto(ctx,ctx.stage.querySelector('#e2'),'Buy compost + mulch'); });
+  at(ctx,1300,()=>{ ctx.stage.querySelector('#tb2').innerHTML=`<div class="ttl2">Buy compost + mulch</div><div class="meta2"><b style="color:#4f46e5">edited just now</b></div>`; });
+  assertBox(ctx,'ok','✓ proves R2 — same row, new text, meta flipped to “edited just now”',400);
+  return ctx.t+900;
+};
+SCENE.sceneR3 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad" style="padding-top:20px">
+    <div class="trow" style="display:block">
+      <div style="display:flex;align-items:center;gap:9px"><span class="ring" id="rg3">1/2</span><div class="tb"><div class="ttl2">Plant the balcony</div><div class="meta2">container — no checkbox of its own</div></div></div>
+      <div class="subs2">
+        <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Buy seeds</span></div>
+        <div class="srow2"><span class="scb2"></span><span class="st2">Prepare pots</span></div>
+        <div id="ns3"></div>
+        <div class="subadd2"><div class="sf" id="sf3">Add a sub-task…</div><button class="sgo" id="sg3">Add</button></div>
+      </div></div></div>`;
+  const c = cursor(ctx);
+  at(ctx,400,()=>moveTo(ctx,c,ctx.stage.querySelector('#sf3')));
+  at(ctx,650,()=>{ click(c); typeInto(ctx,ctx.stage.querySelector('#sf3'),'Water in',55); });
+  at(ctx,850,()=>moveTo(ctx,c,ctx.stage.querySelector('#sg3')));
+  at(ctx,600,()=>{ click(c);
+    ctx.stage.querySelector('#ns3').appendChild(el(`<div class="srow2 new"><span class="scb2"></span><span class="st2">Water in</span></div>`));
+    ctx.stage.querySelector('#sf3').textContent='Add a sub-task…'; ctx.stage.querySelector('#sf3').classList.remove('filled');
+    ctx.stage.querySelector('#rg3').textContent='1/3';
+  });
+  assertBox(ctx,'ok','✓ proves R3 — ring reads 1/3 by itself; the parent still has no checkbox',500);
+  return ctx.t+900;
+};
+SCENE.sceneR4 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad" style="padding-top:20px">
+    <div class="trow" style="display:block">
+      <div style="display:flex;align-items:center;gap:9px"><span class="ring" id="rg4">2/3</span><div class="tb"><div class="ttl2" id="pt4">Plant the balcony</div><div class="meta2" id="pm4">2 of 3 done</div></div></div>
+      <div class="subs2">
+        <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Buy seeds</span></div>
+        <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Prepare pots</span></div>
+        <div class="srow2" id="sr4"><span class="scb2" id="sc4"></span><span class="st2">Water in</span></div>
+      </div></div></div>`;
+  const c = cursor(ctx);
+  const done = on => {
+    ctx.stage.querySelector('#sc4').classList.toggle('on',on);
+    ctx.stage.querySelector('#sr4').classList.toggle('sdone',on);
+    const r = ctx.stage.querySelector('#rg4'); r.textContent = on?'3/3':'2/3'; r.classList.toggle('full',on);
+    ctx.stage.querySelector('#pt4').style.cssText = on?'text-decoration:line-through;color:#8b93a5':'';
+    ctx.stage.querySelector('#pm4').innerHTML = on?'<b>completed just now</b> — rolled up':'2 of 3 done — reopened';
+  };
+  at(ctx,400,()=>moveTo(ctx,c,ctx.stage.querySelector('#sc4')));
+  at(ctx,650,()=>{ click(c); done(true); });
+  at(ctx,1400,()=>{ click(c); done(false); });
+  assertBox(ctx,'ok','✓ proves R4 — the parent completed and reopened purely from its children',500);
+  return ctx.t+900;
+};
+SCENE.sceneR5 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd"><span class="h">Tsumiki</span><span class="n" id="cnt5">3</span><span class="l">to do</span></div>
+    <div class="trow" style="display:block">
+      <div style="display:flex;align-items:center;gap:9px"><span class="ring" id="rg5">0/2</span><div class="tb"><div class="ttl2" id="pt5">Plant the balcony</div></div></div>
+      <div class="subs2">
+        <div class="srow2" id="s5a"><span class="scb2" id="c5a"></span><span class="st2">Buy seeds</span></div>
+        <div class="srow2" id="s5b"><span class="scb2" id="c5b"></span><span class="st2">Prepare pots</span></div>
+      </div></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div></div></div></div>`;
+  const c = cursor(ctx);
+  at(ctx,400,()=>moveTo(ctx,c,ctx.stage.querySelector('#c5a')));
+  at(ctx,650,()=>{ click(c); ctx.stage.querySelector('#c5a').classList.add('on'); ctx.stage.querySelector('#s5a').classList.add('sdone'); ctx.stage.querySelector('#rg5').textContent='1/2'; ctx.stage.querySelector('#cnt5').textContent='2'; });
+  at(ctx,900,()=>moveTo(ctx,c,ctx.stage.querySelector('#c5b')));
+  at(ctx,650,()=>{ click(c); ctx.stage.querySelector('#c5b').classList.add('on'); ctx.stage.querySelector('#s5b').classList.add('sdone');
+    const r=ctx.stage.querySelector('#rg5'); r.textContent='2/2'; r.classList.add('full');
+    ctx.stage.querySelector('#pt5').style.cssText='text-decoration:line-through;color:#8b93a5';
+    const n=ctx.stage.querySelector('#cnt5'); n.textContent='2'; n.style.color='#d64b34'; });
+  assertBox(ctx,'bad','✗ proves R5 FAILED — expected “1 to do”, got “2”: the container was counted',500);
+  return ctx.t+1400;
+};
+SCENE.sceneR6 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="siderow">
+      <span class="navp on" id="vAll">All <span class="ct2">4</span></span>
+      <span class="navp">Active <span class="ct2">3</span></span>
+      <span class="navp" id="vToday">Today <span class="ct2">1</span></span>
+      <span class="navp">Completed <span class="ct2">1</span></span></div>
+    <div id="l6">
+      <div class="trow" data-k="today"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div></div><span class="dchip today">today</span></div>
+      <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Buy compost + mulch</div></div><span class="dchip">Fri 22 Aug</span></div>
+      <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Plant the balcony</div></div></div>
+      <div class="trow tdone"><span class="cb on"></span><div class="tb"><div class="ttl2">Sharpen shears</div></div></div>
+    </div></div>`;
+  const c = cursor(ctx);
+  at(ctx,500,()=>moveTo(ctx,c,ctx.stage.querySelector('#vToday')));
+  at(ctx,700,()=>{ click(c);
+    ctx.stage.querySelector('#vAll').classList.remove('on'); ctx.stage.querySelector('#vToday').classList.add('on');
+    ctx.stage.querySelectorAll('#l6 .trow').forEach(r=>{ if(r.dataset.k!=='today') r.style.display='none'; }); });
+  assertBox(ctx,'ok','✓ proves R6 — Today badge reads 1 and exactly 1 row is shown',600);
+  return ctx.t+1200;
+};
+SCENE.sceneR7 = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd"><span class="h">All tasks</span><span class="l" style="margin-left:auto">clock frozen · ?now=2026-08-17</span></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Repot the fern</div><div class="meta2">due 14 Aug</div></div><span class="dchip over" id="ch1">overdue</span></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div><div class="meta2">due 17 Aug</div></div><span class="dchip today" id="ch2">today</span></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Buy compost + mulch</div><div class="meta2">due 22 Aug</div></div><span class="dchip" id="ch3">Fri 22 Aug</span></div>
+    <div class="trow tdone"><span class="cb on"></span><div class="tb"><div class="ttl2">Sharpen shears</div><div class="meta2"><b>completed</b> — no date chip</div></div></div></div>`;
+  const c = cursor(ctx);
+  ['ch1','ch2','ch3'].forEach((id,i)=>{ at(ctx,i===0?500:800,()=>{ const t=ctx.stage.querySelector('#'+id); moveTo(ctx,c,t,-18,4); t.style.outline='2px solid #4f46e5'; t.style.outlineOffset='2px'; setTimeout(()=>{ t.style.outline='none'; },700); }); });
+  assertBox(ctx,'ok','✓ proves R7 — overdue · today · date read off the visible chips; done wears none',700);
+  return ctx.t+1200;
+};
+SCENE.sceneOpenDetail = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd"><span class="h">Tsumiki</span></div>
+    <div class="trow" id="op"><span class="ring">1/3</span><div class="tb"><div class="ttl2">Plant the balcony</div><div class="meta2">3 sub-tasks · tap to open</div></div><span style="color:#8b93a5;font-size:16px">›</span></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div></div></div></div>`;
+  const c = cursor(ctx);
+  at(ctx,500,()=>moveTo(ctx,c,ctx.stage.querySelector('#op')));
+  at(ctx,750,()=>click(c));
+  assertBox(ctx,'ok','→ opening “Plant the balcony” on its own page',500);
+  return ctx.t+900;
+};
+SCENE.sceneDetailComplete = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="crumb">‹ Task list / <b>Plant the balcony</b></div>
+    <div class="hd" style="margin-bottom:10px"><span class="h">Plant the balcony</span><span class="ring" id="dr" style="margin-left:auto">1/3</span></div>
+    <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Buy seeds</span></div>
+    <div class="srow2" id="d2"><span class="scb2" id="dc"></span><span class="st2">Prepare pots</span></div>
+    <div class="srow2"><span class="scb2"></span><span class="st2">Water in</span></div></div>`;
+  const c = cursor(ctx);
+  at(ctx,500,()=>moveTo(ctx,c,ctx.stage.querySelector('#dc')));
+  at(ctx,750,()=>{ click(c); ctx.stage.querySelector('#dc').classList.add('on'); ctx.stage.querySelector('#d2').classList.add('sdone'); ctx.stage.querySelector('#dr').textContent='2/3'; });
+  assertBox(ctx,'ok','✓ proves D1 — sub-task completed from the detail view',500);
+  return ctx.t+1000;
+};
+SCENE.sceneListReflects = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="crumb">‹ back to Task list</div>
+    <div class="trow"><span class="ring" id="lr">2/3</span><div class="tb"><div class="ttl2">Plant the balcony</div><div class="meta2"><b>Prepare pots</b> now done — reflected here</div></div></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div></div></div></div>`;
+  assertBox(ctx,'ok','✓ proves D2 — the list shows the detail edit on return',500);
+  return ctx.t+1300;
+};
+/* static covers / stills */
+SCENE.coverTaskList = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd"><span class="h">Tsumiki</span><span class="n">3</span><span class="l">to do</span></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Water the plants</div><div class="meta2">added just now</div></div><span class="dchip today">today</span></div>
+    <div class="trow"><span class="ring">1/3</span><div class="tb"><div class="ttl2">Plant the balcony</div><div class="meta2">container · 1 of 3 done</div></div></div>
+    <div class="trow"><span class="cb"></span><div class="tb"><div class="ttl2">Repot the fern</div></div><span class="dchip over">overdue</span></div>
+    <div class="trow tdone"><span class="cb on"></span><div class="tb"><div class="ttl2">Sharpen shears</div></div></div></div>`;
+  return 0;
+};
+SCENE.coverTaskDetail = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="crumb">‹ Task list / <b>Plant the balcony</b></div>
+    <div class="hd" style="margin-bottom:10px"><span class="h">Plant the balcony</span><span class="ring" style="margin-left:auto">2/3</span></div>
+    <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Buy seeds</span></div>
+    <div class="srow2 sdone"><span class="scb2 on"></span><span class="st2">Prepare pots</span></div>
+    <div class="srow2"><span class="scb2"></span><span class="st2">Water in</span></div></div>`;
+  return 0;
+};
+SCENE.coverSettings = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd" style="margin-bottom:12px"><span class="h">Settings</span></div>
+    <div class="frow"><label>Dark mode</label><span class="ftoggle on"></span></div>
+    <div class="frow"><label>Compact rows</label><span class="ftoggle"></span></div>
+    <div class="frow" style="border-color:#f0c5ba"><label style="color:#b23a26">Clear all data</label><span style="font-size:11px;color:#b23a26;font-weight:600">danger</span></div></div>`;
+  return 0;
+};
+SCENE.coverSignin = function(ctx){
+  ctx.stage.innerHTML = `<div class="pad">
+    <div class="hd" style="margin-bottom:12px;justify-content:center"><span class="h">Sign in to Tsumiki</span></div>
+    <div class="inp" style="color:#8b93a5">you@example.com</div>
+    <div class="inp" style="color:#8b93a5">password</div>
+    <div class="frow" style="border:0;box-shadow:none;padding:2px 0;margin-bottom:10px"><span class="ftoggle" style="width:30px;height:17px"></span><label style="font-size:12px">Remember me</label></div>
+    <div class="signbtn dis">Sign in</div></div>`;
+  return 0;
+};
+
+route();
+</script>
+</body>
+</html>
