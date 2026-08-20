@@ -68,7 +68,7 @@ const windowed = process.env.BOARD_ONE_WINDOW
 // without every call site threading `page` through. Safe because the suite runs ONE worker
 // (playwright.board.ts workers:1) — one test, one page, at a time.
 let CURRENT_PAGE: Page | null = null
-export const test = windowed.extend<{ page: Page }>({
+export const test = windowed.extend<{ page: Page, _failAggregate: void }>({
   page: async ({ page }, use, testInfo) => {
     CURRENT_PAGE = page
     FLOW_N = 0
@@ -113,7 +113,52 @@ export const test = windowed.extend<{ page: Page }>({
         } catch { /* the recording just could not be saved — nothing more to do */ }
       }
     }
-  }
+  },
+  // A flow ran every step and collected its failures rather than dying at the first (board R10).
+  // Now close the loop: paint ONE final red summary — so the recording's cover frame shows the
+  // failure (not a later green step) and names every part that broke — then FAIL the test with all
+  // of them.
+  //
+  // An AUTO FIXTURE, not test.afterEach (moved 2026-08-21; the human ratified exit honesty): a
+  // module-scope afterEach in this shared, worker-cached module registered only for the FIRST spec
+  // file loaded per worker (spec/_modes, since '_' < 'b'), so under workers:1 every later file
+  // (board, conflicts, dispatch, init) ran with NO aggregate at all — checkReq's continue-on-
+  // failure path pushed to STEP_FAILURES and nothing ever threw. The test reported "passed" and
+  // `npm run e2e` exited 0 over failed proves-steps; only the index stayed honest (coverage reads
+  // the steps' own errors). A fixture on the extended `test` object travels WITH the object into
+  // every importing file, whatever the load order or module caching. It depends on `page` so its
+  // teardown runs BEFORE the page fixture's (reverse setup order): CURRENT_PAGE is still live for
+  // the red summary paint, and the throw lands before the page teardown reads testInfo.status for
+  // the failed-run video finalisation — the exact ordering the afterEach had.
+  _failAggregate: [async ({ page }, use, testInfo) => {
+    void page                       // dependency only — ordering, see above
+    await use()
+    if (!STEP_FAILURES.length) return
+    const f = STEP_FAILURES
+    if (CURRENT_PAGE) {
+      // titles only, no ordinals — beside a strip of R-chips, a "✗ 2." reads like a requirement
+      // number and the whole point of the card is to be unmistakable. The failed list goes on the
+      // note line; the claim is cleared so a stale got/expected doesn't front the summary.
+      CLAIM = null
+      NOTE = f.map(s => '✗ ' + s.title).slice(0, 6).join('\n')
+      await paintHud({
+        head: '✗ ' + f.length + ' of this test’s steps failed',
+        failed: true
+      }).catch(() => {})
+      await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})
+      // Playwright's automatic screenshot fires BEFORE this teardown, so on its own the run's cover
+      // shows the last step's paint — a green frame fronting a failed run. Shoot the red summary
+      // and attach it as a file (the reporter keeps only the LAST .png attachment as the cover).
+      try {
+        const cover = testInfo.outputPath('failure-cover.png')
+        await CURRENT_PAGE.screenshot({ path: cover })
+        await testInfo.attach('failure-cover', { path: cover, contentType: 'image/png' })
+      } catch { /* a closed page loses the cover, never the failure below */ }
+    }
+    const lines = f.map(s => '  ✗ ' + (s.n ? 'step ' + s.n + ' ' : '') + '"' + s.title + '": ' +
+      String(s.message).split('\n')[0]).join('\n')
+    throw new Error(f.length + ' step(s) failed:\n' + lines)
+  }, { auto: true }]
 })
 
 // The BEAT LOG — the run's own timeline, for cutting a voice-over or subtitle track against the
@@ -171,7 +216,7 @@ let FAILED_PAINTED = false
 // Every step that failed THIS test. A flow does NOT abort at the first failure — it records each
 // one here and keeps going, so the recording reaches every step (incl. the ones that scroll a
 // table into view) and the board can show WHICH parts failed, not just the first (board R10). The
-// afterEach hook paints a final red summary and fails the test if this is non-empty.
+// _failAggregate fixture paints a final red summary and fails the test if this is non-empty.
 let STEP_FAILURES: { n: number, title: string, message: string }[] = []
 
 // The REQUIREMENT CHIP STRIP — one chip per id the flow covers, painted into the topbar so a watcher
@@ -184,7 +229,7 @@ function setChip (id: string, state: 'pending' | 'active' | 'pass' | 'fail'): vo
   const chip = REQ_CHIPS.find(c => c.id === id)
   // A requirement proven by SEVERAL checks is proven only if every one passes — so a fail is
   // terminal for the chip: once red, a later passing check of the same id cannot turn it green
-  // again (nor flip it back to ▸ active). The aggregate afterEach still fails the test regardless;
+  // again (nor flip it back to ▸ active). The aggregate fixture still fails the test regardless;
   // this only keeps the strip honest when one id is checked more than once.
   if (chip) { if (chip.state === 'fail') return; chip.state = state }
   else REQ_CHIPS.push({ id, state })
@@ -223,7 +268,7 @@ const HUD = { head: '' }
 // lines. The full text still goes to the board as a `note:` step (emitNote); this is only how the
 // burn-in shows it. `ok` reddens `got` the instant the values disagree, before the assertion throws.
 let CLAIM: { label: string, expected: string, got: string, ok: boolean } | null = null
-// One freeform line (hudNote), or the afterEach failure summary (multi-line, pre-wrapped).
+// One freeform line (hudNote), or the aggregate failure summary (multi-line, pre-wrapped).
 let NOTE = ''
 // The band's fixed height under a recording. Fixed on purpose: the page below is shifted by
 // exactly this much, and a bar that grew with its detail lines would bounce the whole app on
@@ -576,7 +621,7 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
     // fn runs INSIDE a test.step, so a failure marks THAT step failed on the board. The catch is
     // OUTSIDE the step — the error has already left it (so Playwright records the step as failed) —
     // which lets the flow CONTINUE to the next step instead of aborting (board R10). The test is
-    // still failed: afterEach throws the aggregate. The recording keeps rolling through every step.
+    // still failed: _failAggregate throws the aggregate. The recording keeps rolling through every step.
     await test.step(title, async () => { await fn() })
     await paceGate('step-done', '✓ ' + n + '. ' + title, false)
     beat('step-done', '✓ ' + n + '. ' + title)
@@ -639,7 +684,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   }
   // top-level (a requirement-enumeration test, e.g. the board's own suite): continue-on-failure
   // here too, so the test runs through EVERY requirement and the board shows each one's verdict,
-  // not just the first that broke. The test still fails — afterEach throws the aggregate.
+  // not just the first that broke. The test still fails — _failAggregate throws the aggregate.
   CLAIM = null; NOTE = ''
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
   try {
@@ -665,34 +710,3 @@ export function coverReqs (...ids: string[]): void {
   // prove — pending chips included — from the very first paint.
   for (const id of ids) if (!REQ_CHIPS.some(c => c.id === id)) REQ_CHIPS.push({ id, state: 'pending' })
 }
-
-// A flow ran every step and collected its failures rather than dying at the first (board R10). Now
-// close the loop: paint ONE final red summary — so the recording's cover frame shows the failure
-// (not a later green step) and names every part that broke — then FAIL the test with all of them.
-test.afterEach(async ({}, testInfo) => {
-  if (!STEP_FAILURES.length) return
-  const f = STEP_FAILURES
-  if (CURRENT_PAGE) {
-    // titles only, no ordinals — beside a strip of R-chips, a "✗ 2." reads like a requirement
-    // number and the whole point of the card is to be unmistakable. The failed list goes on the
-    // note line; the claim is cleared so a stale got/expected doesn't front the summary.
-    CLAIM = null
-    NOTE = f.map(s => '✗ ' + s.title).slice(0, 6).join('\n')
-    await paintHud({
-      head: '✗ ' + f.length + ' of this test’s steps failed',
-      failed: true
-    }).catch(() => {})
-    await CURRENT_PAGE.waitForTimeout(1400).catch(() => {})
-    // Playwright's automatic screenshot fires BEFORE this hook, so on its own the run's cover
-    // shows the last step's paint — a green frame fronting a failed run. Shoot the red summary
-    // and attach it as a file (the reporter keeps only the LAST .png attachment as the cover).
-    try {
-      const cover = testInfo.outputPath('failure-cover.png')
-      await CURRENT_PAGE.screenshot({ path: cover })
-      await testInfo.attach('failure-cover', { path: cover, contentType: 'image/png' })
-    } catch { /* a closed page loses the cover, never the failure below */ }
-  }
-  const lines = f.map(s => '  ✗ ' + (s.n ? 'step ' + s.n + ' ' : '') + '"' + s.title + '": ' +
-    String(s.message).split('\n')[0]).join('\n')
-  throw new Error(f.length + ' step(s) failed:\n' + lines)
-})
