@@ -336,34 +336,57 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // line — which is what the R5 test above asserts. (It was served by a row-hover wire until the
     // Columns view retired, 2026-08-18; that wire went with the view.) So the many-to-many listing
     // is proven; it is simply proven where it now lives, not in a covers line.
-    const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
-      const scr = dt.getAttribute('data-screen')
-      const rows = [...dt.querySelectorAll('.reqpane .req')]
-      // Harvest tags from .test NODES, not from .testpane: the Focus reader (default view, eager
-      // since R13) BORROWS the primary covering test's node out of the pane, so a pane-scoped
-      // harvest intermittently missed that test's tags — its uniquely-tagged reqs then read
-      // "proven without a test tagging it" as a FALSE positive (the exact CLAUDE.md loadRuns-window
-      // symptom; bit ~half of full-suite folds, 2026-08-20). Only a real test node carries
-      // `.tags .tag[data-r]`, wherever it is currently parked (pane or reader), so the assertion
-      // keeps its full power: an untagged-proven requirement is still caught.
-      const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
-        .map(el => el.getAttribute('data-r')))
-      const card = document.querySelector('#home .card[data-screen="' + scr + '"] .pcount')
-      return {
-        screen: scr,
-        card: (card && card.textContent || '').trim(),
-        proven: rows.filter(r => r.getAttribute('data-state') === 'proven').length,
-        // a proven requirement its own screen's tests never tag. Coverage rides on the tag (R5), and
-        // this lookup is PER-PANE, so a cross-screen qualified tag would break it BOTH ways and both
-        // must be fixed together: the owning screen sees a proven requirement with no local tag and
-        // fails here, while the tagging screen — testRow strips the qualifier, rendering
-        // `asset-plan:R5` as a bare data-r="R5" (build-board.mjs ~146) — would falsely satisfy this
-        // check for its OWN R5. Widen to qualified ids on both sides the day one is introduced.
-        untaggedProven: rows
-          .filter(r => r.getAttribute('data-state') === 'proven' && !tagged.has(r.getAttribute('data-r')))
-          .map(r => r.getAttribute('data-r'))
+    const surfaces = await page.locator('.dt[data-screen]').evaluateAll(dts => {
+      // Widened to qualified ids, 2026-08-21 — the day the old comment below predicted arrived
+      // long ago: `dispatch:R7` is proven by THIS spec's qualified cross-screen tag, which a
+      // per-pane harvest cannot see (testRow strips the qualifier to a bare data-r="R7" display in
+      // BOARD's pane; dispatch's own pane carries no chip at all). Whenever the committed fold was
+      // CURRENT — ranAt newer than spec/board's source mtimes, i.e. exactly the settled state after
+      // a fold commit — dispatch R7 read proven-without-a-local-tag and this walk false-positived
+      // board:R4=fail (instance 2 of the walk flake; instance 1 was the reader-borrow, 1e17454).
+      // Every "clean" run had simply been made with board sources EDITED after the fold, staling
+      // the dispatch:R7 proof mid-run (spec-store: ranAt < srcMs(screen)) so the row honestly read
+      // unproven — not a race, an edit-then-fold cadence artifact. Fix per the old comment's own
+      // prescription: each chip now carries its ORIGINAL id in data-q (build-board testRow), and
+      // tagged(X) = { data-r of chips in X's own dt } ∪ { rid | ANY dt has a chip with
+      // data-q === X+':'+rid }. Assertion power UNCHANGED (rule 4 — the walk was wrong, the board
+      // honest): a genuinely untagged-proven requirement still has no chip ANYWHERE whose exact
+      // qualified data-q claims it, so it is still caught; the union admits only ids a real tag
+      // chip claims for that screen.
+      const cross = {}      // screen -> Set of rids any chip anywhere tags with a qualified id
+      for (const dt of dts) {
+        for (const el of dt.querySelectorAll('.test .tags .tag[data-q]')) {
+          const q = el.getAttribute('data-q') || ''
+          const i = q.indexOf(':')
+          if (i > 0) (cross[q.slice(0, i)] ||= new Set()).add(q.slice(i + 1))
+        }
       }
-    }))
+      return dts.map(dt => {
+        const scr = dt.getAttribute('data-screen')
+        const rows = [...dt.querySelectorAll('.reqpane .req')]
+        // Harvest tags from .test NODES, not from .testpane: the Focus reader (default view, eager
+        // since R13) BORROWS the primary covering test's node out of the pane, so a pane-scoped
+        // harvest intermittently missed that test's tags — its uniquely-tagged reqs then read
+        // "proven without a test tagging it" as a FALSE positive (the exact CLAUDE.md loadRuns-window
+        // symptom; bit ~half of full-suite folds, 2026-08-20). Only a real test node carries
+        // `.tags .tag[data-r]`, wherever it is currently parked (pane or reader), so the assertion
+        // keeps its full power: an untagged-proven requirement is still caught.
+        const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
+          .map(el => el.getAttribute('data-r')))
+        for (const rid of (cross[scr] || [])) tagged.add(rid)
+        const card = document.querySelector('#home .card[data-screen="' + scr + '"] .pcount')
+        return {
+          screen: scr,
+          card: (card && card.textContent || '').trim(),
+          proven: rows.filter(r => r.getAttribute('data-state') === 'proven').length,
+          // a proven requirement no test anywhere tags — local bare tags and board-wide qualified
+          // data-q tags both count (widened 2026-08-21, see above)
+          untaggedProven: rows
+            .filter(r => r.getAttribute('data-state') === 'proven' && !tagged.has(r.getAttribute('data-r')))
+            .map(r => r.getAttribute('data-r'))
+        }
+      })
+    })
     expect(surfaces.length).toBeGreaterThan(0)
     for (const s of surfaces) {
       expect(s.card, s.screen + ' — the card must state its proven count').toMatch(/^\d+ \/ \d+ proven$/)
@@ -423,22 +446,38 @@ test('A requirement names the tests that cover it', async ({ page }) => {
     // line in it. `.covers` is rendered for UNPROVEN rows only (see the note on R4's test, which
     // also explains why R5's "a requirement lists every test that covers it" survives that removal —
     // Focus's proof line carries it, resolved by tag). The old assertion was unsatisfiable the moment board had a single
-    // proven requirement. Same per-pane / stripped-qualifier caveat as R4's check applies here.
-    const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => dts.map(dt => {
-      // .test-scoped, not .testpane-scoped — same reader-borrow false positive as R4's walk (see
-      // the comment there; fixed together 2026-08-20). hasTests counts nodes the same way.
-      const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
-        .map(el => el.getAttribute('data-r')))
-      const rows = [...dt.querySelectorAll('.reqpane .req')]
-      return {
-        screen: dt.getAttribute('data-screen'),
-        hasTests: dt.querySelectorAll('.test').length > 0,
-        untagged: rows.filter(r => !tagged.has(r.getAttribute('data-r'))).length,
-        untaggedGreen: rows
-          .filter(r => !tagged.has(r.getAttribute('data-r')) && r.getAttribute('data-state') === 'proven')
-          .map(r => r.getAttribute('data-r'))
+    // proven requirement. The per-pane / stripped-qualifier caveat R4's check carried was resolved
+    // 2026-08-21: both walks now union qualified data-q tags board-wide (see R4's comment).
+    const screens = await page.locator('.dt[data-screen]').evaluateAll(dts => {
+      // Union in qualified cross-screen tags via data-q, same as R4's walk (widened together
+      // 2026-08-21 — see the comment there for the mechanism and why assertion power is
+      // unchanged): dispatch:R7 is proven by THIS spec's qualified tag, invisible per-pane.
+      const cross = {}
+      for (const dt of dts) {
+        for (const el of dt.querySelectorAll('.test .tags .tag[data-q]')) {
+          const q = el.getAttribute('data-q') || ''
+          const i = q.indexOf(':')
+          if (i > 0) (cross[q.slice(0, i)] ||= new Set()).add(q.slice(i + 1))
+        }
       }
-    }))
+      return dts.map(dt => {
+        const scr = dt.getAttribute('data-screen')
+        // .test-scoped, not .testpane-scoped — same reader-borrow false positive as R4's walk (see
+        // the comment there; fixed together 2026-08-20). hasTests counts nodes the same way.
+        const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
+          .map(el => el.getAttribute('data-r')))
+        for (const rid of (cross[scr] || [])) tagged.add(rid)
+        const rows = [...dt.querySelectorAll('.reqpane .req')]
+        return {
+          screen: scr,
+          hasTests: dt.querySelectorAll('.test').length > 0,
+          untagged: rows.filter(r => !tagged.has(r.getAttribute('data-r'))).length,
+          untaggedGreen: rows
+            .filter(r => !tagged.has(r.getAttribute('data-r')) && r.getAttribute('data-state') === 'proven')
+            .map(r => r.getAttribute('data-r'))
+        }
+      })
+    })
     expect(screens.some(s => s.hasTests && s.untagged > 0)).toBeTruthy()   // the case that makes it real
     for (const s of screens) {
       expect(s.untaggedGreen, s.screen + ' — no test tags these, so none may read proven').toEqual([])

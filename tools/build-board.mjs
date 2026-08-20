@@ -281,11 +281,16 @@ const planRow = (st, i) =>
 // with the flow title, the coverage tags, and a status chip; opens to the recording, the
 // Run/Watch/Logs/Steps buttons, and the numbered plan steps (loadRuns overlays outcomes). There is
 // no separate screenshot strip — the recording (its still as the cover) is the one artifact.
-const testRow = (s, plan, t) => {
+// Exported (like renderBody/gridProof) so the tag-chip contract is unit-testable directly
+// (tools/testrow-tags.test.mjs). A chip DISPLAYS the bare id (data-r) but also carries the
+// ORIGINAL, possibly qualified id in data-q — a qualified cross-screen tag (`dispatch:R7` in the
+// board spec) stripped to bare data-r alone is invisible to the owning screen's pane, which is how
+// the R4/R6 self-check walks false-positived on dispatch:R7 (2026-08-20; the walks union data-q).
+export const testRow = (s, plan, t) => {
   const coverIds = t ? Object.keys(t.reqs || {}) : (plan.covers || [])
   const tags = coverIds.map(qid => {
     const rid = qid.includes(':') ? qid.split(':').pop() : qid
-    return `<span class="tag" data-r="${esc(rid)}">${esc(rid)}</span>`
+    return `<span class="tag" data-r="${esc(rid)}" data-q="${esc(qid)}">${esc(rid)}</span>`
   }).join('')
   const status = !t ? chip('gone', 'mark o', 'not run')
     : t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
