@@ -142,6 +142,16 @@ export function flattenSteps (steps) {
 // title, so the board can show a test's own shots under that test row rather than a heap of images
 // nobody can attribute. Playwright hands the reporter each test's attachments directly, so this is
 // exact — no guessing from folder names.
+// Only a test that actually RAN may be recorded. Playwright invokes custom reporters for
+// `--list` too — onBegin/onEnd fire with the full suite and ZERO results — and an unexecuted
+// test's outcome() is 'skipped', which the ok-check below reads as a FAILURE. Before this guard
+// (2026-08-21) a bare `npx playwright test --list` therefore recorded every case as failed-in-0ms,
+// folded board-wide fail over the real index, and the poisoned board.html broke the next real
+// suite run. An unattempted case is not a failed case: it leaves NO record, so the fold keeps
+// whatever honest state stood before (this also stops a run that dies before its first test — or
+// a test.skip — from writing fake reds). Pure and exported for tools/reporter-guard.test.mjs.
+export const attempted = test => ((test.results || []).length > 0)
+
 export default class ResultsIndexReporter {
   onBegin (_config, suite) { this.suite = suite }
 
@@ -154,6 +164,7 @@ export default class ResultsIndexReporter {
     // changed since — reporters run in a normal node process, so the clock is available here
     const ranAt = Date.now()
     for (const test of this.suite.allTests()) {
+      if (!attempted(test)) continue   // never ran (a --list, an aborted boot, a skip) — no record
       const file = String(test.location?.file || '')
       const rel = file.split('/spec/')[1]
       if (!rel) continue
