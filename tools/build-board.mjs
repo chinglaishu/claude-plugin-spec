@@ -285,7 +285,7 @@ const planRow = (st, i) =>
 // (tools/testrow-tags.test.mjs). A chip DISPLAYS the bare id (data-r) but also carries the
 // ORIGINAL, possibly qualified id in data-q — a qualified cross-screen tag (`dispatch:R7` in the
 // board spec) stripped to bare data-r alone is invisible to the owning screen's pane, which is how
-// the R4/R6 self-check walks false-positived on dispatch:R7 (2026-08-20; the walks union data-q).
+// the R4/R6 self-check walks false-positived on dispatch:R7 (2026-08-21; the walks union data-q).
 export const testRow = (s, plan, t) => {
   const coverIds = t ? Object.keys(t.reqs || {}) : (plan.covers || [])
   const tags = coverIds.map(qid => {

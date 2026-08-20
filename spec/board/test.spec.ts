@@ -353,6 +353,13 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
       // honest): a genuinely untagged-proven requirement still has no chip ANYWHERE whose exact
       // qualified data-q claims it, so it is still caught; the union admits only ids a real tag
       // chip claims for that screen.
+      //   Closed same day (review m1): the LOCAL term admits a chip only when its data-q is
+      // colon-free (genuinely bare, or a legacy chip with no data-q at all). A STRIPPED qualified
+      // chip — board's data-r="R7" data-q="dispatch:R7" — must satisfy dispatch via the union,
+      // never the tagging screen's OWN R7 via its bare data-r display: that was the "tagging
+      // screen falsely satisfies its own check" direction the pre-widening comment said must be
+      // fixed together. board:R7 is genuinely checkReq'd today, so this tightens power with no
+      // behavior change on the current tree.
       const cross = {}      // screen -> Set of rids any chip anywhere tags with a qualified id
       for (const dt of dts) {
         for (const el of dt.querySelectorAll('.test .tags .tag[data-q]')) {
@@ -372,6 +379,7 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
         // `.tags .tag[data-r]`, wherever it is currently parked (pane or reader), so the assertion
         // keeps its full power: an untagged-proven requirement is still caught.
         const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
+          .filter(el => !(el.getAttribute('data-q') || '').includes(':'))   // bare only — see m1 note above
           .map(el => el.getAttribute('data-r')))
         for (const rid of (cross[scr] || [])) tagged.add(rid)
         const card = document.querySelector('#home .card[data-screen="' + scr + '"] .pcount')
@@ -452,6 +460,9 @@ test('A requirement names the tests that cover it', async ({ page }) => {
       // Union in qualified cross-screen tags via data-q, same as R4's walk (widened together
       // 2026-08-21 — see the comment there for the mechanism and why assertion power is
       // unchanged): dispatch:R7 is proven by THIS spec's qualified tag, invisible per-pane.
+      // And like R4's walk (review m1, same day), the LOCAL term below admits only chips whose
+      // data-q is colon-free — a stripped qualified chip counts for its target screen via the
+      // union, never for the tagging screen's own rid.
       const cross = {}
       for (const dt of dts) {
         for (const el of dt.querySelectorAll('.test .tags .tag[data-q]')) {
@@ -465,6 +476,7 @@ test('A requirement names the tests that cover it', async ({ page }) => {
         // .test-scoped, not .testpane-scoped — same reader-borrow false positive as R4's walk (see
         // the comment there; fixed together 2026-08-20). hasTests counts nodes the same way.
         const tagged = new Set([...dt.querySelectorAll('.test .tags .tag[data-r]')]
+          .filter(el => !(el.getAttribute('data-q') || '').includes(':'))   // bare only — see m1 note
           .map(el => el.getAttribute('data-r')))
         for (const rid of (cross[scr] || [])) tagged.add(rid)
         const rows = [...dt.querySelectorAll('.reqpane .req')]
