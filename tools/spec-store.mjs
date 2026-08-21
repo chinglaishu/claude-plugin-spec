@@ -4,11 +4,12 @@
 // approval could be written against one value and compared against another, and staleness would
 // be quietly wrong — which is the single failure this whole product cannot have.
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, renameSync, rmSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
+import { foldEvidence } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
 
@@ -201,26 +202,39 @@ export function parseReport (path = RESULTS) {
 // five tests — the board understating its own coverage, which is the same species of lie as
 // overstating it. A FULL screen run still replaces, because there the report is authoritative and
 // a merge would keep a test that has since been deleted from the file.
-export function foldByScreen (fresh, { partial = false } = {}) {
+export function foldByScreen (fresh, { partial = false, evidence = null } = {}) {
   const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
   for (const [screen, r] of Object.entries(fresh)) {
     const prev = index[screen]
     // `provenHashes` (Changed-drift, board R4's fifth word) rides the screen's index entry and is
     // FOLDED like everything else here — a fresh report replaces the tests but must never clear the
     // pins of requirements it did not pass this run, so the previous pins carry over and
-    // stampProvenHashes below re-stamps only what passed.
+    // stampProvenHashes below re-stamps only what passed. `evidence` (Task 15) rides the entry the
+    // same way: the harvest below re-folds only the requirements this run photographed.
     const pins = prev?.provenHashes
+    const ev = prev?.evidence
+    const carried = { ...(pins ? { provenHashes: pins } : {}), ...(ev ? { evidence: ev } : {}) }
     if (partial && prev && Array.isArray(prev.tests)) {
       const byTitle = new Map(prev.tests.map(t => [t.title, t]))
       for (const t of r.tests) byTitle.set(t.title, t)
       const tests = [...byTitle.values()]
-      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt, ...(pins ? { provenHashes: pins } : {}) }
-    } else index[screen] = { ...r, ...(pins ? { provenHashes: pins } : {}) }
+      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt, ...carried }
+    } else index[screen] = { ...r, ...carried }
   }
   // Pin the proof text (Changed-drift): for every requirement this run's tests touched whose folded
   // status is now PASS, stamp a content hash of its wording at this moment. Compared at derive time
   // (enrichReqs) against the current text — a mismatch on a still-passing requirement reads Changed.
   stampProvenHashes(fresh, index)
+  // Fold this run's harvested EVIDENCE (Task 15, D2 — frames + clip window, the raw material any
+  // renderer of proof media needs; nothing reads it yet). Per requirement onto the requirement's
+  // screen, fold-never-replace (tools/evidence.mjs, unit-tested); the superseded files it names —
+  // e.g. a stale clip a ffmpeg-less refold replaced with frames alone — are deleted so disk stays
+  // bounded. Deletion is best-effort: a missing file is already what pruning wanted.
+  if (evidence && Object.keys(evidence).length) {
+    for (const p of foldEvidence(index, evidence)) {
+      try { rmSync(join(ROOT, p), { force: true }) } catch { /* already gone */ }
+    }
+  }
   // drop screens whose directory is gone — a deleted screen should not haunt the column
   for (const screen of Object.keys(index)) if (!existsSync(join(SPEC, screen))) delete index[screen]
   // temp-then-rename: two runs can fold at once (a board-started run while the suite runs), and a

@@ -143,7 +143,8 @@ test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
     `  }))\n` +
     `})\n`,
   {}, 'chip fails red')
-  // the aggregate afterEach fails the test — expected; the chip observations rode out in the sidecar.
+  // the aggregate auto fixture (_failAggregate, Task 16) fails the test — expected; the chip
+  // observations rode out in the sidecar.
   assert.notEqual(r.status, 0, 'a flow with a failed check must fail')
   const s = LAST.side
   assert.ok(s, 'the spec wrote its observations before the aggregate failure')

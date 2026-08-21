@@ -22,6 +22,10 @@ export const FILES = [
   // pure requirement-text hashing (two scopes) — imported by spec-store.mjs for the Changed-drift
   // pin (board R4's fifth word), so the vendored store cannot load without it (guard-caught too).
   'tools/reqhash.mjs',
+  // pure evidence-harvest logic (Task 15, D2): clip windows + ffmpeg args + the per-requirement
+  // fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
+  // scaffolded project can load neither without it (the same guard-caught class of miss).
+  'tools/evidence.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs

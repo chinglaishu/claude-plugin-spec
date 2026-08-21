@@ -148,7 +148,12 @@ change.
 - **Per-case records must be recorded by CLI runs too, and folded, never replaced.** A record read
   out of "the newest run" blanks every case that run did not cover, and a reporter that only records
   when the BOARD started the run leaves `npm run e2e` contributing nothing — both showed up as "only
-  the test I clicked has steps". Screenshots stay board-only; steps, logs and coverage are always recorded.
+  the test I clicked has steps". A run's own screenshots stay board-only; steps, logs and coverage are
+  always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
+  before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
+  reporter folds the pair (plus the proves-step's clip window, plus a looping clip when ffmpeg and a
+  recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs too. Nothing renders
+  this yet — it is the raw material for the later proof-media task.
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A

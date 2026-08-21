@@ -642,6 +642,25 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
   }
 }
 
+// EVIDENCE FRAMES (Task 15; D2 — every proof medium is a view over the ONE run recording, and this
+// is the raw material a renderer needs). Around every checkReq assertion body the page is
+// photographed twice — the beat's BEFORE/AFTER phase pair — and the pair rides out of the run as
+// attachments named `evidence <id> before|after`. The reporter (spec/_results-reporter.mjs) folds
+// them, with the proves-step's clip window, into the results index. A live page.screenshot, so it
+// works in a plain CLI run — no board, no video needed. Strictly a BY-PRODUCT, never a gate: any
+// failure is swallowed and the shot itself is time-bounded, so a slow or dying page costs at most
+// the bound and never fails the test.
+async function snapEvidence (id: string, phase: 'before' | 'after'): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page) return
+  try {
+    const info = test.info()
+    const file = info.outputPath(`evidence-${id.replace(/[^a-zA-Z0-9_.-]+/g, '_')}-${phase}.png`)
+    await page.screenshot({ path: file, timeout: 2500 })
+    info.attachments.push({ name: `evidence ${id} ${phase}`, path: file, contentType: 'image/png' })
+  } catch { /* evidence is a by-product — the proof is the assertion, never the photo */ }
+}
+
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
 // covers (qualified, e.g. `asset-plan:R5`, so a flow can prove another screen's requirement) and
 // asserts each on something that would fail without it. `checkReq(id, fn)` runs one such assertion
@@ -664,6 +683,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // and the chip advances ▸ → ✓/✕ so the strip tracks the proof through the whole flow.
     await emitNote('▸ proving ' + id + (title ? ' — ' + title : ''))
     await paintHud({})
+    await snapEvidence(id, 'before')
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
@@ -679,6 +699,9 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
       await paceGate('req-done', id + ' fail', false)
       beat('req-done', id + ' fail')
       throw err
+    } finally {
+      // the AFTER frame lands pass or fail — a failed proof's pair shows the state it broke in
+      await snapEvidence(id, 'after')
     }
     return
   }
@@ -687,6 +710,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // not just the first that broke. The test still fails — _failAggregate throws the aggregate.
   CLAIM = null; NOTE = ''
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
+  await snapEvidence(id, 'before')
   try {
     await test.step('proves ' + id, async () => { await fn() })
     setChip(id, 'pass')
@@ -702,6 +726,10 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     beat('req-done', id + ' fail')
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700 + recordHold(0)).catch(() => {})
+  } finally {
+    // the AFTER frame lands pass or fail — here after the verdict paint, so a failed proof's
+    // after-frame carries the red bar a renderer would want to show
+    await snapEvidence(id, 'after')
   }
 }
 export function coverReqs (...ids: string[]): void {

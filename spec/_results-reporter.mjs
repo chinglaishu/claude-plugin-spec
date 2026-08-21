@@ -1,8 +1,9 @@
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, copyFileSync, mkdirSync, existsSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
-import { join, relative } from 'node:path'
+import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
-import { coverageFromTest } from '../tools/coverage.mjs'
+import { coverageFromTest, qualify } from '../tools/coverage.mjs'
+import { clipWindow, ffmpegClipArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -152,6 +153,56 @@ export function flattenSteps (steps) {
 // a test.skip — from writing fake reds). Pure and exported for tools/reporter-guard.test.mjs.
 export const attempted = test => ((test.results || []).length > 0)
 
+// Is ffmpeg on this box? Auto-detected exactly like piper/ffmpeg in the narrate/serve tools —
+// probed once, and its ABSENCE is never an error (Task 15 rule: without ffmpeg the frame pair
+// alone is the evidence; the clip is a bonus cut only where the recording and the tool both exist).
+let FFMPEG
+function ffmpegOk () {
+  if (FFMPEG !== undefined) return FFMPEG
+  try { execFileSync('ffmpeg', ['-version'], { stdio: 'ignore' }); FFMPEG = true } catch { FFMPEG = false }
+  return FFMPEG
+}
+
+// Turn the run's raw evidence harvest ({qid: {before, after, window, video}} with attachment paths
+// in the run's output dir, pruned with it) into durable index entries: copy each frame pair to its
+// deterministic home (spec/<screen>/evidence/<rid>.*.png — overwriting is the retention rule), cut
+// the looping clip when a recording and ffmpeg exist, and return {qid: entry} for the fold.
+// Best-effort throughout — a frame that cannot be copied is dropped, never a failed run — and it
+// NEVER creates a screen directory the tree does not have (a stray tag must not materialise a
+// screen; the state guard would have nothing to remove because nothing may appear).
+function harvestEvidence (harvest, ranAt) {
+  const out = {}
+  const runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
+  for (const [qid, h] of Object.entries(harvest)) {
+    const scr = qid.slice(0, qid.indexOf(':'))
+    const rid = qid.slice(qid.indexOf(':') + 1)
+    if (!scr || !existsSync(join(process.cwd(), 'spec', scr))) continue
+    const paths = evidencePaths(scr, rid)
+    try { mkdirSync(join(process.cwd(), paths.dir), { recursive: true }) } catch { continue }
+    const entry = {
+      before: null,
+      after: null,
+      clip: null,
+      window: h.window || null,
+      runId,
+      at: new Date(ranAt).toISOString()
+    }
+    for (const phase of ['before', 'after']) {
+      if (!h[phase]) continue
+      try { copyFileSync(h[phase], join(process.cwd(), paths[phase])); entry[phase] = paths[phase] } catch { /* dropped, never fatal */ }
+    }
+    if (h.video && h.window && existsSync(h.video) && ffmpegOk()) {
+      try {
+        execFileSync('ffmpeg', ffmpegClipArgs(h.video, h.window, join(process.cwd(), paths.clip)),
+          { stdio: 'ignore', timeout: 30000 })
+        if (existsSync(join(process.cwd(), paths.clip))) entry.clip = paths.clip
+      } catch { /* no clip — the frame pair alone is the evidence */ }
+    }
+    if (entry.before || entry.after) out[qid] = entry
+  }
+  return out
+}
+
 export default class ResultsIndexReporter {
   onBegin (_config, suite) { this.suite = suite }
 
@@ -159,6 +210,7 @@ export default class ResultsIndexReporter {
     if (!this.suite) return
     const byScreen = {}
     const shotsByTest = {}
+    const evidenceHarvest = {}   // qid → {before, after, window, video} raw paths, folded run-wide
     let totalMs = 0
     // a stable stamp for "when this run happened", so a pass can later be checked against what has
     // changed since — reporters run in a normal node process, so the clock is available here
@@ -220,13 +272,30 @@ export default class ResultsIndexReporter {
       // keepalive page that is never driven anywhere; Playwright screenshots every page in the
       // context, so that blank page was being filed under "what this test saw" ahead of the real
       // one. The page a test actually worked in is the last one it opened.
-      const allShots = atts.filter(a => /\.png$/i.test(a.path || '')).map(a => relative(process.cwd(), a.path))
+      // Evidence frames are per-REQUIREMENT material, not "what this test saw" — keep them out of
+      // the cover/shots selection or a checkReq's after-frame would displace the real cover.
+      const allShots = atts.filter(a => /\.png$/i.test(a.path || '') && !parseEvidenceAttachment(a.name))
+        .map(a => relative(process.cwd(), a.path))
       const shots = allShots.slice(-1)
       const video = atts.find(a => /\.webm$/i.test(a.path || ''))
       // The DETAIL STEPS of the case — every action and check Playwright ran, in order and nested,
       // so a test case can be expanded to see exactly what it did. Verbose, so it lives in the
       // per-run record (pruned with the run), never in the committed index.
       const steps = flattenSteps((test.results || []).slice(-1)[0]?.steps)
+      // EVIDENCE HARVEST (Task 15, D2): pick up the before/after phase pair checkReq attached for
+      // each requirement, plus the proves-step's clip window off the recorded step times (t/d —
+      // Playwright already stamped them; no re-clocking) and the run's video when there is one.
+      // Qualified to the requirement's screen with the SAME rule coverage uses, so an `x:R3` tag's
+      // evidence lands on screen x. Folded run-wide: the last capture of a requirement wins.
+      for (const a of atts) {
+        const tag = parseEvidenceAttachment(a.name)
+        if (!tag || !a.path) continue
+        const qid = qualify(tag.id, screen)
+        const h = (evidenceHarvest[qid] ||= {})
+        h[tag.phase] = a.path
+        h.window = clipWindow(steps, qid) || h.window || null
+        if (video?.path) h.video = video.path
+      }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.
       shotsByTest[test.title] = {
@@ -240,7 +309,12 @@ export default class ResultsIndexReporter {
       // BOARD_PARTIAL is set by the server when it filtered the run to a subset — then this
       // report describes only the tests that ran, and the rest must keep their existing results.
       const partial = !!process.env.BOARD_PARTIAL
-      try { foldByScreen(byScreen, { partial }) } catch (err) { console.error('results-index fold failed:', err) }
+      // The evidence folds in the SAME read-modify-write as the results (fold, never replace): a
+      // requirement this run proved gets its fresh frames + window; one it did not touch keeps its
+      // existing evidence. Harvest first (copies + optional clip cuts), fold second.
+      let evidence = {}
+      try { evidence = harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
+      try { foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
 
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so
