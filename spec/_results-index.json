@@ -6,7 +6,7 @@
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 168,
+        "ms": 289,
         "error": null,
         "line": 33,
         "reqs": {
@@ -16,7 +16,7 @@
       {
         "title": "A requirement and its proof read side by side, each scrolling on its own",
         "ok": true,
-        "ms": 409,
+        "ms": 510,
         "error": null,
         "line": 49,
         "reqs": {
@@ -26,7 +26,7 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 260,
+        "ms": 327,
         "error": null,
         "line": 81,
         "reqs": {
@@ -36,7 +36,7 @@
       {
         "title": "Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself",
         "ok": true,
-        "ms": 534,
+        "ms": 691,
         "error": null,
         "line": 136,
         "reqs": {
@@ -46,7 +46,7 @@
       {
         "title": "Story-step evidence renders from the test definition",
         "ok": true,
-        "ms": 159,
+        "ms": 241,
         "error": null,
         "line": 249,
         "reqs": {
@@ -56,7 +56,7 @@
       {
         "title": "R10 — the player plays the VOICED recording when a run produced one",
         "ok": true,
-        "ms": 229,
+        "ms": 325,
         "error": null,
         "line": 267,
         "reqs": {
@@ -66,7 +66,7 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 190,
+        "ms": 265,
         "error": null,
         "line": 298,
         "reqs": {
@@ -76,7 +76,7 @@
       {
         "title": "A test tags the requirements it covers — and Focus serves that link",
         "ok": true,
-        "ms": 248,
+        "ms": 324,
         "error": null,
         "line": 413,
         "reqs": {
@@ -86,7 +86,7 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 144,
+        "ms": 231,
         "error": null,
         "line": 435,
         "reqs": {
@@ -96,7 +96,7 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 138,
+        "ms": 244,
         "error": null,
         "line": 500,
         "reqs": {
@@ -106,7 +106,7 @@
       {
         "title": "No acceptance gate — nothing on the detail waits to be accepted",
         "ok": true,
-        "ms": 157,
+        "ms": 260,
         "error": null,
         "line": 512,
         "reqs": {
@@ -116,7 +116,7 @@
       {
         "title": "The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers",
         "ok": true,
-        "ms": 669,
+        "ms": 788,
         "error": null,
         "line": 532,
         "reqs": {
@@ -126,7 +126,7 @@
       {
         "title": "Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached",
         "ok": true,
-        "ms": 388,
+        "ms": 479,
         "error": null,
         "line": 669,
         "reqs": {
@@ -136,7 +136,7 @@
       {
         "title": "The proof is scannable as frames, not only as video — a strip of stills per checked value",
         "ok": true,
-        "ms": 314,
+        "ms": 399,
         "error": null,
         "line": 765,
         "reqs": {
@@ -146,7 +146,7 @@
       {
         "title": "A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)",
         "ok": true,
-        "ms": 529,
+        "ms": 608,
         "error": null,
         "line": 827,
         "reqs": {
@@ -164,7 +164,7 @@
       {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 167,
+        "ms": 304,
         "error": null,
         "line": 859,
         "reqs": {
@@ -174,7 +174,7 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 230,
+        "ms": 336,
         "error": null,
         "line": 874,
         "reqs": {
@@ -184,7 +184,7 @@
       {
         "title": "The guide opens as manager and staff — without, then with",
         "ok": true,
-        "ms": 221,
+        "ms": 312,
         "error": null,
         "line": 901,
         "reqs": {
@@ -194,7 +194,7 @@
       {
         "title": "Acts 1 and 2 play once, hold, and stand still under reduced motion",
         "ok": true,
-        "ms": 5645,
+        "ms": 5764,
         "error": null,
         "line": 988,
         "reqs": {
@@ -204,7 +204,7 @@
       {
         "title": "The walkthrough steps on click and holds — never auto-advances",
         "ok": true,
-        "ms": 1440,
+        "ms": 1495,
         "error": null,
         "line": 1034,
         "reqs": {
@@ -214,7 +214,7 @@
       {
         "title": "A deep-linked skill URL shows the skill detail on cold load",
         "ok": true,
-        "ms": 135,
+        "ms": 262,
         "error": null,
         "line": 1059,
         "reqs": {
@@ -224,7 +224,7 @@
       {
         "title": "The guide ends with the derived next action, and there is no rail",
         "ok": true,
-        "ms": 184,
+        "ms": 296,
         "error": null,
         "line": 1073,
         "reqs": {
@@ -234,7 +234,7 @@
       {
         "title": "The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself",
         "ok": true,
-        "ms": 573,
+        "ms": 758,
         "error": null,
         "line": 1111,
         "reqs": {
@@ -242,7 +242,7 @@
         }
       }
     ],
-    "ranAt": 1787251939450,
+    "ranAt": 1787282330863,
     "provenHashes": {
       "R1": "fede646c129b3dfc",
       "R2": "6e030db2cace95aa",
@@ -259,6 +259,173 @@
       "R11": "21b72e7b99a7a080",
       "R12": "4eed476e6bcd7ce2",
       "R15": "3ea50d4bbe1c8a47"
+    },
+    "evidence": {
+      "R1": {
+        "before": "spec/board/evidence/R1.before.png",
+        "after": "spec/board/evidence/R1.after.png",
+        "clip": null,
+        "window": {
+          "from": 156,
+          "to": 172
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R2": {
+        "before": "spec/board/evidence/R2.before.png",
+        "after": "spec/board/evidence/R2.after.png",
+        "clip": null,
+        "window": {
+          "from": 177,
+          "to": 451
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R3": {
+        "before": "spec/board/evidence/R3.before.png",
+        "after": "spec/board/evidence/R3.after.png",
+        "clip": null,
+        "window": {
+          "from": 189,
+          "to": 281
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R10": {
+        "before": "spec/board/evidence/R10.before.png",
+        "after": "spec/board/evidence/R10.after.png",
+        "clip": null,
+        "window": {
+          "from": 177,
+          "to": 274
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R4": {
+        "before": "spec/board/evidence/R4.before.png",
+        "after": "spec/board/evidence/R4.after.png",
+        "clip": null,
+        "window": {
+          "from": 177,
+          "to": 208
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R5": {
+        "before": "spec/board/evidence/R5.before.png",
+        "after": "spec/board/evidence/R5.after.png",
+        "clip": null,
+        "window": {
+          "from": 174,
+          "to": 272
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R6": {
+        "before": "spec/board/evidence/R6.before.png",
+        "after": "spec/board/evidence/R6.after.png",
+        "clip": null,
+        "window": {
+          "from": 178,
+          "to": 188
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R7": {
+        "before": "spec/board/evidence/R7.before.png",
+        "after": "spec/board/evidence/R7.after.png",
+        "clip": null,
+        "window": {
+          "from": 191,
+          "to": 196
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R8": {
+        "before": "spec/board/evidence/R8.before.png",
+        "after": "spec/board/evidence/R8.after.png",
+        "clip": null,
+        "window": {
+          "from": 173,
+          "to": 201
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R13": {
+        "before": "spec/board/evidence/R13.before.png",
+        "after": "spec/board/evidence/R13.after.png",
+        "clip": null,
+        "window": {
+          "from": 177,
+          "to": 441
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R14": {
+        "before": "spec/board/evidence/R14.before.png",
+        "after": "spec/board/evidence/R14.after.png",
+        "clip": null,
+        "window": {
+          "from": 174,
+          "to": 358
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R9": {
+        "before": "spec/board/evidence/R9.before.png",
+        "after": "spec/board/evidence/R9.after.png",
+        "clip": null,
+        "window": {
+          "from": 171,
+          "to": 231
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R11": {
+        "before": "spec/board/evidence/R11.before.png",
+        "after": "spec/board/evidence/R11.after.png",
+        "clip": null,
+        "window": {
+          "from": 196,
+          "to": 209
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R12": {
+        "before": "spec/board/evidence/R12.before.png",
+        "after": "spec/board/evidence/R12.after.png",
+        "clip": null,
+        "window": {
+          "from": 165,
+          "to": 257
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      },
+      "R15": {
+        "before": "spec/board/evidence/R15.before.png",
+        "after": "spec/board/evidence/R15.after.png",
+        "clip": null,
+        "window": {
+          "from": 214,
+          "to": 703
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      }
     }
   },
   "conflicts": {
@@ -268,7 +435,7 @@
       {
         "title": "R2 — both positions are shown in full, each naming where it came from",
         "ok": true,
-        "ms": 101,
+        "ms": 130,
         "error": null,
         "line": 48,
         "reqs": {}
@@ -276,7 +443,7 @@
       {
         "title": "R3 — the tool never picks: resolving is refused until you choose a side",
         "ok": true,
-        "ms": 134,
+        "ms": 149,
         "error": null,
         "line": 62,
         "reqs": {}
@@ -284,7 +451,7 @@
       {
         "title": "R4 — resolving records which side lost, stays on Open, and offers the rewrite",
         "ok": true,
-        "ms": 468,
+        "ms": 538,
         "error": null,
         "line": 76,
         "reqs": {
@@ -294,7 +461,7 @@
       {
         "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
         "ok": true,
-        "ms": 447,
+        "ms": 410,
         "error": null,
         "line": 110,
         "reqs": {}
@@ -302,7 +469,7 @@
       {
         "title": "R5 — undo puts a settled conflict back, and the scanner is never asked to pick",
         "ok": true,
-        "ms": 776,
+        "ms": 847,
         "error": null,
         "line": 140,
         "reqs": {
@@ -310,9 +477,22 @@
         }
       }
     ],
-    "ranAt": 1787251939450,
+    "ranAt": 1787282330863,
     "provenHashes": {
       "R4": "fb50915bc5076917"
+    },
+    "evidence": {
+      "R4": {
+        "before": "spec/conflicts/evidence/R4.before.png",
+        "after": "spec/conflicts/evidence/R4.after.png",
+        "clip": null,
+        "window": {
+          "from": 377,
+          "to": 461
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      }
     }
   },
   "dispatch": {
@@ -322,7 +502,7 @@
       {
         "title": "R1/R2 — the panel opens on the click and streams the job while it runs",
         "ok": true,
-        "ms": 23841,
+        "ms": 40052,
         "error": null,
         "line": 76,
         "reqs": {}
@@ -330,7 +510,7 @@
       {
         "title": "R4 — a person's second run takes over the running one: accepted, not refused",
         "ok": true,
-        "ms": 254,
+        "ms": 213,
         "error": null,
         "line": 98,
         "reqs": {}
@@ -338,7 +518,7 @@
       {
         "title": "R4 — a run may nest inside the run driving it, and nesting is bounded",
         "ok": true,
-        "ms": 1344,
+        "ms": 1228,
         "error": null,
         "line": 130,
         "reqs": {}
@@ -346,7 +526,7 @@
       {
         "title": "running one screen leaves every other screen's E2E result standing",
         "ok": true,
-        "ms": 26397,
+        "ms": 42541,
         "error": null,
         "line": 168,
         "reqs": {}
@@ -354,7 +534,7 @@
       {
         "title": "R6/R8 — a run saves its whole log, and records every test case on its own",
         "ok": true,
-        "ms": 24842,
+        "ms": 1477,
         "error": null,
         "line": 186,
         "reqs": {}
@@ -362,7 +542,7 @@
       {
         "title": "R8 — a run that matched no test is recorded as an error, never 0 of 0 passing",
         "ok": true,
-        "ms": 2118,
+        "ms": 2201,
         "error": null,
         "line": 215,
         "reqs": {}
@@ -370,7 +550,7 @@
       {
         "title": "R8 — running ONE case leaves every other case's steps and log standing",
         "ok": true,
-        "ms": 29269,
+        "ms": 46541,
         "error": null,
         "line": 233,
         "reqs": {}
@@ -378,7 +558,7 @@
       {
         "title": "R8 — a case keeps a LOG HISTORY, folded across runs",
         "ok": true,
-        "ms": 6383,
+        "ms": 6475,
         "error": null,
         "line": 267,
         "reqs": {}
@@ -386,7 +566,7 @@
       {
         "title": "R8 — EVERY case that has run can expand its steps, not only the one you clicked",
         "ok": true,
-        "ms": 27791,
+        "ms": 41319,
         "error": null,
         "line": 303,
         "reqs": {}
@@ -394,7 +574,7 @@
       {
         "title": "R7 — the run panel offers no background run",
         "ok": true,
-        "ms": 171,
+        "ms": 214,
         "error": null,
         "line": 346,
         "reqs": {}
@@ -402,7 +582,7 @@
       {
         "title": "R7 — the panel and its log stay on screen after the run ends",
         "ok": true,
-        "ms": 29861,
+        "ms": 44199,
         "error": null,
         "line": 354,
         "reqs": {}
@@ -410,15 +590,28 @@
       {
         "title": "R5 — cancel stops the job, and cancelling nothing is refused not crashed",
         "ok": true,
-        "ms": 219,
+        "ms": 232,
         "error": null,
         "line": 371,
         "reqs": {}
       }
     ],
-    "ranAt": 1787251939450,
+    "ranAt": 1787282330863,
     "provenHashes": {
       "R7": "fc23001869845262"
+    },
+    "evidence": {
+      "R7": {
+        "before": "spec/dispatch/evidence/R7.before.png",
+        "after": "spec/dispatch/evidence/R7.after.png",
+        "clip": null,
+        "window": {
+          "from": 173,
+          "to": 551
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      }
     }
   },
   "init": {
@@ -428,7 +621,7 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 372,
+        "ms": 367,
         "error": null,
         "line": 23,
         "reqs": {}
@@ -436,7 +629,7 @@
       {
         "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
         "ok": true,
-        "ms": 161,
+        "ms": 107,
         "error": null,
         "line": 48,
         "reqs": {}
@@ -444,7 +637,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 201,
+        "ms": 220,
         "error": null,
         "line": 60,
         "reqs": {}
@@ -452,7 +645,7 @@
       {
         "title": "R3 — a drafted PRD is canon the moment it is written: one CARD, no guess chip, nothing waiting, no gate",
         "ok": true,
-        "ms": 166,
+        "ms": 186,
         "error": null,
         "line": 80,
         "reqs": {}
@@ -460,7 +653,7 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 109,
+        "ms": 106,
         "error": null,
         "line": 122,
         "reqs": {}
@@ -468,7 +661,7 @@
       {
         "title": "R6 — voice-over is a saved, per-project switch, off by default",
         "ok": true,
-        "ms": 526,
+        "ms": 580,
         "error": null,
         "line": 136,
         "reqs": {
@@ -478,7 +671,7 @@
       {
         "title": "R6 — the switch is disabled until piper is ready, with a copyable install helper",
         "ok": true,
-        "ms": 261,
+        "ms": 342,
         "error": null,
         "line": 168,
         "reqs": {
@@ -488,15 +681,28 @@
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 164,
+        "ms": 158,
         "error": null,
         "line": 195,
         "reqs": {}
       }
     ],
-    "ranAt": 1787251939450,
+    "ranAt": 1787282330863,
     "provenHashes": {
       "R6": "c30ee72dc2b5463d"
+    },
+    "evidence": {
+      "R6": {
+        "before": "spec/init/evidence/R6.before.png",
+        "after": "spec/init/evidence/R6.after.png",
+        "clip": null,
+        "window": {
+          "from": 73,
+          "to": 279
+        },
+        "runId": "1787282330863",
+        "at": "2026-08-21T03:18:50.863Z"
+      }
     }
   },
   "_modes": {
@@ -506,7 +712,7 @@
       {
         "title": "unproven — a requirement with no passing test reads unproven",
         "ok": true,
-        "ms": 86,
+        "ms": 350,
         "error": null,
         "line": 55,
         "reqs": {}
@@ -514,7 +720,7 @@
       {
         "title": "proven — a current passing proof makes a requirement proven",
         "ok": true,
-        "ms": 58,
+        "ms": 57,
         "error": null,
         "line": 61,
         "reqs": {}
@@ -538,7 +744,7 @@
       {
         "title": "state is only ever proven or unproven — there is no reworded / accept state",
         "ok": true,
-        "ms": 54,
+        "ms": 55,
         "error": null,
         "line": 88,
         "reqs": {}
@@ -562,7 +768,7 @@
       {
         "title": "changed — a matching pin stays plainly Passed",
         "ok": true,
-        "ms": 53,
+        "ms": 52,
         "error": null,
         "line": 136,
         "reqs": {}
@@ -578,7 +784,7 @@
       {
         "title": "renders — the detail carries NO gate and no accept button",
         "ok": true,
-        "ms": 164,
+        "ms": 279,
         "error": null,
         "line": 183,
         "reqs": {}
@@ -586,7 +792,7 @@
       {
         "title": "renders — a leftover guess: frontmatter line renders exactly like a normal screen",
         "ok": true,
-        "ms": 129,
+        "ms": 123,
         "error": null,
         "line": 202,
         "reqs": {}
@@ -594,7 +800,7 @@
       {
         "title": "renders — a Given/When/Then triple leads the requirement, and a prose-only one gets no block",
         "ok": true,
-        "ms": 239,
+        "ms": 248,
         "error": null,
         "line": 217,
         "reqs": {}
@@ -602,7 +808,7 @@
       {
         "title": "renders — a Changed requirement wears the indigo changed chip, never a plain Passed",
         "ok": true,
-        "ms": 211,
+        "ms": 190,
         "error": null,
         "line": 277,
         "reqs": {}
@@ -610,12 +816,12 @@
       {
         "title": "renders — the home banner counts a Changed requirement as drift",
         "ok": true,
-        "ms": 121,
+        "ms": 125,
         "error": null,
         "line": 316,
         "reqs": {}
       }
     ],
-    "ranAt": 1787251939450
+    "ranAt": 1787282330863
   }
 }
