@@ -709,21 +709,29 @@ ins { color:var(--koke); text-decoration:none; }
   .stopov.ok  { background:var(--ok-bg); color:var(--ok); border:1px solid var(--ok-line); }
   .stopov.neutral { background:var(--paper); color:var(--dim); border:1px solid var(--line2); }
   .stopov .runone { border:1px solid currentColor; background:none; color:inherit; border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; opacity:.85; }
-  /* chapter bar = a row of video-chapter thumbnails; state lives on the thumb ring (human 2026-08-21) */
-  .chstrip { display:flex; gap:10px; overflow-x:auto; padding:6px 2px 2px; justify-content:center; }
-  .ch { flex:0 1 212px; min-width:156px; border:0; background:none; padding:0; cursor:pointer;
-    opacity:.55; transition:opacity .2s; }
-  .ch:hover { opacity:.85; }
+  /* Flow reads like Focus (human 2026-08-21): chapter rail LEFT, player RIGHT, each scrolling on its own (R2) */
+  .fsplit { display:grid; grid-template-columns:390px 1fr; gap:var(--s4); align-items:start;
+    height:calc(100vh - 215px); min-height:430px; }
+  .fleft { overflow-y:auto; height:100%; padding:2px 4px 2px 2px; }
+  .fright { overflow-y:auto; height:100%; }
+  .chstrip { display:flex; flex-direction:column; gap:6px; }
+  .ch { display:flex; align-items:center; gap:10px; border:1px solid transparent; border-radius:var(--r-md);
+    padding:5px 8px; background:none; cursor:pointer; opacity:.62; transition:opacity .2s; }
+  .ch:hover { opacity:.92; background:var(--paper); }
   .ch.cur, .ch.done, .ch.fail, .ch.nr { opacity:1; }
-  .ch.cur .thumb { border-color:var(--ink-3); box-shadow:0 0 0 2px var(--wash); }
+  .ch.cur { border-color:var(--line3); background:var(--paper); box-shadow:var(--sh-sm); }
   .ch.done .chname::after { content:" ✓"; color:var(--ok); }
-  .ch.fail .thumb { border-color:var(--bad-line); background:var(--bad-bg); }
-  .ch.nr .thumb { border-style:dashed; border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
-  .thumb { position:relative; height:104px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:5px; background:#f4f5f8; }
+  .ch.fail { background:var(--bad-bg); border-color:var(--bad-line); }
+  .ch.nr { border:1px dashed var(--yamabuki-line); background:var(--yamabuki-tint); }
+  .thumb { position:relative; width:118px; height:64px; flex:none; border:1px solid var(--hair);
+    border-radius:var(--r-sm); overflow:hidden; background:#f4f5f8; }
+  .chmeta { min-width:0; flex:1; }
+  .chno2 { font-family:var(--mono); font-size:8.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--mute); }
   .scrtag { position:absolute; bottom:3px; left:3px; z-index:3; font-family:var(--mono); font-size:8px;
     letter-spacing:.04em; text-transform:uppercase; color:var(--dim); background:rgba(253,252,249,.88);
     padding:0 4px; border-radius:3px; }
-  .chname { font-size:var(--t-micro); font-weight:500; margin-bottom:3px; line-height:1.3; }
+  .chname { font-size:var(--t-sm); font-weight:500; line-height:1.35; }
+  @media (max-width:900px){ .fsplit { grid-template-columns:1fr; height:auto; } .fleft,.fright { height:auto; overflow:visible; } }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .mchip { font-family:var(--mono); font-size:var(--t-micro); border-radius:var(--r-sm); padding:1px 6px; border:1px solid var(--line); color:var(--dim); background:var(--paper); text-decoration:none; }
   .mchip.ok { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
@@ -1762,48 +1770,52 @@ function renderFlow(id, flowId){
   const cross = new Set(F.chapters.map(c=>c.screen)).size > 1;
   document.getElementById('root').innerHTML = `<div class="wrap">
     <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="go('compose/${id}')">＋ New flow<span class="fk" style="color:var(--ai)">chain proven beats → a prompt</span></button></div>
-    <div class="flowcard">
-      <div class="fhead"><div style="display:flex;align-items:baseline;gap:12px"><h2>${esc(F.name)}</h2>
-        <span class="fmeta">${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''}${cross?' · cross-screen':''}</span></div>
-        <span style="position:relative"><button class="linkbtn" onclick="toggleMenu(event,'flowMenu')" aria-label="flow actions">⋯</button>
-          <div class="rmenu" id="flowMenu" hidden>
-            <button onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'});closeMenus()">✎ Edit this flow</button>
-            <button onclick="toast('Would open the full recording');closeMenus()">▶ Open the full recording</button>
-            <div class="rmenu-div"></div>
-            <button class="danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'});closeMenus()">✕ Remove</button>
-          </div></span></div>
-      <div class="playwrap">
-        <div class="gif" style="margin:0">
-          <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div>
-            <button class="runone" style="position:absolute;top:8px;right:8px;z-index:5;background:var(--paper);border:1px solid var(--line2);opacity:.92" onclick="playFrom('${id}','${F.id}',0)">⟳ replay</button></div>
-        </div>
-        <div class="pstat" id="playStatus"></div>
+    <div class="fsplit">
+      <div class="fleft">
+        <div class="lbl" style="font-size:10px;letter-spacing:.14em;margin:2px 0 8px">the path · ${F.chapters.length} chapters</div>
+        <div class="chstrip" id="chStrip"></div>
       </div>
-      <div class="chstrip" id="chStrip"></div>
+      <div class="fright">
+        <div class="flowcard">
+          <div class="fhead"><div style="display:flex;align-items:baseline;gap:12px"><h2>${esc(F.name)}</h2>
+            <span class="fmeta">${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''}${cross?' · cross-screen':''}</span></div>
+            <span style="position:relative"><button class="linkbtn" onclick="toggleMenu(event,'flowMenu')" aria-label="flow actions">⋯</button>
+              <div class="rmenu" id="flowMenu" hidden>
+                <button onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'});closeMenus()">✎ Edit this flow</button>
+                <button onclick="toast('Would open the full recording');closeMenus()">▶ Open the full recording</button>
+                <div class="rmenu-div"></div>
+                <button class="danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'});closeMenus()">✕ Remove</button>
+              </div></span></div>
+          <div class="playwrap">
+            <div class="gif" style="margin:0">
+              <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div>
+                <button class="runone" style="position:absolute;top:8px;right:8px;z-index:5;background:var(--paper);border:1px solid var(--line2);opacity:.92" onclick="playFrom('${id}','${F.id}',0)">⟳ replay</button></div>
+            </div>
+            <div class="pstat" id="playStatus"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>`;
-  // ONE rail (human 2026-08-21): the chapter strip alone carries the path, its verdicts, and the scrubber
-  // chapter strip: the path as CARDS with connectors — beats chained left to right
-  let stripFailed = false;
+  // the path is a VERTICAL rail on the left (human 2026-08-21) — rows, not cards; the player scrubs from it
   document.getElementById('chStrip').innerHTML = F.chapters.map((ch,i) => {
     const chips = (ch.reqs||[]).length
       ? ch.reqs.map(rid => { const r = reqOf(id,rid) || crossReq(rid); const st = r?stateOf(r, r.__s||s):'ok'; const [mk]=MK[st];
           return `<a class="mchip ${st}" href="${r&&r.__focus?r.__focus:('#/s/'+id+'/focus/'+((s.reqs.findIndex(x=>x.id===rid))+1))}" style="text-decoration:none">${mk} ${rid}</a>`; }).join('')
       : `<span class="mchip">${ch.kind==='seed'?'fixture':'—'}</span>`;
     const thumb = ch.kind==='nr'
-      ? `<div class="noev" style="height:72px;gap:1px;padding:0"><b class="st-nr" style="font-size:11px">◌</b><span class="sub" style="font-size:9px">not reached</span></div>`
+      ? `<div class="noev" style="height:100%;gap:1px;padding:0"><b class="st-nr" style="font-size:11px">◌</b><span class="sub" style="font-size:9px">not reached</span></div>`
       : '';
-    const edge = i===0 ? '' : `<div class="edge ${stripFailed?'nrE':''}">→</div>`;
-    if (ch.fail) stripFailed = true;
-    return edge + `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
+    return `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
       <div class="thumb" data-ci="${i}" ${(ch.scene||ch.kind==='seed')?`onclick="zoomScene(event,'${ch.kind==='seed'?'sceneSeed':ch.scene}','${esc(ch.name)}')" title="click to zoom"`:''}>${thumb}${cross&&ch.screen?`<span class="scrtag">${esc(ch.screen)}</span>`:''}</div>
-      <div class="chname">${esc(ch.name)}</div><div class="chips">${chips}</div></div>`;
+      <div class="chmeta"><div class="chno2">${ch.kind==='seed'?'given':'beat '+i}</div>
+        <div class="chname">${esc(ch.name)}</div><div class="chips">${chips}</div></div></div>`;
   }).join('');
   F.chapters.forEach((ch,i) => {
     const box = document.querySelector(`#chStrip .thumb[data-ci="${i}"]`);
     if (!box) return;
-    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.44, 460, 248);
-    else if (ch.scene) mountStill(box, ch.scene, 0.44, 460, 248);
+    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.256, 460, 248);
+    else if (ch.scene) mountStill(box, ch.scene, 0.256, 460, 248);
   });
   if (autoPlay) playFrom(id, F.id, 0); else pausedFlow(id, F.id);
 }
