@@ -597,6 +597,72 @@ ins { color:var(--koke); text-decoration:none; }
   .fsel { display:flex; flex-direction:column; align-items:flex-start; gap:1px; border:1px solid var(--line2); background:var(--paper); border-radius:var(--r); padding:7px 14px; color:var(--dim); }
   .fsel .fk { font-family:var(--mono); font-size:var(--t-micro); color:var(--mute); }
   .fsel.on { border-color:var(--line3); background:var(--wash); color:var(--ink); font-weight:500; }
+
+  /* ── home feature strip (one mockup carries the whole feature list — human 2026-08-21) ── */
+  .feats { display:grid; grid-template-columns:repeat(6,1fr); gap:var(--s2); margin:var(--s3) 0 var(--s4); }
+  .feat { border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:9px 11px;
+    display:flex; flex-direction:column; gap:2px; cursor:pointer; text-decoration:none; color:var(--ink); }
+  .feat:hover { border-color:var(--ai); }
+  .feat .fm { font-size:14px; line-height:1; }
+  .feat .fl2 { font-size:var(--t-xs); line-height:1.35; }
+  .feat .fs2 { font-family:var(--mono); font-size:9px; color:var(--mute); }
+  @media (max-width:1100px){ .feats{ grid-template-columns:repeat(3,1fr); } }
+
+  /* ── flow composer — beats are gifs, the chain is a chain of gifs (human 2026-08-21) ── */
+  .cwrap { display:grid; grid-template-columns:308px 1fr; gap:var(--s4); align-items:start; }
+  .cpanel { border:1px solid var(--line2); border-radius:var(--r-md); background:var(--paper); padding:var(--s3) var(--s4); }
+  .cpanel h2 { font-size:var(--t-lg); margin:0; }
+  .chd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+  .chd .grow2 { flex:1; }
+  .cgrp { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin:10px 0 6px; }
+  .cnode2 { border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:7px; margin-bottom:8px;
+    cursor:pointer; display:flex; gap:10px; align-items:center; transition:border-color .15s, box-shadow .15s; }
+  .cnode2:hover { border-color:var(--ai); }
+  .cnode2.hint { border-color:var(--yamabuki); box-shadow:0 0 0 2px rgba(138,100,18,.16); }
+  .cnode2.outline { border-style:dashed; }
+  .nthumb { width:106px; height:57px; flex:none; border:1px solid var(--line2); border-radius:4px; overflow:hidden;
+    position:relative; background:var(--wash); }
+  .nmeta { min-width:0; }
+  .nname { font-size:12px; line-height:1.35; }
+  .nsub { font:400 9px var(--mono); color:var(--ai); margin-top:2px; }
+  .cnode2.outline .nsub { color:var(--yamabuki); }
+  .noscene { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:1px; font-family:var(--mono); font-size:8.5px; color:var(--mute); }
+  .cold2 { border:1px dashed var(--line2); border-radius:var(--r); padding:8px 11px; font-size:var(--t-xs); color:var(--dim); line-height:1.55; }
+  .cnamebar { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+  .cnamebar .lbl2 { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); flex:none; }
+  .cnamebar input { border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:4px 10px;
+    font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink); width:260px; }
+  .cgap { border:1px solid var(--yamabuki); background:rgba(138,100,18,.08); color:var(--yamabuki); border-radius:var(--r);
+    padding:8px 12px; font-size:var(--t-xs); margin-bottom:var(--s2); line-height:1.6; }
+  .cgap .kc { display:inline-block; font-family:var(--mono); font-size:9px; padding:0 5px; border-radius:3px;
+    background:var(--paper); border:1px solid var(--line2); }
+  .cchainwrap { overflow-x:auto; padding:4px 0 8px; }
+  .cchain { display:flex; align-items:stretch; min-width:max-content; }
+  .cbeat { width:196px; flex:none; border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:7px; position:relative; }
+  .cbeat.givenb { background:var(--wash); }
+  .cbeat.gapb { border-color:var(--yamabuki); }
+  .cbeat.outline { border-style:dashed; }
+  .bthumb { height:96px; border:1px solid var(--line2); border-radius:4px; overflow:hidden; position:relative;
+    background:var(--wash); margin-bottom:5px; }
+  .bno { font-family:var(--mono); font-size:8.5px; color:var(--mute); }
+  .bname { font-size:11px; line-height:1.35; }
+  .bsub { font:400 8.5px var(--mono); color:var(--ai); margin-top:2px; }
+  .bx { position:absolute; top:3px; right:5px; border:0; background:none; color:var(--mute); cursor:pointer; font-size:12px; }
+  .bx:hover { color:var(--bad); }
+  .cjoint { width:72px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 3px; }
+  .cjoint .ja { font-size:14px; line-height:1; color:var(--ok); }
+  .cjoint .jt { font:400 8px var(--mono); line-height:1.5; margin-top:3px; color:var(--ok); }
+  .cjoint.gap .ja, .cjoint.gap .jt { color:var(--yamabuki); }
+  .cout { display:grid; grid-template-columns:1fr 300px; gap:var(--s4); margin-top:var(--s3); align-items:start; }
+  .cprompt { border:1px solid var(--line2); border-radius:var(--r-md); background:var(--paper); overflow:hidden; }
+  .cprompt .ph2 { display:flex; align-items:center; gap:var(--s2); padding:7px 12px; border-bottom:1px solid var(--line2);
+    background:var(--wash); font-family:var(--mono); font-size:10px; color:var(--dim); }
+  .cprompt .ph2 .btn { margin-left:auto; }
+  .cprompt pre { margin:0; padding:10px 14px; font:400 10.5px/1.65 var(--mono); color:var(--dim); white-space:pre-wrap; max-height:260px; overflow:auto; }
+  .chonest { border:1px solid var(--line2); border-radius:var(--r-md); background:var(--wash); padding:10px 14px;
+    font-size:var(--t-xs); color:var(--dim); line-height:1.6; }
+  @media (max-width:1000px){ .cwrap, .cout { grid-template-columns:1fr; } }
   .flowcard { background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-md); box-shadow:var(--sh-sm); padding:var(--s4); }
   .fhead { display:flex; justify-content:space-between; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); flex-wrap:wrap; }
   .fhead h2 { font-size:var(--t-lg); font-weight:600; margin:0; }
@@ -1066,7 +1132,10 @@ function coverageReminder(id){
 function go(h){ location.hash = '#/' + h; }
 function route(){
   if (stopScene){ stopScene(); stopScene = null; }
+  compStopAll();
   const h = location.hash.replace(/^#\/?/, '');
+  const c = h.match(/^compose\/([^/]+)$/);
+  if (c && SCREENS[c[1]]) return renderCompose(c[1]);
   const m = h.match(/^s\/([^/]+)\/(focus|grid|flow)(?:\/(.+))?$/);
   if (m && SCREENS[m[1]]) renderDetail(m[1], m[2], m[3]);
   else renderHome();
@@ -1137,7 +1206,16 @@ function renderHome(keepHeader){
     ? `<div class="queue attn"><span class="qk">${attn.length} need a look</span><span>${[failed?`<b class="st-bad">${failed} failed</b>`:'', changed?`<b class="st-changed">${changed} changed since their proof</b>`:''].filter(Boolean).join(' · ')} — the honest drift, computed from the runs. <a href="#/s/${a0.id}/focus/${scr(a0.id).reqs.indexOf(a0.r)+1}">Open ${a0.r.id} →</a></span></div>`
     : `<div class="queue clear"><span class="qk">✓ all clear</span><span>Every requirement is passed or untested — nothing has failed or drifted. You write requirements; specboard just tracks their proof.</span></div>`;
 
-  let html = queue;
+  // the feature list — every feature is a LINK into its live demo in this same mockup (human 2026-08-21)
+  const feats = `<div class="feats">
+    <a class="feat" href="#/s/task-list/focus/4"><span class="fm">✎<span style="color:var(--mute)">→</span>ⁿ</span><span class="fl2"><b>Beats</b> — one Given, When→Then chained</span><span class="fs2">see R4 · 2 beats</span></a>
+    <a class="feat" href="#/s/task-list/focus/1"><span class="fm" style="color:var(--ok)">✓</span><span class="fl2"><b>Proof from real runs</b> — stills · gif · video</span><span class="fs2">see R1 in Focus</span></a>
+    <a class="feat" href="#/s/task-list/focus/5"><span class="fm"><span style="color:var(--bad)">✗</span><span style="color:var(--ai)">✎</span></span><span class="fl2"><b>Drift is computed</b> — failed · changed, never stored</span><span class="fs2">see R5 red · R2 indigo</span></a>
+    <a class="feat" href="#/s/task-list/grid"><span class="fm">☰</span><span class="fl2"><b>Focus · List · Flow</b> — three reads of one truth</span><span class="fs2">open the List</span></a>
+    <a class="feat" href="#/compose/task-list"><span class="fm" style="color:var(--ai)">＋</span><span class="fl2"><b>Compose a flow</b> — chain proven beats, Claude writes it</span><span class="fs2">open the composer</span></a>
+    <a class="feat" href="#/s/task-detail/focus/3"><span class="fm" style="color:var(--mute)">○◌</span><span class="fl2"><b>Honest gaps</b> — untested · not-reached stay ungreen</span><span class="fs2">see D3 untested</span></a>
+  </div>`;
+  let html = queue + feats;
   for (const area of AREAS){
     const ids = visible.filter(id => scr(id).area === area);
     if (!ids.length) continue;
@@ -1640,16 +1718,15 @@ function wireColumnsHover(){
 function renderFlow(id, flowId){
   const s = scr(id), flows = s.tests.filter(t => t.kind === 'flow');
   if (!flows.length){
-    document.getElementById('root').innerHTML = `<div class="wrap"><div class="emptyview"><h3>No flow tests on this screen</h3><p>${esc(s.name)} is proven by ${kindCounts(s).unit} unit test${kindCounts(s).unit===1?'':'s'}. A flow crosses states or screens along a path.</p><p style="margin-top:16px"><button class="btn dark" onclick="openPromptModal({action:'add',screenId:'${id}',kind:'flow'})">＋ Author a flow test</button></p></div></div>`;
+    document.getElementById('root').innerHTML = `<div class="wrap"><div class="emptyview"><h3>No flow tests on this screen</h3><p>${esc(s.name)} is proven by ${kindCounts(s).unit} unit test${kindCounts(s).unit===1?'':'s'}. A flow crosses states or screens along a path.</p><p style="margin-top:16px"><button class="btn dark" onclick="go('compose/${id}')">＋ Author a flow test — chain proven beats</button></p></div></div>`;
     return;
   }
   const F = flows.find(f => f.id === flowId) || flows[0];
   const cross = new Set(F.chapters.map(c=>c.screen)).size > 1;
   document.getElementById('root').innerHTML = `<div class="wrap">
-    <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="openPromptModal({action:'add',screenId:'${id}',kind:'flow'})">＋ New flow<span class="fk" style="color:var(--ai)">hand Claude a prompt</span></button></div>
+    <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="go('compose/${id}')">＋ New flow<span class="fk" style="color:var(--ai)">chain proven beats → a prompt</span></button></div>
     <div class="flowcard">
       <div class="fhead"><h2>${esc(F.name)}</h2><div style="display:flex;align-items:center;gap:12px"><span class="fmeta">flow ${F.id.toLowerCase()} · ${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''} · <a href="#" onclick="toast('Would open the full recording');return false">▶ recording</a></span><span style="color:var(--line3)">·</span><button class="linkbtn" onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'})">✎ Edit</button><button class="linkbtn danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'})">✕ Remove</button></div></div>
-      <div class="pathbar" id="pathBarLine"></div>
       <div class="playwrap">
         <div class="gif" style="margin:0">
           <div class="gbar"><span id="playBar">the ONE recording · cut at proves-step timestamps · run ${F.run}</span><span class="rt"><button onclick="playFrom('${id}','${F.id}',0)">⟳ replay flow</button></span></div>
@@ -1659,19 +1736,10 @@ function renderFlow(id, flowId){
       </div>
       <div class="chstrip" id="chStrip"></div>
     </div>
-    <p class="legend">A flow is <b>one path</b>: a Given once (the fixture), then a chain of beats — ${cross?'this one crosses screens, so each beat lands on a different screen':'each beat a step along the path'}. The chain below IS the path; the player above is its one recording, cut at the proves-steps. A failing beat stops the story and everything after it honestly reads not-reached. Click a beat to seek; click its requirement chip to open Focus. Everything here is derived from steps and coverReqs — nothing is stored.</p>
+    <p class="legend">One path, one recording, cut at the proves-steps${cross?' — this flow crosses screens':''}. Click a chapter to seek · a failing beat wears red and everything after reads not-reached.</p>
   </div>`;
-  // the path bar — the flow's whole story in one line
-  let pbFailed = false;
-  document.getElementById('pathBarLine').innerHTML = `<span class="lbl" style="font-size:10px;letter-spacing:.12em">THE PATH</span>` + F.chapters.map((ch,i) => {
-    if (ch.kind === 'seed') return `<span class="seg">given · fixture</span>`;
-    const rid = (ch.reqs||[])[0] || '—';
-    const cls = (ch.kind==='nr' || pbFailed) ? 'nr' : ch.fail ? 'bad' : 'ok';
-    if (ch.fail) pbFailed = true;
-    const mk = cls==='nr' ? '◌' : cls==='bad' ? '✗' : '✓';
-    return `<span class="seg ${cls}">${esc(ch.name)} · ${rid} ${mk}</span>`;
-  }).join('<span class="parr">→</span>');
-  // chapter strip: the same path as CARDS with connectors — beats chained left to right
+  // ONE rail (human 2026-08-21): the chapter strip alone carries the path, its verdicts, and the scrubber
+  // chapter strip: the path as CARDS with connectors — beats chained left to right
   let stripFailed = false;
   document.getElementById('chStrip').innerHTML = F.chapters.map((ch,i) => {
     const chips = (ch.reqs||[]).length
@@ -1752,6 +1820,165 @@ function playFrom(id, flowId, start){
     }});
   }
   runChapter(start);
+}
+
+/* =================================================================== */
+/* FLOW COMPOSER — beats are gifs; the chain is a chain of gifs        */
+/* (human 2026-08-21: one mockup carries authoring too; visual-first)  */
+/* =================================================================== */
+/* one node per beat a test already proves — needs → gives are the joint tokens */
+const COMPOSE_NODES = [
+  { id:'cb-add',   screen:'task-list',   name:'add a task',                          proves:'R1', from:'F2', scene:'sceneR1',           proven:true,  needs:['seeded'],                     gives:['task'] },
+  { id:'cb-sub',   screen:'task-list',   name:'add a sub-task — the ring moves',     proves:'R3', from:'U1', scene:'sceneR3',           proven:true,  needs:['seeded'],                     gives:['container','subtask-open'] },
+  { id:'cb-roll',  screen:'task-list',   name:'tick the last open sub-task — roll-up', proves:'R4', from:'F1', scene:'sceneR4',         proven:true,  needs:['subtask-open'],               gives:['container-done'] },
+  { id:'cb-count', screen:'task-list',   name:'check the remaining count',           proves:'R5', from:'F1', scene:'sceneR5',           proven:true,  needs:['subtask-open'],               gives:['count-checked'] },
+  { id:'cb-views', screen:'task-list',   name:'filter to Today — badges agree',      proves:'R6', from:'F2', scene:'sceneR6',           proven:true,  needs:['task'],                       gives:['filtered'] },
+  { id:'cb-reload',screen:'task-list',   name:'reload — everything comes back',      proves:'R8', from:'F1', scene:null,                proven:true,  needs:[],                             gives:['reloaded'] },
+  { id:'cb-open',  screen:'task-detail', name:'open the container’s detail',         proves:'D1', from:'F3', scene:'sceneOpenDetail',   proven:true,  needs:['container'],                  gives:['detail-open'] },
+  { id:'cb-dtick', screen:'task-detail', name:'tick a sub-task from the detail',     proves:'D1', from:'F3', scene:'sceneDetailComplete', proven:true, needs:['detail-open','subtask-open'], gives:['detail-ticked'] },
+  { id:'cb-back',  screen:'task-detail', name:'back to the list — it reflects',      proves:'D2', from:'F3', scene:'sceneListReflects', proven:true,  needs:['detail-ticked'],              gives:[] },
+  { id:'cb-clear', screen:'settings',    name:'clear data asks to confirm first',    proves:'G2', from:null, scene:null,                proven:false, needs:[],                             gives:['confirm-shown'] },
+];
+const COMPOSE_START = { given:'frozen clock · storage cleared · seeded', gives:['seeded'] };
+let compChain = ['cb-sub','cb-roll'];          // the demo path — valid joints
+let compMode  = 'gif';                          // gif ↔ stills — a view preference, never stored
+let compScreen = null;
+let compStops = [];                             // looping thumb players to kill on re-render
+function compStopAll(){ compStops.forEach(f=>f()); compStops = []; }
+const cnodeOf = id => COMPOSE_NODES.find(n => n.id === id);
+
+function compValidate(){
+  let state = new Set(COMPOSE_START.gives), out = [];
+  for (const id of compChain){
+    const n = cnodeOf(id);
+    out.push({ n, missing: n.needs.filter(t => !state.has(t)) });
+    n.gives.forEach(t => state.add(t));
+  }
+  return out;
+}
+function compFiller(missing){ return COMPOSE_NODES.find(n => n.gives.some(g => missing.includes(g))); }
+function compThumb(box, sceneName, scale, w, h){
+  if (!sceneName){ box.innerHTML = `<div class="noscene"><span>no scene yet</span><span>drawn on the next viz pass</span></div>`; return; }
+  if (compMode === 'gif'){
+    const st = document.createElement('div');
+    st.className = 'stage short';
+    st.style.cssText = `width:${w}px;height:${h}px;transform:scale(${scale});transform-origin:top left;`;
+    box.appendChild(st);
+    compStops.push(play(st, SCENE[sceneName]));
+  } else mountStill(box, sceneName, scale, w, h);
+}
+function setCompMode(m){ compMode = m; renderCompose(compScreen); }
+function compHeader(id){
+  const s = scr(id);
+  document.getElementById('hdr').innerHTML = `
+  <header class="topbar">
+    <div class="dname"><span class="t">Flow composer</span><span class="s">${esc(s.name)} · chain proven beats → a ready kg-e2e prompt</span></div>
+    <span class="mockflag">mockup</span>
+    <div class="grow"></div>
+    <div class="seg">
+      <button class="${compMode==='gif'?'on':''}" onclick="setCompMode('gif')">gif</button>
+      <button class="${compMode==='stills'?'on':''}" onclick="setCompMode('stills')">stills</button>
+    </div>
+    <button class="btn" onclick="go('s/${id}/flow')">Close</button>
+  </header>`;
+}
+function renderCompose(id){
+  compStopAll();
+  if (compScreen !== id){   // restore the browser-local draft only on entry, never mid-edit
+    try { const d = JSON.parse(localStorage['sbComposeDraft:'+id] || 'null');
+      if (Array.isArray(d) && d.length && d.every(x => cnodeOf(x))) compChain = d; } catch(e){}
+  }
+  compScreen = id;
+  compHeader(id);
+  const v = compValidate();
+  try { localStorage['sbComposeDraft:'+id] = JSON.stringify(compChain); } catch(e){}
+  const gap = v.find(x => x.missing.length);
+  const filler = gap ? compFiller(gap.missing) : null;
+  // library — grouped by screen; every beat is its gif
+  const grps = {};
+  COMPOSE_NODES.forEach(n => (grps[n.screen] = grps[n.screen] || []).push(n));
+  const lib = Object.entries(grps).map(([sid, ns]) =>
+    `<div class="cgrp">${esc(scr(sid).name)} · ${ns.length}</div>` + ns.map(n => `
+      <div class="cnode2 ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}" onclick="compAdd('${n.id}')"
+           title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
+        <div class="nthumb" data-nt="${n.id}"></div>
+        <div class="nmeta"><div class="nname">${esc(n.name)}</div>
+          <div class="nsub">${n.proven ? `proves ${n.proves} · from ${n.from}` : `unproven — this flow becomes its first proof`}${filler && filler.id===n.id ? ' · ← fills the gap' : ''}</div></div>
+      </div>`).join('')
+  ).join('') + `<div class="cgrp">Sign in · 0</div><div class="cold2">no beats yet — no requirements. <b>kg-deep</b> drafts them; they appear here the moment they exist.</div>`;
+  // the chain — a chain of gifs
+  let chainHtml = `<div class="cbeat givenb">
+      <div class="bthumb" data-bt="given"></div>
+      <div class="bno">GIVEN · once</div><div class="bname">${esc(COMPOSE_START.given)}</div></div>`;
+  v.forEach((x,i) => {
+    const ok = !x.missing.length;
+    chainHtml += `<div class="cjoint ${ok?'':'gap'}"><span class="ja">${ok?'→':'⇢'}</span><span class="jt">${
+      ok ? 'then ⊇ given ✓' : 'GAP'}</span></div>`;
+    chainHtml += `<div class="cbeat ${x.n.proven?'':'outline'}${x.missing.length?' gapb':''}">
+      <button class="bx" onclick="compRm(${i})">✕</button>
+      <div class="bthumb" data-bt="${i}"></div>
+      <div class="bno">beat ${i+1} · ${esc(x.n.screen)}</div><div class="bname">${esc(x.n.name)}</div>
+      <div class="bsub">proves ${x.n.proves}${x.n.proven?'':' · unproven — written red-first here'}</div></div>`;
+  });
+  const gapbar = gap ? `<div class="cgap">⚠ the joint before <b>${esc(gap.n.name)}</b> does not hold — its Given needs ${
+    gap.missing.map(m=>`<span class="kc">${m}</span>`).join(' ')}${filler?`; <b>${esc(filler.name)}</b> supplies it (lit up left) — click it to insert before the gap`:''}</div>` : '';
+  document.getElementById('root').innerHTML = `<div class="wrap">
+    <div class="cwrap">
+      <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">every beat = a proven gif · click to chain</span></div>${lib}</div>
+      <div>
+        <div class="cpanel">
+          <div class="cnamebar"><span class="lbl2">flow name</span><input id="compName" value="Roll-up round trip" oninput="compPrompt()">
+            <div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">try “tick a sub-task from the detail” — watch the gap</span></div>
+          ${gapbar}
+          <div class="cchainwrap"><div class="cchain">${chainHtml}</div></div>
+        </div>
+        <div class="cout">
+          <div class="cprompt"><div class="ph2">the output — a ready kg-e2e prompt
+            <button class="btn dark" onclick="compCopy()">✳ Copy — hand to Claude</button></div><pre id="compPre"></pre></div>
+          <div class="chonest">The composer <b>writes, runs and stores nothing</b> — Claude writes the test red-first from this prompt,
+            and the flow appears on the board only when that test lands and runs. Draft lives in your browser only.</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  // paint the thumbs (gif mode loops, stills mode freezes)
+  const g = document.querySelector('.bthumb[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .397, 460, 248);
+  v.forEach((x,i) => { const b = document.querySelector(`.bthumb[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .397, 460, 248); });
+  COMPOSE_NODES.forEach(n => { const b = document.querySelector(`.nthumb[data-nt="${n.id}"]`); if (b) compThumb(b, n.scene, .23, 460, 248); });
+  compPrompt();
+}
+function compAdd(id){
+  const v = compValidate();
+  const gapAt = v.findIndex(x => x.missing.length);
+  if (gapAt >= 0 && cnodeOf(id).gives.some(g => v[gapAt].missing.includes(g))) compChain.splice(gapAt, 0, id);
+  else compChain.push(id);
+  renderCompose(compScreen);
+}
+function compRm(i){ compChain.splice(i,1); renderCompose(compScreen); }
+function compPrompt(){
+  const v = compValidate();
+  const name = (document.getElementById('compName')?.value || 'Untitled flow').trim();
+  const start = compChain.length ? cnodeOf(compChain[0]).screen : compScreen;
+  const covers = [...new Set(compChain.map(id => { const n = cnodeOf(id); return (n.screen===start ? '' : n.screen+':') + n.proves; }))];
+  const unproven = v.filter(x => !x.n.proven);
+  const beats = v.map((x,i) => `  beat ${i+1} — ${x.n.name}   (proves ${x.n.proves}${x.n.proven?'':' — UNPROVEN, red-first here'})`).join('\n');
+  const pre = document.getElementById('compPre'); if (!pre) return;
+  pre.textContent =
+`Author a ${new Set(compChain.map(id=>cnodeOf(id).screen)).size>1?'cross-screen ':''}flow test for the "${start}" screen.
+
+File: spec/${start}/test.spec.ts   (a flow lives in the screen it starts on)
+Test name: '${name}'
+Declare up front: coverReqs(${covers.map(c=>`'${c}'`).join(', ') || '…'})
+
+Given (the fixture): ${COMPOSE_START.given}
+${beats || '  (chain beats above)'}
+${unproven.length ? `\nUnproven beats: ${unproven.map(x=>x.n.proves).join(', ')} — this flow is their FIRST proof; same red-first standard.\n` : ''}
+Discipline (kg-e2e): failing test FIRST · every Then a real assertion · checkReq('<id>') inside the beat it proves.`;
+}
+function compCopy(){
+  const t = document.getElementById('compPre').textContent;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
+    .then(()=>toast('Prompt copied — paste it to Claude')).catch(()=>toast('Select and copy the prompt text'));
 }
 
 /* =================================================================== */
