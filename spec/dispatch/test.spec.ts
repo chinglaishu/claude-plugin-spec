@@ -58,7 +58,7 @@ const idle = async (request: any) => {
   await expect.poll(async () => {
     const j = await request.get('/api/runs').then((r: any) => r.json())
     return j.running === null || (SELF_RUN && j.runningId === SELF_RUN) ? null : j.running
-  }, { timeout: 60000 }).toBeNull()
+  }, { timeout: 150000 }).toBeNull()
 }
 
 test.afterEach(async ({ request }) => {
@@ -74,6 +74,11 @@ test.afterEach(async ({ request }) => {
 })
 
 test('R1/R2 — the panel opens on the click and streams the job while it runs', async ({ page, request }) => {
+  // The board spec this drives grew with the visual-requirements rework (board R13/R16, 2026-08-21)
+  // — a whole nested board-file run records video and now takes over a minute, so the default 60s
+  // ceiling cut the run mid-flight and the orphaned job cascaded into the tests after it. The
+  // assertions are unchanged; only the wall clock follows the suite's real size.
+  test.setTimeout(240_000)
   await idle(request)
   // R1: opened BY the control you clicked, and it already knows its screen — nothing is typed.
   await page.goto(BOARD)
@@ -190,6 +195,7 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
 })
 
 test('running one screen leaves every other screen\'s E2E result standing', async ({ page, request }) => {
+  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
   // The board offers a per-screen Run on every row. A run writes a report covering only the
   // screens that ran, and the board reads a persistent index it is folded INTO — so a board-only
   // run must update board and leave conflicts, init and the rest exactly as they were. Replacing
@@ -208,6 +214,7 @@ test('running one screen leaves every other screen\'s E2E result standing', asyn
 })
 
 test('R6/R8 — a run saves its whole log, and records every test case on its own', async ({ request }) => {
+  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
   await idle(request)
   const r = await startRun(request, { screen: 'board' })
   expect(r.ok()).toBeTruthy()
@@ -258,6 +265,7 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   // The record must FOLD across runs, never be read out of one run. A run filtered to a single test
   // records only that test — so taking every case's record from "the newest run" strips the steps
   // and the log off every case that run did not include, which is every other case on the screen.
+  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
   await idle(request)
   const full = await startRun(request, { screen: 'board' })
   expect(full.ok()).toBeTruthy()
@@ -328,7 +336,7 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   // This one genuinely does a lot: a whole headless board run (~40s), then it opens and inspects EVERY
   // one of that screen's cases. The default 60s cannot cover the run AND the per-case sweep, so it timed
   // out mid-loop (the page closing under it) — give the heavy integration test the wall-clock it needs.
-  test.setTimeout(120_000)
+  test.setTimeout(300_000)   // raised again 2026-08-21: the board file grew with R13/R16
   // The record must cover every case a run covered. It did not: a case only had steps if the BOARD
   // had run it, so a screen showed detail for the single case somebody had pressed Run on and
   // nothing for its neighbours — even though the suite had run them all many times.
@@ -376,6 +384,7 @@ test('R7 — the run panel offers no background run', async ({ page }) => {
 })
 
 test('R7 — the panel and its log stay on screen after the run ends', async ({ page, request }) => {
+  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
   await idle(request)
   await page.goto(BOARD)
   await page.locator('.dt[data-i="0"] .runbtn').first().click()
