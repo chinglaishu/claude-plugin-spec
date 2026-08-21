@@ -626,7 +626,7 @@ ins { color:var(--koke); text-decoration:none; }
   .lrow.hint { border-color:var(--yamabuki); background:var(--yamabuki-tint); }
   .lrow.dim { opacity:.42; }
   .lrow.dim:hover { opacity:.9; }
-  .lthumb { width:88px; height:48px; flex:none; border:1px solid var(--line2); border-radius:4px;
+  .lthumb { width:118px; height:64px; flex:none; border:1px solid var(--line2); border-radius:4px;
     overflow:hidden; position:relative; background:var(--wash); }
   .lmeta2 { min-width:0; flex:1; }
   .lname2 { font-size:var(--t-xs); line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -653,8 +653,18 @@ ins { color:var(--koke); text-decoration:none; }
   .crow2.given .cdot span { background:var(--ink-3); }
   .crow2.outline .cdot span { width:8px; height:8px; background:var(--paper); border:2px dashed var(--yamabuki); }
   .crow2.gapb .cdot span { background:var(--yamabuki); }
-  .cthumb2 { width:150px; height:81px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
+  .cthumb2 { width:190px; height:102px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
     overflow:hidden; position:relative; background:var(--wash); }
+  /* zoom: every gif can blow up — ⤢ on hover, click for a lightbox */
+  .zbtn { position:absolute; top:3px; right:3px; z-index:6; border:1px solid var(--line2);
+    background:rgba(253,252,249,.92); border-radius:4px; font-size:10px; line-height:1;
+    padding:2px 5px; cursor:zoom-in; opacity:0; transition:opacity .15s; }
+  .lthumb:hover .zbtn, .cthumb2:hover .zbtn, .thumb:hover .zbtn { opacity:1; }
+  .zoombox { position:fixed; inset:0; z-index:100; background:rgba(28,27,24,.55); cursor:zoom-out;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+  .zoombox .zstage { overflow:hidden; border-radius:10px; background:var(--paper);
+    box-shadow:0 18px 60px rgba(28,27,24,.45); position:relative; }
+  .zoombox .zcap { color:#fdfcf9; font:400 12px var(--mono); }
   .cmeta2 { min-width:0; flex:1; }
   .cname3 { font-size:var(--t-sm); line-height:1.35; }
   .csub3 { font:400 9px var(--mono); color:var(--mute); margin-top:1px; }
@@ -703,7 +713,7 @@ ins { color:var(--koke); text-decoration:none; }
   .stopov .runone { border:1px solid currentColor; background:none; color:inherit; border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; opacity:.85; }
   /* chapter bar = a row of video-chapter thumbnails; state lives on the thumb ring (human 2026-08-21) */
   .chstrip { display:flex; gap:10px; overflow-x:auto; padding:6px 2px 2px; justify-content:center; }
-  .ch { flex:0 1 176px; min-width:132px; border:0; background:none; padding:0; cursor:pointer;
+  .ch { flex:0 1 212px; min-width:156px; border:0; background:none; padding:0; cursor:pointer;
     opacity:.55; transition:opacity .2s; }
   .ch:hover { opacity:.85; }
   .ch.cur, .ch.done, .ch.fail, .ch.nr { opacity:1; }
@@ -711,7 +721,7 @@ ins { color:var(--koke); text-decoration:none; }
   .ch.done .chname::after { content:" ✓"; color:var(--ok); }
   .ch.fail .thumb { border-color:var(--bad-line); background:var(--bad-bg); }
   .ch.nr .thumb { border-style:dashed; border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
-  .thumb { position:relative; height:84px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:5px; background:#f4f5f8; }
+  .thumb { position:relative; height:104px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:5px; background:#f4f5f8; }
   .scrtag { position:absolute; bottom:3px; left:3px; z-index:3; font-family:var(--mono); font-size:8px;
     letter-spacing:.04em; text-transform:uppercase; color:var(--dim); background:rgba(253,252,249,.88);
     padding:0 4px; border-radius:3px; }
@@ -1161,6 +1171,7 @@ function go(h){ location.hash = '#/' + h; }
 function route(){
   if (stopScene){ stopScene(); stopScene = null; }
   compStopAll();
+  if (typeof closeZoom === 'function') closeZoom();
   const h = location.hash.replace(/^#\/?/, '');
   const c = h.match(/^compose\/([^/]+)$/);
   if (c && SCREENS[c[1]]) return renderCompose(c[1]);
@@ -1787,14 +1798,14 @@ function renderFlow(id, flowId){
     const edge = i===0 ? '' : `<div class="edge ${stripFailed?'nrE':''}">→</div>`;
     if (ch.fail) stripFailed = true;
     return edge + `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
-      <div class="thumb" data-ci="${i}">${thumb}${cross&&ch.screen?`<span class="scrtag">${esc(ch.screen)}</span>`:''}</div>
+      <div class="thumb" data-ci="${i}">${thumb}${cross&&ch.screen?`<span class="scrtag">${esc(ch.screen)}</span>`:''}${(ch.scene||ch.kind==='seed')?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${ch.kind==='seed'?'sceneSeed':ch.scene}','${esc(ch.name)}')">⤢</button>`:''}</div>
       <div class="chname">${esc(ch.name)}</div><div class="chips">${chips}</div></div>`;
   }).join('');
   F.chapters.forEach((ch,i) => {
     const box = document.querySelector(`#chStrip .thumb[data-ci="${i}"]`);
     if (!box) return;
-    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.36, 460, 248);
-    else if (ch.scene) mountStill(box, ch.scene, 0.36, 460, 248);
+    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.44, 460, 248);
+    else if (ch.scene) mountStill(box, ch.scene, 0.44, 460, 248);
   });
   if (autoPlay) playFrom(id, F.id, 0); else pausedFlow(id, F.id);
 }
@@ -1946,7 +1957,7 @@ function renderCompose(id){
       <div class="lrow ${ready(n)?'':'dim'} ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}"
            onclick="compAdd('${n.id}')" onmouseenter="rowPlay(event,'${n.id}')" onmouseleave="rowStill(event,'${n.id}')"
            title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
-        <div class="lthumb" data-lt="${n.id}"></div>
+        <div class="lthumb" data-lt="${n.id}">${n.scene?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${n.scene}','${esc(n.name)}')">⤢</button>`:''}</div>
         <div class="lmeta2"><div class="lname2">${esc(n.name)}${filler && filler.id===n.id ? ' <b style="color:var(--yamabuki)">← fills the gap</b>' : ''}</div>
           ${ready(n) ? '' : `<div class="lneed">needs ${n.needs.filter(t=>!endState.has(t)).join(' · ')}</div>`}</div>
         <span class="lrid">${n.proves}</span>
@@ -1972,7 +1983,7 @@ function renderCompose(id){
       ${provesList.length?`<span class="schip">proves ${provesList.join(' · ')}</span>`:''}</div>`;
   let chainHtml = `<div class="crow2 given">
       <div class="cdot"><span></span></div>
-      <div class="cthumb2" data-bt="given"></div>
+      <div class="cthumb2" data-bt="given"><button class="zbtn" title="zoom" onclick="zoomScene(event,'sceneSeed','the fixture Given')">⤢</button></div>
       <div class="cmeta2"><div class="cname3">${esc(COMPOSE_START.given)}</div><div class="csub3">given · set once</div></div>
       <span class="cchip" style="color:var(--ink-3);border-color:var(--line2);background:var(--wash)">fixture</span></div>`;
   v.forEach((x,i) => {
@@ -1982,7 +1993,7 @@ function renderCompose(id){
       : `<div class="cconn gap"><span class="seg"></span><span class="jlab">needs ${x.missing.map(m=>`<span class="kc">${m}</span>`).join(' ')}${filler?` — <b>${esc(filler.name)}</b> fills it, pinned top-left`:''}</span></div>`;
     chainHtml += `<div class="crow2 ${x.n.proven?'':'outline'}${x.missing.length?' gapb':''}">
       <div class="cdot"><span></span></div>
-      <div class="cthumb2" data-bt="${i}"></div>
+      <div class="cthumb2" data-bt="${i}">${x.n.scene?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${x.n.scene}','${esc(x.n.name)}')">⤢</button>`:''}</div>
       <div class="cmeta2"><div class="cname3">${esc(x.n.name)}</div>
         <div class="csub3">beat ${i+1} · ${esc(x.n.screen)}${x.n.proven?'':' · unproven — written red-first here'}</div></div>
       <span class="cchip">${x.n.proves}</span>
@@ -1990,7 +2001,7 @@ function renderCompose(id){
   });
   document.getElementById('root').innerHTML = `<div class="wrap">
     <div class="cwrap">
-      <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">hover = preview · click = chain</span></div>${lib}</div>
+      <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">hover = preview · click = chain · ⤢ = zoom</span></div>${lib}</div>
       <div>
         <div class="cpanel">
           <div class="cnamebar"><span class="lbl2">flow name</span><input id="compName" value="Roll-up round trip" oninput="compPrompt()">
@@ -2012,10 +2023,10 @@ function renderCompose(id){
     </div>
   </div>`;
   // paint thumbs: chain follows the gif·stills toggle; the library is stills + hover-play
-  const g = document.querySelector('.cthumb2[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .326, 460, 248);
-  v.forEach((x,i) => { const b = document.querySelector(`.cthumb2[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .326, 460, 248); });
+  const g = document.querySelector('.cthumb2[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .413, 460, 248);
+  v.forEach((x,i) => { const b = document.querySelector(`.cthumb2[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .413, 460, 248); });
   COMPOSE_NODES.forEach(n => document.querySelectorAll(`.lthumb[data-lt="${n.id}"]`).forEach(b => {
-    if (n.scene) mountStill(b, n.scene, .19, 460, 248);
+    if (n.scene) mountStill(b, n.scene, .256, 460, 248);
     else b.innerHTML = `<div class="noscene"><span>no scene</span></div>`;
   }));
   compPrompt();
@@ -2024,19 +2035,42 @@ function rowPlay(ev, nid){
   const n = cnodeOf(nid); if (!n.scene) return;
   const box = ev.currentTarget.querySelector('.lthumb'); if (!box) return;
   if (box._stop){ box._stop(); box._stop = null; }
-  box.innerHTML = '';
+  box.querySelectorAll('.stage').forEach(x => x.remove());   // keep the ⤢ zoom button alive
   const st = document.createElement('div');
   st.className = 'stage short';
-  st.style.cssText = 'width:460px;height:248px;transform:scale(.19);transform-origin:top left;';
+  st.style.cssText = 'width:460px;height:248px;transform:scale(.256);transform-origin:top left;';
   box.appendChild(st);
   box._stop = play(st, SCENE[n.scene]);
   compStops.push(box._stop);
+}
+/* ── zoom lightbox: any gif, as big as the window allows ── */
+let zoomStop = null;
+function zoomScene(ev, sceneName, cap){
+  ev.stopPropagation();
+  closeZoom();
+  if (!SCENE[sceneName]) return;
+  const s = Math.max(1.2, Math.min(2.2, ((innerWidth||1280) * .9) / 460, ((innerHeight||800) * .72) / 248));
+  const zb = el(`<div class="zoombox"><div class="zstage" style="width:${Math.round(460*s)}px;height:${Math.round(248*s)}px"></div><div class="zcap">${esc(cap||'')} · click or Esc to close</div></div>`);
+  zb.addEventListener('click', closeZoom);
+  document.body.appendChild(zb);
+  const st = document.createElement('div');
+  st.className = 'stage short';
+  st.style.cssText = `width:460px;height:248px;transform:scale(${s});transform-origin:top left;`;
+  zb.querySelector('.zstage').appendChild(st);
+  zoomStop = play(st, SCENE[sceneName]);
+  document.addEventListener('keydown', escZoom);
+}
+function escZoom(e){ if (e.key === 'Escape') closeZoom(); }
+function closeZoom(){
+  const zb = document.querySelector('.zoombox'); if (zb) zb.remove();
+  if (zoomStop){ zoomStop(); zoomStop = null; }
+  document.removeEventListener('keydown', escZoom);
 }
 function rowStill(ev, nid){
   const n = cnodeOf(nid);
   const box = ev.currentTarget.querySelector('.lthumb'); if (!box) return;
   if (box._stop){ box._stop(); box._stop = null; }
-  if (n.scene) mountStill(box, n.scene, .19, 460, 248);
+  if (n.scene) mountStill(box, n.scene, .256, 460, 248);
 }
 function compAdd(id){
   const v = compValidate();
