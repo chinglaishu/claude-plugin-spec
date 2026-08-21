@@ -655,11 +655,8 @@ ins { color:var(--koke); text-decoration:none; }
   .crow2.gapb .cdot span { background:var(--yamabuki); }
   .cthumb2 { width:190px; height:102px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
     overflow:hidden; position:relative; background:var(--wash); }
-  /* zoom: every gif can blow up — ⤢ on hover, click for a lightbox */
-  .zbtn { position:absolute; top:3px; right:3px; z-index:6; border:1px solid var(--line2);
-    background:rgba(253,252,249,.92); border-radius:4px; font-size:10px; line-height:1;
-    padding:2px 5px; cursor:zoom-in; opacity:0; transition:opacity .15s; }
-  .lthumb:hover .zbtn, .cthumb2:hover .zbtn, .thumb:hover .zbtn { opacity:1; }
+  /* zoom: click any gif and it blows up in a lightbox */
+  .lthumb, .cthumb2, .thumb { cursor:zoom-in; }
   .zoombox { position:fixed; inset:0; z-index:100; background:rgba(28,27,24,.55); cursor:zoom-out;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
   .zoombox .zstage { overflow:hidden; border-radius:10px; background:var(--paper);
@@ -681,6 +678,7 @@ ins { color:var(--koke); text-decoration:none; }
   .cconn .jlab { font:400 8.5px var(--mono); color:var(--yamabuki); }
   .kc { display:inline-block; font-family:var(--mono); font-size:9px; padding:0 5px; border-radius:3px;
     background:var(--paper); border:1px solid var(--yamabuki-line); }
+  .cactions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   /* the hand-off job — the board's own detached claude runner (Scan/Rewrite family), simulated here */
   .cjob { border:1px solid var(--ai-line); border-radius:var(--r-md); background:var(--ai-tint);
     padding:10px 14px; margin-top:var(--s3); }
@@ -1798,7 +1796,7 @@ function renderFlow(id, flowId){
     const edge = i===0 ? '' : `<div class="edge ${stripFailed?'nrE':''}">→</div>`;
     if (ch.fail) stripFailed = true;
     return edge + `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
-      <div class="thumb" data-ci="${i}">${thumb}${cross&&ch.screen?`<span class="scrtag">${esc(ch.screen)}</span>`:''}${(ch.scene||ch.kind==='seed')?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${ch.kind==='seed'?'sceneSeed':ch.scene}','${esc(ch.name)}')">⤢</button>`:''}</div>
+      <div class="thumb" data-ci="${i}" ${(ch.scene||ch.kind==='seed')?`onclick="zoomScene(event,'${ch.kind==='seed'?'sceneSeed':ch.scene}','${esc(ch.name)}')" title="click to zoom"`:''}>${thumb}${cross&&ch.screen?`<span class="scrtag">${esc(ch.screen)}</span>`:''}</div>
       <div class="chname">${esc(ch.name)}</div><div class="chips">${chips}</div></div>`;
   }).join('');
   F.chapters.forEach((ch,i) => {
@@ -1957,7 +1955,7 @@ function renderCompose(id){
       <div class="lrow ${ready(n)?'':'dim'} ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}"
            onclick="compAdd('${n.id}')" onmouseenter="rowPlay(event,'${n.id}')" onmouseleave="rowStill(event,'${n.id}')"
            title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
-        <div class="lthumb" data-lt="${n.id}">${n.scene?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${n.scene}','${esc(n.name)}')">⤢</button>`:''}</div>
+        <div class="lthumb" data-lt="${n.id}" ${n.scene?`onclick="zoomScene(event,'${n.scene}','${esc(n.name)}')" title="click to zoom"`:''}></div>
         <div class="lmeta2"><div class="lname2">${esc(n.name)}${filler && filler.id===n.id ? ' <b style="color:var(--yamabuki)">← fills the gap</b>' : ''}</div>
           ${ready(n) ? '' : `<div class="lneed">needs ${n.needs.filter(t=>!endState.has(t)).join(' · ')}</div>`}</div>
         <span class="lrid">${n.proves}</span>
@@ -1983,7 +1981,7 @@ function renderCompose(id){
       ${provesList.length?`<span class="schip">proves ${provesList.join(' · ')}</span>`:''}</div>`;
   let chainHtml = `<div class="crow2 given">
       <div class="cdot"><span></span></div>
-      <div class="cthumb2" data-bt="given"><button class="zbtn" title="zoom" onclick="zoomScene(event,'sceneSeed','the fixture Given')">⤢</button></div>
+      <div class="cthumb2" data-bt="given" onclick="zoomScene(event,'sceneSeed','the fixture Given')" title="click to zoom"></div>
       <div class="cmeta2"><div class="cname3">${esc(COMPOSE_START.given)}</div><div class="csub3">given · set once</div></div>
       <span class="cchip" style="color:var(--ink-3);border-color:var(--line2);background:var(--wash)">fixture</span></div>`;
   v.forEach((x,i) => {
@@ -1993,7 +1991,7 @@ function renderCompose(id){
       : `<div class="cconn gap"><span class="seg"></span><span class="jlab">needs ${x.missing.map(m=>`<span class="kc">${m}</span>`).join(' ')}${filler?` — <b>${esc(filler.name)}</b> fills it, pinned top-left`:''}</span></div>`;
     chainHtml += `<div class="crow2 ${x.n.proven?'':'outline'}${x.missing.length?' gapb':''}">
       <div class="cdot"><span></span></div>
-      <div class="cthumb2" data-bt="${i}">${x.n.scene?`<button class="zbtn" title="zoom" onclick="zoomScene(event,'${x.n.scene}','${esc(x.n.name)}')">⤢</button>`:''}</div>
+      <div class="cthumb2" data-bt="${i}" ${x.n.scene?`onclick="zoomScene(event,'${x.n.scene}','${esc(x.n.name)}')" title="click to zoom"`:''}></div>
       <div class="cmeta2"><div class="cname3">${esc(x.n.name)}</div>
         <div class="csub3">beat ${i+1} · ${esc(x.n.screen)}${x.n.proven?'':' · unproven — written red-first here'}</div></div>
       <span class="cchip">${x.n.proves}</span>
@@ -2001,7 +1999,7 @@ function renderCompose(id){
   });
   document.getElementById('root').innerHTML = `<div class="wrap">
     <div class="cwrap">
-      <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">hover = preview · click = chain · ⤢ = zoom</span></div>${lib}</div>
+      <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">hover = preview · click name = chain · click gif = zoom</span></div>${lib}</div>
       <div>
         <div class="cpanel">
           <div class="cnamebar"><span class="lbl2">flow name</span><input id="compName" value="Roll-up round trip" oninput="compPrompt()">
@@ -2011,11 +2009,16 @@ function renderCompose(id){
         </div>
         <div id="compJob" class="cjob" hidden><div class="cjhead">authoring — a detached claude job, the Scan · Rewrite runner</div><div class="cjsteps"></div></div>
         <div class="cout">
-          <div class="cprompt"><div class="ph2">the prompt this hands over
-            <button class="linkbtn" onclick="compCopy()" style="margin-left:auto">⧉ copy it instead</button>
-            <button class="btn dark" onclick="compHand()">✳ Author this flow — Claude writes the test</button></div><pre id="compPre"></pre></div>
-          <div class="chonest">One click hands this prompt to the board's own <b>detached claude job</b> — the same runner Scan and
-            Rewrite already use (needs a signed-in <span class="mono">claude</span>; Cancel kills the process group). Claude still writes
+          <div>
+            <div class="cactions">
+              <button class="btn dark" onclick="compHand()">＋ Add test — runs in Claude</button>
+              <button class="btn" onclick="compCopy()">⧉ Copy prompt — run it yourself</button>
+              <button class="linkbtn" id="promptTog" onclick="togglePrompt()">view the prompt</button>
+            </div>
+            <div class="cprompt" id="compPromptBox" hidden style="margin-top:10px"><div class="ph2">what gets handed to Claude</div><pre id="compPre"></pre></div>
+          </div>
+          <div class="chonest"><b>Add test</b> hands the prompt to the board's own <b>detached claude job</b> — the same runner Scan and
+            Rewrite already use (signed-in <span class="mono">claude</span> required; Cancel kills the process group). Claude writes
             the test <b>red-first</b>; the composer itself <b>writes, runs and stores nothing</b>, and the flow appears on the board
             when its test lands and runs. Draft lives in your browser only.</div>
         </div>
@@ -2099,6 +2102,11 @@ Given (the fixture): ${COMPOSE_START.given}
 ${beats || '  (chain beats above)'}
 ${unproven.length ? `\nUnproven beats: ${unproven.map(x=>x.n.proves).join(', ')} — this flow is their FIRST proof; same red-first standard.\n` : ''}
 Discipline (kg-e2e): failing test FIRST · every Then a real assertion · checkReq('<id>') inside the beat it proves.`;
+}
+function togglePrompt(){
+  const box = document.getElementById('compPromptBox'), tog = document.getElementById('promptTog');
+  box.hidden = !box.hidden;
+  tog.textContent = box.hidden ? 'view the prompt' : 'hide the prompt';
 }
 function compCopy(){
   const t = document.getElementById('compPre').textContent;
