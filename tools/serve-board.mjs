@@ -288,6 +288,14 @@ function recordRun (entry) {
   // it, or the record directory grows without limit.
   const runs = recordRunEntry(entry)
   const keep = new Set(runs.map(r => r.runId).filter(Boolean))
+  // NEVER prune a LIVE run's record dir. A run only enters the log at its own close, so while it
+  // runs its directory is exactly the thing this sweep would call an orphan — and with takeover
+  // (R4) siblings genuinely overlap: the superseded run's close, or a long close of an earlier
+  // sibling, fired this prune while another run was mid-flight and deleted its record out from
+  // under it. Its reporter then had nowhere to write shots.json, and the run came back with zero
+  // per-case records (the R6/R8 "records every test case" failure, 2026-08-21 — surfaced when the
+  // Task-15 evidence harvest lengthened the reporter's onEnd and widened the race window).
+  for (const j of [running, ...runStack]) if (j && j.runId) keep.add(String(j.runId))
   for (const name of (existsSync(RUNDIR) ? readdirSync(RUNDIR) : [])) {
     if (!keep.has(name)) rmSync(join(RUNDIR, name), { recursive: true, force: true })
   }

@@ -351,8 +351,12 @@ export default class ResultsIndexReporter {
     // The manifest lives in the run's own record directory, so it is pruned with the run it
     // describes and never outlives its images.
     if (process.env.BOARD_RECORD) {
-      try { writeFileSync(join(process.env.BOARD_RECORD, 'shots.json'), JSON.stringify(shotsByTest)) }
-      catch (err) { console.error('shots manifest write failed:', err) }
+      // mkdir first: a run that produced no artifacts (a no-match grep) never created the dir, and
+      // a sibling's prune once swept a live dir mid-run — the manifest is worth a recreate either way.
+      try {
+        mkdirSync(process.env.BOARD_RECORD, { recursive: true })
+        writeFileSync(join(process.env.BOARD_RECORD, 'shots.json'), JSON.stringify(shotsByTest))
+      } catch (err) { console.error('shots manifest write failed:', err) }
     }
   }
 }
