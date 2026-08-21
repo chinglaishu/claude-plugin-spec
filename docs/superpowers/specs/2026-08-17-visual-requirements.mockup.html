@@ -626,7 +626,7 @@ ins { color:var(--koke); text-decoration:none; }
   .lrow.hint { border-color:var(--yamabuki); background:var(--yamabuki-tint); }
   .lrow.dim { opacity:.42; }
   .lrow.dim:hover { opacity:.9; }
-  .lthumb { width:58px; height:32px; flex:none; border:1px solid var(--line2); border-radius:4px;
+  .lthumb { width:88px; height:48px; flex:none; border:1px solid var(--line2); border-radius:4px;
     overflow:hidden; position:relative; background:var(--wash); }
   .lmeta2 { min-width:0; flex:1; }
   .lname2 { font-size:var(--t-xs); line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -653,7 +653,7 @@ ins { color:var(--koke); text-decoration:none; }
   .crow2.given .cdot span { background:var(--ink-3); }
   .crow2.outline .cdot span { width:8px; height:8px; background:var(--paper); border:2px dashed var(--yamabuki); }
   .crow2.gapb .cdot span { background:var(--yamabuki); }
-  .cthumb2 { width:96px; height:52px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
+  .cthumb2 { width:150px; height:81px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
     overflow:hidden; position:relative; background:var(--wash); }
   .cmeta2 { min-width:0; flex:1; }
   .cname3 { font-size:var(--t-sm); line-height:1.35; }
@@ -671,6 +671,14 @@ ins { color:var(--koke); text-decoration:none; }
   .cconn .jlab { font:400 8.5px var(--mono); color:var(--yamabuki); }
   .kc { display:inline-block; font-family:var(--mono); font-size:9px; padding:0 5px; border-radius:3px;
     background:var(--paper); border:1px solid var(--yamabuki-line); }
+  /* the hand-off job — the board's own detached claude runner (Scan/Rewrite family), simulated here */
+  .cjob { border:1px solid var(--ai-line); border-radius:var(--r-md); background:var(--ai-tint);
+    padding:10px 14px; margin-top:var(--s3); }
+  .cjob .cjhead { font-family:var(--mono); font-size:10px; color:var(--ai); letter-spacing:.08em;
+    text-transform:uppercase; margin-bottom:6px; }
+  .cjstep { font:400 11px/1.7 var(--mono); color:var(--ai); display:flex; gap:7px; align-items:baseline; }
+  .cjstep.run { opacity:.65; }
+  .cjstep a { color:var(--ai); font-weight:500; }
   .cout { display:grid; grid-template-columns:1fr 300px; gap:var(--s4); margin-top:var(--s3); align-items:start; }
   .cprompt { border:1px solid var(--line2); border-radius:var(--r-md); background:var(--paper); overflow:hidden; }
   .cprompt .ph2 { display:flex; align-items:center; gap:var(--s2); padding:7px 12px; border-bottom:1px solid var(--line2);
@@ -695,7 +703,7 @@ ins { color:var(--koke); text-decoration:none; }
   .stopov .runone { border:1px solid currentColor; background:none; color:inherit; border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; opacity:.85; }
   /* chapter bar = a row of video-chapter thumbnails; state lives on the thumb ring (human 2026-08-21) */
   .chstrip { display:flex; gap:10px; overflow-x:auto; padding:6px 2px 2px; justify-content:center; }
-  .ch { flex:0 1 132px; min-width:100px; border:0; background:none; padding:0; cursor:pointer;
+  .ch { flex:0 1 176px; min-width:132px; border:0; background:none; padding:0; cursor:pointer;
     opacity:.55; transition:opacity .2s; }
   .ch:hover { opacity:.85; }
   .ch.cur, .ch.done, .ch.fail, .ch.nr { opacity:1; }
@@ -703,7 +711,7 @@ ins { color:var(--koke); text-decoration:none; }
   .ch.done .chname::after { content:" ✓"; color:var(--ok); }
   .ch.fail .thumb { border-color:var(--bad-line); background:var(--bad-bg); }
   .ch.nr .thumb { border-style:dashed; border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
-  .thumb { position:relative; height:62px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:5px; background:#f4f5f8; }
+  .thumb { position:relative; height:84px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:5px; background:#f4f5f8; }
   .scrtag { position:absolute; bottom:3px; left:3px; z-index:3; font-family:var(--mono); font-size:8px;
     letter-spacing:.04em; text-transform:uppercase; color:var(--dim); background:rgba(253,252,249,.88);
     padding:0 4px; border-radius:3px; }
@@ -1785,8 +1793,8 @@ function renderFlow(id, flowId){
   F.chapters.forEach((ch,i) => {
     const box = document.querySelector(`#chStrip .thumb[data-ci="${i}"]`);
     if (!box) return;
-    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.29, 460, 248);
-    else if (ch.scene) mountStill(box, ch.scene, 0.29, 460, 248);
+    if (ch.kind === 'seed') mountStill(box, 'sceneSeed', 0.36, 460, 248);
+    else if (ch.scene) mountStill(box, ch.scene, 0.36, 460, 248);
   });
   if (autoPlay) playFrom(id, F.id, 0); else pausedFlow(id, F.id);
 }
@@ -1990,20 +1998,24 @@ function renderCompose(id){
           ${sum}
           <div class="vchain">${chainHtml}</div>
         </div>
+        <div id="compJob" class="cjob" hidden><div class="cjhead">authoring — a detached claude job, the Scan · Rewrite runner</div><div class="cjsteps"></div></div>
         <div class="cout">
-          <div class="cprompt"><div class="ph2">the output — a ready kg-e2e prompt
-            <button class="btn dark" onclick="compCopy()">✳ Copy — hand to Claude</button></div><pre id="compPre"></pre></div>
-          <div class="chonest">The composer <b>writes, runs and stores nothing</b> — Claude writes the test red-first from this prompt,
-            and the flow appears on the board only when that test lands and runs. Draft lives in your browser only.</div>
+          <div class="cprompt"><div class="ph2">the prompt this hands over
+            <button class="linkbtn" onclick="compCopy()" style="margin-left:auto">⧉ copy it instead</button>
+            <button class="btn dark" onclick="compHand()">✳ Author this flow — Claude writes the test</button></div><pre id="compPre"></pre></div>
+          <div class="chonest">One click hands this prompt to the board's own <b>detached claude job</b> — the same runner Scan and
+            Rewrite already use (needs a signed-in <span class="mono">claude</span>; Cancel kills the process group). Claude still writes
+            the test <b>red-first</b>; the composer itself <b>writes, runs and stores nothing</b>, and the flow appears on the board
+            when its test lands and runs. Draft lives in your browser only.</div>
         </div>
       </div>
     </div>
   </div>`;
   // paint thumbs: chain follows the gif·stills toggle; the library is stills + hover-play
-  const g = document.querySelector('.cthumb2[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .209, 460, 248);
-  v.forEach((x,i) => { const b = document.querySelector(`.cthumb2[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .209, 460, 248); });
+  const g = document.querySelector('.cthumb2[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .326, 460, 248);
+  v.forEach((x,i) => { const b = document.querySelector(`.cthumb2[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .326, 460, 248); });
   COMPOSE_NODES.forEach(n => document.querySelectorAll(`.lthumb[data-lt="${n.id}"]`).forEach(b => {
-    if (n.scene) mountStill(b, n.scene, .124, 460, 248);
+    if (n.scene) mountStill(b, n.scene, .19, 460, 248);
     else b.innerHTML = `<div class="noscene"><span>no scene</span></div>`;
   }));
   compPrompt();
@@ -2015,7 +2027,7 @@ function rowPlay(ev, nid){
   box.innerHTML = '';
   const st = document.createElement('div');
   st.className = 'stage short';
-  st.style.cssText = 'width:460px;height:248px;transform:scale(.124);transform-origin:top left;';
+  st.style.cssText = 'width:460px;height:248px;transform:scale(.19);transform-origin:top left;';
   box.appendChild(st);
   box._stop = play(st, SCENE[n.scene]);
   compStops.push(box._stop);
@@ -2024,7 +2036,7 @@ function rowStill(ev, nid){
   const n = cnodeOf(nid);
   const box = ev.currentTarget.querySelector('.lthumb'); if (!box) return;
   if (box._stop){ box._stop(); box._stop = null; }
-  if (n.scene) mountStill(box, n.scene, .124, 460, 248);
+  if (n.scene) mountStill(box, n.scene, .19, 460, 248);
 }
 function compAdd(id){
   const v = compValidate();
@@ -2058,6 +2070,33 @@ function compCopy(){
   const t = document.getElementById('compPre').textContent;
   (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject())
     .then(()=>toast('Prompt copied — paste it to Claude')).catch(()=>toast('Select and copy the prompt text'));
+}
+/* one click, no clipboard: hand the prompt to the board's detached claude runner (D4 amended by the
+   human 2026-08-21 — same job family as Scan/Rewrite; the test is still written red-first by Claude) */
+let compJobTimers = [];
+function compHand(){
+  const name = (document.getElementById('compName')?.value || 'Untitled flow').trim();
+  const start = compChain.length ? cnodeOf(compChain[0]).screen : compScreen;
+  compJobTimers.forEach(clearTimeout); compJobTimers = [];
+  const j = document.getElementById('compJob'); j.hidden = false;
+  const box = j.querySelector('.cjsteps'); box.innerHTML = '';
+  const steps = [
+    [`prompt handed over · job started detached — Cancel kills the group`, 900],
+    [`writing the failing test '${name}' into spec/${start}/test.spec.ts`, 1600],
+    [`watched it go RED — every beat's assertion fails without the code ✓`, 1300],
+    [`making it pass · one clean run, folded into the index`, 1600],
+    [`done — the flow is authored; it appears in the Flow view from its first run`, 0],
+  ];
+  let t = 0;
+  steps.forEach((s, i) => {
+    compJobTimers.push(setTimeout(() => {
+      box.querySelectorAll('.cjstep.run').forEach(e => { e.classList.remove('run'); e.firstElementChild.textContent = '✓'; });
+      box.appendChild(el(`<div class="cjstep ${i < steps.length-1 ? 'run' : ''}"><span>${i < steps.length-1 ? '◌' : '✓'}</span><span>${s[0]}</span></div>`));
+      if (i === steps.length-1)
+        box.appendChild(el(`<div class="cjstep"><span>→</span><span><a href="#/s/${start}/flow">open the Flow view</a> <span style="opacity:.7">· mockup — the real job is minutes, not seconds</span></span></div>`));
+    }, t));
+    t += s[1];
+  });
 }
 
 /* =================================================================== */

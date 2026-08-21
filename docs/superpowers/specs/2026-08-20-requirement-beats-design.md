@@ -124,6 +124,15 @@ Focus work — it depends on the beat grammar and shares the archetype kit with 
 the node library is derived (crawl/PRDs) or authored is exactly what the mockup explores; no
 storage decision before the human has seen it.
 
+**Amended 2026-08-21 (the human):** the node library derives from **behavior blocks + tests only**
+(the crawl feeds only the schematic archetype kit — a chainable node must carry a Then a real
+assertion holds); and the hand-off **may trigger itself**: instead of copying the prompt, one
+button hands it to the board's existing **detached claude job runner** (the Scan/Rewrite family —
+signed-in `claude` required, Cancel kills the process group). This does not cross the line above:
+the job is Claude writing the test **red-first** in a real session; the board still composes only
+the prompt, stores no graph, and the authored test remains the only flow that exists. The copy
+path stays as the manual fallback.
+
 ## Amendments to prior specs (with reasons — rule 6)
 
 1. **Schematics decision #1** ("add only this; no layout change", 2026-08-18) — **amended
