@@ -1883,16 +1883,16 @@ function playFrom(id, flowId, start){
 /* =================================================================== */
 /* one node per beat a test already proves — needs → gives are the joint tokens */
 const COMPOSE_NODES = [
-  { id:'cb-add',   screen:'task-list',   name:'add a task',                          proves:'R1', from:'F2', scene:'sceneR1',           proven:true,  needs:['seeded'],                     gives:['task'] },
-  { id:'cb-sub',   screen:'task-list',   name:'add a sub-task — the ring moves',     proves:'R3', from:'U1', scene:'sceneR3',           proven:true,  needs:['seeded'],                     gives:['container','subtask-open'] },
-  { id:'cb-roll',  screen:'task-list',   name:'tick the last open sub-task — roll-up', proves:'R4', from:'F1', scene:'sceneR4',         proven:true,  needs:['subtask-open'],               gives:['container-done'] },
-  { id:'cb-count', screen:'task-list',   name:'check the remaining count',           proves:'R5', from:'F1', scene:'sceneR5',           proven:true,  needs:['subtask-open'],               gives:['count-checked'] },
-  { id:'cb-views', screen:'task-list',   name:'filter to Today — badges agree',      proves:'R6', from:'F2', scene:'sceneR6',           proven:true,  needs:['task'],                       gives:['filtered'] },
-  { id:'cb-reload',screen:'task-list',   name:'reload — everything comes back',      proves:'R8', from:'F1', scene:null,                proven:true,  needs:[],                             gives:['reloaded'] },
-  { id:'cb-open',  screen:'task-detail', name:'open the container’s detail',         proves:'D1', from:'F3', scene:'sceneOpenDetail',   proven:true,  needs:['container'],                  gives:['detail-open'] },
-  { id:'cb-dtick', screen:'task-detail', name:'tick a sub-task from the detail',     proves:'D1', from:'F3', scene:'sceneDetailComplete', proven:true, needs:['detail-open','subtask-open'], gives:['detail-ticked'] },
-  { id:'cb-back',  screen:'task-detail', name:'back to the list — it reflects',      proves:'D2', from:'F3', scene:'sceneListReflects', proven:true,  needs:['detail-ticked'],              gives:[] },
-  { id:'cb-clear', screen:'settings',    name:'clear data asks to confirm first',    proves:'G2', from:null, scene:null,                proven:false, needs:[],                             gives:['confirm-shown'] },
+  { id:'cb-add',   screen:'task-list',   name:'add a task',                          proves:'R1', from:'F2', scene:'sceneR1',           proven:true, fn:true,   needs:['seeded'],                     gives:['task'] },
+  { id:'cb-sub',   screen:'task-list',   name:'add a sub-task — the ring moves',     proves:'R3', from:'U1', scene:'sceneR3',           proven:true, fn:true,   needs:['seeded'],                     gives:['container','subtask-open'] },
+  { id:'cb-roll',  screen:'task-list',   name:'tick the last open sub-task — roll-up', proves:'R4', from:'F1', scene:'sceneR4',         proven:true, fn:true,   needs:['subtask-open'],               gives:['container-done'] },
+  { id:'cb-count', screen:'task-list',   name:'check the remaining count',           proves:'R5', from:'F1', scene:'sceneR5',           proven:true, fn:true,   needs:['subtask-open'],               gives:['count-checked'] },
+  { id:'cb-views', screen:'task-list',   name:'filter to Today — badges agree',      proves:'R6', from:'F2', scene:'sceneR6',           proven:true, fn:true,   needs:['task'],                       gives:['filtered'] },
+  { id:'cb-reload',screen:'task-list',   name:'reload — everything comes back',      proves:'R8', from:'F1', scene:null,                proven:true, fn:false,   needs:[],                             gives:['reloaded'] },
+  { id:'cb-open',  screen:'task-detail', name:'open the container’s detail',         proves:'D1', from:'F3', scene:'sceneOpenDetail',   proven:true, fn:true,   needs:['container'],                  gives:['detail-open'] },
+  { id:'cb-dtick', screen:'task-detail', name:'tick a sub-task from the detail',     proves:'D1', from:'F3', scene:'sceneDetailComplete', proven:true, fn:true,  needs:['detail-open','subtask-open'], gives:['detail-ticked'] },
+  { id:'cb-back',  screen:'task-detail', name:'back to the list — it reflects',      proves:'D2', from:'F3', scene:'sceneListReflects', proven:true, fn:true,   needs:['detail-ticked'],              gives:[] },
+  { id:'cb-clear', screen:'settings',    name:'clear data asks to confirm first',    proves:'G2', from:null, scene:null,                proven:false, fn:false, needs:[],                             gives:['confirm-shown'] },
 ];
 const COMPOSE_START = { given:'frozen clock · storage cleared · seeded', gives:['seeded'] };
 let compChain = ['cb-sub','cb-roll'];          // the demo path — valid joints
@@ -1969,7 +1969,7 @@ function renderCompose(id){
            title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
         <div class="lthumb" data-lt="${n.id}" ${n.scene?`onclick="zoomScene(event,'${n.scene}','${esc(n.name)}')" title="click to zoom"`:''}></div>
         <div class="lmeta2"><div class="lname2">${esc(n.name)}${filler && filler.id===n.id ? ' <b style="color:var(--yamabuki)">← fills the gap</b>' : ''}</div>
-          ${ready(n) ? '' : `<div class="lneed">needs ${n.needs.filter(t=>!endState.has(t)).join(' · ')}</div>`}</div>
+          ${ready(n) ? '' : `<div class="lneed">needs ${n.needs.filter(t=>!endState.has(t)).join(' · ')}</div>`}${n.proven && !n.fn ? `<div class="lneed" style="color:var(--mute)">inline test — a flow using it runs via Claude</div>` : ''}</div>
         <span class="lrid">${n.proves}</span>
       </div>`;
   const lib = `<input class="csearch" id="compQ" placeholder="⌕ find a beat — name or R id" value="${esc(compQ)}"
@@ -2022,17 +2022,14 @@ function renderCompose(id){
         <div id="compJob" class="cjob" hidden><div class="cjhead">authoring — a detached claude job, the Scan · Rewrite runner</div><div class="cjsteps"></div></div>
         <div class="cout">
           <div>
-            <div class="cactions">
-              <button class="btn dark" onclick="compHand()">＋ Add test — runs in Claude</button>
-              <button class="btn" onclick="compCopy()">⧉ Copy prompt — run it yourself</button>
-              <button class="linkbtn" id="promptTog" onclick="togglePrompt()">view the prompt</button>
-            </div>
+            <div class="cactions" id="cactions"></div>
             <div class="cprompt" id="compPromptBox" hidden style="margin-top:10px"><div class="ph2">what gets handed to Claude</div><pre id="compPre"></pre></div>
           </div>
-          <div class="chonest"><b>Add test</b> hands the prompt to the board's own <b>detached claude job</b> — the same runner Scan and
-            Rewrite already use (signed-in <span class="mono">claude</span> required; Cancel kills the process group). Claude writes
-            the test <b>red-first</b>; the composer itself <b>writes, runs and stores nothing</b>, and the flow appears on the board
-            when its test lands and runs. Draft lives in your browser only.</div>
+          <div class="chonest"><b>Two paths, no guessing which</b> — when every chained beat is a <b>function-shaped, proven</b>
+            step, Add test <b>composes the flow file deterministically: no AI at all</b> (each beat call threads exact expected
+            numbers through shared state). When any beat is inline or not yet written, Add test hands the prompt to the board's
+            <b>detached claude job</b> (the Scan · Rewrite runner) and Claude writes it red-first. Either way the composer itself
+            stores nothing, and the flow appears on the board when its test lands and runs.</div>
         </div>
       </div>
     </div>
@@ -2044,7 +2041,31 @@ function renderCompose(id){
     if (n.scene) mountStill(b, n.scene, .256, 460, 248);
     else b.innerHTML = `<div class="noscene"><span>no scene</span></div>`;
   }));
+  // two paths (D4 amendment #2): all beats function-shaped + proven → compose with NO AI; else the claude job
+  const inline = compChain.map(cid => cnodeOf(cid)).filter(n => !n.fn || !n.proven);
+  const composable = compChain.length > 0 && inline.length === 0;
+  document.getElementById('cactions').innerHTML = composable
+    ? `<button class="btn dark" onclick="compCompose()">＋ Add test — composed instantly, no AI</button>
+       <button class="btn" onclick="compCopy()">⧉ Copy prompt — run Claude yourself</button>
+       <button class="linkbtn" id="promptTog" onclick="togglePrompt()">view the prompt</button>`
+    : `<button class="btn dark" onclick="compHand()">＋ Add test — runs in Claude</button>
+       <button class="btn" onclick="compCopy()">⧉ Copy prompt — run it yourself</button>
+       <button class="linkbtn" id="promptTog" onclick="togglePrompt()">view the prompt</button>
+       <span class="fs2 mono" style="font-size:9px;color:var(--mute)">${compChain.length ? esc(inline.map(n=>n.proves).join(' · ')) + (inline.length===1?' isn’t':' aren’t') + ' function-shaped yet — Claude writes this one' : 'chain beats first'}</span>`;
   compPrompt();
+}
+function compCompose(){
+  const name = (document.getElementById('compName')?.value || 'Untitled flow').trim();
+  const start = compChain.length ? cnodeOf(compChain[0]).screen : compScreen;
+  const covers = [...new Set(compChain.map(id => { const n = cnodeOf(id); return (n.screen===start ? '' : n.screen+':') + n.proves; }))];
+  const j = document.getElementById('compJob'); j.hidden = false;
+  j.querySelector('.cjhead').textContent = 'composed — deterministic, no model involved';
+  j.querySelector('.cjsteps').innerHTML = [
+    `<div class="cjstep"><span>✓</span><span>wrote spec/${start}/test.spec.ts — test('${esc(name)}') · coverReqs(${covers.map(c=>`'${c}'`).join(', ')})</span></div>`,
+    `<div class="cjstep"><span>✓</span><span>${compChain.length} beat calls chained, each inside its checkReq — expected numbers threaded through shared state</span></div>`,
+    `<div class="cjstep"><span>✓</span><span>validity = every beat proven red-first in its unit home + this file's first run passing</span></div>`,
+    `<div class="cjstep"><span>→</span><span><a href="#/s/${start}/flow">run it — the flow folds in and appears in the Flow view</a> <span style="opacity:.7">· mockup</span></span></div>`,
+  ].join('');
 }
 function rowPlay(ev, nid){
   const n = cnodeOf(nid); if (!n.scene) return;
@@ -2133,6 +2154,7 @@ function compHand(){
   const start = compChain.length ? cnodeOf(compChain[0]).screen : compScreen;
   compJobTimers.forEach(clearTimeout); compJobTimers = [];
   const j = document.getElementById('compJob'); j.hidden = false;
+  j.querySelector('.cjhead').textContent = 'authoring — a detached claude job, the Scan · Rewrite runner';
   const box = j.querySelector('.cjsteps'); box.innerHTML = '';
   const steps = [
     [`prompt handed over · job started detached — Cancel kills the group`, 900],

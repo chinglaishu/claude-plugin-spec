@@ -124,6 +124,19 @@ Focus work — it depends on the beat grammar and shares the archetype kit with 
 the node library is derived (crawl/PRDs) or authored is exactly what the mockup explores; no
 storage decision before the human has seen it.
 
+**Amended 2026-08-21 #2 (the human): deterministic-first hybrid composition.** A beat authored as an
+**exported step function** — it performs its When, asserts its Then with **exact numbers computed
+from a threaded state object**, and updates that state — is *composable*: when every beat in a
+chain is function-shaped and proven, "Add test" **emits the flow file deterministically, no model
+involved** (imports · coverReqs · the fixture Given · each beat call inside its checkReq). The
+Claude job remains for chains containing inline (un-refactored) or not-yet-written beats. This
+deliberately amends *flows authored, never runtime-composed* and this section's own line: composing
+from **authored, individually red-first-proven** beats is not the rejected test generator — every
+assertion in the output was still written and proven by hand; only the plumbing is mechanical. A
+composed flow's validity = proven beats + its first run passing (rule-1 amendment pending the
+human's signature). kg-e2e gains the beat-function convention; existing inline tests compose only
+after refactor.
+
 **Amended 2026-08-21 (the human):** the node library derives from **behavior blocks + tests only**
 (the crawl feeds only the schematic archetype kit — a chainable node must carry a Then a real
 assertion holds); and the hand-off **may trigger itself**: instead of copying the prompt, one
