@@ -103,20 +103,21 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     // a test row carries a meta-line hook under its title (loadRuns fills it from the case's record)
     await expect(t.locator('.tmeta')).toBeAttached()
 
-    // VISIBLY, a requirement reads as its title until opened: the Grid row leads with the title and
-    // does NOT carry the long description; opening the row reveals the full FORMATTED markdown in
-    // Focus — real paragraphs and lists, not raw text.
+    // VISIBLY, a requirement reads as its title until opened: the List row (board R13, Grid became
+    // List 2026-08-21) leads with the title and does NOT carry the long description; opening the row
+    // unfolds the full FORMATTED markdown in place — the row's open body IS the Focus body.
     const bodyFrag = (await req.locator('.body p').count())
       ? (((await req.locator('.body p').first().textContent()) || '').trim().slice(0, 40)) : ''
     const rid = await req.getAttribute('data-r')
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-    const row = dt.locator(`.gridview .grrow[data-r="${rid}"]`)
-    await expect(row.locator('.grt')).toBeVisible()
-    if (bodyFrag) expect(await row.textContent()).not.toContain(bodyFrag)   // the title, not the description
-    await row.click()
-    const ov = dt.locator('.focusov')
-    await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
-    await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    const row = dt.locator(`.gridview .lst-card[data-r="${rid}"]`)
+    await expect(row.locator('.lst-head .lttl')).toBeVisible()
+    if (bodyFrag) expect(await row.locator('.lst-head').textContent()).not.toContain(bodyFrag)   // the title, not the description
+    await row.locator('.lst-head').click()
+    const body = row.locator('.lst-body')
+    await expect(body.locator('.fread .fttl')).not.toBeEmpty()
+    // R1 is prose-only (no behavior lead), so its full formatted text shows open in the body
+    await expect(body.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
   })
 })
 
@@ -212,11 +213,16 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(rows.nth(0).locator('.bdet .bprove')).toContainText(await titleOf('R10'))
 
     // the complete raw record opens in the Steps WINDOW — reached the way a person reaches it now:
-    // the reader's ⋯ menu carries the covering test's own wired Steps button (R13). Wait for the
-    // relocated recording first — it only appears once the fold has reopened the reader with the
-    // stubbed record, so it marks the reader as settled.
+    // the reader's ⋯ menu carries the covering test's own wired Steps button (R13). Settle the fold,
+    // then FORCE R1 into a media-bearing status (the dogfood lag makes the live word nondeterministic
+    // mid-suite) and rebuild the reader, so the media pane's video panel holds the relocated
+    // recording — the same wired .rec node, moved in (R13 media, the frozen mockup).
     const ov = dt.locator('.focusov')
-    await expect(ov.locator('.frecwrap .rec')).toBeVisible()
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    await expect(ov.locator('.fmpanel[data-m="video"] .rec.playable')).toBeAttached()
     await ov.locator('.feval .fmenubtn').click()
     await ov.locator('.feval .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
@@ -231,10 +237,13 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
 
     // the player never CROPS the frame: the narration topbar is burned into the video's top edge,
     // and an object-fit that fills-and-crops (cover) sliced exactly that edge off in display.
-    // Play the reader's relocated recording — the same wired .rec node, moved in (R13).
-    await ov.locator('.frecwrap .rec').click()
-    const fit = await ov.locator('.frecwrap .rec video').evaluate(el => getComputedStyle(el).objectFit)
+    // Switch the toolbar to video (frames is the D2 default) and play the relocated recording —
+    // the same wired .rec node, moved into the media pane's video panel (R13).
+    await ov.locator('.fmedia .medbar button[data-m="video"]').click()
+    await ov.locator('.fmpanel[data-m="video"] .rec').click()
+    const fit = await ov.locator('.fmpanel[data-m="video"] .rec video').evaluate(el => getComputedStyle(el).objectFit)
     expect(fit).toBe('contain')
+    await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
 
     // the bar SURVIVES a navigation — a beat that walks to another page keeps its narration
     await page.reload()
@@ -284,8 +293,15 @@ test('R10 — the player plays the VOICED recording when a run produced one', as
     await page.reload()
     // the reload reopens the detail on the Focus default — R1's page, whose evidence is R1's own
     // covering test moved in with its WIRED player (R13); the fold hands it the stubbed record and
-    // relocates the now-playable recording below the strip
-    const rec = dt.locator('.focusov .frecwrap .rec')
+    // the media pane's video panel holds the now-playable recording. Force a media-bearing status
+    // first (dogfood lag) and rebuild the reader, then switch the toolbar to video.
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    const rec = dt.locator('.focusov .fmpanel[data-m="video"] .rec')
+    await expect(rec).toBeAttached()
+    await dt.locator('.focusov .fmedia .medbar button[data-m="video"]').click()
     await expect(rec).toBeVisible()
     await rec.click()
     // the VOICED cut is what plays — the same record's silent a.webm would play without init R6
@@ -422,13 +438,14 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await expect(test0.locator('.tags .tag[data-r]')).not.toHaveCount(0)
     const rid = await test0.locator('.tags .tag[data-r]').first().getAttribute('data-r')
     const flow = ((await test0.locator('.ttl').textContent()) || '').trim()
-    // …and the board SERVES the many-to-many wire: open that requirement in Focus — the proof line
-    // names this very test, resolved BY TAG (break the tag lookup and this fails)
+    // …and the board SERVES the many-to-many wire: open that requirement — in the List an open row
+    // IS the Focus body (board R13, 2026-08-21), so the proof line inside it names this very test,
+    // resolved BY TAG (break the tag lookup and this fails)
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-    await dt.locator(`.gridview .grrow[data-r="${rid}"]`).click()
-    const ov = dt.locator('.focusov')
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid!)
-    await expect(ov.locator('.feval .fpby')).toContainText(flow)
+    await dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-head`).click()
+    const body = dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-body`)
+    await expect(body.locator('.fread .frmeta .fid')).toHaveText(rid!)
+    await expect(body.locator('.feval .fpby')).toContainText(flow)
   })
 })
 
@@ -529,7 +546,7 @@ test('No acceptance gate — nothing on the detail waits to be accepted', async 
   })
 })
 
-test('The detail offers a Focus / Grid / Flow toggle — Focus reads one requirement per page in two containers', async ({ page }) => {
+test('The detail offers a Focus / List / Flow toggle — Focus leads with the behavior, and media derives from status × beats', async ({ page }) => {
   await coverReqs('R13')
   // FOCUS is the default view — the reader opens straight away
   await page.goto('/#/board')
@@ -537,29 +554,40 @@ test('The detail offers a Focus / Grid / Flow toggle — Focus reads one require
   await checkReq('R13', async () => {
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
-    // the header toggle offers EXACTLY Focus / Grid / Flow (Columns retired as a view 2026-08-18 —
-    // its baked rows stay as the hidden shared source, asserted below), and Focus is active on open
-    // — a one-requirement reader laid out as TWO containers
+    // the header toggle offers EXACTLY Focus / List / Flow (the frozen mockup contract, the human
+    // 2026-08-21 — Grid became List; the router key stays 'grid'), and Focus is active on open
     const ov = dt.locator('.focusov')
     await expect(ov).toBeVisible()
     await expect(dt.locator('.viewseg .vseg')).toHaveCount(3)
-    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'Grid', 'Flow'])
+    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'List', 'Flow'])
     await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveCount(0)
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
     await expect(dt.locator('.cols')).toBeHidden()
     await expect(ov.locator('.fpage')).toHaveCount(1)
-    // its id, state, title and full body on the LEFT container
+    // its id, state and title on the LEFT container
     await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
-    // The Focus reader's chip reads the SAME four-word vocabulary as Columns/Grid (board R4, amended
-    // 2026-08-17) — no separate binary proven/unproven surface left anywhere in the detail.
-    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested/)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested|changed/)
     await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
-    await expect(ov.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
-    // THE PROOF on the RIGHT container — the primary covering test's OWN evidence, MOVED in and wired
-    // (no player rebuilt, R13). The wired controls are relocated into the proof header (#4): Run is
-    // always shown, Run in background / Logs / Steps fold behind a ⋯ menu — still the real nodes, so
-    // the frame strip and the machinery are all here. The LEFT container carries the steps as a clone.
-    // (Robust to the dogfood lag — asserts the machinery, not a specific green state.)
+
+    // THE BEHAVIOR LEADS (R13, the frozen mockup): deep-link to R13 itself — a requirement that
+    // carries a Given/When→Then block — via the #/<screen>/<rid> route the feature strip uses too.
+    await page.goto('/#/board/R13')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
+    const beh = ov.locator('.fread .behavior')
+    await expect(beh).toHaveCount(1)
+    await expect(beh.locator('.brow')).toHaveCount(3)          // one Given + a When→Then beat
+    await expect(beh).toContainText('Focus / List / Flow')
+    // …and the PROSE is COLLAPSED beneath it, one click away — never repeated open under the shape
+    const prose = ov.locator('.fread .fbody')
+    await expect(prose).toBeHidden()
+    await ov.locator('.fread .prose-t').click()
+    await expect(prose).toBeVisible()
+    await expect(prose).toContainText('The detail header carries a toggle')
+    // the SCHEMATIC slot sits below the reading — an honest placeholder until the viz pass draws one
+    await expect(ov.locator('.fleft .fschem')).toContainText('no schematic drawn yet')
+
+    // THE PROOF on the RIGHT — Run + ⋯ header and the proof line, the covering test's OWN node moved
+    // in wired (no player rebuilt), exactly as before the media pane landed
     await expect(ov.locator('.feval .fphead')).toBeVisible()
     await expect(ov.locator('.feval .fpby')).toBeVisible()
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
@@ -567,31 +595,78 @@ test('The detail offers a Focus / Grid / Flow toggle — Focus reads one require
     await expect(ov.locator('.feval .fpacts .fmenu .fmenubtn')).toHaveCount(1) // the rest behind ⋯
     await expect(ov.locator('.feval .fmenupop [data-steps]')).toHaveCount(1)
     await expect(ov.locator('.feval .fmenupop [data-log]')).toHaveCount(1)
-    // the ⋯ menu's Logs and Steps must actually OPEN their windows from here — the buttons are moved
-    // out of their test row, so the handlers have to resolve the record off the reader's moved node
-    // (this is the whole point of relocating them; a broken resolver leaves the menu dead)
     await ov.locator('.feval .fmenubtn').click()
     await ov.locator('.feval .fmenupop [data-log]').click()
     await expect(page.locator('#logsheet')).toHaveClass(/\bon\b/)
     await page.locator('#logsheet [data-logclose]').click()
-    await ov.locator('.feval .fmenubtn').click()
-    await ov.locator('.feval .fmenupop [data-steps]').click()
-    await expect(page.locator('#stepsheet')).toHaveClass(/\bon\b/)
-    await page.locator('#stepsheet [data-stepsclose]').click()
-    await expect(ov.locator('.fread .fsteps .fstepclone .beat').first()).toBeVisible()
-    // there is NO in-reader view-escape button (.fcols/.fopen never came back) — the header toggle
-    // is the only view switch
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
-    // a WINDOWED pager (board R14): with more than ten requirements the window slides around the
-    // current one, but the FIRST and LAST page always anchor the ends so you can jump to req 1 or the
-    // last from anywhere, with an ellipsis marking each gap. (Was a plain ten-cap sliding window that
-    // hid both ends.) The pager rides the detail's footer bar (dt), not the reader (ov).
+    // MEDIA DEFAULTS DERIVE FROM STATUS × BEATS (D2; the frozen mockup). The status is FORCED
+    // client-side onto real .req nodes — the established deterministic technique (the dogfood lag
+    // makes live statuses stale mid-run) — while the baked EVIDENCE attributes (the D2 harvest's
+    // frames, folded from real runs into spec/_results-index.json and baked as data-ev-*) stay real.
+    const evId = await dt.locator('.reqpane .req[data-ev-after]').first().getAttribute('data-r')
+    expect(evId, 'at least one requirement must carry harvested evidence').toBeTruthy()
+    const force = (rid: string, st: string) =>
+      dt.locator(`.reqpane .req[data-r="${rid}"]`).evaluate((el, s) => el.setAttribute('data-status', s), st)
+    const reopen = async (rid: string) => {    // hash-route away and back so the reader rebuilds
+      await page.goto('/#/board/' + (rid === 'R2' ? 'R3' : 'R2'))
+      await page.goto(`/#/board/${rid}`)
+      await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
+    }
+
+    // PASSED → the harvested frame pair, under the stills · gif · video toolbar, stills the default
+    await force(evId!, 'passed')
+    await reopen(evId!)
+    const media = ov.locator('.feval .fmedia')
+    await expect(media).toHaveCount(1)
+    await expect(media.locator('.medbar button')).toHaveText(['stills', 'gif', 'video'])
+    await expect(media.locator('.medbar button[data-m="frames"]')).toHaveClass(/\bon\b/)
+    const framesPanel = media.locator('.fmpanel[data-m="frames"]')
+    await expect(framesPanel).toBeVisible()
+    await expect(framesPanel.locator('.fcell img')).not.toHaveCount(0)   // the harvested before/after pair
+    await expect(framesPanel.locator('.fcap').first()).toContainText(/before|given/)
+    // the TOOLBAR OVERRIDES the default — a client-side preference (localStorage), never stored in the tree
+    await media.locator('.medbar button[data-m="video"]').click()
+    await expect(media.locator('.fmpanel[data-m="video"]')).toBeVisible()
+    await expect(framesPanel).toBeHidden()
+    expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia'))).toBe('video')
+    await media.locator('.medbar button[data-m="frames"]').click()
+    await expect(framesPanel).toBeVisible()
+
+    // FAILED → the red frame; no gif mode (the mockup skips it), video says what it is
+    await force(evId!, 'failed')
+    await reopen(evId!)
+    await expect(media.locator('.medbar button[data-m="clip"]')).toHaveCount(0)
+    await expect(media.locator('.medbar button[data-m="video"]')).toHaveText('video@fail')
+    await expect(media.locator('.fmpanel[data-m="frames"] .fcell.hotbad')).toHaveCount(1)
+
+    // CHANGED → the last proof media under a pinned-era watermark
+    await force(evId!, 'changed')
+    await reopen(evId!)
+    await expect(media.locator('.fmbar')).toContainText('pinned era')
+    await expect(media.locator('.wmark')).toBeVisible()
+    await expect(media.locator('.wmark')).toContainText('re-run to re-verify')
+
+    // UNTESTED → no media and no toolbar: the pane reads the honest line and offers the next move,
+    // which opens the add-test prompt with this requirement pre-picked (R15 behavior, unchanged)
+    await force(evId!, 'untested')
+    await reopen(evId!)
+    await expect(media.locator('.medbar')).toHaveCount(0)
+    await expect(media.locator('.noev')).toContainText('no proof yet')
+    await media.locator('.noev button').click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody')).toContainText('spec/board/test.spec.ts')
+    await page.locator('#promptsheet [data-promptclose]').click()
+    await force(evId!, 'passed')   // leave the forced node in a media-bearing state for later reads
+    await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
+
+    // a WINDOWED pager: first and last page always anchored, ellipsis in the gap, next moves on
     const dots = dt.locator('.dtfoot .fdots .fdot')
-    expect(await dots.count()).toBeLessThan(reqCount)                              // windowed, not all reqCount
-    await expect(dt.locator('.dtfoot .fdot[title^="R1 "]')).toHaveCount(1)         // first page always reachable
-    await expect(dt.locator(`.dtfoot .fdot[title^="R${reqCount} "]`)).toHaveCount(1) // last page always reachable
-    await expect(dt.locator('.dtfoot .fdotgap')).not.toHaveCount(0)                // an ellipsis marks the gap
+    expect(await dots.count()).toBeLessThan(reqCount)
+    await expect(dt.locator('.dtfoot .fdot[title^="R1 "]')).toHaveCount(1)
+    await expect(dt.locator(`.dtfoot .fdot[title^="R${reqCount} "]`)).toHaveCount(1)
+    await expect(dt.locator('.dtfoot .fdotgap')).not.toHaveCount(0)
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
@@ -600,59 +675,52 @@ test('The detail offers a Focus / Grid / Flow toggle — Focus reads one require
     // switching views puts that node back WHOLE into the (hidden) source pane
     const inPane = await dt.locator('.testpane .test').count()
 
-    // GRID → the behavior grid (Grid replaced the compact List, 2026-08-18): one row per requirement —
-    // state · id · title · the Given/When/Then shape it leads with · its proof — and a row opens it
-    // straight into Focus. Every row carries a proof cell (the covering test + verdict, or the honest
-    // "no test asserts this yet" note); the G/W/T cell is proven on a fixture screen in spec/_modes.
+    // LIST → one collapsed row per requirement (state · id · title · beat count · test kind), and an
+    // OPEN row is the FOCUS BODY ITSELF, in place — the same shared builder, an accordion of one
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)   // the borrowed row came home
-    const grid = dt.locator('.gridview')
-    await expect(grid).toBeVisible()
+    const list = dt.locator('.gridview')
+    await expect(list).toBeVisible()
     await expect(dt.locator('.cols')).toBeHidden()
-    await expect(grid.locator('.grrow')).toHaveCount(reqCount)
-    await expect(grid.locator('.grrow .grproof')).toHaveCount(reqCount)
-    // The real board now leads several requirements with a Given/When/Then shape (2026-08-19) — Grid
-    // draws that behavior in a .grbeh cell for them, not only on the spec/_modes fixture screen. R9
-    // (search) is one of them; prose-only principle requirements still carry no .grbeh.
-    const gbeh = grid.locator('.grrow[data-r="R9"] .grbeh')
-    await expect(gbeh).toHaveCount(1)
-    await expect(gbeh.locator('.behavior .bgiven .btxt')).not.toBeEmpty()
-    await expect(gbeh).toContainText(/Given/)
-    await expect(gbeh).toContainText(/When/)
-    await expect(gbeh).toContainText(/Then/)
-    await grid.locator('.grrow').first().click()
-    await expect(dt.locator('.focusov')).toBeVisible()
-    await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
+    await expect(list.locator('.lst-card')).toHaveCount(reqCount)
+    await expect(list.locator('.lst-card .lst-head .lid').first()).not.toBeEmpty()
+    await expect(list.locator('.lst-card .lst-head .lttl').first()).not.toBeEmpty()
+    await expect(list.locator('.lst-card .lst-head .lpf')).toHaveCount(reqCount)  // every row wears its state
+    const card13 = list.locator('.lst-card[data-r="R13"]')
+    await card13.locator('.lst-head').click()
+    await expect(card13).toHaveClass(/\bopen\b/)
+    const open13 = card13.locator('.lst-body')
+    await expect(open13.locator('.fpage')).toHaveCount(1)                 // the Focus body, verbatim
+    await expect(open13.locator('.fread .fttl')).toHaveText(
+      ((await card13.locator('.lst-head .lttl').textContent()) || '').trim())
+    await expect(open13.locator('.fread .behavior')).toHaveCount(1)       // behavior leads here too
+    await expect(open13.locator('.fleft .fschem')).toContainText('no schematic drawn yet')
+    await expect(open13.locator('.feval .fphead')).toBeVisible()
+    // the ACCORDION: opening another row closes this one — one open row at a time, ids never collide
+    const card2 = list.locator('.lst-card[data-r="R2"]')
+    await card2.locator('.lst-head').click()
+    await expect(card2).toHaveClass(/\bopen\b/)
+    await expect(card13).not.toHaveClass(/\bopen\b/)
+    await expect(list.locator('.lst-body:not([hidden])')).toHaveCount(1)
+    // closing the open row restores its borrowed test node to the pane
+    await card2.locator('.lst-head').click()
+    await expect(card2).not.toHaveClass(/\bopen\b/)
+    await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)
 
-    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4, amended
-    // 2026-08-17; fix round 2, 2026-08-18): "proved by <flow>" only for a Passed requirement,
-    // "covered by <flow> … — not passed yet" for one that is covered but not Passed — the two lines
-    // must never disagree about the same requirement. Exercised on TWO real .req nodes from this
-    // screen's own tree, with data-status FORCED client-side to known values on each — not "whichever
-    // status the live board happens to carry today". Editing THIS test file makes the board screen's
-    // OWN proofs go stale until the suite folds a fresh run (the one-run dogfooding lag CLAUDE.md
-    // documents), so asserting against today's live status here would make the test hang on exactly
-    // that lag rather than test the render logic; forcing the input is the same technique R10's
-    // stubbed-record tests use to drive the real client pipeline deterministically. Both requirements
-    // keep their REAL coverage tags (untouched), so `.fpby` still renders off a genuine covering test —
-    // only the status read off `.req` is substituted. Both assertions below are the kind that would
-    // fail if buildFocus rendered the wrong line (proved red against a deliberately-broken client.js
-    // while writing this fix; see task-5-report.md).
+    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4): "proved by"
+    // only for a Passed requirement, "covered by … — not passed yet" otherwise. Same forced-status
+    // technique as above; the coverage tags stay real, so .fpby resolves a genuine covering test.
     const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
       els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
     expect(otherId, 'R13 needs at least two requirements to exercise both branches').toBeTruthy()
-    await dt.locator(`.reqpane .req[data-r="${passedId}"]`).evaluate(el => el.setAttribute('data-status', 'passed'))
-    await dt.locator(`.reqpane .req[data-r="${otherId}"]`).evaluate(el => el.setAttribute('data-status', 'failed'))
-
-    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-    await dt.locator(`.gridview .grrow[data-r="${passedId}"]`).click()
+    await force(passedId!, 'passed')
+    await force(otherId!, 'failed')
+    await page.goto(`/#/board/${passedId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
-
-    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-    await dt.locator(`.gridview .grrow[data-r="${otherId}"]`).click()
+    await page.goto(`/#/board/${otherId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
@@ -868,6 +936,57 @@ test('Searching requirement text hides groups that miss', async ({ page }) => {
     await expect(page.locator('.grp:not(.gone)')).toHaveCount(1)
     await page.locator('#qx').click()
     await expect(page.locator('#home .card:not(.gone)')).toHaveCount(4)
+  })
+})
+
+// Board R16 (the human, 2026-08-21, with the frozen mockup) — home leads with a feature strip of six
+// cards, each a link into the live example of itself on this board; a dismiss control hides it, and
+// the dismissal is a CLIENT-SIDE preference, never stored in the tree.
+test('Home leads with a dismissible feature strip of six cards', async ({ page }) => {
+  await coverReqs('R16')
+  await checkReq('R16', async () => {
+    // no dismissal preference set ⇒ the strip renders
+    await page.evaluate(() => localStorage.removeItem('sbFeats'))
+    await page.reload()
+    await page.waitForSelector('.card')
+    const strip = page.locator('#featwrap')
+    await expect(strip).toBeVisible()
+    await expect(strip.locator('.feat')).toHaveCount(6)
+    // the six features, named — beats · proof · drift · the three views · compose · honest gaps
+    await expect(strip.locator('.feat[data-feat="beats"]')).toContainText(/beats/i)
+    await expect(strip.locator('.feat[data-feat="proof"]')).toContainText(/proof from real runs/i)
+    await expect(strip.locator('.feat[data-feat="drift"]')).toContainText(/drift/i)
+    await expect(strip.locator('.feat[data-feat="views"]')).toContainText('Focus · List · Flow')
+    await expect(strip.locator('.feat[data-feat="compose"]')).toContainText(/compose a flow/i)
+    await expect(strip.locator('.feat[data-feat="gaps"]')).toContainText(/honest gaps/i)
+    // the strip sits ABOVE the areas
+    const above = await page.evaluate(() => {
+      const s = document.getElementById('featwrap'); const h = document.getElementById('home')
+      return !!(s && h && (s.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING))
+    })
+    expect(above, 'the strip must precede the area cards').toBe(true)
+    // a card OPENS the live example of itself: beats → a requirement whose reader leads with a
+    // behavior block; the three views → the List view of a real screen
+    await strip.locator('.feat[data-feat="beats"]').click()
+    await expect(page.locator('.dt:not([hidden]) .focusov .fread .behavior')).toBeVisible()
+    await page.locator('.dt:not([hidden]) .close').click()
+    await page.waitForSelector('.card')
+    await page.locator('#featwrap .feat[data-feat="views"]').click()
+    const dtv = page.locator('.dt:not([hidden])')
+    await expect(dtv.locator('.gridview')).toBeVisible()
+    await expect(dtv.locator('.viewseg .vseg[data-view="grid"]')).toHaveClass(/\bon\b/)
+    await dtv.locator('.close').click()
+    // DISMISS hides the strip; the preference is client-side ONLY — it survives a reload, and
+    // clearing the browser-side preference brings the strip back (a tree-stored dismissal would not)
+    await page.locator('#featx').click()
+    await expect(page.locator('#featwrap')).toBeHidden()
+    await page.reload()
+    await page.waitForSelector('.card')
+    await expect(page.locator('#featwrap')).toBeHidden()
+    await page.evaluate(() => localStorage.clear())
+    await page.reload()
+    await page.waitForSelector('.card')
+    await expect(page.locator('#featwrap')).toBeVisible()
   })
 })
 

@@ -33,11 +33,21 @@ test.afterEach(() => {
 // source of truth the moment it is written, and its state is computed from its tests. `extra` lets a
 // test inject an arbitrary extra frontmatter line — used below to prove a pre-redesign `guess:` line
 // left over in an old PRD is now inert.
-function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { extra = '' } = {}) {
+function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { extra = '', evidence = false } = {}) {
   const dir = join(SPEC, name); mkdirSync(dir, { recursive: true })
   const prd = `---\nscreen: ${name}\narea: Core\ntitle: ${name}\nroute: /${name}\n` +
     extra + `---\n\n## R1 — A first requirement\n\n${body}\n`
   writeFileSync(join(dir, 'prd.md'), prd)
+  if (evidence) {
+    // a real (1×1) png pair at the harvest's deterministic home, so the baked data-ev-* attributes
+    // pass the builder's existsSync guard and the media pane has genuine files to show
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+      'base64')
+    const ed = join(dir, 'evidence'); mkdirSync(ed, { recursive: true })
+    writeFileSync(join(ed, 'R1.before.png'), png)
+    writeFileSync(join(ed, 'R1.after.png'), png)
+  }
   return { name, dir, prd }
 }
 
@@ -214,48 +224,78 @@ test('renders — a leftover guess: frontmatter line renders exactly like a norm
 // contract, so nothing changes for every PRD that does not carry the triple. Focus must show the
 // same block because the reader clones the baked source row's .body verbatim (stripping only
 // .covers) — asserted here so a client.js change can never silently drop it.
-test('renders — a Given/When/Then triple leads the requirement, and a prose-only one gets no block', async ({ page }) => {
+test('renders — a beats block leads the requirement, the List reads it, and the media pane derives from it', async ({ page }) => {
+  // TWO beats (D1's chain), harvested evidence on disk, and a current PASS in the injected index —
+  // the full deterministic input for the frozen-mockup Focus contract (board R13, 2026-08-21):
+  // behavior leads, prose collapses, the List row carries the beat count, the gap strip counts the
+  // untested R2, and the media pane defaults to the per-beat filmstrip for a passed 2-beat req.
   const { name } = makeScreen('probe-behavior',
-    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n\n' +
+    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
+    '- **When** you press Undo\n- **Then** the two items return\n\n' +
     'Supporting prose under the shape.\n\n' +
-    '## R2 — A prose-only requirement\n\nOnly prose here — no triple, so no block.')
-  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+    '## R2 — A prose-only requirement\n\nOnly prose here — no triple, so no block.',
+    { evidence: true })
+  const restore = injectIndex(name, passWithEvidence(name))
+  try {
+    const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+    await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
 
-  // default FOCUS view: the reader's clone of the baked row's .body carries the block untouched
-  const fbeh = dt.locator('.fread .fbody .behavior')
-  await expect(fbeh).toHaveCount(1)
-  await expect(fbeh.locator('.brow')).toHaveCount(3)
-  await expect(fbeh).toContainText('a list with two items')
+    // default FOCUS view: the behavior block LEADS the reading card, above the collapsed prose
+    const fbeh = dt.locator('.fread .behavior')
+    await expect(fbeh).toHaveCount(1)
+    await expect(fbeh.locator('.brow')).toHaveCount(5)          // Given + 2 × (When → Then)
+    await expect(fbeh).toContainText('a list with two items')
+    await expect(fbeh).toContainText('you press Undo')
+    // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
+    await expect(dt.locator('.fread .fbody')).toBeHidden()
+    await dt.locator('.fread .prose-t').click()
+    await expect(dt.locator('.fread .fbody')).toContainText('Supporting prose under the shape.')
 
-  // THE BAKED SOURCE ROW (hidden — the Columns view is retired; count/text reads work there): the
-  // block renders inside R1's .body, three labelled rows carrying the text
-  const beh = dt.locator('.reqpane .req[data-r="R1"] .body .behavior')
-  await expect(beh).toHaveCount(1)
-  await expect(beh.locator('.brow')).toHaveCount(3)
-  await expect(beh.locator('.brow').nth(0)).toContainText('a list with two items')
-  await expect(beh.locator('.brow').nth(1)).toContainText('you press Clear')
-  await expect(beh.locator('.brow').nth(2)).toContainText('the list shows zero items')
-  // the shape LEADS: the block is the body's first element, above the rendered prose
-  await expect(dt.locator('.reqpane .req[data-r="R1"] .body > :first-child')).toHaveClass(/behavior/)
-  // the triple is drawn ONCE, as the shape — the prose renderer must NOT re-emit the same three
-  // lines as a bullet list below it (renderBehavior draws it; the lead is stripped before renderBody)
-  await expect(dt.locator('.reqpane .req[data-r="R1"] .body ul li', { hasText: 'a list with two items' })).toHaveCount(0)
-  // …and the supporting prose that FOLLOWS the triple still renders, so the strip took the lead only
-  await expect(dt.locator('.reqpane .req[data-r="R1"] .body')).toContainText('Supporting prose under the shape.')
-  // and the prose-only requirement renders NO block — no wrapper, no empty grid
-  await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
+    // THE BAKED SOURCE ROW (hidden — count/text reads work there): the block renders inside R1's
+    // .body, five labelled rows carrying the text
+    const beh = dt.locator('.reqpane .req[data-r="R1"] .body .behavior')
+    await expect(beh).toHaveCount(1)
+    await expect(beh.locator('.brow')).toHaveCount(5)
+    await expect(beh.locator('.brow').nth(0)).toContainText('a list with two items')
+    await expect(beh.locator('.brow').nth(1)).toContainText('you press Clear')
+    await expect(beh.locator('.brow').nth(2)).toContainText('the list shows zero items')
+    // the shape LEADS: the block is the body's first element, above the rendered prose
+    await expect(dt.locator('.reqpane .req[data-r="R1"] .body > :first-child')).toHaveClass(/behavior/)
+    // the beats are drawn ONCE, as the shape — never re-emitted as a bullet list below
+    await expect(dt.locator('.reqpane .req[data-r="R1"] .body ul li', { hasText: 'a list with two items' })).toHaveCount(0)
+    await expect(dt.locator('.reqpane .req[data-r="R1"] .body')).toContainText('Supporting prose under the shape.')
+    // and the prose-only requirement renders NO block — no wrapper, no empty grid
+    await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
 
-  // GRID view (board R13, Grid replaced the compact List 2026-08-18): the behavior grid leads each
-  // row with the same shape, read from the same r.behavior — R1's row carries the triple's text, and
-  // prose-only R2 renders NO behavior cell content at all (the empty-string contract, a third time).
-  await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-  const g1 = dt.locator('.gridview .grrow[data-r="R1"]')
-  await expect(g1.locator('.behavior')).toHaveCount(1)
-  await expect(g1).toContainText('a list with two items')
-  await expect(g1).toContainText('you press Clear')
-  await expect(g1).toContainText('the list shows zero items')
-  await expect(dt.locator('.gridview .grrow[data-r="R2"] .behavior')).toHaveCount(0)
+    // MEDIA (D2): a PASSED requirement with more than one beat defaults to the per-beat FILMSTRIP —
+    // the harvested pair read as given → beat frames — under the stills · gif · video toolbar
+    const media = dt.locator('.focusov .feval .fmedia')
+    await expect(media.locator('.medbar button[data-m="frames"]')).toHaveClass(/\bon\b/)
+    const strip = media.locator('.fmpanel[data-m="frames"] .fstrip')
+    await expect(strip.locator('.fcell img')).toHaveCount(2)
+    await expect(strip.locator('.fcap').nth(0)).toContainText('given')
+    await expect(strip.locator('.fcap').nth(1)).toContainText('beat')
+    // no clip was cut (no ffmpeg output in the index) — the gif mode says so honestly, never errors
+    await media.locator('.medbar button[data-m="clip"]').click()
+    await expect(media.locator('.fmpanel[data-m="clip"]')).toContainText('stills still stand')
+    await media.locator('.medbar button[data-m="frames"]').click()
+    await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
+
+    // LIST view (board R13: Grid became List, a list of Focus): one collapsed row per requirement —
+    // the row carries the BEAT COUNT; the gap strip above counts the untested R2 and offers the
+    // add-test affordance (the R15 prompt handoff, unchanged behavior)
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await expect(dt.locator('.gridview .remind')).toContainText('1 Untested')
+    await expect(dt.locator('.gridview .remind [data-addtest]')).toHaveCount(1)
+    const c1 = dt.locator('.gridview .lst-card[data-r="R1"]')
+    await expect(c1.locator('.lst-head .lbeats')).toHaveText('2 beats')
+    await expect(c1.locator('.lst-head .lpf')).toContainText('Passed')
+    await expect(dt.locator('.gridview .lst-card[data-r="R2"] .lbeats')).toHaveCount(0)
+    // an OPEN row is the Focus body itself, in place — same behavior block, same media pane
+    await c1.locator('.lst-head').click()
+    await expect(c1.locator('.lst-body .fread .behavior .brow')).toHaveCount(5)
+    await expect(c1.locator('.lst-body .feval .fmedia .fcell img')).toHaveCount(2)
+  } finally { restore() }
 })
 
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
@@ -266,13 +306,27 @@ test('renders — a Given/When/Then triple leads the requirement, and a prose-on
 // state guard does not snapshot the results index — it is meant to fold, so we put it back ourselves).
 const INDEX = join(SPEC, '_results-index.json')
 
-function injectIndex (name: string) {
+function injectIndex (name: string, entry?: any) {
   const before = existsSync(INDEX) ? readFileSync(INDEX, 'utf8') : null
   const idx = before ? JSON.parse(before) : {}
-  idx[name] = (changedResult(name) as any)[name]
+  idx[name] = entry || (changedResult(name) as any)[name]
   writeFileSync(INDEX, JSON.stringify(idx, null, 2) + '\n')
   return () => { if (before == null) rmSync(INDEX, { force: true }); else writeFileSync(INDEX, before) }
 }
+
+// a fresh, current PASS for R1 that also carries the D2 evidence harvest's index entry — the
+// deterministic input the Focus media pane derives its default from (status × beat count)
+const passWithEvidence = (name: string) => ({
+  ranAt: Date.now() + 100000, total: 1, failed: 0,
+  tests: [{ title: 'x', ok: true, reqs: { [`${name}:R1`]: 'pass' } }],
+  evidence: {
+    R1: {
+      before: `spec/${name}/evidence/R1.before.png`,
+      after: `spec/${name}/evidence/R1.after.png`,
+      clip: null, window: null, at: '2026-08-21T00:00:00.000Z'
+    }
+  }
+})
 
 test('renders — a Changed requirement wears the indigo changed chip, never a plain Passed', async ({ page }) => {
   const { name } = makeScreen('probe-changed')
@@ -302,13 +356,19 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(fpby).toContainText('proved by')
       await expect(fpby).not.toContainText('not passed yet')
       await expect(fpby).toContainText('re-verify')
-      // GRID: the row chip spells it out, and the proof line says the text moved — not "✓ proved by"
+      // the MEDIA pane wears the pinned-era watermark (D2: changed = last proof media, watermarked)
+      const media = dt.locator('.focusov .feval .fmedia')
+      await expect(media.locator('.fmbar')).toContainText('pinned era')
+      await expect(media.locator('.wmark')).toHaveCount(1)
+      // LIST: the row's state cell spells the fifth word out — never a plain Passed
       await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-      const row = dt.locator('.gridview .grrow[data-r="R1"]')
-      await expect(row.locator('.grchip')).toHaveText('◈ Changed')
-      await expect(row.locator('.grchip')).toHaveClass(/changed/)
-      await expect(row.locator('.chip.ok')).toHaveCount(0)
-      await expect(row.locator('.grproof')).toContainText('text moved')
+      const row = dt.locator('.gridview .lst-card[data-r="R1"]')
+      await expect(row.locator('.lst-head .lpf')).toHaveText(/◈ Changed/)
+      await expect(row.locator('.lst-head .lpf')).toHaveClass(/changed/)
+      await expect(row.locator('.lst-head .lpf.passed')).toHaveCount(0)
+      // …and the open row (the Focus body itself) names the drift on its proof line
+      await row.locator('.lst-head').click()
+      await expect(row.locator('.lst-body .feval .fpby')).toContainText('re-verify')
     }
   } finally { restore() }
 })
