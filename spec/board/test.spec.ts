@@ -714,6 +714,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
       els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
     expect(otherId, 'R13 needs at least two requirements to exercise both branches').toBeTruthy()
+    // park the hash on a THIRD page first: a goto to the URL the page is already on RELOADS it
+    // (wiping the forced attributes), while a hash that differs is a same-document navigation
+    await page.goto('/#/board/R3')
     await force(passedId!, 'passed')
     await force(otherId!, 'failed')
     await page.goto(`/#/board/${passedId}`)

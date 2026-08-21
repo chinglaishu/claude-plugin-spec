@@ -6,9 +6,9 @@
 
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, esc, designCss, allScreens, sortedAreas, writeText
+  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -178,7 +178,26 @@ const runAll = name =>
 // it". That line was removed from reqRow below — the E2E column already shows the flow — but the
 // comment was left behind, and two board tests then asserted a `.covers .ctag` chip that nothing
 // renders. A comment describing behaviour the code dropped is how a dead test survives review.)
-const reqRow = r => {
+// The D2 EVIDENCE the fold carries for this requirement (Task 15: before/after frames, an optional
+// looping clip, folded into spec/_results-index.json from CLI runs too) — baked onto the source row
+// as data-ev-* attributes so the Focus media pane (client.js) can render it without a fetch. Only a
+// path whose FILE exists is baked (absence of ffmpeg output — a null or missing clip — is never an
+// error, the frames alone stand), and each carries a content-hash cache-buster because the harvest
+// overwrites in place (the same ?h= discipline as screen.png).
+const evAttrs = (s, r) => {
+  const e = s.run && s.run.evidence && s.run.evidence[r.id]
+  if (!e) return ''
+  let out = ''
+  for (const [k, p] of [['before', e.before], ['after', e.after], ['clip', e.clip]]) {
+    if (!p) continue
+    const abs = join(ROOT, String(p))
+    if (!existsSync(abs)) continue
+    out += ` data-ev-${k}="${esc(String(p) + '?h=' + shotHash(abs))}"`
+  }
+  if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
+  return out
+}
+const reqRow = (r, s) => {
   // A proven requirement names NO tests here — the E2E column already shows the flow that proves it,
   // so a "proven by …" line would just repeat it. An UNPROVEN one still says so plainly (board R6):
   // honestly ungreen, never hidden.
@@ -189,28 +208,25 @@ const reqRow = r => {
   // so the prose renderer gets the body with that lead stripped — otherwise the triple renders twice
   // (once as the shape, once as a bullet list). Gated on r.behavior so a prose-only body is untouched.
   const prose = r.behavior ? stripBehaviorLead(r.body) : r.body
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}">
+  // data-beats carries the beat COUNT (0 = prose-only) — the Focus media pane derives its D2
+  // default from status × beats, and the List row shows the count, so it is baked once here.
+  const beats = r.behavior ? r.behavior.beats.length : 0
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBehavior(r.behavior)}${renderBody(prose)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
   <h2>Requirements<span class="s">what the screen must do</span></h2>
-  ${s.reqs.length ? s.reqs.map(reqRow).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
+  ${s.reqs.length ? s.reqs.map(r => reqRow(r, s)).join('') : `<div class="empty">No requirements yet — write the first in <code>spec/${esc(s.name)}/prd.md</code>.</div>`}
 </div>`
 
-// The GRID view (board R13; Grid replaced the compact List, 2026-08-18): the behavior grid — one row
-// per requirement, scannable at a glance. Each row leads with the state chip, id and title (what List
-// carried), then the Given/When/Then shape the requirement leads with (r.behavior via renderBehavior —
-// absent entirely for a prose-only requirement, the same empty-string contract as the source row's body),
-// and its PROOF: the covering test and verdict from r.tests, or the honest "no test asserts this yet"
-// note (mirroring reqRow's .covers line). A row click opens that requirement in Focus. It is one of
-// the views of the same requirements (Focus, Grid, Flow — the Columns view retired 2026-08-18), switched by
-// the header toggle; it stores nothing new. The label spells the four-word vocabulary out (board R4,
-// amended 2026-08-17) since this row has room where the source row's compact chip does not.
-// EVIDENCE BOUNDARY (deliberate, task 8a): a Grid row does NOT expand gif/frame evidence inline —
-// that needs the evidence-rendering infra (a later task hooks it here); a row that wants the full
-// evidence opens Focus.
+// The LIST view (board R13, the frozen mockup — Grid became List, the human 2026-08-21; the router
+// key stays 'grid'): one COLLAPSED row per requirement — state · id · title · beat count · covering-
+// test kind — with a gap-summary strip above, and an OPEN row is the FOCUS BODY ITSELF, rendered in
+// place by the client's shared builder (an accordion, one open at a time). Only the collapsed heads
+// and the gap strip are baked here; the open body is client-built from the same hidden source rows
+// Focus reads, so List and Focus can never render two different truths.
 const GRID_CHIP = {
   passed: ['ok', 'mark', '✓ Passed'],
   changed: ['changed', 'mark c', '◈ Changed'],
@@ -218,31 +234,28 @@ const GRID_CHIP = {
   'not-reached': ['wait', 'mark n', '◌ Not reached'],
   untested: ['gone', 'mark o', '○ Untested']
 }
-// The proof cell: the covering test that best speaks for the requirement NOW — a CURRENT pass wins;
-// a stale pass never shows as proof (rule 3, never fake a green), so after it come a failure, a flow
-// that stopped short, and only then the stale pass, named honestly as stale. A cross-screen prover
-// names its screen (coverage is board-wide, folded by tag).
-// The proof cell must AGREE with the chip. The chip is r.status — the board-wide fold, fail-wins
-// (deriveReqStatus): a requirement covered by two live tests where one fails reads Failed. So the
-// proof line is driven by r.status too, NOT by its own pass-first precedence — a green "✓ proved by"
-// shows ONLY when the requirement is actually Passed, never beside a Failed chip (rule 3, never look
-// greener than you are; Focus's .fpby does exactly this). We then name the test that speaks for that
-// status. A cross-screen prover names its screen (coverage is board-wide, folded by tag).
-// The proof cell must AGREE with the chip. The chip is r.status — the board-wide fold, fail-wins
-// (deriveReqStatus): a requirement covered by two live tests where one fails reads Failed. So the
-// proof line is driven by r.status too, NOT by its own pass-first precedence — a green "✓ proved by"
-// shows ONLY when the requirement is actually Passed, never beside a Failed chip (rule 3, never look
-// greener than you are; Focus's .fpby does exactly this). We then name the test that speaks for that
-// status. A cross-screen prover names its screen (coverage is board-wide, folded by tag).
-export const gridProof = (r, screenName) => {
+// The covering test that best speaks for the requirement NOW: it must AGREE with the chip — the
+// chip is r.status (the board-wide fail-wins fold), so the pick is driven by r.status too, never a
+// pass-first precedence of its own. A green never shows beside a non-Passed chip (rule 3). Changed
+// is passed-family (the pass is current; the text moved), so it names the same passing test.
+export const pickProofTest = r => {
   const tests = r.tests || []
-  if (!tests.length) return '<span class="grproof none">no test asserts this yet</span>'
-  // `changed` (board R4's fifth word) is a modifier on Passed: the covering pass is still current,
-  // so it names the same passing test — but the line must SAY the text moved, never a plain green.
-  const cur = ((r.status === 'passed' || r.status === 'changed') && tests.find(t => t.status === 'pass' && !t.stale)) ||
+  if (!tests.length) return null
+  return ((r.status === 'passed' || r.status === 'changed') && tests.find(t => t.status === 'pass' && !t.stale)) ||
     (r.status === 'failed' && tests.find(t => t.status === 'fail')) ||
     (r.status === 'not-reached' && tests.find(t => t.status === 'not-reached')) ||
     tests[0]
+}
+// The one-line proof sentence for a requirement. The Grid view that RENDERED it retired when Grid
+// became List (board R13, 2026-08-21) — an open List row now shows the Focus body's proof line
+// instead — but the sentence stays exported and unit-tested (tools/grid-proof.test.mjs) as the
+// pinned wording contract for "proof line agrees with the chip", the same keep-the-proven-renderer
+// precedent as journeyRail. pickProofTest above is the live half the List still uses (the head's
+// covering-test kind).
+export const gridProof = (r, screenName) => {
+  const tests = r.tests || []
+  if (!tests.length) return '<span class="grproof none">no test asserts this yet</span>'
+  const cur = pickProofTest(r)
   const from = cur.screen && cur.screen !== screenName ? ` · ${esc(cur.screen)}` : ''
   const line = r.status === 'passed' ? `✓ proved by ${esc(cur.title)}${from}`
     : r.status === 'changed' ? `◈ proved by ${esc(cur.title)}${from} — but the requirement text moved since that proof, re-verify`
@@ -251,15 +264,40 @@ export const gridProof = (r, screenName) => {
           : `○ covered by ${esc(cur.title)}${from} — stale, not re-proven since the screen changed`
   return `<span class="grproof">${line}</span>`
 }
-const gridPane = s => `<div class="gridview" hidden>
+// The gap-summary strip above the List (the frozen mockup's reminder): counts of what is NOT green
+// — Failed · Changed · Not reached · Untested — with the add-test affordance (the R15 prompt
+// handoff; the board still writes nothing). Empty when nothing gapes — an all-green screen carries
+// no reminder to close gaps that do not exist.
+const gapStrip = s => {
+  const n = st => s.reqs.filter(r => r.status === st).length
+  const gaps = []
+  if (n('failed')) gaps.push(`<b class="gap-failed">${n('failed')} Failed</b>`)
+  if (n('changed')) gaps.push(`<b class="gap-changed">${n('changed')} Changed</b>`)
+  if (n('not-reached')) gaps.push(`<b class="gap-nr">${n('not-reached')} Not reached</b>`)
+  if (n('untested')) gaps.push(`<b class="gap-un">${n('untested')} Untested</b>`)
+  if (!gaps.length) return ''
+  return `<div class="remind"><span class="rk2">${gaps.join('<span class="gapdot">·</span>')}</span><span class="grow"></span>` +
+    `<span class="gbn">add or revise a test to close the gap</span>` +
+    `<button class="btn sm" data-addtest data-prompt="addtest">＋ Author a test</button></div>`
+}
+// kindByTitle: screen + test title → unit | flow, derived from the SOURCE plans (a test with
+// flowStep beats is a flow; a checkReq-only test is a unit) — the same derivation flow.mjs makes at
+// run time, available at build time so a never-run test still shows its kind.
+const listPane = (s, kindOf) => `<div class="gridview" hidden>
+  ${gapStrip(s)}
   ${s.reqs.map(r => {
-    const [tone, mark, label] = GRID_CHIP[r.status] || GRID_CHIP.untested
-    const beh = renderBehavior(r.behavior)
-    return `<button class="grrow" data-r="${esc(r.id)}" data-state="${r.state}">
-      <span class="chip ${tone} grchip"><span class="${mark}"></span>${label}</span>
-      <span class="gr-id">${esc(r.id)}</span><span class="grt">${esc(r.title)}</span><span class="grchev">›</span>
-      ${beh ? `<span class="grbeh">${beh}</span>` : ''}${gridProof(r, s.name)}
-    </button>`
+    const [, , label] = GRID_CHIP[r.status] || GRID_CHIP.untested
+    const beats = r.behavior ? r.behavior.beats.length : 0
+    const cur = pickProofTest(r)
+    const kind = cur ? kindOf(cur.screen || s.name, cur.title) : ''
+    return `<div class="lst-card" data-r="${esc(r.id)}" data-status="${esc(r.status)}">
+      <button class="lst-head" type="button">
+        <span class="chev">›</span><span class="lid">${esc(r.id)}</span><span class="lttl">${esc(r.title)}</span>
+        ${beats > 1 ? `<span class="lbeats">${beats} beats</span>` : ''}
+        <span class="lpf ${esc(r.status)}">${label}${kind ? `<span class="lkind"> · ${esc(kind)}</span>` : ''}</span>
+      </button>
+      <div class="lst-body" hidden></div>
+    </div>`
   }).join('')}
 </div>`
 
@@ -1216,6 +1254,49 @@ export function build () {
   const failing = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'failed').length, 0)
   const changed = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'changed').length, 0)
 
+  // test KIND at build time (unit | flow), derived from the source plans — see listPane
+  const kindByTitle = new Map()
+  for (const s of screens) {
+    for (const p of (s.plans || [])) {
+      kindByTitle.set(s.name + ' ' + p.title, p.steps.some(st => st.kind === 'flow') ? 'flow' : 'unit')
+    }
+  }
+  const kindOf = (screen, title) => kindByTitle.get(screen + ' ' + title) || ''
+
+  // THE HOME FEATURE STRIP (board R16, the human 2026-08-21 with the frozen mockup): six cards,
+  // each a LINK into the live example of itself on THIS board — every target derived from the tree
+  // on this build (nothing stored, nothing invented). A card whose example does not exist right now
+  // says so in its sub-caption and falls back to the nearest honest surface. The dismiss control and
+  // its client-side-only preference live in client.js.
+  const flatReqs = []
+  for (const s of screens) for (const r of s.reqs) flatReqs.push({ s, r })
+  const first = pred => flatReqs.find(pred) || null
+  const beatsEx = first(x => x.r.behavior && x.r.behavior.beats.length > 1) || first(x => x.r.behavior)
+  const hasEv = x => {
+    const e = x.s.run && x.s.run.evidence && x.s.run.evidence[x.r.id]
+    return !!(e && e.before && e.after)
+  }
+  const provenEx = first(x => x.r.status === 'passed' && hasEv(x)) || first(x => x.r.status === 'passed')
+  const driftEx = first(x => x.r.status === 'failed') || first(x => x.r.status === 'changed')
+  const gapEx = first(x => x.r.status === 'untested') || first(x => x.r.status === 'not-reached')
+  const home0 = screens[0]
+  const reqHref = x => x ? `#/${esc(x.s.name)}/${esc(x.r.id)}` : (home0 ? `#/${esc(home0.name)}` : '#')
+  const see = (x, note) => x ? `see ${esc(x.s.name)} ${esc(x.r.id)}` : note
+  const feat = (key, href, mark, line, sub) =>
+    `<a class="feat" data-feat="${key}" href="${href}"><span class="fm">${mark}</span>` +
+    `<span class="fl2">${line}</span><span class="fs2">${sub}</span></a>`
+  const featStrip = home0 ? `<div class="featwrap" id="featwrap">
+    <div class="feats">
+      ${feat('beats', reqHref(beatsEx), '✎<span class="fmq">→</span>ⁿ', '<b>Beats</b> — one Given, When→Then chained', see(beatsEx, 'author the first beats'))}
+      ${feat('proof', reqHref(provenEx), '<span class="fmok">✓</span>', '<b>Proof from real runs</b> — stills · gif · video', see(provenEx, 'run the suite to capture proof'))}
+      ${feat('drift', reqHref(driftEx), '<span class="fmbad">✗</span><span class="fmch">◈</span>', '<b>Drift is computed</b> — failed · changed, never stored', see(driftEx, 'none right now — nothing has drifted'))}
+      ${feat('views', `#/${esc(home0.name)}/grid`, '☰', '<b>Focus · List · Flow</b> — three reads of one truth', 'open the List')}
+      ${feat('compose', `#/${esc(home0.name)}/grid`, '<span class="fmadd">＋</span>', '<b>Compose a flow</b> — the board hands Claude the prompt', 'open the add-test prompt')}
+      ${feat('gaps', reqHref(gapEx), '<span class="fmun">○◌</span>', '<b>Honest gaps</b> — untested · not-reached stay ungreen', see(gapEx, 'none right now — everything is covered'))}
+    </div>
+    <button class="featx" id="featx" aria-label="dismiss the feature strip" title="hide this — a client-side preference, never stored">✕</button>
+  </div>` : ''
+
   const groups = areas.map(a => {
     const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
     return `
@@ -1243,7 +1324,7 @@ export function build () {
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
       <button class="vseg on" data-view="focus" data-i="${i}">Focus</button>
-      <button class="vseg" data-view="grid" data-i="${i}">Grid</button>
+      <button class="vseg" data-view="grid" data-i="${i}">List</button>
       <button class="vseg" data-view="flow" data-i="${i}">Flow</button>
     </div>
     <button class="close btn">Close</button>
@@ -1253,7 +1334,7 @@ export function build () {
       ${reqPane(s)}
       ${testPane(s)}
     </div>
-    ${gridPane(s)}
+    ${listPane(s, kindOf)}
     <div class="flowview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
@@ -1356,6 +1437,31 @@ export function build () {
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:18px; color:var(--ink-4); }
 
+  /* THE FEATURE STRIP (board R16): six cards above the areas, each a link into the live example of
+     itself on this board; the ✕ dismisses it — a client-side preference (localStorage), never
+     stored in the tree. */
+  .featwrap { position:relative; margin-bottom:var(--s4); }
+  .featwrap[hidden] { display:none; }
+  .feats { display:grid; grid-template-columns:repeat(6, 1fr); gap:var(--s2); padding-right:26px; }
+  .feat { border:1px solid var(--hair-2); border-radius:var(--r); background:var(--card);
+    padding:9px 11px; display:flex; flex-direction:column; gap:2px; cursor:pointer;
+    text-decoration:none; color:var(--ink); transition:border-color .12s; }
+  .feat:hover { border-color:var(--ai); }
+  .feat .fm { font-size:14px; line-height:1; }
+  .feat .fm .fmq { color:var(--ink-4); }
+  .feat .fm .fmok { color:var(--koke); }
+  .feat .fm .fmbad { color:var(--bengara); }
+  .feat .fm .fmch { color:var(--ai); }
+  .feat .fm .fmadd { color:var(--ai); }
+  .feat .fm .fmun { color:var(--ink-4); }
+  .feat .fl2 { font-size:var(--t-xs); line-height:1.35; }
+  .feat .fl2 b { font-weight:500; }
+  .feat .fs2 { font:var(--t-micro) var(--mono); color:var(--ink-4); }
+  .featx { position:absolute; right:0; top:0; width:20px; height:20px; border:0; background:transparent;
+    color:var(--ink-4); cursor:pointer; font-size:var(--t-sm); line-height:1; padding:0; }
+  .featx:hover { color:var(--ink); }
+  @media (max-width:1100px) { .feats { grid-template-columns:repeat(3, 1fr); } }
+
   /* DETAIL — a fixed FULL-SCREEN window that COVERS the specboard bar, so a detail page has exactly
      ONE header: its own. Below it, R2's two panes each scroll on their own. z-index sits above the
      top bar (40) and below the log popup (49/50). */
@@ -1437,24 +1543,73 @@ export function build () {
   .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
     color:var(--ink-4); display:block; margin-bottom:var(--s4); }
 
-  /* MATCH THE READING MOCKUP (board R13). The reader reuses the baked source rows' WIRED components —
-     the cloned steps carry their compact beat rows, the moved controls carry the small buttons — so
-     they must be RESTYLED here to the mockup's roomier look (rounded step cards, pill buttons, a framed
-     highlight on THIS requirement's step). Scoped to the reader, so the source rows stay untouched. */
-  .fread .fstepclone { margin:0; display:flex; flex-direction:column; gap:8px; }
-  .fread .fstepclone .beat { border:1px solid var(--hair); border-radius:9px; background:var(--card);
-    margin:0; padding:0; font-size:14px; color:var(--ink); overflow:hidden; }
-  .fread .fstepclone .beat.f { color:var(--ink); }            /* only the mark + detail redden, not the label */
-  .fread .fstepclone .beat.nr { border-style:solid; }
-  .fread .fstepclone .beat.fhere { border-color:var(--hair-2); box-shadow:inset 3px 0 0 var(--ink); }
-  .fread .fstepclone .beat .bh { padding:12px 15px; gap:13px; align-items:center; }
-  .fread .fstepclone .beat .bnum { min-width:13px; }
-  .fread .fstepclone .beat .blbl { font-size:14px; color:var(--ink); }
-  .fread .fstepclone .beat.skip .blbl { color:var(--ink-4); }
-  .fread .fstepclone .beat .bchev { color:var(--line3); font-size:15px; }
-  .fread .fstepclone .beat .bdet { margin:0 15px 12px 42px; }
-  .fread .fstepclone .beat .byou { flex:none; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; white-space:nowrap; }
+  /* MATCH THE FROZEN MOCKUP (board R13, 2026-08-21). The reading side is a STACK: the requirement
+     card (behavior leading, prose collapsed beneath) and the schematic slot below it — together they
+     form the left column, the proof card the right. The old in-card steps clone left with the
+     rewrite (the full step record stays one click away behind the ⋯ menu's Steps window). */
+  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; }
+  .fleft > .fread { flex:1; min-height:0; }
+  /* the behavior block LEADS the reading card — the shared _design.css .behavior grid, roomier here */
+  .fread > .behavior { margin:0 0 var(--s3); }
+  /* the PROSE collapses beneath the shape (one click unfolds the authored requirement in full); a
+     prose-only requirement has no shape to lead with, so its prose stays open — .noshape marks it */
+  .fread .prose-t { font-size:var(--t-xs); color:var(--ink-3); background:none; border:0; padding:0;
+    cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .fread .prose-t:hover { color:var(--ink); }
+  .fread .fbody.fprose { display:none; border-top:1px dashed var(--hair); margin-top:var(--s3);
+    padding-top:var(--s3); }
+  .fread .fbody.fprose.open { display:block; }
+  /* the schematic slot — a placeholder card until the viz pass derives one from the behavior text */
+  .fschem { flex:none; background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:0 1px 3px rgba(28,27,24,.05); padding:var(--s4) var(--s5); }
+  .fschem .figcap { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); margin-bottom:var(--s2); }
+  .fschem .noschem { border:1px dashed var(--hair-2); border-radius:var(--r-sm); padding:var(--s4);
+    font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
+
+  /* THE MEDIA PANE (D2, the frozen mockup): the proof's media under a stills · gif · video toolbar.
+     The default derives from status × beat count; the toolbar overrides it — a client-side
+     preference (localStorage), never stored in the tree. */
+  .fmedia { border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; background:var(--card); }
+  .fmbar { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono);
+    color:var(--ink-3); padding:6px var(--s3); border-bottom:1px solid var(--hair); background:var(--wash); }
+  .fmbar .pinned { color:var(--ai); }
+  .medbar { display:inline-flex; margin-left:auto; border:1px solid var(--hair-2); border-radius:var(--r);
+    overflow:hidden; background:var(--paper); flex:none; }
+  .medbar button { border:0; background:none; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    padding:4px 11px; cursor:pointer; }
+  .medbar button + button { border-left:1px solid var(--hair); }
+  .medbar button:hover { color:var(--ink); }
+  .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  .fmbody { position:relative; }
+  .fmpanel[hidden] { display:none; }
+  /* stills: the harvested frame pair, or the per-beat filmstrip when the requirement chains beats */
+  .fmpanel .fstrip { display:flex; gap:var(--s2); padding:var(--s3); }
+  .fstrip .fcell { flex:1 1 0; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm);
+    overflow:hidden; background:var(--paper); }
+  .fstrip .fcell img { display:block; width:100%; height:auto; border-bottom:1px solid var(--hair); cursor:zoom-in; }
+  .fstrip .fcap { display:flex; align-items:center; gap:6px; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    padding:4px 7px; background:var(--wash); }
+  .fstrip .fcell.hot { border-color:var(--koke-line); }
+  .fstrip .fcell.hotbad { border-color:var(--bengara); }
+  .fstrip .fcell.hotbad .fcap { color:var(--bengara); }
+  /* the failing check's expected-vs-actual, straight off the covering test's recorded error */
+  .fmpanel .xva { border:1px solid var(--bengara-line); background:var(--bengara-tint);
+    border-radius:var(--r-sm); margin:0 var(--s3) var(--s3); padding:var(--s2) var(--s3);
+    font:var(--t-xs)/1.7 var(--mono); color:var(--ink-2); white-space:pre-wrap; }
+  .fmpanel .fclip { display:block; width:100%; height:auto; cursor:zoom-in; }
+  .fmpanel .frecwrap { padding:var(--s3); }
+  /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */
+  .fmbody .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background:rgba(253,252,249,.55); z-index:5; pointer-events:none; }
+  .fmbody .wmark span { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint);
+    border:1px solid var(--ai-line); border-radius:var(--r-sm); padding:4px 10px; }
+  /* the honest empty states — no media is a statement, never an error */
+  .fmedia .noev { min-height:150px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:var(--s2); text-align:center; padding:var(--s4) var(--s5);
+    font-size:var(--t-sm); color:var(--ink-3);
+    background:repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--wash) 10px, var(--wash) 11px); }
+  .fmedia .noev b { font-weight:500; color:var(--ink-2); }
   /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
      background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
      controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
@@ -1542,31 +1697,49 @@ export function build () {
   .dth .btn { height:34px; border-radius:999px; padding:0 17px; }
   .dth .viewseg { height:34px; }
 
-  /* the GRID view — the behavior grid, one row per requirement: chip · id · title on the lead line,
-     then the Given/When/Then shape (when the requirement carries one) and the proof line under the
-     title. A click opens the row in Focus. .grrow, NOT .grow — .grow is the flex-spacer utility
-     (_design.css) and sharing the name would wire every spacer span as a row. All pairs re-measured:
-     --ink-3 on --card 6.42:1, on --wash (hover) 5.29:1 — AA. */
-  .gridview { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--hair);
-    border-radius:var(--r-md); overflow:hidden; width:100%; max-width:820px; margin:0 auto; }
-  .grrow { display:grid; grid-template-columns:max-content max-content 1fr max-content;
-    align-items:center; column-gap:var(--s3); row-gap:var(--s1); padding:var(--s3) var(--s4); border:0;
-    border-bottom:1px solid var(--hair); background:transparent; cursor:pointer; text-align:left; font:inherit; }
-  .grrow:last-child { border-bottom:0; }
-  .grrow:hover { background:var(--wash); }
-  .grrow .grchip { justify-self:start; }
-  .grrow .gr-id { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; }
-  .grrow .grt { min-width:0; font-size:var(--t-md); color:var(--ink);
+  /* the LIST view (board R13, the frozen mockup — Grid became List, 2026-08-21; router key stays
+     'grid'): one collapsed CARD per requirement, a gap-summary strip above, and an open card's body
+     is the Focus body itself (client-built). The container scrolls on its OWN — the page never does
+     (R2's principle). All pairs re-measured: --ink-3 on --card 6.42:1, on --wash (hover) 5.29:1 — AA. */
+  .gridview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+    margin:0 auto; overflow-y:auto; min-height:0; flex:1; padding-bottom:var(--s6); }
+  .lst-card { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:0 1px 3px rgba(28,27,24,.05); overflow:hidden; flex:none; }
+  .lst-head { display:flex; align-items:center; gap:var(--s3); width:100%; padding:var(--s3) var(--s4);
+    border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
+  .lst-head:hover { background:var(--wash); }
+  .lst-head .chev { color:var(--ink-4); font-size:11px; flex:none; width:12px; transition:transform .12s; }
+  .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
+  .lst-head .lid { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; flex:none; }
+  .lst-head .lttl { min-width:0; font-size:var(--t-md); color:var(--ink); font-weight:500;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .grrow .grchev { color:var(--line3); font-size:15px; }
-  /* the shape cell rides UNDER the title, subordinate structural text — the _design.css .behavior
-     block, compacted: no bottom rule (the row's own hairline separates), tighter type */
-  .grrow .grbeh { grid-column:3 / -1; min-width:0; }
-  .grrow .grbeh .behavior { margin:0; padding:0; border-bottom:0; }
-  .grrow .grbeh .btxt { font-size:var(--t-sm); line-height:1.45; }
-  /* the proof cell: which test speaks for this row and its verdict — quiet, one line, honest */
-  .grrow .grproof { grid-column:3 / -1; min-width:0; font-size:var(--t-sm); color:var(--ink-3);
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .lst-head .lbeats { flex:none; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    border:1px solid var(--hair-2); border-radius:999px; padding:1px 8px; }
+  /* the state cell: mark + word (+ the covering test's kind) — hue named per status, mark in the
+     text, so status survives greyscale exactly like the chips (design rule: hue never alone) */
+  .lst-head .lpf { margin-left:auto; flex:none; font-size:var(--t-xs); white-space:nowrap; }
+  .lst-head .lpf.passed { color:var(--koke); }
+  .lst-head .lpf.failed { color:var(--bengara); }
+  .lst-head .lpf.not-reached { color:var(--yamabuki); }
+  .lst-head .lpf.untested { color:var(--ink-4); }
+  .lst-head .lpf.changed { color:var(--ai); }
+  .lst-head .lpf .lkind { font-family:var(--mono); color:var(--ink-4); }
+  .lst-body { border-top:1px solid var(--hair); padding:var(--s4); background:var(--wash); }
+  .lst-body[hidden] { display:none; }
+  /* an open row hosts the full Focus body — a bounded page so its two containers keep their OWN
+     scroll (R2), exactly as in the Focus view */
+  .lst-body .fpage { height:560px; }
+  /* the gap-summary strip: what is not green, counted, with the add-test handoff (R15) */
+  .remind { display:flex; align-items:center; gap:var(--s3); background:var(--card);
+    border:1px solid var(--hair-2); border-radius:var(--r-md); padding:var(--s3) var(--s4);
+    font-size:var(--t-sm); color:var(--ink-2); flex:none; }
+  .remind .rk2 { display:inline-flex; gap:var(--s2); align-items:baseline; }
+  .remind b { font-weight:500; }
+  .remind .gapdot { color:var(--line3); }
+  .remind .gap-failed { color:var(--bengara); }
+  .remind .gap-changed { color:var(--ai); }
+  .remind .gap-nr { color:var(--yamabuki); }
+  .remind .gap-un { color:var(--ink-4); }
 
   /* the FLOW view (board R13): each test's run played as its authored flow — ONE recording seeked
      into chapters (derived by tools/flow.mjs, delivered on the folded record), never cut. The strip
@@ -2547,6 +2720,7 @@ export function build () {
       changed ? `${changed} changed since their proof — re-verify` : ''
     ].filter(Boolean).join(' · ') + '.' : 'All requirements are proven or untested — nothing is failing.'}
   </div>` : ''}
+  ${featStrip}
   <div id="home">
     ${groups}
   </div>
