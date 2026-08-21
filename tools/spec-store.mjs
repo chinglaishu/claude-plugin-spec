@@ -70,6 +70,27 @@ export function runVerdict (code, total) {
   }
 }
 
+// The ONE job slot's close transition (dispatch R4/R5) — pure, so the rule is unit-testable
+// (tools/job-slot.test.mjs) apart from the server that owns the mutable slot. A close releases
+// the slot ONLY when the closing job is the current holder: a run TAKEN OVER (R4, cancel-and-run)
+// closes a beat after its successor already claimed the slot, and popping unconditionally there
+// freed — or handed to an ancestor, over the live takeover run — a slot that was not the closer's
+// to release, so a second concurrent run could start: the exact thing the slot exists to refuse
+// (Task 15 concern 4; reproduced live 2026-08-21). A non-holder's close only steps itself out of
+// the ancestor chain (a parent that died in the stack must never be handed the slot back, dead).
+// Pure: fresh arrays out, inputs untouched; jobs compare by identity, like the server's captured
+// `myJob` locals. The `superseded` flag the takeover sets stays as the run's own record of WHY it
+// was cancelled — the guard here is identity, which covers superseded and dead-ancestor alike.
+export function slotAfterClose (closing, running, runStack) {
+  if (closing && closing !== running) {
+    return { running, runStack: runStack.filter(j => j !== closing) }
+  }
+  return {
+    running: runStack.length ? runStack[runStack.length - 1] : null,
+    runStack: runStack.slice(0, -1)
+  }
+}
+
 // Drafts link the shared sheet relatively so they render standalone over http. Embedded as
 // srcdoc there is no base URL to resolve against, so it is inlined at build time instead.
 // Exported because the BOARD uses it too. The board is one of the screens this tool tracks, so

@@ -14,7 +14,7 @@ import {
   ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
-  RUNS, readRuns, recordRunEntry, reEscape, runVerdict, readResults,
+  RUNS, readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose,
   shouldVoice, narrationPack, voiceReadiness, voicesDir
 } from './spec-store.mjs'
 // pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
@@ -371,12 +371,19 @@ function cancelJob (runId) {
 }
 
 // Releasing the slot when a job ends. A job that was TAKEN OVER (R4) must record itself but NOT touch
-// the slot — the run that took over already holds it — so its close asks this instead of clearing
-// `running` by hand. For every other job the slot passes back to the run it was nested in, or to
-// nobody. runStack is only ever non-empty for runs, so a plain job pops nothing and this reads null.
+// the slot — the run that took over already holds it — so a run's close asks this instead of clearing
+// `running` by hand (it used to pop unconditionally, and a superseded run's close then freed the
+// slot while the takeover run was live, letting a second concurrent run start — Task 15 concern 4,
+// reproduced 2026-08-21). For every other job the slot passes back to the run it was nested in, or
+// to nobody. The rule itself is pure and unit-tested (slotAfterClose, tools/job-slot.test.mjs):
+// only the current HOLDER's close releases; any other close just steps out of the ancestor chain.
+// The plain agent jobs (redraft/scan/crawl) still clear `running` by hand at their own close —
+// nothing can nest in or take over a non-run job, so they are always the holder when they end.
 function releaseSlot (job) {
-  if (job && job.superseded) return
-  running = runStack.pop() || null
+  const next = slotAfterClose(job, running, runStack)
+  running = next.running
+  runStack.length = 0
+  for (const j of next.runStack) runStack.push(j)
 }
 
 // A person's second RUN takes the slot from the run holding it (R4, cancel-and-run). Only ever called
@@ -776,10 +783,13 @@ function startRun (screen, opts = {}) {
       archive
     }
     recordRun(entry)
-    // Pop, don't blank: a nested run finishing hands the slot back to the run it was nested in,
-    // which is still going. Blanking here would free the slot while a run was live and let a person
-    // start a second job alongside it — the exact thing the slot exists to refuse.
-    running = runStack.pop() || null
+    // Release through the ONE slot rule, naming OURSELVES (myJob, the captured local — never the
+    // global, which may already be the run that took us over). A nested run finishing hands the
+    // slot back to the run it was nested in; a run that was TAKEN OVER (R4) is no longer the
+    // holder and must not touch the slot — popping unconditionally here freed the takeover run's
+    // slot the moment the superseded run's process died, and a person could start a second run
+    // alongside the live one: the exact thing the slot exists to refuse.
+    releaseSlot(myJob)
     try { build() } catch (err) { console.error(String(err.stderr || err)) }
     push('run', { state: 'done', ...entry })
     notify()

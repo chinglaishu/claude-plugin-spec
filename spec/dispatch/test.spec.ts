@@ -115,16 +115,40 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
   // nested run, the run driving it is an ANCESTOR, never the holder, so it survives the takeover.
   const second = await request.post('/api/run', { data: { screen: 'board' } })
   expect(second.status(), 'a person\'s second job is accepted, not 409').toBe(200)
-  await idle(request)
+  let secondId = ''
+  await expect.poll(async () => {
+    const j = await request.get('/api/runs').then((r: any) => r.json())
+    secondId = j.runningId || ''
+    return secondId && secondId !== firstId ? 'held' : ''
+  }, { timeout: 30000 }).toBe('held')
 
   // R5: the run it replaced was cancelled — still recorded, marked not-ok, not silently vanished.
-  const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
-  const taken = runs.find((x: any) => x.runId === firstId)
-  expect(taken, 'the taken-over run was recorded, not lost').toBeTruthy()
+  // Its entry lands in the run log at its own close, a beat after the takeover — poll for it.
+  let taken: any = null
+  await expect.poll(async () => {
+    const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
+    taken = runs.find((x: any) => x.runId === firstId)
+    return !!taken
+  }, { timeout: 30000 }).toBeTruthy()
   expect(taken.ok, 'a cancelled run is not a pass').toBe(false)
+
+  // THE SLOT GUARD (2026-08-21): the superseded run's close has now fired — its entry just landed —
+  // and the slot must STILL be held by the run that took over. Before the guard, that close popped
+  // the slot free (or handed it to an ancestor) while the takeover run was live, so a second
+  // concurrent run could start: exactly what the one job slot exists to refuse. This test used to
+  // lean on that lie — its `await idle(...)` here only returned quickly because the slot was being
+  // freed out from under the live takeover run, which then ran on unmanaged under the next tests.
+  const held = await request.get('/api/runs').then((r: any) => r.json())
+  expect(held.runningId, 'the takeover run still holds the slot after the superseded run\'s close').toBe(secondId)
+
   // R5: takeover is a cancel — the partial work is left on disk, so the run's log is still readable.
   const log = await request.get('/spec/_runs/' + firstId + '/run.log')
   expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
+
+  // The takeover run holds the slot until IT ends — so end it: cancel it BY NAME (R5) rather than
+  // waiting out a full board run, then wait for the board to actually be free.
+  await request.post('/api/cancel', { data: { runId: secondId } })
+  await idle(request)
 })
 
 test('R4 — a run may nest inside the run driving it, and nesting is bounded', async ({ request }) => {
