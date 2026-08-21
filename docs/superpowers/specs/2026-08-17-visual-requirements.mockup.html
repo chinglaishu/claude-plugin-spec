@@ -615,6 +615,9 @@ ins { color:var(--koke); text-decoration:none; }
   .chd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
   .chd .grow2 { flex:1; }
   .cgrp { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); margin:10px 0 6px; }
+  .csearch { width:100%; border:1px solid var(--line2); border-radius:var(--r); background:var(--paper);
+    padding:5px 10px; font:400 var(--t-xs)/1.4 var(--sans); color:var(--ink); margin-bottom:4px; }
+  .csearch::placeholder { color:var(--mute); }
   .cnode2 { border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:7px; margin-bottom:8px;
     cursor:pointer; display:flex; gap:10px; align-items:center; transition:border-color .15s, box-shadow .15s; }
   .cnode2:hover { border-color:var(--ai); }
@@ -637,8 +640,8 @@ ins { color:var(--koke); text-decoration:none; }
     padding:8px 12px; font-size:var(--t-xs); margin-bottom:var(--s2); line-height:1.6; }
   .cgap .kc { display:inline-block; font-family:var(--mono); font-size:9px; padding:0 5px; border-radius:3px;
     background:var(--paper); border:1px solid var(--line2); }
-  .cchainwrap { overflow-x:auto; padding:4px 0 8px; }
-  .cchain { display:flex; align-items:stretch; min-width:max-content; }
+  .cchainwrap { padding:4px 0 8px; }
+  .cchain { display:flex; align-items:stretch; flex-wrap:wrap; row-gap:12px; } /* long chains WRAP — never run off-screen (human 2026-08-21) */
   .cbeat { width:196px; flex:none; border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:7px; position:relative; }
   .cbeat.givenb { background:var(--wash); }
   .cbeat.gapb { border-color:var(--yamabuki); }
@@ -686,8 +689,7 @@ ins { color:var(--koke); text-decoration:none; }
   .ch.nr { border-style:dashed; border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
   .thumb { position:relative; height:72px; border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; margin-bottom:6px; background:#f4f5f8; }
   .chscreen { font-family:var(--mono); font-size:9px; letter-spacing:.04em; text-transform:uppercase; color:var(--mute); }
-  .chname { font-size:var(--t-sm); font-weight:600; }
-  .chcomp { font-size:var(--t-micro); color:var(--mute); margin:1px 0 5px; }
+  .chname { font-size:var(--t-sm); font-weight:600; margin-bottom:5px; }
   .chips { display:flex; flex-wrap:wrap; gap:4px; }
   .mchip { font-family:var(--mono); font-size:var(--t-micro); border-radius:var(--r-sm); padding:1px 6px; border:1px solid var(--line); color:var(--dim); background:var(--paper); text-decoration:none; }
   .mchip.ok { color:var(--ok); background:var(--ok-bg); border-color:var(--ok-line); }
@@ -1726,17 +1728,24 @@ function renderFlow(id, flowId){
   document.getElementById('root').innerHTML = `<div class="wrap">
     <div class="flowsel">${flows.map(f => `<button class="fsel ${f.id===F.id?'on':''}" onclick="go('s/${id}/flow/${f.id}')">${esc(f.name)}<span class="fk">flow · ${f.chapters.length} chapters</span></button>`).join('')}<button class="fsel" style="border-style:dashed;color:var(--ai)" onclick="go('compose/${id}')">＋ New flow<span class="fk" style="color:var(--ai)">chain proven beats → a prompt</span></button></div>
     <div class="flowcard">
-      <div class="fhead"><h2>${esc(F.name)}</h2><div style="display:flex;align-items:center;gap:12px"><span class="fmeta">flow ${F.id.toLowerCase()} · ${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''} · <a href="#" onclick="toast('Would open the full recording');return false">▶ recording</a></span><span style="color:var(--line3)">·</span><button class="linkbtn" onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'})">✎ Edit</button><button class="linkbtn danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'})">✕ Remove</button></div></div>
+      <div class="fhead"><div style="display:flex;align-items:baseline;gap:12px"><h2>${esc(F.name)}</h2>
+        <span class="fmeta">${F.dur} · run ${F.run}${F.startsOn?` · starts on ${esc(F.startsOn)}`:''}${cross?' · cross-screen':''}</span></div>
+        <span style="position:relative"><button class="linkbtn" onclick="toggleMenu(event,'flowMenu')" aria-label="flow actions">⋯</button>
+          <div class="rmenu" id="flowMenu" hidden>
+            <button onclick="openPromptModal({action:'edit',screenId:'${id}',testId:'${F.id}'});closeMenus()">✎ Edit this flow</button>
+            <button onclick="toast('Would open the full recording');closeMenus()">▶ Open the full recording</button>
+            <div class="rmenu-div"></div>
+            <button class="danger" onclick="openPromptModal({action:'remove',screenId:'${id}',testId:'${F.id}'});closeMenus()">✕ Remove</button>
+          </div></span></div>
       <div class="playwrap">
         <div class="gif" style="margin:0">
-          <div class="gbar"><span id="playBar">the ONE recording · cut at proves-step timestamps · run ${F.run}</span><span class="rt"><button onclick="playFrom('${id}','${F.id}',0)">⟳ replay flow</button></span></div>
-          <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div></div>
+          <div class="stagebox"><div class="stage" id="stPlay"></div><div class="stopov" id="stopOv"></div>
+            <button class="runone" style="position:absolute;top:8px;right:8px;z-index:5;background:var(--paper);border:1px solid var(--line2);opacity:.92" onclick="playFrom('${id}','${F.id}',0)">⟳ replay</button></div>
         </div>
         <div class="pstat" id="playStatus"></div>
       </div>
       <div class="chstrip" id="chStrip"></div>
     </div>
-    <p class="legend">One path, one recording, cut at the proves-steps${cross?' — this flow crosses screens':''}. Click a chapter to seek · a failing beat wears red and everything after reads not-reached.</p>
   </div>`;
   // ONE rail (human 2026-08-21): the chapter strip alone carries the path, its verdicts, and the scrubber
   // chapter strip: the path as CARDS with connectors — beats chained left to right
@@ -1752,9 +1761,9 @@ function renderFlow(id, flowId){
     const edge = i===0 ? '' : `<div class="edge ${stripFailed?'nrE':''}">→</div>`;
     if (ch.fail) stripFailed = true;
     return edge + `<div class="ch${ch.fail?' fail':''}${ch.kind==='nr'?' nr':''}" data-i="${i}" onclick="if(event.target.tagName!=='A')playFrom('${id}','${F.id}',${i})">
-      <div><span class="chno">${ch.kind==='seed'?'given':'beat '+i}</span>${ch.screen?`<span class="chscreen">${esc(ch.screen)}</span>`:''}</div>
+      <div><span class="chno">${ch.kind==='seed'?'given':'beat '+i}</span>${cross&&ch.screen?`<span class="chscreen">${esc(ch.screen)}</span>`:''}</div>
       <div class="thumb" data-ci="${i}">${thumb}</div>
-      <div class="chname">${esc(ch.name)}</div><div class="chcomp">${esc(ch.comp||'')}</div><div class="chips">${chips}</div></div>`;
+      <div class="chname">${esc(ch.name)}</div><div class="chips">${chips}</div></div>`;
   }).join('');
   F.chapters.forEach((ch,i) => {
     const box = document.querySelector(`#chStrip .thumb[data-ci="${i}"]`);
@@ -1795,7 +1804,7 @@ function playFrom(id, flowId, start){
       e.className = 'ch' + (i<cur?' done':i===cur?' cur':'') + (ch.fail?' fail':'') + (ch.kind==='nr'?' nr':''); });
   }
   function status(i, extra){ document.getElementById('playStatus').innerHTML = `chapter ${i+1} of ${F.chapters.length} — <b style="font-weight:500;color:var(--ink)">${esc(F.chapters[i].name)}</b>${extra?' · '+extra:''}`; }
-  function banner(html, kind){ const ov=document.getElementById('stopOv'); ov.innerHTML=html; ov.className='stopov show '+kind; }
+  function banner(html, kind){ stage.querySelectorAll('.assert').forEach(a=>a.remove()); const ov=document.getElementById('stopOv'); ov.innerHTML=html; ov.className='stopov show '+kind; }
   function runChapter(i){
     if (i >= F.chapters.length) return;
     const ch = F.chapters[i]; setStates(i);
@@ -1842,6 +1851,7 @@ const COMPOSE_NODES = [
 const COMPOSE_START = { given:'frozen clock · storage cleared · seeded', gives:['seeded'] };
 let compChain = ['cb-sub','cb-roll'];          // the demo path — valid joints
 let compMode  = 'gif';                          // gif ↔ stills — a view preference, never stored
+let compQ     = '';                             // the library filter — find a beat fast (human 2026-08-21)
 let compScreen = null;
 let compStops = [];                             // looping thumb players to kill on re-render
 function compStopAll(){ compStops.forEach(f=>f()); compStops = []; }
@@ -1894,18 +1904,24 @@ function renderCompose(id){
   try { localStorage['sbComposeDraft:'+id] = JSON.stringify(compChain); } catch(e){}
   const gap = v.find(x => x.missing.length);
   const filler = gap ? compFiller(gap.missing) : null;
-  // library — grouped by screen; every beat is its gif
+  // library — searchable, grouped by screen, THIS screen's beats first; every beat is its gif
+  const q = compQ.trim().toLowerCase();
+  const shown = COMPOSE_NODES.filter(n => !q || (n.name+' '+n.proves+' '+scr(n.screen).name).toLowerCase().includes(q));
   const grps = {};
-  COMPOSE_NODES.forEach(n => (grps[n.screen] = grps[n.screen] || []).push(n));
-  const lib = Object.entries(grps).map(([sid, ns]) =>
-    `<div class="cgrp">${esc(scr(sid).name)} · ${ns.length}</div>` + ns.map(n => `
+  shown.forEach(n => (grps[n.screen] = grps[n.screen] || []).push(n));
+  const order = Object.keys(grps).sort((a,b) => (a===id ? -1 : b===id ? 1 : 0));
+  const lib = `<input class="csearch" id="compQ" placeholder="⌕ find a beat — name or R id" value="${esc(compQ)}"
+      oninput="compQ=this.value;renderCompose(compScreen);const i=document.getElementById('compQ');i.focus();i.setSelectionRange(i.value.length,i.value.length)">`
+  + (shown.length ? '' : `<div class="cold2" style="margin-top:8px">no beat matches “${esc(compQ)}”</div>`)
+  + order.map(sid =>
+    `<div class="cgrp">${esc(scr(sid).name)} · ${grps[sid].length}${sid===id?' · this screen':''}</div>` + grps[sid].map(n => `
       <div class="cnode2 ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}" onclick="compAdd('${n.id}')"
            title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
         <div class="nthumb" data-nt="${n.id}"></div>
         <div class="nmeta"><div class="nname">${esc(n.name)}</div>
           <div class="nsub">${n.proven ? `proves ${n.proves} · from ${n.from}` : `unproven — this flow becomes its first proof`}${filler && filler.id===n.id ? ' · ← fills the gap' : ''}</div></div>
       </div>`).join('')
-  ).join('') + `<div class="cgrp">Sign in · 0</div><div class="cold2">no beats yet — no requirements. <b>kg-deep</b> drafts them; they appear here the moment they exist.</div>`;
+  ).join('') + (q ? '' : `<div class="cgrp">Sign in · 0</div><div class="cold2">no beats yet — no requirements. <b>kg-deep</b> drafts them; they appear here the moment they exist.</div>`);
   // the chain — a chain of gifs
   let chainHtml = `<div class="cbeat givenb">
       <div class="bthumb" data-bt="given"></div>
