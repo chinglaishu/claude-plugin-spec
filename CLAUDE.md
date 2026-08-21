@@ -206,17 +206,20 @@ change.
   board proves itself, the *first* run after editing `board/test.spec.ts` can lag one run behind (its
   own coverage folds at that run's end). The standing rule survives the mechanism change: never edit a
   requirement's wording just to make its test go green — that is still the human's call, not yours.
-- **The Focus reader BORROWS a test node out of `.testpane`, but `loadRuns` only folds `.testpane`.**
-  The reader (board R13) MOVES the primary covering test's real node into the evidence card (and now,
-  since Focus is the default view, it does so the instant a screen opens — before `loadRuns`'s async
-  fetch returns). `loadRuns` walks `.testpane` to fill each case's recording/frames/steps, so a node
-  that is out in the reader is SKIPPED and left stale — on a fresh deep-link the reader shows a blank
-  recording until you navigate away. Fix, kept: `loadRuns` closes the reader first (node back in the
-  pane), folds every case, then reopens the reader on the same requirement (`ov._curId`). Any code
-  that opens the reader eagerly, or changes what `loadRuns` iterates, must preserve this close-fold-
-  reopen. Symptom in tests: assertions on the reader's evidence pass alone but fail under `checkReq`
-  (its paint/pace shifts them into the `loadRuns` window) — and a locator like `.feval .fpacts .runone`
-  quietly matches the ⋯-menu's copy too (the dropdown nests inside `.fpacts`); scope to `> .runone`.
+- **A reader BORROWS real nodes out of `.testpane`, but `loadRuns` only folds `.testpane`.** Both
+  reader kinds do it — the Focus overlay AND the List's open row (an open row IS the Focus body,
+  board R13 2026-08-21) — and Focus opens the instant a screen loads, before `loadRuns`'s async
+  fetch returns. A node that is out in a reader is SKIPPED by the fold and left stale — a fresh
+  deep-link shows blank media until navigation. Fix, kept and GENERALIZED (Task 3a, 2026-08-22):
+  `loadRuns` closes whichever reader is open (Focus reopened via its `ov._curId`, a List row via
+  its `data-r`), folds every case, then reopens the same requirement; `closeFocus()` tears down
+  both kinds so no view switch strands a borrowed node; `syncDerived` re-syncs each row's evidence
+  data after a run so a reopened reader renders the fresh harvest, never a cache. Any code that
+  opens a reader eagerly, or changes what `loadRuns` iterates, must preserve this close-fold-reopen
+  for BOTH reader kinds. Symptom in tests: assertions on reader evidence pass alone but fail under
+  `checkReq` (its paint/pace shifts them into the `loadRuns` window) — and a locator like
+  `.feval .fpacts .runone` quietly matches the ⋯-menu's copy too (the dropdown nests inside
+  `.fpacts`); scope to `> .runone`.
 
 ## Authored vs measured
 
