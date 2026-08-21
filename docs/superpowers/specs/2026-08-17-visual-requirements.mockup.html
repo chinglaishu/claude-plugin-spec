@@ -618,54 +618,57 @@ ins { color:var(--koke); text-decoration:none; }
   .csearch { width:100%; border:1px solid var(--line2); border-radius:var(--r); background:var(--paper);
     padding:5px 10px; font:400 var(--t-xs)/1.4 var(--sans); color:var(--ink); margin-bottom:4px; }
   .csearch::placeholder { color:var(--mute); }
-  /* library = a scannable index: tabs + search + one-line rows; the gif lives in ONE hover preview */
-  .ltabs { display:flex; flex-wrap:wrap; gap:4px; margin:8px 0 6px; }
-  .ltab { border:1px solid var(--line2); background:var(--paper); border-radius:999px; padding:2px 10px;
-    font-size:10.5px; color:var(--dim); cursor:pointer; }
-  .ltab.on { background:var(--ink); border-color:var(--ink); color:var(--paper); }
-  .ltab .n { font-family:var(--mono); font-size:9px; opacity:.7; margin-left:3px; }
-  .lrow { display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid transparent;
+  /* library = "what can I do next?": ready beats bright, blocked beats dimmed with the token they need;
+     a still thumbnail per row for recognition, playing in place on hover */
+  .lrow { display:flex; align-items:center; gap:9px; padding:4px 8px; border:1px solid transparent;
     border-radius:var(--r); cursor:pointer; }
   .lrow:hover { border-color:var(--ai); background:var(--paper); }
   .lrow.hint { border-color:var(--yamabuki); background:var(--yamabuki-tint); }
-  .ldot { width:8px; height:8px; border-radius:999px; flex:none; background:var(--ok); }
-  .lrow.outline .ldot { background:none; border:1.5px dashed var(--yamabuki); }
-  .lname2 { font-size:var(--t-xs); line-height:1.35; min-width:0; }
-  .lrid { margin-left:auto; font-family:var(--mono); font-size:9px; color:var(--mute); flex:none; }
-  .libprev { position:absolute; left:322px; width:250px; z-index:30; pointer-events:none;
-    border:1px solid var(--line3); border-radius:var(--r-md); background:var(--paper); box-shadow:var(--sh-sm); overflow:hidden; }
-  .libprev .lpstage { position:relative; width:246px; height:132px; overflow:hidden; background:var(--wash); }
-  .libprev .lpcap { padding:5px 10px; font:400 9.5px var(--mono); color:var(--dim); border-top:1px solid var(--line2); }
+  .lrow.dim { opacity:.42; }
+  .lrow.dim:hover { opacity:.9; }
+  .lthumb { width:58px; height:32px; flex:none; border:1px solid var(--line2); border-radius:4px;
+    overflow:hidden; position:relative; background:var(--wash); }
+  .lmeta2 { min-width:0; flex:1; }
+  .lname2 { font-size:var(--t-xs); line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lneed { font:400 8px var(--mono); color:var(--yamabuki); }
+  .lrid { font-family:var(--mono); font-size:9px; color:var(--mute); flex:none; }
   .noscene { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:1px; font-family:var(--mono); font-size:8.5px; color:var(--mute); }
   .cold2 { border:1px dashed var(--line2); border-radius:var(--r); padding:8px 11px; font-size:var(--t-xs); color:var(--dim); line-height:1.55; }
-  .cnamebar { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  .cnamebar { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
   .cnamebar .lbl2 { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); flex:none; }
   .cnamebar input { border:1px solid var(--line2); border-radius:var(--r); background:var(--paper); padding:4px 10px;
     font:400 var(--t-sm)/1.4 var(--sans); color:var(--ink); width:260px; }
-  /* the chain is VERTICAL — one step under the next, any length stays readable */
+  /* the chain = ONE RAIL — beats hang off a single line; the segments carry the joint state */
+  .csum { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:var(--s3); }
+  .schip { font-family:var(--mono); font-size:9.5px; padding:1px 9px; border-radius:999px;
+    border:1px solid var(--line2); color:var(--dim); background:var(--paper); }
+  .schip.ok { color:var(--ok); border-color:var(--ok-line); background:var(--ok-bg); }
+  .schip.warn { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
   .vchain { display:flex; flex-direction:column; max-width:620px; }
-  .vbeat { display:flex; align-items:center; gap:12px; border:1px solid var(--line2); border-radius:var(--r-md);
-    background:var(--paper); padding:8px 10px; }
-  .vbeat.givenb { background:var(--wash); }
-  .vbeat.gapb { border-color:var(--yamabuki); }
-  .vbeat.outline { border-style:dashed; }
-  .vthumb { width:118px; height:64px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
+  .crow2 { display:flex; align-items:center; gap:10px; border-radius:var(--r); padding:3px 6px 3px 0; }
+  .crow2:hover { background:var(--wash); }
+  .cdot { width:26px; flex:none; display:flex; justify-content:center; }
+  .cdot span { width:9px; height:9px; border-radius:999px; background:var(--ok); box-shadow:0 0 0 2px var(--paper); }
+  .crow2.given .cdot span { background:var(--ink-3); }
+  .crow2.outline .cdot span { width:8px; height:8px; background:var(--paper); border:2px dashed var(--yamabuki); }
+  .crow2.gapb .cdot span { background:var(--yamabuki); }
+  .cthumb2 { width:96px; height:52px; flex:none; border:1px solid var(--line2); border-radius:var(--r-sm);
     overflow:hidden; position:relative; background:var(--wash); }
-  .vmeta { min-width:0; flex:1; }
-  .vno { font-family:var(--mono); font-size:8.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--mute); }
-  .vname { font-size:var(--t-sm); line-height:1.4; }
-  .vpr { font:400 9px var(--mono); color:var(--ai); margin-top:1px; }
-  .vbeat.outline .vpr { color:var(--yamabuki); }
+  .cmeta2 { min-width:0; flex:1; }
+  .cname3 { font-size:var(--t-sm); line-height:1.35; }
+  .csub3 { font:400 9px var(--mono); color:var(--mute); margin-top:1px; }
+  .cchip { font-family:var(--mono); font-size:9px; color:var(--ai); border:1px solid var(--ai-line);
+    background:var(--ai-tint); border-radius:var(--r-sm); padding:0 6px; flex:none; }
+  .crow2.outline .cchip { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
   .vx { border:0; background:none; color:var(--mute); cursor:pointer; font-size:13px; padding:2px 6px; flex:none;
     opacity:0; transition:opacity .15s; }
-  .vbeat:hover .vx { opacity:1; }
+  .crow2:hover .vx { opacity:1; }
   .vx:hover { color:var(--bad); }
-  .vjoint { display:flex; align-items:center; gap:7px; padding:3px 0 3px 62px; }
-  .vjoint .ja2 { color:var(--ok); font-size:12px; line-height:1; }
-  .vjoint .jt2 { font:400 9px var(--mono); color:var(--ok); }
-  .vjoint.gap { padding-top:5px; padding-bottom:5px; }
-  .vjoint.gap .ja2, .vjoint.gap .jt2 { color:var(--yamabuki); }
+  .cconn { display:flex; align-items:center; gap:8px; padding-left:12px; }
+  .cconn .seg { width:2px; height:14px; background:var(--koke-line); border-radius:2px; }
+  .cconn.gap .seg { height:24px; background:none; border-left:2px dashed var(--yamabuki); width:0; }
+  .cconn .jlab { font:400 8.5px var(--mono); color:var(--yamabuki); }
   .kc { display:inline-block; font-family:var(--mono); font-size:9px; padding:0 5px; border-radius:3px;
     background:var(--paper); border:1px solid var(--yamabuki-line); }
   .cout { display:grid; grid-template-columns:1fr 300px; gap:var(--s4); margin-top:var(--s3); align-items:start; }
@@ -1920,49 +1923,71 @@ function renderCompose(id){
   try { localStorage['sbComposeDraft:'+id] = JSON.stringify(compChain); } catch(e){}
   const gap = v.find(x => x.missing.length);
   const filler = gap ? compFiller(gap.missing) : null;
-  // library = an INDEX: search + screen tabs + one-line rows; hover previews the beat's gif, click chains it
+  // what the chain's END provides — the library answers "what can I do next?" with it
+  const endState = new Set(COMPOSE_START.gives);
+  compChain.forEach(cid => cnodeOf(cid).gives.forEach(t => endState.add(t)));
+  const ready = n => n.needs.every(t => endState.has(t));
+  // library: search + screen groups (this screen first); ready beats bright and first,
+  // blocked beats dimmed with the token they still need; the gap's filler pinned on top
   const q = compQ.trim().toLowerCase();
-  const tabs = ['all', ...new Set(COMPOSE_NODES.map(n => n.screen))].sort((a,b) => (a===id?-1:b===id?1:0));
-  const tab = compTab || (COMPOSE_NODES.some(n => n.screen===id) ? id : 'all');
-  let rows = COMPOSE_NODES
-    .filter(n => q ? (n.name+' '+n.proves+' '+scr(n.screen).name).toLowerCase().includes(q) : (tab==='all' || n.screen===tab));
-  if (filler && !rows.includes(filler)) rows = [filler, ...rows];   // the gap's filler is ALWAYS visible, whatever tab
-  const showScr = q || tab==='all';
+  const matches = COMPOSE_NODES.filter(n => !q || (n.name+' '+n.proves+' '+scr(n.screen).name).toLowerCase().includes(q));
+  const grps = {};
+  matches.forEach(n => (grps[n.screen] = grps[n.screen] || []).push(n));
+  const order = Object.keys(grps).sort((a,b) => (a===id ? -1 : b===id ? 1 : 0));
+  const rowHtml = n => `
+      <div class="lrow ${ready(n)?'':'dim'} ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}"
+           onclick="compAdd('${n.id}')" onmouseenter="rowPlay(event,'${n.id}')" onmouseleave="rowStill(event,'${n.id}')"
+           title="${esc((SCREENS[n.screen].reqs.find(r=>r.id===n.proves)||{}).then || n.name)}">
+        <div class="lthumb" data-lt="${n.id}"></div>
+        <div class="lmeta2"><div class="lname2">${esc(n.name)}${filler && filler.id===n.id ? ' <b style="color:var(--yamabuki)">← fills the gap</b>' : ''}</div>
+          ${ready(n) ? '' : `<div class="lneed">needs ${n.needs.filter(t=>!endState.has(t)).join(' · ')}</div>`}</div>
+        <span class="lrid">${n.proves}</span>
+      </div>`;
   const lib = `<input class="csearch" id="compQ" placeholder="⌕ find a beat — name or R id" value="${esc(compQ)}"
       oninput="compQ=this.value;renderCompose(compScreen);const i=document.getElementById('compQ');i.focus();i.setSelectionRange(i.value.length,i.value.length)">`
-  + (q ? '' : `<div class="ltabs">${tabs.map(t => `<button class="ltab ${t===tab?'on':''}" onclick="setCompTab('${t}')">${t==='all'?'all':esc(scr(t).name)}<span class="n">${t==='all'?COMPOSE_NODES.length:COMPOSE_NODES.filter(n=>n.screen===t).length}</span></button>`).join('')}</div>`)
-  + (rows.length ? rows.map(n => `
-      <div class="lrow ${n.proven?'':'outline'} ${filler && filler.id===n.id ? 'hint':''}" onclick="compAdd('${n.id}')"
-           onmouseenter="libPreview(event,'${n.id}')" onmouseleave="libPreviewHide()">
-        <span class="ldot"></span>
-        <span class="lname2">${esc(n.name)}${filler && filler.id===n.id ? ' <b style="color:var(--yamabuki)">← fills the gap</b>' : ''}</span>
-        <span class="lrid">${n.proves}${showScr ? ' · '+esc(n.screen.replace('task-','')) : ''}</span>
-      </div>`).join('')
+  + (filler ? rowHtml(filler) : '')
+  + (matches.length ? order.map(sid =>
+      `<div class="cgrp">${esc(scr(sid).name)} · ${grps[sid].length}</div>`
+      + grps[sid].filter(n => !filler || n.id !== filler.id)
+          .sort((a,b) => (ready(b)?1:0) - (ready(a)?1:0))
+          .map(rowHtml).join('')
+    ).join('')
     : `<div class="cold2" style="margin-top:8px">no beat matches “${esc(compQ)}”</div>`)
-  + (q || (tab!=='all' && tab!=='sign-in') ? '' : `<div class="cgrp">Sign in · 0</div><div class="cold2">no beats yet — no requirements. <b>kg-deep</b> drafts them; they appear here the moment they exist.</div>`);
-  // the chain is VERTICAL — the path reads top to bottom, any length
-  let chainHtml = `<div class="vbeat givenb">
-      <div class="vthumb" data-bt="given"></div>
-      <div class="vmeta"><div class="vno">given · once</div><div class="vname">${esc(COMPOSE_START.given)}</div></div></div>`;
+  + (q ? '' : `<div class="cgrp">Sign in · 0</div><div class="cold2">no beats yet — no requirements. <b>kg-deep</b> drafts them; they appear here the moment they exist.</div>`);
+  // the chain: one rail — dots on a line, compact rows, the segment between rows carries the joint
+  const screensIn = new Set(compChain.map(cid => cnodeOf(cid).screen)).size;
+  const provesList = [...new Set(compChain.map(cid => cnodeOf(cid).proves))];
+  const sum = `<div class="csum">
+      <span class="schip">${v.length} beat${v.length===1?'':'s'}</span>
+      ${screensIn>1?`<span class="schip">${screensIn} screens</span>`:''}
+      ${gap ? `<span class="schip warn">⚠ 1 gap</span>` : `<span class="schip ok">path holds ✓</span>`}
+      ${provesList.length?`<span class="schip">proves ${provesList.join(' · ')}</span>`:''}</div>`;
+  let chainHtml = `<div class="crow2 given">
+      <div class="cdot"><span></span></div>
+      <div class="cthumb2" data-bt="given"></div>
+      <div class="cmeta2"><div class="cname3">${esc(COMPOSE_START.given)}</div><div class="csub3">given · set once</div></div>
+      <span class="cchip" style="color:var(--ink-3);border-color:var(--line2);background:var(--wash)">fixture</span></div>`;
   v.forEach((x,i) => {
     const ok = !x.missing.length;
     chainHtml += ok
-      ? `<div class="vjoint"><span class="ja2">↓</span><span class="jt2">then ⊇ given ✓</span></div>`
-      : `<div class="vjoint gap"><span class="ja2">⇣</span><span class="jt2">GAP — given needs ${x.missing.map(m=>`<span class="kc">${m}</span>`).join(' ')}${filler?` · <b>${esc(filler.name)}</b> fills it — lit up in the library`:''}</span></div>`;
-    chainHtml += `<div class="vbeat ${x.n.proven?'':'outline'}${x.missing.length?' gapb':''}">
-      <div class="vthumb" data-bt="${i}"></div>
-      <div class="vmeta"><div class="vno">beat ${i+1} · ${esc(x.n.screen)}</div><div class="vname">${esc(x.n.name)}</div>
-        <div class="vpr">proves ${x.n.proves}${x.n.proven?'':' · unproven — written red-first here'}</div></div>
+      ? `<div class="cconn"><span class="seg"></span></div>`
+      : `<div class="cconn gap"><span class="seg"></span><span class="jlab">needs ${x.missing.map(m=>`<span class="kc">${m}</span>`).join(' ')}${filler?` — <b>${esc(filler.name)}</b> fills it, pinned top-left`:''}</span></div>`;
+    chainHtml += `<div class="crow2 ${x.n.proven?'':'outline'}${x.missing.length?' gapb':''}">
+      <div class="cdot"><span></span></div>
+      <div class="cthumb2" data-bt="${i}"></div>
+      <div class="cmeta2"><div class="cname3">${esc(x.n.name)}</div>
+        <div class="csub3">beat ${i+1} · ${esc(x.n.screen)}${x.n.proven?'':' · unproven — written red-first here'}</div></div>
+      <span class="cchip">${x.n.proves}</span>
       <button class="vx" title="remove" onclick="compRm(${i})">✕</button></div>`;
   });
   document.getElementById('root').innerHTML = `<div class="wrap">
-    <div class="cwrap" style="position:relative">
+    <div class="cwrap">
       <div class="cpanel"><div class="chd"><h2>Beats</h2><div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">hover = preview · click = chain</span></div>${lib}</div>
-      <div id="libPrev" class="libprev" hidden><div class="lpstage"></div><div class="lpcap"></div></div>
       <div>
         <div class="cpanel">
           <div class="cnamebar"><span class="lbl2">flow name</span><input id="compName" value="Roll-up round trip" oninput="compPrompt()">
             <div class="grow2"></div><span class="fs2 mono" style="font-size:9px;color:var(--mute)">try “tick a sub-task from the detail” — watch the gap</span></div>
+          ${sum}
           <div class="vchain">${chainHtml}</div>
         </div>
         <div class="cout">
@@ -1974,33 +1999,32 @@ function renderCompose(id){
       </div>
     </div>
   </div>`;
-  // paint the chain thumbs (gif mode loops, stills mode freezes — the header toggle)
-  const g = document.querySelector('.vthumb[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .256, 460, 248);
-  v.forEach((x,i) => { const b = document.querySelector(`.vthumb[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .256, 460, 248); });
+  // paint thumbs: chain follows the gif·stills toggle; the library is stills + hover-play
+  const g = document.querySelector('.cthumb2[data-bt="given"]'); if (g) compThumb(g, 'sceneSeed', .209, 460, 248);
+  v.forEach((x,i) => { const b = document.querySelector(`.cthumb2[data-bt="${i}"]`); if (b) compThumb(b, x.n.scene, .209, 460, 248); });
+  COMPOSE_NODES.forEach(n => document.querySelectorAll(`.lthumb[data-lt="${n.id}"]`).forEach(b => {
+    if (n.scene) mountStill(b, n.scene, .124, 460, 248);
+    else b.innerHTML = `<div class="noscene"><span>no scene</span></div>`;
+  }));
   compPrompt();
 }
-let libPrevStop = null;
-function setCompTab(t){ compTab = t; renderCompose(compScreen); }
-function libPreview(ev, nid){
-  const n = cnodeOf(nid), p = document.getElementById('libPrev');
-  if (!p) return;
-  const wrap = document.querySelector('.cwrap');
-  p.hidden = false;
-  p.style.top = Math.max(0, ev.currentTarget.getBoundingClientRect().top - wrap.getBoundingClientRect().top - 44) + 'px';
-  p.querySelector('.lpcap').textContent = n.name + ' · ' + (n.proven ? 'proves '+n.proves+' · from '+n.from : 'unproven — this flow becomes its first proof');
-  const box = p.querySelector('.lpstage'); box.innerHTML = '';
-  if (libPrevStop){ libPrevStop(); libPrevStop = null; }
-  if (n.scene){
-    const st = document.createElement('div');
-    st.className = 'stage short';
-    st.style.cssText = 'width:460px;height:248px;transform:scale(.535);transform-origin:top left;';
-    box.appendChild(st);
-    libPrevStop = play(st, SCENE[n.scene]);
-  } else box.innerHTML = `<div class="noscene"><span>no scene yet</span><span>drawn on the next viz pass</span></div>`;
+function rowPlay(ev, nid){
+  const n = cnodeOf(nid); if (!n.scene) return;
+  const box = ev.currentTarget.querySelector('.lthumb'); if (!box) return;
+  if (box._stop){ box._stop(); box._stop = null; }
+  box.innerHTML = '';
+  const st = document.createElement('div');
+  st.className = 'stage short';
+  st.style.cssText = 'width:460px;height:248px;transform:scale(.124);transform-origin:top left;';
+  box.appendChild(st);
+  box._stop = play(st, SCENE[n.scene]);
+  compStops.push(box._stop);
 }
-function libPreviewHide(){
-  const p = document.getElementById('libPrev'); if (p) p.hidden = true;
-  if (libPrevStop){ libPrevStop(); libPrevStop = null; }
+function rowStill(ev, nid){
+  const n = cnodeOf(nid);
+  const box = ev.currentTarget.querySelector('.lthumb'); if (!box) return;
+  if (box._stop){ box._stop(); box._stop = null; }
+  if (n.scene) mountStill(box, n.scene, .124, 460, 248);
 }
 function compAdd(id){
   const v = compValidate();
