@@ -34,7 +34,11 @@ not do. Never take control away from the user (no auto-advancing after a verdict
 
 1. **Write the failing test first** for any new or changed behaviour, **watch it go red**, and **tag
    the requirement it proves** with `checkReq(id, fn)`. *Exempt:* pure refactors, spikes. A test
-   written after the code can only confirm it.
+   written after the code can only confirm it. *Addendum (the human, 2026-08-21):* a **composed
+   flow** — the deterministic composition of function-shaped beats, each already proven red-first
+   in its unit home — is exempt from flow-level watch-it-go-red; its validity is every composed
+   beat's standing red-first proof plus the composed file passing its first full run. A composed
+   flow that fails its first run is a composition defect, never a reason to weaken a beat.
 2. **Assert something that can fail.** If a test would still pass with the requirement deleted, it is
    not a test — and it cannot make that requirement *proven*.
 3. **Never fake a green.** A requirement with no passing assertion reads **unproven**; a flow that
