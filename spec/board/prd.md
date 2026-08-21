@@ -268,41 +268,26 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 *Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
 `guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
 
-## R13 — Three views of a screen's requirements: Focus, Grid, Flow
+## R13 — Three views of a screen's requirements: Focus, List, Flow
 
 - **Given** a screen's requirements
-- **When** you toggle Focus / Grid / Flow
+- **When** you toggle Focus / List / Flow
 - **Then** the same requirements render in that view, storing nothing new
 
-The detail header carries a **toggle — Focus / Grid / Flow** — three views of the same requirements,
-storing nothing new. **Focus** is the default a screen opens on *(the human, 2026-08-13
-— was Columns)*. **Grid** is the behavior grid — one row per
-requirement (state · id · title · the Given·When·Then shape it leads with, blank when the requirement
-is prose-only · its proof: the covering test and its verdict, or an honest no-coverage note) — to scan
-at a glance; a row opens that requirement in Focus. **Focus** reads **one requirement
-at a time**, laid out as **two containers**: the *reading* on the left (its id and state on a meta line
-above the title, then the full description, and the flow step by step with this requirement's step
-highlighted) and the *evidence* on the right — a **proof header** whose top row carries the label and
-the actions (**Run** always shown, and a **⋯ menu** holding **Run in background · Logs · Steps**),
-then the proof line (which flow proves it and its verdict, with the commit that result ran against),
-the scannable **proof-frame strip** (no label — the stills speak for themselves, the human 2026-08-13),
-and the recording. A pager (prev · dots · next) moves between requirements; the toggle switches
-views. The header's Run all, toggle and Close are one control family — same height, same pill radius.
-
-**Flow** plays a screen's tests as their authored flows — each recording is one video seeked into
-chapters in order (a chapter per screen a flow crosses, or per step group on a single screen). A
-chapter strip carries the stage name, a still, and the requirement chips it proves — a chip opens
-that requirement in Focus. It stores nothing new: the chapters are derived from the run's own steps
-and timestamps, and the player seeks the one recording rather than cutting it. A chapter that fails
-stops the playback with the failing beat named, and every chapter after it reads not-reached — a
-flow never ends green on a run that broke.
-
-The evidence is not a pointer elsewhere but the covering test's **own row, moved in** — its controls,
-its frame strip and its recording are the very wired nodes the board bakes as the shared source for
-Focus, Grid and Flow (its steps are shown on the left as a display clone, the moved node keeping the
-wired original), relocated and relocated back so the source rows are left whole. So the reader
-duplicates no player, and a requirement nothing tags reads honestly unproven rather than borrowing a
-green.
+The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
+requirement at a time: the **behavior block leads** on the left (one Given, its When→Then beats),
+the prose collapsed beneath it, the **drawn schematic** below (loop · stills; quiet grey when
+stale); the proof sits on the right — Run + ⋯ header, proof line, then media whose **default
+derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
+expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
+a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
+failing test". **List** is one collapsed row per requirement (state · id · title · beat count ·
+test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in place.
+**Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
+rail as the scrubber** (click a chapter to seek, click its gif to zoom); a failing chapter wears
+red and everything after reads not-reached; **＋ New flow opens the composer** (R15 family). Flow
+reads like Focus: **the chapter rail on the left and the player on the right, each scrolling on
+its own** (R2's principle) *(added by the human 2026-08-21)*. All three views derive; none stores.
 
 *Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
 carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
@@ -315,6 +300,9 @@ the human's spoken decisions; the tests assert the behaviour.*
 *Reworked 2026-08-18 (the human): the three views are Focus / Grid / Flow — Grid replaced the compact
 List, Flow replaced the Columns view; the text follows the human's logged decision, the tests assert
 the behaviour.*
+
+*Reworded 2026-08-21 (the human): Grid became List — a list of Focus — and the views took the frozen
+visual-requirements mockup as their contract.*
 
 ## R14 — The proof is scannable as frames, not only as video
 
@@ -361,3 +349,19 @@ awaits the human; the meaning is theirs, the tests assert the behaviour.*
 *Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
 from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
 menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
+
+## R16 — Home leads with what the board does
+
+- **Given** the board's home with no dismissal preference set
+- **When** it renders
+- **Then** a feature strip of six cards sits above the areas, each opening the live example of itself on this board
+
+The six cards: **beats** · **proof from real runs** · **computed drift** · **the three views** ·
+**compose a flow** · **honest gaps** — each a link into the live example on this board (a
+requirement with beats, a proven requirement's media, a failed/changed requirement, the List view,
+the composer, an untested requirement). A dismiss control hides the strip; the dismissal is a
+**client-side preference, never stored in the tree**, and where no preference exists the strip
+renders again.
+
+*Added 2026-08-21 (the human) with the frozen mockup — onboarding chrome, dismissible, derives
+everything and stores nothing.*
