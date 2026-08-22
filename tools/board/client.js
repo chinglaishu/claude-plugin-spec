@@ -569,29 +569,47 @@ const B = window.__BOARD__ || {}
         '<img loading="lazy" src="' + eh(src) + '" alt="' + eh(cap) + '">' +
         '<div class="fcap">' + eh(cap) + '</div></div>'
     }
-    // the run record's per-requirement proof frames (loadRuns fills the strip; frames carry the id)
-    const perReqRunFrames = function () {
-      return [].slice.call(primary.querySelectorAll('.pfstrip .pframe')).filter(function (f) {
-        const q = f.querySelector('.pfreq')
-        return q && q.textContent.trim() === r.id
-      }).map(function (f) {
-        const img = f.querySelector('img')
-        const caps = f.querySelectorAll('.pfcap span')
-        return { src: img ? img.getAttribute('src') : '', cap: caps.length ? caps[caps.length - 1].textContent : '' }
-      }).filter(function (f) { return f.src })
+    // THE RUN'S PROOF FRAMES (board R14, as signed 2026-08-22): the media pane's stills ARE the
+    // scannable strip — one surface in the focus card, not a near-duplicate pair. Where the newest
+    // record carrying frames covers this requirement, its per-value stills render as the strip's
+    // cells: one per checked value, in order, the got-vs-expected in the caption, red on a failure.
+    // Frames are frames OF the recording (the harvest cuts them), so a record with no video has
+    // none — no strip, never a faked or separately-captured one. Read off the record loadRuns
+    // stashed (never the DOM strip, which is folded away here) — a qualified req tag counts only
+    // for its own screen.
+    const runFrames = function () {
+      const slot = primary.querySelector('.tststeps')
+      const hist = (slot && slot._hist) || []
+      const rec = hist.find(function (x) { return x.frames && x.frames.length })
+      if (!rec) return []
+      return rec.frames.filter(function (fr) {
+        const q = String(fr.req || '')
+        const k = q.indexOf(':')
+        const scr = k > 0 ? q.slice(0, k) : dt.dataset.screen
+        const bare = k > 0 ? q.slice(k + 1) : q
+        return bare === r.id && scr === dt.dataset.screen && fr.img
+      })
     }
     // frames
     const pf = document.createElement('div'); pf.className = 'fmpanel'; pf.dataset.m = 'frames'
     {
       const cells = []
+      const rf = st === 'failed' ? [] : runFrames()
       if (st === 'failed') {
+        // a failure keeps the D2 red-frame default: the harvested after IS the red frame (the
+        // harvest paints the verdict before snapping), with the expected-vs-actual beneath
         if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
         if (r.ev.after) cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
+      } else if (rf.length) {
+        // the merged R14 strip — one cell per checked value, its own caption, red where it failed
+        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
+        rf.forEach(function (fr) {
+          cells.push(cell(fr.img, (fr.ok === false ? '✗ ' : '✓ ') + (fr.cap || 'checked value'),
+            (fr.ok === false ? 'hotbad' : 'hot') + ' rf'))
+        })
       } else if (r.beats > 1) {
         if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
-        const rf = perReqRunFrames()
-        if (rf.length) rf.forEach(function (f, i) { cells.push(cell(f.src, '✓ beat ' + (i + 1) + ' · ' + (f.cap || 'then'), 'hot')) })
-        else if (r.ev.after) cells.push(cell(r.ev.after, '✓ beat ' + r.beats + ' · then — the asserted value in frame', 'hot'))
+        if (r.ev.after) cells.push(cell(r.ev.after, '✓ beat ' + r.beats + ' · then — the asserted value in frame', 'hot'))
       } else {
         if (r.ev.before) cells.push(cell(r.ev.before, 'before'))
         if (r.ev.after) cells.push(cell(r.ev.after, '✓ after — the asserted value in frame', 'hot'))
@@ -731,19 +749,91 @@ const B = window.__BOARD__ || {}
     card.scrollIntoView({ block: 'nearest' })
   }
 
-  // THE FLOW VIEW (board R13): each test's run played as its authored flow — ONE recording seeked
-  // into chapters, never cut. The chapters and the unit/flow kind are derived SERVER-side by the
-  // pure tools/flow.mjs and delivered on the folded /api/runs record (the same path the proof
-  // frames ride), so this only READS `one.chapters` / `one.kind` / `one.video` off the records
-  // loadRuns stashed. Flow builds its OWN player from the record's video path and never moves the
-  // shared .testpane nodes — those belong to Focus's borrow / close-fold-reopen contract, and a
-  // second borrower would fight it.
-  function buildFlow (dt) {
+  // THE FLOW VIEW (board R13, the frozen mockup 2026-08-22): the authored flows read like Focus.
+  // ONE flow at a time, picked in a selector row above (one pill per flow + ＋ New flow, which
+  // keeps the prompt-modal handoff — the composer is Task 5), then the SPLIT: the chapter rail on
+  // the LEFT and the player on the RIGHT, each scrolling on its own (R2's principle). The rail IS
+  // the scrubber — clicking a chapter seeks the ONE recording to that proves-step's timestamp
+  // (never cut), the current chapter wears a ring, a failing chapter wears bengara and stops the
+  // playback with its beat named, and everything after it reads not-reached. Everything derives
+  // from the folded records (chapters + the unit/flow kind server-side in tools/flow.mjs, delivered
+  // on /api/runs; thumbnails are the harvested frames) — the view stores nothing, and it never
+  // moves the shared .testpane nodes (those belong to Focus's borrow / close-fold-reopen contract,
+  // and a second borrower would fight it; Flow only READS them).
+  function flowsOf (dt) {
+    return [].slice.call(dt.querySelectorAll('.testpane .test')).map(function (t) {
+      const slot = t.querySelector('.tststeps')
+      const hist = (slot && slot._hist) || []
+      // chapters and the video must come from the SAME record — the seek offsets are offsets into
+      // that recording; prefer the newest record carrying both, then one with chapters alone (a
+      // CLI run records steps but no video — the rail still reads honestly, with nothing to play)
+      const one = hist.find(function (x) { return x.video && x.chapters && x.chapters.length }) ||
+        hist.find(function (x) { return x.chapters && x.chapters.length }) || null
+      // kind: the UNION of the two honest derivations — the baked source-plan kind (flowStep
+      // present ⇒ flow, the List's rule; it also keeps a flow's pill before it has ever run) and
+      // the record's server-derived kind (a cross-screen tag ⇒ flow, board R6's rule). A
+      // flowStep-authored story is a flow even when it never leaves its screen — the record's
+      // 'unit' must not shadow it.
+      const recKind = (one && one.kind) || ''
+      const baked = t.dataset.kind || ''
+      const kind = (recKind === 'flow' || baked === 'flow') ? 'flow' : (recKind || baked)
+      return { node: t, one: one, kind: kind, title: t.dataset.title || '' }
+    }).filter(function (f) { return f.kind === 'flow' })
+  }
+  function buildFlow (dt, selTitle) {
     const fv = dt.querySelector('.flowview')
     if (!fv) return
     fv.innerHTML = ''
     const screen = dt.dataset.screen
-    for (const t of dt.querySelectorAll('.testpane .test')) fv.appendChild(flowBlock(dt, screen, t))
+    const flows = flowsOf(dt)
+    if (!flows.length) {
+      // the empty state keeps the SAME authoring affordance the board has everywhere: the add-test
+      // prompt (R15's handoff — the board writes nothing; the composer is Task 5)
+      const em = document.createElement('div'); em.className = 'flempty'
+      const h = document.createElement('h3'); h.textContent = 'No flow tests on this screen'
+      const p = document.createElement('p')
+      p.textContent = 'A flow crosses screens along a chosen path and reads as the units it connects.'
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'
+      b.dataset.prompt = 'addtest'   // an opening click — the sheet's outside-click closer skips it
+      b.textContent = '＋ Author a flow test'
+      b.addEventListener('click', function () { openAddTest(dt) })
+      em.appendChild(h); em.appendChild(p); em.appendChild(b)
+      fv.appendChild(em)
+      return
+    }
+    const want = selTitle || dt._flowSel
+    const cur = flows.filter(function (f) { return f.title === want })[0] || flows[0]
+    dt._flowSel = cur.title   // an in-memory view preference — never stored in the tree
+    // the selector row — one pill per flow, the open one marked; ＋ New flow hands off the prompt
+    const bar = document.createElement('div'); bar.className = 'flowsel'
+    flows.forEach(function (f) {
+      const b = document.createElement('button'); b.type = 'button'
+      b.className = 'fsel' + (f === cur ? ' on' : '')
+      const t = document.createElement('span'); t.className = 'fsttl'; t.textContent = f.title
+      const k = document.createElement('span'); k.className = 'fk'
+      k.textContent = f.one ? ('flow · ' + f.one.chapters.length + ' chapters') : 'flow · not run yet'
+      b.appendChild(t); b.appendChild(k)
+      b.addEventListener('click', function () { buildFlow(dt, f.title) })
+      bar.appendChild(b)
+    })
+    {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'fsel newflow'
+      b.dataset.prompt = 'addtest'
+      const t = document.createElement('span'); t.className = 'fsttl'; t.textContent = '＋ New flow'
+      const k = document.createElement('span'); k.className = 'fk'; k.textContent = 'the board hands Claude the prompt'
+      b.appendChild(t); b.appendChild(k)
+      b.addEventListener('click', function () { openAddTest(dt) })
+      bar.appendChild(b)
+    }
+    fv.appendChild(bar)
+    if (!cur.one) {
+      // a flow-kind plan with no record — the honest placeholder, never fake chapters
+      const none = document.createElement('div'); none.className = 'flnone'
+      none.textContent = 'Not run yet — Run to see its flow.'
+      fv.appendChild(none)
+      return
+    }
+    fv.appendChild(flowSplit(dt, screen, cur))
   }
   // Compose the chapters the strip shows from ONE record's reached chapters + its declared set.
   // flow.mjs deliberately returns only what RAN; the honesty is composed here (rule 3):
@@ -791,39 +881,127 @@ const B = window.__BOARD__ || {}
     for (const scr of order) out.push({ title: scr, screen: scr, t: null, reqs: miss[scr], st: 'nr', beat: '' })
     return out
   }
-  function flowBlock (dt, screen, tnode) {
-    const slot = tnode.querySelector('.tststeps')
-    const hist = (slot && slot._hist) || []
-    // chapters and the video must come from the SAME record — the seek offsets are offsets into
-    // that recording; prefer the newest record carrying both, then one with chapters alone (a CLI
-    // run records steps but no video — the strip still reads honestly, with nothing to play)
-    const one = hist.find(function (x) { return x.video && x.chapters && x.chapters.length }) ||
-      hist.find(function (x) { return x.chapters && x.chapters.length }) || null
-    const box = document.createElement('div'); box.className = 'fltest'
-    const head = document.createElement('div'); head.className = 'flhead'
-    const ttl = document.createElement('span'); ttl.className = 'flttl'
-    ttl.textContent = tnode.dataset.title || ''
-    head.appendChild(ttl)
-    if (one && one.kind) {
-      const kind = document.createElement('span'); kind.className = 'flkind'; kind.textContent = one.kind
-      head.appendChild(kind)
-    }
-    box.appendChild(head)
-    if (!one) {
-      const none = document.createElement('div'); none.className = 'flnone'
-      none.textContent = 'Not run yet — Run to see its flow.'
-      box.appendChild(none)
-      return box
-    }
+  // The SPLIT itself — rail left, player right. All the seek mechanics live here: the ONE recording
+  // is PAUSED at start (the server's byte-range support makes a MediaRecorder webm seekable);
+  // nothing plays until a chapter is clicked, and playback pauses at each chapter's boundary —
+  // manual advance, from the rail or the banner's play-next. A failing chapter STOPS the flow: its
+  // banner names the failing beat the moment it is chosen (the verdict is already recorded), and
+  // the caption clears while any banner shows so the two never overlap (the mockup's rule).
+  function flowSplit (dt, screen, f) {
+    const one = f.one
+    const tnode = f.node
     const chs = flowChapters(one, screen)
-    // the ONE recording, PAUSED at start — chapters seek it (the server's byte-range support makes
-    // a MediaRecorder webm seekable); manual advance only, nothing plays until a chapter is clicked
+    const split = document.createElement('div'); split.className = 'flsplit'
+    const rail = document.createElement('div'); rail.className = 'flrail'
+    const rh = document.createElement('div'); rh.className = 'flrailhead'
+    rh.textContent = 'the path · ' + chs.length + ' chapter' + (chs.length === 1 ? '' : 's')
+    rail.appendChild(rh)
+    const strip = document.createElement('div'); strip.className = 'chstrip'
+    rail.appendChild(strip)
+    const main = document.createElement('div'); main.className = 'flmain'
+    const card = document.createElement('div'); card.className = 'flowcard'
+    // the slim header: flow name + kind + duration/run/cross-screen + the ⋯ menu
+    const head = document.createElement('div'); head.className = 'flhead'
+    const ttl = document.createElement('span'); ttl.className = 'flttl'; ttl.textContent = f.title
+    head.appendChild(ttl)
+    const kindEl = document.createElement('span'); kindEl.className = 'flkind'; kindEl.textContent = f.kind
+    head.appendChild(kindEl)
+    const seen = {}; let nscr = 0
+    for (const c of chs) if (c.screen && !seen[c.screen]) { seen[c.screen] = 1; nscr++ }
+    const cross = nscr > 1
+    const meta = document.createElement('span'); meta.className = 'flmeta'
+    const dur = one.ms != null ? (one.ms >= 1000 ? Math.round(one.ms / 1000) + 's' : Math.round(one.ms) + 'ms') : ''
+    meta.textContent = [dur, one.commit ? 'run ' + one.commit : '', cross ? 'cross-screen' : '']
+      .filter(Boolean).join(' · ')
+    head.appendChild(meta)
+    const grow = document.createElement('span'); grow.className = 'grow'; head.appendChild(grow)
+    // the ⋯ menu: Edit / open recording / Remove — authoring is the R15 prompt handoff; the
+    // recording item just opens the one artifact itself, and is withheld when no video exists
+    {
+      const testCtx = function () {
+        return { screen: screen, testTitle: f.title,
+          coverIds: [].slice.call(tnode.querySelectorAll('.tags .tag')).map(function (el) { return el.getAttribute('data-r') }),
+          reqList: screenReqList(dt) }
+      }
+      const menu = promptMenu('flow actions', [['edittest', '✎ Edit this flow', testCtx]])
+      const pop = menu.querySelector('.fmenupop')
+      if (one.video) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn sm'
+        b.textContent = '▶ Open the full recording'
+        b.addEventListener('click', function () { window.open(one.voiced || one.video, '_blank', 'noopener') })
+        pop.appendChild(b)
+      }
+      pop.appendChild(promptItem('removetest', '✕ Remove this flow', testCtx))
+      head.appendChild(menu)
+    }
+    card.appendChild(head)
+
+    const play = document.createElement('div'); play.className = 'flplay'
+    const cap = document.createElement('div'); cap.className = 'flcap'
+    const banner = document.createElement('div'); banner.className = 'flbanner'
     let video = null
     let ready = false
     let pending = null   // a chapter seek clicked before the metadata (and duration probe) landed
     let endAt = null     // the current chapter's boundary — playback pauses there (manual advance)
+    let curIdx = -1
+    const MARK = { p: '✓', f: '✗', nr: '◌' }
+    const fmtT = function (ms) {
+      const s = Math.max(0, Math.round(ms / 1000))
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+    }
+    function setCaption (i) {
+      const c = chs[i]
+      cap.textContent = 'chapter ' + (i + 1) + ' of ' + chs.length + ' — ' + c.title +
+        (c.reqs && c.reqs.length ? ' · proves ' + c.reqs.join(', ') : '')
+    }
+    function hideBanner () { banner.className = 'flbanner'; banner.innerHTML = '' }
+    // the banner never overlaps the caption — the caption CLEARS while a banner shows, so a stop
+    // reads once, loudly, never twice in two places
+    function showBanner (kind, text, btnLabel, btnFn) {
+      banner.innerHTML = ''
+      const s = document.createElement('span'); s.textContent = text; banner.appendChild(s)
+      if (btnLabel) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'flgo'
+        b.textContent = btnLabel
+        b.addEventListener('click', btnFn)
+        banner.appendChild(b)
+      }
+      banner.className = 'flbanner show ' + kind
+      cap.textContent = ''
+    }
+    function seekChapter (i) {
+      const c = chs[i]
+      if (!video || !c || c.t == null) return
+      curIdx = i
+      for (const el of strip.querySelectorAll('.ch.cur')) el.classList.remove('cur')
+      if (strip.children[i]) strip.children[i].classList.add('cur')   // the ring
+      if (c.st === 'f') {
+        // the recorded verdict IS the stop — say so the moment the failing chapter is chosen, and
+        // let its segment play beneath the banner; playback never proceeds past it (rule 3)
+        showBanner('bad', '✗ the flow stopped here — failed at ' + (c.beat || c.title) +
+          ' · everything after is not reached', '⟳ replay', function () { seekChapter(0) })
+      } else { hideBanner(); setCaption(i) }
+      // play THIS chapter only: the boundary is the next recorded chapter's start
+      endAt = null
+      for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { endAt = chs[k].t / 1000; break }
+      if (!ready) { pending = c.t / 1000; return }
+      video.currentTime = c.t / 1000
+      video.play().catch(function () {})
+    }
+    // what the end of chapter i means: a failure already stopped it for good (its banner is up);
+    // the last green chapter of an all-green run completes the flow; otherwise the person advances
+    // by hand — or the honest early-stop is named (rule 3: a broken run never ends on a plain green)
+    function atChapterEnd (i) {
+      const c = chs[i]
+      if (!c || c.st === 'f') return
+      let next = -1
+      for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null && chs[k].st !== 'nr') { next = k; break }
+      if (next >= 0) showBanner('neutral', 'chapter done', '▶ play next — ' + chs[next].title, function () { seekChapter(next) })
+      else if (chs.every(function (c2) { return c2.st === 'p' }))
+        showBanner('ok', '✓ flow complete — every tagged requirement proven', '⟳ replay', function () { seekChapter(0) })
+      else showBanner('neutral', '◌ the flow stopped early — what follows is not reached', '⟳ replay', function () { seekChapter(0) })
+    }
     if (one.video) {
-      const player = document.createElement('div'); player.className = 'flplayer'
       video = document.createElement('video')
       video.controls = true; video.playsInline = true; video.preload = 'metadata'
       video.src = one.voiced || one.video
@@ -843,64 +1021,86 @@ const B = window.__BOARD__ || {}
         } else settle()
       })
       video.addEventListener('timeupdate', function () {
-        // MANUAL ADVANCE: pause at the chapter boundary — the person advances by clicking the next
-        // chapter, and on a failed chapter this same pause is where playback STOPS for good
-        if (endAt != null && video.currentTime >= endAt) video.pause()
+        // MANUAL ADVANCE: pause at the chapter boundary — the person advances from the rail (or
+        // the banner's play-next); on a failed chapter this same pause is where playback STOPS
+        if (endAt != null && video.currentTime >= endAt) { video.pause(); endAt = null; atChapterEnd(curIdx) }
       })
-      player.appendChild(video)
-      box.appendChild(player)
+      video.addEventListener('ended', function () { if (curIdx >= 0) atChapterEnd(curIdx) })
+      play.appendChild(video)
+      const rp = document.createElement('button'); rp.type = 'button'; rp.className = 'flreplay'
+      rp.title = 'replay from the first chapter'; rp.textContent = '⟳'
+      rp.addEventListener('click', function () { seekChapter(0) })
+      play.appendChild(rp)
+      play.appendChild(banner)
+      cap.textContent = 'paused — click any chapter to play it'
+    } else {
+      const no = document.createElement('div'); no.className = 'noev flnovid'
+      const s = document.createElement('span')
+      s.textContent = 'no recording kept for this run — the rail still reads honestly'
+      no.appendChild(s)
+      play.appendChild(no)
     }
-    const strip = document.createElement('div'); strip.className = 'flstrip'
-    const fmtT = function (ms) {
-      const s = Math.max(0, Math.round(ms / 1000))
-      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
-    }
-    const MARK = { p: '✓', f: '✗', nr: '◌' }
-    const seekChapter = function (i) {
-      const c = chs[i]
-      if (!video || c.t == null) return
-      for (const el of strip.querySelectorAll('.flchap.on')) el.classList.remove('on')
-      strip.children[i].classList.add('on')
-      // play THIS chapter only: the boundary is the next recorded chapter's start
-      endAt = null
-      for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { endAt = chs[k].t / 1000; break }
-      if (!ready) { pending = c.t / 1000; return }
-      video.currentTime = c.t / 1000
-      video.play().catch(function () {})
-    }
+    card.appendChild(play); card.appendChild(cap)
+    main.appendChild(card)
+
+    // the rail rows — thumbnail · given/beat label · name (with its mark) · requirement chips
+    let beatN = 0
     chs.forEach(function (c, i) {
-      // a not-reached chapter never plays — it is a rendered absence, not a segment
+      // a not-reached chapter never plays — it is a rendered absence, not a seek target
       const el = document.createElement(c.st === 'nr' ? 'div' : 'button')
-      el.className = 'flchap ' + c.st
-      const meta = document.createElement('div'); meta.className = 'flmeta'
-      const mk = document.createElement('span'); mk.className = 'flmk'; mk.textContent = MARK[c.st]
-      meta.appendChild(mk)
-      if (c.t != null) { const tt = document.createElement('span'); tt.className = 'flt'; tt.textContent = fmtT(c.t); meta.appendChild(tt) }
-      el.appendChild(meta)
-      // the still: the proof frame nearest this chapter's seek point, when the record cut one
+      if (c.st !== 'nr') el.type = 'button'
+      el.className = 'ch ' + c.st
+      const thumb = document.createElement('div'); thumb.className = 'thumb'
       if (c.t != null) {
+        // the still: the harvested proof frame nearest this chapter's seek point, when one was cut
         let end = null
         for (let k = i + 1; k < chs.length; k++) if (chs[k].t != null) { end = chs[k].t; break }
-        const frame = (one.frames || []).find(function (f) {
-          return typeof f.t === 'number' && f.t >= c.t && (end == null || f.t < end)
+        const frame = (one.frames || []).find(function (fr) {
+          return typeof fr.t === 'number' && fr.t >= c.t && (end == null || fr.t < end)
         })
         if (frame) {
           const img = document.createElement('img')
           img.loading = 'lazy'; img.src = frame.img; img.alt = frame.cap || 'chapter still'
-          el.appendChild(img)
+          thumb.appendChild(img)
+        } else {
+          const nt = document.createElement('span'); nt.className = 'nothumb'; nt.textContent = 'no still'
+          thumb.appendChild(nt)
         }
+      } else {
+        const nt = document.createElement('span'); nt.className = 'nothumb'; nt.textContent = '◌'
+        thumb.appendChild(nt)
       }
-      const stage = document.createElement('div'); stage.className = 'flstage'; stage.textContent = c.title
-      el.appendChild(stage)
+      if (cross && c.screen) {
+        const tag = document.createElement('span'); tag.className = 'scrtag'; tag.textContent = c.screen
+        thumb.appendChild(tag)
+      }
+      el.appendChild(thumb)
+      const cm = document.createElement('div'); cm.className = 'chmeta'
+      const no = document.createElement('div'); no.className = 'chno'
+      // 'given' for an opening chapter that proves nothing (the setup the flow stands on); every
+      // later reached chapter is a numbered beat; 'declared' marks a coverReqs screen the run
+      // never reached at all
+      no.textContent = c.t == null ? 'declared'
+        : (i === 0 && !(c.reqs && c.reqs.length) ? 'given' : 'beat ' + (++beatN))
+      if (c.t != null) {
+        const tt = document.createElement('span'); tt.className = 'flt'; tt.textContent = ' · ' + fmtT(c.t)
+        no.appendChild(tt)
+      }
+      cm.appendChild(no)
+      const nm = document.createElement('div'); nm.className = 'chname'
+      const mk = document.createElement('span'); mk.className = 'chmk'; mk.textContent = MARK[c.st]
+      nm.appendChild(mk)
+      nm.appendChild(document.createTextNode(' ' + c.title))
+      cm.appendChild(nm)
       if (c.st === 'f' && c.beat) {
         const beat = document.createElement('div'); beat.className = 'flbeat'
         beat.textContent = '✗ failed at — ' + c.beat
-        el.appendChild(beat)
+        cm.appendChild(beat)
       }
       if (c.st === 'nr') {
         const why = document.createElement('div'); why.className = 'flnr'
         why.textContent = c.t == null ? 'declared, never reached' : 'after the failure — not reached'
-        el.appendChild(why)
+        cm.appendChild(why)
       }
       // the requirement chips this chapter proves — each opens that requirement in Focus; a chapter
       // can land on a hash route with no card (howitworks, a probe page), whose ids render INERTLY
@@ -924,15 +1124,16 @@ const B = window.__BOARD__ || {}
           reqs.appendChild(chip)
         }
       }
-      if (reqs.children.length) el.appendChild(reqs)
+      if (reqs.children.length) cm.appendChild(reqs)
+      el.appendChild(cm)
       if (c.st !== 'nr') el.addEventListener('click', function (e) {
-        if (e.target.closest('img')) return   // the still opens the zoom — a different intent
+        if (e.target.closest('img')) return   // the thumbnail opens the zoom — a different intent
         seekChapter(i)
       })
       strip.appendChild(el)
     })
-    box.appendChild(strip)
-    return box
+    split.appendChild(rail); split.appendChild(main)
+    return split
   }
 
   // THE VIEW TOGGLE (board R13): Focus / Grid / Flow, one segmented control in the detail header

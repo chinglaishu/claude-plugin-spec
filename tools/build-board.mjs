@@ -334,7 +334,10 @@ export const testRow = (s, plan, t) => {
     : t.ok ? chip('ok', 'mark', 'pass') : chip('bad', 'mark o', 'fail')
   const cls = !t ? 'u' : t.ok ? 'p' : 'f'
   const planned = (plan.steps || []).map(planRow).join('')
-  return `<div class="test tst ${cls}" data-t="${esc(plan.title)}" data-title="${esc(plan.title)}">
+  // the SOURCE-derived kind (flowStep present ⇒ flow), baked so the Flow view can offer a pill for
+  // a flow-authored test before it has ever run; a record's server-derived kind overrides it live
+  const kind = (plan.steps || []).some(st => st.kind === 'flow') ? 'flow' : 'unit'
+  return `<div class="test tst ${cls}" data-t="${esc(plan.title)}" data-title="${esc(plan.title)}" data-kind="${kind}">
     <div class="th"><div class="throw"><span class="chev">›</span><span class="ttl tt">${esc(plan.title)}</span><div class="tags">${tags}</div>${status}</div><div class="tmeta"></div></div>
     <div class="tbody">
       <div class="trow2">
@@ -1583,8 +1586,11 @@ export function build () {
   .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
   .fmbody { position:relative; }
   .fmpanel[hidden] { display:none; }
-  /* stills: the harvested frame pair, or the per-beat filmstrip when the requirement chains beats */
-  .fmpanel .fstrip { display:flex; gap:var(--s2); padding:var(--s3); }
+  /* stills: the harvested frame pair, the per-beat filmstrip — or the run's proof-frame strip (the
+     merged R14 surface): fixed-width .rf cells, the strip scrolling sideways when they overflow */
+  .fmpanel .fstrip { display:flex; gap:var(--s2); padding:var(--s3); overflow-x:auto;
+    overscroll-behavior-x:contain; }
+  .fstrip .fcell.rf { flex:0 0 300px; }
   .fstrip .fcell { flex:1 1 0; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
   .fstrip .fcell img { display:block; width:100%; height:auto; border-bottom:1px solid var(--hair); cursor:zoom-in; }
@@ -1653,8 +1659,10 @@ export function build () {
   .fev .test.infocus > .tbody { display:block; padding:0; }
   .fev .test.infocus .trow2 { display:none; }               /* the rec and every control are relocated out of it */
   .fev .test.infocus .fold, .fev .test.infocus .tstlog { display:none; }
-  .feval .pfstrip { margin-top:0; overscroll-behavior-x:contain; }   /* its scroll never chains to the page */
-  .feval .pfstrip .pframe { width:380px; }                  /* larger stills than the source row's 210px */
+  /* R14 as signed 2026-08-22: the media pane's STILLS are the one strip surface in the focus card —
+     the moved test node's own strip folds away here (it stays whole on the node, and shows wherever
+     the test row itself is read: the pane, the Steps window, a future test view) */
+  .fev .test.infocus .pfstrip { display:none; }
 
   /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
      page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
@@ -1753,46 +1761,70 @@ export function build () {
   .remind .gap-nr { color:var(--yamabuki); }
   .remind .gap-un { color:var(--ink-4); }
 
-  /* the FLOW view (board R13): each test's run played as its authored flow — ONE recording seeked
-     into chapters (derived by tools/flow.mjs, delivered on the folded record), never cut. The strip
-     carries stage name · still · requirement chips. Status is hue PLUS a mark, never hue alone:
-     ✓ passed (koke) · ✗ failed with its beat (bengara) · ◌ not-reached (ink-4). Pairs re-measured
-     for AA: --koke on --paper 7.0:1, --bengara on --paper 6.4:1, --ink-4 on --paper 5.2:1,
-     --ink-3 on --card 6.42:1, --ai on --ai-tint is the documented chip.rev pair. */
-  .flowview { display:flex; flex-direction:column; gap:var(--s4); width:100%; max-width:980px;
-    margin:0 auto; }
+  /* the FLOW view (board R13, the frozen mockup 2026-08-22): ONE flow at a time — a selector row
+     of pills above, then the SPLIT: the chapter rail LEFT, the player RIGHT, each scrolling on its
+     own (R2's principle; neither scrolls the page). Status is hue PLUS a mark, never hue alone:
+     ✓ passed (koke) · ✗ failed with its beat (bengara) · ◌ not-reached. Every pair measured for AA
+     (Task 3b report): worst in this block is --ink-4 on --canvas 4.71:1; the tinted fail/nr rows
+     use --ink-3 for their labels because --ink-4 on --bengara-tint measures 4.41:1. */
+  .flowview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+    margin:0 auto; flex:1; min-height:0; }
   .flowview[hidden] { display:none; }
-  .fltest { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    padding:var(--s4); }
-  .flhead { display:flex; align-items:center; gap:var(--s3); }
-  .flttl { font-size:var(--t-md); font-weight:500; color:var(--ink); min-width:0; }
-  .flkind { font:var(--t-micro) var(--mono); color:var(--ink-3); border:1px solid var(--hair-2);
-    border-radius:999px; padding:1px 8px; flex:none; }
-  .flnone { font-size:var(--t-sm); color:var(--ink-3); margin-top:var(--s2); }
-  .flplayer { margin-top:var(--s3); }
-  .flplayer video { width:100%; max-height:430px; background:var(--ink); border-radius:var(--r);
-    border:1px solid var(--hair-2); object-fit:contain; display:block; }
-  .flstrip { display:flex; gap:var(--s2); overflow-x:auto; margin-top:var(--s3);
-    padding-bottom:var(--s1); }
-  .flchap { flex:0 0 190px; min-width:0; text-align:left; font:inherit; color:var(--ink-2);
-    background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm);
-    padding:var(--s2); display:flex; flex-direction:column; gap:var(--s1); }
-  button.flchap { cursor:pointer; }
-  button.flchap:hover { background:var(--wash); border-color:var(--hair-2); }
-  .flchap.on { border-color:var(--ink); }
-  .flchap img { width:100%; border-radius:var(--r-sm); border:1px solid var(--hair); display:block; }
-  .flchap .flmeta { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono); }
-  .flchap .flmk { font-weight:600; }
-  .flchap.p .flmk { color:var(--koke); }
-  .flchap.f .flmk, .flchap.f .flt { color:var(--bengara); }
-  .flchap.nr .flmk { color:var(--ink-4); }
-  .flchap .flt { color:var(--ink-4); }
-  .flchap .flstage { font-size:var(--t-sm); line-height:1.4; color:var(--ink); }
-  .flchap.nr .flstage { color:var(--ink-4); }
+  .flowsel { flex:none; display:flex; gap:var(--s2); flex-wrap:wrap; }
+  .fsel { display:flex; flex-direction:column; align-items:flex-start; gap:1px; font:inherit;
+    border:1px solid var(--hair-2); background:var(--paper); border-radius:var(--r);
+    padding:7px 14px; color:var(--ink-2); cursor:pointer; text-align:left; max-width:340px; }
+  .fsel .fsttl { font-size:var(--t-sm); max-width:100%; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; }
+  .fsel .fk { font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  .fsel:hover { border-color:var(--line3); }
+  .fsel.on { border-color:var(--line3); background:var(--wash); color:var(--ink); font-weight:500; }
+  .fsel.newflow { border-style:dashed; color:var(--ai); }
+  .fsel.newflow .fk { color:var(--ai); }
+  .flsplit { flex:1; min-height:0; display:grid; grid-template-columns:390px minmax(0,1fr);
+    gap:var(--s4); align-items:stretch; }
+  /* stacked on a narrow screen, per-pane scroll would trap content — the split scrolls whole */
+  @media (max-width:1080px) {
+    .flsplit { grid-template-columns:1fr; overflow-y:auto; }
+    .flsplit > .flrail, .flsplit > .flmain { overflow:visible; height:auto; }
+  }
+  .flrail { overflow-y:auto; overflow-x:hidden; min-height:0; padding:2px; }
+  .flmain { overflow-y:auto; min-height:0; }
+  .flrailhead { font:var(--t-micro) var(--mono); text-transform:uppercase; letter-spacing:.12em;
+    color:var(--ink-4); margin:2px 0 var(--s2); }
+  .chstrip { display:flex; flex-direction:column; gap:6px; }
+  /* one chapter row — thumbnail · given/beat label · name (with its mark) · requirement chips; the
+     row is the scrubber (a real button); a not-reached row is a rendered absence (a div) */
+  .ch { display:flex; align-items:center; gap:10px; font:inherit; text-align:left; width:100%;
+    border:1px solid transparent; border-radius:var(--r-md); padding:5px 8px; background:none;
+    color:var(--ink-2); }
+  button.ch { cursor:pointer; }
+  button.ch:hover { background:var(--paper); border-color:var(--hair); }
+  .ch.cur { border-color:var(--line3); background:var(--paper); box-shadow:var(--sh-sm); } /* the ring */
+  .ch.f { background:var(--bengara-tint); border-color:var(--bengara-line); }
+  .ch.nr { border:1px dashed var(--yamabuki-line); background:var(--yamabuki-tint); opacity:.8; }
+  .ch .thumb { position:relative; width:118px; height:64px; flex:none; border:1px solid var(--hair);
+    border-radius:var(--r-sm); overflow:hidden; background:var(--wash); }
+  .ch .thumb img { width:100%; height:100%; object-fit:cover; display:block; cursor:zoom-in; }
+  .ch .thumb .nothumb { position:absolute; inset:0; display:flex; align-items:center;
+    justify-content:center; font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  .ch .scrtag { position:absolute; bottom:3px; left:3px; font:var(--t-micro) var(--mono);
+    color:var(--ink-3); background:var(--paper); padding:0 4px; border-radius:3px; opacity:.92; }
+  .chmeta { min-width:0; flex:1; }
+  .chno { font:var(--t-micro) var(--mono); text-transform:uppercase; letter-spacing:.05em;
+    color:var(--ink-4); }
+  .chno .flt { text-transform:none; letter-spacing:0; color:var(--ink-4); }
+  /* AA on the tinted rows: --ink-4 on --bengara-tint is 4.41:1, so their labels step up to ink-3 */
+  .ch.f .chno, .ch.nr .chno, .ch.f .chno .flt, .ch.nr .chno .flt { color:var(--ink-3); }
+  .chname { font-size:var(--t-sm); font-weight:500; line-height:1.35; color:var(--ink); }
+  .chmk { font-weight:600; }
+  .ch.p .chmk { color:var(--koke); }
+  .ch.f .chmk { color:var(--bengara); }
+  .ch.nr .chmk { color:var(--ink-3); }
   /* the failing beat, named on the chapter that stopped the flow (rule 3) */
-  .flchap .flbeat { font-size:var(--t-xs); line-height:1.4; color:var(--bengara); }
-  .flchap .flnr { font-size:var(--t-xs); color:var(--ink-4); }
-  .flreqs { display:flex; gap:5px; flex-wrap:wrap; margin-top:auto; }
+  .flbeat { font-size:var(--t-xs); line-height:1.4; color:var(--bengara); }
+  .flnr { font-size:var(--t-xs); color:var(--ink-3); }
+  .flreqs { display:flex; gap:5px; flex-wrap:wrap; margin-top:2px; }
   /* the requirement chips a chapter proves — neutral metadata at rest; the transient INDIGO tint on
      hover is the board's many-to-many coverage cue (it moved here from the retired Columns view's
      row hover). A chip opens that requirement in Focus; an id whose screen has no card is inert. */
@@ -1801,6 +1833,44 @@ export function build () {
   button.flreq { cursor:pointer; }
   button.flreq:hover { background:var(--ai-tint); color:var(--ai); }
   .flreq.inert { opacity:.75; }
+  /* the player card — slim header, the ONE recording, a single caption line */
+  .flowcard { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:0 1px 3px rgba(28,27,24,.05); padding:var(--s4); }
+  .flhead { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s3); min-width:0; }
+  .flttl { font-size:var(--t-md); font-weight:500; color:var(--ink); min-width:0; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .flkind { font:var(--t-micro) var(--mono); color:var(--ink-3); border:1px solid var(--hair-2);
+    border-radius:999px; padding:1px 8px; flex:none; }
+  .flmeta { font:var(--t-micro) var(--mono); color:var(--ink-4); flex:none; }
+  .flnone { font-size:var(--t-sm); color:var(--ink-3); }
+  .flplay { position:relative; }
+  .flplay video { width:100%; max-height:52vh; background:var(--ink); border-radius:var(--r);
+    border:1px solid var(--hair-2); object-fit:contain; display:block; }
+  .flplay .noev { min-height:180px; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:var(--t-sm); color:var(--ink-3); border:1px dashed var(--hair-2);
+    border-radius:var(--r);
+    background:repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--wash) 10px, var(--wash) 11px); }
+  .flreplay { position:absolute; top:8px; right:8px; z-index:5; font:var(--t-sm) var(--sans);
+    background:var(--paper); border:1px solid var(--hair-2); border-radius:999px; padding:3px 10px;
+    color:var(--ink-2); cursor:pointer; opacity:.92; }
+  .flreplay:hover { color:var(--ink); border-color:var(--line3); }
+  /* the stop banner rides the BOTTOM of the player, and the caption CLEARS while it shows — the
+     banner never overlaps the caption (the frozen mockup's rule) */
+  .flbanner { position:absolute; left:8px; right:8px; bottom:8px; z-index:7; display:none;
+    align-items:center; gap:var(--s2); border-radius:var(--r); padding:8px 12px;
+    font-size:var(--t-sm); font-weight:500; }
+  .flbanner.show { display:flex; }
+  .flbanner.bad { background:var(--bengara-tint); color:var(--bengara); border:1px solid var(--bengara-line); }
+  .flbanner.ok { background:var(--koke-tint); color:var(--koke); border:1px solid var(--koke-line); }
+  .flbanner.neutral { background:var(--paper); color:var(--ink-2); border:1px solid var(--hair-2); }
+  .flbanner .flgo { border:1px solid currentColor; background:none; color:inherit; margin-left:auto;
+    border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; cursor:pointer; flex:none; }
+  .flcap { font-size:var(--t-xs); color:var(--ink-3); margin-top:var(--s2); text-align:center;
+    min-height:1.4em; }
+  /* the honest empty state — no flows is a statement with a next move, never a blank pane */
+  .flempty { text-align:center; padding:64px 20px; color:var(--ink-3); }
+  .flempty h3 { font-size:var(--t-lg); font-weight:600; color:var(--ink-2); margin:0 0 4px; }
+  .flempty p { font-size:var(--t-sm); margin:0 0 var(--s4); }
 
   /* the reading hierarchy of both lists (board R3): a quiet one-line hint under each title */
   .rmain { flex:1; min-width:0; }
