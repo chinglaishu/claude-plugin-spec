@@ -351,6 +351,12 @@ the board never writes or edits a requirement or a test — every add/edit/remov
 ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
 awaits the human; the meaning is theirs, the tests assert the behaviour.*
 
+*Amended 2026-08-22 (the human): "never writes a requirement or a test itself" applies to the ⋯
+handoffs — scan, rewrite, and the composer's Claude path. The deterministic compose emit is the
+**one** sanctioned write: `＋ Add test` composes `spec/<start>/test.spec.ts` directly, and only
+from beats that already carry their own red-first proof (the D4 amendment of 2026-08-21,
+CLAUDE.md rule 1's addendum). The board still writes no requirement, ever.*
+
 *Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
 from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
 menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
