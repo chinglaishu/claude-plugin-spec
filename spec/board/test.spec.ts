@@ -619,12 +619,18 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await media.locator('.medbar button[data-m="frames"]').click()
     await expect(framesPanel).toBeVisible()
 
-    // FAILED → the red frame; no gif mode (the mockup skips it), video says what it is
+    // FAILED → the failed mark on the pane; no gif mode (the mockup skips it), video says what it
+    // is. The stills are the NEWEST record's (D3): its own frames when the last run of this test was
+    // a recorded one, else the harvested red after-frame — the framed branch is pinned by R14 (1b)
+    // on a stub record, so here only the frameless branch asserts the exact red-frame cell.
     await force(evId!, 'failed')
     await reopen(evId!)
     await expect(media.locator('.medbar button[data-m="clip"]')).toHaveCount(0)
     await expect(media.locator('.medbar button[data-m="video"]')).toHaveText('video@fail')
-    await expect(media.locator('.fmpanel[data-m="frames"] .fcell.hotbad')).toHaveCount(1)
+    await expect(media.locator('.fmbar .fpv.fail')).toContainText('✗')
+    if (await media.locator('.fmpanel[data-m="frames"] .fcell.rf').count() === 0) {
+      await expect(media.locator('.fmpanel[data-m="frames"] .fcell.hotbad')).toHaveCount(1)
+    }
 
     // CHANGED → the last proof media under a pinned-era watermark
     await force(evId!, 'changed')
@@ -962,6 +968,25 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
 
+    // (1b) D3 (the human, 2026-08-22): the media pane renders the NEWEST record's harvest whatever
+    // its status — a FAILING run's own frames show (the value that broke, burned red) instead of
+    // the strip being suppressed under a failed chip. The failed state is carried in the pane
+    // itself: the bar wears the existing failed mark (✗ + bengara, hue never alone), the failing
+    // value stays red, and video reads video@fail. Forced status again — the same technique.
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    const rfF = ov.locator('.feval .fmedia .fmpanel[data-m="frames"] .fcell.rf')
+    await expect(rfF).toHaveCount(3)                              // the failing run's frames DO render
+    await expect(rfF.nth(2)).toHaveClass(/\bhotbad\b/)
+    await expect(rfF.nth(2)).toContainText('got 5 · expected 4')
+    await expect(ov.locator('.feval .fmedia .fmbar .fpv.fail')).toContainText('✗')   // the failed mark on the pane
+    await expect(ov.locator('.feval .fmedia .medbar button[data-m="video"]')).toHaveText('video@fail')
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    await expect(ov.locator('.feval .fmedia .fmbar .fpv.fail')).toHaveCount(0)      // and only on a failure
+
     // (2) AND THE STRIP IS THE TEST'S OWN: leave Focus — the borrowed node returns whole to the
     // hidden source pane, frames intact (count/class reads work on hidden rows) — "in the test's
     // evidence" survives the merge untouched
@@ -973,8 +998,11 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
     await expect(tst.locator('.pfstrip .pframe').nth(3).locator('.pfreq')).toHaveText('dispatch:R1')
 
-    // (3) NO VIDEO → NO STRIP: a record that cut no frames yields NO run-frame cells — the
-    // harvested pair still stands, never a faked or separately-captured strip
+    // (3) NO VIDEO → NO STRIP, and NEWEST-RECORD-ONLY (D3): a record that cut no frames yields NO
+    // run-frame cells — the harvested pair still stands, never a faked or separately-captured strip.
+    // An OLDER record's frames must not stand in for the newest run either (that is how a green
+    // strip from a past run would sit under a newer verdict): the stub keeps the framed record
+    // behind a newer frameless one, and the strip stays empty.
     await page.unroute('**/api/runs')
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
@@ -982,6 +1010,11 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
         ok: true, total: 1, failed: 0, shotsByTest: { [R1_TITLE]: {
           shots: [], steps: [], log: 'x',
           at: '2026-08-13T01:00:00.000Z', ms: 6000, ok: true, commit: 'abc1234'
+        } } },
+      { screen: 'board', runId: 'rf', hasLog: false, at: '2026-08-13T00:00:00.000Z', ms: 6000,
+        ok: false, total: 1, failed: 1, shotsByTest: { [R1_TITLE]: {
+          shots: [], video: 'spec/_runs/rf/a.webm', frames, steps: [], log: 'x',
+          at: '2026-08-13T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
         } } }]
     } }))
     await page.reload()

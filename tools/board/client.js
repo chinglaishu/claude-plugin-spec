@@ -625,7 +625,9 @@ const B = window.__BOARD__ || {}
   //   passed, 1 beat  → the harvested before/after frame pair
   //   passed, N beats → the per-beat filmstrip (given + the run's per-requirement frames, or the
   //                     harvested after-frame closing the chain when no recording captured them)
-  //   failed          → the red after-frame + the covering test's expected-vs-actual
+  //   failed          → the NEWEST record's own frames when it cut any (D3: the failing value red),
+  //                     else the red after-frame — plus the covering test's expected-vs-actual and
+  //                     the ✗ failed mark on the bar
   //   changed         → the last proof's media under a pinned-era watermark
   //   untested / not-reached → no media: "no proof yet · ＋ write the failing test"
   // — under a stills · gif · video toolbar. The override is a client-side preference (localStorage),
@@ -659,7 +661,10 @@ const B = window.__BOARD__ || {}
     const bar = document.createElement('div'); bar.className = 'fmbar'
     const lab = document.createElement('span')
     lab.innerHTML = 'proves ' + eh(r.id) + (r.ev.at ? ' · ' + eh(r.ev.at) : '') +
-      (st === 'changed' ? ' · <span class="pinned">✎ pinned era</span>' : '')
+      (st === 'changed' ? ' · <span class="pinned">✎ pinned era</span>' : '') +
+      // D3: a failing run's media shows — so the pane itself carries the failed state, with the
+      // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
+      (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
     bar.appendChild(lab)
     const mb = document.createElement('span'); mb.className = 'medbar'
     const modes = st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video']
@@ -687,18 +692,23 @@ const B = window.__BOARD__ || {}
         '<div class="fcap">' + eh(cap) + '</div></div>'
     }
     // THE RUN'S PROOF FRAMES (board R14, as signed 2026-08-22): the media pane's stills ARE the
-    // scannable strip — one surface in the focus card, not a near-duplicate pair. Where the newest
-    // record carrying frames covers this requirement, its per-value stills render as the strip's
+    // scannable strip — one surface in the focus card, not a near-duplicate pair. Where the NEWEST
+    // record covers this requirement with frames, its per-value stills render as the strip's
     // cells: one per checked value, in order, the got-vs-expected in the caption, red on a failure.
     // Frames are frames OF the recording (the harvest cuts them), so a record with no video has
     // none — no strip, never a faked or separately-captured one. Read off the record loadRuns
     // stashed (never the DOM strip, which is folded away here) — a qualified req tag counts only
     // for its own screen.
+    // D3 (the human, 2026-08-22; task-3b review L3): NEWEST RECORD ONLY, whatever its status. The
+    // old rule took the newest record that HAD frames and so had to blank the strip under a failed
+    // chip (an older passing run's green strip there is a fake green); reading only hist[0] lets a
+    // failing run's own frames show — the value that broke, burned red — with no fake-green path,
+    // and a later video-less CLI run falls back to the harvested pair (that fold's own frames).
     const runFrames = function () {
       const slot = primary.querySelector('.tststeps')
       const hist = (slot && slot._hist) || []
-      const rec = hist.find(function (x) { return x.frames && x.frames.length })
-      if (!rec) return []
+      const rec = hist[0]
+      if (!rec || !rec.frames || !rec.frames.length) return []
       return rec.frames.filter(function (fr) {
         const q = String(fr.req || '')
         const k = q.indexOf(':')
@@ -711,19 +721,19 @@ const B = window.__BOARD__ || {}
     const pf = document.createElement('div'); pf.className = 'fmpanel'; pf.dataset.m = 'frames'
     {
       const cells = []
-      const rf = st === 'failed' ? [] : runFrames()
-      if (st === 'failed') {
-        // a failure keeps the D2 red-frame default: the harvested after IS the red frame (the
-        // harvest paints the verdict before snapping), with the expected-vs-actual beneath
-        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
-        if (r.ev.after) cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
-      } else if (rf.length) {
+      const rf = runFrames()
+      if (rf.length) {
         // the merged R14 strip — one cell per checked value, its own caption, red where it failed
         if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
         rf.forEach(function (fr) {
           cells.push(cell(fr.img, (fr.ok === false ? '✗ ' : '✓ ') + (fr.cap || 'checked value'),
             (fr.ok === false ? 'hotbad' : 'hot') + ' rf'))
         })
+      } else if (st === 'failed') {
+        // no frames on the newest record (a CLI run): the D2 red-frame default — the harvested after
+        // IS the red frame (the harvest paints the verdict before snapping), expected-vs-actual beneath
+        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
+        if (r.ev.after) cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
       } else if (r.beats > 1) {
         if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
         if (r.ev.after) cells.push(cell(r.ev.after, '✓ beat ' + r.beats + ' · then — the asserted value in frame', 'hot'))
