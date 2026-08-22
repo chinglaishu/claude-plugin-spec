@@ -223,8 +223,8 @@ const real = (() => {
 })()
 const SERVES = {
   'derive-a-word': ['board:R4', 'board:R6', 'board:R12', 'dispatch:R3', 'dispatch:R7', 'todo:R7'],
-  'fold-into-rows': ['dispatch:R8', 'init:R2', 'init:R5', 'conflicts:R5'],
-  'type-and-append': ['todo:R1', 'todo:R3', 'init:R1']
+  'fold-into-rows': ['dispatch:R8', 'init:R5', 'conflicts:R5'],
+  'type-and-append': ['todo:R1', 'todo:R3']
 }
 // the draft's deliberate text-only set — 13 ids — plus init:R6, which the draft listed under
 // type-and-append but whose SECOND beat (a missing piper/ffmpeg disables the switch) no typed
@@ -232,7 +232,12 @@ const SERVES = {
 // honesty rule), so it stays text-only rather than wearing a picture of only half its beats.
 const TEXT_ONLY = ['board:R7', 'board:R8', 'board:R10', 'board:R11', 'board:R14',
   'dispatch:R2', 'dispatch:R4', 'dispatch:R5', 'init:R3', 'conflicts:R1', 'conflicts:R3',
-  'todo:R2', 'todo:R8', 'init:R6']
+  'todo:R2', 'todo:R8', 'init:R6',
+  // Task 7 review A1-b/c (the controller, 2026-08-22 — the drawing, not the requirement): init R2's
+  // "it BECOMES a row" is a row appearing, which fold-into-rows (a landing on rows already there)
+  // cannot draw; init R1's "stores … reads them back" names no row and no count, so type-and-append
+  // would invent a list and a TOTAL for it. Both fall to null rather than draw a neighbouring idea.
+  'init:R1', 'init:R2']
 
 test('the three task-7 archetypes fit their listed ids\' REAL beats (read from the prd files) and draw', () => {
   for (const [arch, ids] of Object.entries(SERVES)) {
@@ -300,4 +305,34 @@ test('type-and-append: the typed bar, a row sliding in at the foot, the count st
   assert.ok(d.svg.includes('class="new0"'), 'the appended row')
   assert.ok(d.svg.includes('>3<') && d.svg.includes('>2<'), 'the count steps 2 → 3')
   assert.ok(d.svg.includes('class="cur"'), 'the cursor types it — a user act')
+})
+
+// Task 7 review A1-a: conflicts R5's idea is that a rescan lands and the settled row STAYS — the
+// drawing held the landed row lit to the end (the picture of "updates", the opposite). The "stays"
+// variant flashes the landing and returns the row to rest; a chain whose Then says updates/marked
+// new (dispatch R8, init R5) still holds the tint.
+test('fold-into-rows "stays": a Then that only stays/keeps flashes the landed row, never holds it lit', () => {
+  const d = deriveSchematic(real['conflicts:R5'])
+  assert.equal(d.archetype, 'fold-into-rows')
+  assert.ok(d.svg.includes('data-variant="stays"'), 'the stays variant is stamped')
+  // the held tint is a keyframe pair "opacity:.22 … opacity:.22" up to the hold; the flash is one
+  // short window. Pin it by the hit0 keyframes: no stop at the hold carries the lit opacity.
+  const kf = d.svg.match(/@keyframes \S*hit0\{((?:[^{}]*\{[^{}]*\})*)\}/)[1]
+  const litStops = [...kf.matchAll(/([\d.]+)%\{opacity:\.22\}/g)].map(m => Number(m[1]))
+  assert.ok(litStops.length >= 1, 'the landing flashes')
+  assert.ok(Math.max(...litStops) - Math.min(...litStops) <= 4, 'the flash is brief — not held to the hold: ' + litStops)
+  const upd = deriveSchematic(real['dispatch:R8'])
+  assert.ok(!upd.svg.includes('data-variant="stays"'), 'R8 updates — the landed row holds its tint')
+  const mk = deriveSchematic(real['init:R5'])
+  assert.ok(!mk.svg.includes('data-variant="stays"'), 'R5 marks a route new — an update, held')
+})
+
+test('type-and-append refuses a Then that names no row and no count (init R1: stores … reads back)', () => {
+  const saved = b('Setup', 'you enter the URL and save', 'the config stores exactly that and Setup reads it back')
+  assert.equal(matchArchetype(saved), null)
+})
+
+test('fold-into-rows refuses a Then where something BECOMES a row (init R2) — a landing cannot draw a row appearing', () => {
+  const grows = b('an app being inventoried', 'the crawl visits a route', 'it becomes a row with its screenshot')
+  assert.equal(matchArchetype(grows), null)
 })

@@ -17,7 +17,7 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { allScreens, SPEC } from './spec-store.mjs'
-import { deriveSchematic, vizHash } from './viz.mjs'
+import { deriveSchematic } from './viz.mjs'
 
 const pick = process.argv.slice(2)
 const screens = allScreens().filter(s => !pick.length || pick.includes(s.name))
@@ -39,8 +39,11 @@ for (const s of screens) {
       continue
     }
     if (existsSync(p)) {
-      const cur = readFileSync(p, 'utf8')
-      if (cur.includes(`data-viz-hash="${vizHash(r.behavior)}"`)) {
+      // up to date = the file's BODY is what the kit draws for this text today (minus the date
+      // stamp) — a text-hash match alone let a kit change (Task 7 review A1-a: the fold-into-rows
+      // "stays" variant) never land, because the text had not moved
+      const cur = readFileSync(p, 'utf8').replace(/ data-viz-at="[^"]*"/, '').trim()
+      if (cur === d.svg.trim()) {
         console.log(`  = ${s.name}/${r.id} — up to date (${d.archetype})`)
         continue
       }

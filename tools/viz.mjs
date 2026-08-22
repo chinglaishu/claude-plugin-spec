@@ -106,7 +106,12 @@ const W = {
   land: /\b(run|rerun|scan|rescan|crawl|fold)/,              // something lands on a stack of records
   folded: /\b(rows?|cases?|records?|recorded|routes?|settled|keeps?|stays?|folded)\b/,
   append: /\b(type|enter|add|save|fill)/,                  // text put in, then kept
-  appended: /\b(appears?|bottom|foot|stores?|records?|new)\b|\breads? .* back\b|\d/,
+  // review A1-c: a Then must NAME the row or the count that appears — "stores … reads back" names
+  // neither, and the drawing would invent a list and a TOTAL for it (init R1 → null)
+  appended: /\b(appears?|bottom|foot|rows?|list)\b|\d/,
+  becomes: /\bbecomes?\b/,                                  // a row APPEARING — not a landing on rows already there (review A1-b)
+  stays: /\b(stays?|keeps?|untouched)\b/,                   // the landed row is left as it was (review A1-a)
+  updates: /\b(updates?|changes?|marked|new|becomes?)\b/,
   inPlace: /\b(in place|same row|edited)\b/                 // an edit of what is already there — not an append
 }
 const lows = b => b.beats.map(x => ({ when: String(x.when).toLowerCase(), then: String(x.then).toLowerCase() }))
@@ -175,7 +180,7 @@ const KIT = [
     // never replaced. Up to three landings (three rows drawn).
     fits (b) {
       const L = lows(b)
-      return b.beats.length <= 3 && L.every(x => W.land.test(x.when) && W.folded.test(x.then))
+      return b.beats.length <= 3 && L.every(x => W.land.test(x.when) && W.folded.test(x.then) && !W.becomes.test(x.then))
     },
     draw: drawFoldRows
   },
@@ -216,11 +221,11 @@ export function deriveSchematic (behavior) {
   const hash = vizHash(behavior)
   const k = 'vz' + hash.slice(0, 8)               // the scope class; also suffixes keyframe names
   const kf = suffix => `v${hash.slice(0, 8)}${suffix}`  // CSS identifiers may not start with a digit
-  const { css, body, view = '0 0 300 150' } = arch.draw(behavior, t, k, kf)
+  const { css, body, view = '0 0 300 150', variant = '' } = arch.draw(behavior, t, k, kf)
   const label = esc(`schematic — the idea, not the real UI. given ${behavior.given}; ` +
     behavior.beats.map((x, i) => `beat ${i + 1}: ${x.when} → ${x.then}`).join('; '))
   const svg = `<svg class="${k}" viewBox="${view}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"` +
-    ` data-viz-hash="${hash}" data-viz-archetype="${arch.name}" data-viz-beats="${n}" data-viz-phases="${t.phases.join(' ')}">` +
+    ` data-viz-hash="${hash}" data-viz-archetype="${arch.name}" data-viz-beats="${n}" data-viz-phases="${t.phases.join(' ')}"${variant ? ` data-variant="${variant}"` : ''}>` +
     `<style>${css}</style>${body}</svg>`
   return { archetype: arch.name, svg, phases: t.phases }
 }
@@ -457,6 +462,11 @@ function drawDeriveWord (b, t, k, kf) {
 // was: folded, never replaced.
 function drawFoldRows (b, t, k, kf) {
   const n = b.beats.length
+  // the "stays" variant (review A1-a): every Then only stays/keeps and none updates — the landing
+  // FLASHES the row it hits and leaves it exactly as it was (conflicts R5: a settled conflict
+  // survives a rescan). A chain with an update (dispatch R8, init R5's "marked new") holds the tint.
+  const L = lows(b)
+  const stays = L.every(x => W.stays.test(x.then)) && !L.some(x => W.updates.test(x.then))
   let css = ''
   const rows = [0, 1, 2].map(i => {
     const y = 30 + 30 * i
@@ -469,7 +479,7 @@ function drawFoldRows (b, t, k, kf) {
     const g = t.segs[i]
     const y = 30 + 30 * i
     css += `.${k} .hit${i}{animation:${kf('hit' + i)} ${t.dur}s infinite}` +
-      `@keyframes ${kf('hit' + i)}{${onOff([[g.flip, t.hold]], 'opacity:.22', 'opacity:0')}}` +
+      `@keyframes ${kf('hit' + i)}{${onOff([[g.flip, stays ? r1(g.flip + 4) : t.hold]], 'opacity:.22', 'opacity:0')}}` +
       `.${k} .run${i}{animation:${kf('run' + i)} ${t.dur}s ease-in-out infinite}` +
       `@keyframes ${kf('run' + i)}{${stops([
         [0, 'transform:translate(0,0);opacity:0'], [r1(g.s), 'transform:translate(0,0);opacity:0'],
@@ -481,8 +491,8 @@ function drawFoldRows (b, t, k, kf) {
   const tokens = Array.from({ length: n }, (_, i) =>
     `<g class="run${i}"><rect x="226" y="44" width="48" height="16" rx="8" fill="var(--ai)"/>${bar(238, 49, 24, 6, 'var(--paper)')}</g>`).join('')
   const body = rows.join('') + tokens +
-    `<text x="250" y="104" text-anchor="middle" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">FOLDED</text>`
-  return { css, body }
+    `<text x="250" y="104" text-anchor="middle" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">${stays ? 'UNTOUCHED' : 'FOLDED'}</text>`
+  return { css, body, variant: stays ? 'stays' : '' }
 }
 
 // Text typed into a box (the cursor does it — a user act), then a new row slides in at the foot

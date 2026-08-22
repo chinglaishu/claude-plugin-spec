@@ -4,7 +4,7 @@ import type { FlowState } from '../board/steps'
 import { writeFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { makeDocumentScreen } from '../_fixture'
+import { makeDocumentScreen, treeShape } from '../_fixture'
 import { build } from '../../tools/build-board.mjs'
 
 // The Init screen's composable beats (the beat-function convention — see spec/board/steps.ts for
@@ -32,7 +32,7 @@ export async function openSetupAfterCrawl (page: Page): Promise<FlowState> {
   }))
   await page.goto('/#init')
   await expect(page.locator('#initview')).toBeVisible()
-  return { screens: 4, areas: 3, settled: '/board', fresh: '/storefront' }
+  return { ...treeShape(), settled: '/board', fresh: '/storefront' }   // the tree's shape, read off disk (review A2-a)
 }
 
 export const BEATS = [

@@ -1,4 +1,5 @@
 import { expect } from '../_base'
+import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 import type { FlowState } from '../board/steps'
 
@@ -44,7 +45,7 @@ export async function openBoardDetail (page: Page): Promise<FlowState> {
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   await expect(dt.locator('.focusov')).toBeVisible()
   await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-  return { screens: 4, areas: 3 }
+  return { ...treeShape() }
 }
 
 export const BEATS = [

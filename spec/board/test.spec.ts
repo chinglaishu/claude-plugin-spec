@@ -4,6 +4,7 @@ import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
 // chain them — each test keeps its checkReq AROUND the call, so the proof's power is unchanged
 import { openBoardHome, countHomeCards, searchRequirementText, openDetailReader, toggleViews } from './steps'
 import { refreshDerivedInPlace } from '../dispatch/steps'
+import { treeShape } from '../_fixture'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
@@ -548,7 +549,7 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // the header toggle offers EXACTLY Focus / List / Flow (the frozen mockup contract, the human
     // 2026-08-21 — Grid became List; the router key stays 'grid'), Focus is active on open, and the
     // List is one row per requirement — the beat, threaded the exact row count
-    await toggleViews(page, { screens: 4, areas: 3, reqs: reqCount })
+    await toggleViews(page, { ...treeShape(), reqs: reqCount })
     const ov = dt.locator('.focusov')
 
     // THE BEHAVIOR LEADS (R13, the frozen mockup): deep-link to R13 itself — a requirement that
@@ -1095,7 +1096,7 @@ test('A finished run refreshes the board in place — no reload, the panel stays
   await coverReqs('dispatch:R7')
   await openDetail(page)
   // the cross-screen beat (spec/dispatch/steps.ts) — a flow composed from the board can chain it
-  await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, { screens: 4, areas: 3 }) })
+  await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, { ...treeShape() }) })
 })
 
 // hudCheck is a CHECK, not a caption: it ASSERTS the got-vs-expected it paints on the recording's

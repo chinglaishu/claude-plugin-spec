@@ -442,3 +442,12 @@ export const BEATS = [
   // before the Given — the budget must be set before any waiting starts
   assert.ok(t.indexOf('test.setTimeout(350000)') < t.indexOf('const state = await boardGiven(page)'))
 })
+
+// Task 7 review A5-a: `ms: 150_000` — the numeric-separator style this repo uses for every
+// test.setTimeout — parsed as 150 ms, so the budget silently collapsed to the default + 150 ms
+test('parseBeats reads an ms budget written with numeric separators (150_000 → 150000)', () => {
+  const s = parseBeats(`export const BEATS = [
+    { fn: 'slow', proves: 'R1', name: 'a nested run', needs: [], gives: [], ms: 150_000 }
+  ]`)
+  assert.equal(s.beats[0].ms, 150000)
+})

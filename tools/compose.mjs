@@ -85,8 +85,10 @@ export function parseBeats (src) {
           const beat = { fn, proves, name, needs: arrKey(obj, 'needs'), gives: arrKey(obj, 'gives') }
           // an optional wall-clock budget (Task 7): a beat that waits on a nested run declares the
           // milliseconds it needs, and the emitter sums the chain's budgets into ONE test.setTimeout
-          const ms = obj.match(/\bms\s*:\s*(\d+)/)
-          if (ms) beat.ms = Number(ms[1])
+          // (review A5-a: `150_000` — the numeric-separator style this repo's setTimeouts use —
+          // must read 150000, never 150; a quoted value is not a number and is dropped)
+          const ms = obj.match(/\bms\s*:\s*(\d[\d_]*)\b/)
+          if (ms) beat.ms = Number(ms[1].replace(/_/g, ''))
           beats.push(beat)
         }
         i += obj.length + 2

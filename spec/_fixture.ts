@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
+import { writeFileSync, mkdirSync, copyFileSync, readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { APIRequestContext } from '@playwright/test'
@@ -80,4 +80,22 @@ export function makeGreenfieldScreen (name: string) {
     `---\nscreen: ${name}\narea: Core\ntitle: ${name}\nroute: /${name}\n---\n\n` +
     '## R1 — A requirement, not yet drafted\n\nOne behaviour, waiting for a wireframe.\n')
   return name
+}
+
+// THE TREE'S OWN SHAPE, read off the disk — an AUTHORED fact (spec/<screen>/prd.md is the source of
+// truth), computed here so no GIVEN pins "4 screens, 3 areas" as a literal (Task 7 review A2-a: the
+// board and init fixtures each carried that pin, and a fifth screen would have broken three tests in
+// three places). A screen is a directory with a prd.md; its area is the frontmatter's `area`.
+export function treeShape (): { screens: number, areas: number } {
+  const SPEC = join(dirname(fileURLToPath(import.meta.url)))
+  const areas = new Set<string>()
+  let screens = 0
+  for (const name of readdirSync(SPEC)) {
+    const prd = join(SPEC, name, 'prd.md')
+    if (name.startsWith('_') || !existsSync(prd)) continue
+    screens++
+    const m = readFileSync(prd, 'utf8').match(/^area:\s*(.+)$/m)
+    areas.add(m ? m[1].trim() : 'Other')
+  }
+  return { screens, areas: areas.size }
 }

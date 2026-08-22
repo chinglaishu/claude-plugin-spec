@@ -1,4 +1,5 @@
 import { expect } from '../_base'
+import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 
 // THE BEAT-FUNCTION CONVENTION (Task 5; D4 amended 2026-08-21 #2 by the human; CLAUDE.md rule 1's
@@ -32,7 +33,7 @@ export const GIVEN = {
 export async function openBoardHome (page: Page): Promise<FlowState> {
   await page.goto('/')
   await page.waitForSelector('.card')
-  return { screens: 4, areas: 3 }
+  return { ...treeShape() }      // read off spec/*/prd.md, never pinned (review A2-a)
 }
 
 export const BEATS = [

@@ -93,6 +93,8 @@ test('Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leave
 // stored — this is ordinary authored-test material from the moment it was written.
 test('Add, rename, grow and roll up the container, then reload — composed', async ({ page }) => {
   await coverReqs('R1', 'R2', 'R3', 'R5', 'R4', 'R8')
+  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
+  test.setTimeout(480000)
   // the fixture Given, once — frozen clock · storage cleared · the seed: one container (ring 1/3) + three open tasks + one done — To do 5
   const state = await openSeededBoard(page)
   // beat 1 — proves R1
