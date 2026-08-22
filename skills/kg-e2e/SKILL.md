@@ -147,6 +147,82 @@ test('editing a line item recomputes the total and carries it to the schedule', 
 - `spec/<screen>/screen.png` is written by exactly one test (usually the last), with
   `page.screenshot({ path: ..., fullPage: false })`. Do not capture it separately.
 
+## The beat-function convention — write each beat as an exported step function (default)
+
+*(Added 2026-08-22, Task 5 — the human's 2026-08-21 deterministic-first decision. Lessons go into the
+skill, not just memory.)* A unit beat authored as an **exported step function** is *composable*: the
+board's flow composer can chain it with other proven beats into a flow file **with no model
+involved**, and that composed flow is valid by its beats' standing red-first proofs plus its own first
+run passing (CLAUDE.md rule 1's addendum). An inline beat — an assertion body written straight into
+`test(…)` — still proves its requirement exactly as before, but a flow that uses it can only be
+written by Claude. **Author new unit beats function-shaped by default**; every other discipline in
+this skill (red-first, real assertion, visible values, golden data) applies to the function body
+unchanged.
+
+Beats live in **`spec/<screen>/steps.ts` beside `test.spec.ts`** — the file is NOT a test (Playwright
+matches `*/test.spec.ts` only), and the board reads its metadata statically, never executing it:
+
+```ts
+// spec/<screen>/steps.ts
+import { expect } from '../_base'
+import type { Page } from '@playwright/test'
+export type FlowState = Record<string, any>        // (or import it from a sibling steps.ts)
+
+// THE FIXTURE — the Given, set ONCE per flow. Seeds the golden data and returns the numbers every
+// beat computes its exact Then from. `gives` names the joint tokens the fixture provides.
+export const GIVEN = { fn: 'openSeededList', text: 'frozen clock · storage cleared · 3 seeded items', gives: ['seeded'] }
+export async function openSeededList (page: Page): Promise<FlowState> {
+  await page.goto('/tasks?seed=golden')
+  await expect(page.getByTestId('task-row')).toHaveCount(3)
+  return { rows: 3, open: 3 }                        // the golden numbers, threaded from here on
+}
+
+// ONE ENTRY PER EXPORTED BEAT — fn · proves (bare id = this screen) · name (the flow chapter's
+// sentence) · needs/gives (joint tokens: beat N's Then must satisfy beat N+1's Given)
+export const BEATS = [
+  { fn: 'addTask', proves: 'R1', name: 'add a task — the count moves', needs: ['seeded'], gives: ['task'] },
+  { fn: 'tickLastOpen', proves: 'R4', name: 'tick the last open sub-task — the container rolls up', needs: ['task'], gives: ['done'] }
+]
+
+// A BEAT: perform its When, assert its Then with EXACT numbers computed from `state`, update `state`.
+// It never calls checkReq itself — the caller wraps it — and it never re-hardcodes a number a
+// previous beat already gave it.
+export async function addTask (page: Page, state: FlowState): Promise<void> {
+  await page.getByTestId('new-task').pressSequentially('Water the plants')
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('task-row')).toHaveCount(state.rows + 1)   // the EFFECT, exact
+  state.rows += 1; state.open += 1
+}
+```
+
+The unit test in `test.spec.ts` keeps its `checkReq` **around** the call — the proof's power is
+unchanged, only the body moved:
+
+```ts
+import { openSeededList, addTask } from './steps'
+test('adding a task moves the count', async ({ page }) => {
+  await coverReqs('R1')
+  const state = await openSeededList(page)
+  await checkReq('R1', async () => { await addTask(page, state) })
+})
+```
+
+The rules that keep a beat composable:
+- **needs/gives are the joints.** Name what a beat relies on (`needs`) and what it leaves true
+  (`gives`) as short tokens; the composer's gap check is only as honest as these. A beat with no
+  needs is chainable anywhere after the Given.
+- **Exact numbers come from `state`, never from the screen.** Reading a value off the page and
+  asserting the page shows it is a tautology; the golden number comes from the fixture (or a
+  previous beat's arithmetic) and the page is held to it.
+- **One beat, one requirement.** `proves` is a single id; a beat that proves two things is two beats.
+- **A cross-screen beat lives in ITS screen's `steps.ts`** (`spec/other/steps.ts`, proving that
+  screen's `R…`); a flow that starts elsewhere imports it as `../other/steps` and tags it qualified.
+- **Refactoring an inline beat into a step function is a pure refactor** (rule 1 exempt) — the
+  assertion body moves verbatim, the test's checkReq stays, and the suite must stay green
+  throughout. Do it while you are there: it makes the next flow composable with no model at all.
+- **A composed flow that fails its first run is a composition defect** (a wrong joint, a missing
+  token), never a reason to weaken a beat.
+
 ## Which URL a test navigates to
 
 - **specboard's own screens** run against the board on `/`.
