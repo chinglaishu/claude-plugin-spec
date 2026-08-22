@@ -82,10 +82,7 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/steps.ts       the screen's composable beats (exported step functions + BEATS/GIVEN metadata)
-spec/<screen>/evidence/      the harvest: <rid>.before/after.png (640px) + <rid>.clip.webp where a board run cut one — COMMITTED,
-                             here and in every scaffolded project (D2, the human 2026-08-22; a CLI fold keeps the clip while the
-                             requirement stays proven under the same text hash — D1); spec/.gitignore never lists it
+spec/<screen>/evidence/      the harvest (frames + clip) — COMMITTED here and in scaffolded projects (D2 2026-08-22); retention rule in tools/evidence.mjs carryClip
 spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html

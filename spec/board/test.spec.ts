@@ -628,8 +628,16 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(media.locator('.medbar button[data-m="clip"]')).toHaveCount(0)
     await expect(media.locator('.medbar button[data-m="video"]')).toHaveText('video@fail')
     await expect(media.locator('.fmbar .fpv.fail')).toContainText('✗')
-    if (await media.locator('.fmpanel[data-m="frames"] .fcell.rf').count() === 0) {
+    // positive either way (review A-2): the newest record's own strip renders under the mark, or the
+    // harvested red after-frame does — exactly one of the two, never a bare absence
+    const rfCells = media.locator('.fmpanel[data-m="frames"] .fcell.rf')
+    if (await rfCells.count() > 0) {
+      await expect(rfCells.first()).toBeVisible()
+      await expect(rfCells.first().locator('img')).toHaveCount(1)
+      await expect(media.locator('.fmpanel[data-m="frames"] .fcell:not(.rf).hotbad')).toHaveCount(0)
+    } else {
       await expect(media.locator('.fmpanel[data-m="frames"] .fcell.hotbad')).toHaveCount(1)
+      await expect(media.locator('.fmpanel[data-m="frames"] .fcell.hotbad')).toBeVisible()
     }
 
     // CHANGED → the last proof media under a pinned-era watermark
@@ -997,6 +1005,43 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(tst.locator('.pfstrip .pframe')).toHaveCount(4)
     await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
     await expect(tst.locator('.pfstrip .pframe').nth(3).locator('.pfreq')).toHaveText('dispatch:R1')
+
+    // (2b) Task 6 review A-1: the strip shown under a failed status is the run that FAILED it. R15
+    // is covered by two tests; stub the first (DOM order) passing with green R15 frames and the
+    // second failing with a red R15 frame — the pane must render the second's frames, not an
+    // all-green strip under "✗ failed run".
+    const A_TITLE = 'The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself'
+    const B_TITLE = '＋ New flow opens the composer — a derived library, the joint check, a truthful two-path button'
+    await page.unroute('**/api/runs')
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rab', hasLog: false, at: '2026-08-13T02:00:00.000Z', ms: 6000,
+        ok: false, total: 2, failed: 1, shotsByTest: {
+          [A_TITLE]: { shots: [], video: 'spec/_runs/rab/a.webm', steps: [], log: 'x', ok: true, commit: 'abc1234',
+            at: '2026-08-13T02:00:00.000Z', ms: 3000,
+            frames: [{ img: 'spec/board/screen.png', ok: true, cap: 'A value — got 1 · expected 1', req: 'R15' }] },
+          [B_TITLE]: { shots: [], video: 'spec/_runs/rab/b.webm', steps: [], log: 'x', ok: false, commit: 'abc1234',
+            at: '2026-08-13T02:00:00.000Z', ms: 3000,
+            frames: [{ img: 'spec/board/screen.png', ok: false, cap: 'B value — got 2 · expected 3', req: 'R15' }] }
+        } }]
+    } }))
+    await page.goto('/#/board/R15')
+    await page.reload()
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R15')
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
+    await dt.locator('.reqpane .req[data-r="R15"]').evaluate(el => el.setAttribute('data-status', 'failed'))
+    // rebuild the reader ON R15 (the view toggle reopens Focus at its default page, R1)
+    await page.goto('/#/board/R2')
+    await page.goto('/#/board/R15')
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R15')
+    const panelAB = dt.locator('.focusov .feval .fmedia .fmpanel[data-m="frames"]')
+    await expect(panelAB.locator('.fcell.rf')).toHaveCount(1)
+    await expect(panelAB.locator('.fcell.rf').first()).toContainText('B value — got 2 · expected 3')
+    await expect(panelAB.locator('.fcell.rf').first()).toHaveClass(/\bhotbad\b/)
+    await expect(panelAB.locator('.fcell.rf', { hasText: 'A value' })).toHaveCount(0)
+    await expect(dt.locator('.focusov .feval .fmedia .fmbar .fpv.fail')).toContainText('✗')
+    // the proof line names the test whose run failed, too — the pane and its header agree
+    await expect(dt.locator('.focusov .feval .fpby b')).toHaveText(B_TITLE)
 
     // (3) NO VIDEO → NO STRIP, and NEWEST-RECORD-ONLY (D3): a record that cut no frames yields NO
     // run-frame cells — the harvested pair still stands, never a faked or separately-captured strip.

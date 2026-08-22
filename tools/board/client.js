@@ -387,7 +387,17 @@ const B = window.__BOARD__ || {}
   function focusBody (dt, r) {
     const tests = [].slice.call(dt.querySelectorAll('.testpane .test'))
     const cov = tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + r.id + '"]') })
-    const primary = cov[0] || null
+    // The PRIMARY covering test — the one whose node the reader borrows and whose newest record the
+    // media pane renders. Under a failed status (Task 6 review A-1) it is the covering test whose
+    // newest record FAILED: r.status is the board-wide fold, so with two covering tests the first
+    // in DOM order may have passed, and its green strip under "✗ failed run" would misdescribe the
+    // failure. Falls back to the first when no record says it failed (a fold older than the records).
+    const failedOne = r.status === 'failed' ? cov.find(function (t) {
+      const slot = t.querySelector('.tststeps')
+      const one = slot && slot._hist && slot._hist[0]
+      return !!one && one.ok === false
+    }) : null
+    const primary = failedOne || cov[0] || null
     // every relocated node is tracked; restore() reverses in LIFO order so a node whose original
     // parent sits inside another moved node goes home after its container does
     const moved = []
@@ -456,7 +466,9 @@ const B = window.__BOARD__ || {}
 
     // ── RIGHT: the proof ─────────────────────────────────────────────────────
     const evl = document.createElement('div'); evl.className = 'feval'
-    const flows = cov.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
+    // the proof line names the PRIMARY first (under a failed status, the test whose run failed — A-1)
+    const ordered = primary ? [primary].concat(cov.filter(function (t) { return t !== primary })) : cov
+    const flows = ordered.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
     if (cov.length) {
       const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
       const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
@@ -2612,6 +2624,8 @@ const B = window.__BOARD__ || {}
       for (const slot of panel.querySelectorAll('.pfstrip')) {
         const host = slot.closest('.test')
         const hist = rec[host && host.dataset.title] || []
+        // (the test's OWN strip keeps every recorded frame set; the requirement's media pane is the
+        // newest-record-only surface — D3, buildMedia — so the two rules differ on purpose)
         const withFrames = hist.find(x => x.frames && x.frames.length)
         const frames = (withFrames && withFrames.frames) || []
         slot.innerHTML = frames.map(f =>
