@@ -89,8 +89,20 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     await row.locator('.lst-head').click()
     const body = row.locator('.lst-body')
     await expect(body.locator('.fread .fttl')).not.toBeEmpty()
-    // R1 is prose-only (no behavior lead), so its full formatted text shows open in the body
-    await expect(body.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    // Since 1413ac1 (the human, 2026-08-22) EVERY requirement leads with its beats, R1 included:
+    // the behavior block heads the open row and the full formatted prose sits one click away
+    // behind 'the authored requirement — in full' (a prose-only requirement would show it open).
+    // The old branch ("R1 is prose-only") was the wrong side of this break — the PRD moved by
+    // the human's hand; the test follows (rule 4).
+    await expect(body.locator('.fread .behavior, .fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    const proseT = body.locator('.fread .prose-t')
+    if (await proseT.count()) {
+      await expect(body.locator('.fread .fbody.fprose')).toBeHidden()        // folded beneath the lead
+      await proseT.click()
+      await expect(body.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()   // the full text, on demand
+    } else {
+      await expect(body.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    }
   })
 })
 
@@ -1562,7 +1574,11 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
     const shown: string[] = await cv.locator('.lrow[data-node]').evaluateAll((els: any[]) => els.map(e => e.dataset.node))
     expect(shown.length, 'the library is not empty').toBeGreaterThan(0)
     expect(new Set(shown)).toEqual(new Set(ids))
-    expect(none.length, 'this tree has at least one requirement with neither a test nor a behavior block').toBeGreaterThan(0)
+    // a requirement with neither a test nor a behavior block derives NO node. Since 1413ac1 (the
+    // human, 2026-08-22) every requirement on this tree leads with beats, so `none` is empty here
+    // and the rule's pinning lives in tools/compose.test.mjs ('THE HONESTY RULE'); the set
+    // equality above still fails on any node the tree did not earn. (The old "at least one such
+    // requirement" assertion pinned a tree shape, not the rule — rule 4: the test was the wrong side.)
     for (const q of none) await expect(cv.locator(`.lrow[data-node$=":${q}"]`)).toHaveCount(0)
     // a beat node is the board's own steps.ts beat; an inline node says so (a flow using it runs via Claude)
     await expect(cv.locator('.lrow[data-node="b:board:openDetailReader"][data-kind="beat"]')).toHaveCount(1)
