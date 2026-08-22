@@ -26,6 +26,10 @@ Requirement ids are stable forever — later passes append, never renumber.
 
 ## R1 — Adding a task puts it in the list
 
+- **Given** the list, the Add box empty and Add disabled
+- **When** you type "Water the plants" and press Add
+- **Then** a new unchecked row with exactly that text appears at the bottom, stamped "added just now"
+
 Typing a task and pressing Add (or Enter) shows it as a new row at the bottom of the list, unchecked,
 carrying exactly the text that was typed. An empty input adds nothing — the Add button is disabled
 until there is text.
@@ -35,6 +39,10 @@ until there is text.
 
 ## R2 — A task can be edited in place, and the edit is stamped
 
+- **Given** a task row stamped "added"
+- **When** you double-click its title, retype it and press Enter
+- **Then** the same row reads the new text in place and its stamp flips to "edited just now"
+
 Double-clicking a task's title (or its edit icon) makes it editable; Enter saves the new text in the
 same row, Escape cancels. Saving a real change records an "edited" time, replacing the "added" one.
 
@@ -42,6 +50,10 @@ same row, Escape cancels. Saving a real change records an "edited" time, replaci
      meta line flipped from "added" to "edited just now". -->
 
 ## R3 — A task with sub-tasks is a container with a derived progress ring
+
+- **Given** a task with three sub-tasks, one done — its ring reads 1/3 and it has no checkbox of its own
+- **When** you add a sub-task
+- **Then** the ring reads 1/4 by itself, and the parent still has no checkbox
 
 Sub-tasks live inside a task. A task that has them is a container: it shows a progress ring counting
 its sub-tasks (2 of 3) in place of its own checkbox, so it can never be completed by a stray click —
@@ -51,6 +63,12 @@ only its sub-tasks can be. Adding a sub-task moves the ring by itself.
      confirming the ring's fraction grows its denominator by one with no checkbox on the parent. -->
 
 ## R4 — Completion rolls up, both directions
+
+- **Given** a container whose sub-tasks are all but three done
+- **When** you tick its last open sub-tasks
+- **Then** the container completes itself — ring 4/4, title struck through — nobody ticked the parent
+- **When** you toggle one done sub-task back open
+- **Then** the container reopens — ring 3/4
 
 Completing the last open sub-task completes the container by itself; reopening any sub-task reopens
 the container. The container's done-state is purely derived from its children — nobody ticks a
@@ -62,6 +80,12 @@ container by hand.
 
 ## R5 — "To do" counts remaining leaves only
 
+- **Given** seven open leaves — three open sub-tasks in a container plus four childless tasks — "To do" reads 7
+- **When** you tick one sub-task
+- **Then** To do reads 6 — down by exactly one
+- **When** you tick the container's last two open sub-tasks
+- **Then** To do reads 4 — down by two, not three: the container is never a unit of work
+
 The header count is the real amount of work left: open sub-tasks, plus open tasks that have no
 sub-tasks. A container is scaffolding — it is never counted as a unit of work itself, and completing
 one drops the count by its open-leaf count, not by one.
@@ -72,6 +96,10 @@ one drops the count by its open-leaf count, not by one.
 
 ## R6 — Smart views filter correctly, and the sidebar counts agree
 
+- **Given** the seeded tasks, some done, some due today
+- **When** you switch to All, Active, Today or Completed
+- **Then** only that view's tasks show, and its sidebar badge equals the task rows on screen
+
 All shows every task; Active hides done tasks; Today shows only not-done tasks due on or before
 today; Completed shows only done tasks. Each view's sidebar badge equals the number of task rows that
 view actually shows.
@@ -81,6 +109,10 @@ view actually shows.
 
 ## R7 — A due date derives an overdue or today chip
 
+- **Given** the list under the frozen ?now= clock
+- **When** the tasks render
+- **Then** "Renew passport", due two days ago, wears the red overdue chip; "Pay the electricity bill", due today, wears the today chip
+
 A not-done task due before today wears the red "overdue" chip; a task due today wears the "today"
 chip; a task due later shows its date; a done task wears no date chip.
 
@@ -88,6 +120,10 @@ chip; a task due later shows its date; a done task wears no date chip.
      due-today task reads "today", both read off the visible chips. -->
 
 ## R8 — Everything survives a reload
+
+- **Given** tasks renamed, completed and reopened on screen
+- **When** you reload the page
+- **Then** the renamed title, the container's 3/4 ring and a completed stamp all come back
 
 Tasks, sub-tasks, done-states, edited titles, due dates, order, and every created / edited /
 completed timestamp all come back after the page reloads — nothing lived only on screen.

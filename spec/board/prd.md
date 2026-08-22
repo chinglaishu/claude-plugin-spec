@@ -16,6 +16,10 @@ a rubber-stamp. The per-requirement "Narrowed …" notes below record each step.
 
 ## R1 — One card per screen, not a row of cells
 
+- **Given** a board of screens, each with its requirements and a latest test recording
+- **When** you open the board's home
+- **Then** exactly one card per screen appears — its name, its requirement titles and the recording's cover frame — and no requirement gets a row of its own
+
 Every screen is one card: its name, its requirement **titles**, and the latest test **recording**
 (its cover frame as the still). Requirements are never their own rows; the card is titles, and each
 title's description lives one click away in the detail. There is no PRD / draft / screen / E2E column
@@ -74,6 +78,14 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 ## R4 — Requirement state is computed and assertion-backed
 
+- **Given** a requirement whose state is computed from the tests that tag it, never typed
+- **When** a tagging test passes on an assertion that would fail without the requirement
+- **Then** it reads Passed, and the home card's "N / M proven" count equals the Passed rows in its detail
+- **When** one tagging test fails while another passes
+- **Then** it reads Failed — fail wins, a real failure is never masked by a second green
+- **When** no test tags it, a flow stops before its assertion, or its text moves past its last proof
+- **Then** it reads Untested, Not reached or Changed — none of them green
+
 Each requirement reads one of **five words**, computed from the tests, never typed: **Passed** — a
 test that tags this requirement passed *on an assertion that would fail without it*; **Failed** — a
 test that tags it ran its assertion and it did not hold (**fail wins**: a requirement covered by one
@@ -103,12 +115,20 @@ for a status of its own.*
 
 ## R5 — Requirements and tests are many-to-many, by tag
 
+- **Given** a test that tags the requirement ids it covers — qualified (asset-plan:R5) when the requirement is another screen's
+- **When** you open a requirement
+- **Then** its proof line shows every test that tags it, resolved by tag, wherever that test's file lives
+
 One test can prove several requirements; one requirement can be proven by several tests. The link
 lives in the **test**, which tags the requirement ids it covers — qualified (e.g. `asset-plan:R5`),
 so a flow can cover another screen's requirement. A flow's file lives in the screen it **starts** on;
 coverage is by tag, so a requirement lists every test that covers it, wherever that file lives.
 
 ## R6 — Two kinds of test, unit and flow — never long-and-shallow
+
+- **Given** a screen's proof in two kinds — a unit test of one screen or component, a flow test crossing screens along a chosen path
+- **When** a test of either kind tags several requirements
+- **Then** each tagged requirement is proven only by an assertion that would fail without it, and a requirement no test tags stays Untested — a test merely existing buys no green
 
 A screen's proof comes in two kinds, both first-class. A **unit** test proves one screen — or one
 component on it — displaying right and acting right in each state that matters. A **flow** test
@@ -126,6 +146,10 @@ assertion, never by a test merely existing.*
 
 ## R7 — specboard owns neither the wireframe nor the design
 
+- **Given** a screen documented by its requirements and the tests that prove them
+- **When** you open its detail
+- **Then** no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only
+
 Sketching or designing a screen before it exists is a real job, but a different one, and already well
 served elsewhere. specboard tracks requirements and their proof — **nothing else**. It does not render,
 link to, gate, or store a wireframe or a design of any kind; there is no design field, no design chip,
@@ -139,6 +163,10 @@ one more thing to carry, and the tool is meant to be minimal. The `design:` fron
 Design chip are gone.*
 
 ## R8 — No acceptance gate: requirements are the source of truth as written
+
+- **Given** a requirement written in prd.md — canon the moment it is written
+- **When** you open its screen's detail
+- **Then** it reads straight from the header into the Focus reader — no gate bar, no accept button, nothing waiting to be accepted
 
 There is **no gate**. A requirement is the source of truth the moment you write it — editing the PRD
 *is* the change, and the assertion-backed tests prove it against the real app automatically (R4), with
@@ -161,6 +189,14 @@ hides itself rather than sitting empty. Screens are grouped into named areas, in
 never paginated — a board you page through can no longer answer "what is the state of everything".
 
 ## R10 — A test opens to its full evidence, and can be run — watchably or in the background
+
+- **Given** a test with numbered story steps, its run records, and Run / Run in background wherever it is shown
+- **When** you open the test
+- **Then** its numbered story steps show from its definition — before any run — each wearing the run's passed / failed / not-reached mark
+- **When** a step asserts a value while the run records
+- **Then** the topbar burned into the recording names the requirement and shows the check as expected and got — red on a failure, the asserted value scrolled into view
+- **When** you pick Logs from the ⋯ menu
+- **Then** the whole run log opens in a floating window, not a full-screen scrim
 
 A test row is not just a verdict. It opens to: the flow's **numbered story steps** — the author's
 own sentences of what a user does and what should happen ("Edit the draft — change Unit 01-02 Net
@@ -239,6 +275,12 @@ recording's cover frame is a red summary naming the failed steps, and the meta l
 
 ## R11 — The guide is the manager's story: without the tool, then with it
 
+- **Given** the guide at #howitworks
+- **When** you open it
+- **Then** two acts tell the same three moments — assigning work, reviewing it, two weeks later — first without the tool ("Done, boss!", a wall of code, the same bug back) then with it, every step a drawn scene
+- **When** you click
+- **Then** the walkthrough steps forward one scene and holds — it never advances on its own
+
 #howitworks opens on two situations with the SAME three moments — assigning work, reviewing it, two
 weeks later. Without the tool: the task lives in a chat scroll ("Done, boss!"), review is a wall of
 code you approve blindly, and the same bug returns — closing on a green assertion shown beside the
@@ -257,6 +299,10 @@ flag or confirmation step left anywhere on the board. A written requirement is c
 exists, full stop.*
 
 ## R12 — The guide ends with the one next action, derived not stored
+
+- **Given** the walkthrough's last act, with no step rail and no checklist anywhere on home
+- **When** the last act renders
+- **Then** it closes on one next action derived from the tree on this build — for example /kg-deep <screen> — and when everything derivable already holds, the CTA says so
 
 The walkthrough closes on a single next action for this project, derived from the tree on each build
 (config saved, rows exist, a prd.md drafted, a requirement proven) — the same `journey()` derivation,
@@ -307,6 +353,12 @@ the behaviour.*
 visual-requirements mockup as their contract.*
 
 ## R14 — The proof is scannable as frames, not only as video
+
+- **Given** a run whose recording holds several checked values
+- **When** you open the requirement's proof as stills
+- **Then** one frame per checked value shows in order, cut from the recording at the instant it fired, each carrying its burned-in topbar and got-vs-expected — a failing value red
+- **When** a run captured no recording
+- **Then** no strip shows at all — never a separately captured picture
 
 A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording,
 its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at

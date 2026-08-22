@@ -7,6 +7,10 @@ route: /run/:job
 
 ## R1 — One panel per job, opened by the cell you clicked
 
+- **Given** a Run control on a board cell that already knows its screen and its task
+- **When** you click it
+- **Then** the run panel opens naming that screen and shows it running — nothing was typed
+
 The job knows its screen and its task, so nothing has to be typed. "Rewrite the losing side
 of the conflict for checkout-page" is the whole instruction.
 
@@ -16,10 +20,18 @@ unchanged: the job carries its own context.*
 
 ## R2 — The work is visible while it runs
 
+- **Given** a job running in the panel
+- **When** the job prints
+- **Then** its lines stream into the panel's log as they arrive — before any verdict, so nobody clicks Run a second time
+
 Claude's output streams into the panel. A button that goes quiet for two minutes gets
 clicked again, and the second run fights the first.
 
 ## R3 — Finishing updates the board without a reload
+
+- **Given** a panel whose job is running, the page never reloaded
+- **When** the job ends
+- **Then** the panel's chip reads passed or failed and the cell it was working on changes state in place
 
 The cell the job was fixing changes state in place.
 
@@ -27,6 +39,12 @@ The cell the job was fixing changes state in place.
 four-column mechanism (doctrine sweep) — the cell simply changes state in place.*
 
 ## R4 — One job at a time; a person's second job takes over, a nested run shares the slot
+
+- **Given** one job holding the board's one global slot
+- **When** a person starts a second job
+- **Then** the running job is cancelled and the new one takes the slot — accepted, never refused or queued — and the cancelled job's partial log stays on disk
+- **When** a run names the run driving it as its parent
+- **Then** it nests inside that run instead of cancelling it, and nesting deeper than a short chain is refused
 
 Only one job runs at a time — two agents editing one wireframe is a corrupted file and a confusing
 diff. So when a person starts a second job while one is running, the running job is **cancelled and
@@ -56,6 +74,12 @@ cancelled, and a nested run's ancestors keep the slot and resume when the takeov
 
 ## R5 — Cancel actually stops it
 
+- **Given** a running job
+- **When** you press Cancel
+- **Then** the process is killed — gone from the slot — and its partial work is left in place, the log still readable
+- **When** a cancel names a job that is not the one running
+- **Then** it is refused rather than stopping a different job
+
 The process is killed, and the partial work is left in place rather than rolled back, so you
 can see how far it got.
 
@@ -68,6 +92,10 @@ executing the spec instead, once nesting made those two different things. The su
 half way through and reported nothing.*
 
 ## R6 — The whole log is kept, not just the verdict
+
+- **Given** a finished run
+- **When** you open its log
+- **Then** the whole log opens — every line the job printed, each case by name, in full — not a truncated snippet
 
 Every line the job printed is saved with the run and can be read back in full afterwards — not a
 truncated snippet, and not only while you happened to be watching it scroll past. "7 of 7 passed"
@@ -82,6 +110,10 @@ with time, duration and commit, so the coarser cross-run list was redundant and 
 tests column. A run's log and its scope now live in the per-case record, nowhere else.*
 
 ## R7 — The panel stays open when the job ends, and the board updates behind it
+
+- **Given** the run panel with its job ending
+- **When** the job finishes
+- **Then** the panel and its log stay on screen, and the board behind it refreshes in place — no reload, and no background chip anywhere
 
 Finishing does not close the panel or reload the page out from under it. The log and the result stay
 on screen until you dismiss them, so the output is there to read for reference. **The board behind
@@ -98,6 +130,14 @@ so the chip bought nothing, and a running job you could not read was more mislea
 could. Keeping the panel open is what "keep it visible" was always meant to buy.*
 
 ## R8 — A test run records each case on its own
+
+- **Given** a screen with several test cases, each keeping its own record
+- **When** a run covers only one case
+- **Then** that case's record updates and every other case keeps its own steps and log — folded, never replaced
+- **When** a case has run several times
+- **Then** it keeps its last ten runs, each headed by time, duration and the commit it ran against — the commit on its meta line
+- **When** a run matched no test
+- **Then** it is recorded as an error saying no tests ran — never "0 of 0 passing"
 
 Running a screen's suite records every test case individually — its result, its duration, its steps
 and its own log — never one pass/fail folded over the whole file. Each case keeps its OWN most recent

@@ -12,10 +12,18 @@ route: /init
 
 ## R1 — Asks for what cannot be guessed, and nothing else
 
+- **Given** Setup, asking only how to start the app, what URL it serves on, and which routes matter
+- **When** you pick a start mode, enter the URL and the routes, and save
+- **Then** the project config stores exactly those, and Setup reads them back when you return
+
 How to start the app, what URL it serves on, and which routes matter. Guessing any of these
 wrong produces a complete, confident, wrong board.
 
 ## R2 — An existing app is inventoried into rows: visited, screenshotted, nothing faked
+
+- **Given** an existing app being inventoried by the crawl
+- **When** the crawl visits a route
+- **Then** it becomes a row with its screenshot (crawl.png) and no PRD — honestly ungoverned, never fake coverage
 
 Each route becomes a row: visited and screenshotted (`crawl.png`), with **no PRD** — visibly,
 honestly ungoverned. The board shows the whole app on day one as a map of what is not yet covered,
@@ -29,6 +37,10 @@ per-screen, human-sponsored **kg-deep** pass — study, golden fixture, a drafte
 gate, then a few comprehensive proving flows — run one screen at a time, most important first.*
 
 ## R3 — A drafted PRD is a requirement immediately, not a guess awaiting acceptance
+
+- **Given** a PRD drafted on the human's behalf
+- **When** the board builds
+- **Then** the screen is one ordinary card with its requirement titles — no guess chip, nothing waiting, no gate; its tests alone decide Untested
 
 A PRD drafted on the human's behalf (a kg-deep pass's draft) is a requirement like any other the
 instant it exists: specboard drafts it as an ordinary starting point, and the human edits or removes
@@ -46,14 +58,28 @@ on a person to accept it.*
 
 ## R4 — An empty project is the same flow with nothing found
 
+- **Given** a crawl that found no routes
+- **When** you open Setup
+- **Then** no rows show, and a prompt to write the first PRD appears
+
 No routes, no rows, and a prompt to write the first PRD. Greenfield is the zero case of the
 crawl, not a separate mode with separate code.
 
 ## R5 — Rerunning finds new screens without touching settled ones
 
+- **Given** routes already on the board, with their PRDs and pins
+- **When** you rerun the crawl
+- **Then** a new route is marked new, and a settled route keeps its PRD and reads as already on the board
+
 Routes already on the board keep their PRD, their approvals and their pins.
 
 ## R6 — Setup carries a voice-over switch: off by default, saved with the project
+
+- **Given** Setup's voice-over switch, off by default
+- **When** you tick it and save
+- **Then** the project config records voice-over on, and Setup reads it back ticked when you return
+- **When** piper, ffmpeg or a voice model is missing
+- **Then** the switch is disabled, Setup names what is missing with a copyable Claude prompt and shell, and Re-check enables it once all three are present
 
 A single watchable run can be **narrated aloud**, not only subtitled — so Setup has a **voice-over
 switch**. It is **off by default** and **persists in the project's config** (`spec/_config.json`,
