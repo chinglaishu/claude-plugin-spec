@@ -204,3 +204,100 @@ test('renderSchematic refuses on*= event handlers and javascript:/data: hrefs (t
   const clean = renderSchematic(mk('<svg><rect fill="var(--wash)"/></svg>'))
   assert.ok(clean.includes('<svg><rect fill="var(--wash)"/></svg>'), 'a clean svg with no handlers/hrefs is unaffected')
 })
+
+// ── Task 7 (2026-08-22): the three archetypes the beats draft named, against the REAL prd texts ──
+// The draft's analysis (beats-draft.json) proposed derive-a-word / fold-into-rows / type-and-append
+// and listed which ids each serves; the same pass marked 13 requirements text-only ON PURPOSE
+// (absences, streaming, a one-slot fight, an in-place edit, a reload) — those must STILL fall to
+// null, read from the prd files so the pin is against the signed text, never a paraphrase.
+import { readFileSync } from 'node:fs'
+import { parsePrd } from './spec-store.mjs'
+import { parseBehavior } from './behavior.mjs'
+
+const PRD = (root, screen) => parsePrd(readFileSync(new URL(`../${root}/${screen}/prd.md`, import.meta.url), 'utf8')).reqs
+const real = (() => {
+  const out = {}
+  for (const s of ['board', 'dispatch', 'init', 'conflicts']) for (const r of PRD('spec', s)) out[`${s}:${r.id}`] = parseBehavior(r.body)
+  for (const r of PRD('demo/todo/spec', 'todo')) out[`todo:${r.id}`] = parseBehavior(r.body)
+  return out
+})()
+const SERVES = {
+  'derive-a-word': ['board:R4', 'board:R6', 'board:R12', 'dispatch:R3', 'dispatch:R7', 'todo:R7'],
+  'fold-into-rows': ['dispatch:R8', 'init:R2', 'init:R5', 'conflicts:R5'],
+  'type-and-append': ['todo:R1', 'todo:R3', 'init:R1']
+}
+// the draft's deliberate text-only set — 13 ids — plus init:R6, which the draft listed under
+// type-and-append but whose SECOND beat (a missing piper/ffmpeg disables the switch) no typed
+// append can draw honestly: a chain an archetype cannot draw in full falls to null (the 2026-08-18
+// honesty rule), so it stays text-only rather than wearing a picture of only half its beats.
+const TEXT_ONLY = ['board:R7', 'board:R8', 'board:R10', 'board:R11', 'board:R14',
+  'dispatch:R2', 'dispatch:R4', 'dispatch:R5', 'init:R3', 'conflicts:R1', 'conflicts:R3',
+  'todo:R2', 'todo:R8', 'init:R6']
+
+test('the three task-7 archetypes fit their listed ids\' REAL beats (read from the prd files) and draw', () => {
+  for (const [arch, ids] of Object.entries(SERVES)) {
+    for (const id of ids) {
+      assert.ok(real[id], `${id} has a behavior block`)
+      assert.equal(matchArchetype(real[id]), arch, `${id} → ${arch}`)
+      const d = deriveSchematic(real[id])
+      assert.ok(d && d.svg.startsWith('<svg'), `${id} draws`)
+      assert.equal(d.phases.length, real[id].beats.length + 1)
+      assert.ok(!/#[0-9a-fA-F]{3}/.test(d.svg) && !/\sid="/.test(d.svg) && !d.svg.includes('`'), `${id}: house style`)
+    }
+  }
+})
+
+test('the draft\'s deliberate text-only set (+ init:R6) still falls to null — never a wrong picture', () => {
+  for (const id of TEXT_ONLY) {
+    assert.ok(real[id], `${id} has a behavior block`)
+    assert.equal(matchArchetype(real[id]), null, `${id} stays text-only`)
+    assert.equal(deriveSchematic(real[id]), null)
+  }
+})
+
+test('the six older archetypes keep their real fits — the new rules shadow none of them', () => {
+  const keep = {
+    'board:R1': 'open-and-reveal', 'board:R3': 'open-and-reveal', 'board:R5': 'open-and-reveal', 'board:R15': 'open-and-reveal',
+    'board:R9': 'type-and-filter', 'board:R13': 'switch-views',
+    'dispatch:R1': 'open-and-reveal', 'dispatch:R6': 'open-and-reveal',
+    'init:R4': 'open-and-reveal', 'conflicts:R2': 'open-and-reveal', 'conflicts:R4': 'press-and-clear',
+    'todo:R4': 'toggle-and-recount', 'todo:R5': 'toggle-and-recount', 'todo:R6': 'switch-views',
+    'board:R2': null, 'board:R16': null
+  }
+  for (const [id, arch] of Object.entries(keep)) assert.equal(matchArchetype(real[id]), arch, id)
+})
+
+test('derive-a-word: nothing is typed — the cursor is absent, and the chip flips its word per beat', () => {
+  const d = deriveSchematic(real['board:R4'])
+  assert.equal(d.archetype, 'derive-a-word')
+  assert.ok(!d.svg.includes('class="cur"'), 'no cursor: the state is computed, never typed')
+  // the three words R4's beats name, drawn on the chip in beat order
+  for (const w of ['Passed', 'Failed', 'Untested']) assert.ok(d.svg.includes('>' + w + '<'), 'chip word ' + w)
+  // a Then that names no word still flips the chip — an abstract bar, never an invented word
+  const d2 = deriveSchematic(real['dispatch:R7'])
+  assert.equal(d2.archetype, 'derive-a-word')
+  assert.ok(!/>[A-Z][a-z]+</.test(d2.svg), 'no word invented for R7')
+})
+
+test('derive-a-word refuses a user act — "you …" in a When is somebody typing, not a derivation', () => {
+  const typed = b('a requirement', 'you type Passed into its state', 'it reads Passed')
+  assert.notEqual(matchArchetype(typed), 'derive-a-word')
+})
+
+test('fold-into-rows: one row lights per beat, the others are drawn unchanged; more than three beats refuse', () => {
+  const d = deriveSchematic(real['dispatch:R8'])
+  assert.equal(d.archetype, 'fold-into-rows')
+  assert.equal((d.svg.match(/class="hit\d"/g) || []).length, 3, 'three landings, one per beat')
+  const four = b('records', 'a run covers case A', 'that record updates, the rest keep theirs',
+    'a run covers case B', 'the record updates', 'a run covers C', 'the record updates', 'a run covers D', 'the record updates')
+  assert.equal(deriveSchematic(four), null)
+})
+
+test('type-and-append: the typed bar, a row sliding in at the foot, the count stepping up', () => {
+  const d = deriveSchematic(real['todo:R1'])
+  assert.equal(d.archetype, 'type-and-append')
+  assert.ok(d.svg.includes('class="typed"'), 'something is typed')
+  assert.ok(d.svg.includes('class="new0"'), 'the appended row')
+  assert.ok(d.svg.includes('>3<') && d.svg.includes('>2<'), 'the count steps 2 → 3')
+  assert.ok(d.svg.includes('class="cur"'), 'the cursor types it — a user act')
+})

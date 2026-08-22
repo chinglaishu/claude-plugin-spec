@@ -29,3 +29,6 @@ node_modules/
 /spec/_state-snapshot.*.json
 /spec/_dir-snapshot.*.json
 /spec/_auth-state.json
+# specboard update scratch
+.specboard-backup-*/
+*.new

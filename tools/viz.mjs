@@ -99,7 +99,15 @@ const W = {
   pick: /\b(pick|choose|select)/,
   view: /\b(view|mode|tab|render)/,
   open: /\b(open|expand|unfold|pick|choose|click|double)/,
-  reveal: /\b(unfold|open|expand|reveal|show|appear)/
+  reveal: /\b(unfold|open|expand|reveal|show|appear)/,
+  // task 7 (2026-08-22) — the three archetypes the beats draft named
+  user: /\byou\b/,                                          // a person acting — NOT a derivation
+  derived: /\b(reads?|derived?|wears?|proven|refreshes)\b/,  // a word/state computed, never typed
+  land: /\b(run|rerun|scan|rescan|crawl|fold)/,              // something lands on a stack of records
+  folded: /\b(rows?|cases?|records?|recorded|routes?|settled|keeps?|stays?|folded)\b/,
+  append: /\b(type|enter|add|save|fill)/,                  // text put in, then kept
+  appended: /\b(appears?|bottom|foot|stores?|records?|new)\b|\breads? .* back\b|\d/,
+  inPlace: /\b(in place|same row|edited)\b/                 // an edit of what is already there — not an append
 }
 const lows = b => b.beats.map(x => ({ when: String(x.when).toLowerCase(), then: String(x.then).toLowerCase() }))
 
@@ -149,6 +157,40 @@ const KIT = [
     name: 'open-and-reveal',
     fits (b) { const L = lows(b); return b.beats.length === 1 && W.open.test(L[0].when) && W.reveal.test(L[0].then) },
     draw: drawOpenReveal
+  },
+  // ── task 7 (2026-08-22): the three archetypes beats-draft.json named ──
+  {
+    name: 'derive-a-word',
+    // every When is an EVENT, never a person ("you …" is somebody typing the word — refused), and
+    // every Then reads a computed word or state. Up to three beats: one chip word per beat.
+    fits (b) {
+      const L = lows(b)
+      return b.beats.length <= 3 && L.every(x => !W.user.test(x.when) && W.derived.test(x.then))
+    },
+    draw: drawDeriveWord
+  },
+  {
+    name: 'fold-into-rows',
+    // every When is a run/scan/crawl landing, every Then a record that updates or stays — folded,
+    // never replaced. Up to three landings (three rows drawn).
+    fits (b) {
+      const L = lows(b)
+      return b.beats.length <= 3 && L.every(x => W.land.test(x.when) && W.folded.test(x.then))
+    },
+    draw: drawFoldRows
+  },
+  {
+    name: 'type-and-append',
+    // every beat is a person putting text in (type / enter / add / save / fill) whose Then keeps
+    // it — a new row at the foot, a stored value read back, a count stepping. An edit of a row
+    // already there ("the same row reads the new text in place", todo R2) is NOT an append and is
+    // refused; a chain with any other kind of beat (init R6's "piper is missing → the switch is
+    // disabled") falls through to null too.
+    fits (b) {
+      const L = lows(b)
+      return b.beats.length <= 3 && L.every(x => W.user.test(x.when) && W.append.test(x.when) && W.appended.test(x.then) && !W.inPlace.test(x.then))
+    },
+    draw: drawTypeAppend
   }
 ]
 
@@ -349,6 +391,143 @@ function drawOpenReveal (b, t, k, kf) {
     bar(44, 26, 130, 9) +
     `<g class="pbody"><rect x="28" y="48" width="220" height="78" rx="6" fill="var(--paper)" stroke="var(--line)" stroke-width="1.2"/>` +
     bar(40, 60, 180, 6) + bar(40, 74, 150, 6) + bar(40, 88, 166, 6) + bar(40, 102, 120, 6) + `</g>` +
+    `<g class="cur">${CURSOR}</g>`
+  return { css, body }
+}
+
+// ── task 7 (2026-08-22): the three archetypes the beats draft named ────────
+
+// Inputs on the left (a tag chip, an assertion mark, a text-hash glyph) feed ONE chip on the right
+// that flips its word per beat — the state is computed, never typed, so this is the one drawing
+// with NO cursor: nobody's hand is in it. When a Then names its word ("reads Passed", "chip reads
+// passed or failed") the chip shows it; otherwise an abstract bar flips — never an invented word.
+const wordOf = then => {
+  const m = String(then).match(/\breads (?:the )?([A-Z][A-Za-z-]*|passed|failed)/)
+  return m ? m[1] : null
+}
+function drawDeriveWord (b, t, k, kf) {
+  const n = b.beats.length
+  const flips = t.segs.map(g => g.flip)
+  let css = ''
+  // the inputs: each beat lights ONE of the three, in turn — the cause that fed the chip
+  const inputs = [0, 1, 2].map(i => {
+    const y = 34 + 30 * i
+    const glyph = i === 0
+      ? `<rect x="24" y="${y}" width="34" height="14" rx="7" fill="var(--wash)" stroke="var(--line2)" stroke-width="1.2"/>` + bar(31, y + 4, 20, 6, 'var(--line3)')
+      : i === 1
+        ? box(24, y + 2) + `<path d="M26.5 ${y + 7} l2 2 l4 -4.5" fill="none" stroke="var(--ink-3)" stroke-width="1.3"/>` + bar(42, y + 3.5, 16, 6)
+        : bar(24, y + 4, 34, 6, 'var(--line2)')
+    return `<g class="in${i}">${glyph}</g>`
+  })
+  for (let i = 0; i < 3; i++) {
+    const spans = t.segs.filter((_, j) => j % 3 === i).map(g => [g.act, r1(g.flip + 4)])
+    if (!spans.length) continue
+    css += `.${k} .in${i}{animation:${kf('in' + i)} ${t.dur}s infinite}` +
+      `@keyframes ${kf('in' + i)}{${onOff(spans, 'opacity:1', 'opacity:.45')}}`
+  }
+  // the wires, each pulsing as its input fires
+  const wires = [0, 1, 2].map(i => `<path class="w${i}" d="M62 ${41 + 30 * i} C 110 ${41 + 30 * i}, 120 71, 168 71" fill="none" stroke="var(--line2)" stroke-width="1.2"/>`)
+  for (let i = 0; i < 3; i++) {
+    const spans = t.segs.filter((_, j) => j % 3 === i).map(g => [g.act, r1(g.flip + 2)])
+    if (!spans.length) continue
+    css += `.${k} .w${i}{animation:${kf('w' + i)} ${t.dur}s infinite}` +
+      `@keyframes ${kf('w' + i)}{${onOff(spans, 'stroke:var(--ai)', 'stroke:var(--line2)')}}`
+  }
+  // the chip: n+1 faces stacked — the given's blank dashed face, then one word (or bar) per beat
+  let faces = `<g class="f0"><rect x="172" y="58" width="96" height="26" rx="13" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.2" stroke-dasharray="3 3"/>${bar(196, 68, 48, 6, 'var(--line3)')}</g>`
+  css += `.${k} .f0{animation:${kf('f0')} ${t.dur}s infinite}` +
+    `@keyframes ${kf('f0')}{${onOff([[0, r1(flips[0] - 0.1)]], 'opacity:1', 'opacity:0')}}`
+  for (let j = 1; j <= n; j++) {
+    const w = wordOf(b.beats[j - 1].then)
+    const to = j === n ? t.hold : r1(flips[j] - 0.1)
+    const face = w
+      ? `<text x="220" y="76" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--paper)">${esc(w)}</text>`
+      : bar(196 + 6 * j, 68, 48 - 8 * j, 6, 'var(--paper)')
+    faces += `<g class="f${j}"><rect x="172" y="58" width="96" height="26" rx="13" fill="var(--ai)"/>${face}</g>`
+    css += `.${k} .f${j}{animation:${kf('f' + j)} ${t.dur}s infinite}` +
+      `@keyframes ${kf('f' + j)}{${onOff([[flips[j - 1], to]], 'opacity:1', 'opacity:0')}}`
+  }
+  const body = inputs.join('') + wires.join('') + faces +
+    `<text x="220" y="104" text-anchor="middle" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">DERIVED</text>`
+  return { css, body }
+}
+
+// A stack of rows, each its own record. Per beat a run token slides in from the right and LANDS
+// on one row — that row lights and its bar changes — while every other row is drawn exactly as it
+// was: folded, never replaced.
+function drawFoldRows (b, t, k, kf) {
+  const n = b.beats.length
+  let css = ''
+  const rows = [0, 1, 2].map(i => {
+    const y = 30 + 30 * i
+    return `<g class="row${i}"><rect x="20" y="${y}" width="170" height="22" rx="5" fill="var(--paper)" stroke="var(--line)" stroke-width="1.2"/>` +
+      `<circle cx="34" cy="${y + 11}" r="3.5" fill="var(--line2)"/>` + bar(46, y + 7.5, [92, 76, 84][i]) +
+      `<rect class="hit${i}" x="20" y="${y}" width="170" height="22" rx="5" fill="var(--ai)" opacity="0"/></g>`
+  })
+  // beat i lands on row i — the lit overlay holds from the flip to the end; the run token travels
+  for (let i = 0; i < n; i++) {
+    const g = t.segs[i]
+    const y = 30 + 30 * i
+    css += `.${k} .hit${i}{animation:${kf('hit' + i)} ${t.dur}s infinite}` +
+      `@keyframes ${kf('hit' + i)}{${onOff([[g.flip, t.hold]], 'opacity:.22', 'opacity:0')}}` +
+      `.${k} .run${i}{animation:${kf('run' + i)} ${t.dur}s ease-in-out infinite}` +
+      `@keyframes ${kf('run' + i)}{${stops([
+        [0, 'transform:translate(0,0);opacity:0'], [r1(g.s), 'transform:translate(0,0);opacity:0'],
+        [r1(g.s + 1), 'transform:translate(0,0);opacity:1'],
+        [g.flip, `transform:translate(-60px,${y - 41}px);opacity:1`], [r1(g.flip + 3), `transform:translate(-60px,${y - 41}px);opacity:0`],
+        [100, `transform:translate(-60px,${y - 41}px);opacity:0`]
+      ])}}`
+  }
+  const tokens = Array.from({ length: n }, (_, i) =>
+    `<g class="run${i}"><rect x="226" y="44" width="48" height="16" rx="8" fill="var(--ai)"/>${bar(238, 49, 24, 6, 'var(--paper)')}</g>`).join('')
+  const body = rows.join('') + tokens +
+    `<text x="250" y="104" text-anchor="middle" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">FOLDED</text>`
+  return { css, body }
+}
+
+// Text typed into a box (the cursor does it — a user act), then a new row slides in at the foot
+// of the list and the count beside it steps up, once per beat.
+function drawTypeAppend (b, t, k, kf) {
+  const n = b.beats.length
+  let css = ''
+  const base = 2
+  const rows = [0, 1].map(i => box(30, 56 + 22 * i) + bar(48, 57.5 + 22 * i, [96, 80][i])).join('')
+  let news = ''
+  for (let i = 0; i < n; i++) {
+    const g = t.segs[i]
+    const y = 56 + 22 * (base + i)
+    news += `<g class="new${i}">${box(30, y)}${bar(48, y + 1.5, 88 - 10 * i)}</g>`
+    css += `.${k} .new${i}{animation:${kf('new' + i)} ${t.dur}s ease-out infinite}` +
+      `@keyframes ${kf('new' + i)}{${stops([
+        [0, 'transform:translate(0,-8px);opacity:0'], [g.flip, 'transform:translate(0,-8px);opacity:0'],
+        [r1(g.flip + 5), 'transform:translate(0,0);opacity:1'], [t.hold, 'transform:translate(0,0);opacity:1'],
+        [t.reset, 'transform:translate(0,-8px);opacity:0'], [100, 'transform:translate(0,-8px);opacity:0']
+      ])}}`
+  }
+  // the typed bar grows in the box during each beat's act, and empties on the flip (submitted)
+  css += `.${k} .typed{transform-origin:28px 31px;animation:${kf('ty')} ${t.dur}s infinite}` +
+    `@keyframes ${kf('ty')}{${stops([[0, 'transform:scaleX(0)']].concat(t.segs.flatMap(g => [
+      [r1(g.act - 2), 'transform:scaleX(0)'], [r1(g.flip - 1), 'transform:scaleX(1)'], [g.flip, 'transform:scaleX(0)']
+    ])).concat([[100, 'transform:scaleX(0)']]))}}`
+  // the count: base, then base+1 … base+n, each visible only in its own window
+  let counts = ''
+  const flips = t.segs.map(g => g.flip)
+  for (let j = 0; j <= n; j++) {
+    const from = j === 0 ? 0 : flips[j - 1]
+    const to = j === n ? t.hold : r1(flips[j] - 0.1)
+    counts += `<text class="n${j}" x="226" y="86" font-size="30" font-family="var(--mono)" fill="var(--ok)">${base + j}</text>`
+    css += `.${k} .n${j}{animation:${kf('n' + j)} ${t.dur}s infinite}` +
+      `@keyframes ${kf('n' + j)}{${onOff([[from, to]], 'opacity:1', 'opacity:0')}}`
+  }
+  css += `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+    `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 32, y: 26 }])}}`
+  const body =
+    `<rect x="20" y="20" width="150" height="22" rx="4" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1.2"/>` +
+    `<rect class="typed" x="28" y="27" width="54" height="8" rx="3" fill="var(--line2)"/>` +
+    `<rect x="176" y="20" width="22" height="22" rx="6" fill="var(--wash)" stroke="var(--line2)" stroke-width="1.2"/>` +
+    `<path d="M187 25 v12 M181 31 h12" stroke="var(--ink-3)" stroke-width="1.4"/>` +
+    rows + news + counts +
+    `<text x="210" y="104" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">TOTAL</text>` +
     `<g class="cur">${CURSOR}</g>`
   return { css, body }
 }
