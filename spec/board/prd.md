@@ -45,12 +45,12 @@ whether to fold R2 into R13, and the human chose to keep it as the standalone pr
 
 - **Given** a requirement showing only its title
 - **When** you open it
-- **Then** its full, formatted description unfolds — a Grid row opens into the Focus reader
+- **Then** its full, formatted description unfolds — a List row opens into the Focus body in place
 
 A requirement shows only its **title** until it is opened, then its full description — real
 requirements are long and formatted (headings, lists, `code`, author notes), so the collapse is what
-keeps them scannable: in **Grid** a requirement is a title row, and opening it hands it to the
-**Focus** reader, where the full text unfolds. A test leads with a **prominent, descriptive title**
+keeps them scannable: in **List** a requirement is a title row, and opening it unfolds the **Focus
+body in place** — the same reader, embedded, not a navigation. A test leads with a **prominent, descriptive title**
 of the flow it runs — its own name, so it says what the test is *for* — then its latest **recording**
 (cover frame as the still, played on click), then the requirement ids it covers. The old worry, a
 test title just repeating a requirement's, is gone: under many-to-many a test covers several
@@ -69,6 +69,8 @@ needed the title / sub-line / hint layer this adds to be scannable.*
 is gone (R13). The anatomy is unchanged (a requirement is a title that expands to its full text; a
 test leads with its flow name, then recording, then tags; both with a reading hierarchy) and now
 reads in Grid rows and the Focus reader, which the tests assert.*
+
+*Reworded 2026-08-22 (the human): Grid→List, hands-to→in-place, with the frozen mockup.*
 
 ## R4 — Requirement state is computed and assertion-backed
 
@@ -310,8 +312,9 @@ A reviewer shouldn't have to play a video to check a proven value. Where a run c
 its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at
 the instant that check fired (indexed by the run's own beat log), each carrying the same
 self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the
-ring on the exact value asserted. They show as a **scannable strip** — in the test's evidence and in
-the focus card — so a person verifies the asserted values by eye, in order, without pressing play; the
+ring on the exact value asserted. They show as the media pane's **stills** — the default for a
+multi-beat pass and one toolbar click away otherwise — in the test's evidence and the focus card; so
+a person verifies the asserted values by eye, in order, without pressing play; the
 **video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
 frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
 no strip, never a faked or separately-captured one.
@@ -320,6 +323,8 @@ no strip, never a faked or separately-captured one.
 trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the
 video kept for what a picture cannot carry. It amends R10's "no separate screenshot column" — the
 frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
+
+*Reworded 2026-08-22 (the human): the strip is the media pane's stills view — one surface, not two.*
 
 ## R15 — The board hands you a prompt; it never writes a requirement or a test itself
 
