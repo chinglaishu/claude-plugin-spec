@@ -43,6 +43,22 @@ test('Home lists every screen as a card', async ({ page }) => {
   await checkReq('R1', async () => { await countHomeCards(page, state) })
   // the home cover falls back to a still when a run has no video (R10) — keep board's own cover fresh
   await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
+  // the card's STILL opens the screen in Focus, exactly like the rest of the card (the frozen
+  // mockup, Task 8) — it is not a lightbox zoom, which is what every other thumbnail does
+  await checkReq('R1', async () => {
+    const first = page.locator('#home .card').first()
+    const name = await first.getAttribute('data-screen')
+    await first.locator('.cshot img').click()
+    await expect(page.locator('#lb')).toBeHidden()
+    await expect(page.locator(`.dt[data-screen="${name}"]:not([hidden]) .focusov`)).toBeVisible()
+    await expect(page).toHaveURL(new RegExp('#/' + name + '$'))
+  })
+  // the header crumb names THIS project — package.json's name, with a tagline from spec/_config.json
+  // when one is authored; "dogfooding itself" is specboard's own default, derived, never hardcoded
+  await checkReq('R1', async () => {
+    await expect(page.locator('.top .crumb')).toHaveText('specboard · dogfooding itself')
+    await expect(page.locator('.top .crumb')).toHaveAttribute('data-project', 'specboard')
+  })
 })
 
 test('A requirement and its proof read side by side, each scrolling on its own', async ({ page }) => {
@@ -556,6 +572,13 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // carries a Given/When→Then block — via the #/<screen>/<rid> route the feature strip uses too.
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
+    // THE MOCKUP'S CHROME (Task 8, the frozen mockup 2026-08-17): the top bar names the screen with
+    // its area · route beneath; the card header reads `R13  ✓ Passed` left and `n of N  ⋯` right
+    await expect(dt.locator('.dth .dname h2')).toHaveText('Board')
+    await expect(dt.locator('.dth .dname .dsub')).toHaveText('Core · /')
+    const pos13 = await dt.locator('.reqpane .req').evaluateAll(els => els.findIndex(e => e.getAttribute('data-r') === 'R13') + 1)
+    await expect(ov.locator('.fread .frmeta .fcount')).toHaveText(`${pos13} of ${reqCount}`)
+    await expect(ov.locator('.fread .frmeta .fcount + .fmenu .fmenubtn')).toHaveCount(1)   // the ⋯ sits right of the counter
     const beh = ov.locator('.fread .behavior')
     await expect(beh).toHaveCount(1)
     await expect(beh.locator('.brow')).toHaveCount(3)          // one Given + a When→Then beat
@@ -588,6 +611,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // in wired (no player rebuilt), exactly as before the media pane landed
     await expect(ov.locator('.feval .fphead')).toBeVisible()
     await expect(ov.locator('.feval .fpby')).toBeVisible()
+    // the proof header is ONE line — `PROVEN BY [unit|flow] <test name>` (the mockup; "covered by"
+    // where the covering test does not currently prove it — rule 3, never a fake green)
+    await expect(ov.locator('.feval .fpby .fpl')).toHaveText(/^(proven|covered) by$/)
+    await expect(ov.locator('.feval .fpby .tk')).toHaveText(/^(unit|flow)$/)
+    await expect(ov.locator('.feval .fpby .tone')).not.toBeEmpty()
+    await expect(ov.locator('.feval .fprun')).toHaveCount(0)          // no separate "last run" line any more
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
     await expect(ov.locator('.feval .fpacts > .runone')).toBeVisible()        // Run always shown in the header
     await expect(ov.locator('.feval .fpacts .fmenu .fmenubtn')).toHaveCount(1) // the rest behind ⋯
@@ -618,6 +647,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await reopen(evId!)
     const media = ov.locator('.feval .fmedia')
     await expect(media).toHaveCount(1)
+    // the strip header reads `<test name> · proves R<n> · run <id>` with the stills|gif|video toolbar
+    // on the SAME row (the mockup's gbar) — the run id is the covering test's newest record's commit
+    await expect(media.locator('.fmbar .fmname')).not.toBeEmpty()
+    await expect(media.locator('.fmbar')).toContainText('proves ' + evId)
+    await expect(media.locator('.fmbar .frun')).toHaveText(/^run \S+$/)
+    await expect(media.locator('.fmbar .medbar button')).toHaveCount(3)
     await expect(media.locator('.medbar button')).toHaveText(['stills', 'gif', 'video'])
     await expect(media.locator('.medbar button[data-m="frames"]')).toHaveClass(/\bon\b/)
     const framesPanel = media.locator('.fmpanel[data-m="frames"]')
@@ -682,6 +717,19 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
+    // the mockup's pager: the hint at the right, 30px pages, the current page ringed in ink (NOT
+    // inverted — Run all is the detail's one inverted element, the design system's rule; the mockup's
+    // sumi fill is a listed divergence), and ← → paging one requirement at a time from the keyboard
+    await expect(dt.locator('.dtfoot .fpk')).toHaveText('← → to review one by one')
+    const curDot = dt.locator('.dtfoot .fdot.cur')
+    expect(await curDot.evaluate(el => getComputedStyle(el).borderColor)).toBe('rgb(28, 27, 24)')
+    expect(await curDot.evaluate(el => el.getBoundingClientRect().height)).toBe(30)
+    expect(await dt.locator('.dth .btn.pri, .dtfoot [style*="background"]').count(), 'one inverted element').toBe(1)
+    const secondId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
+    await page.keyboard.press('ArrowLeft')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(firstId)
+    await page.keyboard.press('ArrowRight')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(secondId)
 
     // LEAVING FOCUS RESTORES THE BORROWED NODE: while the reader is open it holds one test's row;
     // switching views puts that node back WHOLE into the (hidden) source pane
@@ -720,8 +768,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(card2).not.toHaveClass(/\bopen\b/)
     await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)
 
-    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4): "proved by"
-    // only for a Passed requirement, "covered by … — not passed yet" otherwise. Same forced-status
+    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4): "proven by"
+    // only for a Passed requirement, "covered by" otherwise (the mockup's label, kept honest). Same forced-status
     // technique as above; the coverage tags stay real, so .fpby resolves a genuine covering test.
     const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
       els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
@@ -734,12 +782,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.goto(`/#/board/${passedId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
-    await expect(dt.locator('.focusov .feval .fpby')).toContainText('proved by')
+    await expect(dt.locator('.focusov .feval .fpby')).toContainText('proven by')
     await page.goto(`/#/board/${otherId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
     await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
-    await expect(dt.locator('.focusov .feval .fpby')).not.toContainText('proved by')
+    await expect(dt.locator('.focusov .feval .fpby')).not.toContainText('proven by')
   })
 })
 

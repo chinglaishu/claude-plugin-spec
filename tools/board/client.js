@@ -163,11 +163,12 @@ const B = window.__BOARD__ || {}
   addEventListener('popstate', route)
   addEventListener('hashchange', route)
 
-  // The WHOLE card opens the screen (board R1) — its whole content is about that one screen. The
-  // cover image is the exception: it opens the zoom, a different intent from "open this screen".
+  // The WHOLE card opens the screen (board R1) — its whole content is about that one screen,
+  // the latest-run still included (Task 8, the frozen mockup: the cover opens Focus like the rest
+  // of the card; it is the one thumbnail the lightbox does NOT claim — see the zoom handler).
   for (const c of document.querySelectorAll('#home .card'))
     c.addEventListener('click', e => {
-      if (e.target.closest('img, button, a, input, label')) return
+      if (e.target.closest('button, a, input, label')) return
       open(c.dataset.i)
     })
   // closing the detail also tears down an open focus reader, returning every borrowed node to the
@@ -323,6 +324,25 @@ const B = window.__BOARD__ || {}
   // so the hidden source rows are always left whole — the same borrow / close-fold-reopen contract
   // loadRuns depends on (CLAUDE.md).
   function reqNodes (dt) { return [].slice.call(dt.querySelectorAll('.reqpane .req')) }
+  // a test node's KIND — the baked source-plan kind ∪ the newest record's server-derived kind (the
+  // same union flowsOf applies for the Flow view: flow if either says so)
+  function testKind (t) {
+    if (!t) return ''
+    const slot = t.querySelector('.tststeps')
+    const one = slot && slot._hist && slot._hist[0]
+    const rec = (one && one.kind) || ''
+    const baked = t.dataset.kind || ''
+    return (rec === 'flow' || baked === 'flow') ? 'flow' : (rec || baked)
+  }
+  // the newest record's commit for a test node — the `run <id>` the strip header names
+  function testRunId (t) {
+    if (!t) return ''
+    const slot = t.querySelector('.tststeps')
+    const one = slot && slot._hist && slot._hist[0]
+    if (one && one.commit) return String(one.commit)
+    const shaEl = t.querySelector('.tmeta .tsha')
+    return shaEl && shaEl.textContent ? shaEl.textContent.trim() : ''
+  }
   function screenReqList (dt) {
     return reqNodes(dt).map(function (x) {
       const t = x.querySelector('.rt')
@@ -384,7 +404,10 @@ const B = window.__BOARD__ || {}
       proseHtml: proseHtml
     }
   }
-  function focusBody (dt, r) {
+  // opts.counter — the Focus view's "n of N" position (the List's open row passes none: a row
+  // already knows where it sits)
+  function focusBody (dt, r, opts) {
+    opts = opts || {}
     const tests = [].slice.call(dt.querySelectorAll('.testpane .test'))
     const cov = tests.filter(function (t) { return t.querySelector('.tags .tag[data-r="' + r.id + '"]') })
     // The PRIMARY covering test — the one whose node the reader borrows and whose newest record the
@@ -431,6 +454,10 @@ const B = window.__BOARD__ || {}
       return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title, reqList: screenReqList(dt) }
     }
     const reqAddTestCtx = function () { const c = reqCtx(); c.coverIds = [r.id]; return c }
+    if (opts.counter) {
+      const fc = document.createElement('span'); fc.className = 'fcount'; fc.textContent = opts.counter
+      rmeta.appendChild(fc)
+    }
     rmeta.appendChild(promptMenu('requirement authoring actions', [
       ['reword', 'Reword this requirement', reqCtx],
       ['addreq', 'Add a requirement', reqCtx],
@@ -477,20 +504,28 @@ const B = window.__BOARD__ || {}
       ptop.innerHTML = '<span class="fplbl">The proof</span>'
       const acts = document.createElement('div'); acts.className = 'fpacts'
       ptop.appendChild(acts); ph.appendChild(ptop)
-      // "proved by" tracks r.status (board R4) — the same fold that names the chip names this line.
-      // Changed is passed-family (it WAS proved; the text moved since) — mirroring gridProof.
+      // THE PROOF LINE (Task 8, the frozen mockup): ONE row — `PROVEN BY [unit|flow] <test name>`.
+      // "proven by" tracks r.status (board R4) — the same fold that names the chip names this line;
+      // Changed is passed-family (it WAS proved; the text moved since) — mirroring gridProof. Any
+      // other status reads "covered by": the mockup's label, kept honest (rule 3 — never a fake
+      // green under a ✗ chip). The kind chip is the union List and Flow use (source ∪ record).
       const proved = r.status === 'passed' || r.status === 'changed'
       const by = document.createElement('div'); by.className = 'fpby'
-      by.innerHTML = (proved ? 'proved by ' : 'covered by ') + '<b>' + eh(flows[0] || '') + '</b>' +
-        ' · <span class="fpv ' + vstate + '">' + vword + '</span>' +
-        (cov.length > 1 ? ' · <span class="fpmore">+' + (cov.length - 1) + ' more cover it</span>' : '') +
-        (r.status === 'changed' ? ' — text moved since that proof, re-verify' : (proved ? '' : ' — not passed yet'))
+      const kind = testKind(primary)
+      by.innerHTML = '<span class="fpl">' + (proved ? 'proven by' : 'covered by') + '</span>' +
+        '<span class="tone">' + (kind ? '<span class="tk ' + kind + '">' + kind + '</span>' : '') +
+        '<span class="tn" title="' + eh(flows[0] || '') + '">' + eh(flows[0] || '') + '</span>' +
+        (vstate === 'fail' ? ' <span class="fpv fail">✗</span>' : '') + '</span>' +
+        (cov.length > 1 ? '<span class="fpmore">+' + (cov.length - 1) + ' more cover it</span>' : '')
       ph.appendChild(by)
-      const shaEl = primary.querySelector('.tmeta .tsha')
-      if (shaEl && shaEl.textContent) {
-        const run = document.createElement('div'); run.className = 'fprun'
-        run.innerHTML = 'last run · <span class="tsha">' + eh(shaEl.textContent) + '</span>'
-        ph.appendChild(run)
+      if (r.status === 'changed') {
+        const sn = document.createElement('div'); sn.className = 'stalenote'
+        sn.innerHTML = '◈ the requirement was <b>edited after this proof ran</b> — re-run to re-verify'
+        ph.appendChild(sn)
+      } else if (!proved && vstate !== 'fail' && r.status !== 'untested' && r.status !== 'not-reached') {
+        const sn = document.createElement('div'); sn.className = 'stalenote'
+        sn.textContent = 'covered, not proven — ' + vword
+        ph.appendChild(sn)
       }
       evl.appendChild(ph)
       // relocate the wired per-test controls into the proof header: Run (watchable) always visible,
@@ -671,9 +706,16 @@ const B = window.__BOARD__ || {}
     if (['frames', 'clip', 'video'].indexOf(mode) < 0) mode = 'frames'
     if (st === 'failed' && mode === 'clip') mode = 'frames'   // the mockup skips gif on a failure
     const bar = document.createElement('div'); bar.className = 'fmbar'
-    const lab = document.createElement('span')
-    lab.innerHTML = 'proves ' + eh(r.id) + (r.ev.at ? ' · ' + eh(r.ev.at) : '') +
-      (st === 'changed' ? ' · <span class="pinned">✎ pinned era</span>' : '') +
+    // the mockup's gbar (Task 8): `<test name> · proves R4 · run <id>` — the name clipped first
+    const ttlEl = primary.querySelector('.ttl')
+    const tname = ttlEl ? ttlEl.textContent.trim() : ''
+    const runId = testRunId(primary)
+    const nm = document.createElement('span'); nm.className = 'fmname'; nm.textContent = tname; nm.title = tname
+    bar.appendChild(nm)
+    const lab = document.createElement('span'); lab.className = 'fmfacts'
+    lab.innerHTML = (tname ? '· ' : '') + 'proves ' + eh(r.id) +
+      (runId ? ' · <span class="frun">run ' + eh(runId) + '</span>' : (r.ev.at ? ' · ' + eh(r.ev.at) : '')) +
+      (st === 'changed' ? ' · <span class="pinned">◈ pinned era</span>' : '') +
       // D3: a failing run's media shows — so the pane itself carries the failed state, with the
       // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
       (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
@@ -819,13 +861,17 @@ const B = window.__BOARD__ || {}
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
     const dots = document.createElement('div'); dots.className = 'fdots'
     const next = document.createElement('button'); next.className = 'fnav next'; next.textContent = '›'
-    pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
+    // the mockup's hint (Task 8) — and the keys it names: ← → page one requirement at a time while
+    // this reader is open and no field has the focus (the guide's stepper claims the same keys only
+    // while #howview is the open view, so the two never both fire)
+    const hint = document.createElement('span'); hint.className = 'fpk'; hint.textContent = '← → to review one by one'
+    pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next); pager.appendChild(hint)
     function render () {
       if (bodyRestore) { bodyRestore(); bodyRestore = null }   // reclaim the previous page's moved nodes
       const old = ov.querySelector('.fpage'); if (old) old.remove()
       const r = reqInfo(reqs[cur])
       ov._curId = r.id        // so a loadRuns fold can reopen this reader on the SAME requirement
-      const fb = focusBody(dt, r)
+      const fb = focusBody(dt, r, { counter: (cur + 1) + ' of ' + reqs.length })
       bodyRestore = fb.restore
       ov.appendChild(fb.page)
 
@@ -864,6 +910,16 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
+    const onKey = function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
+      if (!ov.isConnected) { document.removeEventListener('keydown', onKey); return }
+      if (dt.hidden || !ov.offsetParent) return
+      const a = document.activeElement
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return
+      if (e.key === 'ArrowRight' && cur < reqs.length - 1) { cur++; render(); e.preventDefault() }
+      else if (e.key === 'ArrowLeft' && cur > 0) { cur--; render(); e.preventDefault() }
+    }
+    document.addEventListener('keydown', onKey)
     // the pager lives in the detail's full-width FOOTER BAR, shown only while focus is open
     const foot = dt.querySelector('.dtfoot')
     if (foot) { foot.innerHTML = ''; foot.appendChild(pager); foot.hidden = false }
@@ -2846,6 +2902,7 @@ const B = window.__BOARD__ || {}
   document.addEventListener('click', e => {
     const img = e.target.closest('img')
     if (!img || !img.src || img.closest('.lb')) return
+    if (img.closest('#home .cshot')) return   // the home card's still opens the screen, not the zoom (Task 8)
     e.stopPropagation()
     openLb(img.src, img.alt || 'screenshot')
   })

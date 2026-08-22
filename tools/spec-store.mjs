@@ -610,6 +610,9 @@ export const DEFAULT_CONFIG = {
   // OFF by default and saved per project (init R6); only bites a single watchable run of a screen
   // that has a narration pack (board R10) — otherwise the recording is silent, exactly as before.
   voiceOver: false,
+  // a one-line tagline for the board's header crumb — `<package name> · <tagline>` (Task 8, the
+  // frozen mockup's "Tsumiki · task-tracker demo"). Authored once, optional; blank = the name alone.
+  tagline: '',
   // where a run's screenshots and videos are kept. 'local' = spec/_runs/ in this repo (default).
   // 'git' = committed to a branch of this repo (pushed to origin only if push:true). A bucket = a
   // base URL uploads are PUT to.
@@ -649,6 +652,7 @@ export function cleanConfig (cfg = {}, cur = {}) {
     stepDelayMs: Math.max(0, Math.min(5000, Number(src.stepDelayMs) || 0)) || (src.stepDelayMs === 0 ? 0 : 300),
     // a real boolean on disk — a stale form or a truthy string can never pin a half-on state
     voiceOver: !!src.voiceOver,
+    tagline: str(src.tagline, 120).trim(),
     storage: {
       where: ['local', 'git', 'bucket'].includes(src.storage?.where) ? src.storage.where : 'local',
       gitBranch: str(src.storage?.gitBranch, 120).trim(),

@@ -53,6 +53,24 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   await expect(first.locator('.cshot')).toHaveCount(1)      // the latest recording's cover frame
   // the old PRD/draft/screen/E2E column strip is gone — the card is titles + cover, nothing else
   await expect(page.locator('.cell[data-col], .colhs')).toHaveCount(0)
+  // THE MOCKUP'S CARD (Task 8, the frozen mockup 2026-08-17 — board R1): the name is the card's
+  // large title with the screen's ROUTE in mono beneath it…
+  await expect(first.locator('.croute')).not.toBeEmpty()
+  expect(parseFloat(await first.locator('.nm').evaluate(el => getComputedStyle(el).fontSize)), 'the title wears the card-title scale (t-xl)')
+    .toBeGreaterThanOrEqual(19)
+  // …every requirement row LEADS with its status mark (hue never alone: ✓ ◈ ✗ ◌ ○ by the five-word
+  // vocabulary — the same marks the Focus chip and the List row wear)…
+  const rows = first.locator('.rl li:not(.more)')
+  await expect(rows.first().locator('.mk')).toHaveText(/^[✓◈✗◌○]$/)
+  expect(await first.locator('.rl li:not(.more) .mk').count()).toBe(await rows.count())
+  // …the right column carries the proven-count pill AND the unit · flow kind chips (derived from the
+  // folded tests: flowStep in the source ∪ a cross-screen tag in the record — the union)…
+  await expect(first.locator('.metrics .pcount')).toHaveText(/^\d+ \/ \d+ proven$/)
+  await expect(first.locator('.metrics .kinds .kchip')).toHaveText([/^\d+ unit$/, /^\d+ flow$/])
+  // …and the thumbnail is the screen's latest-run STILL, captioned with that run — never a grey
+  // placeholder where a run has left a still (the board's own screens all have one)
+  await expect(first.locator('.cshot img')).toHaveCount(1)
+  await expect(first.locator('.cshot .lrun')).toHaveText(/^latest run · \S+$/)
   state.cards = await cards.count()
 }
 

@@ -3,7 +3,13 @@
   "baseUrl": "http://localhost:4319",
   "backendCommand": "",
   "frontendCommand": "node serve-app.mjs",
-  "routes": ["/todo.html"],
+  "routes": [
+    "/todo.html"
+  ],
   "stepDelayMs": 1400,
-  "storage": { "where": "local", "push": false }
+  "storage": {
+    "where": "local",
+    "push": false
+  },
+  "tagline": "task-tracker demo"
 }

@@ -4,16 +4,18 @@
 // spec/_design.css the drafts link, and adds nothing but layout — it is one of the screens this
 // tool tracks, so it has no business owning a second design system.
 
-import { join, resolve } from 'node:path'
+import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash
+  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
 // pure: the flow composer's library derivation (Task 5) — fed to the client through the JSON island
 import { deriveLibrary } from './compose.mjs'
+// pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
+import { deriveKind } from './flow.mjs'
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
@@ -58,25 +60,104 @@ const reqChip = status => {
   return `<span class="chip ${tone}" title="${title}"><span class="${mark}"></span></span>`
 }
 
+// THE HEADER CRUMB (Task 8, the frozen mockup's "Tsumiki · task-tracker demo"): `<project> ·
+// <tagline>`, DERIVED — the project's package.json name (falling back to the repo directory), and
+// the tagline authored in spec/_config.json when there is one. "dogfooding itself" is the default
+// tagline of exactly one project — specboard's own repo — never a hardcoded string on a vendored
+// board. Pure and exported (tools/home-card.test.mjs).
+export const projectIdentity = (pkg, cfg, dirName) => {
+  const name = String((pkg && pkg.name) || dirName || 'project').trim()
+  const own = name === 'specboard'
+  const tagline = String((cfg && cfg.tagline) || (own ? 'dogfooding itself' : '')).trim()
+  return { name, tagline, own, crumb: tagline ? name + ' · ' + tagline : name }
+}
+
+// A screen's test KINDS (board R6 — unit and flow, both first-class), counted for the home card's
+// `k unit · j flow` chips. Each test's kind is the UNION of the two honest derivations the List and
+// Flow views already agree on (Task 3b): the SOURCE plan's kind (a flowStep beat ⇒ flow) and the
+// RECORD's kind (a tag qualified to another screen ⇒ flow, tools/flow.mjs deriveKind) — a flowStep
+// story that never leaves its screen is still a flow, and a plain test that proves another screen's
+// requirement is too. Tests are enumerated from the source plans (so a never-run test counts), with
+// the run records as the fallback when the spec did not parse. Pure and exported.
+export const screenKinds = s => {
+  const byTitle = new Map(((s.run && s.run.tests) || []).map(t => [t.title, t]))
+  const recKind = t => (t ? deriveKind(Object.keys(t.reqs || {}), s.name) : '')
+  const plans = (s.plans && s.plans.length)
+    ? s.plans.map(p => ({ src: (p.steps || []).some(st => st.kind === 'flow') ? 'flow' : 'unit', rec: recKind(byTitle.get(p.title)) }))
+    : [...byTitle.values()].map(t => ({ src: '', rec: recKind(t) }))
+  const out = { unit: 0, flow: 0 }
+  for (const p of plans) out[(p.src === 'flow' || p.rec === 'flow') ? 'flow' : 'unit']++
+  return out
+}
+
+// The card's THUMBNAIL is the screen's latest-run STILL (Task 8, the frozen mockup's `latest run ·
+// <id>` caption): spec/<screen>/screen.png where a test shot one (the kg-e2e convention), else the
+// NEWEST after-frame of the D2 evidence harvest — a project whose tests never shoot screen.png (the
+// Tsumiki demo) still gets a real frame of its latest run rather than a grey placeholder. The
+// caption names the run: the newest record's commit when the run manifest carries one, else the run
+// id. Null when nothing has run — the honest empty cover. Pure: `runs` is spec/_runs.json's array.
+export const latestStill = (s, runs) => {
+  const run = s.run
+  let src = null, hash = ''
+  if (s.hasShot) { src = `spec/${s.name}/screen.png`; hash = s.shotHash || '' }
+  else if (run && run.evidence) {
+    let best = null
+    for (const e of Object.values(run.evidence)) {
+      if (!e || !e.after) continue
+      if (!best || String(e.at || '') > String(best.at || '')) best = e
+    }
+    if (best) src = String(best.after)
+  }
+  if (!src) return null
+  // the newest run that covered this screen ('all' or by name) — its per-test commit, if recorded
+  const mine = (runs || []).filter(r => r && (r.screen === 'all' || r.screen === s.name))
+  const newest = mine.reduce((a, b) => (!a || String(b.runId || '') > String(a.runId || '')) ? b : a, null)
+  const commit = newest && Object.values(newest.shotsByTest || {}).map(t => t && t.commit).find(Boolean)
+  const id = commit || (newest && newest.runId) || (run && run.ranAt != null ? String(run.ranAt) : '')
+  return { src, hash, run: id }
+}
+
 // Home is one CARD per screen (board R1): its name, a proven-count chip, the requirement TITLES, and
 // the latest run's recording cover (or the still). There is NO PRD/draft/screen/E2E column strip — the
 // card is titles + cover and nothing else. There is no guess/draft chip either (the human, 2026-08-17):
 // a drafted PRD is canon the instant it exists, so a card never distinguishes it from one a human wrote.
-const card = (s, i) => {
+// Task 8 (the frozen mockup 2026-08-17): the name is the card's large title with the ROUTE in mono
+// beneath; each requirement row LEADS with its status MARK (the five-word vocabulary's marks — hue
+// never alone); the right column stacks the proven-count pill, the `k unit · j flow` kind chips and
+// the latest-run still, captioned. The pill keeps R4's signed words — "N / M proven" — where the
+// mockup wrote "passed": the requirement text owns that word, not the drawing.
+const CARD_MARK = { passed: '✓', changed: '◈', failed: '✗', 'not-reached': '◌', untested: '○' }
+const card = (s, i, runs) => {
   const M = s.reqs.length
   const proven = s.reqs.filter(r => r.state === 'proven').length
   const done = M > 0 && proven === M
   const q = (s.title + ' ' + s.route + ' ' + s.reqs.map(r => r.title).join(' ')).toLowerCase()
+  const kc = screenKinds(s)
+  const kinds = (kc.unit || kc.flow)
+    ? `<span class="kchip unit"><span class="km">${kc.unit}</span> unit</span><span class="kchip flow"><span class="km">${kc.flow}</span> flow</span>`
+    : '<span class="kchip none">no tests yet</span>'
+  const still = latestStill(s, runs)
+  // the evidence fallback is served off the same allowlisted spec/** path; hashed like screen.png
+  const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}`
+    : (existsSync(join(ROOT, still.src)) ? `${still.src}?h=${shotHash(join(ROOT, still.src))}` : null))
+  const rows = s.reqs.slice(0, 5).map(r =>
+    `<li><span class="id">${esc(r.id)}</span><span class="mk ${esc(r.status)}">${CARD_MARK[r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(r.title)}</span></li>`).join('')
   return `
 <div class="card" data-screen="${esc(s.name)}" data-i="${i}" data-q="${esc(q)}">
   <div class="cmain">
-    <div class="cd"><span class="nm">${esc(s.title)}</span>
-      <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span></div>
-    <ul class="rl">${s.reqs.slice(0, 5).map(r => `<li><span class="id">${esc(r.id)}</span>${esc(r.title)}</li>`).join('')}${s.reqs.length > 5 ? `<li class="more">… ${s.reqs.length - 5} more</li>` : ''}</ul>
+    <div class="cname"><h3 class="nm">${esc(s.title)}</h3></div>
+    <div class="croute">${esc(s.route)}</div>
+    <ul class="rl">${rows}${s.reqs.length > 5 ? `<li class="more">… ${s.reqs.length - 5} more</li>` : ''}</ul>
   </div>
-  <div class="cshot">${s.hasShot
-    ? `<img src="spec/${esc(s.name)}/screen.png?h=${s.shotHash}" alt="${esc(s.title)} — latest run">`
-    : '<span class="play">▶</span>'}</div>
+  <div class="cright">
+    <div class="metrics">
+      <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span>
+      <div class="kinds">${kinds}</div>
+    </div>
+    <div class="cshot">${stillSrc
+      ? `<span class="lrun">latest run · ${esc(still.run)}</span><img src="${esc(stillSrc)}" alt="${esc(s.title)} — latest run">`
+      : '<span class="play">▶</span>'}</div>
+  </div>
 </div>`
 }
 
@@ -159,10 +240,17 @@ export function renderBody (text) {
 // without a browser (tools/behavior-render.test.mjs).
 export function renderBehavior (b) {
   if (!b) return ''
-  const row = (k, label, text) =>
-    `<div class="brow b${k}"><span class="blab">${label}</span><span class="btxt">${esc(text)}</span></div>`
-  const beats = (b.beats || [{ when: b.when, then: b.then }])
-    .map(bt => row('when', 'When', bt.when) + row('then', 'Then', bt.then)).join('')
+  const row = (k, label, text, cls = '') =>
+    `<div class="brow b${k}${cls}"><span class="blab">${label}</span><span class="btxt">${esc(text)}</span></div>`
+  const list = b.beats || [{ when: b.when, then: b.then }]
+  // Task 8 (the frozen mockup's behavior table): a MULTI-beat block numbers its When/Then labels
+  // (WHEN 1 · THEN 1 · WHEN 2 …) and marks every beat after the first `beatstart`, so the Focus
+  // table can rule a heavier line between beats. A 1-beat block emits none of it — byte-identical.
+  const many = list.length > 1
+  const beats = list.map((bt, i) => {
+    const n = many ? `<sup class="bno">${i + 1}</sup>` : ''
+    return row('when', 'When' + n, bt.when, many && i > 0 ? ' beatstart' : '') + row('then', 'Then' + n, bt.then)
+  }).join('')
   return `<div class="behavior">${row('given', 'Given', b.given)}${beats}</div>`
 }
 
@@ -1290,6 +1378,17 @@ export function build () {
   // 2026-08-19). Everything else is simply proven or untested, and zero of both stays "all clear".
   const failing = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'failed').length, 0)
   const changed = screens.reduce((n, s) => n + s.reqs.filter(r => r.status === 'changed').length, 0)
+  // the FIRST requirement that needs a look — the strip's "Open R<n> →" deep link (screen order,
+  // then requirement order; failed before changed within a screen, as the counts read)
+  const attn0 = (() => {
+    for (const s of screens) for (const r of s.reqs) if (r.status === 'failed' || r.status === 'changed') return { s, r }
+    return null
+  })()
+  // the run manifest — only for the cards' `latest run · <id>` captions (the newest run's commit)
+  const runs = (() => { try { return readRuns() } catch { return [] } })()
+  // the header crumb: this project's name + tagline, derived (never "specboard" on a vendored board)
+  const pkg = (() => { try { return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) } catch { return null } })()
+  const ident = projectIdentity(pkg, readConfig(), basename(ROOT))
 
   // test KIND at build time (unit | flow), derived from the source plans — see listPane
   const kindByTitle = new Map()
@@ -1343,7 +1442,7 @@ export function build () {
     <h2>${esc(a)}</h2>
     <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
   </div>
-  <div class="cards">${inArea.map(x => card(x.s, x.i)).join('')}</div>
+  <div class="cards">${inArea.map(x => card(x.s, x.i, runs)).join('')}</div>
 </section>`
   }).join('')
 
@@ -1356,7 +1455,7 @@ export function build () {
   const detail = screens.map((s, i) => `
 <section class="dt" data-i="${i}" data-screen="${esc(s.name)}" hidden>
   <div class="dth dbarhook">
-    <h2>${esc(s.title)}</h2>
+    <div class="dname"><h2>${esc(s.title)}</h2><span class="dsub">${esc(s.area)} · ${esc(s.route)}</span></div>
     <span class="grow"></span>
     ${runAll(s.name)}
     <div class="viewseg" role="tablist" aria-label="View">
@@ -1457,6 +1556,15 @@ export function build () {
   .clear { display:flex; align-items:center; gap:var(--s3); background:var(--koke-tint);
     border:1px solid var(--koke-line); border-radius:var(--r-md); padding:var(--s3) var(--s4);
     margin-bottom:var(--s4); font-size:var(--t-sm); color:var(--koke); }
+  /* the NEED-A-LOOK state (Task 8, the mockup's attn queue): gold — in flight, nothing settled — a
+     mono count pill, the failed/changed counts in their own hues, and the first one's deep link.
+     Measured on --yamabuki-tint #f6eeda: --ink-2 8.4:1 · --yamabuki 4.6:1 · --bengara 5.7:1 · --ai 8.0:1; the pill --yamabuki on --paper 5.2:1. */
+  .clear.attn { background:var(--yamabuki-tint); border-color:var(--yamabuki-line); color:var(--ink-2); gap:14px; }
+  .clear.attn .qk { font:var(--t-xs) var(--mono); color:var(--yamabuki); background:var(--paper);
+    border:1px solid var(--yamabuki-line); border-radius:var(--r-sm); padding:3px 10px; white-space:nowrap; }
+  .clear.attn .st-bad { color:var(--bengara); font-weight:500; }
+  .clear.attn .st-changed { color:var(--ai); font-weight:500; }
+  .clear.attn .qopen { color:var(--yamabuki); font-weight:500; }
   .qwrap { position:relative; display:inline-flex; align-items:center; }
   .qx { position:absolute; right:6px; border:0; background:transparent; cursor:pointer;
     color:var(--ink-4); font-size:var(--t-sm); padding:2px 4px; line-height:1; display:none; }
@@ -1480,23 +1588,47 @@ export function build () {
   /* Home cards only — this grid, the pointer cursor and the hover lift are the affordance of an
      openable row. Scoped to #home so it never leaks onto the plain block .card that _design.css
      gives the Setup view; an unscoped rule once split that form into two clipped columns. */
-  #home .card { display:grid; grid-template-columns:1fr 260px; gap:var(--s5); background:var(--card);
-    border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s4) var(--s5); cursor:pointer;
-    transition:border-color .12s, box-shadow .12s; }
+  /* Task 8 — the frozen mockup's card (2026-08-17): 1fr + a 300px right column; a large title with
+     the route in mono beneath; dashed hair-ruled requirement rows each LEADING with its status mark;
+     the right column stacks the proven pill, the unit · flow kind chips and the captioned still. */
+  #home .card { display:grid; grid-template-columns:1fr 300px; gap:var(--s5); background:var(--card);
+    border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s5); cursor:pointer;
+    box-shadow:var(--sh-sm); transition:border-color .12s, box-shadow .12s; }
   #home .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
   #home .card.gone { display:none; }
-  #home .card .cd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
-  #home .card .nm { font-size:var(--t-lg); letter-spacing:-.02em; }
-  #home .card .pcount { margin-left:auto; }
-  .rl { list-style:none; display:flex; flex-direction:column; gap:5px; margin:0; padding:0; }
-  .rl li { display:flex; gap:var(--s2); align-items:baseline; font-size:var(--t-sm); color:var(--ink-2); }
+  #home .card .cname { display:flex; align-items:center; gap:var(--s3); margin-bottom:2px; }
+  #home .card .nm { font-size:var(--t-xl); font-weight:500; letter-spacing:-.02em; }
+  #home .card .croute { font:var(--t-micro) var(--mono); color:var(--ink-4); margin-bottom:var(--s3); }
+  .rl { list-style:none; display:flex; flex-direction:column; margin:var(--s2) 0 0; padding:0; }
+  .rl li { display:flex; gap:9px; align-items:baseline; padding:4px 0; font-size:var(--t-sm); color:var(--ink-2);
+    border-top:1px dashed var(--hair); }
+  .rl li:first-child { border-top:0; }
   .rl li .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
-  .rl li.more { color:var(--ink-4); font-size:var(--t-xs); padding-left:calc(24px + var(--s2)); }
-  .cshot { aspect-ratio:16/10; border-radius:var(--r); border:1px solid var(--hair-2); overflow:hidden;
+  /* the status mark leads every row — the five-word vocabulary's marks in its hues (board R4), the
+     hue never alone because the GLYPH itself differs per state: ✓ ◈ ✗ ◌ ○ */
+  .rl li .mk { flex:none; width:14px; text-align:center; font-size:var(--t-sm); color:var(--ink-4); }
+  .rl li .mk.passed { color:var(--koke); } .rl li .mk.changed { color:var(--ai); }
+  .rl li .mk.failed { color:var(--bengara); } .rl li .mk.not-reached { color:var(--yamabuki); }
+  .rl li.more { color:var(--ink-4); font-size:var(--t-xs); padding-left:calc(24px + 14px + 18px); }
+  #home .card .cright { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  #home .card .metrics { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+  #home .card .pcount { border-radius:999px; padding:2px 10px; }
+  #home .card .kinds { display:flex; gap:6px; }
+  .kchip { display:inline-flex; align-items:center; gap:5px; font-size:var(--t-xs); border:1px solid var(--hair-2);
+    border-radius:999px; padding:2px 9px; color:var(--ink-2); background:var(--paper); }
+  .kchip .km { font-family:var(--mono); font-weight:500; }
+  .kchip.unit .km { color:var(--ai); }
+  .kchip.flow .km { color:var(--koke); }
+  .kchip.none { color:var(--ink-4); }
+  .cshot { width:300px; height:150px; border-radius:var(--r-sm); border:1px solid var(--hair); overflow:hidden;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); position:relative; }
   .cshot img { width:100%; height:100%; object-fit:cover; object-position:top left; display:block; }
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:18px; color:var(--ink-4); }
+  /* the "latest run · <id>" caption rides the still's top-left corner, on a paper wash so it reads
+     over any frame (--ink-3 on --paper: 5.9:1) */
+  .cshot .lrun { position:absolute; top:6px; left:8px; z-index:2; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm); padding:1px 5px; }
 
   /* THE FEATURE STRIP (board R16): six cards above the areas, each a link into the live example of
      itself on this board; the ✕ dismisses it — a client-side preference (localStorage), never
@@ -1535,7 +1667,10 @@ export function build () {
   .dth { flex:none; display:flex; align-items:center; gap:var(--s3);
     width:100%; padding:var(--s4) var(--s6);
     border-bottom:1px solid var(--hair); background:var(--paper); }
-  .dth h2 { font-size:17px; letter-spacing:-.02em; }
+  .dth h2 { font-size:var(--t-lg); font-weight:500; letter-spacing:-.02em; }
+  /* the screen's name with "area · route" beneath (Task 8, the mockup's .dname) */
+  .dth .dname { display:flex; flex-direction:column; gap:1px; }
+  .dth .dname .dsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
   .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
@@ -1610,8 +1745,22 @@ export function build () {
      rewrite (the full step record stays one click away behind the ⋯ menu's Steps window). */
   .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; }
   .fleft > .fread { flex:1; min-height:0; }
-  /* the behavior block LEADS the reading card — the shared _design.css .behavior grid, roomier here */
-  .fread > .behavior { margin:0 0 var(--s3); }
+  /* the behavior block LEADS the reading card — drawn as the mockup's bordered TABLE here (Task 8):
+     a tinted label column (GIVEN / WHEN 1 / THEN 1 …) ruled off on the right, every row hair-ruled,
+     a heavier rule opening each beat after the first, the Given row distinct; the text wraps in the
+     right column. The shared _design.css grid stays the baked source row's (hidden) shape.
+     Measured: --ink-3 on --wash 5.3:1 (the labels), on --canvas 5.8:1 (Given); --ink on --paper 16.8:1 (the text). */
+  .fread > .behavior { display:block; margin:0 0 var(--s4); padding:0; border:1px solid var(--hair);
+    border-radius:var(--r-md); overflow:hidden; }
+  .fread > .behavior .brow { display:grid; grid-template-columns:72px 1fr; border-top:1px solid var(--hair); }
+  .fread > .behavior .brow:first-child { border-top:0; }
+  .fread > .behavior .brow.beatstart { border-top:2px solid var(--hair-2); }
+  .fread > .behavior .blab { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); padding:10px var(--s3); background:var(--wash); border-right:1px solid var(--hair);
+    display:flex; align-items:flex-start; }
+  .fread > .behavior .bgiven .blab { background:var(--canvas); }
+  .fread > .behavior .blab .bno { font-size:9px; line-height:1; color:var(--ink-3); margin-left:4px; }   /* ink-3 on wash 5.3:1 (ink-4 measured 4.3 — under AA) */
+  .fread > .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
   /* the PROSE collapses beneath the shape (one click unfolds the authored requirement in full); a
      prose-only requirement has no shape to lead with, so its prose stays open — .noshape marks it */
   .fread .prose-t { font-size:var(--t-xs); color:var(--ink-3); background:none; border:0; padding:0;
@@ -1726,18 +1875,33 @@ export function build () {
   .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
   /* board R15: the divider between the run/log items and the authoring items in the proof ⋯ menu */
   .fmenupop .fmdiv { height:1px; margin:6px 4px; background:var(--hair); }
-  /* the requirement's own ⋯ (board R15) rides the reading card's meta line, pushed to its far edge */
+  /* the requirement's own ⋯ (board R15) rides the reading card's meta line, pushed to its far edge;
+     in Focus the position counter ("4 of 8", Task 8) sits just left of it */
   .frmeta .fmenu { margin-left:auto; }
+  .frmeta .fcount { margin-left:auto; font-size:var(--t-xs); color:var(--ink-3); white-space:nowrap; }
+  .frmeta .fcount + .fmenu { margin-left:0; }
   /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
-  .fpby { font-size:var(--t-md); color:var(--ink-2); margin-top:var(--s2); }
-  .fpby b { font-weight:500; }
-  .fprun { font-size:var(--t-sm); color:var(--ink-4); margin-top:3px; }
-  .fprun .tsha { font-family:var(--mono); color:var(--ink-3); border:1px solid var(--hair);
-    border-radius:var(--r-sm); padding:0 4px; background:var(--paper); }
+  /* Task 8 — the mockup's proof line: PROVEN BY [unit|flow] <test name> on ONE row (the kind chip
+     in its hue: unit = indigo tint, flow = moss tint — --ai on --ai-tint 7.6:1, --koke on --koke-tint 6.1:1) */
+  .fpby { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:24px; margin-top:var(--s2);
+    font-size:var(--t-sm); color:var(--ink); }
+  .fpby .fpl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+  .fpby .tone { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+  .fpby .tone .tn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:420px; }
+  .tk { font:var(--t-micro) var(--mono); text-transform:uppercase; letter-spacing:.05em; border-radius:var(--r-sm);
+    padding:1px 6px; flex:none; }
+  .tk.unit { color:var(--ai); background:var(--ai-tint); } .tk.flow { color:var(--koke); background:var(--koke-tint); }
+  /* the Changed drift reads on its own note beneath the line, exactly as the mockup draws it */
+  .feval .stalenote { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line);
+    border-radius:var(--r-sm); padding:6px 10px; margin-top:var(--s2); }
+  .feval .stalenote b { font-weight:500; }
+  /* the strip header: <test name> · proves R4 · run <id> — the name clipped before the facts are */
+  .fmbar .fmname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:0 1 auto; }
+  .fmbar .fmfacts { flex:none; white-space:nowrap; }
   .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
   .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
   .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
@@ -1762,19 +1926,28 @@ export function build () {
   .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:var(--s5) var(--s6);
     background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
   .dtfoot[hidden] { display:none; }
-  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s3); }
-  .fnav { width:24px; height:24px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-2); font-size:13px; line-height:1; }
+  /* Task 8 — the mockup's pager: 30px round pages with no border at rest (a hairline on hover), and
+     the "← → to review one by one" hint at the right (--ink-3 on --paper 6.4:1). The mockup INVERTS
+     the current page in sumi; the detail already spends its one inverted element on Run all (the
+     design system: exactly one per screen), so the current page wears a solid ink RING and a bold
+     number instead — a divergence listed for the human in the Task 8 report. */
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .fnav { min-width:30px; height:30px; border-radius:999px; border:1px solid transparent; background:none;
+    color:var(--ink-2); font:var(--t-sm) var(--mono); line-height:1; cursor:pointer; }
+  .fnav:hover { border-color:var(--hair-2); }
   .fnav:disabled { opacity:.35; cursor:default; }
   .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
   /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */
-  .fdot { width:23px; height:23px; border-radius:999px; border:1px solid var(--hair-2); background:var(--paper);
-    color:var(--ink-3); font:var(--t-xs) var(--mono); flex:none; padding:0;
+  .fdot { min-width:30px; height:30px; border-radius:999px; border:1px solid transparent; background:none;
+    color:var(--ink-2); font:var(--t-sm) var(--mono); flex:none; padding:0 4px; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center;
-    transition:transform .15s var(--sc-e, ease), box-shadow .15s ease, border-color .15s ease; }
-  .fdot:hover { border-color:var(--line3); }
-  .fdot.proven { background:var(--koke-tint); border-color:var(--koke-line); color:var(--koke); }
-  .fdot.unproven { background:var(--wash); }
+    transition:box-shadow .15s ease, border-color .15s ease; }
+  .fdot:hover { border-color:var(--hair-2); }
+  /* a page's STATE rides its number's hue — proven moss, unproven ink-3 — hue never alone: the
+     current page is the inverted one, the others plain */
+  .fdot.proven { color:var(--koke); }
+  .fdot.unproven { color:var(--ink-3); }
+  .fpk { color:var(--ink-3); font-size:var(--t-xs); margin-left:var(--s3); white-space:nowrap; }
   /* the gap between a jump-anchor (first/last page) and the sliding window — an inert ellipsis,
      muted so it reads as "there is more between" without competing with the numbered dots. */
   .fdotgap { flex:none; align-self:center; color:var(--ink-3); font:var(--t-xs) var(--mono);
@@ -1782,8 +1955,8 @@ export function build () {
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
      ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
      Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */
-  .fdot.cur { border-color:var(--ink); color:var(--ink); font-weight:500; transform:scale(1.1);
-    box-shadow:0 1px 2px rgba(28,27,24,.08); position:relative; z-index:1; }
+  .fdot.cur, .fdot.cur.proven, .fdot.cur.unproven { border-color:var(--ink); color:var(--ink); font-weight:500;
+    box-shadow:inset 0 0 0 1px var(--ink); position:relative; z-index:1; }
 
   /* the view TOGGLE in the detail header — Focus / Grid / Flow (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
@@ -2981,7 +3154,7 @@ export function build () {
 
 <div class="top">
   <div class="brand"><span class="logo"></span>specboard</div>
-  <span class="crumb">specboard · dogfooding itself</span>
+  <span class="crumb" data-project="${esc(ident.name)}">${esc(ident.crumb)}</span>
   <span class="grow"></span>
   <span class="chip run" id="runflag" hidden><span class="dot"></span>running — click to watch</span>
   <span id="shown" class="gbn" style="min-width:64px;text-align:right"></span>
@@ -3003,13 +3176,16 @@ export function build () {
 </div>
 
 <div class="wrap">
-  ${screens.length ? `<div class="clear">
-    <span class="chip ${failing ? 'bad' : changed ? 'changed' : 'ok'}"><span class="dot"></span>${failing ? `${failing} failing` : changed ? `${changed} changed` : 'nothing failing'}</span>
-    ${failing || changed ? [
-      failing ? `${failing} requirement${failing === 1 ? '' : 's'} failing` : '',
-      changed ? `${changed} changed since their proof — re-verify` : ''
-    ].filter(Boolean).join(' · ') + '.' : 'All requirements are proven or untested — nothing is failing.'}
-  </div>` : ''}
+  ${screens.length ? (failing || changed ? `<div class="clear attn">
+    <span class="qk">${failing + changed} need a look</span>
+    <span class="qt">${[
+      failing ? `<b class="st-bad">${failing} failed</b>` : '',
+      changed ? `<b class="st-changed">${changed} changed since their proof</b>` : ''
+    ].filter(Boolean).join(' · ')} — the honest drift, computed from the runs. <a class="qopen" href="#/${esc(attn0.s.name)}/${esc(attn0.r.id)}">Open ${esc(attn0.r.id)} →</a></span>
+  </div>` : `<div class="clear">
+    <span class="chip ok"><span class="dot"></span>nothing failing</span>
+    All requirements are proven or untested — nothing is failing.
+  </div>`) : ''}
   ${featStrip}
   <div id="home">
     ${groups}

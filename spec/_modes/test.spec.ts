@@ -257,6 +257,20 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(fbeh.locator('.brow')).toHaveCount(5)          // Given + 2 × (When → Then)
     await expect(fbeh).toContainText('a list with two items')
     await expect(fbeh).toContainText('you press Undo')
+    // THE BEHAVIOR TABLE (Task 8, the frozen mockup 2026-08-17): a bordered block, a TINTED label
+    // column carrying the beat NUMBERS (WHEN 1 / THEN 1 / WHEN 2 / THEN 2), each row hair-ruled and a
+    // heavier rule opening every beat after the first; the Given row carries no number
+    await expect(fbeh.locator('.brow.beatstart')).toHaveCount(1)
+    await expect(fbeh.locator('.brow').nth(3)).toHaveClass(/beatstart/)
+    await expect(fbeh.locator('.blab .bno')).toHaveText(['1', '1', '2', '2'])
+    await expect(fbeh.locator('.bgiven .bno')).toHaveCount(0)
+    expect(await fbeh.evaluate(el => getComputedStyle(el).borderTopWidth), 'the block is bordered').toBe('1px')
+    const lab = fbeh.locator('.brow').nth(1).locator('.blab')
+    expect(await lab.evaluate(el => getComputedStyle(el).backgroundColor), 'the label column is tinted').not.toBe('rgba(0, 0, 0, 0)')
+    expect(await lab.evaluate(el => getComputedStyle(el).borderRightWidth), 'the label column is ruled off').toBe('1px')
+    const rule1 = await fbeh.locator('.brow').nth(1).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
+    const rule3 = await fbeh.locator('.brow').nth(3).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
+    expect(rule3, 'a beat boundary rules heavier than a row').toBeGreaterThan(rule1)
     // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
     await expect(dt.locator('.fread .fbody')).toBeHidden()
     await dt.locator('.fread .prose-t').click()
@@ -448,10 +462,12 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       // the Focus proof line must AGREE with the chip (client.js:401 invariant) — a Changed requirement
       // WAS proved by a real passing test, so it reads "proved by …" and names the drift, never the
       // self-contradictory "covered by … passed — not passed yet".
+      // (Task 8: the proof header is the mockup's one line — `PROVEN BY [kind] <name>` — and the
+      // drift reads on its own stale note beneath it, exactly as the mockup draws it)
       const fpby = dt.locator('.focusov .feval .fpby')
-      await expect(fpby).toContainText('proved by')
+      await expect(fpby.locator('.fpl')).toHaveText('proven by')
       await expect(fpby).not.toContainText('not passed yet')
-      await expect(fpby).toContainText('re-verify')
+      await expect(dt.locator('.focusov .feval .stalenote')).toContainText('re-verify')
       // the MEDIA pane wears the pinned-era watermark (D2: changed = last proof media, watermarked)
       const media = dt.locator('.focusov .feval .fmedia')
       await expect(media.locator('.fmbar')).toContainText('pinned era')
@@ -464,7 +480,7 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(row.locator('.lst-head .lpf.passed')).toHaveCount(0)
       // …and the open row (the Focus body itself) names the drift on its proof line
       await row.locator('.lst-head').click()
-      await expect(row.locator('.lst-body .feval .fpby')).toContainText('re-verify')
+      await expect(row.locator('.lst-body .feval .stalenote')).toContainText('re-verify')
     }
   } finally { restore() }
 })
@@ -478,4 +494,46 @@ test('renders — the home banner counts a Changed requirement as drift', async 
     // the drift banner names the changed count — "… 1 changed since their proof"
     await expect(page.locator('.clear')).toContainText('1 changed since their proof')
   } finally { restore() }
+})
+
+// THE "NEED A LOOK" STRIP (Task 8, the frozen mockup 2026-08-17): with anything failed or changed
+// the strip reads `N need a look · X failed · Y changed since their proof — … Open <id> →`, the link
+// a deep link into the FIRST one's Focus. Both states injected at once so the counts and the sum are
+// all asserted together (the board's own tree is never naturally failed or changed on a green fold).
+test('renders — the home strip counts what needs a look and deep-links the first one', async ({ page }) => {
+  const bad = makeScreen('probe-attn-fail')
+  const chg = makeScreen('probe-attn-changed')
+  const failEntry = { ranAt: Date.now() + 100000, total: 1, failed: 1,
+    tests: [{ title: 'x', ok: false, error: 'expected 2 · got 1', reqs: { [`${bad.name}:R1`]: 'fail' } }] }
+  const restoreA = injectIndex(bad.name, failEntry)
+  const restoreB = injectIndex(chg.name)
+  try {
+    const card = page.locator('#home .card[data-screen="' + chg.name + '"]')
+    await settleAt(page, '/', card)
+    const strip = page.locator('.clear.attn')
+    await expect(strip).toHaveCount(1)
+    // the two counts named, and their SUM as the headline — the probes are the only failed/changed
+    // requirements on a green tree, but a stale dogfood fold may add its own: read the parts and
+    // check the sum, so the assertion bites on the arithmetic and never on a lucky tree
+    await expect(strip).toContainText(/\d+ failed/)
+    await expect(strip).toContainText(/\d+ changed since their proof/)
+    const txt = (await strip.textContent()) || ''
+    const need = Number((/(\d+) need a look/.exec(txt) || [])[1])
+    const failed = Number((/(\d+) failed/.exec(txt) || [])[1])
+    const changed = Number((/(\d+) changed since/.exec(txt) || [])[1])
+    expect(failed).toBeGreaterThanOrEqual(1)
+    expect(changed).toBeGreaterThanOrEqual(1)
+    expect(need, 'need a look = failed + changed').toBe(failed + changed)
+    // "Open R1 →" deep-links the FIRST requirement that needs a look into its Focus reader
+    const link = strip.locator('a.qopen')
+    await expect(link).toHaveText(/^Open R\d+ →$/)
+    const href = await link.getAttribute('href')
+    expect(href).toMatch(/^#\/[a-z0-9_-]+\/R\d+$/)
+    await link.click()
+    const scr = href!.split('/')[1]
+    const rid = href!.split('/')[2]
+    const dt = page.locator('.dt[data-screen="' + scr + '"]:not([hidden])')
+    await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(rid)
+    await expect(dt.locator('.focusov .fread .fchip')).toHaveText(/Failed|Changed/)
+  } finally { restoreB(); restoreA() }
 })
