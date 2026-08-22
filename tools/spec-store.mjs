@@ -137,7 +137,9 @@ const QUOTED = String.raw`(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")`
 export function parseTestPlan (src) {
   const s = String(src || '')
   // split into per-test blocks at each top-level test('…' / test("…"
-  const testRe = new RegExp(String.raw`\btest\s*\(\s*` + QUOTED, 'g')
+  // anchored at line start (task-5 review B-4): a `test(` quoted in a string or a comment is not a
+  // test — it once baked a phantom case the dispatch R8 sweep then failed on honestly
+  const testRe = new RegExp(String.raw`^[ \t]*test\s*\(\s*` + QUOTED, 'gm')
   const marks = []
   let m
   while ((m = testRe.exec(s))) marks.push({ title: unquote(m[1] ?? m[2]), at: m.index, bodyAt: testRe.lastIndex })
@@ -378,6 +380,13 @@ function aggFor (results) {
   if (!a) { a = aggregateCoverage(key); _aggCache.set(key, a) }
   return a
 }
+// A pass counts only while CURRENT: stale if it predates a change to a source of EITHER the screen
+// whose test file produced it OR the requirement's own screen (task-5 review B-3 — a cross-screen
+// beat's assertion lives in the requirement's screen's steps.ts, e.g. dispatch:R7 proven from the
+// board's file). Pure; unit-tested in tools/stale-proof.test.mjs. Fails are never stale.
+export function passStale (e, screen, srcMs) {
+  return e.status === 'pass' && e.ranAt != null && e.ranAt < Math.max(srcMs(e.screen) || 0, srcMs(screen) || 0)
+}
 function enrichReqs (reqs, screen, results) {
   const agg = aggFor(results)
   const srcCache = {}
@@ -392,7 +401,7 @@ function enrichReqs (reqs, screen, results) {
       // that produced it (prd.md / test.spec.ts) — the proof then describes a version that has moved.
       // Editing a requirement is exactly such a change: it touches prd.md, so that screen's proofs go
       // stale by source and the requirement reads unproven until re-run — no gate needed to notice.
-      stale: e.status === 'pass' && e.ranAt != null && e.ranAt < srcMs(e.screen)
+      stale: passStale(e, screen, srcMs)
     }))
     const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
     // deriveReqStatus must see the SAME staleness filter hasCurrentPass does — a stale pass is

@@ -47,6 +47,9 @@ function bracketSlice (src, at, open, close) {
   return null
 }
 
+// a beat's fn is interpolated raw into `await <fn>(page, state)` — only a plain identifier may pass
+const isIdent = s => /^[A-Za-z_$][\w$]*$/.test(String(s || ''))
+
 export function parseBeats (src) {
   const s = String(src || '')
   let given = null
@@ -55,7 +58,7 @@ export function parseBeats (src) {
     const body = bracketSlice(s, gm.index + gm[0].length - 1, '{', '}')
     if (body != null) {
       const fn = strKey(body, 'fn')
-      if (fn) given = { fn, text: strKey(body, 'text'), gives: arrKey(body, 'gives') }
+      if (isIdent(fn)) given = { fn, text: strKey(body, 'text'), gives: arrKey(body, 'gives') }
     }
   }
   const beats = []
@@ -71,8 +74,9 @@ export function parseBeats (src) {
         const fn = strKey(obj, 'fn')
         const proves = strKey(obj, 'proves')
         const name = strKey(obj, 'name')
-        // an entry missing any of the three is not a callable beat — skipped, never guessed at
-        if (fn && proves && name) {
+        // an entry missing any of the three is not a callable beat — skipped, never guessed at; and
+        // fn must be a plain identifier, because the emitter interpolates it as a CALL (B-6)
+        if (isIdent(fn) && proves && name) {
           beats.push({ fn, proves, name, needs: arrKey(obj, 'needs'), gives: arrKey(obj, 'gives') })
         }
         i += obj.length + 2
@@ -206,12 +210,26 @@ const coversOf = (picked, start) => {
   return out
 }
 
+// ── validFlowName — the title lands in a string literal AND a // comment of an executed file ──
+// (task-5 review B-2) a line terminator (\n, \r, U+2028/9) would end the header comment while
+// staying legal in the literal — top-level code in a file Playwright runs; any control character is
+// refused for the same reason, and the length is capped so a title stays a title.
+export const validFlowName = name => {
+  const t = String(name || '')
+  return t.length > 0 && t.length <= 200 && !/[\u0000-\u001f\u007f\u2028\u2029]/.test(t)
+}
+
 // ── composeCheck — every reason the deterministic emitter must refuse ─────
 // The server re-derives the library and asks THIS before writing anything; the client's button is
 // a rendering of the same answer, never the authority.
 export function composeCheck ({ nodes, givens, chain, name, existing }) {
   const c = chain || []
   if (!c.length) return { ok: false, error: 'chain at least one beat first' }
+  // the name is checked BEFORE proof: a malformed title is refused the same way whatever the fold
+  // says (fix round 1 — the stale-beat refusal used to shadow it)
+  const title = String(name || '').trim()
+  if (!title) return { ok: false, error: 'name the flow first' }
+  if (!validFlowName(title)) return { ok: false, error: 'the flow name must be one line of printable text, at most 200 characters' }
   for (const id of c) if (!nodeOf(nodes, id)) return { ok: false, error: `no such beat: ${id}` }
   const picked = c.map(id => nodeOf(nodes, id))
   const comp = composable(nodes, c)
@@ -225,8 +243,6 @@ export function composeCheck ({ nodes, givens, chain, name, existing }) {
   const v = validateChain(nodes, c, given.gives)
   const gap = v.find(x => x.missing.length)
   if (gap) return { ok: false, error: `the chain breaks before "${gap.node.name}" — needs ${gap.missing.join(' · ')}` }
-  const title = String(name || '').trim()
-  if (!title) return { ok: false, error: 'name the flow first' }
   if (existing && flowLanded(existing, title)) {
     return { ok: false, error: `a test named "${title}" already exists in spec/${start}/test.spec.ts` }
   }
@@ -250,12 +266,17 @@ export function mergeImports (existing, module, names) {
     return src.replace(re, `import { ${have.concat(add).join(', ')} } from '${module}'`)
   }
   const line = `import { ${names.join(', ')} } from '${module}'`
-  const imports = [...src.matchAll(/^import .*$/gm)]
-  if (imports.length) {
-    const last = imports[imports.length - 1]
-    const at = last.index + last[0].length
-    return src.slice(0, at) + '\n' + line + src.slice(at)
+  // after the LEADING import block only (B-7): walk from the top over import / comment / blank
+  // lines and remember the last import seen — a mid-file import, or an `import` line inside a
+  // template string further down, is never the anchor
+  let at = -1
+  let pos = 0
+  for (const l of src.split('\n')) {
+    if (/^import\b/.test(l)) at = pos + l.length
+    else if (!(/^\s*$/.test(l) || /^\s*\/\//.test(l))) break
+    pos += l.length + 1
   }
+  if (at >= 0) return src.slice(0, at) + '\n' + line + src.slice(at)
   return line + '\n' + src
 }
 
@@ -299,7 +320,10 @@ ${body}
   need(module(start), given.fn)
   for (const n of picked) need(module(n.screen), n.fn)
 
-  let src = existing != null ? String(existing) : "import { test, checkReq, coverReqs, flowStep } from '../_base'\n"
+  // the harness names are merged into an EXISTING file too (B-1): a screen whose spec imports only
+  // { test, expect } would otherwise call coverReqs/checkReq/flowStep unimported and break its suite
+  let src = existing != null ? String(existing) : ''
+  src = mergeImports(src, '../_base', ['test', 'checkReq', 'coverReqs', 'flowStep'])
   for (const [mod, fns] of byModule) src = mergeImports(src, mod, fns)
   const text = src.replace(/\n*$/, '\n') + block
   return { path: `spec/${start}/test.spec.ts`, text, testTitle: title, covers, start }
@@ -338,7 +362,9 @@ Discipline (kg-e2e): failing test FIRST · every Then a real assertion · checkR
 // endpoint asks it to refuse a duplicate. Titles compare unescaped, exactly.
 export function flowLanded (src, title) {
   const want = String(title)
-  for (const m of String(src || '').matchAll(/\btest\s*\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g)) {
+  // anchored at line start (B-4): a title merely QUOTED in a comment, a string or a prompt echo must
+  // never report "landed" — this is the claude job's success oracle
+  for (const m of String(src || '').matchAll(/^[ \t]*test\s*\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/gm)) {
     const t = String(m[1] ?? m[2]).replace(/\\(['"\\])/g, '$1')
     if (t === want) return true
   }

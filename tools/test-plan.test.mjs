@@ -50,3 +50,16 @@ test("A requirement expands; a test leads with its flow name", async ({ page }) 
   assert.equal(plans[0].title, 'A requirement expands; a test leads with its flow name')
   assert.deepEqual(plans[0].steps, [{ kind: 'flow', text: "Edit a draft unit's Net rent" }])
 })
+
+// fix round 1 (task-5 review B-4): the scanner is anchored at line start, so a test( quoted inside
+// a string, a regex or a comment is never baked as a phantom case
+test('a test( sequence inside a string or a comment is not a test', () => {
+  const src = `
+test('real', async ({ page }) => {
+  // test('commented out')
+  expect(out.text).toContain("test('scratch flow'")
+})
+`
+  const plans = parseTestPlan(src)
+  assert.deepEqual(plans.map(p => p.title), ['real'])
+})

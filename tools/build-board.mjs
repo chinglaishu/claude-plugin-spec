@@ -1269,6 +1269,13 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
   </div>
 </section>`
 
+// The JSON island's serializer (task-5 review B-5): the island carries prd text (titles, Then lines),
+// so `<` `>` `&` and the U+2028/9 line terminators are \u-escaped — a title containing </script>
+// can neither end the script nor trip the build's parse guard. Plain JSON.parse reads it back.
+export const islandJson = data => JSON.stringify(data)
+  .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+  .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
+
 export function build () {
   const screens = allScreens()
   const areas = sortedAreas(screens)
@@ -3206,7 +3213,7 @@ ${howView(ctaAction)}
 </div>
 ${detail}
 
-<script>window.__BOARD__ = ${JSON.stringify(BOARD_DATA)}</script>
+<script>window.__BOARD__ = ${islandJson(BOARD_DATA)}</script>
 <script>${clientJs}</script>
 `
 

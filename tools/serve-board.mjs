@@ -20,7 +20,7 @@ import {
 // pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
 import { deriveChapters, deriveKind } from './flow.mjs'
 // pure (no fs) — the flow composer's library derivation, joint check, emitter and prompt (Task 5)
-import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded } from './compose.mjs'
+import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded, validFlowName } from './compose.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
 // BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
@@ -539,6 +539,8 @@ function startComposeJob ({ chain, name }) {
   for (const id of c) if (!nodes.find(n => n.id === id)) { const e = new Error(`no such beat: ${id}`); e.status = 400; throw e }
   const title = String(name || '').trim()
   if (!title) { const e = new Error('name the flow first'); e.status = 400; throw e }
+  // the title lands in the prompt and is flowLanded's oracle — one printable line only (B-2)
+  if (!validFlowName(title)) { const e = new Error('the flow name must be one line of printable text, at most 200 characters'); e.status = 400; throw e }
   const start = nodes.find(n => n.id === c[0]).screen
   const file = join(SPEC, start, 'test.spec.ts')
   runJob({
@@ -1041,8 +1043,14 @@ const server = createServer(async (req, res) => {
   // Running the suite is a fixed, known command — not arbitrary execution — but it is still a
   // POST that starts a process, so a cross-site page must not be able to trigger it. Same-origin
   // when a browser sends an Origin; tools without one (curl, the test suite) are unaffected.
+  // (task-5 review B-2 re-checked this guard: it sits BEFORE every POST handler, the compose ones
+  // included, and a browser always sends Origin on a cross-site POST — text/plain "simple" requests
+  // too. Widened so a board served on a hostname other than localhost accepts its OWN origin: the
+  // Origin must match the request's Host, or be the loopback forms of this port.)
   const origin = req.headers.origin
-  const sameOrigin = !origin || origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}`
+  const host = String(req.headers.host || '')
+  const sameOrigin = !origin || origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}` ||
+    (host && (origin === `http://${host}` || origin === `https://${host}`))
   if (req.method === 'POST' && !sameOrigin) {
     res.writeHead(403, { 'content-type': 'text/plain' }); res.end('cross-origin refused'); return
   }

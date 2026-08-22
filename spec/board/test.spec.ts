@@ -1535,36 +1535,51 @@ test('The compose endpoint composes deterministically and refuses honestly — n
   // follows the board's own derived state (the dogfood lag: a source edit stales a proof until the
   // next fold, and the honest answer then is a refusal naming the beat, never a composed file)
   const status = async (rid: string) => dt.locator('.reqpane .req[data-r="' + rid + '"]').getAttribute('data-status')
-  const proven = (await status('R1')) === 'passed' && (await status('R2')) === 'passed' && (await status('R13')) === 'passed'
+  // the two chained beats' gate (R1, R2) and the gap case's gate (R13) are SEPARATE — R13 is tagged
+  // by this very test, so one red run must not drag the chain's expectation with it
+  const proven = (await status('R1')) === 'passed' && (await status('R2')) === 'passed'
+  const proven13 = (await status('R13')) === 'passed'
   await checkReq('R13', async () => {
     const ok = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
     if (proven) {
-      expect(ok.status()).toBe(200)
+      expect(ok.status(), 'compose (R1, R2 proven): ' + await ok.text()).toBe(200)
       const out = await ok.json()
       expect(out.path).toBe('spec/board/test.spec.ts')
       expect(out.dryRun).toBe(true)
-      // (the call is spelled without the `test(` sequence — flowLanded AND parseTestPlan scan THIS file
-      // too, and the literal would read as a landed test / a 29th baked case titled by the remainder)
-      expect(out.text).toContain(['te', 'st'].join('') + "('scratch flow'")
+      // (this literal once baked a phantom 29th case — both scanners are anchored at line start now,
+      // fix round 1 B-4, so a quoted test( inside a string is exactly what this line also proves)
+      expect(out.text).toContain("test('scratch flow'")
       expect(out.text).toContain("coverReqs('R1', 'R2')")
       expect(out.text).toContain("checkReq('R1', async () => { await countHomeCards(page, state) })")
       expect(out.text).toContain('const state = await openBoardHome(page)')
-      // the gap: toggleViews needs `detail` and nothing before it gives it
-      const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
-      expect(gap.status()).toBe(409)
-      expect(await gap.text()).toMatch(/needs detail/)
-      // no name: refused before anything is written
-      const noname = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: '  ', dryRun: true } })
-      expect(noname.status()).toBe(409)
-      expect(await noname.text()).toMatch(/name the flow/i)
     } else {
       // not currently proven ⇒ refused, the stale beat named — the emitter never composes on a stale Then
-      expect(ok.status()).toBe(409)
+      expect(ok.status(), 'compose (R1/R2 not proven): ' + await ok.text()).toBe(409)
       expect(await ok.text()).toMatch(/not function-shaped \+ proven/)
     }
+    // the gap: toggleViews needs `detail` and nothing before it gives it (its own beat proven, else
+    // the composable check refuses first and names R13 — both honest)
+    const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
+    expect(gap.status(), await gap.text()).toBe(409)
+    expect(await gap.text()).toMatch(proven13 ? /needs detail/ : /R13 is not function-shaped/)
+    // no name: refused before anything else, whatever the fold says
+    const noname = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: '  ', dryRun: true } })
+    expect(noname.status(), await noname.text()).toBe(409)
+    expect(await noname.text()).toMatch(/name the flow/i)
+    // a flow name that is not one printable line is refused whatever the fold says (B-2): a line
+    // terminator would end the composed header comment inside a file Playwright executes
+    const nl = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: 'a\nb', dryRun: true } })
+    expect(nl.status(), await nl.text()).toBe(409)
+    expect(await nl.text()).toMatch(/flow name/i)
+    const nlj = await request.post('/api/compose-job', { data: { chain: ['b:board:countHomeCards'], name: 'a\u2028b' } })
+    expect(nlj.status(), await nlj.text()).toBe(400)
+    expect(await nlj.text()).toMatch(/flow name/i)
+    // and a cross-site page cannot reach either path: a foreign Origin is refused before any handler
+    const xo = await request.post('/api/compose', { headers: { origin: 'http://evil.example' }, data: { chain: ['b:board:countHomeCards'], name: 'x', dryRun: true } })
+    expect(xo.status(), await xo.text()).toBe(403)
     // an inline beat: the deterministic path refuses whatever the fold says, naming the Claude path
     const inl = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'i:board:R3'], name: 'inline', dryRun: true } })
-    expect(inl.status()).toBe(409)
+    expect(inl.status(), await inl.text()).toBe(409)
     expect(await inl.text()).toMatch(/R3/)
     expect(await inl.text()).toMatch(/not function-shaped \+ proven — the Claude path/)
     // the Claude path: an empty chain is refused up front — no detached claude job is ever spawned

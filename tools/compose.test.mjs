@@ -19,7 +19,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  parseBeats, deriveLibrary, validateChain, fillerFor, composable,
+  parseBeats, deriveLibrary, validateChain, fillerFor, composable, validFlowName, mergeImports,
   composeCheck, emitFlow, composePrompt, flowLanded
 } from './compose.mjs'
 
@@ -322,4 +322,53 @@ test('flowLanded is true only when a test with exactly that title exists in the 
   assert.equal(flowLanded("test('My flow extended', () => {})", 'My flow'), false)
   assert.equal(flowLanded('', 'My flow'), false)
   assert.equal(flowLanded("test('the human\\'s flow', () => {})", "the human's flow"), true)
+})
+
+// ── fix round 1 (task-5 review, 2026-08-22) ───────────────────────────────
+test('B-1: emitting into an EXISTING file that lacks the harness names merges them into its ../_base import', () => {
+  const a = okArgs()
+  a.chain = ['b:board:openBoardReader']
+  a.existing = "import { test, expect } from '../_base'\n\ntest('unrelated', async () => {})\n"
+  const t = emitFlow(a).text
+  assert.equal(t.match(/from '\.\.\/_base'/g).length, 1)
+  assert.match(t, /import \{ test, expect, checkReq, coverReqs, flowStep \} from '\.\.\/_base'/)
+})
+
+test('B-2: a flow name with a line terminator, a control character or over 200 chars is refused — never emitted', () => {
+  for (const bad of ['a\nb', 'a\rb', 'x y', 'x y', 'tab\there', 'nul ', 'del', 'y'.repeat(201)]) {
+    const a = okArgs(); a.name = bad
+    const chk = composeCheck(a)
+    assert.equal(chk.ok, false, JSON.stringify(bad))
+    assert.match(chk.error, /flow name/i)
+    assert.throws(() => emitFlow(a))
+  }
+  assert.equal(validFlowName('Home to the List — composed'), true)
+  assert.equal(validFlowName('y'.repeat(200)), true)
+})
+
+test('B-4: flowLanded matches a test() call only at the start of a line — never one quoted in a string or comment', () => {
+  assert.equal(flowLanded("// test('X')\nconst s = \"test('X')\"\n", 'X'), false)
+  assert.equal(flowLanded("  test('X', async () => {})\n", 'X'), true)
+  assert.equal(flowLanded("test('X', async () => {})", 'X'), true)
+})
+
+test('B-6: parseBeats skips an entry whose fn is not a plain identifier (it is interpolated as a call)', () => {
+  const src = `export const BEATS = [
+  { fn: 'good_1', proves: 'R1', name: 'ok', needs: [], gives: [] },
+  { fn: 'evil(); x', proves: 'R2', name: 'bad', needs: [], gives: [] },
+  { fn: '1abc', proves: 'R3', name: 'bad', needs: [], gives: [] }
+]
+export const GIVEN = { fn: 'seed()', text: 't', gives: [] }`
+  const p = parseBeats(src)
+  assert.deepEqual(p.beats.map(b => b.fn), ['good_1'])
+  assert.equal(p.given, null)
+})
+
+test('B-7: mergeImports adds a new module after the LEADING import block, not after a mid-file import', () => {
+  const src = "import { test } from '../_base'\nimport { a } from './steps'\n\ntest('x', async () => {})\n" +
+    "import { late } from 'node:fs'\nconst s = `\nimport { fake } from \"nowhere\"\n`\n"
+  const out = mergeImports(src, '../dispatch/steps', ['r'])
+  const lines = out.split('\n')
+  assert.equal(lines[2], "import { r } from '../dispatch/steps'")
+  assert.equal(out.match(/from '\.\.\/dispatch\/steps'/g).length, 1)
 })
