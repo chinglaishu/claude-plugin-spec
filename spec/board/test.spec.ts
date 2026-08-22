@@ -731,13 +731,15 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
   })
 })
 
-// Board R13 — the FLOW view, proven against a DETERMINISTIC record (the R10 stub pattern): chapters
-// are derived SERVER-side (tools/flow.mjs) and ride the folded record like the proof frames do, so
-// the client is driven here with a fabricated record whose flow crosses screens and breaks mid-way.
-// The honesty guarantee is the point: a failing chapter stops the playback, and everything after it
-// — recorded green or never reached at all — reads NOT-REACHED, so a Flow view can never present a
-// broken run as fully green (rule 3).
-test('Flow plays a run as chapters — a failing chapter stops it and the rest reads not-reached', async ({ page }) => {
+// Board R13 — the FLOW view against the frozen mockup contract (the signed sentence, 2026-08-21):
+// the chapter rail on the LEFT, the player on the RIGHT, each scrolling on its own (R2's principle),
+// with the rail as the SCRUBBER over the ONE recording. Proven against a DETERMINISTIC record (the
+// R10 stub pattern): chapters are derived SERVER-side (tools/flow.mjs) and ride the folded record
+// like the proof frames do, so the client is driven with a fabricated record whose flow crosses
+// screens and breaks mid-way. The honesty guarantee stays the point: a failing chapter stops the
+// playback, and everything after it — recorded green or never reached at all — reads NOT-REACHED,
+// so a Flow view can never present a broken run as fully green (rule 3).
+test('Flow reads like Focus — the rail on the left scrubs the one recording, a failure stops it and the rest reads not-reached', async ({ page }) => {
   await coverReqs('R13')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -756,7 +758,8 @@ test('Flow plays a run as chapters — a failing chapter stops it and the rest r
 
     // (1) STUB a flow record: three reached chapters (fabricated in the exact shape flow.mjs emits),
     // the SECOND one failing, plus a declared coverReqs set naming two screens the flow never
-    // reached — dispatch (has a card) and howitworks (a hash route with NO card; must never crash)
+    // reached — dispatch (has a card) and howitworks (a hash route with NO card; must never crash).
+    // The record also carries harvested proof FRAMES (Task 15) — the rail's chapter thumbnails.
     const chapters = [
       { title: 'Open the board detail', screen: 'board', t: 0, reqs: ['R1'], ok: true },
       { title: 'Cross to conflicts — the count agrees', screen: 'conflicts', t: 2000, reqs: ['R2'], ok: false },
@@ -771,8 +774,12 @@ test('Flow plays a run as chapters — a failing chapter stops it and the rest r
       { label: 'Open /#/board', cat: 'pw:api', depth: 1, ok: true, t: 4000, d: 100 },
       { label: 'proves R10', cat: 'test.step', depth: 1, ok: true, t: 4100, d: 50 }
     ]
+    const frames = [
+      { img: 'spec/board/screen.png', ok: true, cap: 'cards on the home board — got 4 · expected 4', req: 'R1', t: 150 },
+      { img: 'spec/board/screen.png', ok: false, cap: 'The open count — got 1 · expected 2', req: 'conflicts:R2', t: 2200 }
+    ]
     const caseRec = {
-      shots: [], video: 'spec/_runs/rfl/a.webm', steps, log: 'x', kind: 'flow', chapters,
+      shots: [], video: 'spec/_runs/rfl/a.webm', steps, frames, log: 'x', kind: 'flow', chapters,
       reqs: ['board:R1', 'conflicts:R2', 'board:R10', 'dispatch:R7', 'howitworks:R2'],
       at: '2026-08-18T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
     }
@@ -785,55 +792,129 @@ test('Flow plays a run as chapters — a failing chapter stops it and the rest r
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()   // the fold settled
 
-    // (2) the toggle's third view — Flow — shows the chaptered player; no reader, no columns
+    // (2) the toggle's third view — Flow — no reader, no columns; ABOVE the split, the flow
+    // SELECTOR row: one pill per flow, plus ＋ New flow keeping the CURRENT prompt-modal behavior
+    // (the composer is Task 5 — the board hands Claude the prompt, it writes nothing)
     await dt.locator('.viewseg .vseg[data-view="flow"]').click()
     await expect(dt.locator('.viewseg .vseg[data-view="flow"]')).toHaveClass(/\bon\b/)
     await expect(dt.locator('.focusov')).toHaveCount(0)
     await expect(dt.locator('.cols')).toBeHidden()
     const fv = dt.locator('.flowview')
     await expect(fv).toBeVisible()
+    const sel = fv.locator('.flowsel')
+    await expect(sel.locator('.fsel', { hasText: R1_TITLE })).toHaveClass(/\bon\b/)  // the recorded flow leads
+    // a flow-kind PLAN with no record still gets its pill — derived from the baked source, honestly unrun
+    await expect(sel.locator('.fsel', { hasText: STORY_TITLE })).toContainText('not run yet')
+    const plus = sel.locator('.fsel.newflow')
+    await expect(plus).toContainText('New flow')
+    await plus.click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody')).toContainText('spec/board/test.spec.ts')
+    await page.locator('#promptsheet [data-promptclose]').click()
 
-    // (3) the first test's block: ONE recording, PAUSED at start (manual advance), read as chapters
-    const fl = fv.locator('.fltest').first()
-    await expect(fl.locator('.flttl')).toHaveText(R1_TITLE)
-    await expect(fl.locator('.flkind')).toHaveText('flow')
-    await expect(fl.locator('.flplayer video')).toHaveCount(1)      // ONE video, seeked — never cut
-    await expect(fl.locator('.flplayer video')).toHaveJSProperty('paused', true)
-    const chaps = fl.locator('.flchap')
-    await expect(chaps).toHaveCount(5)   // 3 reached + dispatch + howitworks, declared-never-reached
-    await expect(chaps.nth(0).locator('.flstage')).toHaveText('Open the board detail')
-    await expect(chaps.nth(1).locator('.flstage')).toHaveText('Cross to conflicts — the count agrees')
+    // (3) THE SPLIT (the signed R13 sentence — R2's principle): the chapter rail LEFT, the player
+    // RIGHT, each scrolling on its OWN — and neither scrolls the page
+    const split = fv.locator('.flsplit')
+    await expect(split).toHaveCount(1)
+    for (const s of ['.flrail', '.flmain']) {
+      const o = await split.locator(s).evaluate(el => getComputedStyle(el).overflowY)
+      expect(['auto', 'scroll'], s + ' must scroll on its own').toContain(o)
+    }
+    expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
+    // the ONE recording, PAUSED — the rail seeks it, never cuts it
+    const video = split.locator('.flmain video')
+    await expect(video).toHaveCount(1)
+    await expect(video).toHaveJSProperty('paused', true)
+    // the slim header: flow name + duration + run + ⋯ (Edit / open recording / Remove — R15 handoff)
+    await expect(split.locator('.flhead .flttl')).toHaveText(R1_TITLE)
+    await expect(split.locator('.flhead .flmeta')).toContainText('run abc1234')
+    await expect(split.locator('.flhead .flmeta')).toContainText('cross-screen')
+    await split.locator('.flhead .fmenubtn').click()
+    const pop = split.locator('.flhead .fmenupop')
+    await expect(pop.locator('button', { hasText: 'Edit this flow' })).toHaveCount(1)
+    await expect(pop.locator('button', { hasText: 'Remove' })).toHaveCount(1)
+    await expect(pop.locator('button', { hasText: 'recording' })).toHaveCount(1)
+    await split.locator('.flhead .fmenubtn').click()   // close the menu again
+
+    // (4) the RAIL derives everything from the record: 5 rows — 3 reached + 2 declared-never-reached
+    const chaps = split.locator('.chstrip .ch')
+    await expect(chaps).toHaveCount(5)
+    await expect(chaps.nth(0).locator('.chno')).toContainText('beat 1')
+    await expect(chaps.nth(0).locator('.chname')).toContainText('Open the board detail')
     await expect(chaps.nth(0)).toHaveClass(/\bp\b/)
-    await expect(chaps.nth(0).locator('.flmk')).toHaveText('✓')
+    await expect(chaps.nth(0).locator('.chmk')).toHaveText('✓')     // a done chapter carries its ✓
     await expect(chaps.nth(0).locator('.flreq[data-r="R1"]')).toHaveCount(1)
-
-    // (4) the FAILING chapter is marked and NAMES its failing beat…
+    await expect(chaps.nth(0).locator('.thumb img')).toHaveCount(1) // the harvested frame is the thumbnail
+    // the FAILING chapter wears its mark and NAMES its failing beat…
     await expect(chaps.nth(1)).toHaveClass(/\bf\b/)
-    await expect(chaps.nth(1).locator('.flmk')).toHaveText('✗')
+    await expect(chaps.nth(1).locator('.chmk')).toHaveText('✗')
     await expect(chaps.nth(1)).toContainText('got 1 · expected 2')
     // …and RULE 3: the chapter AFTER it was recorded GREEN (ok:true in the stub) but follows a
-    // failure, so it must read NOT-REACHED — this fails if the player shows it green
+    // failure, so it must read NOT-REACHED — this fails if the rail shows it green
     await expect(chaps.nth(2)).toHaveClass(/\bnr\b/)
     await expect(chaps.nth(2)).not.toHaveClass(/\bp\b/)
-    await expect(chaps.nth(2).locator('.flmk')).toHaveText('◌')
-    // the declared coverReqs screens the flow never reached trail as not-reached chapters —
-    // dispatch's chip is a real link (it has a card); howitworks renders its id INERTLY, no crash
+    await expect(chaps.nth(2).locator('.chmk')).toHaveText('◌')
+    // the declared coverReqs screens the flow never reached trail as not-reached rows — dispatch's
+    // chip is a real link (it has a card); howitworks renders its id INERTLY, no crash
     await expect(chaps.nth(3)).toHaveClass(/\bnr\b/)
     await expect(chaps.nth(3).locator('.flreq[data-r="R7"]')).toHaveCount(1)
     await expect(chaps.nth(4)).toHaveClass(/\bnr\b/)
     await expect(chaps.nth(4).locator('.flreq.inert')).toHaveCount(1)
+    // a not-reached row is a rendered absence — never a seek target
+    expect(await chaps.nth(2).evaluate(el => el.tagName)).not.toBe('BUTTON')
 
-    // (5) a test with NO recorded run shows the honest placeholder — never fake chapters
-    await expect(fv.locator('.fltest .flnone').first()).toContainText('Not run yet')
+    // (5) THE RAIL IS THE SCRUBBER: clicking a chapter seeks the player, RINGS the current one and
+    // captions it; clicking the FAILING chapter stops the playback there — the banner names the
+    // failing beat and NEVER overlaps the caption (the caption clears while the banner shows)
+    await chaps.nth(0).locator('.chname').click()
+    await expect(chaps.nth(0)).toHaveClass(/\bcur\b/)
+    await expect(split.locator('.flcap')).toContainText('chapter 1 of 5')
+    await expect(split.locator('.flcap')).toContainText('proves R1')
+    await chaps.nth(1).locator('.chname').click()
+    await expect(chaps.nth(1)).toHaveClass(/\bcur\b/)
+    await expect(chaps.nth(0)).not.toHaveClass(/\bcur\b/)
+    const banner = split.locator('.flbanner')
+    await expect(banner).toHaveClass(/\bshow\b/)
+    await expect(banner).toHaveClass(/\bbad\b/)
+    await expect(banner).toContainText('the flow stopped here')
+    await expect(banner).toContainText('got 1 · expected 2')
+    await expect(banner.locator('.flgo')).toHaveCount(1)            // ⟳ replay, right in the banner
+    await expect(split.locator('.flcap')).toHaveText('')
+    // seeking back to a green chapter clears the banner and the caption returns
+    await chaps.nth(0).locator('.chname').click()
+    await expect(banner).not.toHaveClass(/\bshow\b/)
+    await expect(split.locator('.flcap')).toContainText('chapter 1 of 5')
+    // the player carries its own small ⟳ replay
+    await expect(split.locator('.flreplay')).toHaveCount(1)
+    // a chapter THUMBNAIL zooms in the shared lightbox — a different intent from seeking
+    await chaps.nth(0).locator('.thumb img').click()
+    await expect(page.locator('#lb')).toBeVisible()
+    await page.locator('#lbclose').click()
 
-    // (6) a requirement chip opens that requirement in FOCUS
-    await chaps.nth(0).locator('.flreq[data-r="R1"]').click()
+    // (6) a flow with NO record keeps the honest placeholder — never fake chapters
+    await sel.locator('.fsel', { hasText: STORY_TITLE }).click()
+    await expect(fv.locator('.flnone')).toContainText('Not run yet')
+    await expect(fv.locator('.chstrip .ch')).toHaveCount(0)
+    await sel.locator('.fsel', { hasText: R1_TITLE }).click()
+
+    // (7) a requirement chip opens that requirement in FOCUS
+    await fv.locator('.chstrip .ch').nth(0).locator('.flreq[data-r="R1"]').click()
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R1')
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
+
+    // (8) a screen with NO flows keeps its empty state, with the same authoring affordance
+    // (the add-test prompt — R15's handoff; the composer is Task 5)
+    await page.goto('/#/conflicts/flow')
+    const cfv = page.locator('.dt[data-screen="conflicts"]:not([hidden]) .flowview')
+    await expect(cfv.locator('.flempty')).toContainText('No flow tests')
+    await cfv.locator('.flempty button[data-prompt]').click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody')).toContainText('spec/conflicts/test.spec.ts')
+    await page.locator('#promptsheet [data-promptclose]').click()
   })
 })
 
-test('The proof is scannable as frames, not only as video — a strip of stills per checked value', async ({ page }) => {
+test('The proof is scannable as frames — the media pane\'s stills ARE the strip, one surface', async ({ page }) => {
   await coverReqs('R14')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -860,33 +941,53 @@ test('The proof is scannable as frames, not only as video — a strip of stills 
     } }))
     await page.reload()
 
-    // (1) IN THE FOCUS READER — the reload reopened the detail on the Focus DEFAULT, R1's page,
-    // whose RIGHT container EMBEDS the primary covering test (R13), so the strip rides along: a
-    // scannable strip of stills, one per checked value, each captioned with its got-vs-expected;
-    // the failing value is marked red. (The frame count also waits out loadRuns' close-fold-reopen.)
+    // (1) IN THE FOCUS READER the frames render as the MEDIA PANE'S STILLS (R14 as signed
+    // 2026-08-22: one surface, not two): one cell per checked value, in order, each captioned with
+    // its got-vs-expected; the failing value reads red. (The count also waits out loadRuns'
+    // close-fold-reopen.)
     const ov = dt.locator('.focusov')
-    const fr = ov.locator('.feval .fev .pfstrip .pframe')
-    await expect(fr).toHaveCount(3)
-    await expect(fr.nth(0)).toContainText('got 7 · expected 7')
-    await expect(fr.nth(2)).toContainText('got 5 · expected 4')
-    await expect(fr.nth(0)).not.toHaveClass(/\bbad\b/)
-    await expect(fr.nth(2)).toHaveClass(/\bbad\b/)               // the failed value reads red
-    await expect(fr.nth(0).locator('img')).toHaveCount(1)        // frames OF the recording, as images
+    const panel = ov.locator('.feval .fmedia .fmpanel[data-m="frames"]')
+    const rf = panel.locator('.fcell.rf')
+    await expect(rf).toHaveCount(3)
+    await expect(rf.nth(0)).toContainText('got 7 · expected 7')
+    await expect(rf.nth(2)).toContainText('got 5 · expected 4')
+    await expect(rf.nth(0)).not.toHaveClass(/\bhotbad\b/)
+    await expect(rf.nth(2)).toHaveClass(/\bhotbad\b/)            // the failed value reads red
+    await expect(rf.nth(0).locator('img')).toHaveCount(1)        // frames OF the recording, as images
     // a still is a thumbnail; a click opens it full in the existing lightbox (verify without pixels)
-    await fr.nth(2).locator('img').click()
+    await rf.nth(2).locator('img').click()
     await expect(page.locator('#lb')).toBeVisible()
     await page.locator('#lbclose').click()
-    // the strip carries no label (#5 — the stills speak for themselves) and the moved test's own
-    // header is folded away (the proof line replaces it)
+    // ONE SURFACE (the signed merge): the moved test node's own strip is folded away in the focus
+    // card — the stills view above is the only strip a reader sees; no label crowds it and the
+    // moved test's header stays folded (the proof line replaces it)
+    await expect(ov.locator('.feval .fev .pfstrip')).toBeHidden()
     await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
 
     // (2) AND THE STRIP IS THE TEST'S OWN: leave Focus — the borrowed node returns whole to the
-    // hidden source pane, frames intact (count/class reads work on hidden rows)
+    // hidden source pane, frames intact (count/class reads work on hidden rows) — "in the test's
+    // evidence" survives the merge untouched
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     const tst = dt.locator('.testpane .test', { hasText: R1_TITLE }).first()
     await expect(tst.locator('.pfstrip .pframe')).toHaveCount(3)
     await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
+
+    // (3) NO VIDEO → NO STRIP: a record that cut no frames yields NO run-frame cells — the
+    // harvested pair still stands, never a faked or separately-captured strip
+    await page.unroute('**/api/runs')
+    await page.route('**/api/runs', r => r.fulfill({ json: {
+      watch: false, running: false,
+      runs: [{ screen: 'board', runId: 'rf2', hasLog: false, at: '2026-08-13T01:00:00.000Z', ms: 6000,
+        ok: true, total: 1, failed: 0, shotsByTest: { [R1_TITLE]: {
+          shots: [], steps: [], log: 'x',
+          at: '2026-08-13T01:00:00.000Z', ms: 6000, ok: true, commit: 'abc1234'
+        } } }]
+    } }))
+    await page.reload()
+    const panel2 = dt.locator('.focusov .feval .fmedia .fmpanel[data-m="frames"]')
+    await expect(panel2.locator('.fcell')).not.toHaveCount(0)     // the harvested pair still stands
+    await expect(panel2.locator('.fcell.rf')).toHaveCount(0)      // …but no strip — no frames, no fake
   })
 })
 
