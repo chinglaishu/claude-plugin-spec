@@ -79,6 +79,9 @@ covers it wherever that file lives.
 ```
 spec/<screen>/prd.md         requirements + frontmatter (screen, area, title, route)
 spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq (may also shoot screen.png as a fallback cover)
+spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
+                             metadata beside exported step functions — perform the When, assert the exact Then
+                             from a threaded state, update it; the caller's checkReq wraps the call
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
@@ -87,11 +90,14 @@ spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by conte
 
 tools/coverage.mjs           pure: proves-steps + covers-tags → per-req pass/fail/not-reached, and proven/unproven
 tools/spec-store.mjs         reads/derives everything. THE authority on requirement state.
+tools/compose.mjs            pure, unit-tested: the flow composer — parseBeats (steps.ts, read statically),
+                             deriveLibrary (nodes from behavior blocks + tests ONLY), the joint check, composeCheck,
+                             emitFlow (chain → the composed flow file, no model) and composePrompt (the Claude path)
 tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.
-tools/serve-board.mjs        server: static allowlist, runs, scan, rewrite, crawl, SSE, watch (no accept endpoint — the gate is gone, board R8)
+tools/serve-board.mjs        server: static allowlist, runs, scan, rewrite, compose (deterministic emit + the claude-path job), crawl, SSE, watch (no accept endpoint — the gate is gone, board R8)
 tools/crawl.mjs              the Init crawler — INVENTORY ONLY (a real browser; rows + crawl.png, no drafting; outside the suite)
 tools/staff.mjs              the kg-staff briefing — what governs a screen; run it before you change one
 tools/narrate.mjs            pure, unit-tested: beats + a screen's narration pack → cues, timing map, SRT
@@ -191,7 +197,7 @@ change.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.
-- **Agent jobs (scan, rewrite) need a valid `claude` login and take minutes.** They run
+- **Agent jobs (scan, rewrite, the composer's Claude path) need a valid `claude` login and take minutes.** They run
   detached so Cancel can kill the whole process group. They are real and live **outside** the
   deterministic suite — `diagnose()` names an expired login rather than reporting a silent no-op.
   The crawl also runs detached and long, but it is **inventory-only** (a real browser, no claude):
