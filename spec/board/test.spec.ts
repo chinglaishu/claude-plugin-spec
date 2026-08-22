@@ -583,8 +583,23 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await ov.locator('.fread .prose-t').click()
     await expect(prose).toBeVisible()
     await expect(prose).toContainText('The detail header carries a toggle')
-    // the SCHEMATIC slot sits below the reading — an honest placeholder until the viz pass draws one
+    // the SCHEMATIC slot sits below the reading — R13's OWN drawn loop (dogfood: the board draws
+    // its requirements). Derived from the behavior text by tools/viz.mjs (switch-views archetype)
+    // and committed at spec/board/viz/R13.svg; fresh (text and drawing agree), so no grey, no ≠.
+    const schem13 = ov.locator('.fleft .fschem')
+    await expect(schem13.locator('.viz svg')).toHaveCount(1)
+    await expect(schem13).not.toContainText('no schematic drawn yet')
+    await expect(schem13).not.toHaveClass(/isstale/)
+    await expect(schem13.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
+    await expect(schem13.locator('.figfoot')).toContainText('viz@')
+    await expect(schem13.locator('.figfoot')).not.toContainText('≠')
+    // …and a requirement the kit cannot draw keeps the honest placeholder (R2: scroll independence
+    // fits no archetype — text-only, never a wrong picture)
+    await page.goto('/#/board/R2')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
     await expect(ov.locator('.fleft .fschem')).toContainText('no schematic drawn yet')
+    await page.goto('/#/board/R13')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
 
     // THE PROOF on the RIGHT — Run + ⋯ header and the proof line, the covering test's OWN node moved
     // in wired (no player rebuilt), exactly as before the media pane landed
@@ -695,7 +710,7 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(open13.locator('.fread .fttl')).toHaveText(
       ((await card13.locator('.lst-head .lttl').textContent()) || '').trim())
     await expect(open13.locator('.fread .behavior')).toHaveCount(1)       // behavior leads here too
-    await expect(open13.locator('.fleft .fschem')).toContainText('no schematic drawn yet')
+    await expect(open13.locator('.fleft .fschem .viz svg')).toHaveCount(1) // the drawn loop, in place too
     await expect(open13.locator('.feval .fphead')).toBeVisible()
     // the ACCORDION: opening another row closes this one — one open row at a time, ids never collide
     const card2 = list.locator('.lst-card[data-r="R2"]')

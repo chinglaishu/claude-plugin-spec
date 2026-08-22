@@ -4,6 +4,8 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readScreen } from '../../tools/spec-store.mjs'
 import { reqHash, meaningText } from '../../tools/reqhash.mjs'
+import { parseBehavior } from '../../tools/behavior.mjs'
+import { deriveSchematic } from '../../tools/viz.mjs'
 import { build } from '../../tools/build-board.mjs'
 
 // The ENGINE of the board's computed state (board R4/R8). A requirement's state is COMPUTED — proven or
@@ -296,6 +298,91 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(c1.locator('.lst-body .fread .behavior .brow')).toHaveCount(5)
     await expect(c1.locator('.lst-body .feval .fmedia .fcell img')).toHaveCount(2)
   } finally { restore() }
+})
+
+// ── the drawn schematic fills the Focus slot (requirement schematics, task 4) ──
+// The schematic is AUTHORED-side content: derived once from the behavior text (tools/viz.mjs,
+// pure), committed at spec/<screen>/viz/<id>.svg, hash-pinned — so this test needs no injected
+// index at all. It proves the three contract points the brief names: the slot renders the drawn
+// loop for a requirement whose committed drawing matches its text; loop · stills is a CLIENT-side
+// preference (stills = the same drawing frozen per beat phase, nothing stored in the tree); and a
+// drawing whose text has moved past it renders QUIET GREY with the dated ≠ note — honest, never a
+// wrong picture. A requirement with no drawing keeps the placeholder line.
+test('renders — the drawn schematic fills the Focus slot: loop, stills per beat, grey when the text moves', async ({ page }) => {
+  const body =
+    '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
+    '- **When** you press Undo\n- **Then** the two items return\n\n' +
+    'Prose under the shape.\n\n' +
+    '## R2 — A prose-only requirement\n\nOnly prose — no behavior block, so no drawing to derive.'
+  const { name, dir, prd } = makeScreen('probe-viz', body)
+  // derive + commit the drawing EXACTLY as the viz pass does (tools/viz-derive.mjs): the SVG
+  // carries its own data-viz-hash stamp, so enrichReqs reads it fresh
+  const d = deriveSchematic(parseBehavior(body))!
+  expect(d.archetype).toBe('press-and-clear')
+  mkdirSync(join(dir, 'viz'), { recursive: true })
+  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
+  const vizat = d.svg.match(/data-viz-hash="(.{16})"/)![1].slice(0, 6)
+
+  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+  const schem = dt.locator('.focusov .fleft .fschem')
+
+  // the slot is FILLED: the drawn loop under the caption, the viz@hash note — no placeholder line
+  await expect(schem.locator('.viz svg')).toHaveCount(1)
+  await expect(schem.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
+  await expect(schem).not.toContainText('no schematic drawn yet')
+  await expect(schem.locator('.figfoot')).toContainText('viz@' + vizat)
+  await expect(schem.locator('.figfoot')).not.toContainText('≠')
+  await expect(schem.locator('.staleov')).toHaveCount(0)          // fresh — no stale overlay at all
+
+  // loop · stills: STILLS is the same drawing frozen per beat phase — given + one frame per beat —
+  // and the choice is a client-side preference (localStorage), never stored in the tree
+  await expect(schem.locator('.medbar button[data-sm="loop"]')).toHaveClass(/\bon\b/)
+  await schem.locator('.medbar button[data-sm="stills"]').click()
+  await expect(schem.locator('.sstills .sframe')).toHaveCount(3)  // given + 2 beats
+  await expect(schem.locator('.sstills .sframe svg')).toHaveCount(3)
+  await expect(schem.locator('.sstills .scap').nth(0)).toHaveText('given')
+  await expect(schem.locator('.sstills .scap').nth(1)).toHaveText('beat 1 · then')
+  await expect(schem.locator('.sstills .scap').nth(2)).toHaveText('beat 2 · then')
+  expect(await page.evaluate(() => localStorage.getItem('sbSchemMode'))).toBe('stills')
+  // clearing the preference restores the loop default on the next open — client-only, nothing baked
+  await page.evaluate(() => localStorage.removeItem('sbSchemMode'))
+  await page.goto('/#/' + name + '/R2')
+  await page.goto('/#/' + name + '/R1')
+  await expect(schem.locator('.medbar button[data-sm="loop"]')).toHaveClass(/\bon\b/)
+  await expect(schem.locator('.viz svg')).toHaveCount(1)
+
+  // reduced motion → the stepped form by default (D3): the same stills, no looping animation
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/#/' + name + '/R2')
+  await page.goto('/#/' + name + '/R1')
+  await expect(schem.locator('.sstills .sframe')).toHaveCount(3)
+  await page.emulateMedia({ reducedMotion: null })
+
+  // a requirement with NO drawing keeps the honest placeholder line
+  await page.goto('/#/' + name + '/R2')
+  await expect(dt.locator('.focusov .fleft .fschem')).toContainText('no schematic drawn yet')
+
+  // THE TEXT MOVES PAST THE DRAWING → quiet grey + the dated "text ≠ viz" note. The committed SVG
+  // stays byte-identical; only prd.md changes — staleness is COMPUTED from the pin, never stored.
+  // A goto between two hashes is a SAME-DOCUMENT navigation (the documented trap), so the rebuilt
+  // board.html would never load — force a real reload, re-asserting build() per retry like settleAt.
+  writeFileSync(join(dir, 'prd.md'), prd.replace('the list shows zero items', 'the list shows an empty state'))
+  await expect(async () => {
+    build()
+    await page.reload()
+    await expect(dt.locator('.viewseg')).toBeVisible({ timeout: 2000 })
+    await expect(dt.locator('.reqpane .req[data-r="R1"] .schematic[data-stale="1"]')).toHaveCount(1, { timeout: 2000 })
+  }).toPass({ timeout: 25000 })
+  await page.goto('/#/' + name + '/R1')
+  const stale = dt.locator('.focusov .fleft .fschem')
+  await expect(stale).toHaveClass(/\bisstale\b/)
+  await expect(stale.locator('.viz svg')).toHaveCount(1)          // the old drawing, greyed — shown, not hidden
+  await expect(stale.locator('.staleov')).toBeVisible()
+  await expect(stale.locator('.staleov')).toContainText('stale — text changed')
+  await expect(stale.locator('.staleov')).toContainText('redrawn on the next viz pass')
+  await expect(stale.locator('.figfoot')).toContainText('≠')      // text@… ≠ viz@… — both pins named
+  await expect(stale.locator('.figfoot')).toContainText('viz@' + vizat)
 })
 
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
