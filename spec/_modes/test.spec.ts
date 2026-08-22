@@ -271,7 +271,18 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     const rule1 = await fbeh.locator('.brow').nth(1).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     const rule3 = await fbeh.locator('.brow').nth(3).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     expect(rule3, 'a beat boundary rules heavier than a row').toBeGreaterThan(rule1)
+    // …and the collapsed-prose toggle beneath the table is still IN VIEW (fix round 1, A-1): the
+    // taller table must not push a signed R13 element below the card's clipped edge — Playwright
+    // auto-scrolls before a click, so only an explicit viewport check can see this
+    await expect(dt.locator('.focusov .fread .prose-t')).toBeInViewport()
     // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
+    // the collapsed-prose toggle beneath the table is IN VIEW before anything is clicked (fix round 1,
+    // A-1): the taller table must not push a signed R13 element below the card's clipped edge —
+    // Playwright auto-scrolls before a click, so only an explicit, pre-click viewport check sees it
+    // (on a short window, where the reading card's own clipped edge is what would hide it)
+    await page.setViewportSize({ width: 1440, height: 640 })
+    await expect(dt.locator('.focusov .fread .prose-t')).toBeInViewport({ ratio: 1 })
+    await page.setViewportSize({ width: 1440, height: 900 })
     await expect(dt.locator('.fread .fbody')).toBeHidden()
     await dt.locator('.fread .prose-t').click()
     await expect(dt.locator('.fread .fbody')).toContainText('Supporting prose under the shape.')

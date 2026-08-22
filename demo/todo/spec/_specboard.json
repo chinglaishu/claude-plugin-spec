@@ -1,0 +1,39 @@
+{
+  "version": "0.26.0",
+  "files": {
+    "tools/spec-store.mjs": "7a2987aa50836dfeecb2ee68841ac7f5c8c355edc57dd0802277f9211e3fafbd",
+    "tools/coverage.mjs": "7cfd1577f4f7854d0460bc4a338f6e7d2817b09205d4108433954b0df504111c",
+    "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
+    "tools/build-board.mjs": "d5617e3a4b7f53e34481de54958cab9b489a6a3bde657a8ceca4b13e151a2072",
+    "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
+    "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
+    "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
+    "tools/viz.mjs": "72fff016656b9b5d127654abe2926c292fc8756e57f327ea5f88d2e617890227",
+    "tools/viz-derive.mjs": "097ab575d6168eba15de2eac432458ba6e5c82434b752d89fd5803d75aac189c",
+    "tools/evidence.mjs": "5c548adf2f6d69e361f519154b588ca78e462985927bd3fc48cad3fca0c52258",
+    "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
+    "tools/board/client.js": "83924033c5f15858625499024710d9af3df2dff159d8d62ed34051324269eefc",
+    "tools/serve-board.mjs": "3d56dc5a44827f8d905792165b739c3de6ddbcf0e044175d3aaa4dcc938c549a",
+    "tools/narrate.mjs": "a93bfc3d3ab04d1ea518811a5dc1a3be48c42102982166f4af781379e53e11df",
+    "tools/narrate-run.mjs": "b4db895396fecf9062f6f33169fb8050e26a00321a81c989e3d1902ba4097fb0",
+    "tools/crawl.mjs": "96f8d1f2bf5eda998ffd45c98c8feb83c74314b46e2583993fac461966bb4b14",
+    "tools/ship-record.mjs": "687ff7f8fd6169e978e43b5e7c4e83b8560d325e882252b5a8ba82fab5ac19b2",
+    "tools/staff.mjs": "e9e9c7a03e8799469400dfc5e36686add3b72c09f72d0abe0d163e36bb41fdb9",
+    "tools/proof-integrity.mjs": "f8e11bc620799d9d0b1dafb47896bf2a45dea5ae38daa0b6c3f0e6dcb1dfc57a",
+    "tools/auth-projects.mjs": "57676e72b55108a2ceb7cceda67eddfa61e06625351c5faf94e30cc42f0ee5b7",
+    "playwright.board.ts": "a2dfd87f75885c6460bc4cb9e822f844eb6c562a75a781d10f99c7b11c7614fb",
+    "spec/_design.css": "6fdf783204b2188654903b6c136623b614520803360933f031aa8f1b9dd2ef8b",
+    "spec/_base.ts": "2719301fc2a5fc064acedfb87b5f0d666295fa92eabb1b4cd0df826a5bc88ccb",
+    "spec/_fixture.ts": "2d54075670d83613ca1c1e53e384b17a7552c221ff22c5804077d4c96100f04f",
+    "spec/_state-guard.ts": "311221e9437e327c9add94df81d344ee9ad783fe861fa683d5d7e560a64f8f03",
+    "spec/_state-guard-teardown.ts": "6381c1f72089205dd8d88fbd15e1a4e770f198e83fba5c5c0078c45ce3e8b631",
+    "spec/_results-reporter.mjs": "8cd76c0063d7f39a7b7f27bdce50a3877aa465901ae8aee388bb1f82e8aeb44a",
+    "spec/_auth.setup.ts": "288113187b28dc0d51fac936149c7b0e9d9d6577b4f6a265fba467a48fc1d9ee",
+    "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
+    "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed"
+  },
+  "project": {
+    "name": "Tsumiki",
+    "tagline": "task-tracker demo"
+  }
+}

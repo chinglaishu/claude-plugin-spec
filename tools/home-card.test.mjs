@@ -6,11 +6,29 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { projectIdentity, screenKinds, latestStill } from './build-board.mjs'
 import { cleanConfig } from './spec-store.mjs'
+import { mergeManifest } from './_skeleton.mjs'
 
 // ── H6: the header crumb — "<project> · <tagline>" ───────────────────────────
 test('the crumb derives from package.json name + the config tagline', () => {
   const id = projectIdentity({ name: 'tsumiki-demo' }, { tagline: 'task-tracker demo' }, 'todo')
   assert.equal(id.crumb, 'tsumiki-demo · task-tracker demo')
+})
+// A-2 (fix round 1): the COMMITTED identity — spec/_specboard.json's `project` block — leads; the
+// config's tagline (per-machine, gitignored on scaffolded projects) and package.json only fill gaps
+test('the manifest\'s project { name, tagline } leads; config and package.json fill the gaps', () => {
+  const m = { version: '0.26.0', files: {}, project: { name: 'Tsumiki', tagline: 'task-tracker demo' } }
+  assert.equal(projectIdentity({ name: 'tsumiki-demo' }, { tagline: 'ignored' }, 'todo', m).crumb, 'Tsumiki · task-tracker demo')
+  assert.equal(projectIdentity({ name: 'tsumiki-demo' }, {}, 'todo', { project: { name: 'Tsumiki' } }).crumb, 'Tsumiki')
+  assert.equal(projectIdentity({ name: 'tsumiki-demo' }, { tagline: 'from config' }, 'todo', { project: { name: 'Tsumiki' } }).crumb, 'Tsumiki · from config')
+  assert.equal(projectIdentity({ name: 'acme' }, {}, 'x', { project: { tagline: 'only a tagline' } }).crumb, 'acme · only a tagline')
+  assert.equal(projectIdentity({ name: 'acme' }, {}, 'x', { version: '1', files: {} }).crumb, 'acme')
+})
+test('scaffold --force keeps an existing manifest\'s project block (mergeManifest)', () => {
+  const fresh = { version: '0.27.0', files: { 'a.mjs': 'h' } }
+  const prev = { version: '0.26.0', files: { 'a.mjs': 'g' }, project: { name: 'Tsumiki', tagline: 't' } }
+  assert.deepEqual(mergeManifest(fresh, prev), { version: '0.27.0', files: { 'a.mjs': 'h' }, project: { name: 'Tsumiki', tagline: 't' } })
+  assert.deepEqual(mergeManifest(fresh, null), fresh)
+  assert.deepEqual(mergeManifest(fresh, { version: '0.26.0', files: {} }), fresh)
 })
 test('no tagline → the name alone; no package name → the repo directory name', () => {
   assert.equal(projectIdentity({ name: 'acme' }, {}, 'x').crumb, 'acme')
@@ -67,6 +85,19 @@ test('latestStill falls back to the newest after-frame of the evidence harvest (
   const st = latestStill(s, [])
   assert.match(st.src, /^spec\/todo\/evidence\/R5\.after\.png/)   // the newest by `at`
   assert.equal(st.run, '7')                                        // no commit on record → the run id
+})
+// A-3 (fix round 1): the caption names the run that PRODUCED the chosen frame — the evidence
+// entry's own runId resolved to its commit — never a newer run that covered the screen but shot nothing
+test('latestStill captions the evidence frame with ITS run, not the newest run covering the screen', () => {
+  const s = { name: 'todo', hasShot: false, run: { ranAt: 9, evidence: {
+    R1: { after: 'spec/todo/evidence/R1.after.png', at: '2026-08-22T15:34:05.741Z', runId: '7' }
+  } } }
+  const runs = [
+    { runId: '7', screen: 'todo', shotsByTest: { t: { commit: 'aaa1111' } } },
+    { runId: '9', screen: 'todo', shotsByTest: { t: { commit: 'bbb2222' } } }   // newer, shot nothing
+  ]
+  assert.equal(latestStill(s, runs).run, 'aaa1111')
+  assert.equal(latestStill(s, []).run, '7')                        // unknown to the manifest → its id
 })
 test('latestStill is null with neither a shot nor evidence — the honest empty cover', () => {
   assert.equal(latestStill({ name: 'x', hasShot: false, run: undefined }, []), null)

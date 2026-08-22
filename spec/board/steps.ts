@@ -103,7 +103,9 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
   await expect(ov.locator('.feval')).toBeVisible()
-  for (const sel of ['.fread', '.feval']) {
+  // the reading REGION is the left column (.fleft — the reading card plus the schematic below it,
+  // scrolling as one since Task 8 fix round 1 so a tall behaviour table never clips the card)
+  for (const sel of ['.fleft', '.feval']) {
     const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
     expect(['auto', 'scroll']).toContain(oflow)
   }
@@ -114,7 +116,7 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   expect(await ov.locator('.feval').evaluate(el => el.scrollHeight > el.clientHeight), 'the proof region overflows').toBe(true)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
   expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.fread').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
+  expect(await ov.locator('.fleft').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()

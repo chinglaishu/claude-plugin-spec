@@ -94,6 +94,17 @@ export const DEV = { '@playwright/test': '^1.62.0', '@types/node': '^22.0.0' }
 // it is a record of what the project is running, not transient run state.
 export const MANIFEST = 'spec/_specboard.json'
 
+// The manifest also carries the project's COMMITTED IDENTITY — `project: { name, tagline }`, the
+// board crumb's authored source (Task 8 fix round 1, A-2: spec/_config.json is gitignored above, so
+// an identity kept there vanishes on a clone). A fresh manifest (scaffold --force, update) is the
+// new release's hashes + whatever `project` block the previous manifest carried — never invented,
+// never dropped. Pure; unit-tested in tools/home-card.test.mjs and tools/update.test.mjs.
+export function mergeManifest (fresh, prev) {
+  const out = { ...fresh }
+  if (prev && prev.project && typeof prev.project === 'object') out.project = { ...prev.project }
+  return out
+}
+
 // Content hash of a file, or null if it does not exist — "missing" has to be a first-class state a
 // caller can branch on, distinct from "present but different".
 export function hashFile (path) {

@@ -14,7 +14,7 @@
 import { cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { FILES, MANIFEST, hashFile, readVersion, buildManifest } from './_skeleton.mjs'
+import { FILES, MANIFEST, hashFile, readVersion, buildManifest, mergeManifest } from './_skeleton.mjs'
 
 // Pure decision + file effects, so it can be proven against throwaway dirs. `base` is the shipped
 // manifest ({version, files}) or null; `files` is the set to walk (the real skeleton by default).
@@ -59,7 +59,8 @@ export function updateProject ({ dest, src, base, files = FILES, dryRun = false 
   report.hasConflicts = report.conflicts.length > 0
   // The version only advances to the new release when nothing is left half-merged; while a conflict
   // stands the project is genuinely part-old, and the version must not claim otherwise.
-  const manifest = { version: report.hasConflicts ? baseVer : version, files: newFiles }
+  // the project's committed identity block rides along from the base (A-2) — hashes are the update's
+  const manifest = mergeManifest({ version: report.hasConflicts ? baseVer : version, files: newFiles }, base)
 
   if (!dryRun) {
     for (const op of ops) op()

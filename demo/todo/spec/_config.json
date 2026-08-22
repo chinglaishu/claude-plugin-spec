@@ -10,6 +10,5 @@
   "storage": {
     "where": "local",
     "push": false
-  },
-  "tagline": "task-tracker demo"
+  }
 }

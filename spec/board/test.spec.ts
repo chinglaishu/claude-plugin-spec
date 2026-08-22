@@ -724,7 +724,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const curDot = dt.locator('.dtfoot .fdot.cur')
     expect(await curDot.evaluate(el => getComputedStyle(el).borderColor)).toBe('rgb(28, 27, 24)')
     expect(await curDot.evaluate(el => el.getBoundingClientRect().height)).toBe(30)
-    expect(await dt.locator('.dth .btn.pri, .dtfoot [style*="background"]').count(), 'one inverted element').toBe(1)
+    // rule 2 (review B-3): computed, not inline — a CSS-inverted current page must fail this
+    expect(await curDot.evaluate(el => getComputedStyle(el).backgroundColor), 'the current page is not inverted').toBe('rgba(0, 0, 0, 0)')
+    expect(await dt.locator('.btn.pri').count(), 'Run all is the detail\'s one inverted element').toBe(1)
     const secondId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await page.keyboard.press('ArrowLeft')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(firstId)

@@ -14,7 +14,7 @@ import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, SPEC_IGNORE, ROOT_IGNORE, buildManifest } from './_skeleton.mjs'
+import { FILES, SCRIPTS, DEV, MANIFEST, SPEC_IGNORE, ROOT_IGNORE, buildManifest, mergeManifest } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -63,7 +63,10 @@ if (missing.length) {
 // (and --force re-vendor), so a freshly scaffolded project is immediately update-ready. Records the
 // hashes of the files AS SHIPPED, which is exactly what buildManifest(SRC) computes.
 if (!existsSync(join(DEST, MANIFEST)) || force) {
-  writeFileSync(join(DEST, MANIFEST), JSON.stringify(buildManifest(SRC), null, 2) + '\n')
+  // --force keeps the project's committed identity (`project: { name, tagline }`) — A-2
+  let prev = null
+  try { prev = JSON.parse(readFileSync(join(DEST, MANIFEST), 'utf8')) } catch { prev = null }
+  writeFileSync(join(DEST, MANIFEST), JSON.stringify(mergeManifest(buildManifest(SRC), prev), null, 2) + '\n')
   copied.push(MANIFEST)
 }
 

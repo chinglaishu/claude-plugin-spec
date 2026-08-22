@@ -65,10 +65,15 @@ const reqChip = status => {
 // the tagline authored in spec/_config.json when there is one. "dogfooding itself" is the default
 // tagline of exactly one project — specboard's own repo — never a hardcoded string on a vendored
 // board. Pure and exported (tools/home-card.test.mjs).
-export const projectIdentity = (pkg, cfg, dirName) => {
-  const name = String((pkg && pkg.name) || dirName || 'project').trim()
+// Fix round 1 (A-2): the COMMITTED identity leads — spec/_specboard.json's `project: { name,
+// tagline }` (the manifest every scaffolded project commits; scaffold --force and update preserve
+// it) — because spec/_config.json is gitignored there and a tagline kept in it vanishes on a clone.
+// The config's tagline (Settings may still set it) and package.json only fill the gaps.
+export const projectIdentity = (pkg, cfg, dirName, manifest) => {
+  const proj = (manifest && manifest.project && typeof manifest.project === 'object') ? manifest.project : {}
+  const name = String(proj.name || (pkg && pkg.name) || dirName || 'project').trim()
   const own = name === 'specboard'
-  const tagline = String((cfg && cfg.tagline) || (own ? 'dogfooding itself' : '')).trim()
+  const tagline = String(proj.tagline || (cfg && cfg.tagline) || (own ? 'dogfooding itself' : '')).trim()
   return { name, tagline, own, crumb: tagline ? name + ' · ' + tagline : name }
 }
 
@@ -98,10 +103,9 @@ export const screenKinds = s => {
 // id. Null when nothing has run — the honest empty cover. Pure: `runs` is spec/_runs.json's array.
 export const latestStill = (s, runs) => {
   const run = s.run
-  let src = null, hash = ''
+  let src = null, hash = '', best = null
   if (s.hasShot) { src = `spec/${s.name}/screen.png`; hash = s.shotHash || '' }
   else if (run && run.evidence) {
-    let best = null
     for (const e of Object.values(run.evidence)) {
       if (!e || !e.after) continue
       if (!best || String(e.at || '') > String(best.at || '')) best = e
@@ -109,12 +113,18 @@ export const latestStill = (s, runs) => {
     if (best) src = String(best.after)
   }
   if (!src) return null
-  // the newest run that covered this screen ('all' or by name) — its per-test commit, if recorded
-  const mine = (runs || []).filter(r => r && (r.screen === 'all' || r.screen === s.name))
-  const newest = mine.reduce((a, b) => (!a || String(b.runId || '') > String(a.runId || '')) ? b : a, null)
-  const commit = newest && Object.values(newest.shotsByTest || {}).map(t => t && t.commit).find(Boolean)
-  const id = commit || (newest && newest.runId) || (run && run.ranAt != null ? String(run.ranAt) : '')
-  return { src, hash, run: id }
+  // the run that PRODUCED the frame (fix round 1, A-3): an evidence frame carries its own runId; a
+  // screen.png is the newest run's. Either resolves to that run's recorded commit where the
+  // manifest has it, else stays the run id — never a newer run that covered the screen but shot nothing
+  const commitOf = r => r && Object.values(r.shotsByTest || {}).map(t => t && t.commit).find(Boolean)
+  let rec = null
+  if (best && best.runId) rec = (runs || []).find(r => r && String(r.runId) === String(best.runId)) || null
+  else {
+    const mine = (runs || []).filter(r => r && (r.screen === 'all' || r.screen === s.name))
+    rec = mine.reduce((a, b) => (!a || String(b.runId || '') > String(a.runId || '')) ? b : a, null)
+  }
+  const id = commitOf(rec) || (rec && rec.runId) || (best && best.runId) || (run && run.ranAt != null ? String(run.ranAt) : '')
+  return { src, hash, run: String(id) }
 }
 
 // Home is one CARD per screen (board R1): its name, a proven-count chip, the requirement TITLES, and
@@ -1388,7 +1398,8 @@ export function build () {
   const runs = (() => { try { return readRuns() } catch { return [] } })()
   // the header crumb: this project's name + tagline, derived (never "specboard" on a vendored board)
   const pkg = (() => { try { return JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) } catch { return null } })()
-  const ident = projectIdentity(pkg, readConfig(), basename(ROOT))
+  const manifest = (() => { try { return JSON.parse(readFileSync(join(ROOT, 'spec', '_specboard.json'), 'utf8')) } catch { return null } })()
+  const ident = projectIdentity(pkg, readConfig(), basename(ROOT), manifest)
 
   // test KIND at build time (unit | flow), derived from the source plans — see listPane
   const kindByTitle = new Map()
@@ -1626,7 +1637,7 @@ export function build () {
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     font-size:18px; color:var(--ink-4); }
   /* the "latest run · <id>" caption rides the still's top-left corner, on a paper wash so it reads
-     over any frame (--ink-3 on --paper: 5.9:1) */
+     over any frame (--ink-3 on --paper: 6.42:1) */
   .cshot .lrun { position:absolute; top:6px; left:8px; z-index:2; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--paper); border:1px solid var(--hair); border-radius:var(--r-sm); padding:1px 5px; }
 
@@ -1743,8 +1754,12 @@ export function build () {
      card (behavior leading, prose collapsed beneath) and the schematic slot below it — together they
      form the left column, the proof card the right. The old in-card steps clone left with the
      rewrite (the full step record stays one click away behind the ⋯ menu's Steps window). */
-  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; }
-  .fleft > .fread { flex:1; min-height:0; }
+  /* fix round 1 (A-1): the LEFT COLUMN scrolls as one and the reading card GROWS to its content —
+     a tall behaviour table must never push the collapsed-prose toggle (a signed R13 element) below a
+     clipped card edge with no scroll cue. R2's independent scroll holds: the reading region is the
+     column, the proof card its own. */
+  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; overflow-y:auto; overflow-x:hidden; }
+  .fleft > .fread { flex:none; overflow:visible; }
   /* the behavior block LEADS the reading card — drawn as the mockup's bordered TABLE here (Task 8):
      a tinted label column (GIVEN / WHEN 1 / THEN 1 …) ruled off on the right, every row hair-ruled,
      a heavier rule opening each beat after the first, the Given row distinct; the text wraps in the
@@ -1759,7 +1774,7 @@ export function build () {
     color:var(--ink-3); padding:10px var(--s3); background:var(--wash); border-right:1px solid var(--hair);
     display:flex; align-items:flex-start; }
   .fread > .behavior .bgiven .blab { background:var(--canvas); }
-  .fread > .behavior .blab .bno { font-size:9px; line-height:1; color:var(--ink-3); margin-left:4px; }   /* ink-3 on wash 5.3:1 (ink-4 measured 4.3 — under AA) */
+  .fread > .behavior .blab .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:4px; }   /* on the scale (B-1); ink-3 on wash 5.3:1 (ink-4 measured 4.3 — under AA) */
   .fread > .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
   /* the PROSE collapses beneath the shape (one click unfolds the authored requirement in full); a
      prose-only requirement has no shape to lead with, so its prose stays open — .noshape marks it */

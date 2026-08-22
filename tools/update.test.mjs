@@ -201,3 +201,23 @@ test('an overwrite is backed up first, under the base version', () => {
   updateProject({ dest, src, base, files: ['a.mjs'] })
   assert.equal(read(dest, '.specboard-backup-1.2.3/a.mjs'), 'OLD', 'the replaced file is recoverable')
 })
+
+// Task 8 fix round 1 (A-2): the manifest's committed PROJECT IDENTITY — `project: { name, tagline }`,
+// the crumb's authored source (spec/_config.json is gitignored on a scaffolded project, so a tagline
+// there vanishes on a clone) — must survive an update: the manifest is rewritten with the new
+// hashes, and the block rides along untouched.
+test('project { name, tagline } in the manifest survives an update', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW')
+  w(dest, 'a.mjs', 'OLD')
+  const base = { version: '1.0.0', files: { 'a.mjs': h('OLD') }, project: { name: 'Tsumiki', tagline: 'task-tracker demo' } }
+  updateProject({ dest, src, base, files: ['a.mjs'] })
+  assert.deepEqual(manifest(dest).project, { name: 'Tsumiki', tagline: 'task-tracker demo' })
+  assert.equal(manifest(dest).version, '9.9.9')
+})
+test('a manifest without a project block gains none — nothing invented', () => {
+  const { src, dest } = scratch()
+  w(src, 'a.mjs', 'NEW'); w(dest, 'a.mjs', 'OLD')
+  updateProject({ dest, src, base: { version: '1.0.0', files: { 'a.mjs': h('OLD') } }, files: ['a.mjs'] })
+  assert.equal('project' in manifest(dest), false)
+})

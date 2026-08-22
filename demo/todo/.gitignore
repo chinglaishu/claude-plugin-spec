@@ -18,7 +18,8 @@ node_modules/
 /spec/_auth.setup.ts
 /spec/_seed.ts
 /spec/_escapes.md
-/spec/_specboard.json
+# (spec/_specboard.json is COMMITTED — it records the release AND the project's identity block,
+#  `project: { name, tagline }`, the board crumb's authored source; Task 8 fix round 1)
 
 # transient run state — EXCEPT the fold: since 0.25.1 evidence is committed by default, and the
 # evidence is meaningless without the index that names it (Task 7, 2026-08-22), so the demo commits

@@ -175,6 +175,7 @@ const B = window.__BOARD__ || {}
   // baked source panes (.cols stays hidden — it is the data source, not a view; board R13 2026-08-18)
   function closeFocus () {
     for (const o of document.querySelectorAll('.focusov')) {
+      if (o._onKey) { document.removeEventListener('keydown', o._onKey); o._onKey = null }   // the ← → keys leave with the reader (A-4)
       if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
       // else o.remove() would destroy the real nodes the source panes still need
       const dtx = o.closest('.dt')
@@ -910,15 +911,17 @@ const B = window.__BOARD__ || {}
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
+    // registered ONCE per reader and removed by closeFocus (ov._onKey) — fix round 1, A-4 — so a
+    // loadRuns close-fold-reopen cycle never stacks listeners
     const onKey = function (e) {
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
-      if (!ov.isConnected) { document.removeEventListener('keydown', onKey); return }
-      if (dt.hidden || !ov.offsetParent) return
+      if (dt.hidden || !ov.isConnected || !ov.offsetParent) return
       const a = document.activeElement
-      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable)) return
+      if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return
       if (e.key === 'ArrowRight' && cur < reqs.length - 1) { cur++; render(); e.preventDefault() }
       else if (e.key === 'ArrowLeft' && cur > 0) { cur--; render(); e.preventDefault() }
     }
+    ov._onKey = onKey
     document.addEventListener('keydown', onKey)
     // the pager lives in the detail's full-width FOOTER BAR, shown only while focus is open
     const foot = dt.querySelector('.dtfoot')
