@@ -909,7 +909,10 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const frames = [
       { img: 'spec/board/screen.png', ok: true,  cap: 'first value — got 7 · expected 7', req: 'R1' },
       { img: 'spec/board/screen.png', ok: true,  cap: 'second value — got 6 · expected 6', req: 'R1' },
-      { img: 'spec/board/screen.png', ok: false, cap: 'third value — got 5 · expected 4', req: 'R1' }
+      { img: 'spec/board/screen.png', ok: false, cap: 'third value — got 5 · expected 4', req: 'R1' },
+      // the NEGATIVE (final review T3b L2): a qualified tag counts only for its OWN screen — this
+      // frame proves dispatch:R1, so it must NOT appear in board R1's strip (count stays 3)
+      { img: 'spec/board/screen.png', ok: true,  cap: 'foreign value — got 9 · expected 9', req: 'dispatch:R1' }
     ]
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
@@ -935,7 +938,8 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const ov = dt.locator('.focusov')
     const panel = ov.locator('.feval .fmedia .fmpanel[data-m="frames"]')
     const rf = panel.locator('.fcell.rf')
-    await expect(rf).toHaveCount(3)
+    await expect(rf).toHaveCount(3)                               // the three of THIS screen's R1 — not the foreign fourth
+    await expect(panel.locator('.fcell.rf', { hasText: 'foreign value' })).toHaveCount(0)
     await expect(rf.nth(0)).toContainText('got 7 · expected 7')
     await expect(rf.nth(2)).toContainText('got 5 · expected 4')
     await expect(rf.nth(0)).not.toHaveClass(/\bhotbad\b/)
@@ -957,8 +961,11 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     // evidence" survives the merge untouched
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     const tst = dt.locator('.testpane .test', { hasText: R1_TITLE }).first()
-    await expect(tst.locator('.pfstrip .pframe')).toHaveCount(3)
+    // (the TEST's strip is every frame the test cut — all four, the foreign dispatch:R1 one included;
+    // only the REQUIREMENT's stills view filters by screen)
+    await expect(tst.locator('.pfstrip .pframe')).toHaveCount(4)
     await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
+    await expect(tst.locator('.pfstrip .pframe').nth(3).locator('.pfreq')).toHaveText('dispatch:R1')
 
     // (3) NO VIDEO → NO STRIP: a record that cut no frames yields NO run-frame cells — the
     // harvested pair still stands, never a faked or separately-captured strip

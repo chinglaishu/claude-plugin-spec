@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindow, ffmpegClipArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
+import { clipWindow, ffmpegClipArgs, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -189,7 +189,20 @@ function harvestEvidence (harvest, ranAt) {
     }
     for (const phase of ['before', 'after']) {
       if (!h[phase]) continue
-      try { copyFileSync(h[phase], join(process.cwd(), paths[phase])); entry[phase] = paths[phase] } catch { /* dropped, never fatal */ }
+      const dest = join(process.cwd(), paths[phase])
+      // downscaled to the clip's width when ffmpeg is here (final review M4 — a full-viewport PNG
+      // per phase per requirement per fold was megabytes of history); the 1× copy otherwise
+      let landed = false
+      if (ffmpegOk()) {
+        try {
+          execFileSync('ffmpeg', ffmpegDownscaleArgs(h[phase], dest), { stdio: 'ignore', timeout: 15000 })
+          landed = existsSync(dest)
+        } catch { landed = false }
+      }
+      if (!landed) {
+        try { copyFileSync(h[phase], dest); landed = true } catch { /* dropped, never fatal */ }
+      }
+      if (landed) entry[phase] = paths[phase]
     }
     if (h.video && h.window && existsSync(h.video) && ffmpegOk()) {
       try {

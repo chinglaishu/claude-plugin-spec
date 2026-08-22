@@ -1,18 +1,27 @@
 // The recording already exists (a board run's .webm) and each `proves <id>` step already carries
 // its offset+duration (spec/_results-reporter.mjs flattenSteps: t, d). This turns those into a
 // per-requirement clip window and the ffmpeg args to cut a short looping webp — the requirement's
-// gif face (visual-requirements redesign). Pure; the caller runs ffmpeg (frame-pair fallback when
-// it is absent is a separate integration task). Nothing renders this yet.
+// gif face (visual-requirements redesign). Pure; the caller runs ffmpeg (the frame pair alone is
+// the evidence when it is absent). The Focus media pane (tools/board/client.js buildMedia) renders
+// the harvested frames and, where a board run cut one, the clip.
 const bare = id => String(id).slice(String(id).lastIndexOf(':') + 1)
 
+// EXACT label first (final review m1 / Task 15 L1): a composed flow can carry `proves R7` AND
+// `proves dispatch:R7` in one test, and the bare-id alias once handed dispatch:R7 the earlier R7
+// window. The bare fallback stays only when ONE side is unqualified — two different qualified ids
+// never alias.
 export function clipWindow (steps, id) {
-  const want = bare(id)
-  for (const s of steps || []) {
-    if (String(s.label || '') !== 'proves ' + want && bare(String(s.label || '').replace(/^proves /, '')) !== want) continue
-    if (typeof s.t !== 'number') return null
-    return { from: s.t, to: s.t + (typeof s.d === 'number' ? s.d : 0) }
-  }
-  return null
+  const want = String(id)
+  const exact = (steps || []).find(s => String(s.label || '') === 'proves ' + want)
+  const hit = exact || (steps || []).find(s => {
+    const l = String(s.label || '')
+    if (!l.startsWith('proves ')) return false
+    const sid = l.slice('proves '.length)
+    return (!want.includes(':') || !sid.includes(':')) && bare(sid) === bare(want)
+  })
+  if (!hit) return null
+  if (typeof hit.t !== 'number') return null
+  return { from: hit.t, to: hit.t + (typeof hit.d === 'number' ? hit.d : 0) }
 }
 
 export function ffmpegClipArgs (srcRel, { from, to }, outRel) {
@@ -22,6 +31,14 @@ export function ffmpegClipArgs (srcRel, { from, to }, outRel) {
     '-y', '-ss', secs(from), '-t', String(dur), '-i', srcRel,
     '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', outRel
   ]
+}
+
+// The harvested frame pair, downscaled to the clip's width at the fold (final review M4): a
+// full-viewport PNG is ~140 KB and the frames are committed with the tree, so a fold of sixty
+// requirements added megabytes per run. Same scale filter as the clip; the frame stays a PNG at
+// its deterministic path. Without ffmpeg the 1× frame is copied as before.
+export function ffmpegDownscaleArgs (srcRel, outRel) {
+  return ['-y', '-i', srcRel, '-vf', 'scale=640:-2:flags=lanczos', outRel]
 }
 
 export function ffmpegFrameArgs (srcRel, atMs, outRel) {
