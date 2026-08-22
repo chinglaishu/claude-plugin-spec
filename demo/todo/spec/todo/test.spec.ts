@@ -85,3 +85,42 @@ test('Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leave
     if (HOLD) await hudNote('Every value above was read off the screen you just watched, never off storage')
   })
 })
+
+// ── COMPOSED FLOW: 'Add, rename, grow and roll up the container, then reload — composed' (deterministic emitter — tools/compose.mjs) ─────────────
+// Every beat below is an authored step function, red-first-proven in its unit home
+// (spec/<screen>/steps.ts); this file's first full run passing is the composition's validity
+// (CLAUDE.md rule 1 addendum, the human 2026-08-21). No model was involved and no graph is
+// stored — this is ordinary authored-test material from the moment it was written.
+test('Add, rename, grow and roll up the container, then reload — composed', async ({ page }) => {
+  await coverReqs('R1', 'R2', 'R3', 'R5', 'R4', 'R8')
+  // the fixture Given, once — frozen clock · storage cleared · the seed: one container (ring 1/3) + three open tasks + one done — To do 5
+  const state = await openSeededBoard(page)
+  // beat 1 — proves R1
+  await flowStep('type "Water the plants" and press Add — a new row at the bottom, stamped added just now', async () => {
+    await checkReq('R1', async () => { await addTask(page, state) })
+  })
+  // beat 2 — proves R2
+  await flowStep('double-click the new task and retype it — the same row, stamp flipped to edited', async () => {
+    await checkReq('R2', async () => { await renameInPlace(page, state) })
+  })
+  // beat 3 — proves R3
+  await flowStep('add a sub-task to the container — the ring grows by itself, no checkbox on the parent', async () => {
+    await checkReq('R3', async () => { await addSubTaskGrowsRing(page, state) })
+  })
+  // beat 4 — proves R5
+  await flowStep('tick one sub-task — To do drops by exactly one', async () => {
+    await checkReq('R5', async () => { await tickOneSubTask(page, state) })
+  })
+  // beat 5 — proves R4
+  await flowStep('tick the container\'s last open sub-tasks — it completes itself', async () => {
+    await checkReq('R4', async () => { await finishContainerRollsUp(page, state) })
+  })
+  // beat 6 — proves R5
+  await flowStep('To do dropped by the open leaves, never by the container', async () => {
+    await checkReq('R5', async () => { await containerIsNotAUnit(page, state) })
+  })
+  // beat 7 — proves R8
+  await flowStep('reload — the rename, the ring and a completed stamp come back', async () => {
+    await checkReq('R8', async () => { await reloadKeepsEverything(page, state) })
+  })
+})

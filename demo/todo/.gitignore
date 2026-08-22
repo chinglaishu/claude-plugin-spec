@@ -20,10 +20,10 @@ node_modules/
 /spec/_escapes.md
 /spec/_specboard.json
 
-# transient run state
-/spec/_results-index.json
+# transient run state — EXCEPT the fold: since 0.25.1 evidence is committed by default, and the
+# evidence is meaningless without the index that names it (Task 7, 2026-08-22), so the demo commits
+# spec/_results-index.json + spec/_runs.json exactly as the plugin does; the raw JSON report stays out
 /spec/_results.json
-/spec/_runs.json
 /spec/_runs/
 /spec/_run-report.json
 /spec/_state-snapshot.*.json
