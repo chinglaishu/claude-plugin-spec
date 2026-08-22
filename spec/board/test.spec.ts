@@ -1573,3 +1573,26 @@ test('The compose endpoint composes deterministically and refuses honestly — n
     expect(await job.text()).toMatch(/chain at least one beat/i)
   })
 })
+
+// ── COMPOSED FLOW: 'Home, the detail, then a finished run refreshes it in place — composed' (deterministic emitter — tools/compose.mjs) ─────────────
+// Every beat below is an authored step function, red-first-proven in its unit home
+// (spec/<screen>/steps.ts); this file's first full run passing is the composition's validity
+// (CLAUDE.md rule 1 addendum, the human 2026-08-21). No model was involved and no graph is
+// stored — this is ordinary authored-test material from the moment it was written.
+test('Home, the detail, then a finished run refreshes it in place — composed', async ({ page }) => {
+  await coverReqs('R1', 'R2', 'dispatch:R7')
+  // the fixture Given, once — the board home, freshly loaded — specboard's own four screens in three areas
+  const state = await openBoardHome(page)
+  // beat 1 — proves R1
+  await flowStep('count the home cards — one per screen, titles and a cover', async () => {
+    await checkReq('R1', async () => { await countHomeCards(page, state) })
+  })
+  // beat 2 — proves R2
+  await flowStep('open the board detail — reading and proof side by side', async () => {
+    await checkReq('R2', async () => { await openDetailReader(page, state) })
+  })
+  // beat 3 — proves dispatch:R7
+  await flowStep('a finished run refreshes the board in place — no reload', async () => {
+    await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, state) })
+  })
+})
