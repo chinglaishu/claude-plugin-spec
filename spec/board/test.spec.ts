@@ -940,11 +940,18 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
         } } }]
     } }))
     await page.reload()
+    await expect(dt.locator('.focusov')).toBeVisible()
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()   // the fold settled
+    // the media pane derives its panels from R1's status; the strip must not depend on the dogfood
+    // lag (mid-run the live status is stale-by-source), so force the media-bearing status onto the
+    // real node — the established deterministic technique — and rebuild the reader on it
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
 
     // (1) IN THE FOCUS READER the frames render as the MEDIA PANE'S STILLS (R14 as signed
     // 2026-08-22: one surface, not two): one cell per checked value, in order, each captioned with
-    // its got-vs-expected; the failing value reads red. (The count also waits out loadRuns'
-    // close-fold-reopen.)
+    // its got-vs-expected; the failing value reads red.
     const ov = dt.locator('.focusov')
     const panel = ov.locator('.feval .fmedia .fmpanel[data-m="frames"]')
     const rf = panel.locator('.fcell.rf')
@@ -985,6 +992,11 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
         } } }]
     } }))
     await page.reload()
+    await expect(dt.locator('.focusov')).toBeVisible()
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const panel2 = dt.locator('.focusov .feval .fmedia .fmpanel[data-m="frames"]')
     await expect(panel2.locator('.fcell')).not.toHaveCount(0)     // the harvested pair still stands
     await expect(panel2.locator('.fcell.rf')).toHaveCount(0)      // …but no strip — no frames, no fake
