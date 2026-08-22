@@ -1,4 +1,9 @@
 import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
+// the board's own composable beats (the beat-function convention, Task 5): the assertion bodies the
+// tests below were proven red-first with, lifted into exported step functions so the composer can
+// chain them — each test keeps its checkReq AROUND the call, so the proof's power is unchanged
+import { openBoardHome, countHomeCards, searchRequirementText, openDetailReader, toggleViews } from './steps'
+import { refreshDerivedInPlace } from '../dispatch/steps'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
 // test here tags the requirement it covers and asserts something that would fail if that requirement
@@ -32,50 +37,18 @@ test.beforeEach(async ({ page }) => {
 
 test('Home lists every screen as a card', async ({ page }) => {
   await coverReqs('R1')
-  await checkReq('R1', async () => {
-    const cards = page.locator('#home .card')
-    await expect(cards).toHaveCount(4)                       // one per screen, not one per requirement
-    const first = cards.first()
-    await expect(first.locator('.nm')).not.toBeEmpty()      // the screen's name
-    await expect(first.locator('.rl li').first()).toBeVisible() // requirement TITLES on the card
-    await expect(first.locator('.cshot')).toHaveCount(1)    // the latest recording's cover frame
-    // the old PRD/draft/screen/E2E column strip is gone — the card is titles + cover, nothing else
-    await expect(page.locator('.cell[data-col], .colhs')).toHaveCount(0)
-  })
+  // the beat: one card per screen, titles and a cover — the golden count threads from the fixture
+  const state = await openBoardHome(page)
+  await checkReq('R1', async () => { await countHomeCards(page, state) })
   // the home cover falls back to a still when a run has no video (R10) — keep board's own cover fresh
   await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
 })
 
 test('A requirement and its proof read side by side, each scrolling on its own', async ({ page }) => {
   await coverReqs('R2')
-  await openDetail(page)
-  await checkReq('R2', async () => {
-    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-    // The two regions are the FOCUS reader's containers now (R2, reworked 2026-08-18): the reading
-    // on the left, the covering test's proof on the right — each with its OWN overflow, so scrolling
-    // the proof never moves the reading…
-    const ov = dt.locator('.focusov')
-    await expect(ov.locator('.fpage')).toHaveCount(1)
-    await expect(ov.locator('.fread')).toBeVisible()
-    await expect(ov.locator('.feval')).toBeVisible()
-    for (const sel of ['.fread', '.feval']) {
-      const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
-      expect(['auto', 'scroll']).toContain(oflow)
-    }
-    await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
-    expect(await ov.locator('.fread').evaluate(el => el.scrollTop)).toBe(0)
-    // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
-    expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
-    // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay
-    // baked as the hidden shared source (R13), and NO view the toggle offers ever shows them.
-    const segs = dt.locator('.viewseg .vseg')
-    const nseg = await segs.count()
-    for (let i = 0; i < nseg; i++) {
-      await segs.nth(i).click()
-      await expect(dt.locator('.cols')).toBeHidden()
-    }
-    await dt.locator('.viewseg .vseg[data-view="focus"]').click()   // leave the default view on
-  })
+  // the beat opens the detail itself (its When) and asserts the two independently-scrolling regions
+  const state = await openBoardHome(page)
+  await checkReq('R2', async () => { await openDetailReader(page, state) })
 })
 
 test('A requirement expands; a test leads with its flow name', async ({ page }) => {
@@ -555,19 +528,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     const reqCount = await dt.locator('.reqpane .req').count()
     // the header toggle offers EXACTLY Focus / List / Flow (the frozen mockup contract, the human
-    // 2026-08-21 — Grid became List; the router key stays 'grid'), and Focus is active on open
+    // 2026-08-21 — Grid became List; the router key stays 'grid'), Focus is active on open, and the
+    // List is one row per requirement — the beat, threaded the exact row count
+    await toggleViews(page, { screens: 4, areas: 3, reqs: reqCount })
     const ov = dt.locator('.focusov')
-    await expect(ov).toBeVisible()
-    await expect(dt.locator('.viewseg .vseg')).toHaveCount(3)
-    await expect(dt.locator('.viewseg .vseg')).toHaveText(['Focus', 'List', 'Flow'])
-    await expect(dt.locator('.viewseg .vseg[data-view="columns"]')).toHaveCount(0)
-    await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
-    await expect(dt.locator('.cols')).toBeHidden()
-    await expect(ov.locator('.fpage')).toHaveCount(1)
-    // its id, state and title on the LEFT container
-    await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
-    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested|changed/)
-    await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
 
     // THE BEHAVIOR LEADS (R13, the frozen mockup): deep-link to R13 itself — a requirement that
     // carries a Given/When→Then block — via the #/<screen>/<rid> route the feature strip uses too.
@@ -1026,21 +990,8 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
 test('A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)', async ({ page }) => {
   await coverReqs('dispatch:R7')
   await openDetail(page)
-  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  const before = await dt.locator('.reqpane .req[data-r="R1"]').getAttribute('data-state')
-  const flipped = before === 'proven' ? 'unproven' : 'proven'
-  // serve a board.html where R1's derived state has flipped — exactly what a run's rebuild would change
-  await page.route('**/board.html', async route => {
-    const real = await (await route.fetch()).text()
-    await route.fulfill({ contentType: 'text/html',
-      body: real.split('data-r="R1" data-state="' + before + '"').join('data-r="R1" data-state="' + flipped + '"') })
-  })
-  const url = page.url()
-  await checkReq('dispatch:R7', async () => {
-    await page.evaluate(() => (window as any).__refreshDerived())      // the SSE run-done/change path calls this
-    await expect(dt.locator('.reqpane .req[data-r="R1"]')).toHaveAttribute('data-state', flipped)  // synced in place
-    expect(page.url(), 'no reload — the open panel would survive').toBe(url)
-  })
+  // the cross-screen beat (spec/dispatch/steps.ts) — a flow composed from the board can chain it
+  await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, { screens: 4, areas: 3 }) })
 })
 
 // hudCheck is a CHECK, not a caption: it ASSERTS the got-vs-expected it paints on the recording's
@@ -1057,17 +1008,10 @@ test('hudCheck asserts the value it paints — a mismatch throws, a match does n
 
 test('Searching requirement text hides groups that miss', async ({ page }) => {
   await coverReqs('R9')
-  await checkReq('R9', async () => {
-    await expect(page.locator('.grp')).toHaveCount(3)        // Core, Running, Setup
-    await expect(page.locator('.grp .grph h2').first()).toHaveText('Core')
-    // search matches requirement TEXT, not just the name — 'canon' appears only in the board's own reqs
-    await page.locator('#q').fill('canon')
-    await expect(page.locator('#home .card:not(.gone)')).toHaveCount(1)
-    // a group with nothing matching hides itself rather than sitting empty
-    await expect(page.locator('.grp:not(.gone)')).toHaveCount(1)
-    await page.locator('#qx').click()
-    await expect(page.locator('#home .card:not(.gone)')).toHaveCount(4)
-  })
+  // the beat needs the card count its predecessor gives (the joint) — threaded, never re-hardcoded
+  const state = await openBoardHome(page)
+  state.cards = state.screens
+  await checkReq('R9', async () => { await searchRequirementText(page, state) })
 })
 
 // Board R16 (the human, 2026-08-21, with the frozen mockup) — home leads with a feature strip of six

@@ -316,7 +316,8 @@ export function readResults () {
 
 // Newest source file for a screen. If anything it proves has changed since the run, the result
 // describes a version of this screen that no longer exists.
-const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
+// steps.ts carries beat assertions since Task 5 — editing one moves the proof's source like test.spec.ts
+const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts', 'steps.ts']
   .map(f => join(dir, f))
   .filter(existsSync)
   .reduce((max, f) => Math.max(max, statSync(f).mtimeMs), 0)
