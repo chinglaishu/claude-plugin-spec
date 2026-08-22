@@ -1508,7 +1508,7 @@ export function build () {
     padding:9px 11px; display:flex; flex-direction:column; gap:2px; cursor:pointer;
     text-decoration:none; color:var(--ink); transition:border-color .12s; }
   .feat:hover { border-color:var(--ai); }
-  .feat .fm { font-size:14px; line-height:1; }
+  .feat .fm { font-size:var(--t-lg); line-height:1; }
   .feat .fm .fmq { color:var(--ink-4); }
   .feat .fm .fmok { color:var(--koke); }
   .feat .fm .fmbad { color:var(--bengara); }
@@ -1593,7 +1593,7 @@ export function build () {
     .fpage > .fread, .fpage > .feval { overflow:visible; }
   }
   .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:0 1px 3px rgba(28,27,24,.05); overflow-y:auto; overflow-x:hidden; min-height:0; }
+    box-shadow:var(--sh-sm); overflow-y:auto; overflow-x:hidden; min-height:0; }
   .fread { padding:var(--s6) var(--s6) var(--s5); }
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
   .fread .fttl { font-size:22px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
@@ -1623,7 +1623,7 @@ export function build () {
   /* the schematic slot (task 4) — the drawn, hash-pinned loop where a committed drawing exists;
      the honest placeholder line where none does. loop · stills reuses the media pane's .medbar. */
   .fschem { flex:none; background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:0 1px 3px rgba(28,27,24,.05); padding:var(--s4) var(--s5); }
+    box-shadow:var(--sh-sm); padding:var(--s4) var(--s5); }
   .fschem .figcap { display:flex; align-items:center; gap:var(--s2);
     font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); margin-bottom:var(--s2); }
@@ -1811,11 +1811,11 @@ export function build () {
   .gridview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
     margin:0 auto; overflow-y:auto; min-height:0; flex:1; padding-bottom:var(--s6); }
   .lst-card { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:0 1px 3px rgba(28,27,24,.05); overflow:hidden; flex:none; }
+    box-shadow:var(--sh-sm); overflow:hidden; flex:none; }
   .lst-head { display:flex; align-items:center; gap:var(--s3); width:100%; padding:var(--s3) var(--s4);
     border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
   .lst-head:hover { background:var(--canvas); }
-  .lst-head .chev { color:var(--ink-4); font-size:11px; flex:none; width:12px; transition:transform .12s; }
+  .lst-head .chev { color:var(--ink-4); font-size:var(--t-micro); flex:none; width:12px; transition:transform .12s; }
   .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
   .lst-head .lid { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; flex:none; }
   .lst-head .lttl { min-width:0; font-size:var(--t-md); color:var(--ink); font-weight:500;
@@ -1927,7 +1927,7 @@ export function build () {
   .flreq.inert { opacity:.75; }
   /* the player card — slim header, the ONE recording, a single caption line */
   .flowcard { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:0 1px 3px rgba(28,27,24,.05); padding:var(--s4); }
+    box-shadow:var(--sh-sm); padding:var(--s4); }
   .flhead { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s3); min-width:0; }
   .flttl { font-size:var(--t-md); font-weight:500; color:var(--ink); min-width:0; overflow:hidden;
     text-overflow:ellipsis; white-space:nowrap; }
@@ -2103,7 +2103,7 @@ export function build () {
   .req .h .chip { padding:3px; }
   .req .id { font:var(--t-micro) var(--mono); color:var(--ink-4); width:24px; flex:none; }
   .req .rt { flex:1; font-size:var(--t-md); color:var(--ink); }
-  .req .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; }
+  .req .chev { color:var(--ink-4); font-size:var(--t-micro); transition:transform .12s; }
   .req.open .chev { transform:rotate(90deg); }
   .req .body { display:none; padding:var(--s2) var(--s4) var(--s4) calc(var(--s4) + 24px + var(--s3));
     font-size:var(--t-sm); line-height:1.7; color:var(--ink-2); }
@@ -2145,7 +2145,7 @@ export function build () {
      2026-08-18: these rows are the hidden shared source now, and the many-to-many cue lives on
      Focus's proof line and the Flow chapters' requirement chips.) */
   .test:hover { background:var(--wash); }
-  .throw .chev { color:var(--ink-4); font-size:11px; transition:transform .12s; flex:none; }
+  .throw .chev { color:var(--ink-4); font-size:var(--t-micro); transition:transform .12s; flex:none; }
   .test.open .throw .chev { transform:rotate(90deg); }
   .ttl { flex:1; font-size:var(--t-md); color:var(--ink); }
   .throw .tags { flex:none; }
@@ -2255,7 +2255,7 @@ export function build () {
     border-radius:var(--r-sm); padding:1px 6px; }
   .beat.f .bid { background:var(--bengara-tint); color:var(--bengara); }
   .beat .blbl { flex:1; min-width:0; }
-  .beat .bchev { flex:none; color:var(--ink-4); font-size:11px; }
+  .beat .bchev { flex:none; color:var(--ink-4); font-size:var(--t-micro); }
   .beat .bdet { list-style:none; margin:3px 0 var(--s2) calc(12px + var(--s2)); padding:0; }
   .beat .bdet[hidden] { display:none; }
   .beat .bdet li { padding:1px 0; line-height:1.5; }
