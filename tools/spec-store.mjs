@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
 import { foldEvidence } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
+// pure: the beat-function metadata (GIVEN + BEATS) of a screen's steps.ts, read statically (Task 5)
+import { parseBeats } from './compose.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
 import { vizHash, vizStale } from './viz.mjs'
 
@@ -445,6 +447,11 @@ export function readScreen (name, results = null) {
   // The plan of every test, read from the spec file itself, so the board shows a test's steps
   // before it has ever run (board R10). Empty when there is no test file or it parses to nothing.
   const plans = hasTest ? parseTestPlan(readFileSync(join(dir, 'test.spec.ts'), 'utf8')) : []
+  // The screen's COMPOSABLE BEATS (the beat-function convention, Task 5): spec/<screen>/steps.ts's
+  // GIVEN + BEATS metadata, read the same static way the plans are — the composer's library derives
+  // from this plus the behavior blocks and tests, never the crawl. No file → no given, no beats.
+  const stepsPath = join(dir, 'steps.ts')
+  const steps = existsSync(stepsPath) ? parseBeats(readFileSync(stepsPath, 'utf8')) : { given: null, beats: [] }
   const state = readState(name)
 
   // A cell WAITS when the thing to its left does not exist yet — there is nothing to be stale
@@ -525,6 +532,7 @@ export function readScreen (name, results = null) {
     shotHash: hasShot ? shotHash(join(dir, 'screen.png')) : '',
     run,
     plans,
+    steps,
     prdHash,
     draftHash,
     draftHtml: hasDraft ? inlineDesign(draftSrc) : '',

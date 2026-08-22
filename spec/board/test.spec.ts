@@ -787,9 +787,11 @@ test('Flow reads like Focus — the rail on the left scrubs the one recording, a
     const plus = sel.locator('.fsel.newflow')
     await expect(plus).toContainText('New flow')
     await plus.click()
-    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
-    await expect(page.locator('#promptbody')).toContainText('spec/board/test.spec.ts')
-    await page.locator('#promptsheet [data-promptclose]').click()
+    await expect(page).toHaveURL(/#\/compose\/board$/)
+    await expect(dt.locator('.composeview')).toBeVisible()
+    await expect(page.locator('#promptsheet')).not.toHaveClass(/\bon\b/)
+    await dt.locator('.composeview .cback').click()            // back to Flow — the rail is still there
+    await expect(fv).toBeVisible()
 
     // (3) THE SPLIT (the signed R13 sentence — R2's principle): the chapter rail LEFT, the player
     // RIGHT, each scrolling on its OWN — and neither scrolls the page
@@ -881,15 +883,14 @@ test('Flow reads like Focus — the rail on the left scrubs the one recording, a
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R1')
     await expect(dt.locator('.viewseg .vseg[data-view="focus"]')).toHaveClass(/\bon\b/)
 
-    // (8) a screen with NO flows keeps its empty state, with the same authoring affordance
-    // (the add-test prompt — R15's handoff; the composer is Task 5)
+    // (8) a screen with NO flows keeps its empty state, with the same authoring affordance — the
+    // composer, opened FOR that screen (its beats group first; a flow's file follows its first beat)
     await page.goto('/#/conflicts/flow')
     const cfv = page.locator('.dt[data-screen="conflicts"]:not([hidden]) .flowview')
     await expect(cfv.locator('.flempty')).toContainText('No flow tests')
-    await cfv.locator('.flempty button[data-prompt]').click()
-    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
-    await expect(page.locator('#promptbody')).toContainText('spec/conflicts/test.spec.ts')
-    await page.locator('#promptsheet [data-promptclose]').click()
+    await cfv.locator('.flempty button').click()
+    await expect(page).toHaveURL(/#\/compose\/conflicts$/)
+    await expect(page.locator('.dt[data-screen="conflicts"]:not([hidden]) .composeview')).toBeVisible()
   })
 })
 
@@ -1391,5 +1392,184 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     expect(after).not.toBe(before)                      // the toggle really rewrote the prompt
     expect(after).toContain(offId)                      // and the cover line now names the toggled id
     await sheet.locator('[data-promptclose]').click()
+  })
+})
+
+// THE FLOW COMPOSER (board R13: "＋ New flow opens the composer (R15 family)"; D4 of the beats spec as
+// amended 2026-08-21 by the human — deterministic-first). Three honesty claims, each an assertion that
+// the old prompt-modal board fails: (1) the library is DERIVED from behavior blocks + tests ONLY — a
+// node exists exactly where a beat function, a tagging test, or a behavior block does, and a
+// requirement with none has no node; (2) the joint check — a beat whose `needs` nothing before it
+// gives is a named GAP, its filler pinned, and the chain holds once the filler is in; (3) the
+// two-path button is TRUTHFUL — "composed instantly, no AI" only while every chained beat is a
+// function-shaped, proven step; otherwise "runs in Claude", naming the blocking beat.
+import { readFileSync, existsSync } from 'node:fs'
+import { parseBeats } from '../../tools/compose.mjs'
+const expectedLibrary = async (page: any) => {
+  // derive the expected node set from the BAKED panes (what the board itself shows) + steps.ts on
+  // disk (the beat metadata, read the same static way the board reads it) — never from the composer
+  const screens: Array<{ name: string, reqs: Array<{ id: string, behavior: boolean }>, tags: string[] }> =
+    await page.locator('.dt[data-screen]').evaluateAll((dts: any[]) => dts.map(dt => ({
+      name: dt.dataset.screen,
+      reqs: [].slice.call(dt.querySelectorAll('.reqpane .req')).map((r: any) => ({
+        id: r.dataset.r, behavior: !!r.querySelector('.behavior') })),
+      tags: [].slice.call(dt.querySelectorAll('.testpane .test .tags .tag')).map((t: any) =>
+        (t.dataset.q.includes(':') ? t.dataset.q : dt.dataset.screen + ':' + t.dataset.q))
+    })))
+  const covered = new Set(screens.flatMap(s => s.tags))
+  const ids: string[] = []
+  const none: string[] = []
+  for (const s of screens) {
+    const stepsFile = 'spec/' + s.name + '/steps.ts'
+    const beats = existsSync(stepsFile) ? parseBeats(readFileSync(stepsFile, 'utf8')).beats : []
+    const beatCovered = new Set<string>()
+    for (const b of beats) { ids.push('b:' + s.name + ':' + b.fn); beatCovered.add(b.proves) }
+    for (const r of s.reqs) {
+      if (beatCovered.has(r.id)) continue
+      if (covered.has(s.name + ':' + r.id)) ids.push('i:' + s.name + ':' + r.id)
+      else if (r.behavior) ids.push('o:' + s.name + ':' + r.id)
+      else none.push(s.name + ':' + r.id)
+    }
+  }
+  return { ids, none }
+}
+
+test('＋ New flow opens the composer — a derived library, the joint check, a truthful two-path button', async ({ page }) => {
+  await coverReqs('R13', 'R15')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await page.evaluate(() => { try { localStorage.removeItem('sbComposeDraft:board') } catch (e) {} })
+  const cv = dt.locator('.composeview')
+  await checkReq('R13', async () => {
+    // ＋ New flow ROUTES to the composer (#/compose/<screen>) — the prompt modal no longer opens
+    await dt.locator('.viewseg .vseg[data-view="flow"]').click()
+    await dt.locator('.flowsel .fsel.newflow').click()
+    await expect(page).toHaveURL(/#\/compose\/board$/)
+    await expect(cv).toBeVisible()
+    await expect(page.locator('#promptsheet')).not.toHaveClass(/\bon\b/)
+
+    // (1) LIBRARY HONESTY — exactly the derived node set, and none for a requirement with nothing
+    const { ids, none } = await expectedLibrary(page)
+    const shown: string[] = await cv.locator('.lrow[data-node]').evaluateAll((els: any[]) => els.map(e => e.dataset.node))
+    expect(shown.length, 'the library is not empty').toBeGreaterThan(0)
+    expect(new Set(shown)).toEqual(new Set(ids))
+    expect(none.length, 'this tree has at least one requirement with neither a test nor a behavior block').toBeGreaterThan(0)
+    for (const q of none) await expect(cv.locator(`.lrow[data-node$=":${q.replace(':', ':')}"]`)).toHaveCount(0)
+    // a beat node is the board's own steps.ts beat; an inline node says so (a flow using it runs via Claude)
+    await expect(cv.locator('.lrow[data-node="b:board:openDetailReader"][data-kind="beat"]')).toHaveCount(1)
+    await expect(cv.locator('.lrow[data-node="i:board:R3"][data-kind="inline"] .lneed')).toContainText(/inline test/i)
+
+    // (2) THE JOINT CHECK — chain toggleViews (needs `detail`) straight after the Given (gives `home`)
+    await expect(cv.locator('.vchain .crow2.given')).toHaveCount(1)           // the fixture, set once
+    await cv.locator('.lrow[data-node="b:board:toggleViews"] .lname2').click()
+    await expect(cv.locator('.vchain .crow2[data-node="b:board:toggleViews"]')).toHaveCount(1)
+    await expect(cv.locator('.csum .schip.warn')).toContainText('1 gap')
+    await expect(cv.locator('.vchain .cconn.gap .jlab .kc')).toHaveText(['detail'])   // the missing token, named
+    // the filler (openDetailReader gives `detail`) is PINNED first in the library, whatever the filter
+    const filler = cv.locator('.lrow.hint')
+    await expect(filler).toHaveCount(1)
+    await expect(filler).toHaveAttribute('data-node', 'b:board:openDetailReader')
+    expect(await cv.locator('.lrow[data-node]').first().getAttribute('data-node')).toBe('b:board:openDetailReader')
+    await cv.locator('.csearch').fill('zzz-no-such-beat')
+    await expect(cv.locator('.lrow[data-node]')).toHaveCount(1)                 // only the pin survives the filter
+    await expect(cv.locator('.lrow[data-node]').first()).toHaveClass(/\bhint\b/)
+    await cv.locator('.csearch').fill('')
+    // adding the filler closes the gap — inserted BEFORE the beat that needed it, and the path holds
+    await filler.locator('.lname2').click()
+    await expect(cv.locator('.vchain .cconn.gap')).toHaveCount(0)
+    await expect(cv.locator('.csum .schip.ok')).toContainText('path holds')
+    const order: string[] = await cv.locator('.vchain .crow2[data-node]').evaluateAll((els: any[]) => els.map(e => e.dataset.node))
+    expect(order).toEqual(['b:board:openDetailReader', 'b:board:toggleViews'])
+
+    // (3) THE TWO-PATH BUTTON — truthful against the board's OWN derived state: "composed instantly,
+    // no AI" exactly when every chained beat is function-shaped AND currently PASSED on this board;
+    // the dogfood lag (a proof stale by a source edit until the next fold) flips it honestly to the
+    // Claude path, naming the beats that are not currently proven — never a green it did not earn
+    const status = async (rid: string) => dt.locator('.reqpane .req[data-r="' + rid + '"]').getAttribute('data-status')
+    const proven = (await status('R2')) === 'passed' && (await status('R13')) === 'passed'
+    const add = cv.locator('.cactions .cadd')
+    const why = cv.locator('.cactions .cwhy')
+    if (proven) {
+      await expect(add).toHaveAttribute('data-path', 'deterministic')
+      await expect(add).toContainText(/composed instantly, no AI/i)
+    } else {
+      await expect(add).toHaveAttribute('data-path', 'claude')
+      await expect(why).toContainText((await status('R2')) === 'passed' ? 'R13' : 'R2')
+    }
+    // chain an INLINE beat (R3 — a tagging test, no step function) ⇒ the Claude path, blocker named
+    await cv.locator('.lrow[data-node="i:board:R3"] .lname2').click()
+    await expect(add).toHaveAttribute('data-path', 'claude')
+    await expect(add).toContainText(/runs in Claude/i)
+    await expect(why).toContainText('R3')
+    // remove it again — the verdict flips back; nothing about this was stored in the tree
+    await cv.locator('.vchain .crow2[data-node="i:board:R3"] .vx').click()
+    await expect(add).toHaveAttribute('data-path', proven ? 'deterministic' : 'claude')
+    await expect(why).not.toContainText('R3')
+  })
+  await checkReq('R15', async () => {
+    // the manual fallbacks of the R15 family: ⧉ Copy prompt and a read-only view of the prompt
+    // carrying the exact file, the declared cover set and the kg-e2e discipline
+    await expect(cv.locator('.cactions .ccopy')).toContainText(/copy prompt/i)
+    const pre = cv.locator('.cprompt pre')
+    await expect(pre).toBeHidden()
+    await cv.locator('.cactions .ctog').click()
+    await expect(pre).toBeVisible()
+    await expect(pre).toContainText('spec/board/test.spec.ts')
+    await expect(pre).toContainText("coverReqs('R2', 'R13')")
+    await expect(pre).toContainText('failing test FIRST')
+    await expect(pre).toContainText('never weaken a test to go green')
+    expect(await pre.evaluate(el => el.tagName)).toBe('PRE')
+  })
+})
+
+// The composer's SERVER half: the deterministic endpoint runs the same composeCheck + emitFlow the
+// unit tests pin and REFUSES honestly — a gap, an inline beat, a missing name — and the Claude-path
+// job refuses before it would ever spawn. `dryRun` returns exactly what would be written without
+// writing (the suite must not edit its own running spec file); the real write is the same code one
+// flag away, proven by the composed demo flow this repo carries (Task 5 report).
+test('The compose endpoint composes deterministically and refuses honestly — no job spawns on a refusal', async ({ page, request }) => {
+  await coverReqs('R13')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  // the server derives proof from the SAME fold the baked board shows — so the expectation here
+  // follows the board's own derived state (the dogfood lag: a source edit stales a proof until the
+  // next fold, and the honest answer then is a refusal naming the beat, never a composed file)
+  const status = async (rid: string) => dt.locator('.reqpane .req[data-r="' + rid + '"]').getAttribute('data-status')
+  const proven = (await status('R1')) === 'passed' && (await status('R2')) === 'passed' && (await status('R13')) === 'passed'
+  await checkReq('R13', async () => {
+    const ok = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
+    if (proven) {
+      expect(ok.status()).toBe(200)
+      const out = await ok.json()
+      expect(out.path).toBe('spec/board/test.spec.ts')
+      expect(out.dryRun).toBe(true)
+      // (built in two halves — flowLanded scans THIS file too, and the literal would read as a landed test)
+      expect(out.text).toContain('test(' + "'scratch flow'")
+      expect(out.text).toContain("coverReqs('R1', 'R2')")
+      expect(out.text).toContain("checkReq('R1', async () => { await countHomeCards(page, state) })")
+      expect(out.text).toContain('const state = await openBoardHome(page)')
+      // the gap: toggleViews needs `detail` and nothing before it gives it
+      const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
+      expect(gap.status()).toBe(409)
+      expect(await gap.text()).toMatch(/needs detail/)
+      // no name: refused before anything is written
+      const noname = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: '  ', dryRun: true } })
+      expect(noname.status()).toBe(409)
+      expect(await noname.text()).toMatch(/name the flow/i)
+    } else {
+      // not currently proven ⇒ refused, the stale beat named — the emitter never composes on a stale Then
+      expect(ok.status()).toBe(409)
+      expect(await ok.text()).toMatch(/not function-shaped \+ proven/)
+    }
+    // an inline beat: the deterministic path refuses whatever the fold says, naming the Claude path
+    const inl = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'i:board:R3'], name: 'inline', dryRun: true } })
+    expect(inl.status()).toBe(409)
+    expect(await inl.text()).toMatch(/R3/)
+    expect(await inl.text()).toMatch(/not function-shaped \+ proven — the Claude path/)
+    // the Claude path: an empty chain is refused up front — no detached claude job is ever spawned
+    // for nothing (a live job needs a login and minutes; the suite never starts one)
+    const job = await request.post('/api/compose-job', { data: { chain: [], name: 'nothing' } })
+    expect(job.status()).toBe(400)
+    expect(await job.text()).toMatch(/chain at least one beat/i)
   })
 })

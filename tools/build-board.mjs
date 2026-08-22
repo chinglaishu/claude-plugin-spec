@@ -12,6 +12,8 @@ import {
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
+// pure: the flow composer's library derivation (Task 5) — fed to the client through the JSON island
+import { deriveLibrary } from './compose.mjs'
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
@@ -1319,7 +1321,7 @@ export function build () {
       ${feat('proof', reqHref(provenEx), '<span class="fmok">✓</span>', '<b>Proof from real runs</b> — stills · gif · video', see(provenEx, 'run the suite to capture proof'))}
       ${feat('drift', reqHref(driftEx), '<span class="fmbad">✗</span><span class="fmch">◈</span>', '<b>Drift is computed</b> — failed · changed, never stored', see(driftEx, 'none right now — nothing has drifted'))}
       ${feat('views', `#/${esc(home0.name)}/grid`, '☰', '<b>Focus · List · Flow</b> — three reads of one truth', 'open the List')}
-      ${feat('compose', `#/${esc(home0.name)}/grid`, '<span class="fmadd">＋</span>', '<b>Compose a flow</b> — the board hands Claude the prompt', 'open the add-test prompt')}
+      ${feat('compose', `#/compose/${esc(home0.name)}`, '<span class="fmadd">＋</span>', '<b>Compose a flow</b> — chain proven beats; no AI when they all are', 'open the composer')}
       ${feat('gaps', reqHref(gapEx), '<span class="fmun">○◌</span>', '<b>Honest gaps</b> — untested · not-reached stay ungreen', see(gapEx, 'none right now — everything is covered'))}
     </div>
     <button class="featx" id="featx" aria-label="dismiss the feature strip" title="hide this — a client-side preference, never stored">✕</button>
@@ -1364,6 +1366,7 @@ export function build () {
     </div>
     ${listPane(s, kindOf)}
     <div class="flowview" hidden></div>
+    <div class="composeview" hidden></div>
   </div>
   <div class="dtfoot" hidden></div>
 </section>`).join('')
@@ -1372,9 +1375,32 @@ export function build () {
   // this template literal — and is read in verbatim below. The build-time values it needs are handed
   // over as a JSON ISLAND (window.__BOARD__), so code and data cross the seam cleanly: no
   // interpolation reaches into the script, so the backtick / ${} / \n escaping traps cannot happen.
+  // THE COMPOSER'S LIBRARY (Task 5; D4 as amended 2026-08-21): derived HERE, on every build, from
+  // behavior blocks + tests only (deriveLibrary — pure, unit-tested) — never the crawl, never a stored
+  // graph. Each node carries its requirement's harvested after/before frames (its proof's evidence,
+  // when a run has left any) as the composer's thumbnails, and the behavior's last Then as its tip.
+  const lib = deriveLibrary(screens)
+  const byName = new Map(screens.map(s => [s.name, s]))
+  const composeNodes = lib.nodes.map(n => {
+    const scr = byName.get(n.screen)
+    const ev = scr && scr.run && scr.run.evidence && scr.run.evidence[n.proves]
+    const req = scr && scr.reqs.find(r => r.id === n.proves)
+    const beats = req && req.behavior ? req.behavior.beats : []
+    return {
+      ...n,
+      still: ev && ev.after ? ev.after : null,
+      before: ev && ev.before ? ev.before : null,
+      then: beats.length ? beats[beats.length - 1].then : ''
+    }
+  })
   const BOARD_DATA = {
     screens: screens.map(s => s.name),
-    skillIds: HOW_FLOWS.map(f => f.id)
+    skillIds: HOW_FLOWS.map(f => f.id),
+    compose: {
+      nodes: composeNodes,
+      givens: lib.givens,
+      titles: Object.fromEntries(screens.map(s => [s.name, s.title]))
+    }
   }
   const clientJs = readFileSync(join(ROOT, 'tools', 'board', 'client.js'), 'utf8')
 
@@ -1926,6 +1952,122 @@ export function build () {
     border-radius:var(--r); font-size:var(--t-xs); padding:3px 11px; cursor:pointer; flex:none; }
   .flcap { font-size:var(--t-xs); color:var(--ink-3); margin-top:var(--s2); text-align:center;
     min-height:1.4em; }
+  /* THE FLOW COMPOSER (board R13 / R15 family; Task 5, the frozen mockup's #/compose view): beats
+     are frames, the chain is a rail of frames. Tokens only — every pair measured for AA, resting and
+     hover (Task 5 report): worst in this block is --yamabuki on --yamabuki-tint 4.64:1; --ink-4 on
+     --paper 5.18, --ink-3 on --wash 5.29, --ink-3 on --ai-tint 5.45, --bengara on --ai-tint 5.48,
+     --koke on --koke-tint 6.06, --ai on --ai-tint 7.62. A blocked library row is dimmed by COLOUR
+     (ink-4 on paper) and a greyed thumbnail, never by opacity on text — that sinks it under 4.5. */
+  .composeview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+    margin:0 auto; flex:1; min-height:0; overflow-y:auto; }
+  .composeview[hidden] { display:none; }
+  .chead { display:flex; align-items:center; gap:var(--s3); flex:none; }
+  .chead .chl { display:flex; flex-direction:column; gap:1px; flex:1; min-width:0; }
+  .chead .cht { font-size:var(--t-lg); font-weight:600; color:var(--ink); }
+  .chead .chs { font:var(--t-xs) var(--mono); color:var(--ink-3); }
+  .cseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:var(--r); overflow:hidden; }
+  .cseg .cmode { border:0; background:var(--paper); color:var(--ink-3); font:var(--t-xs) var(--sans);
+    padding:4px 10px; cursor:pointer; }
+  .cseg .cmode.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  .cwrap { display:grid; grid-template-columns:340px minmax(0,1fr); gap:var(--s4); align-items:start; }
+  @media (max-width:1000px) { .cwrap, .cout { grid-template-columns:1fr; } }
+  .cpanel { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--paper);
+    padding:var(--s3) var(--s4); }
+  .cpanel h2 { font-size:var(--t-lg); margin:0; }
+  .chd { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+  .chint { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); text-align:right; }
+  .cgrp { font:var(--t-micro) var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3);
+    margin:10px 0 6px; }
+  .csearch { width:100%; border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper);
+    padding:5px 10px; font:var(--t-xs)/1.4 var(--sans); color:var(--ink); margin-bottom:4px; }
+  .csearch::placeholder { color:var(--ink-3); }
+  /* library = "what can I do next?": ready beats bright, blocked beats dimmed by colour with the token
+     they need; a still per row for recognition, the before/after pair alternating on hover */
+  .lrow { display:flex; align-items:center; gap:9px; padding:4px 8px; border:1px solid transparent;
+    border-radius:var(--r); cursor:pointer; }
+  .lrow:hover { border-color:var(--ai); background:var(--paper); }
+  .lrow.hint { border-color:var(--yamabuki); background:var(--yamabuki-tint); }
+  .lrow.dim .lname2 { color:var(--ink-4); }
+  .lrow.dim .lthumb { filter:grayscale(1) opacity(.55); }
+  .lrow.dim:hover .lthumb { filter:none; }
+  .lthumb { width:118px; height:64px; flex:none; border:1px solid var(--hair-2); border-radius:var(--r-sm);
+    overflow:hidden; position:relative; background:var(--wash); }
+  .lthumb img, .cthumb2 img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; cursor:zoom-in; }
+  .lmeta2 { min-width:0; flex:1; }
+  .lname2 { font-size:var(--t-xs); line-height:1.3; color:var(--ink); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .lname2 .lfill { color:var(--yamabuki); }
+  .lneed { font:var(--t-micro)/1.35 var(--mono); color:var(--yamabuki); margin-top:1px; }
+  .lrow.hint .lneed, .lrow.hint .lname2 .lfill { color:var(--yamabuki); }
+  .lneed.lmute { color:var(--ink-3); }
+  .lrid { font:var(--t-micro) var(--mono); color:var(--ink-3); flex:none; }
+  .noscene { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;
+    padding:0 6px; font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  .cold2 { border:1px dashed var(--hair-2); border-radius:var(--r); padding:8px 11px; font-size:var(--t-xs);
+    color:var(--ink-2); line-height:1.55; }
+  .cnamebar { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+  .cnamebar .lbl2 { font:var(--t-micro) var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-3); flex:none; }
+  .cnamebar input { border:1px solid var(--hair-2); border-radius:var(--r); background:var(--paper); padding:4px 10px;
+    font:var(--t-sm)/1.4 var(--sans); color:var(--ink); width:280px; }
+  .cnamebar input::placeholder { color:var(--ink-3); }
+  /* the chain = ONE RAIL — beats hang off a single line; the segments carry the joint state */
+  .csum { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:var(--s3); }
+  .schip { font:var(--t-micro) var(--mono); padding:1px 9px; border-radius:999px; border:1px solid var(--hair-2);
+    color:var(--ink-2); background:var(--paper); }
+  .schip.ok { color:var(--koke); border-color:var(--koke-line); background:var(--koke-tint); }
+  .schip.warn { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
+  .vchain { display:flex; flex-direction:column; max-width:640px; }
+  .crow2 { display:flex; align-items:center; gap:10px; border-radius:var(--r); padding:3px 6px 3px 0; }
+  .crow2:hover { background:var(--wash); }
+  .cdot { width:26px; flex:none; display:flex; justify-content:center; }
+  .cdot span { width:9px; height:9px; border-radius:999px; background:var(--koke); box-shadow:0 0 0 2px var(--paper); }
+  .crow2.given .cdot span { background:var(--ink-3); }
+  .crow2.outline .cdot span { width:8px; height:8px; background:var(--paper); border:2px dashed var(--yamabuki); }
+  .crow2.gapb .cdot span { background:var(--yamabuki); }
+  .cthumb2 { width:190px; height:102px; flex:none; border:1px solid var(--hair-2); border-radius:var(--r-sm);
+    overflow:hidden; position:relative; background:var(--wash); }
+  .cmeta2 { min-width:0; flex:1; }
+  .cname3 { font-size:var(--t-sm); line-height:1.35; color:var(--ink); }
+  .csub3 { font:var(--t-micro) var(--mono); color:var(--ink-3); margin-top:1px; }
+  .cchip { font:var(--t-micro) var(--mono); color:var(--ai); border:1px solid var(--ai-line); background:var(--ai-tint);
+    border-radius:var(--r-sm); padding:0 6px; flex:none; }
+  .cchip.fix { color:var(--ink-3); border-color:var(--hair-2); background:var(--wash); }
+  .crow2.outline .cchip { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
+  .vx { border:0; background:none; color:var(--ink-3); cursor:pointer; font-size:var(--t-md); padding:2px 6px; flex:none;
+    opacity:0; transition:opacity .15s; }
+  .crow2:hover .vx, .vx:focus { opacity:1; }
+  .vx:hover { color:var(--bengara); }
+  .cconn { display:flex; align-items:center; gap:8px; padding-left:12px; }
+  .cconn .seg { width:2px; height:14px; background:var(--koke-line); border-radius:2px; }
+  .cconn.gap .seg { height:24px; background:none; border-left:2px dashed var(--yamabuki); width:0; }
+  .cconn .jlab { font:var(--t-micro) var(--mono); color:var(--yamabuki); }
+  .kc { display:inline-block; font:var(--t-micro) var(--mono); padding:0 5px; border-radius:var(--r-sm);
+    background:var(--paper); border:1px solid var(--yamabuki-line); color:var(--yamabuki); }
+  .cactions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  /* the two-path button wears the colour of the state it produces — a composed, model-free flow
+     (koke outline) or a Claude-authored one (the accent) — never inverted: the detail header's Run
+     is this screen's one inverted element */
+  .cadd.det { border-color:var(--koke); color:var(--koke); background:var(--koke-tint); }
+  .cadd.det:hover { border-color:var(--koke); background:var(--paper); }
+  .cadd.ai { border-color:var(--ai); color:var(--ai); background:var(--ai-tint); }
+  .cadd.ai:hover { border-color:var(--ai); background:var(--paper); }
+  .cadd:disabled { color:var(--ink-3); border-color:var(--hair-2); background:var(--paper); cursor:default; }
+  .linkbtn.ctog { border:0; background:none; color:var(--ai); font-size:var(--t-xs); cursor:pointer; text-decoration:underline; padding:0; }
+  .cwhy { font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  /* the hand-off job — the board's own detached claude runner (Scan/Rewrite family), or the emitter */
+  .cjob { border:1px solid var(--ai-line); border-radius:var(--r-md); background:var(--ai-tint); padding:10px 14px; margin-top:var(--s3); }
+  .cjob .cjhead { font:var(--t-micro) var(--mono); color:var(--ai); letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+  .cjstep { font:var(--t-xs)/1.7 var(--mono); color:var(--ai); display:flex; gap:7px; align-items:baseline; }
+  .cjstep.run { color:var(--ink-2); }
+  .cjstep.bad { color:var(--bengara); }
+  .cjstep a { color:var(--ai); font-weight:500; }
+  .cout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:var(--s4); margin-top:var(--s3); align-items:start; }
+  .cprompt { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--paper); overflow:hidden; margin-top:10px; }
+  .cprompt[hidden] { display:none; }
+  .cprompt .ph2 { display:flex; align-items:center; gap:var(--s2); padding:7px 12px; border-bottom:1px solid var(--hair-2);
+    background:var(--wash); font:var(--t-micro) var(--mono); color:var(--ink-2); }
+  .cprompt pre { margin:0; padding:10px 14px; font:var(--t-xs)/1.65 var(--mono); color:var(--ink-2); white-space:pre-wrap; max-height:260px; overflow:auto; }
+  .chonest { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--wash); padding:10px 14px;
+    font-size:var(--t-xs); color:var(--ink-2); line-height:1.6; }
   /* the honest empty state — no flows is a statement with a next move, never a blank pane */
   .flempty { text-align:center; padding:64px 20px; color:var(--ink-3); }
   .flempty h3 { font-size:var(--t-lg); font-weight:600; color:var(--ink-2); margin:0 0 4px; }

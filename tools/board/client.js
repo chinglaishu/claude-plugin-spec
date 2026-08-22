@@ -139,6 +139,13 @@ const B = window.__BOARD__ || {}
     // and #/<screen>/flow open the named view. The sub-path is routing sugar over setView — the
     // views themselves stay derived, nothing new is stored.
     const seg = decodeURIComponent(location.hash.replace(/^#\//, '')).split('/')
+    // #/compose/<screen> — the flow composer for that screen (the frozen mockup's address; board R13)
+    if (seg[0] === 'compose' && SCREENS.indexOf(seg[1]) >= 0) {
+      show(SCREENS.indexOf(seg[1]))
+      const cdt = document.querySelector('.dt[data-screen="' + seg[1] + '"]')
+      if (cdt) setView(cdt, 'compose')
+      return
+    }
     const name = seg[0]
     const i = SCREENS.indexOf(name)
     if (i >= 0) {
@@ -321,6 +328,12 @@ const B = window.__BOARD__ || {}
       const t = x.querySelector('.rt')
       return { id: x.getAttribute('data-r'), title: t ? t.textContent : '' }
     })
+  }
+  // ＋ New flow / ＋ Author a flow test route to the composer (board R13: "＋ New flow opens the
+  // composer") — the prompt modal stays for the requirement/test ⋯ menus (R15)
+  function openCompose (dt) {
+    history.pushState(null, '', '#/compose/' + dt.dataset.screen)
+    setView(dt, 'compose')
   }
   function openAddTest (dt, coverIds) {
     openPrompt('addtest', { screen: dt.dataset.screen, coverIds: coverIds || [], reqList: screenReqList(dt) })
@@ -855,7 +868,7 @@ const B = window.__BOARD__ || {}
 
   // THE FLOW VIEW (board R13, the frozen mockup 2026-08-22): the authored flows read like Focus.
   // ONE flow at a time, picked in a selector row above (one pill per flow + ＋ New flow, which
-  // keeps the prompt-modal handoff — the composer is Task 5), then the SPLIT: the chapter rail on
+  // opens the composer — Task 5), then the SPLIT: the chapter rail on
   // the LEFT and the player on the RIGHT, each scrolling on its own (R2's principle). The rail IS
   // the scrubber — clicking a chapter seeks the ONE recording to that proves-step's timestamp
   // (never cut), the current chapter wears a ring, a failing chapter wears bengara and stops the
@@ -891,16 +904,14 @@ const B = window.__BOARD__ || {}
     const screen = dt.dataset.screen
     const flows = flowsOf(dt)
     if (!flows.length) {
-      // the empty state keeps the SAME authoring affordance the board has everywhere: the add-test
-      // prompt (R15's handoff — the board writes nothing; the composer is Task 5)
+      // the empty state offers the same authoring affordance the selector row does: the composer
       const em = document.createElement('div'); em.className = 'flempty'
       const h = document.createElement('h3'); h.textContent = 'No flow tests on this screen'
       const p = document.createElement('p')
       p.textContent = 'A flow crosses screens along a chosen path and reads as the units it connects.'
       const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'
-      b.dataset.prompt = 'addtest'   // an opening click — the sheet's outside-click closer skips it
-      b.textContent = '＋ Author a flow test'
-      b.addEventListener('click', function () { openAddTest(dt) })
+      b.textContent = '＋ Author a flow test — chain proven beats'
+      b.addEventListener('click', function () { openCompose(dt) })
       em.appendChild(h); em.appendChild(p); em.appendChild(b)
       fv.appendChild(em)
       return
@@ -922,11 +933,10 @@ const B = window.__BOARD__ || {}
     })
     {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'fsel newflow'
-      b.dataset.prompt = 'addtest'
       const t = document.createElement('span'); t.className = 'fsttl'; t.textContent = '＋ New flow'
-      const k = document.createElement('span'); k.className = 'fk'; k.textContent = 'the board hands Claude the prompt'
+      const k = document.createElement('span'); k.className = 'fk'; k.textContent = 'chain proven beats — composed, or a prompt'
       b.appendChild(t); b.appendChild(k)
-      b.addEventListener('click', function () { openAddTest(dt) })
+      b.addEventListener('click', function () { openCompose(dt) })
       bar.appendChild(b)
     }
     fv.appendChild(bar)
@@ -1240,6 +1250,401 @@ const B = window.__BOARD__ || {}
     return split
   }
 
+  // THE FLOW COMPOSER (board R13's "＋ New flow opens the composer"; D4 of the 2026-08-20 beats spec
+  // as amended 2026-08-21 by the human — deterministic-first). The LIBRARY is derived at build time
+  // (tools/compose.mjs deriveLibrary, fed by build-board through the JSON island) from behavior
+  // blocks + tests ONLY: a beat node where spec/<screen>/steps.ts declares a step function, an
+  // inline node where a test tags a requirement but no step function exists (Claude-path only,
+  // marked), an outline node where only a behavior block exists (its flow is the first proof), and
+  // NO node where a requirement has neither. The chain is a BROWSER-ONLY draft (localStorage) — the
+  // board stores no graph as truth. The two-path button renders the SAME answer the server's
+  // composeCheck gives (every chained beat function-shaped + proven ⇒ composed with no model; else
+  // the detached claude job, the blocking beat named); the server re-derives and re-checks before
+  // it writes anything, so this is a rendering of the rule, never the authority.
+  const COMPOSE = B.compose || { nodes: [], givens: {}, titles: {} }
+  const cnodeOf = id => COMPOSE.nodes.find(function (n) { return n.id === id }) || null
+  const draftKey = screen => 'sbComposeDraft:' + screen
+  function readDraft (screen) {
+    try {
+      const d = JSON.parse(localStorage.getItem(draftKey(screen)) || 'null')
+      if (d && Array.isArray(d.chain)) return { chain: d.chain.filter(cnodeOf), name: String(d.name || '') }
+    } catch (err) { /* no draft */ }
+    return { chain: [], name: '' }
+  }
+  function writeDraft (screen, d) { try { localStorage.setItem(draftKey(screen), JSON.stringify(d)) } catch (err) { /* private mode */ } }
+  // the chain's start screen decides the fixture and the file (a flow lives where it starts)
+  const chainStart = (screen, chain) => (chain.length ? cnodeOf(chain[0]).screen : screen)
+  const givenFor = (screen, chain) => COMPOSE.givens[chainStart(screen, chain)] || null
+  function chainCheck (screen, chain) {
+    const given = givenFor(screen, chain)
+    const state = {}
+    ;(given ? given.gives : []).forEach(function (t) { state[t] = true })
+    const rows = chain.map(function (id) {
+      const n = cnodeOf(id)
+      const missing = n.needs.filter(function (t) { return !state[t] })
+      n.gives.forEach(function (t) { state[t] = true })
+      return { n: n, missing: missing }
+    })
+    return { rows: rows, end: state, gap: rows.find(function (r) { return r.missing.length }) || null }
+  }
+  const fillerFor = missing => COMPOSE.nodes.find(function (n) { return n.gives.some(function (g) { return missing.indexOf(g) >= 0 }) }) || null
+  const qualified = (n, start) => (n.screen === start ? '' : n.screen + ':') + n.proves
+  // the prompt — the SAME text tools/compose.mjs composePrompt builds server-side for the job
+  function composePromptText (screen, chain, name) {
+    const picked = chain.map(cnodeOf)
+    const start = chainStart(screen, chain)
+    const given = givenFor(screen, chain)
+    const covers = []
+    picked.forEach(function (n) { const q = qualified(n, start); if (covers.indexOf(q) < 0) covers.push(q) })
+    const screens = {}; picked.forEach(function (n) { screens[n.screen] = true })
+    const unproven = picked.filter(function (n) { return !n.proven })
+    const beats = picked.map(function (n, i) {
+      return '  beat ' + (i + 1) + ' — ' + n.name + '   (proves ' + qualified(n, start) + (n.proven ? '' : ' — UNPROVEN, red-first here') + ')'
+    }).join('\n')
+    return 'Author a ' + (Object.keys(screens).length > 1 ? 'cross-screen ' : '') + 'flow test for the "' + start + '" screen.\n\n' +
+      'File: spec/' + start + '/test.spec.ts   (a flow lives in the screen it starts on)\n' +
+      "Test name: '" + (name.trim() || 'Untitled flow') + "'\n" +
+      'Declare up front: coverReqs(' + (covers.map(function (c) { return "'" + c + "'" }).join(', ') || '…') + ')\n\n' +
+      'Given (the fixture): ' + (given ? given.text : 'seed the golden fixture (spec/<screen>/steps.ts has no GIVEN yet)') + '\n' +
+      (beats || '  (chain beats above)') + '\n' +
+      (unproven.length ? '\nUnproven beats: ' + unproven.map(function (n) { return n.proves }).join(', ') + ' — this flow is their FIRST proof; same red-first standard.\n' : '') +
+      '\nA beat already function-shaped (spec/<screen>/steps.ts) is CALLED, never re-written; an inline or\n' +
+      'unwritten beat is authored red-first — and refactoring it into an exported step function while you\n' +
+      'are there makes the next flow composable with no model at all (the beat-function convention,\n' +
+      'kg-e2e).\n\n' +
+      "Discipline (kg-e2e): failing test FIRST · every Then a real assertion · checkReq('<id>') inside the beat it proves · every asserted value visible in the recording · never weaken a test to go green."
+  }
+  // a thumbnail: the requirement's harvested AFTER frame (its proof, a real run's evidence — the
+  // composer shows what a beat's Then looked like when it last passed); hover alternates the
+  // before/after pair (the beat as a two-frame loop); click zooms in the shared lightbox
+  function cthumb (n, cls) {
+    const box = document.createElement('div'); box.className = cls
+    if (n.still) {
+      const img = document.createElement('img'); if (cls === 'lthumb') img.loading = 'lazy'; img.src = n.still
+      img.alt = n.name + ' — after'; img.dataset.after = n.still
+      if (n.before) img.dataset.before = n.before
+      box.appendChild(img)
+    } else {
+      const ns = document.createElement('div'); ns.className = 'noscene'
+      ns.textContent = n.kind === 'outline' ? 'no proof yet' : 'no evidence frame yet'
+      box.appendChild(ns)
+    }
+    return box
+  }
+  const cplayers = []
+  function cplay (box) {
+    const img = box.querySelector('img'); if (!img || !img.dataset.before || box._cstop) return
+    // both frames DECODED before the loop starts — swapping src on a still-loading image restarts
+    // its load every tick and the frame never paints (a large evidence png outlives a 700ms tick)
+    const pre = new Image(); pre.src = img.dataset.before
+    let on = false; let t = null; let dead = false
+    const go = function () {
+      if (dead) return
+      t = setInterval(function () { on = !on; img.src = on ? img.dataset.before : img.dataset.after }, 700)
+      cplayers.push(t)
+    }
+    if (pre.complete) go(); else { pre.onload = go; pre.onerror = function () { dead = true } }
+    box._cstop = function () { dead = true; if (t) clearInterval(t); img.src = img.dataset.after; box._cstop = null }
+  }
+  function cstopAll () {
+    while (cplayers.length) clearInterval(cplayers.pop())
+    document.querySelectorAll('.composeview .cthumb2, .composeview .lthumb').forEach(function (b) { if (b._cstop) b._cstop() })
+  }
+  let compMode = 'gif'     // chain thumbs: gif (the two-frame loop) ↔ stills — a view preference, never stored
+  function buildCompose (dt) {
+    const cv = dt.querySelector('.composeview')
+    if (!cv) return
+    cstopAll()
+    const screen = dt.dataset.screen
+    const draft = readDraft(screen)
+    let chain = draft.chain
+    const q = (cv._q || '').trim().toLowerCase()
+    cv.innerHTML = ''
+    const chk = chainCheck(screen, chain)
+    const filler = chk.gap ? fillerFor(chk.gap.missing) : null
+    const ready = n => n.needs.every(function (t) { return chk.end[t] })
+    const start = chainStart(screen, chain)
+    const given = givenFor(screen, chain)
+    writeDraft(screen, { chain: chain, name: draft.name })
+
+    // ── the header row
+    const head = document.createElement('div'); head.className = 'chead'
+    const hl = document.createElement('div'); hl.className = 'chl'
+    const ht = document.createElement('span'); ht.className = 'cht'; ht.textContent = 'Flow composer'
+    const hs = document.createElement('span'); hs.className = 'chs'
+    hs.textContent = (COMPOSE.titles[screen] || screen) + ' · chain proven beats → a composed flow, or a ready kg-e2e prompt'
+    hl.appendChild(ht); hl.appendChild(hs); head.appendChild(hl)
+    const seg = document.createElement('div'); seg.className = 'cseg'
+    ;['gif', 'stills'].forEach(function (m) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cmode' + (compMode === m ? ' on' : '')
+      b.textContent = m; b.addEventListener('click', function () { compMode = m; buildCompose(dt) }); seg.appendChild(b)
+    })
+    head.appendChild(seg)
+    const back = document.createElement('button'); back.type = 'button'; back.className = 'btn sm cback'
+    back.textContent = 'Back to Flow'
+    back.addEventListener('click', function () { history.pushState(null, '', '#/' + screen + '/flow'); setView(dt, 'flow') })
+    head.appendChild(back)
+    cv.appendChild(head)
+
+    const wrap = document.createElement('div'); wrap.className = 'cwrap'
+    // ── the LIBRARY: "what can I do next?" — ready beats bright and first, blocked beats dimmed with
+    // the token they still need, the gap's filler pinned on top whatever the filter
+    const lib = document.createElement('div'); lib.className = 'cpanel clib'
+    const lh = document.createElement('div'); lh.className = 'chd'
+    const lt = document.createElement('h2'); lt.textContent = 'Beats'
+    const lhint = document.createElement('span'); lhint.className = 'chint'; lhint.textContent = 'hover = preview · click name = chain · click frame = zoom'
+    lh.appendChild(lt); lh.appendChild(lhint); lib.appendChild(lh)
+    const search = document.createElement('input'); search.className = 'csearch'; search.type = 'search'
+    search.placeholder = '⌕ find a beat — name or R id'; search.value = cv._q || ''
+    search.addEventListener('input', function () {
+      cv._q = search.value; const at = search.selectionStart
+      buildCompose(dt)
+      const s2 = cv.querySelector('.csearch'); if (s2) { s2.focus(); try { s2.setSelectionRange(at, at) } catch (err) {} }
+    })
+    lib.appendChild(search)
+    const matches = COMPOSE.nodes.filter(function (n) {
+      return !q || (n.name + ' ' + n.proves + ' ' + n.screen + ' ' + (COMPOSE.titles[n.screen] || '')).toLowerCase().indexOf(q) >= 0
+    })
+    const row = function (n) {
+      const r = document.createElement('div'); r.className = 'lrow' + (ready(n) ? '' : ' dim') +
+        (n.kind === 'outline' ? ' outline' : '') + (filler && filler.id === n.id ? ' hint' : '')
+      r.dataset.node = n.id; r.dataset.kind = n.kind; r.dataset.ready = ready(n) ? '1' : '0'
+      r.title = n.then || n.name
+      r.appendChild(cthumb(n, 'lthumb'))
+      const meta = document.createElement('div'); meta.className = 'lmeta2'
+      const nm = document.createElement('div'); nm.className = 'lname2'; nm.textContent = n.name
+      if (filler && filler.id === n.id) { const b = document.createElement('b'); b.className = 'lfill'; b.textContent = ' ← fills the gap'; nm.appendChild(b) }
+      meta.appendChild(nm)
+      if (!ready(n)) {
+        const need = document.createElement('div'); need.className = 'lneed'
+        need.textContent = 'needs ' + n.needs.filter(function (t) { return !chk.end[t] }).join(' · ')
+        meta.appendChild(need)
+      }
+      if (n.kind === 'inline') {
+        const il = document.createElement('div'); il.className = 'lneed lmute'
+        il.textContent = 'inline test · runs via Claude'; meta.appendChild(il)
+      } else if (n.kind === 'outline') {
+        const ol = document.createElement('div'); ol.className = 'lneed'
+        ol.textContent = 'behavior only · first proof, via Claude'; meta.appendChild(ol)
+      } else if (!n.proven) {
+        const np = document.createElement('div'); np.className = 'lneed'
+        np.textContent = 'not currently passing · re-prove first'; meta.appendChild(np)
+      }
+      r.appendChild(meta)
+      const rid = document.createElement('span'); rid.className = 'lrid'; rid.textContent = n.proves
+      r.appendChild(rid)
+      r.addEventListener('mouseenter', function () { cplay(r.querySelector('.lthumb')) })
+      r.addEventListener('mouseleave', function () { const b = r.querySelector('.lthumb'); if (b && b._cstop) b._cstop() })
+      r.addEventListener('click', function (e) {
+        if (e.target.closest('img')) return      // the frame zooms (the shared lightbox) — a different intent
+        compAdd(dt, n.id)
+      })
+      return r
+    }
+    if (filler) lib.appendChild(row(filler))
+    const grps = {}
+    matches.forEach(function (n) { if (!filler || n.id !== filler.id) (grps[n.screen] = grps[n.screen] || []).push(n) })
+    const order = Object.keys(grps).sort(function (a, b) { return a === screen ? -1 : b === screen ? 1 : 0 })
+    if (order.length) {
+      order.forEach(function (sid) {
+        const g = document.createElement('div'); g.className = 'cgrp'
+        g.textContent = (COMPOSE.titles[sid] || sid) + ' · ' + grps[sid].length
+        lib.appendChild(g)
+        grps[sid].slice().sort(function (a, b) { return (ready(b) ? 1 : 0) - (ready(a) ? 1 : 0) }).forEach(function (n) { lib.appendChild(row(n)) })
+      })
+    } else if (!filler) {
+      const none = document.createElement('div'); none.className = 'cold2'
+      none.textContent = q ? 'no beat matches “' + q + '”' : 'no beats yet — a node appears here the moment a behavior block or a test exists'
+      lib.appendChild(none)
+    }
+    if (!q) {
+      // screens with NO node at all, named honestly — nothing is invented for them
+      const empty = SCREENS.filter(function (s) { return !COMPOSE.nodes.some(function (n) { return n.screen === s }) })
+      empty.forEach(function (sid) {
+        const g = document.createElement('div'); g.className = 'cgrp'; g.textContent = (COMPOSE.titles[sid] || sid) + ' · 0'
+        const c = document.createElement('div'); c.className = 'cold2'
+        c.textContent = 'no beats yet — no behavior block and no tagging test. kg-deep drafts them; they appear here the moment they exist.'
+        lib.appendChild(g); lib.appendChild(c)
+      })
+    }
+    wrap.appendChild(lib)
+
+    // ── the CHAIN: one rail — the Given, then each beat; the segment between rows carries the joint
+    const right = document.createElement('div')
+    const cp = document.createElement('div'); cp.className = 'cpanel cchain'
+    const nb = document.createElement('div'); nb.className = 'cnamebar'
+    const nl = document.createElement('span'); nl.className = 'lbl2'; nl.textContent = 'flow name'
+    const name = document.createElement('input'); name.id = 'compName'; name.value = draft.name; name.placeholder = 'name the flow'
+    name.addEventListener('input', function () { writeDraft(screen, { chain: chain, name: name.value }); renderPrompt() })
+    nb.appendChild(nl); nb.appendChild(name); cp.appendChild(nb)
+    const sum = document.createElement('div'); sum.className = 'csum'
+    const chip = function (cls, text) { const s = document.createElement('span'); s.className = 'schip ' + cls; s.textContent = text; sum.appendChild(s) }
+    chip('', chain.length + ' beat' + (chain.length === 1 ? '' : 's'))
+    const scr = {}; chain.forEach(function (id) { scr[cnodeOf(id).screen] = true })
+    if (Object.keys(scr).length > 1) chip('', Object.keys(scr).length + ' screens')
+    const gaps = chk.rows.filter(function (r) { return r.missing.length }).length
+    if (gaps) chip('warn', '⚠ ' + gaps + ' gap' + (gaps === 1 ? '' : 's')); else chip('ok', 'path holds ✓')
+    const proves = []; chain.forEach(function (id) { const qd = qualified(cnodeOf(id), start); if (proves.indexOf(qd) < 0) proves.push(qd) })
+    if (proves.length) chip('', 'proves ' + proves.join(' · '))
+    cp.appendChild(sum)
+    const vc = document.createElement('div'); vc.className = 'vchain'
+    const crow = function (cls, node, thumbNode, title, sub, chipText, chipCls) {
+      const r = document.createElement('div'); r.className = 'crow2 ' + cls
+      if (node) r.dataset.node = node.id
+      const d = document.createElement('div'); d.className = 'cdot'; d.appendChild(document.createElement('span')); r.appendChild(d)
+      const th = cthumb(thumbNode || { name: title, still: null, kind: 'given' }, 'cthumb2')
+      r.appendChild(th)
+      if (compMode === 'gif') cplay(th)
+      const m = document.createElement('div'); m.className = 'cmeta2'
+      const t = document.createElement('div'); t.className = 'cname3'; t.textContent = title
+      const s = document.createElement('div'); s.className = 'csub3'; s.textContent = sub
+      m.appendChild(t); m.appendChild(s); r.appendChild(m)
+      const c = document.createElement('span'); c.className = 'cchip ' + (chipCls || ''); c.textContent = chipText; r.appendChild(c)
+      return r
+    }
+    const g = crow('given', null, null, given ? given.text : 'no GIVEN yet — spec/' + start + '/steps.ts declares no fixture',
+      given ? 'given · set once' : 'the Claude path seeds it', 'fixture', 'fix')
+    vc.appendChild(g)
+    chk.rows.forEach(function (r, i) {
+      const conn = document.createElement('div'); conn.className = 'cconn' + (r.missing.length ? ' gap' : '')
+      const sg = document.createElement('span'); sg.className = 'seg'; conn.appendChild(sg)
+      if (r.missing.length) {
+        const jl = document.createElement('span'); jl.className = 'jlab'
+        jl.appendChild(document.createTextNode('needs '))
+        r.missing.forEach(function (mt) { const k = document.createElement('span'); k.className = 'kc'; k.textContent = mt; jl.appendChild(k); jl.appendChild(document.createTextNode(' ')) })
+        if (filler) { jl.appendChild(document.createTextNode('— ')); const b = document.createElement('b'); b.textContent = filler.name; jl.appendChild(b); jl.appendChild(document.createTextNode(' fills it, pinned top-left')) }
+        conn.appendChild(jl)
+      }
+      vc.appendChild(conn)
+      const n = r.n
+      const kindNote = n.kind === 'beat' ? (n.proven ? '' : ' · not currently passing') : n.kind === 'inline' ? ' · inline — Claude writes this beat' : ' · unproven — written red-first here'
+      const cr = crow((n.proven && n.kind === 'beat' ? '' : 'outline') + (r.missing.length ? ' gapb' : ''), n, n, n.name,
+        'beat ' + (i + 1) + ' · ' + n.screen + kindNote, qualified(n, start), '')
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'vx'; x.title = 'remove'; x.textContent = '✕'
+      x.addEventListener('click', function () { chain.splice(i, 1); writeDraft(screen, { chain: chain, name: name.value }); buildCompose(dt) })
+      cr.appendChild(x)
+      vc.appendChild(cr)
+    })
+    cp.appendChild(vc)
+    right.appendChild(cp)
+
+    // ── the job panel (hidden until a path runs) + the two-path actions + the prompt + the honesty note
+    const job = document.createElement('div'); job.className = 'cjob'; job.hidden = true
+    const jh = document.createElement('div'); jh.className = 'cjhead'; job.appendChild(jh)
+    const js = document.createElement('div'); js.className = 'cjsteps'; job.appendChild(js)
+    right.appendChild(job)
+    const out = document.createElement('div'); out.className = 'cout'
+    const left = document.createElement('div')
+    const acts = document.createElement('div'); acts.className = 'cactions'
+    const blocking = chain.map(cnodeOf).filter(function (n) { return n.kind !== 'beat' || !n.proven })
+    const deterministic = chain.length > 0 && blocking.length === 0 && !!given
+    const add = document.createElement('button'); add.type = 'button'; add.className = 'btn cadd ' + (deterministic ? 'det' : 'ai')
+    add.dataset.path = deterministic ? 'deterministic' : 'claude'
+    add.textContent = deterministic ? '＋ Add test — composed instantly, no AI' : '＋ Add test — runs in Claude'
+    add.disabled = !chain.length
+    add.addEventListener('click', function () { if (deterministic) compCompose(dt, chain, name.value, job); else compHand(dt, chain, name.value, job) })
+    acts.appendChild(add)
+    const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'btn ccopy'
+    copy.textContent = deterministic ? '⧉ Copy prompt — run Claude yourself' : '⧉ Copy prompt — run it yourself'
+    copy.addEventListener('click', function () {
+      const t = composePromptText(screen, chain, name.value)
+      const p = navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject(new Error('no clipboard'))
+      p.then(function () { toast('Prompt copied — paste it to Claude') }).catch(function () { toast('Select and copy the prompt text') })
+    })
+    acts.appendChild(copy)
+    const tog = document.createElement('button'); tog.type = 'button'; tog.className = 'linkbtn ctog'; tog.textContent = 'view the prompt'
+    acts.appendChild(tog)
+    const why = document.createElement('span'); why.className = 'cwhy'
+    why.textContent = !chain.length ? 'chain beats first'
+      : deterministic ? 'every beat is a proven step function — no model involved'
+        : !given ? 'spec/' + start + '/steps.ts declares no GIVEN — Claude seeds the fixture'
+          : blocking.map(function (n) { return qualified(n, start) }).join(' · ') + (blocking.length === 1 ? ' isn’t' : ' aren’t') + ' function-shaped + proven yet — Claude writes this one'
+    acts.appendChild(why)
+    left.appendChild(acts)
+    const pb = document.createElement('div'); pb.className = 'cprompt'; pb.hidden = true
+    const ph = document.createElement('div'); ph.className = 'ph2'; ph.textContent = 'what gets handed to Claude'
+    const pre = document.createElement('pre'); pb.appendChild(ph); pb.appendChild(pre)
+    left.appendChild(pb)
+    tog.addEventListener('click', function () { pb.hidden = !pb.hidden; tog.textContent = pb.hidden ? 'view the prompt' : 'hide the prompt' })
+    function renderPrompt () { pre.textContent = composePromptText(screen, chain, name.value) }
+    renderPrompt()
+    out.appendChild(left)
+    const honest = document.createElement('div'); honest.className = 'chonest'
+    honest.innerHTML = '<b>Two paths, no guessing which</b> — when every chained beat is a <b>function-shaped, proven</b> step, ' +
+      'Add test <b>composes the flow file deterministically: no AI at all</b> (each beat call threads exact expected numbers ' +
+      'through shared state). When any beat is inline or not yet written, Add test hands the prompt to the board’s ' +
+      '<b>detached claude job</b> (the Scan · Rewrite runner) and Claude writes it red-first. Either way the composer ' +
+      'itself stores nothing, and the flow appears on the board when its test lands and runs.'
+    out.appendChild(honest)
+    right.appendChild(out)
+    wrap.appendChild(right)
+    cv.appendChild(wrap)
+  }
+  function compAdd (dt, id) {
+    const screen = dt.dataset.screen
+    const d = readDraft(screen)
+    const chk = chainCheck(screen, d.chain)
+    const n = cnodeOf(id)
+    const gapAt = chk.rows.findIndex(function (r) { return r.missing.length })
+    // the gap's filler slots in BEFORE the beat that needed it; anything else appends
+    if (gapAt >= 0 && n.gives.some(function (g2) { return chk.rows[gapAt].missing.indexOf(g2) >= 0 })) d.chain.splice(gapAt, 0, id)
+    else d.chain.push(id)
+    writeDraft(screen, d)
+    buildCompose(dt)
+  }
+  const jstep = (box, mark, text, cls) => {
+    const s = document.createElement('div'); s.className = 'cjstep' + (cls ? ' ' + cls : '')
+    const m = document.createElement('span'); m.textContent = mark; const t = document.createElement('span'); t.textContent = text
+    s.appendChild(m); s.appendChild(t); box.appendChild(s); return s
+  }
+  // THE DETERMINISTIC PATH: the server re-derives the library, runs composeCheck and emitFlow
+  // (tools/compose.mjs), writes spec/<start>/test.spec.ts and reports the file — or refuses with
+  // the reason. Nothing is composed at suite runtime and no graph is stored: the file is ordinary
+  // authored-test material from the moment it is written.
+  function compCompose (dt, chain, name, job) {
+    const screen = dt.dataset.screen
+    job.hidden = false
+    job.querySelector('.cjhead').textContent = 'composing — deterministic, no model involved'
+    const box = job.querySelector('.cjsteps'); box.innerHTML = ''
+    const run = jstep(box, '◌', 'asking the server to compose the flow file', 'run')
+    fetch('/api/compose', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chain: chain, name: name }) })
+      .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, text: t } }) })
+      .then(function (r) {
+        run.remove()
+        if (!r.ok) { job.querySelector('.cjhead').textContent = 'refused — nothing written'; jstep(box, '✗', r.text, 'bad'); return }
+        const out = JSON.parse(r.text)
+        job.querySelector('.cjhead').textContent = 'composed — deterministic, no model involved'
+        jstep(box, '✓', 'wrote ' + out.path + " — test('" + out.testTitle + "') · coverReqs(" + out.covers.map(function (c) { return "'" + c + "'" }).join(', ') + ')')
+        jstep(box, '✓', chain.length + ' beat call' + (chain.length === 1 ? '' : 's') + ' chained, each inside its checkReq — expected numbers threaded through shared state')
+        jstep(box, '✓', 'validity = every beat proven red-first in its unit home + this file’s first run passing')
+        const s = jstep(box, '→', '')
+        const a = document.createElement('a'); a.href = '#/' + out.start + '/flow'; a.textContent = 'run it — the flow folds in and appears in the Flow view'
+        s.lastChild.appendChild(a)
+        writeDraft(screen, { chain: [], name: '' })     // the draft is spent — the file is the flow now
+      })
+      .catch(function (err) { run.remove(); jstep(box, '✗', 'could not reach the board server: ' + err.message, 'bad') })
+  }
+  // THE CLAUDE PATH: one click, no clipboard — the prompt goes to the board's EXISTING detached claude
+  // runner (the Scan · Rewrite family: a signed-in `claude`, its own process group so Cancel kills
+  // the whole tree, diagnose() naming an expired login). The run panel streams it like any job; the
+  // server's "done" means the test really landed on disk (flowLanded), never that claude exited 0.
+  function compHand (dt, chain, name, job) {
+    job.hidden = false
+    job.querySelector('.cjhead').textContent = 'authoring — a detached claude job, the Scan · Rewrite runner'
+    const box = job.querySelector('.cjsteps'); box.innerHTML = ''
+    const run = jstep(box, '◌', 'handing the prompt to the board’s claude runner', 'run')
+    fetch('/api/compose-job', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chain: chain, name: name }) })
+      .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, text: t } }) })
+      .then(function (r) {
+        run.remove()
+        if (!r.ok) { job.querySelector('.cjhead').textContent = 'refused — no job started'; jstep(box, '✗', r.text, 'bad'); return }
+        jstep(box, '✓', 'prompt handed over · job started detached — Cancel in the run panel kills the group')
+        jstep(box, '◌', "Claude is writing the failing test '" + (name.trim() || 'Untitled flow') + "' red-first — minutes, not seconds; the run panel streams it", 'run')
+        jstep(box, '→', 'done means the test LANDED in the file (the disk is asked, never the exit code); the flow appears in the Flow view from its first run')
+      })
+      .catch(function (err) { run.remove(); jstep(box, '✗', 'could not reach the board server: ' + err.message, 'bad') })
+  }
+
   // THE VIEW TOGGLE (board R13): Focus / Grid / Flow, one segmented control in the detail header
   // (the Columns view was retired 2026-08-18 — its baked panes stay in the DOM as the hidden shared
   // source, and NOTHING un-hides .cols). Focus is the default and opens the reader; Grid is the
@@ -1249,13 +1654,21 @@ const B = window.__BOARD__ || {}
   function setView (dt, view, startId) {
     const gv = dt.querySelector('.gridview')
     const fv = dt.querySelector('.flowview')
+    const cv = dt.querySelector('.composeview')
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
+    cstopAll()
+    if (cv) cv.hidden = view !== 'compose'
     if (view === 'grid') { if (gv) gv.hidden = false; if (fv) fv.hidden = true }
     else if (view === 'flow') {
       if (gv) gv.hidden = true
       // build AFTER closeFocus put any borrowed test node back — Flow reads the whole pane
       if (fv) { buildFlow(dt); fv.hidden = false }
+    } else if (view === 'compose') {
+      // the composer (board R13 / R15 family) — not a segment of the toggle; reached from ＋ New
+      // flow or #/compose/<screen>, it derives its library from the JSON island and stores nothing
+      if (gv) gv.hidden = true; if (fv) fv.hidden = true
+      if (cv) buildCompose(dt)
     } else { if (gv) gv.hidden = true; if (fv) fv.hidden = true; buildFocus(dt, startId) }   // focus (the default)
   }
   for (const b of document.querySelectorAll('.viewseg .vseg'))

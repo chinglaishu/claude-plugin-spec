@@ -140,6 +140,24 @@ test('THE HONESTY RULE — a requirement with neither behavior block nor tagging
   assert.equal(l.nodes.some(n => n.proves === 'R21' && n.screen === 'board'), false)
 })
 
+test('a requirement a test TAGS IN SOURCE (a plan cover) but that has never folded still derives an INLINE node — cross-screen too', () => {
+  // "a node exists only where a behavior block or a test does" — the test EXISTS the moment it is
+  // written (parseTestPlan reads its checkReq tags off the source); the fold only says whether it
+  // passed. A never-run tagging test ⇒ an inline node, proven:false; a bare plan tag is this screen,
+  // a qualified one (`dispatch:R7` in the board spec) lands on the other screen.
+  const screens = screensFix()
+  screens[0].reqs.push({ id: 'R22', title: 'Tagged, never run', status: 'untested', behavior: null, tests: [] })
+  screens[1].reqs.push({ id: 'R8', title: 'Other screen, tagged from board', status: 'untested', behavior: null, tests: [] })
+  screens[0].plans = [{ title: 'a new test', steps: [], covers: ['R22', 'dispatch:R8'] }]
+  const l = deriveLibrary(screens)
+  const n = byId(l, 'i:board:R22')
+  assert.ok(n, 'a source-tagged requirement derives an inline node')
+  assert.equal(n.proven, false)
+  const x = byId(l, 'i:dispatch:R8')
+  assert.ok(x, 'a qualified plan tag derives the other screen\'s inline node')
+  assert.equal(x.proven, false)
+})
+
 test('a beat covering a requirement suppresses that requirement\'s inline duplicate', () => {
   const l = lib()
   assert.equal(byId(l, 'i:board:R10'), undefined)  // R10 is beat-covered; no second node

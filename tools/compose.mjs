@@ -89,7 +89,8 @@ export function parseBeats (src) {
 //   beat    — an authored step function (steps.ts) whose metadata names what it proves; composable
 //             only while that requirement reads PASSED (a changed/failed/stale one must be
 //             re-proven first — composing against a moved text would thread a stale Then).
-//   inline  — a requirement a test tags (it has real coverage) but no beat function yet; chainable
+//   inline  — a requirement a test tags (in the fold, or in source — a never-run test is still a
+//             test) but no beat function yet; chainable
 //             only through the Claude path, and marked so ("inline test — a flow using it runs via
 //             Claude").
 //   outline — a requirement with an authored behavior block and NO tagging test; the flow written
@@ -100,6 +101,15 @@ export function parseBeats (src) {
 export function deriveLibrary (screens) {
   const nodes = []
   const givens = {}
+  // a test EXISTS the moment it is written: the source plans' checkReq tags (parseTestPlan) count as
+  // coverage alongside the fold's, qualified board-wide — a never-run tagging test is still a test,
+  // and its node reads proven:false until the fold says otherwise
+  const tagged = new Set()
+  for (const s of screens || []) {
+    for (const p of s.plans || []) {
+      for (const c of p.covers || []) tagged.add(c.includes(':') ? c : s.name + ':' + c)
+    }
+  }
   for (const s of screens || []) {
     givens[s.name] = (s.steps && s.steps.given) || null
     const beatCovered = new Set()
@@ -120,7 +130,7 @@ export function deriveLibrary (screens) {
     }
     for (const r of s.reqs || []) {
       if (beatCovered.has(r.id)) continue          // the beat node IS this requirement's node
-      const covered = (r.tests || []).length > 0
+      const covered = (r.tests || []).length > 0 || tagged.has(s.name + ':' + r.id)
       if (covered) {
         nodes.push({
           id: `i:${s.name}:${r.id}`,

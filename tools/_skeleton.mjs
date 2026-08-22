@@ -35,6 +35,10 @@ export const FILES = [
   // fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
   // scaffolded project can load neither without it (the same guard-caught class of miss).
   'tools/evidence.mjs',
+  // pure flow-composer logic (Task 5): parseBeats (spec-store reads each screen's steps.ts through
+  // it) + deriveLibrary/composeCheck/emitFlow/composePrompt (build-board and serve-board) — the
+  // vendored store cannot load without it (the same guard-caught class of miss).
+  'tools/compose.mjs',
   'tools/board/client.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs

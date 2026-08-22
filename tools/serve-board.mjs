@@ -19,6 +19,8 @@ import {
 } from './spec-store.mjs'
 // pure (no fs, no clock) — safe to import here; the BUILDER still runs as a child process below
 import { deriveChapters, deriveKind } from './flow.mjs'
+// pure (no fs) — the flow composer's library derivation, joint check, emitter and prompt (Task 5)
+import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded } from './compose.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
 
 // BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
@@ -499,6 +501,55 @@ function startRewrite (key) {
     // you make by hand. A resolution is not a special kind of edit.
     onDone: () => `${finding.decision.lost} now agrees — its screens have gone stale`
   })
+}
+
+// THE FLOW COMPOSER's two paths (Task 5; D4 amended 2026-08-21 #2 by the human). Both re-derive the
+// library from the tree at request time (behavior blocks + tests only) and re-run the pure check —
+// the client's button is a rendering of this answer, never the authority.
+//   composeFlow — DETERMINISTIC: every chained beat a function-shaped, currently-passing step; the
+//     emitter composes the flow file (imports · coverReqs · the fixture Given · each beat call inside
+//     its checkReq, state threaded) and the server writes/appends spec/<start>/test.spec.ts. No model.
+//     The file is ordinary authored-test material from the moment it is written; nothing is composed
+//     at suite runtime and no graph is stored. `dryRun` returns exactly what WOULD be written, without
+//     writing — the suite proves the path without editing its own running spec file.
+//   startComposeJob — the CLAUDE path: the prompt goes to the SAME detached claude runner scan and
+//     rewrite use (runJob: a signed-in `claude`, its own process group so Cancel kills the tree,
+//     diagnose() naming an expired login). "changed" asks the DISK whether a test with that title
+//     landed (flowLanded), never the exit code.
+function composeLibrary () { return deriveLibrary(allScreens()) }
+function composeFlow ({ chain, name, dryRun }) {
+  const { nodes, givens } = composeLibrary()
+  const start = chain && chain.length && nodes.find(n => n.id === chain[0])
+  const file = start ? join(SPEC, start.screen, 'test.spec.ts') : null
+  const existing = file && existsSync(file) ? readFileSync(file, 'utf8') : null
+  const chk = composeCheck({ nodes, givens, chain, name, existing })
+  if (!chk.ok) throw new Error(chk.error)
+  const out = emitFlow({ nodes, givens, chain, name, existing })
+  if (!dryRun) {
+    writeFileSync(join(ROOT, out.path), out.text)
+    try { build() } catch (err) { console.error(String(err.stderr || err)) }
+    notify()
+  }
+  return { path: out.path, testTitle: out.testTitle, covers: out.covers, start: out.start, dryRun: !!dryRun, text: out.text }
+}
+function startComposeJob ({ chain, name }) {
+  const { nodes, givens } = composeLibrary()
+  const c = Array.isArray(chain) ? chain : []
+  if (!c.length) { const e = new Error('chain at least one beat first'); e.status = 400; throw e }
+  for (const id of c) if (!nodes.find(n => n.id === id)) { const e = new Error(`no such beat: ${id}`); e.status = 400; throw e }
+  const title = String(name || '').trim()
+  if (!title) { const e = new Error('name the flow first'); e.status = 400; throw e }
+  const start = nodes.find(n => n.id === c[0]).screen
+  const file = join(SPEC, start, 'test.spec.ts')
+  runJob({
+    kind: 'compose',
+    label: start,
+    prompt: composePrompt({ nodes, givens, chain: c, name: title }),
+    failNote: `no test named "${title}" landed in spec/${start}/test.spec.ts`,
+    changed: () => existsSync(file) && flowLanded(readFileSync(file, 'utf8'), title),
+    onDone: () => `"${title}" landed in spec/${start}/test.spec.ts — run it and the flow folds in`
+  })
+  return { started: true, start, file: `spec/${start}/test.spec.ts`, testTitle: title }
 }
 
 // The crawl: an INVENTORY, nothing more. tools/crawl.mjs drives a real browser over the project's
@@ -1049,6 +1100,29 @@ const server = createServer(async (req, res) => {
       res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(out))
     } catch (err) {
       res.writeHead(400, { 'content-type': 'text/plain' }); res.end(err.message)
+    }
+    return
+  }
+
+  // the composer's deterministic path — 409 carries the honest refusal (a gap, an inline beat, a
+  // missing name, a duplicate title); 200 names the written file (or, dryRun, what would be written)
+  if (url.pathname === '/api/compose' && req.method === 'POST') {
+    try {
+      const out = composeFlow(JSON.parse(await readBody(req) || '{}'))
+      res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(out))
+    } catch (err) {
+      res.writeHead(409, { 'content-type': 'text/plain' }); res.end(err.message)
+    }
+    return
+  }
+  // the composer's Claude path — 400 for a malformed ask (nothing spawns), 409 when the one job slot
+  // is taken (runJob's guard, shared with scan/rewrite)
+  if (url.pathname === '/api/compose-job' && req.method === 'POST') {
+    try {
+      const out = startComposeJob(JSON.parse(await readBody(req) || '{}'))
+      res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(out))
+    } catch (err) {
+      res.writeHead(err.status || 409, { 'content-type': 'text/plain' }); res.end(err.message)
     }
     return
   }
