@@ -88,8 +88,15 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
     const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
     expect(['auto', 'scroll']).toContain(oflow)
   }
+  // …proven with a region that REALLY overflows (final review m8: `.fread.scrollTop === 0` held
+  // trivially while `.feval` fit its box): a tall spacer is pushed into the proof region for the
+  // check, the scroll must actually move there (> 0), and the reading must not move at all
+  await ov.locator('.feval').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'flex:none; min-height:4000px'; el.appendChild(sp) })   // flex:none — a flex child with no content would shrink to nothing
+  expect(await ov.locator('.feval').evaluate(el => el.scrollHeight > el.clientHeight), 'the proof region overflows').toBe(true)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
-  expect(await ov.locator('.fread').evaluate(el => el.scrollTop)).toBe(0)
+  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof region scrolled').toBeGreaterThan(0)
+  expect(await ov.locator('.fread').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
+  await ov.locator('.feval').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
   // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay
@@ -119,7 +126,12 @@ export async function toggleViews (page: Page, state: FlowState): Promise<void> 
   await expect(ov.locator('.fpage')).toHaveCount(1)
   // its id, state and title on the LEFT container
   await expect(ov.locator('.fread .frmeta .fid')).not.toBeEmpty()
-  await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/passed|failed|not-reached|untested|changed/)
+  // the chip wears exactly the status its source row derives — compared to the row, not to the
+  // list of every legal word (final review m8: that regex failed only on NO state, never the wrong one)
+  const fid = (await ov.locator('.fread .frmeta .fid').textContent() || '').trim()
+  const rowStatus = await dt.locator('.reqpane .req[data-r="' + fid + '"]').getAttribute('data-status')
+  expect(rowStatus, 'the source row carries a derived status').toMatch(/^(passed|failed|not-reached|untested|changed)$/)
+  await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(new RegExp('(^|\\s)' + rowStatus + '(\\s|$)'))
   await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
   // the List: one collapsed row per requirement — exactly as many as the detail carries
   await dt.locator('.viewseg .vseg[data-view="grid"]').click()

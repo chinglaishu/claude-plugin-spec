@@ -2378,15 +2378,9 @@ const B = window.__BOARD__ || {}
         featwrap.hidden = true
         try { localStorage.setItem('sbFeats', 'off') } catch (e) { /* preference only */ }
       })
-      // the compose card's live example today IS the R15 prompt handoff: after its href routes to
-      // the List view, open the add-test prompt on that screen (the board still writes nothing)
-      const comp = featwrap.querySelector('.feat[data-feat="compose"]')
-      if (comp) comp.addEventListener('click', () => {
-        setTimeout(() => {
-          const dt = [].slice.call(document.querySelectorAll('.dt')).find(d => !d.hidden && d.dataset.screen)
-          if (dt) openAddTest(dt)
-        }, 0)
-      })
+      // the compose card's href routes to the composer itself (#/compose/<screen>, board R13) — the
+      // old prompt-modal hop that used to ride this click is gone (final review wave: it opened the
+      // R15 sheet on top of the composer)
     }
   }
 

@@ -390,12 +390,18 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
       expect(Number(s.card.split(' ')[0]), s.screen + ' — card count vs detail rows').toBe(s.proven)
       expect(s.untaggedProven, s.screen + ' — proven without a test tagging it').toEqual([])
     }
-    const unproven = page.locator('#reqpane .req[data-state="unproven"]').first()
-    if (await unproven.count()) {
-      // the honest no-coverage line rides the baked row's body (read hidden — the same honesty
-      // shows on the visible surfaces: Grid's proof cell and Focus's "The proof")
-      await expect(unproven.locator('.covers .nocov')).toContainText('no test asserts this yet')
+    // the honest no-coverage line rides the baked row's body (read hidden — the same honesty shows
+    // on the visible surfaces: the List's proof cell and Focus's "The proof"). Asserted from BOTH
+    // sides so a fully-green tree cannot make it vacuous (final review m8): every unproven row
+    // carries the line, and NO proven row does — the second half bites on every tree.
+    const unprovenRows = page.locator('#reqpane .req[data-state="unproven"]')
+    for (let i = 0; i < await unprovenRows.count(); i++) {
+      await expect(unprovenRows.nth(i).locator('.covers .nocov')).toContainText('no test asserts this yet')
     }
+    // (board-wide, every screen's baked pane: a source edit stales one screen's proofs until the
+    // next fold — the dogfood lag — but never every screen's at once)
+    expect(await page.locator('.dt .reqpane .req[data-state="proven"]').count(), 'some proven rows exist to check').toBeGreaterThan(0)
+    await expect(page.locator('.dt .reqpane .req[data-state="proven"] .covers .nocov')).toHaveCount(0)
   })
 })
 
@@ -1036,7 +1042,7 @@ test('Home leads with a dismissible feature strip of six cards', async ({ page }
     await expect(strip).toBeVisible()
     await expect(strip.locator('.feat')).toHaveCount(6)
     // the six features, named — beats · proof · drift · the three views · compose · honest gaps
-    await expect(strip.locator('.feat[data-feat="beats"]')).toContainText(/beats/i)
+    await expect(strip.locator('.feat[data-feat="beats"]')).toContainText('one Given, When→Then chained')
     await expect(strip.locator('.feat[data-feat="proof"]')).toContainText(/proof from real runs/i)
     await expect(strip.locator('.feat[data-feat="drift"]')).toContainText(/drift/i)
     await expect(strip.locator('.feat[data-feat="views"]')).toContainText('Focus · List · Flow')
@@ -1066,10 +1072,18 @@ test('Home leads with a dismissible feature strip of six cards', async ({ page }
     await page.reload()
     await page.waitForSelector('.card')
     await expect(page.locator('#featwrap')).toBeHidden()
-    await page.evaluate(() => localStorage.clear())
+    await page.evaluate(() => localStorage.removeItem('sbFeats'))   // only THIS preference — never the media/schematic prefs later tests rely on
     await page.reload()
     await page.waitForSelector('.card')
     await expect(page.locator('#featwrap')).toBeVisible()
+    // the compose card opens the COMPOSER itself (R13's "＋ New flow opens the composer") — and no
+    // prompt modal rides on top of it (a leftover from when the card's live example was the R15
+    // prompt handoff)
+    await page.locator('#featwrap .feat[data-feat="compose"]').click()
+    await expect(page).toHaveURL(/#\/compose\/[a-z-]+$/)
+    await expect(page.locator('.dt:not([hidden]) .composeview')).toBeVisible()
+    await expect(page.locator('#promptsheet')).not.toHaveClass(/\bon\b/)
+    await page.locator('.dt:not([hidden]) .close').click()
   })
 })
 

@@ -101,6 +101,7 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
 })
 
 test('R4 — a person\'s second run takes over the running one: accepted, not refused', async ({ request }) => {
+  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
   await idle(request)
   const first = await startRun(request, { screen: 'board' })
   expect(first.ok(), 'the first run is accepted').toBeTruthy()
@@ -157,6 +158,7 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
 })
 
 test('R4 — a run may nest inside the run driving it, and nesting is bounded', async ({ request }) => {
+  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
   // The board puts every run it starts in the one job slot. This spec proves the run panel BY
   // starting runs, so without nesting the dispatch row is the one row that can never be run from
   // the board: it would wait for the slot its own run is holding. That is the blank browser window.
@@ -402,6 +404,7 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
 })
 
 test('R5 — cancel stops the job, and cancelling nothing is refused not crashed', async ({ request }) => {
+  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
   await idle(request)
   const started = await startRun(request, { screen: 'board' })
   expect(started.status()).toBe(200)
