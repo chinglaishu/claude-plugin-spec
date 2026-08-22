@@ -1543,8 +1543,9 @@ test('The compose endpoint composes deterministically and refuses honestly — n
       const out = await ok.json()
       expect(out.path).toBe('spec/board/test.spec.ts')
       expect(out.dryRun).toBe(true)
-      // (built in two halves — flowLanded scans THIS file too, and the literal would read as a landed test)
-      expect(out.text).toContain('test(' + "'scratch flow'")
+      // (the call is spelled without the `test(` sequence — flowLanded AND parseTestPlan scan THIS file
+      // too, and the literal would read as a landed test / a 29th baked case titled by the remainder)
+      expect(out.text).toContain(['te', 'st'].join('') + "('scratch flow'")
       expect(out.text).toContain("coverReqs('R1', 'R2')")
       expect(out.text).toContain("checkReq('R1', async () => { await countHomeCards(page, state) })")
       expect(out.text).toContain('const state = await openBoardHome(page)')
