@@ -174,11 +174,20 @@ async function settleAt (page: any, url: string, ready: any) {
   // late) eats the whole outer budget and never re-builds — the intermittent 15.2s flake this file is
   // prone to. Short inner + a wider outer budget lets each retry re-assert build() until the file
   // events settle. The assertion is unchanged; only the retry cadence is.
+  // 2026-08-22, two more turns of the same screw (assertions still unchanged):
+  //   · page.reload() after the goto — the FIRST retry's goto from another hash is a SAME-DOCUMENT
+  //     navigation (the documented trap) and serves the old DOM no matter how fresh board.html is;
+  //     an unconditional reload makes every retry land on the board build() just wrote.
+  //   · outer budget 25s → 60s: the watcher's debounced child builds form a CONVOY under load (each
+  //     fixture write spawns one; a slow stale child overwrites the fresh board as it lands), and a
+  //     full-suite run was once still draining it at 25s (one solo run recovered at ~24s). More
+  //     retries, same assertion — the af1d732 wall-clock-budget precedent.
   await expect(async () => {
     build()
     await page.goto(url)
+    await page.reload()
     await expect(ready).toBeVisible({ timeout: 2000 })
-  }).toPass({ timeout: 25000 })
+  }).toPass({ timeout: 60000 })
 }
 
 // Every fixture test above injects an index and rebuilds board.html to that FIXTURE via settleAt's
@@ -373,7 +382,7 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
     await page.reload()
     await expect(dt.locator('.viewseg')).toBeVisible({ timeout: 2000 })
     await expect(dt.locator('.reqpane .req[data-r="R1"] .schematic[data-stale="1"]')).toHaveCount(1, { timeout: 2000 })
-  }).toPass({ timeout: 25000 })
+  }).toPass({ timeout: 60000 })
   await page.goto('/#/' + name + '/R1')
   const stale = dt.locator('.focusov .fleft .fschem')
   await expect(stale).toHaveClass(/\bisstale\b/)
