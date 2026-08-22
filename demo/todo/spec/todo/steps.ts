@@ -1,0 +1,173 @@
+import { expect, proveVisible, reveal, hudCheck, recordHold, waitForContent } from '../_base'
+import type { Page } from '@playwright/test'
+import { APP_BASE, FROZEN_NOW } from '../_app'
+
+// Tsumiki's composable beats (the beat-function convention — kg-e2e; Task 7, 2026-08-22). Each
+// exported function is ONE beat of the proving flow in ./test.spec.ts, lifted VERBATIM: it performs
+// its When on the real app, asserts its Then with EXACT numbers computed from the threaded `state`
+// (the seed's golden numbers, moved by each beat's arithmetic — never read off the screen and
+// echoed back), and updates that state. The flow keeps its checkReq AROUND each call, so the
+// proof's power is unchanged; the board's composer chains the same calls into a new flow with
+// no model involved.
+
+export type FlowState = Record<string, any>
+
+const URL = `${APP_BASE}/todo.html?now=${encodeURIComponent(FROZEN_NOW)}`
+const HOLD = recordHold()
+
+// ── selectors (the app carries data-id/data-done hooks; everything else is read as a user sees it)
+const rowById = (page: Page, id: string) => page.locator(`.task[data-id="${id}"]`)
+const rowByTitle = (page: Page, t: string) => page.locator('.task', { has: page.locator('.ttl', { hasText: t }) })
+const subById = (page: Page, id: string) => page.locator(`.srow[data-id="${id}"]`)
+const navBtn = (page: Page, v: string) => page.locator(`.nav[data-view="${v}"]`)
+
+// THE FIXTURE: the seed under the frozen clock — load once, wipe storage, load again so the app
+// re-seeds deterministically. The golden numbers: k1 is a container with three sub-tasks, one done
+// (ring 1/3, two open leaves); k2 k3 k4 are open childless tasks; k5 is done. To do = 2 + 3 = 5.
+export const GIVEN = {
+  fn: 'openSeededBoard',
+  text: 'frozen clock · storage cleared · the seed: one container (ring 1/3) + three open tasks + one done — To do 5',
+  gives: ['seeded']
+}
+export async function openSeededBoard (page: Page): Promise<FlowState> {
+  await page.goto(URL, { waitUntil: 'domcontentloaded' })
+  await page.evaluate(() => localStorage.clear())
+  await page.goto(URL, { waitUntil: 'domcontentloaded' })
+  await waitForContent(rowById(page, 'k1'))
+  return { leaves: 5, ring: { done: 1, total: 3 }, container: 'k1' }
+}
+
+export const BEATS = [
+  { fn: 'addTask', proves: 'R1', name: 'type "Water the plants" and press Add — a new row at the bottom, stamped added just now', needs: ['seeded'], gives: ['task'] },
+  { fn: 'renameInPlace', proves: 'R2', name: 'double-click the new task and retype it — the same row, stamp flipped to edited', needs: ['task'], gives: ['renamed'] },
+  { fn: 'addSubTaskGrowsRing', proves: 'R3', name: 'add a sub-task to the container — the ring grows by itself, no checkbox on the parent', needs: ['seeded'], gives: ['subtask'] },
+  { fn: 'tickOneSubTask', proves: 'R5', name: 'tick one sub-task — To do drops by exactly one', needs: ['seeded'], gives: ['one-ticked'] },
+  { fn: 'finishContainerRollsUp', proves: 'R4', name: 'tick the container\'s last open sub-tasks — it completes itself', needs: ['subtask', 'one-ticked'], gives: ['rolled-up'] },
+  { fn: 'containerIsNotAUnit', proves: 'R5', name: 'To do dropped by the open leaves, never by the container', needs: ['rolled-up'], gives: ['counted'] },
+  { fn: 'reopenSubTaskReopensParent', proves: 'R4', name: 'reopen one sub-task — the container reopens', needs: ['rolled-up'], gives: ['reopened'] },
+  { fn: 'walkSmartViews', proves: 'R6', name: 'walk All / Active / Today / Completed — every badge equals its rows', needs: ['seeded'], gives: ['views'] },
+  { fn: 'readDateChips', proves: 'R7', name: 'read the date chips under the frozen clock — overdue and today', needs: ['seeded'], gives: ['dates'] },
+  { fn: 'reloadKeepsEverything', proves: 'R8', name: 'reload — the rename, the ring and a completed stamp come back', needs: ['renamed'], gives: ['reloaded'] }
+]
+
+// R1 — the typed text lands as a new row, and its stamp reads "added just now".
+export async function addTask (page: Page, state: FlowState): Promise<void> {
+  await reveal(page.locator('.addrow'))
+  await page.locator('#nt').fill('Water the plants')
+  await page.locator('.go').click()
+  const row = rowByTitle(page, 'Water the plants')
+  await proveVisible(row.locator('.ttl'), 'Water the plants', 'The new task, read off the list')
+  await proveVisible(row.locator('.meta'), 'added just now',
+    'Its activity stamp', { match: s => /added just now/.test(s) })
+  state.task = 'Water the plants'
+  state.leaves += 1
+}
+
+// R2 — the row shows the new text, and the stamp flips added → edited.
+export async function renameInPlace (page: Page, state: FlowState): Promise<void> {
+  await rowByTitle(page, state.task).locator('.ttl').dblclick()
+  const edit = page.locator('.edit')
+  await edit.fill('Water the office plants')
+  await edit.press('Enter')
+  const row = rowByTitle(page, 'Water the office plants')
+  await proveVisible(row.locator('.ttl'), 'Water the office plants', 'The renamed task, read back off its row')
+  await proveVisible(row.locator('.meta'), 'edited just now',
+    'The stamp flipped to edited', { match: s => /edited just now/.test(s) })
+  state.task = 'Water the office plants'
+}
+
+// R3 — a container shows a derived ring, no checkbox, and the ring grows when a sub-task is added.
+export async function addSubTaskGrowsRing (page: Page, state: FlowState): Promise<void> {
+  const k = state.container
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`, 'The container ring — one of three done')
+  await expect(rowById(page, k).locator('.trow > .cb'),
+    'a container has no checkbox of its own — only a ring').toHaveCount(0)
+  await page.locator('#sub-' + k).fill('Order name badges')
+  await page.locator('#sub-' + k).press('Enter')
+  state.ring.total += 1
+  state.leaves += 1
+  state.sub = 'Order name badges'
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
+    'Adding a sub-task grew the ring by itself — one of four')
+}
+
+// R5 — the count reads the leaves, then one sub-task done drops it by exactly one.
+export async function tickOneSubTask (page: Page, state: FlowState): Promise<void> {
+  const left = page.locator('#left')
+  await proveVisible(left, String(state.leaves), 'To do — ' + state.leaves + ' leaves of work left')
+  await subById(page, 'k1b').locator('.scb').click()
+  state.leaves -= 1
+  state.ring.done += 1
+  await proveVisible(left, String(state.leaves), 'One sub-task done — the count drops by exactly one')
+}
+
+// R4 — finish the container's remaining open sub-tasks; the last tick rolls the parent up —
+// nobody ticked the parent; it completed itself.
+export async function finishContainerRollsUp (page: Page, state: FlowState): Promise<void> {
+  const k = state.container
+  await subById(page, 'k1c').locator('.scb').click()
+  await rowById(page, k).locator('.srow', { has: page.getByText(state.sub, { exact: true }) })
+    .locator('.scb').click()
+  const open = state.ring.total - state.ring.done - 2   // what was still open before these two ticks, minus them
+  state.ring.done = state.ring.total
+  state.leaves -= 2
+  expect(open, 'the two ticks were the container\'s LAST open sub-tasks').toBe(0)
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.total}/${state.ring.total}`, 'Every sub-task done — the ring is full')
+  await hudCheck('The container completed itself', 'true', await rowById(page, k).getAttribute('data-done'))
+  expect(await rowById(page, k).getAttribute('data-done'),
+    'the container rolled up to done on its own').toBe('true')
+}
+
+// R5 — completing a container of two open leaves dropped the count by two, not three: the
+// container itself is never a unit of work. (This is the assertion the broken-counter demo fails.)
+export async function containerIsNotAUnit (page: Page, state: FlowState): Promise<void> {
+  await proveVisible(page.locator('#left'), String(state.leaves), 'The container is not a task — the count dropped by two, to ' + state.leaves)
+}
+
+// R4, the other direction — reopening any sub-task reopens the container.
+export async function reopenSubTaskReopensParent (page: Page, state: FlowState): Promise<void> {
+  const k = state.container
+  await subById(page, 'k1b').locator('.scb').click()
+  state.ring.done -= 1
+  state.leaves += 1
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`, 'Reopen one sub-task and the parent reopens')
+  expect(await rowById(page, k).getAttribute('data-done'),
+    'reopening a sub-task reopened the container').toBe('false')
+}
+
+// R6 — for each view, the sidebar badge equals the number of task rows the view actually shows.
+export async function walkSmartViews (page: Page, state: FlowState): Promise<void> {
+  for (const v of ['all', 'active', 'today', 'completed']) {
+    await navBtn(page, v).click()
+    await reveal(navBtn(page, v))
+    const badge = ((await navBtn(page, v).locator('.ct').textContent()) || '').trim()
+    const rows = await page.locator('.list .task').count()
+    await hudCheck(`${v} — sidebar badge vs rows on screen`, badge, String(rows))
+    expect(String(rows), `${v}: the badge must equal the rows the view shows`).toBe(badge)
+    if (HOLD) await page.waitForTimeout(HOLD)
+  }
+  await navBtn(page, 'all').click()
+  state.views = 4
+}
+
+// R7 — against the frozen clock, a past-due task reads overdue and a due-today task reads today.
+export async function readDateChips (page: Page, state: FlowState): Promise<void> {
+  await navBtn(page, 'all').click()
+  await proveVisible(rowById(page, 'k3').locator('.chip'), 'overdue', 'Renew passport is past due — overdue')
+  await proveVisible(rowById(page, 'k2').locator('.chip'), 'today', 'Pay the electricity bill is due today')
+  state.dates = { overdue: 'k3', today: 'k2' }
+}
+
+// R8 — the edit, the container's ring as it stands, and a completed stamp all survive a real reload.
+export async function reloadKeepsEverything (page: Page, state: FlowState): Promise<void> {
+  await page.reload({ waitUntil: 'domcontentloaded' })
+  await waitForContent(rowById(page, 'k1'))
+  await proveVisible(rowByTitle(page, state.task).locator('.ttl'),
+    state.task, 'The rename survived the reload')
+  await proveVisible(rowById(page, state.container).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
+    'The container came back at ' + state.ring.done + ' of ' + state.ring.total)
+  await navBtn(page, 'completed').click()
+  await proveVisible(rowById(page, 'k5').locator('.meta'), 'done',
+    'A completed stamp survived the reload', { match: s => /done/.test(s) })
+  state.reloaded = true
+}
