@@ -9,6 +9,11 @@ import type { FlowState } from '../board/steps'
 // beats (R1 → R2 → R3, Task 7) are the unit test 'R1/R2 — the panel opens on the click…' lifted
 // verbatim into callables — the same assertions, now each inside its own checkReq — so the
 // composer can chain "run from a cell, watch it stream, the verdict lands in place" with no model.
+// ONE COMPOSITION RULE these three carry (Task 7, found while composing): the cell they click is
+// the BOARD's, so a flow chaining them must START HERE (spec/dispatch/test.spec.ts), never on the
+// board — a flow living in spec/board/test.spec.ts would be re-run by the very nested board run it
+// starts, nest again inside that, and hit the nesting bound (the job-slot trap in CLAUDE.md). The
+// composer's joint check sees tokens, not recursion; the start screen is the author's call.
 
 // The run this very process IS, when the BOARD started it (see test.spec.ts): a Run clicked from a
 // page that does not name its parent is refused by the very run executing this beat (R4), so the

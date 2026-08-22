@@ -1,5 +1,6 @@
-import { test, expect, checkReq, coverReqs } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep } from '../_base'
 import { openBoardDetail, clickRunOnCell, watchLogStream, verdictLandsInPlace } from './steps'
+import { openDetailReader, toggleViews } from '../board/steps'
 
 // The dispatch panel IS the run panel — a job is a job, whether it is Claude redrafting a
 // wireframe or Playwright running a suite. Testing it with a real Claude redraft is impossible
@@ -422,4 +423,37 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
   const nothing = await request.post('/api/cancel', { data: { runId: 'not-a-run' } })
   expect(nothing.status()).toBe(409)
   expect(await nothing.text()).toMatch(/nothing is running/i)
+})
+
+// ── COMPOSED FLOW: 'Run from the board cell, watch it stream, the verdict lands — then read the detail in its three views — composed' (deterministic emitter — tools/compose.mjs) ─────────────
+// Every beat below is an authored step function, red-first-proven in its unit home
+// (spec/<screen>/steps.ts); this file's first full run passing is the composition's validity
+// (CLAUDE.md rule 1 addendum, the human 2026-08-21). No model was involved and no graph is
+// stored — this is ordinary authored-test material from the moment it was written.
+test('Run from the board cell, watch it stream, the verdict lands — then read the detail in its three views — composed', async ({ page }) => {
+  await coverReqs('R1', 'R2', 'R3', 'board:R2', 'board:R13')
+  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
+  test.setTimeout(620000)
+  // the fixture Given, once — the board's own detail open on Focus, the boot fold settled
+  const state = await openBoardDetail(page)
+  // beat 1 — proves R1
+  await flowStep('click Run on the board cell — the panel opens naming the screen, running', async () => {
+    await checkReq('R1', async () => { await clickRunOnCell(page, state) })
+  })
+  // beat 2 — proves R2
+  await flowStep('the log streams into the panel before any verdict', async () => {
+    await checkReq('R2', async () => { await watchLogStream(page, state) })
+  })
+  // beat 3 — proves R3
+  await flowStep('the verdict lands — chip passed or failed, the cell updated, no reload', async () => {
+    await checkReq('R3', async () => { await verdictLandsInPlace(page, state) })
+  })
+  // beat 4 — proves board:R2
+  await flowStep('open the board detail — reading and proof side by side', async () => {
+    await checkReq('board:R2', async () => { await openDetailReader(page, state) })
+  })
+  // beat 5 — proves board:R13
+  await flowStep('toggle Focus / List / Flow — the List is one row per requirement', async () => {
+    await checkReq('board:R13', async () => { await toggleViews(page, state) })
+  })
 })

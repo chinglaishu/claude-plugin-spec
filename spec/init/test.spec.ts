@@ -1,8 +1,9 @@
-import { test, expect, checkReq, coverReqs } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep } from '../_base'
 import { openSetupAfterCrawl, rerunMarksNewRows, draftedRowBecomesCard } from './steps'
 import { writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { countHomeCards, searchRequirementText } from '../board/steps'
 
 // Init is where a project with code but no specs gets a board. The actual crawl — a real browser
 // visiting real routes, then Claude drafting a PRD from each page — needs a login and minutes, so
@@ -180,4 +181,33 @@ test('R5 — rerunning marks new routes new and leaves a settled row alone', asy
   await checkReq('R5', async () => { await rerunMarksNewRows(page, state) })
 
   await page.screenshot({ path: 'spec/init/screen.png', fullPage: false })
+})
+
+// ── COMPOSED FLOW: 'A crawled row becomes a card — the rerun marks it, the draft lands as one card, home counts it and search finds it — composed' (deterministic emitter — tools/compose.mjs) ─────────────
+// Every beat below is an authored step function, red-first-proven in its unit home
+// (spec/<screen>/steps.ts); this file's first full run passing is the composition's validity
+// (CLAUDE.md rule 1 addendum, the human 2026-08-21). No model was involved and no graph is
+// stored — this is ordinary authored-test material from the moment it was written.
+test('A crawled row becomes a card — the rerun marks it, the draft lands as one card, home counts it and search finds it — composed', async ({ page }) => {
+  await coverReqs('R5', 'R3', 'board:R1', 'board:R9')
+  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
+  test.setTimeout(300000)
+  // the fixture Given, once — Setup open on a crawl that found /board (already a screen) and /storefront (new)
+  const state = await openSetupAfterCrawl(page)
+  // beat 1 — proves R5
+  await flowStep('the rerun marks the new route new, the settled one already on the board', async () => {
+    await checkReq('R5', async () => { await rerunMarksNewRows(page, state) })
+  })
+  // beat 2 — proves R3
+  await flowStep('a drafted PRD is one ordinary card — no guess chip, nothing waiting, no gate', async () => {
+    await checkReq('R3', async () => { await draftedRowBecomesCard(page, state) })
+  })
+  // beat 3 — proves board:R1
+  await flowStep('count the home cards — one per screen, titles and a cover', async () => {
+    await checkReq('board:R1', async () => { await countHomeCards(page, state) })
+  })
+  // beat 4 — proves board:R9
+  await flowStep('search "canon" — groups that miss hide themselves', async () => {
+    await checkReq('board:R9', async () => { await searchRequirementText(page, state) })
+  })
 })
