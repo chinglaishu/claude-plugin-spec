@@ -164,6 +164,26 @@ export function renderBehavior (b) {
   return `<div class="behavior">${row('given', 'Given', b.given)}${beats}</div>`
 }
 
+// The drawn SCHEMATIC a requirement may carry (requirement schematics, 2026-08-18; task 4) —
+// r.viz is attached by enrichReqs from the committed spec/<screen>/viz/<id>.svg (derived by
+// tools/viz.mjs from the behavior text, hash-pinned, never a capture of the real UI). Baked here
+// into the hidden source row as a <figure> so the Focus reader (and the List's open row — the
+// same client builder) renders it without a fetch, with the loop · stills chrome built
+// client-side. The empty-string contract mirrors renderBehavior(null): no viz, no wrapper, no
+// change anywhere the drawing is absent. Defense in depth: the file is committed content, but the
+// builder still refuses to inline anything that is not a plain <svg> (a script, a stray payload) —
+// board.html must never gain executable content this way.
+export function renderSchematic (r) {
+  const v = r && r.viz
+  if (!v) return ''
+  const svg = String(v.svg || '').trim()
+  if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg)) return ''
+  const stale = v.stale ? ' data-stale="1"' : ''
+  const at = v.at ? ` data-vizat="${esc(v.at)}"` : ''
+  return `<figure class="schematic" data-phases="${esc((v.phases || []).join(' '))}"` +
+    ` data-vizhash="${esc(v.hash || '')}" data-texthash="${esc(v.textHash || '')}"${at}${stale}>${svg}</figure>`
+}
+
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
 // Run/Watch buttons and the SSE-streamed run panel live on the test rows (R10).
 const runAll = name =>
@@ -213,7 +233,7 @@ const reqRow = (r, s) => {
   const beats = r.behavior ? r.behavior.beats.length : 0
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
-    <div class="body">${renderBehavior(r.behavior)}${renderBody(prose)}${covers}</div>
+    <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r)}${renderBody(prose)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
@@ -1562,13 +1582,47 @@ export function build () {
   .fread .fbody.fprose { display:none; border-top:1px dashed var(--hair); margin-top:var(--s3);
     padding-top:var(--s3); }
   .fread .fbody.fprose.open { display:block; }
-  /* the schematic slot — a placeholder card until the viz pass derives one from the behavior text */
+  /* the schematic slot (task 4) — the drawn, hash-pinned loop where a committed drawing exists;
+     the honest placeholder line where none does. loop · stills reuses the media pane's .medbar. */
   .fschem { flex:none; background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     box-shadow:0 1px 3px rgba(28,27,24,.05); padding:var(--s4) var(--s5); }
-  .fschem .figcap { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  .fschem .figcap { display:flex; align-items:center; gap:var(--s2);
+    font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); margin-bottom:var(--s2); }
+  .fschem .figcap .medbar { margin-left:auto; }
+  .fschem .figcap .beatdots { margin-left:auto; display:inline-flex; gap:5px; }
+  .fschem .figcap .beatdots + .medbar { margin-left:var(--s2); }
+  .fschem .beatdots i { width:6px; height:6px; border-radius:999px; background:var(--hair-2); }
+  .fschem .beatdots i.on { background:var(--ai); }
   .fschem .noschem { border:1px dashed var(--hair-2); border-radius:var(--r-sm); padding:var(--s4);
     font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
+  /* the loop: one drawing, animating; capped so the figure never crowds the reading card */
+  .fschem .viz { position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
+    overflow:hidden; background:var(--paper); }
+  .fschem .viz svg { display:block; width:100%; height:auto; max-height:220px; }
+  /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right */
+  .fschem.isstale .viz svg, .fschem.isstale .sstills svg { filter:grayscale(1) opacity(.45); }
+  .fschem .staleov { position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:4px; text-align:center; padding:0 var(--s5);
+    background:rgba(253,252,249,.85); /* the .wmark scrim family — paper at .85 so the note reads AA */ }
+  .fschem .staleov b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
+  .fschem .staleov span { font-size:var(--t-xs); color:var(--ink-3); }
+  /* stills: the loop's own frames — every animation paused, parked per phase by --ph */
+  .fschem .sstills { display:flex; gap:var(--s2); }
+  .fschem .sstills .sframe { flex:1; min-width:0; border:1px solid var(--hair);
+    border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  .fschem .sstills .sframe svg { display:block; width:100%; height:auto; }
+  .fschem .sstills .sframe svg * { animation-play-state:paused !important;
+    animation-delay:var(--ph,0s) !important; }
+  .fschem .sstills .scap { font:var(--t-micro) var(--mono); color:var(--ink-3);
+    padding:3px 7px; border-top:1px solid var(--hair); background:var(--wash); }
+  .fschem .figfoot { font-size:var(--t-xs); color:var(--ink-3); margin-top:6px; }
+  .fschem .figfoot .h { font-family:var(--mono); }
+  /* the client already defaults a reduced-motion viewer to stills; if they choose loop anyway,
+     the drawing holds still rather than animating */
+  @media (prefers-reduced-motion: reduce) {
+    .fschem .viz svg * { animation-play-state:paused !important; }
+  }
 
   /* THE MEDIA PANE (D2, the frozen mockup): the proof's media under a stills · gif · video toolbar.
      The default derives from status × beat count; the toolbar overrides it — a client-side

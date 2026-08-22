@@ -12,6 +12,7 @@ import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './c
 import { foldEvidence } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
+import { vizHash } from './viz.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -339,6 +340,31 @@ const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts']
 // block ({given, beats}) a requirement may lead with, or null when it is prose-only. Attached here
 // (not in the builder) so every reader of a requirement sees the same parse; the builder only
 // draws it. It is authored text re-shaped, never a derived state.
+// `viz` (added 2026-08-22, requirement schematics — task 4) is the requirement's committed drawn
+// schematic, read from spec/<screen>/viz/<id>.svg where one exists. The file is AUTHORED content
+// (derived once from the behavior text by tools/viz.mjs, committed like code); what is COMPUTED
+// here is only its honesty: the stamp the drawing carries (data-viz-hash) against the current
+// behavior text's hash. A mismatch — the text moved past the drawing, or the behavior block was
+// removed entirely — reads `stale`, and the board renders it quiet grey with the dated ≠ note,
+// never a wrong picture passing for right. No viz file → null, exactly like behavior.
+function vizFor (screen, id, behavior) {
+  const p = join(SPEC, screen, 'viz', `${id}.svg`)
+  if (!existsSync(p)) return null
+  const svg = readFileSync(p, 'utf8').trim()
+  const attr = n => (svg.match(new RegExp(`data-viz-${n}="([^"]*)"`)) || [])[1] || ''
+  const hash = attr('hash')
+  const textHash = vizHash(behavior)
+  return {
+    svg,
+    hash,
+    textHash,
+    stale: hash !== textHash,
+    at: attr('at'),
+    archetype: attr('archetype'),
+    phases: attr('phases').split(/\s+/).filter(Boolean).map(Number)
+  }
+}
+
 const _aggCache = new WeakMap()
 function aggFor (results) {
   const key = results || {}
@@ -378,7 +404,8 @@ function enrichReqs (reqs, screen, results) {
     const folded = deriveReqStatus(liveEntries)
     const pin = results?.[screen]?.provenHashes?.[r.id]
     const status = isChanged(folded, pin, r.body) ? 'changed' : folded
-    return { ...r, state: deriveReqState({ hasCurrentPass }), status, behavior: parseBehavior(r.body), tests }
+    const behavior = parseBehavior(r.body)
+    return { ...r, state: deriveReqState({ hasCurrentPass }), status, behavior, viz: vizFor(screen, r.id, behavior), tests }
   })
 }
 

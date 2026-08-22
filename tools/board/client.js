@@ -330,15 +330,31 @@ const B = window.__BOARD__ || {}
   function reqInfo (node) {
     const idEl = node.querySelector('.id'); const ttlEl = node.querySelector('.rt')
     const bodyEl = node.querySelector('.body')
-    let behHtml = ''; let proseHtml = ''
+    let behHtml = ''; let proseHtml = ''; let schem = null
     if (bodyEl) {
       const c = bodyEl.cloneNode(true)
       const cov = c.querySelector('.covers'); if (cov) cov.remove()
       const beh = c.querySelector('.behavior')
       if (beh) { behHtml = beh.outerHTML; beh.remove() }
+      // the baked drawn schematic (task 4): lifted out of the prose clone like the behavior block,
+      // so the Focus slot renders it and the collapsed prose never carries a second copy
+      const sc = c.querySelector('.schematic')
+      if (sc) {
+        const svgEl = sc.querySelector('svg')
+        schem = {
+          svg: svgEl ? svgEl.outerHTML : '',
+          phases: (sc.getAttribute('data-phases') || '').split(/\s+/).filter(Boolean),
+          hash: sc.getAttribute('data-vizhash') || '',
+          textHash: sc.getAttribute('data-texthash') || '',
+          at: sc.getAttribute('data-vizat') || '',
+          stale: sc.getAttribute('data-stale') === '1'
+        }
+        sc.remove()
+      }
       proseHtml = c.innerHTML
     }
     return {
+      schem: schem,
       node: node,
       id: idEl ? idEl.textContent : '',
       state: node.getAttribute('data-state') || 'unproven',
@@ -420,11 +436,10 @@ const B = window.__BOARD__ || {}
     }
     read.appendChild(fbody)
     left.appendChild(read)
-    // the schematic slot — an honest placeholder until the viz pass derives one from the behavior text
-    const schem = document.createElement('div'); schem.className = 'fschem'
-    schem.innerHTML = '<div class="figcap">schematic · the idea, not the real UI</div>' +
-      '<div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div>'
-    left.appendChild(schem)
+    // the schematic slot (task 4): the drawn, hash-pinned loop where a committed drawing exists —
+    // quiet grey with the dated ≠ note when the text has moved past it — and the honest
+    // placeholder line where none does
+    left.appendChild(buildSchematic(r))
 
     // ── RIGHT: the proof ─────────────────────────────────────────────────────
     const evl = document.createElement('div'); evl.className = 'feval'
@@ -502,6 +517,95 @@ const B = window.__BOARD__ || {}
     }
     page.appendChild(left); page.appendChild(evl)
     return { page: page, restore: restore, id: r.id }
+  }
+
+  // The SCHEMATIC slot (requirement schematics spec 2026-08-18; task 4): the AUTHORED-side
+  // drawing — derived once from the behavior text (tools/viz.mjs), committed at
+  // spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media (the golden/expected-vs-current
+  // diff was dropped 2026-08-18; the left pane's only media choice is loop vs stills of the SAME
+  // drawing). loop · stills is a client-side preference (localStorage 'sbSchemMode'); a
+  // reduced-motion viewer defaults to the stepped stills. A drawing whose text moved past its pin
+  // renders QUIET GREY under the dated "text ≠ viz" note — honest, never a wrong picture; a
+  // requirement with no committed drawing keeps the placeholder line.
+  function buildSchematic (r) {
+    const wrap = document.createElement('div'); wrap.className = 'fschem'
+    const v = r.schem
+    if (!v || !v.svg) {
+      wrap.innerHTML = '<div class="figcap">schematic · the idea, not the real UI</div>' +
+        '<div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div>'
+      return wrap
+    }
+    const short = function (h) { return String(h || '').slice(0, 6) }
+    const render = function () {
+      let mode = null
+      try { mode = localStorage.getItem('sbSchemMode') } catch (e) { mode = null }
+      if (mode !== 'loop' && mode !== 'stills') {
+        mode = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+          ? 'stills' : 'loop'
+      }
+      wrap.className = 'fschem' + (v.stale ? ' isstale' : '')
+      wrap.textContent = ''
+      const cap = document.createElement('div'); cap.className = 'figcap'
+      const lbl = document.createElement('span'); lbl.textContent = 'schematic · the idea, not the real UI'
+      cap.appendChild(lbl)
+      if (mode === 'loop' && r.beats > 1) {
+        // one dot per beat — static (first on): a quiet count, not a synced progress indicator
+        const dots = document.createElement('span'); dots.className = 'beatdots'
+        for (let i = 0; i < r.beats; i++) {
+          const d = document.createElement('i'); if (i === 0) d.className = 'on'
+          dots.appendChild(d)
+        }
+        cap.appendChild(dots)
+      }
+      const mb = document.createElement('span'); mb.className = 'medbar'
+      ;['loop', 'stills'].forEach(function (m) {
+        const b = document.createElement('button'); b.type = 'button'; b.dataset.sm = m
+        b.textContent = m
+        if (m === mode) b.classList.add('on')
+        b.addEventListener('click', function () {
+          try { localStorage.setItem('sbSchemMode', m) } catch (e) { /* preference only, never the tree */ }
+          render()
+        })
+        mb.appendChild(b)
+      })
+      cap.appendChild(mb)
+      wrap.appendChild(cap)
+      if (mode === 'stills') {
+        // the stills ARE the loop's own frames: the same drawing, paused, parked per phase by a
+        // negative animation-delay (the CSS reads --ph off each frame's holder)
+        const st = document.createElement('div'); st.className = 'sstills'
+        const phases = v.phases.length ? v.phases : ['-0.05']
+        phases.forEach(function (ph, i) {
+          const f = document.createElement('div'); f.className = 'sframe'
+          const holder = document.createElement('div'); holder.style.setProperty('--ph', ph + 's')
+          holder.innerHTML = v.svg
+          const c = document.createElement('div'); c.className = 'scap'
+          c.textContent = i === 0 ? 'given' : (phases.length > 2 ? 'beat ' + i + ' · then' : 'then')
+          f.appendChild(holder); f.appendChild(c); st.appendChild(f)
+        })
+        wrap.appendChild(st)
+      } else {
+        const viz = document.createElement('div'); viz.className = 'viz'
+        viz.innerHTML = v.svg
+        if (v.stale) {
+          const so = document.createElement('div'); so.className = 'staleov'
+          const b = document.createElement('b'); b.textContent = '✎ stale — text changed'
+          const s = document.createElement('span')
+          s.textContent = 'the requirement was reworded after this was drawn' +
+            (v.at ? ' (' + v.at + ')' : '') + ' — redrawn on the next viz pass'
+          so.appendChild(b); so.appendChild(s); viz.appendChild(so)
+        }
+        wrap.appendChild(viz)
+      }
+      const foot = document.createElement('div'); foot.className = 'figfoot'
+      foot.innerHTML = v.stale
+        ? 'drawn from the text · <span class="h">text@' + eh(short(v.textHash)) + ' ≠ viz@' + eh(short(v.hash)) + '</span> — redrawn on the next viz pass'
+        : 'drawn from the text · <span class="h">viz@' + eh(short(v.hash)) + '</span> · ' +
+          (mode === 'stills' ? 'the loop’s own frames, frozen per beat' : 'loops · pauses under reduced-motion')
+      wrap.appendChild(foot)
+    }
+    render()
+    return wrap
   }
 
   // The MEDIA pane (D2, the frozen mockup): default derives from status × beat count —

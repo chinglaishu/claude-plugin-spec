@@ -22,6 +22,10 @@ export const FILES = [
   // pure requirement-text hashing (two scopes) — imported by spec-store.mjs for the Changed-drift
   // pin (board R4's fifth word), so the vendored store cannot load without it (guard-caught too).
   'tools/reqhash.mjs',
+  // pure requirement-schematic derivation (task 4, 2026-08-22): the archetype kit + vizHash/vizStale
+  // — imported by spec-store.mjs (enrichReqs attaches r.viz, the committed drawing's staleness), so
+  // the vendored store cannot load without it (the same guard-caught class of miss).
+  'tools/viz.mjs',
   // pure evidence-harvest logic (Task 15, D2): clip windows + ffmpeg args + the per-requirement
   // fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
   // scaffolded project can load neither without it (the same guard-caught class of miss).
