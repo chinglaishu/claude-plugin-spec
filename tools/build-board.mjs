@@ -1700,14 +1700,21 @@ export function build () {
   /* the LIST view (board R13, the frozen mockup — Grid became List, 2026-08-21; router key stays
      'grid'): one collapsed CARD per requirement, a gap-summary strip above, and an open card's body
      is the Focus body itself (client-built). The container scrolls on its OWN — the page never does
-     (R2's principle). All pairs re-measured: --ink-3 on --card 6.42:1, on --wash (hover) 5.29:1 — AA. */
+     (R2's principle). Every text/background pair this block introduces, RE-MEASURED numerically at
+     both states (fix round 1, 2026-08-22 — two of these failed AA on the original --wash hover:
+     .lpf.not-reached #8a6412 measured 4.31:1, .lpf.untested/.lkind #6e6b64 measured 4.27:1, both
+     under the 4.5:1 floor). Rather than reassign a status hue (hue names the state — it cannot move
+     to fix contrast) the hover background moved from --wash to --canvas, the app's own page
+     background one step lighter — every pair already used on --card clears 4.5:1 on --canvas too:
+     --koke 7.05/6.42, --bengara 6.46/5.87, --yamabuki 5.23/4.76, --ink-4 5.18/4.71, --ink-3
+     6.42/5.84, --ai 8.98/8.16, --ink 16.79/15.27 (card/canvas). No new colour, no hue reassigned. */
   .gridview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
     margin:0 auto; overflow-y:auto; min-height:0; flex:1; padding-bottom:var(--s6); }
   .lst-card { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     box-shadow:0 1px 3px rgba(28,27,24,.05); overflow:hidden; flex:none; }
   .lst-head { display:flex; align-items:center; gap:var(--s3); width:100%; padding:var(--s3) var(--s4);
     border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
-  .lst-head:hover { background:var(--wash); }
+  .lst-head:hover { background:var(--canvas); }
   .lst-head .chev { color:var(--ink-4); font-size:11px; flex:none; width:12px; transition:transform .12s; }
   .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
   .lst-head .lid { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; flex:none; }
@@ -1727,8 +1734,13 @@ export function build () {
   .lst-body { border-top:1px solid var(--hair); padding:var(--s4); background:var(--wash); }
   .lst-body[hidden] { display:none; }
   /* an open row hosts the full Focus body — a bounded page so its two containers keep their OWN
-     scroll (R2), exactly as in the Focus view */
-  .lst-body .fpage { height:560px; }
+     scroll (R2), exactly as in the Focus view. In Focus itself .fpage gets its bound for free
+     (flex:1 inside .dt's fixed inset:0 viewport overlay); inline in the list there is no such
+     ancestor, so the bound has to be stated directly. A bare 560px was arbitrary and off any
+     token/scale (fix round 1, 2026-08-22): clamp() to a viewport fraction instead, so the row
+     answers to the actual window rather than a fixed guess, floored/ceilinged so it stays usable on
+     a short laptop screen and doesn't balloon on a tall monitor. */
+  .lst-body .fpage { height:clamp(420px, 65vh, 640px); }
   /* the gap-summary strip: what is not green, counted, with the add-test handoff (R15) */
   .remind { display:flex; align-items:center; gap:var(--s3); background:var(--card);
     border:1px solid var(--hair-2); border-radius:var(--r-md); padding:var(--s3) var(--s4);
