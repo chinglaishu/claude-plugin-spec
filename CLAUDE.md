@@ -127,7 +127,7 @@ npm run test:tools     # the pure-function unit tests (coverage, prd-render, upd
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
-moves the board's own port.
+moves the board's own port; `BOARD_HOST=<hostname>` names the one non-loopback hostname whose own origin the POST guard accepts.
 
 ## The design system is non-negotiable
 

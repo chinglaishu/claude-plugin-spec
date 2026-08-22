@@ -1045,12 +1045,16 @@ const server = createServer(async (req, res) => {
   // when a browser sends an Origin; tools without one (curl, the test suite) are unaffected.
   // (task-5 review B-2 re-checked this guard: it sits BEFORE every POST handler, the compose ones
   // included, and a browser always sends Origin on a cross-site POST — text/plain "simple" requests
-  // too. Widened so a board served on a hostname other than localhost accepts its OWN origin: the
-  // Origin must match the request's Host, or be the loopback forms of this port.)
+  // too. A board served on a hostname other than localhost accepts its OWN origin only when that
+  // hostname is named in BOARD_HOST: matching the Origin against the request's Host alone would
+  // let a DNS-rebound page — evil.example resolving to this machine — match its own Host (the
+  // re-review's one new finding). Loopback forms of this port are always the board's own.)
   const origin = req.headers.origin
   const host = String(req.headers.host || '')
+  const ownHost = host && process.env.BOARD_HOST && host === `${process.env.BOARD_HOST}:${PORT}`
   const sameOrigin = !origin || origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}` ||
-    (host && (origin === `http://${host}` || origin === `https://${host}`))
+    origin === `http://[::1]:${PORT}` ||
+    (ownHost && (origin === `http://${host}` || origin === `https://${host}`))
   if (req.method === 'POST' && !sameOrigin) {
     res.writeHead(403, { 'content-type': 'text/plain' }); res.end('cross-origin refused'); return
   }
