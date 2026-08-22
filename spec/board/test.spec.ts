@@ -1102,7 +1102,7 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(panelAB.locator('.fcell.rf', { hasText: 'A value' })).toHaveCount(0)
     await expect(dt.locator('.focusov .feval .fmedia .fmbar .fpv.fail')).toContainText('✗')
     // the proof line names the test whose run failed, too — the pane and its header agree
-    await expect(dt.locator('.focusov .feval .fpby b')).toHaveText(B_TITLE)
+    await expect(dt.locator('.focusov .feval .fpby .tn')).toHaveText(B_TITLE)   // the name in the mockup's one-line proof header (Task 8)
 
     // (3) NO VIDEO → NO STRIP, and NEWEST-RECORD-ONLY (D3): a record that cut no frames yields NO
     // run-frame cells — the harvested pair still stands, never a faked or separately-captured strip.
