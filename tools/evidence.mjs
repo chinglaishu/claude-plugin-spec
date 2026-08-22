@@ -75,22 +75,44 @@ export function parseEvidenceAttachment (name) {
   return m ? { id: m[1], phase: m[2] } : null
 }
 
+// D1 (the human, 2026-08-22 — final review M3): does a video-less fold keep the previous clip?
+// Only a BOARD run records video, so every CLI `npm run e2e` used to fold `clip: null` and prune
+// the gif the last watched run cut. The clip stays while (a) this fold cut none, (b) the
+// requirement is still proven after this fold (no gif under a red chip — rule 3), and (c) the
+// requirement's TEXT HASH is the one the clip was cut for — `hash` is reqHash(meaningText), the
+// same pin Changed-drift uses. The pin is deliberately NOT the frame bytes: the pair is
+// re-photographed every fold and differs byte for byte each time (clocks, counts), so a
+// content-hash rule would keep nothing, ever. A fold WITH a video always replaces. An old entry
+// with no pin (pre-D1) cannot vouch for its clip and drops it.
+export function carryClip (old, e, proven) {
+  return !!(old && old.clip && !e.clip && proven && e.hash && old.hash === e.hash)
+}
+
 // Fold one run's harvest into the results index — the same rules coverage follows: merged per
 // requirement onto the REQUIREMENT's screen (a qualified `x:R3` lands on screen x, wherever the
 // tagging test's file lives), and a requirement or screen the run did not touch keeps its evidence
 // untouched. Mutates `index` (it is called inside spec-store's single read-modify-write of the
 // file) and returns the superseded file paths no longer referenced — the caller deletes those so
 // disk stays bounded (deterministic paths overwrite in place; only a path the new entry dropped,
-// e.g. a stale clip when this fold cut none, needs pruning).
-export function foldEvidence (index, entries) {
+// e.g. a stale clip when this fold cut none, needs pruning). `proven(qid)` is the caller's oracle
+// for carryClip — the board-wide folded status after THIS fold; absent, nothing is carried (the
+// strict pre-D1 prune). A clip names the run that cut it (clipRunId/clipAt) so a carried one is
+// never mistaken for this fold's.
+export function foldEvidence (index, entries, { proven = () => false } = {}) {
   const prune = []
-  for (const [qid, e] of Object.entries(entries || {})) {
+  for (const [qid, raw] of Object.entries(entries || {})) {
     const i = String(qid).indexOf(':')
     if (i < 1) continue                       // never invent a screen for an unqualified id
     const scr = qid.slice(0, i)
     const rid = qid.slice(i + 1)
     const entry = (index[scr] ??= {})
     const old = entry.evidence?.[rid]
+    let e = raw
+    if (carryClip(old, raw, proven(qid))) {
+      e = { ...raw, clip: old.clip, clipRunId: old.clipRunId || old.runId, clipAt: old.clipAt || old.at }
+    } else if (raw.clip) {
+      e = { ...raw, clipRunId: raw.runId, clipAt: raw.at }
+    }
     entry.evidence = { ...(entry.evidence || {}), [rid]: e }
     if (old) {
       const kept = new Set([e.before, e.after, e.clip].filter(Boolean))

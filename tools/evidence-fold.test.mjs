@@ -88,3 +88,52 @@ test('foldEvidence skips an unqualified id rather than inventing a screen', () =
   assert.deepEqual(index, {})
   assert.deepEqual(prune, [])
 })
+
+// D1 (the human, 2026-08-22): a fold WITHOUT a video keeps the previous fold's clip — file and index
+// entry — while the requirement is still proven and its wording is the one the clip was cut for.
+// The pin is the requirement's TEXT hash (reqHash of the meaning text, the same pin Changed-drift
+// uses), never the frame bytes: the frame pair is re-photographed on every fold and differs byte
+// for byte each time (clocks, counts), so a content-hash rule would keep nothing, ever.
+test('D1: a video-less fold carries the old clip forward when the text hash matches and the requirement is still proven', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', at: '2026-08-20T00:00:00.000Z', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) }, { proven: () => true })
+  assert.deepEqual(prune, [], 'nothing is pruned — the clip file stays on disk')
+  const e = index.board.evidence.R4
+  assert.equal(e.clip, 'spec/board/evidence/R4.clip.webp', 'the clip path is carried into the new entry')
+  assert.equal(e.runId, 'r2', 'the frames are the new fold\'s')
+  assert.equal(e.clipRunId, 'r0', 'the clip says which run cut it')
+  assert.equal(e.clipAt, '2026-08-20T00:00:00.000Z')
+})
+test('D1: a fold WITH a video replaces the clip and stamps its own run as the cutter', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', clipRunId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  foldEvidence(index, { 'board:R4': entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r5', hash: 'h1' }) }, { proven: () => true })
+  assert.equal(index.board.evidence.R4.clipRunId, 'r5')
+})
+test('D1: the clip drops when the requirement\'s text hash moved (the proof is pinned to the wording)', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h2' }) }, { proven: () => true })
+  assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
+  assert.equal(index.board.evidence.R4.clip, null)
+})
+test('D1: the clip drops when the requirement is no longer proven this fold (no gif under a red chip)', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) }, { proven: () => false })
+  assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
+  assert.equal(index.board.evidence.R4.clip, null)
+})
+test('D1: an old entry with no hash pin (pre-D1 fold) cannot vouch for its clip — it drops', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) }, { proven: () => true })
+  assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
+})
+test('D1: without a proven oracle the fold stays as strict as before (prune on any video-less refold)', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) })
+  assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
+})

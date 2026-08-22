@@ -272,8 +272,21 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   // screen, fold-never-replace (tools/evidence.mjs, unit-tested); the superseded files it names —
   // e.g. a stale clip a ffmpeg-less refold replaced with frames alone — are deleted so disk stays
   // bounded. Deletion is best-effort: a missing file is already what pruning wanted.
+  // D1 (2026-08-22): each entry is pinned to the requirement's CURRENT text hash (the Changed-drift
+  // pin), and the fold is told which requirements stand proven after this fold — together those let
+  // a video-less CLI fold carry a watched run's clip forward (tools/evidence.mjs carryClip) instead
+  // of pruning it on every `npm run e2e`.
   if (evidence && Object.keys(evidence).length) {
-    for (const p of foldEvidence(index, evidence)) {
+    const agg = aggregateCoverage(index)
+    const prdCache = {}
+    for (const [qid, e] of Object.entries(evidence)) {
+      const i = qid.indexOf(':')
+      if (i < 1) continue
+      const body = reqBody(qid.slice(0, i), qid.slice(i + 1), prdCache)
+      e.hash = body == null ? null : reqHash(meaningText(body))
+    }
+    const proven = qid => deriveReqStatus(agg[qid] || []) === 'passed'
+    for (const p of foldEvidence(index, evidence, { proven })) {
       try { rmSync(join(ROOT, p), { force: true }) } catch { /* already gone */ }
     }
   }
@@ -304,24 +317,30 @@ function stampProvenHashes (fresh, index) {
   // pass before status, so the requirement is not Passed and Changed cannot fire).
   const agg = aggregateCoverage(index)
   const prdCache = {}
-  const reqsOf = scr => (prdCache[scr] ??= (() => {
-    const p = join(SPEC, scr, 'prd.md')
-    if (!existsSync(p)) return []
-    try { return parsePrd(readFileSync(p, 'utf8')).reqs } catch { return [] }
-  })())
   for (const qid of touched) {
     const i = qid.indexOf(':')
     if (i < 0) continue                       // ids in t.reqs are always qualified; stay safe anyway
     const scr = qid.slice(0, i)
     const rid = qid.slice(i + 1)
     if (deriveReqStatus(agg[qid] || []) !== 'passed') continue
-    const body = reqsOf(scr).find(r => r.id === rid)?.body
+    const body = reqBody(scr, rid, prdCache)
     if (body == null) continue
     // a cross-screen pin may land on a screen with no run entry yet — that pin-only entry carries
     // no tests, and readScreen treats it as "never run" (the run guard there), never a fake green
     const entry = (index[scr] ??= {})
     entry.provenHashes = { ...(entry.provenHashes || {}), [rid]: reqHash(meaningText(body)) }
   }
+}
+
+// A requirement's body text off its screen's prd.md, cached per screen for one fold — shared by the
+// Changed-drift pin and the evidence pin so the two can never hash different text.
+function reqBody (scr, rid, cache = {}) {
+  const reqs = (cache[scr] ??= (() => {
+    const p = join(SPEC, scr, 'prd.md')
+    if (!existsSync(p)) return []
+    try { return parsePrd(readFileSync(p, 'utf8')).reqs } catch { return [] }
+  })())
+  return reqs.find(r => r.id === rid)?.body ?? null
 }
 
 export const foldResults = (reportPath = RESULTS) => foldByScreen(parseReport(reportPath))
