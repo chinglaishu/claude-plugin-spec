@@ -1,9 +1,8 @@
-import { test, expect, checkReq } from '../_base'
+import { test, expect, checkReq, coverReqs } from '../_base'
+import { openSetupAfterCrawl, rerunMarksNewRows, draftedRowBecomesCard } from './steps'
 import { writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { makeDocumentScreen } from '../_fixture'
-import { build } from '../../tools/build-board.mjs'
 
 // Init is where a project with code but no specs gets a board. The actual crawl — a real browser
 // visiting real routes, then Claude drafting a PRD from each page — needs a login and minutes, so
@@ -93,39 +92,11 @@ test('R3 — a drafted PRD is canon the moment it is written: one CARD, no guess
   // is canon immediately — an ordinary starting point the human edits or removes freely, exactly like a
   // PRD they wrote from scratch. There is no draft/guess state, no accept gate, no gate B — nothing
   // waits on a person to confirm it.
-  const name = makeDocumentScreen('storefront')
-  try {
-    const cardLoc = page.locator('#home .card[data-screen="' + name + '"]')
-    await expect(async () => {
-      build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
-      await page.goto('/')
-      await expect(cardLoc).toHaveCount(1)
-    }).toPass({ timeout: 15000 })
-    // a drafted screen is an ordinary card — no guess chip, no waiting marker, and the rest of the
-    // card still renders normally (its proven-count chip and requirement titles)
-    await expect(cardLoc.locator('.chip', { hasText: /guess/i })).toHaveCount(0)
-    expect(await cardLoc.getAttribute('data-waiting')).toBeNull()
-    await expect(cardLoc.locator('.pcount')).toHaveCount(1)
-    await expect(cardLoc.locator('.rl li')).not.toHaveCount(0)
-
-    // the detail carries NOTHING to accept — no gate anywhere. Retry the detail nav: right after
-    // the fixture lands, the watcher can briefly rebuild the board stale (no storefront in its
-    // SCREENS list yet), so re-goto until the detail actually opens this screen (the Focus reader
-    // visible — the default view; the Columns view is retired, board R13 2026-08-18) — the same
-    // settle the _modes specs ride out, and the same one a real browser gets via live-reload.
-    const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
-    await expect(async () => {
-      build()   // re-assert the board each retry — the watcher can stale-overwrite it and never self-correct
-      await page.goto('/#/' + name)
-      await expect(dt.locator('.focusov')).toBeVisible()
-    }).toPass({ timeout: 15000 })
-    await expect(dt.locator('.gate')).toHaveCount(0)                // no acceptance gate (board R8)
-    await expect(dt.locator('[data-act="accept"]')).toHaveCount(0)  // nothing to accept
-    await expect(dt.locator('[data-gate]')).toHaveCount(0)          // no gate B / draft gate either
-  } finally {
-    rmSync(join(SPEC, name), { recursive: true, force: true })
-    build()
-  }
+  // Task 7 (2026-08-22): the assertion body moved VERBATIM into ./steps.ts (draftedRowBecomesCard)
+  // and is now TAGGED — it was asserted here all along but never wore a checkReq.
+  await coverReqs('R3')
+  const state = await openSetupAfterCrawl(page)
+  await checkReq('R3', async () => { await draftedRowBecomesCard(page, state) })
 })
 
 test('R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD', async ({ page }) => {
@@ -202,17 +173,11 @@ test('R6 — the switch is disabled until piper is ready, with a copyable instal
 })
 
 test('R5 — rerunning marks new routes new and leaves a settled row alone', async ({ page }) => {
-  // one route already has a real (non-guess) screen on the board — 'board' — and one is new
-  writeFileSync(CRAWL, JSON.stringify({
-    crawledAt: '2026-07-27T10:00:00.000Z',
-    routes: [{ route: '/board', title: 'Board' }, { route: '/storefront', title: 'Storefront' }]
-  }))
-  await page.goto('/#init')
-  const found = page.locator('#initview #initfound')
-  const boardRow = found.locator('.frow', { hasText: '/board' })
-  const newRow = found.locator('.frow', { hasText: '/storefront' })
-  await expect(boardRow).toContainText(/already on board|yours/i)
-  await expect(newRow).toContainText(/new/i)
+  // one route already has a real (non-guess) screen on the board — 'board' — and one is new.
+  // Task 7 (2026-08-22): the fixture + assertion moved VERBATIM into ./steps.ts and are now TAGGED.
+  await coverReqs('R5')
+  const state = await openSetupAfterCrawl(page)
+  await checkReq('R5', async () => { await rerunMarksNewRows(page, state) })
 
   await page.screenshot({ path: 'spec/init/screen.png', fullPage: false })
 })

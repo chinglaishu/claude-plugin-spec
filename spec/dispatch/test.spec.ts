@@ -1,4 +1,5 @@
-import { test, expect } from '../_base'
+import { test, expect, checkReq, coverReqs } from '../_base'
+import { openBoardDetail, clickRunOnCell, watchLogStream, verdictLandsInPlace } from './steps'
 
 // The dispatch panel IS the run panel — a job is a job, whether it is Claude redrafting a
 // wireframe or Playwright running a suite. Testing it with a real Claude redraft is impossible
@@ -79,25 +80,21 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
   // ceiling cut the run mid-flight and the orphaned job cascaded into the tests after it. The
   // assertions are unchanged; only the wall clock follows the suite's real size.
   test.setTimeout(300_000)   // raised 2026-08-22 (Task 6 fix round 1): the WATCHED nested board run measured 147 s
+  // Task 7 (2026-08-22): the three assertion bodies moved VERBATIM into ./steps.ts as composable
+  // beats (the beat-function convention) and are now TAGGED — R1, R2 and R3 were asserted here all
+  // along but never wore a checkReq, so they read Untested on the board they prove. R3 gained the
+  // no-reload sentinel and the cell-moved-in-place check its beat text names ("the cell it was
+  // working on changes state in place").
+  await coverReqs('R1', 'R2', 'R3')
   await idle(request)
+  const state = await openBoardDetail(page)
   // R1: opened BY the control you clicked, and it already knows its screen — nothing is typed.
-  await page.goto(BOARD)
-  await expect(page.locator('#runpanel')).toBeHidden()
-  await page.locator('.dt[data-i="0"] .runbtn').first().click()
-
-  const panel = page.locator('#runpanel')
-  await expect(panel).toBeVisible()
-  await expect(panel.locator('#rptitle')).toContainText('board')
-  await expect(panel.locator('#rpchip')).toContainText('running')
-
+  await checkReq('R1', async () => { await clickRunOnCell(page, state) })
   // R2: the work is visible while it runs. A button that goes quiet for two minutes gets clicked
   // again, and the second run fights the first — so real output has to be seen arriving.
-  await expect(panel.locator('#rplog')).toContainText(/Running|passed|test/i, { timeout: 60000 })
-
-  // R3: finishing updates the panel in place, no reload, and reports the real result. The wall clock
-  // follows the board file's real size under the watched pace: 147 s / 122 s measured 2026-08-22
-  // after board R14 grew (1b)/(2b), so the old 120 s bound cut a passing run mid-flight.
-  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 200000 })
+  await checkReq('R2', async () => { await watchLogStream(page, state) })
+  // R3: finishing updates the panel in place, no reload, and reports the real result.
+  await checkReq('R3', async () => { await verdictLandsInPlace(page, state) })
 
   await page.screenshot({ path: 'spec/dispatch/screen.png', fullPage: false })
 })
