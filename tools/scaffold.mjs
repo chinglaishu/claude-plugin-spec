@@ -14,7 +14,7 @@ import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, buildManifest } from './_skeleton.mjs'
+import { FILES, SCRIPTS, DEV, MANIFEST, SPEC_IGNORE, ROOT_IGNORE, buildManifest } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
@@ -43,22 +43,17 @@ for (const rel of FILES) {
 // spec/.gitignore — the transient run state never belongs in git. NOT _specboard.json: that is a
 // committable record of which release the project runs. The backup dirs and .new files an update
 // leaves behind ARE transient recovery/merge scratch, so they are ignored.
+// Neither list touches spec/<screen>/evidence/ or board.html — the harvest is committed (D2).
 const gi = join(DEST, 'spec/.gitignore')
 if (!existsSync(gi) || force) {
-  writeFileSync(gi, [
-    '_state-snapshot.*.json', '_dir-snapshot.*.json', '_run-report.json', '_runs/',
-    '_conflicts.json', '_conflict-decisions.json', '_config.json', '_crawl.json', 'crawl.png',
-    // the saved authenticated session — real tokens, never committed
-    '_auth-state.json', ''
-  ].join('\n'))
+  writeFileSync(gi, [...SPEC_IGNORE, ''].join('\n'))
   copied.push('spec/.gitignore')
 }
 // The repo-root .gitignore gets the update scratch (a backup dir and .new files live at the paths
 // they shadow, anywhere in the tree). Appended, never clobbered.
 const rootGi = join(DEST, '.gitignore')
-const IGNORE = ['.specboard-backup-*/', '*.new']
 const existing = existsSync(rootGi) ? readFileSync(rootGi, 'utf8') : ''
-const missing = IGNORE.filter(p => !existing.split('\n').includes(p))
+const missing = ROOT_IGNORE.filter(p => !existing.split('\n').includes(p))
 if (missing.length) {
   writeFileSync(rootGi, existing + (existing && !existing.endsWith('\n') ? '\n' : '') +
     '# specboard update scratch\n' + missing.join('\n') + '\n')

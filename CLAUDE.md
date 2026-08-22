@@ -83,7 +83,9 @@ spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function co
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
 spec/<screen>/steps.ts       the screen's composable beats (exported step functions + BEATS/GIVEN metadata)
-spec/<screen>/evidence/      the harvest: <rid>.before/after.png (640px) + <rid>.clip.webp where a board run cut one
+spec/<screen>/evidence/      the harvest: <rid>.before/after.png (640px) + <rid>.clip.webp where a board run cut one — COMMITTED,
+                             here and in every scaffolded project (D2, the human 2026-08-22; a CLI fold keeps the clip while the
+                             requirement stays proven under the same text hash — D1); spec/.gitignore never lists it
 spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
@@ -115,7 +117,7 @@ tools/narrate-run.mjs        the shell: `pace` (synth pack lines → BOARD_NARRA
                              beats to) and `render` (recording + beats + pack → subtitled/voiced mp4).
                              NO model at run time — packs are authored once per screen with pass AND
                              fail variants; piper synth is cached by voice+text
-tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV) + manifest hashing
+tools/_skeleton.mjs          the ONE list of what gets vendored into a project (FILES/SCRIPTS/DEV/SPEC_IGNORE/ROOT_IGNORE) + manifest hashing
 tools/scaffold.mjs           vendors the skeleton into a project (kg-init) and writes spec/_specboard.json
 tools/update.mjs             brings a scaffolded project to a new release (kg-update); test-first in tools/update.test.mjs
 playwright.board.ts          testDir ./spec, testMatch */test.spec.ts, workers:1

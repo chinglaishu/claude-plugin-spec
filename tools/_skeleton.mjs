@@ -75,6 +75,19 @@ export const SCRIPTS = {
   e2e: 'playwright test --config=playwright.board.ts'
 }
 
+// What a scaffolded project's git must NOT track — the transient run state under spec/ and the
+// update scratch at the root. NOT spec/_specboard.json (a committable record of the release), and
+// NOT spec/<screen>/evidence/ or board.html: the harvested frames (640px) and clips are the proof a
+// fresh clone must show, so they are committed (D2, the human 2026-08-22). Pinned by
+// tools/skeleton-ignore.test.mjs.
+export const SPEC_IGNORE = [
+  '_state-snapshot.*.json', '_dir-snapshot.*.json', '_run-report.json', '_runs/',
+  '_conflicts.json', '_conflict-decisions.json', '_config.json', '_crawl.json', 'crawl.png',
+  // the saved authenticated session — real tokens, never committed
+  '_auth-state.json'
+]
+export const ROOT_IGNORE = ['.specboard-backup-*/', '*.new']
+
 export const DEV = { '@playwright/test': '^1.62.0', '@types/node': '^22.0.0' }
 
 // Where a project records which specboard release its vendored code corresponds to. Committable —
