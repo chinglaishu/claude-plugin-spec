@@ -21,11 +21,20 @@ const CRAWL = join(SPEC, '_crawl.json')
 const config = () => (existsSync(CONFIG) ? JSON.parse(readFileSync(CONFIG, 'utf8')) : null)
 
 test('R1 — the form persists what cannot be guessed, and reads it back', async ({ page, request }) => {
-  // start from no config so the round-trip is real, not a coincidence of what was already there
-  if (existsSync(CONFIG)) rmSync(CONFIG)
+  // Routing to #init HYDRATES the form asynchronously (client.js loadConfig fetches /api/config and
+  // writes every field), and that fetch can resolve AFTER the test's fills — wiping them so Save
+  // posts empty strings (seen as baseUrl "" in the poll, 2026-08-22, once the grown board stretched
+  // the timing). The app's hydrate-on-open is by design; the test was the racing side (rule 4). So
+  // make hydration OBSERVABLE: seed a sentinel config, wait until the form shows it — loadConfig
+  // has now run — and only then clear the config and fill. The round-trip below is still real: a
+  // leftover sentinel could never satisfy the assertions.
+  writeFileSync(CONFIG, JSON.stringify({ baseUrl: 'http://sentinel.invalid' }))
   await page.goto('/#init')
   const view = page.locator('#initview')
   await expect(view).toBeVisible()
+  await expect(view.locator('#initurl')).toHaveValue('http://sentinel.invalid')
+  // start from no config so the round-trip is real, not a coincidence of what was already there
+  if (existsSync(CONFIG)) rmSync(CONFIG)
 
   // the human explicitly asked to be able to point at an ALREADY-RUNNING server rather than always
   // starting one — so the mode is a real choice, and it has to survive
