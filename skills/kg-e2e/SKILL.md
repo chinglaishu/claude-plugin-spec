@@ -374,9 +374,6 @@ Never add `--reporter=…` to either command. The fold that records proof, evide
 reporter list — the run looks normal, prints its lines, and nothing lands on the board. Whole files
 only, never `-g` (a scoped run clobbers the index).
 
-```bash
-```
-
 A per-screen run folds its per-requirement coverage into `spec/_results-index.json` without blanking
 any other screen's — so running one screen to prove it is safe. Watch the new assertion fail first;
 then make it pass; then confirm on the board that the requirement now reads **proven** and the test's
