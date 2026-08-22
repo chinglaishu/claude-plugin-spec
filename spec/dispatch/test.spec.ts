@@ -78,7 +78,7 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
   // — a whole nested board-file run records video and now takes over a minute, so the default 60s
   // ceiling cut the run mid-flight and the orphaned job cascaded into the tests after it. The
   // assertions are unchanged; only the wall clock follows the suite's real size.
-  test.setTimeout(240_000)
+  test.setTimeout(300_000)   // raised 2026-08-22 (Task 6 fix round 1): the WATCHED nested board run measured 147 s
   await idle(request)
   // R1: opened BY the control you clicked, and it already knows its screen — nothing is typed.
   await page.goto(BOARD)
@@ -94,8 +94,10 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
   // again, and the second run fights the first — so real output has to be seen arriving.
   await expect(panel.locator('#rplog')).toContainText(/Running|passed|test/i, { timeout: 60000 })
 
-  // R3: finishing updates the panel in place, no reload, and reports the real result.
-  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 120000 })
+  // R3: finishing updates the panel in place, no reload, and reports the real result. The wall clock
+  // follows the board file's real size under the watched pace: 147 s / 122 s measured 2026-08-22
+  // after board R14 grew (1b)/(2b), so the old 120 s bound cut a passing run mid-flight.
+  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 200000 })
 
   await page.screenshot({ path: 'spec/dispatch/screen.png', fullPage: false })
 })
@@ -386,14 +388,14 @@ test('R7 — the run panel offers no background run', async ({ page }) => {
 })
 
 test('R7 — the panel and its log stay on screen after the run ends', async ({ page, request }) => {
-  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
+  test.setTimeout(300_000)   // a whole WATCHED nested board run — see the R1/R2 note (147 s measured)
   await idle(request)
   await page.goto(BOARD)
   await page.locator('.dt[data-i="0"] .runbtn').first().click()
   const panel = page.locator('#runpanel')
   await expect(panel).toBeVisible()
   await expect(panel.locator('#rplog')).toContainText(/Running|passed|test/i, { timeout: 60000 })
-  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 120000 })
+  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 200000 })
   // Finishing does not close the panel or blank the log out from under you — it is there to read for
   // reference. (The self-reload that closed it is held off under automation, so this guards the
   // observable contract: the log survives the run ending; it does not prove the human reload path.)
