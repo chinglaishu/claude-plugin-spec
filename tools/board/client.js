@@ -1517,7 +1517,7 @@ const B = window.__BOARD__ || {}
       }
       vc.appendChild(conn)
       const n = r.n
-      const kindNote = n.kind === 'beat' ? (n.proven ? '' : ' · not currently passing') : n.kind === 'inline' ? ' · inline — Claude writes this beat' : ' · unproven — written red-first here'
+      const kindNote = n.kind === 'beat' ? (n.proven ? '' : n.stale ? ' · proven, stale by source — run first' : ' · not currently passing') : n.kind === 'inline' ? ' · inline — Claude writes this beat' : ' · unproven — written red-first here'
       const cr = crow((n.proven && n.kind === 'beat' ? '' : 'outline') + (r.missing.length ? ' gapb' : ''), n, n, n.name,
         'beat ' + (i + 1) + ' · ' + n.screen + kindNote, qualified(n, start), '')
       const x = document.createElement('button'); x.type = 'button'; x.className = 'vx'; x.title = 'remove'; x.textContent = '✕'
@@ -1558,7 +1558,11 @@ const B = window.__BOARD__ || {}
     why.textContent = !chain.length ? 'chain beats first'
       : deterministic ? 'every beat is a proven step function — no model involved'
         : !given ? 'spec/' + start + '/steps.ts declares no GIVEN — Claude seeds the fixture'
-          : blocking.map(function (n) { return qualified(n, start) }).join(' · ') + (blocking.length === 1 ? ' isn’t' : ' aren’t') + ' function-shaped + proven yet — Claude writes this one'
+          // two reasons, told apart (final review m2): every blocker STALE by a source edit — most
+          // often the compose that just wrote this screen's file — wants a run, not the Claude path
+          : blocking.every(function (n) { return n.stale })
+            ? blocking.map(function (n) { return qualified(n, start) }).join(' · ') + (blocking.length === 1 ? ' is' : ' are') + ' proven, but stale by source — run spec/' + start + ' first, then compose'
+            : blocking.map(function (n) { return qualified(n, start) }).join(' · ') + (blocking.length === 1 ? ' isn’t' : ' aren’t') + ' function-shaped + proven yet — Claude writes this one'
     acts.appendChild(why)
     left.appendChild(acts)
     const pb = document.createElement('div'); pb.className = 'cprompt'; pb.hidden = true
@@ -1617,6 +1621,10 @@ const B = window.__BOARD__ || {}
         jstep(box, '✓', 'wrote ' + out.path + " — test('" + out.testTitle + "') · coverReqs(" + out.covers.map(function (c) { return "'" + c + "'" }).join(', ') + ')')
         jstep(box, '✓', chain.length + ' beat call' + (chain.length === 1 ? '' : 's') + ' chained, each inside its checkReq — expected numbers threaded through shared state')
         jstep(box, '✓', 'validity = every beat proven red-first in its unit home + this file’s first run passing')
+        // honest about the cost (final review m2): the write moved spec/<start>/test.spec.ts, so EVERY
+        // proof that file carries — the whole start screen, and any cross-screen tag in it — reads
+        // stale board-wide until the file runs; a second compose on this screen is refused until then
+        jstep(box, '!', 'spec/' + out.start + '’s proofs read stale until this file runs — the write moved their source; run it before composing here again')
         const s = jstep(box, '→', '')
         const a = document.createElement('a'); a.href = '#/' + out.start + '/flow'; a.textContent = 'run it — the flow folds in and appears in the Flow view'
         s.lastChild.appendChild(a)

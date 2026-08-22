@@ -372,3 +372,36 @@ test('B-7: mergeImports adds a new module after the LEADING import block, not af
   assert.equal(lines[2], "import { r } from '../dispatch/steps'")
   assert.equal(out.match(/from '\.\.\/dispatch\/steps'/g).length, 1)
 })
+
+// ── final review m2 / m5 ──────────────────────────────────────────────────
+test('m2: a beat whose proof is PASSED-BUT-STALE (its source moved since the fold) reads stale:true, and composeCheck says so — "run first", not the cryptic not-proven', () => {
+  const screens = screensFix()
+  // the spec-store shape: status falls to untested once every pass is stale by source; the stale
+  // pass itself is still on the requirement's tests
+  screens[0].reqs[0].status = 'untested'
+  screens[0].reqs[0].tests = [{ title: 'x', status: 'pass', stale: true }]
+  const l = deriveLibrary(screens)
+  const n = byId(l, 'b:board:openBoardReader')
+  assert.equal(n.proven, false)
+  assert.equal(n.stale, true)
+  // a beat never passed is NOT stale
+  assert.equal(byId(l, 'o:board:R20').stale, false)
+  const c = composeCheck({ nodes: l.nodes, givens: l.givens, chain: ['b:board:openBoardReader'], name: 'x', existing: null })
+  assert.equal(c.ok, false)
+  assert.match(c.error, /R10 .*proven, but stale by source — run spec\/board first/)
+  assert.doesNotMatch(c.error, /not function-shaped/)
+  // a NEVER-proven beat keeps the not-proven wording (the two reasons are distinguished)
+  screens[0].reqs[0].tests = []
+  const l2 = deriveLibrary(screens)
+  const c2 = composeCheck({ nodes: l2.nodes, givens: l2.givens, chain: ['b:board:openBoardReader'], name: 'x', existing: null })
+  assert.match(c2.error, /R10 is not function-shaped \+ proven/)
+})
+
+test('m5: parseBeats refuses a QUALIFIED proves (the convention is a bare id — a qualified one would mis-qualify in the cover set)', () => {
+  const s = parseBeats(`export const BEATS = [
+    { fn: 'ok', proves: 'R1', name: 'a beat', needs: [], gives: [] },
+    { fn: 'bad', proves: 'x:R3', name: 'qualified — skipped', needs: [], gives: [] },
+    { fn: 'bad2', proves: 'R 3', name: 'not an id — skipped', needs: [], gives: [] }
+  ]`)
+  assert.deepEqual(s.beats.map(b => b.fn), ['ok'])
+})

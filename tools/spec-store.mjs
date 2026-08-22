@@ -94,6 +94,22 @@ export function slotAfterClose (closing, running, runStack) {
   }
 }
 
+// The deterministic composer vs the slot (final review m3). composeFlow is a synchronous WRITE of
+// spec/<start>/test.spec.ts, not a job — it never takes the slot — but a write under a live run that
+// is executing that file lands a fold whose ranAt predates the source (the run arrives stale, wasted),
+// and a compose job on the same screen is a write race. Returns the live job that blocks the write —
+// a test run of that screen or of the whole suite anywhere in the live chain (holder + stacked
+// ancestors), or a compose job on that screen — or null. Pure (tools/job-slot.test.mjs); slot,
+// cancel and nesting semantics are untouched, this only reads them.
+export function composeBlockedBy (running, runStack, start) {
+  for (const j of [...(runStack || []), running]) {
+    if (!j) continue
+    if (j.kind === 'tests' && (j.screen === 'all' || j.screen === start)) return j
+    if (j.kind === 'compose' && j.screen === start) return j
+  }
+  return null
+}
+
 // Drafts link the shared sheet relatively so they render standalone over http. Embedded as
 // srcdoc there is no base URL to resolve against, so it is inlined at build time instead.
 // Exported because the BOARD uses it too. The board is one of the screens this tool tracks, so

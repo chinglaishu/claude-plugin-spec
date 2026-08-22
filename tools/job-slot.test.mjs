@@ -11,7 +11,7 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { slotAfterClose } from './spec-store.mjs'
+import { slotAfterClose, composeBlockedBy } from './spec-store.mjs'
 
 // jobs are compared by IDENTITY, exactly like the server's captured `myJob` locals
 const job = id => ({ runId: id, kind: 'tests' })
@@ -26,7 +26,7 @@ test('a nested run finishing hands the slot back to the run it was nested in', (
   assert.deepEqual(slotAfterClose(child, child, [parent]), { running: parent, runStack: [] })
 })
 
-test('an agent job finishing frees the slot (the stack is only ever runs)', () => {
+test('a non-stacked holder\'s close frees the slot (pure rule — the server\'s agent jobs still clear `running` by hand at their own close, never through slotAfterClose)', () => {
   const j = { kind: 'redraft' }
   assert.deepEqual(slotAfterClose(j, j, []), { running: null, runStack: [] })
 })
@@ -75,4 +75,38 @@ test('pure — the stack passed in is never mutated', () => {
   const stack = [s]
   slotAfterClose(c, c, stack)
   assert.deepEqual(stack, [s])
+})
+
+// ── final review m3: the deterministic composer and the slot ──────────────
+// composeFlow WRITES spec/<start>/test.spec.ts. It never takes the slot (it is a synchronous write,
+// not a job), but it must not write under a live run that is executing that very file — the run's
+// fold would land with a ranAt older than the write and read stale on arrival (a wasted run), and a
+// compose-job writing the same file is a plain write race. The rule is pure and mirrors runJob's
+// guard in spirit without touching slot/cancel/nesting semantics: a test run of the start screen or
+// of the whole suite, anywhere in the live chain (holder + stacked ancestors), or a compose job on
+// that screen, blocks; anything else lets the write through.
+test('m3: no holder → nothing blocks', () => {
+  assert.equal(composeBlockedBy(null, [], 'board'), null)
+})
+test('m3: a test run of the START screen blocks, naming itself; of another screen does not', () => {
+  const r = { kind: 'tests', screen: 'board', runId: 'a' }
+  assert.equal(composeBlockedBy(r, [], 'board'), r)
+  assert.equal(composeBlockedBy({ kind: 'tests', screen: 'init', runId: 'b' }, [], 'board'), null)
+})
+test('m3: a whole-suite run blocks every screen', () => {
+  const r = { kind: 'tests', screen: 'all', runId: 'a' }
+  assert.equal(composeBlockedBy(r, [], 'board'), r)
+  assert.equal(composeBlockedBy(r, [], 'init'), r)
+})
+test('m3: a stacked ancestor counts — a nested init run inside a full-suite run still blocks board', () => {
+  const parent = { kind: 'tests', screen: 'all', runId: 'p' }
+  const child = { kind: 'tests', screen: 'init', runId: 'c' }
+  assert.equal(composeBlockedBy(child, [parent], 'board'), parent)
+})
+test('m3: a compose job on the start screen blocks (same file); a scan or a crawl does not', () => {
+  const cj = { kind: 'compose', screen: 'board' }
+  assert.equal(composeBlockedBy(cj, [], 'board'), cj)
+  assert.equal(composeBlockedBy({ kind: 'compose', screen: 'init' }, [], 'board'), null)
+  assert.equal(composeBlockedBy({ kind: 'scan', screen: 'scan' }, [], 'board'), null)
+  assert.equal(composeBlockedBy({ kind: 'crawl', screen: 'crawl' }, [], 'board'), null)
 })

@@ -49,6 +49,8 @@ function bracketSlice (src, at, open, close) {
 
 // a beat's fn is interpolated raw into `await <fn>(page, state)` — only a plain identifier may pass
 const isIdent = s => /^[A-Za-z_$][\w$]*$/.test(String(s || ''))
+// a bare requirement id — R followed by digits, no screen qualifier (the steps.ts convention)
+const isBareReqId = v => typeof v === 'string' && /^R\d+$/.test(v)
 
 export function parseBeats (src) {
   const s = String(src || '')
@@ -75,8 +77,11 @@ export function parseBeats (src) {
         const proves = strKey(obj, 'proves')
         const name = strKey(obj, 'name')
         // an entry missing any of the three is not a callable beat — skipped, never guessed at; and
-        // fn must be a plain identifier, because the emitter interpolates it as a CALL (B-6)
-        if (isIdent(fn) && proves && name) {
+        // fn must be a plain identifier, because the emitter interpolates it as a CALL (B-6).
+        // `proves` must be a BARE requirement id (the convention: a beat lives in the screen it
+        // proves, and the cover set qualifies it by screen) — a qualified 'x:R3' would be
+        // re-qualified into 'c:x:R3' in a prompt, so it is skipped too (final review m5)
+        if (isIdent(fn) && isBareReqId(proves) && name) {
           beats.push({ fn, proves, name, needs: arrKey(obj, 'needs'), gives: arrKey(obj, 'gives') })
         }
         i += obj.length + 2
@@ -119,6 +124,9 @@ export function deriveLibrary (screens) {
     const beatCovered = new Set()
     for (const b of (s.steps && s.steps.beats) || []) {
       const req = (s.reqs || []).find(r => r.id === b.proves)
+      // stale — proven before, but the pass predates a source edit (spec-store's passStale): the
+      // honest reason is "run first", not "never proven" (final review m2)
+      const stale = !!req && req.status !== 'passed' && (req.tests || []).some(t => t.status === 'pass' && t.stale)
       nodes.push({
         id: `b:${s.name}:${b.fn}`,
         kind: 'beat',
@@ -128,7 +136,8 @@ export function deriveLibrary (screens) {
         fn: b.fn,
         needs: b.needs,
         gives: b.gives,
-        proven: !!req && req.status === 'passed'
+        proven: !!req && req.status === 'passed',
+        stale
       })
       beatCovered.add(b.proves)
     }
@@ -145,7 +154,8 @@ export function deriveLibrary (screens) {
           fn: null,
           needs: [],
           gives: [],
-          proven: r.status === 'passed'
+          proven: r.status === 'passed',
+          stale: false
         })
       } else if (r.behavior) {
         nodes.push({
@@ -157,7 +167,8 @@ export function deriveLibrary (screens) {
           fn: null,
           needs: [],
           gives: [],
-          proven: false
+          proven: false,
+          stale: false
         })
       }
       // neither → no node (the honesty rule)
@@ -234,6 +245,14 @@ export function composeCheck ({ nodes, givens, chain, name, existing }) {
   const picked = c.map(id => nodeOf(nodes, id))
   const comp = composable(nodes, c)
   if (!comp.ok) {
+    // two honest reasons, told apart (m2): a beat whose proof went STALE by a source edit — typically
+    // the compose that just wrote this very file — needs a run, not the Claude path
+    const stale = comp.blocking.filter(n => n.stale)
+    if (stale.length === comp.blocking.length) {
+      const names = stale.map(n => n.proves).join(', ')
+      const screens = [...new Set(stale.map(n => 'spec/' + n.screen))].join(', ')
+      return { ok: false, error: `${names} ${stale.length === 1 ? 'is' : 'are'} proven, but stale by source — run ${screens} first` }
+    }
     const names = comp.blocking.map(n => n.proves).join(', ')
     return { ok: false, error: `${names} ${comp.blocking.length === 1 ? 'is' : 'are'} not function-shaped + proven — the Claude path writes this flow` }
   }

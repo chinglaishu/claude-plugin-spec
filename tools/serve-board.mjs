@@ -11,6 +11,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname, resolve, dirname, basename, relative } from 'node:path'
 import { homedir } from 'node:os'
 import {
+  composeBlockedBy,
   ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
@@ -526,6 +527,14 @@ function composeFlow ({ chain, name, dryRun }) {
   if (!chk.ok) throw new Error(chk.error)
   const out = emitFlow({ nodes, givens, chain, name, existing })
   if (!dryRun) {
+    // never write the file a live run is executing (m3): the fold would arrive stale. A dry run
+    // writes nothing, so it is answered whatever holds the slot (the suite proves the path that way).
+    const blocker = composeBlockedBy(running, runStack, chk.start)
+    if (blocker) {
+      throw new Error(blocker.kind === 'compose'
+        ? `a compose job is already writing spec/${chk.start}/test.spec.ts — compose after it closes`
+        : `a run is in progress on ${blocker.screen === 'all' ? 'the whole suite' : 'spec/' + blocker.screen} — compose after it closes, or its fold would land stale`)
+    }
     writeFileSync(join(ROOT, out.path), out.text)
     try { build() } catch (err) { console.error(String(err.stderr || err)) }
     notify()

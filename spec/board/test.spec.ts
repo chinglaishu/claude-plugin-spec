@@ -1403,11 +1403,20 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
 // gives is a named GAP, its filler pinned, and the chain holds once the filler is in; (3) the
 // two-path button is TRUTHFUL — "composed instantly, no AI" only while every chained beat is a
 // function-shaped, proven step; otherwise "runs in Claude", naming the blocking beat.
-import { readFileSync, existsSync } from 'node:fs'
-import { parseBeats } from '../../tools/compose.mjs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { build } from '../../tools/build-board.mjs'
+const INDEX_FILE = 'spec/_results-index.json'
+// the beat metadata read INDEPENDENTLY of the module under test (final review m8: the oracle used
+// to be parseBeats itself) — a plain regex over each `{ fn: '…', proves: '…' }` entry of steps.ts
+const beatsOf = (src: string) => {
+  const out: Array<{ fn: string, proves: string }> = []
+  const body = /export\s+const\s+BEATS\s*=\s*\[([\s\S]*?)\n\]/.exec(src)?.[1] || ''
+  for (const m of body.matchAll(/\{\s*fn:\s*'([A-Za-z_$][\w$]*)'\s*,\s*proves:\s*'(R\d+)'/g)) out.push({ fn: m[1], proves: m[2] })
+  return out
+}
 const expectedLibrary = async (page: any) => {
   // derive the expected node set from the BAKED panes (what the board itself shows) + steps.ts on
-  // disk (the beat metadata, read the same static way the board reads it) — never from the composer
+  // disk (the beat metadata, read by an independent regex) — never from the composer or its module
   const screens: Array<{ name: string, reqs: Array<{ id: string, behavior: boolean }>, tags: string[] }> =
     await page.locator('.dt[data-screen]').evaluateAll((dts: any[]) => dts.map(dt => ({
       name: dt.dataset.screen,
@@ -1421,7 +1430,8 @@ const expectedLibrary = async (page: any) => {
   const none: string[] = []
   for (const s of screens) {
     const stepsFile = 'spec/' + s.name + '/steps.ts'
-    const beats = existsSync(stepsFile) ? parseBeats(readFileSync(stepsFile, 'utf8')).beats : []
+    const beats = existsSync(stepsFile) ? beatsOf(readFileSync(stepsFile, 'utf8')) : []
+    if (s.name === 'board') expect(beats.length, 'the board declares its four beats').toBe(4)
     const beatCovered = new Set<string>()
     for (const b of beats) { ids.push('b:' + s.name + ':' + b.fn); beatCovered.add(b.proves) }
     for (const r of s.reqs) {
@@ -1454,7 +1464,7 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
     expect(shown.length, 'the library is not empty').toBeGreaterThan(0)
     expect(new Set(shown)).toEqual(new Set(ids))
     expect(none.length, 'this tree has at least one requirement with neither a test nor a behavior block').toBeGreaterThan(0)
-    for (const q of none) await expect(cv.locator(`.lrow[data-node$=":${q.replace(':', ':')}"]`)).toHaveCount(0)
+    for (const q of none) await expect(cv.locator(`.lrow[data-node$=":${q}"]`)).toHaveCount(0)
     // a beat node is the board's own steps.ts beat; an inline node says so (a flow using it runs via Claude)
     await expect(cv.locator('.lrow[data-node="b:board:openDetailReader"][data-kind="beat"]')).toHaveCount(1)
     await expect(cv.locator('.lrow[data-node="i:board:R3"][data-kind="inline"] .lneed')).toContainText(/inline test/i)
@@ -1481,21 +1491,36 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
     const order: string[] = await cv.locator('.vchain .crow2[data-node]').evaluateAll((els: any[]) => els.map(e => e.dataset.node))
     expect(order).toEqual(['b:board:openDetailReader', 'b:board:toggleViews'])
 
-    // (3) THE TWO-PATH BUTTON — truthful against the board's OWN derived state: "composed instantly,
-    // no AI" exactly when every chained beat is function-shaped AND currently PASSED on this board;
-    // the dogfood lag (a proof stale by a source edit until the next fold) flips it honestly to the
-    // Claude path, naming the beats that are not currently proven — never a green it did not earn
-    const status = async (rid: string) => dt.locator('.reqpane .req[data-r="' + rid + '"]').getAttribute('data-status')
-    const proven = (await status('R2')) === 'passed' && (await status('R13')) === 'passed'
+    // (3) THE TWO-PATH BUTTON — the rule RENDERED, and proven BOTH ways unconditionally. The client
+    // reads each beat's `proven` off the JSON island (its only source; the server re-derives before
+    // it writes), so the flags are FORCED there — the established deterministic technique (the
+    // dogfood lag stales the live fold by one run after a source edit) — and the composer is
+    // re-entered so it renders from them. Neither branch is skipped on the tree's current fold
+    // (final review M5: a proof conditional on its own subject's state was a rule-3 hole).
+    const forceProven = async (unproven: string[]) => {
+      await page.evaluate((ids) => {
+        (window as any).__BOARD__.compose.nodes.forEach((n: any) => { if (n.kind === 'beat') n.proven = !ids.includes(n.id) })
+      }, unproven)
+      await page.goto('/#/board')
+      await page.goto('/#/compose/board')          // re-enter: the draft keeps the chain, the flags re-read
+      await expect(cv).toBeVisible()
+      await expect(cv.locator('.vchain .crow2[data-node]')).toHaveCount(2)
+    }
     const add = cv.locator('.cactions .cadd')
     const why = cv.locator('.cactions .cwhy')
-    if (proven) {
-      await expect(add).toHaveAttribute('data-path', 'deterministic')
-      await expect(add).toContainText(/composed instantly, no AI/i)
-    } else {
-      await expect(add).toHaveAttribute('data-path', 'claude')
-      await expect(why).toContainText((await status('R2')) === 'passed' ? 'R13' : 'R2')
-    }
+    // every chained beat function-shaped + proven ⇒ composed instantly, no AI
+    await forceProven([])
+    await expect(add).toHaveAttribute('data-path', 'deterministic')
+    await expect(add).toContainText(/composed instantly, no AI/i)
+    await expect(why).toContainText(/no model involved/)
+    // one chained beat not currently proven ⇒ the Claude path, THAT beat's requirement named
+    await forceProven(['b:board:toggleViews'])
+    await expect(add).toHaveAttribute('data-path', 'claude')
+    await expect(add).toContainText(/runs in Claude/i)
+    await expect(why).toContainText('R13')
+    await expect(why).not.toContainText('R2')
+    await forceProven([])
+    await expect(add).toHaveAttribute('data-path', 'deterministic')
     // chain an INLINE beat (R3 — a tagging test, no step function) ⇒ the Claude path, blocker named
     await cv.locator('.lrow[data-node="i:board:R3"] .lname2').click()
     await expect(add).toHaveAttribute('data-path', 'claude')
@@ -1503,7 +1528,7 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
     await expect(why).toContainText('R3')
     // remove it again — the verdict flips back; nothing about this was stored in the tree
     await cv.locator('.vchain .crow2[data-node="i:board:R3"] .vx').click()
-    await expect(add).toHaveAttribute('data-path', proven ? 'deterministic' : 'claude')
+    await expect(add).toHaveAttribute('data-path', 'deterministic')
     await expect(why).not.toContainText('R3')
   })
   await checkReq('R15', async () => {
@@ -1530,18 +1555,31 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
 test('The compose endpoint composes deterministically and refuses honestly — no job spawns on a refusal', async ({ page, request }) => {
   await coverReqs('R13')
   await openDetail(page)
-  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  // the server derives proof from the SAME fold the baked board shows — so the expectation here
-  // follows the board's own derived state (the dogfood lag: a source edit stales a proof until the
-  // next fold, and the honest answer then is a refusal naming the beat, never a composed file)
-  const status = async (rid: string) => dt.locator('.reqpane .req[data-r="' + rid + '"]').getAttribute('data-status')
-  // the two chained beats' gate (R1, R2) and the gap case's gate (R13) are SEPARATE — R13 is tagged
-  // by this very test, so one red run must not drag the chain's expectation with it
-  const proven = (await status('R1')) === 'passed' && (await status('R2')) === 'passed'
-  const proven13 = (await status('R13')) === 'passed'
+  // The server derives proof from the index on disk at EVERY request — so the two answers that
+  // matter (composed · refused-as-stale) are proven against a DETERMINISTIC index, never the live
+  // fold (final review M5: an expectation read off the subject's own derived state skipped the
+  // positive branch on the dogfood lag and went green with the emitter deleted). The board's own
+  // entry is patched in place — ranAt pushed past every source (nothing stale) or to zero (every
+  // pass stale by source) — and the exact prior bytes restored in `finally`, then the board rebuilt
+  // to them so no later test opens onto a fixture index (the _modes precedent, injectIndex).
+  const patchBoardIndex = (mut: (e: any) => void) => {
+    const before = readFileSync(INDEX_FILE, 'utf8')
+    const idx = JSON.parse(before)
+    expect(idx.board, 'the board has folded at least once').toBeTruthy()
+    mut(idx.board)
+    writeFileSync(INDEX_FILE, JSON.stringify(idx, null, 2) + '\n')
+    return () => writeFileSync(INDEX_FILE, before)
+  }
+  const fresh = (e: any) => {
+    e.ranAt = Date.now() + 10 * 60 * 1000       // newer than any source — no pass is stale
+    delete e.provenHashes                       // and no pin can flip a pass to Changed
+    for (const t of e.tests) for (const k of Object.keys(t.reqs || {})) if (/^board:R(1|2|13)$/.test(k)) t.reqs[k] = 'pass'
+  }
+  const stale = (e: any) => { e.ranAt = 0 }    // older than every source — every pass stale by source
   await checkReq('R13', async () => {
-    const ok = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
-    if (proven) {
+    let restore = patchBoardIndex(fresh)
+    try {
+      const ok = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
       expect(ok.status(), 'compose (R1, R2 proven): ' + await ok.text()).toBe(200)
       const out = await ok.json()
       expect(out.path).toBe('spec/board/test.spec.ts')
@@ -1552,16 +1590,22 @@ test('The compose endpoint composes deterministically and refuses honestly — n
       expect(out.text).toContain("coverReqs('R1', 'R2')")
       expect(out.text).toContain("checkReq('R1', async () => { await countHomeCards(page, state) })")
       expect(out.text).toContain('const state = await openBoardHome(page)')
-    } else {
-      // not currently proven ⇒ refused, the stale beat named — the emitter never composes on a stale Then
-      expect(ok.status(), 'compose (R1/R2 not proven): ' + await ok.text()).toBe(409)
-      expect(await ok.text()).toMatch(/not function-shaped \+ proven/)
-    }
-    // the gap: toggleViews needs `detail` and nothing before it gives it (its own beat proven, else
-    // the composable check refuses first and names R13 — both honest)
-    const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
-    expect(gap.status(), await gap.text()).toBe(409)
-    expect(await gap.text()).toMatch(proven13 ? /needs detail/ : /R13 is not function-shaped/)
+      // the SAME chain against proofs gone stale by source (m2): refused, and the reason is "run
+      // first" — proven-but-stale is told apart from never-proven; the emitter never composes on a
+      // stale Then
+      restore(); restore = patchBoardIndex(stale)
+      const st = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
+      expect(st.status(), 'compose (R1/R2 stale): ' + await st.text()).toBe(409)
+      expect(await st.text()).toMatch(/^R1, R2 are proven, but stale by source — run spec\/board first$/)
+    } finally { restore(); build() }
+    // the gap: toggleViews needs `detail` and nothing before it gives it — asked on the FRESH index
+    // so the joint check, not the proof check, is what refuses
+    restore = patchBoardIndex(fresh)
+    try {
+      const gap = await request.post('/api/compose', { data: { chain: ['b:board:toggleViews'], name: 'gap', dryRun: true } })
+      expect(gap.status(), await gap.text()).toBe(409)
+      expect(await gap.text()).toMatch(/needs detail/)
+    } finally { restore(); build() }
     // no name: refused before anything else, whatever the fold says
     const noname = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards'], name: '  ', dryRun: true } })
     expect(noname.status(), await noname.text()).toBe(409)
