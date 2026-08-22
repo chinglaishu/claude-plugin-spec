@@ -43,9 +43,9 @@ export async function openBoardDetail (page: Page): Promise<FlowState> {
 }
 
 export const BEATS = [
-  { fn: 'clickRunOnCell', proves: 'R1', name: 'click Run on the board cell — the panel opens naming the screen, running', needs: ['detail'], gives: ['run-started'] },
+  { fn: 'clickRunOnCell', proves: 'R1', name: 'click Run on the board cell — the panel opens naming the screen, running', needs: ['detail'], gives: ['run-started'], ms: 150000 },   // idleSlot's budget
   { fn: 'watchLogStream', proves: 'R2', name: 'the log streams into the panel before any verdict', needs: ['run-started'], gives: ['streaming'] },
-  { fn: 'verdictLandsInPlace', proves: 'R3', name: 'the verdict lands — chip passed or failed, the cell updated, no reload', needs: ['streaming'], gives: ['verdict'] },
+  { fn: 'verdictLandsInPlace', proves: 'R3', name: 'the verdict lands — chip passed or failed, the cell updated, no reload', needs: ['streaming'], gives: ['verdict'], ms: 230000 },   // the nested board run (147 s measured) + the in-place poll
   { fn: 'refreshDerivedInPlace', proves: 'R7', name: 'a finished run refreshes the board in place — no reload', needs: ['detail'], gives: ['refreshed'] }
 ]
 

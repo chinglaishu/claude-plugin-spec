@@ -189,6 +189,10 @@ export const BEATS = [
 // the screen it proves) — is skipped, never guessed at. And a beat composes deterministically only
 // while its requirement reads PASSED on the board: changed, failed, or stale-by-source (the file
 // moved since the fold — every compose does that to its start screen) needs a run first.
+// A beat that WAITS — on a nested run, a long poll — declares its wall-clock budget: `ms: 230000`.
+// The emitter sums the chain's budgets (an undeclared beat counts the harness's 60 s default, the
+// fixture the same) into ONE test.setTimeout at the top of the composed test — without it the first
+// cross-screen compose that chained a nested board run died at the default (Task 7, 2026-08-22).
 
 // A BEAT: perform its When, assert its Then with EXACT numbers computed from `state`, update `state`.
 // It never calls checkReq itself — the caller wraps it — and it never re-hardcodes a number a

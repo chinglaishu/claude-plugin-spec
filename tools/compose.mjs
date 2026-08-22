@@ -82,7 +82,12 @@ export function parseBeats (src) {
         // proves, and the cover set qualifies it by screen) — a qualified 'x:R3' would be
         // re-qualified into 'c:x:R3' in a prompt, so it is skipped too (final review m5)
         if (isIdent(fn) && isBareReqId(proves) && name) {
-          beats.push({ fn, proves, name, needs: arrKey(obj, 'needs'), gives: arrKey(obj, 'gives') })
+          const beat = { fn, proves, name, needs: arrKey(obj, 'needs'), gives: arrKey(obj, 'gives') }
+          // an optional wall-clock budget (Task 7): a beat that waits on a nested run declares the
+          // milliseconds it needs, and the emitter sums the chain's budgets into ONE test.setTimeout
+          const ms = obj.match(/\bms\s*:\s*(\d+)/)
+          if (ms) beat.ms = Number(ms[1])
+          beats.push(beat)
         }
         i += obj.length + 2
       }
@@ -136,6 +141,7 @@ export function deriveLibrary (screens) {
         fn: b.fn,
         needs: b.needs,
         gives: b.gives,
+        ms: b.ms || 0,
         proven: !!req && req.status === 'passed',
         stale
       })
@@ -306,6 +312,11 @@ export function emitFlow ({ nodes, givens, chain, name, existing }) {
   const { start, covers, given } = chk
   const title = String(name).trim()
   const module = scr => (scr === start ? './steps' : `../${scr}/steps`)
+  // Playwright's default per-test budget (playwright.board.ts `timeout: 60000`) is what an
+  // undeclared beat — and the fixture — count as; a beat that waits on a nested run (dispatch's
+  // run beats, 147 s measured) declares its own `ms` so the composed test never dies at the default
+  const DEFAULT_MS = 60000
+  const budget = DEFAULT_MS + picked.reduce((n, b) => n + (b.ms || DEFAULT_MS), 0)
 
   // the beat calls — each inside its checkReq inside its flowStep, state threaded through all
   const body = picked.map((n, i) => {
@@ -324,6 +335,8 @@ export function emitFlow ({ nodes, givens, chain, name, existing }) {
 // stored — this is ordinary authored-test material from the moment it was written.
 test('${sq(title)}', async ({ page }) => {
   await coverReqs(${covers.map(c => `'${sq(c)}'`).join(', ')})
+  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
+  test.setTimeout(${budget})
   // the fixture Given, once — ${given.text}
   const state = await ${given.fn}(page)
 ${body}

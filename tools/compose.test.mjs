@@ -405,3 +405,40 @@ test('m5: parseBeats refuses a QUALIFIED proves (the convention is a bare id —
   ]`)
   assert.deepEqual(s.beats.map(b => b.fn), ['ok'])
 })
+
+// ── Task 7 (2026-08-22): a beat's wall-clock BUDGET rides the chain into the composed test ──
+// The first cross-screen compose that chained dispatch's run beats (a nested board run, 147 s
+// measured) would have died at Playwright's 60 s default — a composition defect by rule 1's
+// addendum (fix the composition, never the beat). So a BEATS entry may declare `ms`, the emitter
+// sums the chain's budgets (an undeclared beat counts 60 s, the harness default; the fixture the
+// same) and emits ONE test.setTimeout(total) before the Given — and a short chain still carries
+// the default-sized budget, so the emitted file never waits longer than it asked to.
+test('parseBeats reads an optional numeric ms budget per beat (absent → not carried)', () => {
+  const s = parseBeats(`export const BEATS = [
+    { fn: 'slow', proves: 'R1', name: 'a nested run', needs: [], gives: [], ms: 230000 },
+    { fn: 'quick', proves: 'R2', name: 'a click', needs: [], gives: [] }
+  ]`)
+  assert.equal(s.beats[0].ms, 230000)
+  assert.equal('ms' in s.beats[1], false)
+})
+
+test('emitFlow sets ONE test timeout = the fixture default + every chained beat\'s budget (undeclared = 60 s)', () => {
+  const screens = screensFix()
+  screens[1].steps = parseBeats(`
+export const GIVEN = { fn: 'dispatchGiven', text: 'the served board', gives: ['board'] }
+export const BEATS = [
+  { fn: 'refreshInPlace', proves: 'R7', name: 'A finished run refreshes the board in place',
+    needs: ['reader-open'], gives: ['refreshed'], ms: 230000 }
+]`)
+  const { nodes, givens } = deriveLibrary(screens)
+  assert.equal(byId({ nodes }, 'b:dispatch:refreshInPlace').ms, 230000)
+  const a = okArgs()
+  a.nodes = nodes; a.givens = givens
+  a.chain = ['b:board:openBoardReader', 'b:dispatch:refreshInPlace']
+  const t = emitFlow(a).text
+  // 60000 (fixture) + 60000 (undeclared beat) + 230000 (declared)
+  assert.equal(t.match(/test\.setTimeout\(/g).length, 1)
+  assert.ok(t.includes('  test.setTimeout(350000)'))
+  // before the Given — the budget must be set before any waiting starts
+  assert.ok(t.indexOf('test.setTimeout(350000)') < t.indexOf('const state = await boardGiven(page)'))
+})
