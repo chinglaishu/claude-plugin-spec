@@ -77,6 +77,10 @@ item (year by year, row by row). `proveVisible(locator, expected, label)` from `
 call. The API read is for PRECISION behind the on-screen proof, never a substitute for it. Finishing
 check: with the sound off, can you SEE every number the flow claims?
 
+**Author each unit beat as an exported step function** in `spec/<screen>/steps.ts` (fn · proves ·
+name · needs/gives) with its `checkReq` kept around the call — kg-e2e's beat-function convention —
+so the board's composer can chain it into a flow with no model involved.
+
 Coverage is many-to-many at assertion granularity, and tests come in two kinds, both first-class
 (board R6, amended 2026-08-17 — this previously said "a FEW flows that each prove MANY"): **unit**
 tests prove this screen's own behaviours — each state that matters, each action's outcome — and
@@ -85,7 +89,7 @@ every requirement's state:
 
 ```ts
 test('Reading the screen — every surface holds its exact golden numbers', async ({ page }) => {
-  coverReqs('R2', 'R3', 'R4')            // declared up front → an early failure reads not-reached
+  await coverReqs('R2', 'R3', 'R4')      // declared up front → an early failure reads not-reached
   …
   await checkReq('R3', async () => { /* an assertion that fails without R3 */ })
 })

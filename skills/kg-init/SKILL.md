@@ -25,7 +25,7 @@ containing `.claude-plugin/plugin.json` and `tools/`. Substitute that path.
 
 ## 1. Install dependencies and start the board
 
-The scaffold added the `board`/`e2e`/`staff` scripts and the two dev deps to your `package.json`.
+The scaffold added the `board` / `board:build` / `staff` / `proof` / `e2e` scripts and the two dev deps to your `package.json`.
 
 ```bash
 npm install

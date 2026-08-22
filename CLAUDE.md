@@ -18,7 +18,7 @@ requirement is canon the moment it is written, full stop — a PRD drafted on th
 kg-deep pass) is an ordinary starting point the human edits or removes freely, exactly like one they
 wrote themselves, and nothing on the board waits on a person to confirm it. specboard owns **neither
 the wireframe nor the design** — it tracks requirements and their proof, nothing else (no design
-field, no external-artifact chip). The tool **dogfoods itself**: its own four screens are the cards on
+field, no external-artifact chip). The tool **dogfoods itself**: its own screens are the cards on
 its own board.
 
 ## You are staff. The human decides meaning.
@@ -82,6 +82,9 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
+spec/<screen>/steps.ts       the screen's composable beats (exported step functions + BEATS/GIVEN metadata)
+spec/<screen>/evidence/      the harvest: <rid>.before/after.png (640px) + <rid>.clip.webp where a board run cut one
+spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
@@ -93,7 +96,14 @@ tools/spec-store.mjs         reads/derives everything. THE authority on requirem
 tools/compose.mjs            pure, unit-tested: the flow composer — parseBeats (steps.ts, read statically),
                              deriveLibrary (nodes from behavior blocks + tests ONLY), the joint check, composeCheck,
                              emitFlow (chain → the composed flow file, no model) and composePrompt (the Claude path)
-tools/build-board.mjs        renders board.html (home cards + the two-column detail). Draws only — no reading logic.
+tools/build-board.mjs        renders board.html (home cards + the per-screen detail: Focus / List / Flow views and
+                             the composer, over the hidden baked panes). Draws only — no reading logic.
+tools/behavior.mjs           pure: parses a requirement's behavior block (Given + When→Then beats)
+tools/reqhash.mjs            pure: the shared requirement-text hash (Changed-drift, evidence, schematics)
+tools/viz.mjs                pure: behavior chain → archetype → the drawn schematic SVG (+ still phases)
+tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg (`node tools/viz-derive.mjs`)
+tools/flow.mjs               pure: a recorded test's steps → its kind (unit/flow) and chapters for the Flow player
+tools/evidence.mjs           pure: clip window, ffmpeg args (clip · frame · downscale), evidence paths, the fold
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.
@@ -124,6 +134,9 @@ npm run board          # serve on 4173
 npm run e2e            # the suite
 npm run board:build    # rebuild board.html only
 npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
+npm run staff          # the kg-staff briefing for a screen
+npm run proof          # proof-integrity check
+node tools/viz-derive.mjs [screen…]   # derive the schematics (the only way a project gets them)
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
@@ -162,15 +175,16 @@ change.
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
   reporter folds the pair (plus the proves-step's clip window, plus a looping clip when ffmpeg and a
-  recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs too. Nothing renders
-  this yet — it is the raw material for the later proof-media task.
+  recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs too. The Focus media
+  pane (`client.js` buildMedia) renders the pair (stills · gif · video); frames are downscaled to the
+  clip's 640px width at the fold when ffmpeg is present (final review M4).
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
   qualified tag (`x:R3`) proves another screen's requirement, so the fold is board-wide, not per-file.
 - **The board's CLIENT BEHAVIOUR now lives in `tools/board/client.js`** — real JavaScript, read in
   verbatim by `build-board.mjs` and paired with a JSON island (`window.__BOARD__`) that carries its
-  three build-time values (screens, skill ids, waiting indices). Because that code is no longer
+  build-time values (`screens`, `skillIds`, and `compose` — the composer's derived library). Because that code is no longer
   inside a template literal, backticks, `${}` and `\n` are ordinary characters there — edit it like
   any `.js` file, and lint/type-check it (`node --check` at minimum) to catch the logic errors the
   `new Function()` guard cannot. The MARKUP and CSS in `build-board.mjs` are **still** emitted inside
@@ -206,7 +220,7 @@ change.
 - **Another agent may be working in this repo.** Stage files explicitly — `git add -A` has swept
   someone else's in-flight work into an unrelated commit before.
 - **The board dogfoods itself, so a green suite is not "board is settled".** `spec/board/test.spec.ts`
-  tags its own R1–R10 with `checkReq`; R4 and R8 now *assert the gate is gone* (no reworded state, no
+  tags its own requirements with `checkReq`; R4 and R8 now *assert the gate is gone* (no reworded state, no
   gate bar, no accept button) rather than transiently touching any file — the tests no longer write or
   restore `spec/board/state.json` (that file is a pre-redesign relic, see Architecture). Because the
   board proves itself, the *first* run after editing `board/test.spec.ts` can lag one run behind (its

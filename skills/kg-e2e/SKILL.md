@@ -1,6 +1,6 @@
 ---
 name: kg-e2e
-description: Use to author the E2E test that proves a specboard screen's requirements — the right-hand column of the two-column board. The test TAGS each requirement it covers with checkReq/coverReqs and asserts something that would fail without it. Write the failing assertion first and watch it go red. Used standalone when a screen needs its test, and by kg-init to characterize an existing screen.
+description: Use to author the E2E test that proves a specboard screen's requirements — the proof half of the board (requirements on one end, the tests that prove them on the other). The test TAGS each requirement it covers with checkReq/coverReqs and asserts something that would fail without it. Write the failing assertion first and watch it go red. Used standalone when a screen needs its test, and by kg-init to characterize an existing screen.
 ---
 
 # Authoring the test that proves a screen
@@ -44,8 +44,9 @@ That yields the three states the board derives per requirement: **pass** (a `pro
 not error), **fail** (it ran and errored), **not-reached** (declared in `coverReqs` but its step
 never ran). The reporter folds these per-requirement into `spec/_results-index.json`, and
 `spec-store` turns them into each requirement's state: **proven / unproven** — proven when a current
-passing assertion covers it, unproven otherwise. There is no acceptance gate, so there is no third
-"changed since accepted" state.
+passing assertion covers it, unproven otherwise. There is no acceptance gate; the board's status
+word adds **changed** (board R4, indigo) for a requirement proved before whose text has since moved
+past its proof — it reads unproven until re-run, never green.
 
 **Ids are many-to-many and can be qualified.** One test can prove several requirements; one
 requirement can be proven by several tests. A bare id (`R4`) means *this test's own screen*; a
@@ -55,7 +56,7 @@ screen it **starts** on, but its coverage lands wherever it tags. This is exactl
 cross-screen flow the board wants (edit here → assert there), and it is why a test's title should name
 the **flow**, not a single requirement.
 
-**`spec/board/test.spec.ts` is the worked example** — the board proves its own ten requirements this
+**`spec/board/test.spec.ts` is the worked example** — the board proves its own requirements this
 way. Read it before writing your first one.
 
 ## The rules that make it a test and not a decoration
@@ -111,7 +112,7 @@ import { test, expect, checkReq, coverReqs, waitForContent } from '../_base'
 test('editing a line item recomputes the total and carries it to the schedule', async ({ page }) => {
   // Declare the full set this flow intends to reach, up front. If it fails early, the ids it never
   // got to are recorded NOT-REACHED — honestly unproven, not green and not red.
-  coverReqs('R3', 'R4', 'tenancy-schedule:R5')
+  await coverReqs('R3', 'R4', 'tenancy-schedule:R5')
 
   await page.goto('/<route>')                       // see "which URL" below
 
@@ -183,6 +184,11 @@ export const BEATS = [
   { fn: 'addTask', proves: 'R1', name: 'add a task — the count moves', needs: ['seeded'], gives: ['task'] },
   { fn: 'tickLastOpen', proves: 'R4', name: 'tick the last open sub-task — the container rolls up', needs: ['task'], gives: ['done'] }
 ]
+// Two gotchas the parser (tools/compose.mjs parseBeats) enforces SILENTLY: an entry missing fn,
+// proves or name — or whose proves is qualified ('x:R3'; it must be a bare R<n>, the beat lives in
+// the screen it proves) — is skipped, never guessed at. And a beat composes deterministically only
+// while its requirement reads PASSED on the board: changed, failed, or stale-by-source (the file
+// moved since the fold — every compose does that to its start screen) needs a run first.
 
 // A BEAT: perform its When, assert its Then with EXACT numbers computed from `state`, update `state`.
 // It never calls checkReq itself — the caller wraps it — and it never re-hardcodes a number a

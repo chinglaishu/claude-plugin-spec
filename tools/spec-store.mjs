@@ -268,7 +268,7 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   // (enrichReqs) against the current text — a mismatch on a still-passing requirement reads Changed.
   stampProvenHashes(fresh, index)
   // Fold this run's harvested EVIDENCE (Task 15, D2 — frames + clip window, the raw material any
-  // renderer of proof media needs; nothing reads it yet). Per requirement onto the requirement's
+  // renderer of proof media needs; the Focus media pane renders it). Per requirement onto the requirement's
   // screen, fold-never-replace (tools/evidence.mjs, unit-tested); the superseded files it names —
   // e.g. a stale clip a ffmpeg-less refold replaced with frames alone — are deleted so disk stays
   // bounded. Deletion is best-effort: a missing file is already what pruning wanted.

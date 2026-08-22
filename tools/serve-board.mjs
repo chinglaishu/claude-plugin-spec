@@ -41,9 +41,10 @@ const build = () =>
   execFileSync(process.execPath, [join(ROOT, 'tools/build-board.mjs')], { cwd: ROOT })
     .toString().trim()
 
-// board.html is a generated static file. Every gate POST rebuilds it before it responds, and the
-// file-watcher rebuilds on any spec change — EXCEPT state.json, which is deliberately excluded (it is
-// written on the server's own gate path, which already rebuilds, and reacting to it in the watcher
+// board.html is a generated static file. Every writing POST (the gate is gone — board R8; today:
+// conflict decisions, compose) rebuilds it before it responds, and the file-watcher rebuilds on any
+// spec change — EXCEPT state.json, which is deliberately excluded (a pre-redesign relic; a write on
+// the server's own path already rebuilds, and reacting to it in the watcher
 // would double every rebuild). But a test — or a second tool — can write a state.json DIRECTLY, and
 // then a plain page load would serve a board that predates the pin. So on a GET for board.html, if any
 // state.json is newer than board.html, rebuild synchronously first. Narrow to state.json only, so the
