@@ -69,9 +69,9 @@
     "webServer": {
       "command": "node tools/serve-board.mjs",
       "env": {
-        "BOARD_PORT": "4387"
+        "BOARD_PORT": "4395"
       },
-      "url": "http://localhost:4387",
+      "url": "http://localhost:4395",
       "reuseExistingServer": true,
       "timeout": 20000
     }
@@ -99,12 +99,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 370,
+                  "duration": 99,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:32.158Z",
+                  "startTime": "2026-08-22T06:19:49.251Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -114,7 +114,7 @@
           ],
           "id": "74f4141ad054871aca7f-f59203d62be2713d4904",
           "file": "_modes/test.spec.ts",
-          "line": 65,
+          "line": 67,
           "column": 1
         },
         {
@@ -133,12 +133,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 62,
+                  "duration": 68,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:32.932Z",
+                  "startTime": "2026-08-22T06:19:49.482Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -148,7 +148,7 @@
           ],
           "id": "74f4141ad054871aca7f-09e288180395e93b8f58",
           "file": "_modes/test.spec.ts",
-          "line": 71,
+          "line": 73,
           "column": 1
         },
         {
@@ -172,7 +172,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.001Z",
+                  "startTime": "2026-08-22T06:19:49.556Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -182,7 +182,7 @@
           ],
           "id": "74f4141ad054871aca7f-3d9f4dc7c23f8e547ba7",
           "file": "_modes/test.spec.ts",
-          "line": 77,
+          "line": 79,
           "column": 1
         },
         {
@@ -201,12 +201,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 62,
+                  "duration": 61,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.068Z",
+                  "startTime": "2026-08-22T06:19:49.622Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -216,7 +216,7 @@
           ],
           "id": "74f4141ad054871aca7f-f6cb607cb0d5182a45a4",
           "file": "_modes/test.spec.ts",
-          "line": 90,
+          "line": 92,
           "column": 1
         },
         {
@@ -240,7 +240,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.135Z",
+                  "startTime": "2026-08-22T06:19:49.689Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -250,7 +250,7 @@
           ],
           "id": "74f4141ad054871aca7f-8ce955b581faa020ad18",
           "file": "_modes/test.spec.ts",
-          "line": 98,
+          "line": 100,
           "column": 1
         },
         {
@@ -269,12 +269,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 65,
+                  "duration": 61,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.202Z",
+                  "startTime": "2026-08-22T06:19:49.757Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -284,7 +284,7 @@
           ],
           "id": "74f4141ad054871aca7f-ebe424e270d9f3b5a4b5",
           "file": "_modes/test.spec.ts",
-          "line": 113,
+          "line": 115,
           "column": 1
         },
         {
@@ -303,12 +303,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 72,
+                  "duration": 60,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.273Z",
+                  "startTime": "2026-08-22T06:19:49.823Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -318,7 +318,7 @@
           ],
           "id": "74f4141ad054871aca7f-4f215257b54548ef5554",
           "file": "_modes/test.spec.ts",
-          "line": 138,
+          "line": 140,
           "column": 1
         },
         {
@@ -337,12 +337,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 75,
+                  "duration": 59,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.352Z",
+                  "startTime": "2026-08-22T06:19:49.889Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -352,7 +352,7 @@
           ],
           "id": "74f4141ad054871aca7f-367271907553365d7988",
           "file": "_modes/test.spec.ts",
-          "line": 146,
+          "line": 148,
           "column": 1
         },
         {
@@ -371,12 +371,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 63,
+                  "duration": 60,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.435Z",
+                  "startTime": "2026-08-22T06:19:49.954Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -386,7 +386,7 @@
           ],
           "id": "74f4141ad054871aca7f-938ddc6d45b48c28dc0c",
           "file": "_modes/test.spec.ts",
-          "line": 155,
+          "line": 157,
           "column": 1
         },
         {
@@ -405,12 +405,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 460,
+                  "duration": 220,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.505Z",
+                  "startTime": "2026-08-22T06:19:50.021Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -420,7 +420,7 @@
           ],
           "id": "74f4141ad054871aca7f-dfb72337309c5c5f85d4",
           "file": "_modes/test.spec.ts",
-          "line": 193,
+          "line": 204,
           "column": 1
         },
         {
@@ -439,12 +439,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 175,
+                  "duration": 211,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:33.974Z",
+                  "startTime": "2026-08-22T06:19:50.247Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -454,7 +454,7 @@
           ],
           "id": "74f4141ad054871aca7f-cc3198687760099975e9",
           "file": "_modes/test.spec.ts",
-          "line": 212,
+          "line": 223,
           "column": 1
         },
         {
@@ -473,12 +473,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 479,
+                  "duration": 471,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:34.159Z",
+                  "startTime": "2026-08-22T06:19:50.468Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -488,7 +488,41 @@
           ],
           "id": "74f4141ad054871aca7f-9e9149ad3f9c3baf8afb",
           "file": "_modes/test.spec.ts",
-          "line": 227,
+          "line": 238,
+          "column": 1
+        },
+        {
+          "title": "renders — the drawn schematic fills the Focus slot: loop, stills per beat, grey when the text moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 423,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-22T06:19:50.945Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-f1427e9115757ddcf2f3",
+          "file": "_modes/test.spec.ts",
+          "line": 320,
           "column": 1
         },
         {
@@ -507,12 +541,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 321,
+                  "duration": 293,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:34.645Z",
+                  "startTime": "2026-08-22T06:19:51.374Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -522,7 +556,7 @@
           ],
           "id": "74f4141ad054871aca7f-3351524c9d10321c6dea",
           "file": "_modes/test.spec.ts",
-          "line": 331,
+          "line": 427,
           "column": 1
         },
         {
@@ -541,12 +575,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 163,
+                  "duration": 157,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:34.973Z",
+                  "startTime": "2026-08-22T06:19:51.673Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -556,7 +590,7 @@
           ],
           "id": "74f4141ad054871aca7f-a08d3963c51de77e8b63",
           "file": "_modes/test.spec.ts",
-          "line": 376,
+          "line": 472,
           "column": 1
         }
       ]
@@ -588,7 +622,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 280,
+                  "duration": 265,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -596,10 +630,10 @@
                   "steps": [
                     {
                       "title": "proves R1",
-                      "duration": 15
+                      "duration": 14
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:35.160Z",
+                  "startTime": "2026-08-22T06:19:51.854Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -649,7 +683,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 459,
+                  "duration": 454,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -657,10 +691,10 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 206
+                      "duration": 219
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:35.448Z",
+                  "startTime": "2026-08-22T06:19:52.126Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -710,7 +744,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 324,
+                  "duration": 343,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -718,10 +752,10 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 99
+                      "duration": 114
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:35.916Z",
+                  "startTime": "2026-08-22T06:19:52.586Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -771,7 +805,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 873,
+                  "duration": 710,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -779,7 +813,7 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 590,
+                      "duration": 486,
                       "steps": [
                         {
                           "title": "note: first check — got 1 · expected 1",
@@ -792,7 +826,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:36.247Z",
+                  "startTime": "2026-08-22T06:19:52.937Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -842,7 +876,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 296,
+                  "duration": 269,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -850,7 +884,7 @@
                   "steps": [
                     {
                       "title": "Open the board detail — the reader is there",
-                      "duration": 123,
+                      "duration": 129,
                       "steps": [
                         {
                           "title": "note: ▸ proving R10 — A test opens to its full evidence, and can be run — watchably or in the background",
@@ -858,13 +892,13 @@
                         },
                         {
                           "title": "proves R10",
-                          "duration": 6
+                          "duration": 5
                         }
                       ]
                     },
                     {
                       "title": "Announce a golden value on the narration bar",
-                      "duration": 5,
+                      "duration": 4,
                       "steps": [
                         {
                           "title": "note: cards on the home board — got 4 · expected 4",
@@ -877,7 +911,7 @@
                       "duration": 3
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:37.128Z",
+                  "startTime": "2026-08-22T06:19:53.654Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -927,7 +961,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 547,
+                  "duration": 453,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -935,10 +969,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 253
+                      "duration": 231
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:37.431Z",
+                  "startTime": "2026-08-22T06:19:53.930Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -988,7 +1022,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 285,
+                  "duration": 272,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -996,10 +1030,10 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 37
+                      "duration": 35
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:37.985Z",
+                  "startTime": "2026-08-22T06:19:54.390Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1049,7 +1083,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 329,
+                  "duration": 328,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1057,10 +1091,10 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 100
+                      "duration": 105
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:38.277Z",
+                  "startTime": "2026-08-22T06:19:54.668Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1110,7 +1144,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 254,
+                  "duration": 228,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1118,10 +1152,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 17
+                      "duration": 11
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:38.614Z",
+                  "startTime": "2026-08-22T06:19:55.003Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1171,7 +1205,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 231,
+                  "duration": 258,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1179,10 +1213,10 @@
                   "steps": [
                     {
                       "title": "proves R7",
-                      "duration": 7
+                      "duration": 10
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:38.875Z",
+                  "startTime": "2026-08-22T06:19:55.238Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1232,7 +1266,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 273,
+                  "duration": 278,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1240,10 +1274,10 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 30
+                      "duration": 31
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:39.114Z",
+                  "startTime": "2026-08-22T06:19:55.503Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1293,7 +1327,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1102,
+                  "duration": 1046,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1301,10 +1335,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 856
+                      "duration": 796
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:39.394Z",
+                  "startTime": "2026-08-22T06:19:55.788Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1354,7 +1388,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1110,
+                  "duration": 1012,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1362,10 +1396,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 877
+                      "duration": 795
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:40.504Z",
+                  "startTime": "2026-08-22T06:19:56.846Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1391,7 +1425,7 @@
           ],
           "id": "a4d8056b74ea4749de01-7d02613b62f66ef5a3d7",
           "file": "board/test.spec.ts",
-          "line": 742,
+          "line": 757,
           "column": 1
         },
         {
@@ -1415,7 +1449,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 723,
+                  "duration": 634,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1423,10 +1457,10 @@
                   "steps": [
                     {
                       "title": "proves R14",
-                      "duration": 448
+                      "duration": 399
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:41.623Z",
+                  "startTime": "2026-08-22T06:19:57.865Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1452,7 +1486,7 @@
           ],
           "id": "a4d8056b74ea4749de01-03775c6fe7d5d9e18999",
           "file": "board/test.spec.ts",
-          "line": 917,
+          "line": 932,
           "column": 1
         },
         {
@@ -1476,7 +1510,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 636,
+                  "duration": 624,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1484,10 +1518,10 @@
                   "steps": [
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 384
+                      "duration": 400
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:42.353Z",
+                  "startTime": "2026-08-22T06:19:58.506Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1513,7 +1547,7 @@
           ],
           "id": "a4d8056b74ea4749de01-2068f535bfd07492d91a",
           "file": "board/test.spec.ts",
-          "line": 1011,
+          "line": 1026,
           "column": 1
         },
         {
@@ -1532,7 +1566,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 157,
+                  "duration": 143,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1547,7 +1581,7 @@
                       "duration": 0
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:42.997Z",
+                  "startTime": "2026-08-22T06:19:59.136Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1557,7 +1591,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89998ca822d3716515a6",
           "file": "board/test.spec.ts",
-          "line": 1035,
+          "line": 1050,
           "column": 1
         },
         {
@@ -1581,7 +1615,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 311,
+                  "duration": 294,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1589,10 +1623,10 @@
                   "steps": [
                     {
                       "title": "proves R9",
-                      "duration": 62
+                      "duration": 59
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:43.165Z",
+                  "startTime": "2026-08-22T06:19:59.287Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1618,7 +1652,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a65565fa8517263db880",
           "file": "board/test.spec.ts",
-          "line": 1043,
+          "line": 1058,
           "column": 1
         },
         {
@@ -1642,7 +1676,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 692,
+                  "duration": 630,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1650,10 +1684,10 @@
                   "steps": [
                     {
                       "title": "proves R16",
-                      "duration": 426
+                      "duration": 417
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:43.483Z",
+                  "startTime": "2026-08-22T06:19:59.587Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1679,7 +1713,7 @@
           ],
           "id": "a4d8056b74ea4749de01-5c6599a9ca01b2b7c1ce",
           "file": "board/test.spec.ts",
-          "line": 1061,
+          "line": 1076,
           "column": 1
         },
         {
@@ -1703,7 +1737,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 348,
+                  "duration": 332,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1711,10 +1745,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 80
+                      "duration": 94
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:44.183Z",
+                  "startTime": "2026-08-22T06:20:00.223Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1740,7 +1774,7 @@
           ],
           "id": "a4d8056b74ea4749de01-987e4a2f9c8286335f0d",
           "file": "board/test.spec.ts",
-          "line": 1109,
+          "line": 1124,
           "column": 1
         },
         {
@@ -1764,7 +1798,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 344,
+                  "duration": 330,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1772,10 +1806,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 140
+                      "duration": 127
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:44.537Z",
+                  "startTime": "2026-08-22T06:20:00.562Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1801,7 +1835,7 @@
           ],
           "id": "a4d8056b74ea4749de01-64c0c7988b49a148fa65",
           "file": "board/test.spec.ts",
-          "line": 1136,
+          "line": 1151,
           "column": 1
         },
         {
@@ -1825,7 +1859,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5867,
+                  "duration": 5758,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1833,14 +1867,14 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 5381
+                      "duration": 5383
                     },
                     {
                       "title": "proves R11",
-                      "duration": 94
+                      "duration": 97
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:44.888Z",
+                  "startTime": "2026-08-22T06:20:00.898Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1876,7 +1910,7 @@
           ],
           "id": "a4d8056b74ea4749de01-86bd19acd4bf40e51cd9",
           "file": "board/test.spec.ts",
-          "line": 1223,
+          "line": 1238,
           "column": 1
         },
         {
@@ -1900,7 +1934,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1617,
+                  "duration": 1629,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1908,10 +1942,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 1321
+                      "duration": 1384
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:50.776Z",
+                  "startTime": "2026-08-22T06:20:06.663Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1937,7 +1971,7 @@
           ],
           "id": "a4d8056b74ea4749de01-584a8f6bb8a7369c1d41",
           "file": "board/test.spec.ts",
-          "line": 1269,
+          "line": 1284,
           "column": 1
         },
         {
@@ -1961,7 +1995,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 235,
+                  "duration": 262,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1969,10 +2003,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 10
+                      "duration": 9
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:52.401Z",
+                  "startTime": "2026-08-22T06:20:08.301Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1998,7 +2032,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89c79fff911eead41b7f",
           "file": "board/test.spec.ts",
-          "line": 1294,
+          "line": 1309,
           "column": 1
         },
         {
@@ -2022,7 +2056,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 323,
+                  "duration": 287,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2030,10 +2064,10 @@
                   "steps": [
                     {
                       "title": "proves R12",
-                      "duration": 95
+                      "duration": 83
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:52.644Z",
+                  "startTime": "2026-08-22T06:20:08.571Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2059,7 +2093,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a5859e92b6efee0ece72",
           "file": "board/test.spec.ts",
-          "line": 1308,
+          "line": 1323,
           "column": 1
         },
         {
@@ -2091,10 +2125,10 @@
                   "steps": [
                     {
                       "title": "proves R15",
-                      "duration": 456
+                      "duration": 445
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:52.973Z",
+                  "startTime": "2026-08-22T06:20:08.865Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2120,7 +2154,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b19be08d9243cbcb5133",
           "file": "board/test.spec.ts",
-          "line": 1346,
+          "line": 1361,
           "column": 1
         }
       ]
@@ -2147,12 +2181,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 144,
+                  "duration": 130,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:53.674Z",
+                  "startTime": "2026-08-22T06:20:09.564Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2186,7 +2220,7 @@
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:53.826Z",
+                  "startTime": "2026-08-22T06:20:09.699Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2220,7 +2254,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 622,
+                  "duration": 593,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2228,10 +2262,10 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 231
+                      "duration": 247
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:53.993Z",
+                  "startTime": "2026-08-22T06:20:09.866Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2276,12 +2310,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 426,
+                  "duration": 424,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:54.622Z",
+                  "startTime": "2026-08-22T06:20:10.465Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2310,7 +2344,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1092,
+                  "duration": 1095,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2318,10 +2352,10 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 186
+                      "duration": 188
                     }
                   ],
-                  "startTime": "2026-08-22T05:19:55.055Z",
+                  "startTime": "2026-08-22T06:20:10.896Z",
                   "annotations": [],
                   "attachments": [
                     {
@@ -2369,12 +2403,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 52080,
+                  "duration": 50637,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:19:56.178Z",
+                  "startTime": "2026-08-22T06:20:12.022Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2403,12 +2437,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 543,
+                  "duration": 495,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:20:48.266Z",
+                  "startTime": "2026-08-22T06:21:02.665Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2437,12 +2471,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1302,
+                  "duration": 1296,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:20:48.819Z",
+                  "startTime": "2026-08-22T06:21:03.167Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2471,12 +2505,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 45414,
+                  "duration": 44517,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:20:50.129Z",
+                  "startTime": "2026-08-22T06:21:04.469Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2505,12 +2539,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 50875,
+                  "duration": 45955,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:21:35.548Z",
+                  "startTime": "2026-08-22T06:21:48.991Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2539,12 +2573,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3426,
+                  "duration": 2262,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:22:26.428Z",
+                  "startTime": "2026-08-22T06:22:34.850Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2573,12 +2607,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 52597,
+                  "duration": 56002,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:22:29.861Z",
+                  "startTime": "2026-08-22T06:22:37.119Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2607,12 +2641,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8331,
+                  "duration": 8441,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:23:22.463Z",
+                  "startTime": "2026-08-22T06:23:33.126Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2641,12 +2675,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 44337,
+                  "duration": 45679,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:23:30.799Z",
+                  "startTime": "2026-08-22T06:23:41.575Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2675,12 +2709,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 208,
+                  "duration": 169,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:24:15.140Z",
+                  "startTime": "2026-08-22T06:24:27.265Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2709,12 +2743,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 47497,
+                  "duration": 49061,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:24:15.361Z",
+                  "startTime": "2026-08-22T06:24:27.442Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2743,12 +2777,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 281,
+                  "duration": 248,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:02.870Z",
+                  "startTime": "2026-08-22T06:25:16.508Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2785,12 +2819,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 410,
+                  "duration": 481,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:03.172Z",
+                  "startTime": "2026-08-22T06:25:16.776Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2819,12 +2853,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 221,
+                  "duration": 240,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:03.589Z",
+                  "startTime": "2026-08-22T06:25:17.263Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2834,7 +2868,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-b04ed2d27deff8733eb8",
           "file": "init/test.spec.ts",
-          "line": 48,
+          "line": 57,
           "column": 1
         },
         {
@@ -2853,12 +2887,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 219,
+                  "duration": 245,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:03.819Z",
+                  "startTime": "2026-08-22T06:25:17.511Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2868,7 +2902,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-a7bd6c25b291e27139ea",
           "file": "init/test.spec.ts",
-          "line": 60,
+          "line": 69,
           "column": 1
         },
         {
@@ -2887,12 +2921,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 193,
+                  "duration": 258,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:04.044Z",
+                  "startTime": "2026-08-22T06:25:17.763Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2902,7 +2936,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-5f88eb6023fc3ef974b3",
           "file": "init/test.spec.ts",
-          "line": 80,
+          "line": 89,
           "column": 1
         },
         {
@@ -2921,12 +2955,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 127,
+                  "duration": 128,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:04.242Z",
+                  "startTime": "2026-08-22T06:25:18.027Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -2936,7 +2970,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-b41ba3b8e290735872a7",
           "file": "init/test.spec.ts",
-          "line": 122,
+          "line": 131,
           "column": 1
         },
         {
@@ -2955,7 +2989,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 666,
+                  "duration": 682,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2963,10 +2997,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 375
+                      "duration": 408
                     }
                   ],
-                  "startTime": "2026-08-22T05:25:04.378Z",
+                  "startTime": "2026-08-22T06:25:18.162Z",
                   "annotations": [],
                   "attachments": [
                     {
@@ -2987,7 +3021,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-c5ce69578323944b0049",
           "file": "init/test.spec.ts",
-          "line": 136,
+          "line": 145,
           "column": 1
         },
         {
@@ -3006,7 +3040,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 376,
+                  "duration": 413,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3014,10 +3048,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 246
+                      "duration": 284
                     }
                   ],
-                  "startTime": "2026-08-22T05:25:05.051Z",
+                  "startTime": "2026-08-22T06:25:18.851Z",
                   "annotations": [],
                   "attachments": [
                     {
@@ -3038,7 +3072,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-6119f87fbe62fd990a2e",
           "file": "init/test.spec.ts",
-          "line": 168,
+          "line": 177,
           "column": 1
         },
         {
@@ -3057,12 +3091,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 195,
+                  "duration": 158,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2026-08-22T05:25:05.433Z",
+                  "startTime": "2026-08-22T06:25:19.269Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -3072,7 +3106,7 @@
           ],
           "id": "a3d7ad62b56c3ce6940d-07c5f2756c5fc84a7906",
           "file": "init/test.spec.ts",
-          "line": 195,
+          "line": 204,
           "column": 1
         }
       ]
@@ -3080,9 +3114,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-22T05:19:30.758Z",
-    "duration": 334925.098,
-    "expected": 64,
+    "startTime": "2026-08-22T06:19:48.161Z",
+    "duration": 331424.729,
+    "expected": 65,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0
