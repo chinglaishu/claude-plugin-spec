@@ -26,6 +26,11 @@ export const FILES = [
   // — imported by spec-store.mjs (enrichReqs attaches r.viz, the committed drawing's staleness), so
   // the vendored store cannot load without it (the same guard-caught class of miss).
   'tools/viz.mjs',
+  // the viz pass's shell (task 4 review M2, fix round 1, 2026-08-22): the CLI a scaffolded project
+  // runs to derive/commit its own schematics ("redraw is instant and free"). NOT caught by the
+  // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports
+  // it — so it must be listed directly or a scaffolded project has no hands to run the viz pass at all.
+  'tools/viz-derive.mjs',
   // pure evidence-harvest logic (Task 15, D2): clip windows + ffmpeg args + the per-requirement
   // fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
   // scaffolded project can load neither without it (the same guard-caught class of miss).

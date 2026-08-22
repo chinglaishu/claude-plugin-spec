@@ -12,7 +12,7 @@ import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './c
 import { foldEvidence } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
-import { vizHash } from './viz.mjs'
+import { vizHash, vizStale } from './viz.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -358,7 +358,10 @@ function vizFor (screen, id, behavior) {
     svg,
     hash,
     textHash,
-    stale: hash !== textHash,
+    // task 4 review I1: one comparison authority — vizStale(hash, behavior) is the exact same
+    // check (hash !== vizHash(behavior)) that viz.mjs already exports and unit-pins; this used to
+    // recompute it inline as a second, un-pinned copy.
+    stale: vizStale(hash, behavior),
     at: attr('at'),
     archetype: attr('archetype'),
     phases: attr('phases').split(/\s+/).filter(Boolean).map(Number)

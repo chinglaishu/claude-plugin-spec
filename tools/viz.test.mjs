@@ -185,3 +185,22 @@ test('renderSchematic refuses anything that is not a plain committed SVG', () =>
   assert.equal(renderSchematic({ viz: { svg: '<svg><script>x</script></svg>', phases: [], hash: 'x', textHash: 'x', stale: false } }), '')
   assert.equal(renderSchematic({ viz: { svg: 'plain text', phases: [], hash: 'x', textHash: 'x', stale: false } }), '')
 })
+
+test('renderSchematic refuses on*= event handlers and javascript:/data: hrefs (task 4 review M1)', () => {
+  // The comment above renderSchematic states the contract plainly: "board.html must never gain
+  // executable content this way." The <script> refusal above does not cover an inline handler
+  // attribute or a javascript:/data: URI hiding in an href — both execute once the SVG is inlined
+  // into the live DOM (and again via innerHTML in client.js buildSchematic). The SVGs on disk today
+  // are self-authored and clean, so this is contract-hardening rather than an active hole — but the
+  // filter should actually do what its comment says.
+  const mk = svg => ({ viz: { svg, phases: [], hash: 'x', textHash: 'x', stale: false } })
+  assert.equal(renderSchematic(mk('<svg onload="alert(1)"></svg>')), '', 'onload attribute refused')
+  assert.equal(renderSchematic(mk('<svg><rect onclick="alert(1)"/></svg>')), '', 'onclick attribute refused')
+  assert.equal(renderSchematic(mk('<svg><a href="javascript:alert(1)"><rect/></a></svg>')), '', 'javascript: href refused')
+  assert.equal(renderSchematic(mk('<svg><a href="data:text/html,<script>alert(1)</script>"><rect/></a></svg>')), '', 'data: href refused')
+  assert.equal(renderSchematic(mk('<svg><a xlink:href="javascript:alert(1)"><rect/></a></svg>')), '', 'javascript: xlink:href refused')
+  // a plain, clean drawing (no handlers, no javascript:/data: href) must still render — the
+  // hardening must not over-refuse ordinary committed content.
+  const clean = renderSchematic(mk('<svg><rect fill="var(--wash)"/></svg>'))
+  assert.ok(clean.includes('<svg><rect fill="var(--wash)"/></svg>'), 'a clean svg with no handlers/hrefs is unaffected')
+})

@@ -177,7 +177,12 @@ export function renderSchematic (r) {
   const v = r && r.viz
   if (!v) return ''
   const svg = String(v.svg || '').trim()
-  if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg)) return ''
+  // task 4 review M1: the <script>/shape checks alone miss an inline on*= event handler attribute
+  // or a javascript:/data: URI riding in an href — both execute once this is inlined into the live
+  // DOM (and again via innerHTML in client.js buildSchematic). Refuse those too, so the filter
+  // actually delivers the contract this comment states.
+  if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg) ||
+    /\son\w+\s*=/i.test(svg) || /\bhref\s*=\s*["']?\s*(?:javascript|data):/i.test(svg)) return ''
   const stale = v.stale ? ' data-stale="1"' : ''
   const at = v.at ? ` data-vizat="${esc(v.at)}"` : ''
   return `<figure class="schematic" data-phases="${esc((v.phases || []).join(' '))}"` +
