@@ -65,7 +65,9 @@ name:
 **Families (board R17).** Once a screen carries more than a handful of requirements, group them
 under `### <n> · <family> — <gloss>` lines placed *between* `## R<n>` sections: a heading opens a
 family that owns every requirement that follows it until the next heading, so move whole sections
-under their family rather than renumbering anything. Families are structure, not meaning — a
+under their family rather than renumbering anything. `###` is therefore RESERVED for family lines: a
+`###` inside a requirement's body would open a family there, so use `####` or bold for sub-headings
+within a body. Families are structure, not meaning — a
 requirement's id, text and proof are untouched by where it sits, a family carries no state of its own
 (its marks are its requirements' marks), and a prd with no headings renders exactly as before. Name a
 family by what the requirements *share* ("Containers and roll-up", "Persistence"), number them in
