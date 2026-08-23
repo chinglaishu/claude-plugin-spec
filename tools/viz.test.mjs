@@ -336,3 +336,25 @@ test('fold-into-rows refuses a Then where something BECOMES a row (init R2) — 
   const grows = b('an app being inventoried', 'the crawl visits a route', 'it becomes a row with its screenshot')
   assert.equal(matchArchetype(grows), null)
 })
+
+// ── Task 11: play speed — the whole drawing retimes off ONE wrapper var ────
+// Every animation-duration is emitted as calc(<X>s / var(--spd, 1)), so setting --spd on the
+// schematic wrapper retimes loop playback (1 / 1.5 / 2). The still PHASES stay plain negative
+// numbers: the client CSS divides the parked delay by the SAME var, so the fraction
+// |delay|/duration — the frame a still shows — is preserved exactly at every speed.
+test('T11: every animation shorthand carries calc(<X>s / var(--spd, 1)) — no unscaled duration survives', () => {
+  for (const fix of [OPEN, CLEAR, TICK, MOVE, FILTER, VIEWS, MENU]) {
+    const d = deriveSchematic(fix)
+    const shorthands = d.svg.match(/animation:[^;}]*/g) || []
+    assert.ok(shorthands.length > 0, 'the drawing animates')
+    for (const a of shorthands) {
+      assert.match(a, /calc\(\d+(\.\d+)?s \/ var\(--spd, 1\)\)/, 'scaled duration in: ' + a)
+      assert.ok(!/ \d+(\.\d+)?s /.test(a), 'no bare duration left in: ' + a)
+    }
+  }
+})
+test('T11: the still phases are untouched — plain negative seconds for --ph, never a calc string', () => {
+  const d = deriveSchematic(TICK)
+  assert.ok(d.phases.every(p => typeof p === 'number' && p < 0))
+  assert.ok(d.svg.includes('data-viz-phases="' + d.phases.join(' ') + '"'))
+})

@@ -52,7 +52,12 @@ function timeline (n) {
   // stills: the loop's own frames — just before the intro ends (given) and just before each beat's
   // segment ends (that beat's Then, settled, the cursor at rest)
   const phases = [-0.05, ...segs.map(g => -r2((g.e / 100) * dur - 0.15))]
-  return { dur, segs, phases, hold: 94, reset: 98 }
+  // Task 11 (play speed): the ONE duration every animation uses, divided by the wrapper's --spd
+  // (1 / 1.5 / 2 — the schematic pane's speed button) so a single var retimes the whole drawing.
+  // The still phases above stay plain numbers: the board CSS divides the parked animation-delay by
+  // the SAME var, so |delay|/duration — the frame a still shows — is preserved at every speed.
+  const durCss = `calc(${dur}s / var(--spd, 1))`
+  return { dur, durCss, segs, phases, hold: 94, reset: 98 }
 }
 
 const stops = list => list.map(([p, s]) => `${p}%{${s}}`).join('')
@@ -231,7 +236,7 @@ export function deriveSchematic (behavior) {
 }
 
 // ── the templates ──────────────────────────────────────────────────────────
-// Each returns { css, body } — css already scoped to .${k}, all animations ${t.dur}s infinite.
+// Each returns { css, body } — css already scoped to .${k}, all animations ${t.durCss} infinite.
 
 // N ticks in a checklist, the count chip stepping down — the schematics mockup's R5 family.
 function drawToggleRecount (b, t, k, kf) {
@@ -243,9 +248,9 @@ function drawToggleRecount (b, t, k, kf) {
     const y = 30 + 24 * i
     if (i < n) {
       rows.push(box(30, y, 'b' + i), tick(30, y, 'c' + i), bar(48, y + 1.5, widths[i]))
-      css += `.${k} .b${i}{animation:${kf('b' + i)} ${t.dur}s infinite}` +
+      css += `.${k} .b${i}{animation:${kf('b' + i)} ${t.durCss} infinite}` +
         `@keyframes ${kf('b' + i)}{${onOff([[flips[i], t.hold]], 'fill:var(--ai);stroke:var(--ai)', 'fill:var(--paper);stroke:var(--line3)')}}` +
-        `.${k} .c${i}{animation:${kf('c' + i)} ${t.dur}s infinite}` +
+        `.${k} .c${i}{animation:${kf('c' + i)} ${t.durCss} infinite}` +
         `@keyframes ${kf('c' + i)}{${onOff([[flips[i], t.hold]], 'opacity:1', 'opacity:0')}}`
     } else {
       rows.push(box(30, y), bar(48, y + 1.5, widths[i]))    // the last row stays open — "leaves only"
@@ -258,10 +263,10 @@ function drawToggleRecount (b, t, k, kf) {
     const to = j === n ? t.hold : r1(flips[j] - 0.1)
     counts += `<text class="n${j}" x="222" y="78" font-size="30" font-family="var(--mono)" fill="var(--ok)">${n + 1 - j}</text>`
     const spans = j === 0 ? [[0, to]] : [[from, to]]
-    css += `.${k} .n${j}{animation:${kf('n' + j)} ${t.dur}s infinite}` +
+    css += `.${k} .n${j}{animation:${kf('n' + j)} ${t.durCss} infinite}` +
       `@keyframes ${kf('n' + j)}{${onOff(spans, 'opacity:1', 'opacity:0')}}`
   }
-  css += `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+  css += `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, t.segs.map((_, i) => ({ x: 34, y: 34 + 24 * i })))}}`
   const body = `<rect x="16" y="16" width="180" height="118" rx="8" fill="none" stroke="var(--line)" stroke-width="1.4"/>` +
     rows.join('') + counts +
@@ -276,15 +281,15 @@ function drawPressClear (b, t, k, kf) {
   const f0 = t.segs[0].flip; const f1 = restore ? t.segs[1].flip : null
   const rows = [0, 1, 2].map(i => box(24, 34 + 24 * i) + bar(42, 35.5 + 24 * i, [96, 82, 90][i])).join('')
   const goneSpan = [[f0, restore ? r1(f1 - 0.1) : t.hold]]
-  let css = `.${k} .rows{animation:${kf('rows')} ${t.dur}s infinite}` +
+  let css = `.${k} .rows{animation:${kf('rows')} ${t.durCss} infinite}` +
     `@keyframes ${kf('rows')}{${onOff(goneSpan, 'opacity:0', 'opacity:1')}}` +
-    `.${k} .btn{animation:${kf('btn')} ${t.dur}s infinite}` +
+    `.${k} .btn{animation:${kf('btn')} ${t.durCss} infinite}` +
     `@keyframes ${kf('btn')}{${onOff(t.segs.map(g => [g.act, r1(g.act + 4)]), 'fill:var(--ai);stroke:var(--ai)', 'fill:var(--paper);stroke:var(--line2)')}}` +
-    `.${k} .full{animation:${kf('full')} ${t.dur}s infinite}` +
+    `.${k} .full{animation:${kf('full')} ${t.durCss} infinite}` +
     `@keyframes ${kf('full')}{${onOff(goneSpan, 'opacity:0', 'opacity:1')}}` +
-    `.${k} .none{animation:${kf('none')} ${t.dur}s infinite}` +
+    `.${k} .none{animation:${kf('none')} ${t.durCss} infinite}` +
     `@keyframes ${kf('none')}{${onOff(goneSpan, 'opacity:1', 'opacity:0')}}` +
-    `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+    `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 236, y: 34 }])}}`
   const body = `<g class="rows">${rows}</g>` +
     `<rect class="btn" x="210" y="28" width="64" height="22" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1.4"/>` +
@@ -303,14 +308,14 @@ function drawMoveBetweenLists (b, t, k, kf) {
     const y = 32 + 26 * i
     items += `<g class="it${i}">${box(30, y)}${bar(48, y + 1.5, 62, 7)}</g>`
     const g = t.segs[i]
-    css += `.${k} .it${i}{animation:${kf('it' + i)} ${t.dur}s ease-in-out infinite}` +
+    css += `.${k} .it${i}{animation:${kf('it' + i)} ${t.durCss} ease-in-out infinite}` +
       `@keyframes ${kf('it' + i)}{${stops([
         [0, 'transform:translate(0,0)'], [g.act, 'transform:translate(0,0)'],
         [r1(g.flip + 6), 'transform:translate(148px,26px)'], [t.hold, 'transform:translate(148px,26px)'],
         [t.reset, 'transform:translate(0,0)'], [100, 'transform:translate(0,0)']
       ])}}`
   }
-  css += `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+  css += `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t,
       Array.from({ length: n }, (_, i) => ({ x: 36, y: 36 + 26 * i })),
       Array.from({ length: n }, (_, i) => ({ x: 184, y: 62 + 26 * i })))}}`
@@ -327,15 +332,15 @@ function drawTypeFilter (b, t, k, kf) {
   const g = t.segs[0]
   const rows = [0, 1, 2, 3].map(i =>
     `<g class="${i % 2 ? 'fout' : ''}"><circle cx="30" cy="${64 + 22 * i}" r="3" fill="var(--line2)"/>${bar(42, 60 + 22 * i, [120, 96, 132, 88][i])}</g>`).join('')
-  const css = `.${k} .typed{transform-origin:28px 31px;animation:${kf('ty')} ${t.dur}s infinite}` +
+  const css = `.${k} .typed{transform-origin:28px 31px;animation:${kf('ty')} ${t.durCss} infinite}` +
     `@keyframes ${kf('ty')}{${stops([
       [0, 'transform:scaleX(0)'], [g.act, 'transform:scaleX(0)'],
       [r1(g.flip + 4), 'transform:scaleX(1)'], [t.hold, 'transform:scaleX(1)'],
       [t.reset, 'transform:scaleX(0)'], [100, 'transform:scaleX(0)']
     ])}}` +
-    `.${k} .fout{animation:${kf('fo')} ${t.dur}s infinite}` +
+    `.${k} .fout{animation:${kf('fo')} ${t.durCss} infinite}` +
     `@keyframes ${kf('fo')}{${onOff([[t.segs[0].flip, t.hold]], 'opacity:0.12', 'opacity:1')}}` +
-    `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+    `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 32, y: 26 }])}}`
   const body =
     `<rect x="20" y="20" width="170" height="22" rx="4" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1.2"/>` +
@@ -351,17 +356,17 @@ function drawSwitchViews (b, t, k, kf) {
   const gridCells = []
   for (let i = 0; i < 2; i++) for (let j = 0; j < 3; j++)
     gridCells.push(`<rect x="${24 + 52 * j}" y="${62 + 34 * i}" width="44" height="26" rx="4" fill="var(--wash)" stroke="var(--hair)"/>`)
-  const css = `.${k} .sw{animation:${kf('sw')} ${t.dur}s ease-in-out infinite}` +
+  const css = `.${k} .sw{animation:${kf('sw')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('sw')}{${stops([
       [0, 'transform:translate(0,0)'], [g.act, 'transform:translate(0,0)'],
       [r1(g.flip + 3), 'transform:translate(54px,0)'], [t.hold, 'transform:translate(54px,0)'],
       [t.reset, 'transform:translate(0,0)'], [100, 'transform:translate(0,0)']
     ])}}` +
-    `.${k} .va{animation:${kf('va')} ${t.dur}s infinite}` +
+    `.${k} .va{animation:${kf('va')} ${t.durCss} infinite}` +
     `@keyframes ${kf('va')}{${onOff(flip, 'opacity:0', 'opacity:1')}}` +
-    `.${k} .vb{animation:${kf('vb')} ${t.dur}s infinite}` +
+    `.${k} .vb{animation:${kf('vb')} ${t.durCss} infinite}` +
     `@keyframes ${kf('vb')}{${onOff(flip, 'opacity:1', 'opacity:0')}}` +
-    `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+    `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 100, y: 30 }])}}`
   const body =
     `<rect x="20" y="20" width="162" height="24" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1.2"/>` +
@@ -377,19 +382,19 @@ function drawSwitchViews (b, t, k, kf) {
 // A title row opens: the chevron turns, the body panel unfolds beneath.
 function drawOpenReveal (b, t, k, kf) {
   const g = t.segs[0]
-  const css = `.${k} .chv{transform-origin:31px 31px;animation:${kf('ch')} ${t.dur}s ease-in-out infinite}` +
+  const css = `.${k} .chv{transform-origin:31px 31px;animation:${kf('ch')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('ch')}{${stops([
       [0, 'transform:rotate(0deg)'], [g.act, 'transform:rotate(0deg)'],
       [r1(g.flip + 3), 'transform:rotate(90deg)'], [t.hold, 'transform:rotate(90deg)'],
       [t.reset, 'transform:rotate(0deg)'], [100, 'transform:rotate(0deg)']
     ])}}` +
-    `.${k} .pbody{transform-origin:140px 48px;animation:${kf('pb')} ${t.dur}s ease-in-out infinite}` +
+    `.${k} .pbody{transform-origin:140px 48px;animation:${kf('pb')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('pb')}{${stops([
       [0, 'transform:scaleY(0);opacity:0'], [g.act, 'transform:scaleY(0);opacity:0'],
       [r1(g.flip + 8), 'transform:scaleY(1);opacity:1'], [t.hold, 'transform:scaleY(1);opacity:1'],
       [t.reset, 'transform:scaleY(0);opacity:0'], [100, 'transform:scaleY(0);opacity:0']
     ])}}` +
-    `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+    `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 36, y: 34 }])}}`
   const body =
     `<path class="chv" d="M28 26 l6 5 l-6 5" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>` +
@@ -427,7 +432,7 @@ function drawDeriveWord (b, t, k, kf) {
   for (let i = 0; i < 3; i++) {
     const spans = t.segs.filter((_, j) => j % 3 === i).map(g => [g.act, r1(g.flip + 4)])
     if (!spans.length) continue
-    css += `.${k} .in${i}{animation:${kf('in' + i)} ${t.dur}s infinite}` +
+    css += `.${k} .in${i}{animation:${kf('in' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('in' + i)}{${onOff(spans, 'opacity:1', 'opacity:.45')}}`
   }
   // the wires, each pulsing as its input fires
@@ -435,12 +440,12 @@ function drawDeriveWord (b, t, k, kf) {
   for (let i = 0; i < 3; i++) {
     const spans = t.segs.filter((_, j) => j % 3 === i).map(g => [g.act, r1(g.flip + 2)])
     if (!spans.length) continue
-    css += `.${k} .w${i}{animation:${kf('w' + i)} ${t.dur}s infinite}` +
+    css += `.${k} .w${i}{animation:${kf('w' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('w' + i)}{${onOff(spans, 'stroke:var(--ai)', 'stroke:var(--line2)')}}`
   }
   // the chip: n+1 faces stacked — the given's blank dashed face, then one word (or bar) per beat
   let faces = `<g class="f0"><rect x="172" y="58" width="96" height="26" rx="13" fill="var(--paper)" stroke="var(--line3)" stroke-width="1.2" stroke-dasharray="3 3"/>${bar(196, 68, 48, 6, 'var(--line3)')}</g>`
-  css += `.${k} .f0{animation:${kf('f0')} ${t.dur}s infinite}` +
+  css += `.${k} .f0{animation:${kf('f0')} ${t.durCss} infinite}` +
     `@keyframes ${kf('f0')}{${onOff([[0, r1(flips[0] - 0.1)]], 'opacity:1', 'opacity:0')}}`
   for (let j = 1; j <= n; j++) {
     const w = wordOf(b.beats[j - 1].then)
@@ -449,7 +454,7 @@ function drawDeriveWord (b, t, k, kf) {
       ? `<text x="220" y="76" text-anchor="middle" font-size="11" font-family="var(--mono)" fill="var(--paper)">${esc(w)}</text>`
       : bar(196 + 6 * j, 68, 48 - 8 * j, 6, 'var(--paper)')
     faces += `<g class="f${j}"><rect x="172" y="58" width="96" height="26" rx="13" fill="var(--ai)"/>${face}</g>`
-    css += `.${k} .f${j}{animation:${kf('f' + j)} ${t.dur}s infinite}` +
+    css += `.${k} .f${j}{animation:${kf('f' + j)} ${t.durCss} infinite}` +
       `@keyframes ${kf('f' + j)}{${onOff([[flips[j - 1], to]], 'opacity:1', 'opacity:0')}}`
   }
   const body = inputs.join('') + wires.join('') + faces +
@@ -478,9 +483,9 @@ function drawFoldRows (b, t, k, kf) {
   for (let i = 0; i < n; i++) {
     const g = t.segs[i]
     const y = 30 + 30 * i
-    css += `.${k} .hit${i}{animation:${kf('hit' + i)} ${t.dur}s infinite}` +
+    css += `.${k} .hit${i}{animation:${kf('hit' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('hit' + i)}{${onOff([[g.flip, stays ? r1(g.flip + 4) : t.hold]], 'opacity:.22', 'opacity:0')}}` +
-      `.${k} .run${i}{animation:${kf('run' + i)} ${t.dur}s ease-in-out infinite}` +
+      `.${k} .run${i}{animation:${kf('run' + i)} ${t.durCss} ease-in-out infinite}` +
       `@keyframes ${kf('run' + i)}{${stops([
         [0, 'transform:translate(0,0);opacity:0'], [r1(g.s), 'transform:translate(0,0);opacity:0'],
         [r1(g.s + 1), 'transform:translate(0,0);opacity:1'],
@@ -507,7 +512,7 @@ function drawTypeAppend (b, t, k, kf) {
     const g = t.segs[i]
     const y = 56 + 22 * (base + i)
     news += `<g class="new${i}">${box(30, y)}${bar(48, y + 1.5, 88 - 10 * i)}</g>`
-    css += `.${k} .new${i}{animation:${kf('new' + i)} ${t.dur}s ease-out infinite}` +
+    css += `.${k} .new${i}{animation:${kf('new' + i)} ${t.durCss} ease-out infinite}` +
       `@keyframes ${kf('new' + i)}{${stops([
         [0, 'transform:translate(0,-8px);opacity:0'], [g.flip, 'transform:translate(0,-8px);opacity:0'],
         [r1(g.flip + 5), 'transform:translate(0,0);opacity:1'], [t.hold, 'transform:translate(0,0);opacity:1'],
@@ -515,7 +520,7 @@ function drawTypeAppend (b, t, k, kf) {
       ])}}`
   }
   // the typed bar grows in the box during each beat's act, and empties on the flip (submitted)
-  css += `.${k} .typed{transform-origin:28px 31px;animation:${kf('ty')} ${t.dur}s infinite}` +
+  css += `.${k} .typed{transform-origin:28px 31px;animation:${kf('ty')} ${t.durCss} infinite}` +
     `@keyframes ${kf('ty')}{${stops([[0, 'transform:scaleX(0)']].concat(t.segs.flatMap(g => [
       [r1(g.act - 2), 'transform:scaleX(0)'], [r1(g.flip - 1), 'transform:scaleX(1)'], [g.flip, 'transform:scaleX(0)']
     ])).concat([[100, 'transform:scaleX(0)']]))}}`
@@ -526,10 +531,10 @@ function drawTypeAppend (b, t, k, kf) {
     const from = j === 0 ? 0 : flips[j - 1]
     const to = j === n ? t.hold : r1(flips[j] - 0.1)
     counts += `<text class="n${j}" x="226" y="86" font-size="30" font-family="var(--mono)" fill="var(--ok)">${base + j}</text>`
-    css += `.${k} .n${j}{animation:${kf('n' + j)} ${t.dur}s infinite}` +
+    css += `.${k} .n${j}{animation:${kf('n' + j)} ${t.durCss} infinite}` +
       `@keyframes ${kf('n' + j)}{${onOff([[from, to]], 'opacity:1', 'opacity:0')}}`
   }
-  css += `.${k} .cur{animation:${kf('cur')} ${t.dur}s ease-in-out infinite}` +
+  css += `.${k} .cur{animation:${kf('cur')} ${t.durCss} ease-in-out infinite}` +
     `@keyframes ${kf('cur')}{${cursorKF(t, [{ x: 32, y: 26 }])}}`
   const body =
     `<rect x="20" y="20" width="150" height="22" rx="4" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1.2"/>` +
