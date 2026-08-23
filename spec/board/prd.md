@@ -53,6 +53,16 @@ renders again.
 *Added 2026-08-21 (the human) with the frozen mockup — onboarding chrome, dismissible, derives
 everything and stores nothing.*
 
+## R17 — Requirements sub-group within a screen
+
+- **Given** a screen whose prd.md places `###` family headings between its requirements
+- **When** the board renders that screen
+- **Then** every requirement sits under its family — on the home card, in List, and in the Focus pager — and a jump-map names each family with its requirements and their marks, in the prd's order
+
+A `### <n> · <family> — <gloss>` line groups the requirements that follow it until the next heading; a screen with no headings renders exactly as today, and requirements before the first heading sit first under no family. A family carries no state of its own: its marks are its requirements' marks, derived and never stored. Families are structure, not meaning — a requirement's id, text and proof are untouched by where it sits.
+
+*Added 2026-08-23 (the human): sub-grouping modelled on the dojostack overlay catalogue's families and jump-map.*
+
 ### 2 · Reading a requirement and its proof — the two ends
 
 ## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own

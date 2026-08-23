@@ -401,6 +401,7 @@ const B = window.__BOARD__ || {}
         at: node.getAttribute('data-ev-at') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
+      family: node.getAttribute('data-fam') || '',   // the prd's `###` family this sits under (board R17); '' = none
       behHtml: behHtml,
       proseHtml: proseHtml
     }
@@ -872,7 +873,9 @@ const B = window.__BOARD__ || {}
       const old = ov.querySelector('.fpage'); if (old) old.remove()
       const r = reqInfo(reqs[cur])
       ov._curId = r.id        // so a loadRuns fold can reopen this reader on the SAME requirement
-      const fb = focusBody(dt, r, { counter: (cur + 1) + ' of ' + reqs.length })
+      // the counter leads with the requirement's FAMILY when the prd has them (board R17):
+      // `<family> · n of N`; a screen with no families keeps the bare `n of N`
+      const fb = focusBody(dt, r, { counter: (r.family ? r.family + ' · ' : '') + (cur + 1) + ' of ' + reqs.length })
       bodyRestore = fb.restore
       ov.appendChild(fb.page)
 
@@ -897,6 +900,11 @@ const B = window.__BOARD__ || {}
         if (prevIdx >= 0 && i - prevIdx > 1) {
           const gap = document.createElement('span'); gap.className = 'fdotgap'; gap.textContent = '…'
           dots.appendChild(gap)
+        } else if (prevIdx >= 0 && (reqs[i].getAttribute('data-fam') || '') !== (reqs[prevIdx].getAttribute('data-fam') || '')) {
+          // a family boundary between two adjacent dots (board R17): a thin inert gap groups the
+          // dots by family — structure, not a page; nothing to click
+          const fg = document.createElement('span'); fg.className = 'fdotfam'; fg.setAttribute('aria-hidden', 'true')
+          dots.appendChild(fg)
         }
         const rr = reqs[i]
         const ttlEl = rr.querySelector('.rt')
@@ -1747,6 +1755,9 @@ const B = window.__BOARD__ || {}
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
     cstopAll()
+    // THE MAP (board R17) belongs to the two views that page requirements — Focus and List; Flow
+    // and the composer hide it (neither has a requirement to jump to)
+    const map = dt.querySelector('.reqmap'); if (map) map.hidden = view === 'flow' || view === 'compose'
     if (cv) cv.hidden = view !== 'compose'
     if (view === 'grid') { if (gv) gv.hidden = false; if (fv) fv.hidden = true }
     else if (view === 'flow') {
@@ -2866,6 +2877,11 @@ const B = window.__BOARD__ || {}
         else if (!cur && nxt) list.insertBefore(nxt.cloneNode(true), list.firstChild)
       }
     }
+    // the jump-map's marks (board R17) are the requirements' own — derived, so a run moves them
+    dt.querySelectorAll('.reqmap .tocit').forEach(function (it) {
+      const f = fresh.querySelector('.reqmap .tocit[data-r="' + cssEsc(it.dataset.r) + '"]'); if (!f) return
+      swapChip(it, f, '.tdot')
+    })
     dt.querySelectorAll('.testpane .test').forEach(function (t) {
       const f = fresh.querySelector('.testpane .test[data-title="' + cssEsc(t.dataset.title) + '"]'); if (!f) return
       ;['p', 'f', 'u'].forEach(function (c) { t.classList.toggle(c, f.classList.contains(c)) })

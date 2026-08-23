@@ -493,7 +493,7 @@ export function readScreen (name, results = null) {
   if (!existsSync(prdPath)) return null
 
   const prdText = readFileSync(prdPath, 'utf8')
-  const { fm, reqs } = parsePrd(prdText)
+  const { fm, reqs, families } = parsePrd(prdText)
   const prdHash = sha(prdText)
 
   const draftPath = join(dir, 'draft.html')
@@ -586,6 +586,8 @@ export function readScreen (name, results = null) {
     route: fm.route || '',
     governs,
     reqs: reqStates,
+    // the prd's `###` families (board R17) — structure only, in prd order; [] when it has none
+    families,
     prdText,
     rejections,
     hasShot,

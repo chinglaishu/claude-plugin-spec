@@ -51,3 +51,34 @@ test('a prd with no ### headings parses exactly as before — no families, bodie
     { id: 'R2', title: 'title R2', body: 'second' }
   ])
 })
+
+// ── the home card's fold keeps families intact (board R17) ─────────────────────────────────────
+import { familyGroups, cardRows } from './build-board.mjs'
+const Q = (id, family) => ({ id, title: 't ' + id, status: 'passed', family })
+test('familyGroups: loose requirements first under no family, then each family in prd order', () => {
+  const s = {
+    reqs: [Q('R1', null), Q('R2', '1'), Q('R3', '1'), Q('R4', '2')],
+    families: [{ n: '1', name: 'A', gloss: 'g', heading: '1 · A — g', ids: ['R2', 'R3'] }, { n: '2', name: 'B', gloss: '', heading: '2 · B', ids: ['R4'] }]
+  }
+  assert.deepEqual(familyGroups(s).map(g => [g.family && g.family.name, g.reqs.map(r => r.id)]),
+    [[null, ['R1']], ['A', ['R2', 'R3']], ['B', ['R4']]])
+  assert.deepEqual(familyGroups({ reqs: [Q('R1', null)], families: [] }).map(g => [g.family, g.reqs.length]), [[null, 1]])
+  assert.deepEqual(familyGroups({ reqs: [], families: [] }), [])
+})
+test('cardRows: no families → the first five rows and "… N more", exactly as before', () => {
+  const reqs = ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7'].map(id => Q(id, null))
+  const rows = cardRows({ reqs, families: [] })
+  assert.deepEqual(rows.map(x => x.kind === 'req' ? x.r.id : x.kind + ':' + x.n), ['R1', 'R2', 'R3', 'R4', 'R5', 'more:2'])
+  assert.equal(cardRows({ reqs: reqs.slice(0, 5), families: [] }).filter(x => x.kind === 'more').length, 0)
+})
+test('cardRows: the fold cuts only at a family boundary — a family the cap lands inside is shown whole', () => {
+  const fams = [
+    { n: '1', name: 'A', gloss: '', heading: '1 · A', ids: ['R1', 'R2', 'R3'] },
+    { n: '2', name: 'B', gloss: '', heading: '2 · B', ids: ['R4', 'R5', 'R6'] },
+    { n: '3', name: 'C', gloss: '', heading: '3 · C', ids: ['R7'] }
+  ]
+  const reqs = fams.flatMap(f => f.ids.map(id => Q(id, f.n)))
+  const rows = cardRows({ reqs, families: fams })
+  assert.deepEqual(rows.map(x => x.kind === 'req' ? x.r.id : x.kind === 'fam' ? 'fam:' + x.f.name : x.kind + ':' + x.n),
+    ['fam:A', 'R1', 'R2', 'R3', 'fam:B', 'R4', 'R5', 'R6', 'more:1'])
+})

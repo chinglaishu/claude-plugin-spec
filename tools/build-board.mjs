@@ -137,6 +137,45 @@ export const latestStill = (s, runs) => {
 // the latest-run still, captioned. The pill keeps R4's signed words — "N / M proven" — where the
 // mockup wrote "passed": the requirement text owns that word, not the drawing.
 const CARD_MARK = { passed: '✓', changed: '◈', failed: '✗', 'not-reached': '◌', untested: '○' }
+// FAMILIES (board R17, the human 2026-08-23): a screen's requirements grouped by the prd's `###`
+// headings — the loose ones (before any heading) first under a null family, then each family in
+// prd order with its requirements in THEIR prd order. Pure, unit-tested (tools/prd-families.test.mjs);
+// a screen with no headings is one null group, so every consumer renders exactly as before.
+export const familyGroups = s => {
+  const fams = s.families || []
+  const byId = new Map((s.reqs || []).map(r => [r.id, r]))
+  const loose = (s.reqs || []).filter(r => r.family == null)
+  const groups = loose.length ? [{ family: null, reqs: loose }] : []
+  for (const f of fams) {
+    const reqs = f.ids.map(id => byId.get(id)).filter(Boolean)
+    if (reqs.length) groups.push({ family: f, reqs })
+  }
+  return groups
+}
+// The card's rows under a cap of five, as a plan: {kind:'fam', f} · {kind:'req', r} · {kind:'more', n}.
+// With families the fold cuts ONLY at a family boundary — the family the cap lands inside is shown
+// whole (never a header with half its requirements), and "… N more" counts the requirements left.
+export const cardRows = (s, cap = 5) => {
+  const groups = familyGroups(s)
+  const rows = []
+  let shown = 0
+  const total = (s.reqs || []).length
+  for (const g of groups) {
+    if (shown >= cap) break
+    if (g.family) {
+      rows.push({ kind: 'fam', f: g.family })
+      for (const r of g.reqs) { rows.push({ kind: 'req', r }); shown++ }
+    } else {
+      for (const r of g.reqs) { if (shown >= cap) break; rows.push({ kind: 'req', r }); shown++ }
+    }
+  }
+  if (shown < total) rows.push({ kind: 'more', n: total - shown })
+  return rows
+}
+// A family header row — the reference catalogue's `.grp` shape (mono uppercase eyebrow: the number
+// and name bold, the gloss after the em-dash muted, a hair rule beneath), carried by the row's class.
+const famRow = (f, tag = 'li') =>
+  `<${tag} class="fam"><span class="fnum">${esc(f.n == null ? '' : f.n + ' · ')}</span><b class="fname">${esc(f.name)}</b>${f.gloss ? `<span class="fgloss"> — ${esc(f.gloss)}</span>` : ''}</${tag}>`
 const card = (s, i, runs) => {
   const M = s.reqs.length
   const proven = s.reqs.filter(r => r.state === 'proven').length
@@ -150,14 +189,15 @@ const card = (s, i, runs) => {
   // the evidence fallback is served off the same allowlisted spec/** path; hashed like screen.png
   const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}`
     : (existsSync(join(ROOT, still.src)) ? `${still.src}?h=${shotHash(join(ROOT, still.src))}` : null))
-  const rows = s.reqs.slice(0, 5).map(r =>
-    `<li><span class="id">${esc(r.id)}</span><span class="mk ${esc(r.status)}">${CARD_MARK[r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(r.title)}</span></li>`).join('')
+  const rows = cardRows(s).map(x => x.kind === 'fam' ? famRow(x.f)
+    : x.kind === 'more' ? `<li class="more">… ${x.n} more</li>`
+      : `<li><span class="id">${esc(x.r.id)}</span><span class="mk ${esc(x.r.status)}">${CARD_MARK[x.r.status] || CARD_MARK.untested}</span><span class="rtl">${esc(x.r.title)}</span></li>`).join('')
   return `
 <div class="card" data-screen="${esc(s.name)}" data-i="${i}" data-q="${esc(q)}">
   <div class="cmain">
     <div class="cname"><h3 class="nm">${esc(s.title)}</h3></div>
     <div class="croute">${esc(s.route)}</div>
-    <ul class="rl">${rows}${s.reqs.length > 5 ? `<li class="more">… ${s.reqs.length - 5} more</li>` : ''}</ul>
+    <ul class="rl">${rows}</ul>
   </div>
   <div class="cright">
     <div class="metrics">
@@ -336,7 +376,10 @@ const reqRow = (r, s) => {
   // data-beats carries the beat COUNT (0 = prose-only) — the Focus media pane derives its D2
   // default from status × beats, and the List row shows the count, so it is baked once here.
   const beats = r.behavior ? r.behavior.beats.length : 0
-  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${evAttrs(s, r)}>
+  // data-fam: the requirement's family NAME (board R17) — the Focus counter reads `<family> · n of N`
+  // off the baked row; absent on a screen with no families, so the counter reads as before
+  const fam = (s.families || []).find(f => f.ids.includes(r.id))
+  return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
     <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r)}${renderBody(prose)}${covers}</div>
   </div>`
@@ -410,7 +453,8 @@ const gapStrip = s => {
 // run time, available at build time so a never-run test still shows its kind.
 const listPane = (s, kindOf) => `<div class="gridview" hidden>
   ${gapStrip(s)}
-  ${s.reqs.map(r => {
+  ${familyGroups(s).flatMap(g => [...(g.family ? [g.family] : []), ...g.reqs]).map(r => {
+    if (r.ids) return famRow(r, 'div').replace('class="fam"', 'class="lst-fam"')   // a family header row
     const [, , label] = GRID_CHIP[r.status] || GRID_CHIP.untested
     const beats = r.behavior ? r.behavior.beats.length : 0
     const cur = pickProofTest(r)
@@ -425,6 +469,22 @@ const listPane = (s, kindOf) => `<div class="gridview" hidden>
     </div>`
   }).join('')}
 </div>`
+
+// THE MAP (board R17): a collapsible jump-map at the top of the detail, one row per family (the
+// reference catalogue's `.tocg` / `.tl` / `.tocit` / `.tdot` shape), every requirement as `id title`
+// behind its derived mark, each a deep-link to its Focus page (#/<screen>/<rid> — the router's
+// existing sub-path). List and Focus SHARE it (argued in the task-9 report: collapsed it is one
+// 28px summary line, so Focus loses nothing; Flow and the composer hide it since neither pages
+// requirements). A screen with no families bakes NO map at all — it renders exactly as before. The
+// marks are the requirements' own (CARD_MARK), re-synced after a run by syncDerived: a family has
+// no state to store.
+const reqMap = s => {
+  if (!(s.families || []).length) return ''
+  const rows = familyGroups(s).map(g => `<div class="tocg"><span class="tl">${g.family ? esc(g.family.heading) : ''}</span>${
+    g.reqs.map(r => `<a class="tocit" href="#/${esc(s.name)}/${esc(r.id)}" data-r="${esc(r.id)}"><span class="tdot ${esc(r.status)}">${CARD_MARK[r.status] || CARD_MARK.untested}</span><span class="tid">${esc(r.id)}</span>${esc(r.title)}</a>`).join('')
+  }</div>`).join('')
+  return `<details class="reqmap"><summary>The map — click to jump</summary>${rows}</details>`
+}
 
 // One PLANNED story step, baked from the test's definition (board R10) so it shows before the test
 // has run. It renders "pending" (a hollow mark); loadRuns overlays the recorded outcome — passed,
@@ -1477,6 +1537,7 @@ export function build () {
     <button class="close btn">Close</button>
   </div>
   <div class="dtscroll">
+    ${reqMap(s)}
     <div class="cols" style="display:none">
       ${reqPane(s)}
       ${testPane(s)}
@@ -1621,6 +1682,17 @@ export function build () {
   .rl li .mk.passed { color:var(--koke); } .rl li .mk.changed { color:var(--ai); }
   .rl li .mk.failed { color:var(--bengara); } .rl li .mk.not-reached { color:var(--yamabuki); }
   .rl li.more { color:var(--ink-4); font-size:var(--t-xs); padding-left:calc(24px + 14px + 18px); }
+  /* a FAMILY header row (board R17) — the reference catalogue's .grp shape scaled to the card: a
+     mono uppercase eyebrow, the number muted, the name bold in ink, the gloss muted after the
+     em-dash, a hair rule beneath; the row itself has no mark, no id — it is structure, not a
+     requirement. Contrast on card: --ink-3 6.42:1, --ink 16.79:1 (measured, the rule above). */
+  .rl li.fam { display:block; border-top:0; border-bottom:1px solid var(--hair); margin-top:var(--s2); padding:6px 0 4px;
+    font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); white-space:nowrap;
+    overflow:hidden; text-overflow:ellipsis; }
+  .rl li.fam:first-child { margin-top:0; }
+  .rl li.fam + li { border-top:0; }
+  .rl li.fam .fname { color:var(--ink); font-weight:600; }
+  .rl li.fam .fgloss { color:var(--ink-3); }
   #home .card .cright { display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
   #home .card .metrics { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
   #home .card .pcount { border-radius:999px; padding:2px 10px; }
@@ -1967,6 +2039,9 @@ export function build () {
      muted so it reads as "there is more between" without competing with the numbered dots. */
   .fdotgap { flex:none; align-self:center; color:var(--ink-3); font:var(--t-xs) var(--mono);
     padding:0 1px; user-select:none; }
+  /* the thin gap between two FAMILIES' dots (board R17) — a hair-rule tick, inert, so the dots
+     read grouped without a second row of chrome */
+  .fdotfam { flex:none; align-self:center; width:1px; height:14px; background:var(--hair-2); margin:0 var(--s1); }
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
      ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
      Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */
@@ -2003,6 +2078,36 @@ export function build () {
   .lst-head { display:flex; align-items:center; gap:var(--s3); width:100%; padding:var(--s3) var(--s4);
     border:0; background:transparent; cursor:pointer; text-align:left; font:inherit; }
   .lst-head:hover { background:var(--canvas); }
+  /* the List's FAMILY header row (board R17) — the same .grp eyebrow as the card, between the cards */
+  .lst-fam { flex:none; margin:var(--s3) 0 0; padding:0 var(--s1) 6px; border-bottom:1px solid var(--hair);
+    font:var(--t-xs) var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3); }
+  .lst-fam:first-child { margin-top:0; }
+  .lst-fam .fname { color:var(--ink); font-weight:600; }
+  .lst-fam .fgloss { color:var(--ink-3); }
+  /* THE MAP (board R17): a collapsible jump-map at the top of the detail scroll — the reference's
+     .toc/.tocg/.tl/.tocit/.tdot, in the house tokens. Shared by Focus and List (hidden under Flow /
+     compose by setView). Closed it is one summary line; open, one row per family: the family's
+     heading as a mono eyebrow, then a pill per requirement — its derived mark (the card's glyphs in
+     their hues, hue never alone), its id in mono, its title. Hover: a darker hair border, the
+     text unchanged (ink on paper 16.79:1 at rest and hover; the marks as on the card). */
+  .reqmap { flex:none; width:100%; max-width:1160px; margin:0 auto var(--s3); background:var(--card);
+    border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s2) var(--s4); }
+  .reqmap > summary { cursor:pointer; list-style:none; font:var(--t-micro) var(--mono); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--ink-3); padding:2px 0; user-select:none; }
+  .reqmap > summary::-webkit-details-marker { display:none; }
+  .reqmap > summary::before { content:'›'; display:inline-block; width:12px; color:var(--ink-4); transition:transform .12s; }
+  .reqmap[open] > summary::before { transform:rotate(90deg); }
+  .reqmap .tocg { display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; margin:7px 0; }
+  .reqmap .tocg .tl { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
+    min-width:180px; flex:none; }
+  .reqmap .tocit { display:inline-flex; gap:6px; align-items:center; font-size:var(--t-xs); padding:2px 10px;
+    border:1px solid var(--hair); border-radius:999px; background:var(--paper); color:var(--ink); text-decoration:none;
+    white-space:nowrap; max-width:100%; }
+  .reqmap .tocit .tid { font-family:var(--mono); color:var(--ink-3); }
+  .reqmap .tocit:hover { border-color:var(--hair-2); background:var(--card); }
+  .reqmap .tdot { flex:none; width:12px; text-align:center; font-size:var(--t-xs); color:var(--ink-4); }
+  .reqmap .tdot.passed { color:var(--koke); } .reqmap .tdot.changed { color:var(--ai); }
+  .reqmap .tdot.failed { color:var(--bengara); } .reqmap .tdot.not-reached { color:var(--yamabuki); }
   .lst-head .chev { color:var(--ink-4); font-size:var(--t-micro); flex:none; width:12px; transition:transform .12s; }
   .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
   .lst-head .lid { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; flex:none; }

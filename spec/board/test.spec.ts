@@ -1822,3 +1822,135 @@ test('Home, the detail, then a finished run refreshes it in place — composed',
     await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, state) })
   })
 })
+
+// R17 — requirement FAMILIES (the human, 2026-08-23): `### n · family — gloss` lines between a
+// prd's sections group the requirements that follow. The oracle here is the prd.md itself, read
+// INDEPENDENTLY of the parser under test (a plain line scan for `###` and `## Rn` in document
+// order) — an authored fact, so no family name, count or position is pinned as a literal. Families
+// carry no state: every mark the map shows is derived from the requirement it names.
+import { rmSync } from 'node:fs'
+import { makeDocumentScreen } from '../_fixture'
+const prdFamilies = (text: string) => {
+  const fams: Array<{ heading: string, name: string, ids: string[] }> = []
+  let cur: { heading: string, name: string, ids: string[] } | null = null
+  const loose: string[] = []
+  for (const line of text.split('\n')) {
+    const f = /^###\s+(.+)$/.exec(line)
+    if (f) { cur = { heading: f[1].trim(), name: f[1].replace(/^\S+\s+·\s+/, '').replace(/\s+—.*$/, '').trim(), ids: [] }; fams.push(cur); continue }
+    const r = /^##\s+(R\d+)\s+—/.exec(line)
+    if (r) (cur ? cur.ids : loose).push(r[1])
+  }
+  return { fams, loose, ids: [...loose, ...fams.flatMap(f => f.ids)] }
+}
+const MARKS = ['✓', '◈', '✗', '◌', '○']
+
+test('Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the jump-map', async ({ page }) => {
+  await coverReqs('R17')
+  const prd = prdFamilies(readFileSync('spec/board/prd.md', 'utf8'))
+  expect(prd.fams.length, 'the board prd must carry families for this test to mean anything').toBeGreaterThan(1)
+  const card = page.locator('#home .card[data-screen="board"]')
+
+  // the HOME CARD: family header rows between the requirement rows, in prd order, each shown
+  // family complete (the "… N more" fold cuts only at a family boundary)
+  await checkReq('R17', async () => {
+    const heads = card.locator('.rl .fam')
+    await expect(heads.first()).toBeVisible()
+    const shown = await heads.allTextContents()
+    expect(shown.map(s => s.trim()), 'card families read in prd order').toEqual(prd.fams.slice(0, shown.length).map(f => f.heading))
+    // walk the rows: under each header, exactly its ids in order — no family cut in half
+    const seq = await card.locator('.rl > li').evaluateAll(els => els.map(e =>
+      e.classList.contains('fam') ? 'fam' : e.classList.contains('more') ? 'more' : (e.querySelector('.id')?.textContent || '')))
+    const want: string[] = []
+    for (const f of prd.fams.slice(0, shown.length)) { want.push('fam'); want.push(...f.ids) }
+    const rows = seq.filter(x => x !== 'more')
+    expect(rows, 'every shown family carries all its requirements, in order').toEqual(want)
+    if (shown.length < prd.fams.length) {
+      const rest = prd.ids.length - rows.filter(x => x !== 'fam').length
+      await expect(card.locator('.rl .more')).toHaveText('… ' + rest + ' more')
+    }
+  })
+
+  // the LIST view: the same header rows over their rows
+  await checkReq('R17', async () => {
+    await page.goto('/#/board/grid')
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await expect(dt.locator('.gridview')).toBeVisible()
+    await expect(dt.locator('.gridview .lst-fam')).toHaveText(prd.fams.map(f => f.heading))
+    const seq = await dt.locator('.gridview > .lst-fam, .gridview > .lst-card').evaluateAll(els => els.map(e =>
+      e.classList.contains('lst-fam') ? 'fam' : (e.getAttribute('data-r') || '')))
+    const want: string[] = [...prd.loose]
+    for (const f of prd.fams) { want.push('fam'); want.push(...f.ids) }
+    expect(seq).toEqual(want)
+  })
+
+  // FOCUS: the counter reads `<family> · n of N`, and the pager groups its dots by family
+  await checkReq('R17', async () => {
+    const rid = 'R17'
+    const fam = prd.fams.find(f => f.ids.includes(rid))!
+    const pos = prd.ids.indexOf(rid) + 1
+    await page.goto('/#/board/' + rid)
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await expect(dt.locator('.focusov .fid')).toHaveText(rid)
+    await expect(dt.locator('.focusov .fcount')).toHaveText(fam.name + ' · ' + pos + ' of ' + prd.ids.length)
+    // one thin gap per family boundary among the dots the pager shows (dots are windowed past 10:
+    // count the boundaries between CONSECUTIVE shown dots)
+    const dotIdx = (await dt.locator('.dtfoot .fdot').allTextContents()).map(Number)
+    const famOf = (n: number) => prd.fams.findIndex(f => f.ids.includes(prd.ids[n - 1]))
+    let bounds = 0
+    for (let k = 1; k < dotIdx.length; k++) if (dotIdx[k] - dotIdx[k - 1] === 1 && famOf(dotIdx[k]) !== famOf(dotIdx[k - 1])) bounds++
+    await expect(dt.locator('.dtfoot .fdotfam')).toHaveCount(bounds)
+    expect(bounds, 'the pager must show at least one family boundary here').toBeGreaterThan(0)
+  })
+
+  // THE MAP: one column per family, one marked entry per requirement, a click jumps to its Focus page
+  await checkReq('R17', async () => {
+    await page.goto('/#/board')
+    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+    const map = dt.locator('.reqmap')
+    await expect(map).toBeVisible()
+    await expect(map.locator('.tocg')).toHaveCount(prd.fams.length + (prd.loose.length ? 1 : 0))
+    await expect(map.locator('.tocg .tl')).toHaveText(prd.fams.map(f => f.heading))
+    const items = map.locator('.tocit')
+    await expect(items).toHaveCount(prd.ids.length)
+    expect(await items.evaluateAll(els => els.map(e => e.getAttribute('data-r')))).toEqual(prd.ids)
+    const marks = await items.locator('.tdot').allTextContents()
+    expect(marks.length).toBe(prd.ids.length)
+    for (const m of marks) expect(MARKS, 'every entry carries a derived mark').toContain(m.trim())
+    // the mark is the requirement's own — derived from the baked row, never a family state
+    const r17mark = await dt.locator('.reqpane .req[data-r="R17"]').getAttribute('data-status')
+    await expect(map.locator('.tocit[data-r="R17"] .tdot')).toHaveClass(new RegExp('\\b' + r17mark + '\\b'))
+    await map.locator('summary').click()
+    await map.locator('.tocit[data-r="R17"]').click()
+    await expect(dt.locator('.focusov .fid')).toHaveText('R17')
+    await expect(page).toHaveURL(/#\/board\/R17$/)
+  })
+
+  // a screen with NO families renders exactly as today — no header element anywhere, no map,
+  // the counter a bare `n of N`
+  await checkReq('R17', async () => {
+    const name = makeDocumentScreen('plainfolk')
+    try {
+      const stubCard = page.locator('#home .card[data-screen="' + name + '"]')
+      await expect(async () => {
+        build()
+        await page.goto('/')
+        await expect(stubCard).toHaveCount(1)
+      }).toPass({ timeout: 15000 })
+      await expect(stubCard.locator('.rl li')).toHaveCount(1)
+      await expect(stubCard.locator('.rl .fam')).toHaveCount(0)
+      const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+      await expect(async () => {
+        build()
+        await page.goto('/#/' + name)
+        await expect(dt.locator('.focusov')).toBeVisible()
+      }).toPass({ timeout: 15000 })
+      await expect(dt.locator('.focusov .fcount')).toHaveText('1 of 1')
+      await expect(dt.locator('.reqmap')).toHaveCount(0)
+      await expect(dt.locator('.gridview .lst-fam')).toHaveCount(0)
+      await expect(dt.locator('.dtfoot .fdotfam')).toHaveCount(0)
+    } finally {
+      rmSync('spec/' + name, { recursive: true, force: true })
+      build()
+    }
+  })
+})
