@@ -40,6 +40,11 @@ export const FILES = [
   // vendored store cannot load without it (the same guard-caught class of miss).
   'tools/compose.mjs',
   'tools/board/client.js',
+  // the gif-mode frame-stepper's pure timing math (Task 13) — read verbatim into board.html by
+  // build-board.mjs exactly like client.js, so a scaffolded project's build cannot emit the board
+  // without it. NOT caught by the every-relative-import-is-vendored guard (nothing imports it —
+  // it is inlined), so it must be listed directly.
+  'tools/board/stepper.js',
   'tools/serve-board.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs
   // is the pure cue/subtitle/timing logic, narrate-run.mjs the piper+ffmpeg shell. Vendored so a

@@ -343,23 +343,27 @@ const runAll = name =>
 // it". That line was removed from reqRow below — the E2E column already shows the flow — but the
 // comment was left behind, and two board tests then asserted a `.covers .ctag` chip that nothing
 // renders. A comment describing behaviour the code dropped is how a dead test survives review.)
-// The D2 EVIDENCE the fold carries for this requirement (Task 15: before/after frames, an optional
-// looping clip, folded into spec/_results-index.json from CLI runs too) — baked onto the source row
-// as data-ev-* attributes so the Focus media pane (client.js) can render it without a fetch. Only a
-// path whose FILE exists is baked (absence of ffmpeg output — a null or missing clip — is never an
-// error, the frames alone stand), and each carries a content-hash cache-buster because the harvest
-// overwrites in place (the same ?h= discipline as screen.png).
+// The D2 EVIDENCE the fold carries for this requirement (Task 15: the before/after frame pair,
+// folded into spec/_results-index.json from CLI runs too) — baked onto the source row as
+// data-ev-* attributes so the Focus media pane (client.js) can render it without a fetch. Only a
+// path whose FILE exists is baked (absence of a frame is never an error), and each carries a
+// content-hash cache-buster because the harvest overwrites in place (the same ?h= discipline as
+// screen.png). The WINDOW — the proves-step's span in the run's recording — is baked as
+// `data-ev-window="from:to"` (data, not a path — no file check): it is what lets the gif-mode
+// frame-stepper (Task 13) hold each frame for its TRUE relative duration. A legacy entry's clip
+// fields are simply not baked — the webp retired with the stepper.
 const evAttrs = (s, r) => {
   const e = s.run && s.run.evidence && s.run.evidence[r.id]
   if (!e) return ''
   let out = ''
-  const vars = e.clipVariants || {}
-  for (const [k, p] of [['before', e.before], ['after', e.after], ['clip', e.clip],
-    ['clip15', vars['1.5x']], ['clip2', vars['2x']]]) {
+  for (const [k, p] of [['before', e.before], ['after', e.after]]) {
     if (!p) continue
     const abs = join(ROOT, String(p))
     if (!existsSync(abs)) continue
     out += ` data-ev-${k}="${esc(String(p) + '?h=' + shotHash(abs))}"`
+  }
+  if (out && e.window && typeof e.window.from === 'number' && typeof e.window.to === 'number') {
+    out += ` data-ev-window="${esc(e.window.from + ':' + e.window.to)}"`
   }
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
@@ -1571,6 +1575,10 @@ export function build () {
     }
   }
   const clientJs = readFileSync(join(ROOT, 'tools', 'board', 'client.js'), 'utf8')
+  // the frame-stepper's pure timing math (Task 13) — a second verbatim real-JS file, emitted in
+  // its own <script> BEFORE the client (which reads globalThis.SBStepper); node --test reaches the
+  // same bytes directly (tools/stepper.test.mjs), so the pace the board plays is the pace tested
+  const stepperJs = readFileSync(join(ROOT, 'tools', 'board', 'stepper.js'), 'utf8')
 
   const html = `<!doctype html>
 <meta charset="utf-8">
@@ -1933,12 +1941,14 @@ export function build () {
   .medbar button + button { border-left:1px solid var(--hair); }
   .medbar button:hover { color:var(--ink); }
   .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
-  /* Task 11 — the per-pane play-speed button (the reference catalogue's pspd): a mono label
-     cycling 1× → 1.5× → 2×, session-scoped (never stored). ink-3 on paper 6.42:1, hover ink. */
-  .pspd { border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper);
+  /* Task 13 — the per-pane play-speed DROPDOWN (replacing Task 11's cycle button): a native
+     <select>, 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, mono, session-scoped (never stored) — the
+     keyboard reaches it for free. ink-3 on paper 6.42:1, hover/focus ink. */
+  select.pspd { appearance:none; -webkit-appearance:none;
+    border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper);
     color:var(--ink-3); font:var(--t-micro) var(--mono); font-weight:500; padding:4px 8px;
-    min-width:40px; cursor:pointer; flex:none; }
-  .pspd:hover { border-color:var(--ink-4); color:var(--ink); }
+    min-width:48px; cursor:pointer; flex:none; text-align:center; }
+  select.pspd:hover, select.pspd:focus-visible { border-color:var(--ink-4); color:var(--ink); }
   .fmbar .pspd, .fschem .figcap .pspd { margin-left:auto; }
   .fmbar .pspd ~ .medbar, .fschem .figcap .pspd ~ .medbar { margin-left:var(--s2); }
   .fschem .figcap .beatdots ~ .pspd { margin-left:var(--s2); }
@@ -1961,7 +1971,20 @@ export function build () {
   .fmpanel .xva { border:1px solid var(--bengara-line); background:var(--bengara-tint);
     border-radius:var(--r-sm); margin:0 var(--s3) var(--s3); padding:var(--s2) var(--s3);
     font:var(--t-xs)/1.7 var(--mono); color:var(--ink-2); white-space:pre-wrap; }
-  .fmpanel .fclip { display:block; width:100%; height:auto; cursor:zoom-in; }
+  /* gif mode is the FRAME-STEPPER (Task 13): the harvested frames stacked, one on show, over a
+     slim bar of EXACT dots + the mono n / N count. Dot states carry a non-hue mark beside the
+     hue (current = ai fill + offset ring, seen = ink-4 fill, upcoming = hollow ink-4 ring), and
+     the count spells the position out — hue never alone. */
+  .fmpanel .fsteps img { display:none; width:100%; height:auto; cursor:zoom-in; }
+  .fmpanel .fsteps img.on { display:block; }
+  .fmpanel .fstepbar { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
+    border-top:1px solid var(--hair); background:var(--paper); }
+  .fstepbar .pdots { display:inline-flex; gap:6px; align-items:center; }
+  .fstepbar .pd { width:9px; height:9px; padding:0; border-radius:999px; border:1px solid var(--ink-4);
+    background:none; cursor:pointer; flex:none; }
+  .fstepbar .pd.seen { background:var(--ink-4); border-color:var(--ink-4); }
+  .fstepbar .pd.cur { background:var(--ai); border-color:var(--ai); outline:1px solid var(--ai); outline-offset:2px; }
+  .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
   .fmpanel .frecwrap { padding:var(--s3); }
   /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */
   .fmbody .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -3546,6 +3569,7 @@ ${howView(ctaAction)}
 ${detail}
 
 <script>window.__BOARD__ = ${islandJson(BOARD_DATA)}</script>
+<script>${stepperJs}</script>
 <script>${clientJs}</script>
 `
 

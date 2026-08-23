@@ -310,9 +310,14 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(strip.locator('.fcell img')).toHaveCount(2)
     await expect(strip.locator('.fcap').nth(0)).toContainText('given')
     await expect(strip.locator('.fcap').nth(1)).toContainText('beat')
-    // no clip was cut (no ffmpeg output in the index) — the gif mode says so honestly, never errors
+    // gif mode is the FRAME-STEPPER (Task 13): no clip file exists or is needed — the harvested
+    // pair itself plays as frames, with an EXACT dot per frame and the count written out. This
+    // entry carries no window (an old-harvest shape), so the equal-holds fallback paces it.
     await media.locator('.medbar button[data-m="clip"]').click()
-    await expect(media.locator('.fmpanel[data-m="clip"]')).toContainText('stills still stand')
+    const stepper = media.locator('.fmpanel[data-m="clip"]')
+    await expect(stepper.locator('.fsteps img')).toHaveCount(2)
+    await expect(stepper.locator('.pdots .pd')).toHaveCount(2)
+    await expect(stepper.locator('.fstepn')).toHaveText(/^\d \/ 2$/)
     await media.locator('.medbar button[data-m="frames"]').click()
     await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
 

@@ -174,6 +174,12 @@ const B = window.__BOARD__ || {}
   // closing the detail also tears down an open focus reader, returning every borrowed node to the
   // baked source panes (.cols stays hidden — it is the data source, not a view; board R13 2026-08-18)
   function closeFocus () {
+    // the gif-mode frame-stepper's chained timer leaves with its reader (Task 13) — BOTH reader
+    // kinds hold a media pane, so stop any stepper before the nodes go; the tick's isConnected
+    // guard is only the backstop, never the plan
+    for (const p of document.querySelectorAll('.focusov .fmpanel[data-m="clip"], .lst-card.open .fmpanel[data-m="clip"]')) {
+      if (p._stop) p._stop()
+    }
     for (const o of document.querySelectorAll('.focusov')) {
       if (o._onKey) { document.removeEventListener('keydown', o._onKey); o._onKey = null }   // the ← → keys leave with the reader (A-4)
       if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
@@ -397,9 +403,12 @@ const B = window.__BOARD__ || {}
       ev: {
         before: node.getAttribute('data-ev-before') || '',
         after: node.getAttribute('data-ev-after') || '',
-        clip: node.getAttribute('data-ev-clip') || '',
-        clip15: node.getAttribute('data-ev-clip15') || '',
-        clip2: node.getAttribute('data-ev-clip2') || '',
+        // the harvest window ("from:to", ms into the run's recording) — the frame-stepper's
+        // timing base (Task 13); absent on an old harvest, and the stepper says so with equal holds
+        window: (function () {
+          const m = /^(\d+):(\d+)$/.exec(node.getAttribute('data-ev-window') || '')
+          return m ? { from: +m[1], to: +m[2] } : null
+        })(),
         at: node.getAttribute('data-ev-at') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
@@ -603,28 +612,32 @@ const B = window.__BOARD__ || {}
     return { page: page, restore: restore, id: r.id }
   }
 
-  // PLAY SPEED (Task 11, the reference catalogue's per-player pspd): one small mono button per
-  // pane cycling 1× → 1.5× → 2×. SESSION-scoped on purpose (module state, never storage): readers
-  // are rebuilt on every fold (close-fold-reopen), so the chosen pace must survive a rebuild — but
-  // a preference that quietly persisted across visits would make tomorrow's gif play fast with no
-  // cue why. Two panes, two states: the media pane (gif variant src swap / video playbackRate) and
-  // the schematic pane (--spd on its wrapper — viz emits every duration as calc(<X>s/var(--spd,1))
-  // and the stills CSS divides the parked delay by the SAME var, so a still shows the same frame
-  // at every speed). A global "all players" control is deliberately absent: specboard shows one
-  // player per pane, so per-pane IS the reference's control, honestly scoped.
-  const SPDS = [1, 1.5, 2]
-  const spdLabel = function (v) { return v === 1 ? '1×' : (v === 1.5 ? '1.5×' : '2×') }
+  // PLAY SPEED (Task 13, superseding Task 11's cycle button): one design-system <select> per pane
+  // — 0.25× · 0.5× · 1× · 1.5× · 2× · 4× (the human's chosen range; a cycle button cannot carry
+  // six stops, and a native select is keyboard-reachable for free). SESSION-scoped on purpose
+  // (module state, never storage): readers are rebuilt on every fold (close-fold-reopen), so the
+  // chosen pace must survive a rebuild — but a preference that quietly persisted across visits
+  // would make tomorrow's proof play fast with no cue why. Two panes, two states: the media pane
+  // (the gif-mode frame-stepper's holds / video playbackRate — the native rate covers the whole
+  // range) and the schematic pane (--spd on its wrapper — viz emits every duration as
+  // calc(<X>s/var(--spd,1)), which takes any factor, and the stills CSS divides the parked delay
+  // by the SAME var, so a still shows the same frame at every speed). A global "all players"
+  // control is deliberately absent: specboard shows one player per pane, so per-pane IS the
+  // reference's control, honestly scoped.
+  const SPDS = [0.25, 0.5, 1, 1.5, 2, 4]
+  const spdLabel = function (v) { return v + '×' }
   let MEDIA_SPD = 1
   let SCHEM_SPD = 1
-  function spdButton (get, set) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'pspd'
-    b.title = 'play speed'
-    b.textContent = spdLabel(get())
-    b.addEventListener('click', function () {
-      set(SPDS[(SPDS.indexOf(get()) + 1) % SPDS.length])
-      b.textContent = spdLabel(get())
+  function spdSelect (get, set) {
+    const s = document.createElement('select'); s.className = 'pspd'
+    s.title = 'play speed'; s.setAttribute('aria-label', 'play speed')
+    SPDS.forEach(function (v) {
+      const o = document.createElement('option'); o.value = String(v); o.textContent = spdLabel(v)
+      s.appendChild(o)
     })
-    return b
+    s.value = String(get())
+    s.addEventListener('change', function () { set(parseFloat(s.value) || 1) })
+    return s
   }
 
   // The SCHEMATIC slot (requirement schematics spec 2026-08-18; task 4): the AUTHORED-side
@@ -679,7 +692,7 @@ const B = window.__BOARD__ || {}
         })
         mb.appendChild(b)
       })
-      const sb = spdButton(function () { return SCHEM_SPD }, function (nv) {
+      const sb = spdSelect(function () { return SCHEM_SPD }, function (nv) {
         SCHEM_SPD = nv
         wrap.style.setProperty('--spd', String(nv))
       })
@@ -734,8 +747,9 @@ const B = window.__BOARD__ || {}
   //   changed         → the last proof's media under a pinned-era watermark
   //   untested / not-reached → no media: "no proof yet · ＋ write the failing test"
   // — under a stills · gif · video toolbar. The override is a client-side preference (localStorage),
-  // never stored in the tree; the gif renders only when the fold cut a clip file (absence of ffmpeg
-  // output is never an error — the stills still stand).
+  // never stored in the tree; gif mode is the frame-stepper (Task 13) — it plays the harvested
+  // frames themselves, so it needs no cut file at all (a requirement with no frames yet says so
+  // honestly).
   function buildMedia (dt, r, primary, move) {
     const box = document.createElement('div'); box.className = 'fmedia'
     const st = r.status
@@ -776,9 +790,9 @@ const B = window.__BOARD__ || {}
       // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
       (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
     bar.appendChild(lab)
-    // the pane's play speed (Task 11): applies to the ACTIVE mode — gif src swap / video
-    // playbackRate; stills have no pace, the choice simply stands for the other modes
-    const sb = spdButton(function () { return MEDIA_SPD }, function (nv) { MEDIA_SPD = nv; applySpd() })
+    // the pane's play speed (Task 13's dropdown): applies to the ACTIVE mode — the frame-stepper's
+    // holds / video playbackRate; stills have no pace, the choice simply stands for the other modes
+    const sb = spdSelect(function () { return MEDIA_SPD }, function (nv) { MEDIA_SPD = nv; applySpd() })
     bar.appendChild(sb)
     const mb = document.createElement('span'); mb.className = 'medbar'
     const modes = st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video']
@@ -786,6 +800,8 @@ const B = window.__BOARD__ || {}
     const apply = function (m) {
       ;[].slice.call(mb.children).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m) })
       Object.keys(panels).forEach(function (k) { panels[k].hidden = k !== m })
+      // the stepper runs only while its panel shows — a mode switch stops the timer, never orphans it
+      if (panels.clip && panels.clip._stop && m !== 'clip') panels.clip._stop()
       applySpd()
     }
     modes.forEach(function (m) {
@@ -869,12 +885,73 @@ const B = window.__BOARD__ || {}
       }
     }
     panels.frames = pf; body.appendChild(pf)
-    // gif — the fold's looping clip, only where the file exists
+    // gif — the FRAME-STEPPER (Task 13, the human's choice over the retired webp: a webp exposes
+    // no current frame, so exact dots and 0.25×–4× pace need JS-held frames). It plays the
+    // harvested frames — before → each asserted-value frame (the newest record's, same source as
+    // the stills strip) → after — holding each for its TRUE relative duration
+    // (tools/board/stepper.js): the baked window anchors the ends, each record frame's `t` the
+    // middles; an old harvest with no usable timing falls back to equal holds, honestly. A dot
+    // click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest rule
+    // that guarantees the chosen frame its read time. Reduced-motion pauses the auto-advance
+    // exactly like the schematic's loop; the dots still step by hand. The timer is chained, stops
+    // with the panel (mode switch, applySpd re-arm) and with the reader (closeFocus calls _stop;
+    // the tick also self-stops when its panel leaves the DOM — never an orphan interval).
     if (modes.indexOf('clip') >= 0) {
       const pc = document.createElement('div'); pc.className = 'fmpanel'; pc.dataset.m = 'clip'
-      pc.innerHTML = r.ev.clip
-        ? '<img class="fclip" loading="lazy" src="' + eh(r.ev.clip) + '" alt="looping clip of the proof">'
-        : '<div class="noev"><span>no gif for this run — stills still stand</span></div>'
+      const sframes = []
+      if (r.ev.before) sframes.push({ src: r.ev.before, alt: 'given', anchor: r.ev.window ? r.ev.window.from : null })
+      runFrames().forEach(function (fr) {
+        sframes.push({ src: fr.img, alt: fr.cap || 'checked value', anchor: (typeof fr.t === 'number') ? fr.t : null })
+      })
+      if (r.ev.after) sframes.push({ src: r.ev.after, alt: 'after — the asserted value in frame', anchor: r.ev.window ? r.ev.window.to : null })
+      if (!sframes.length) {
+        pc.innerHTML = '<div class="noev"><span>no harvested frames for this proof yet — the next run captures them</span></div>'
+      } else {
+        const stage = document.createElement('div'); stage.className = 'fsteps'
+        sframes.forEach(function (f) {
+          const img = document.createElement('img'); img.loading = 'lazy'; img.src = f.src; img.alt = f.alt
+          stage.appendChild(img)
+        })
+        const sbar = document.createElement('div'); sbar.className = 'fstepbar'
+        const dots = document.createElement('span'); dots.className = 'pdots'
+        const lbl = document.createElement('span'); lbl.className = 'fstepn'
+        const holds = window.SBStepper.stepperHolds(sframes.map(function (f) { return f.anchor })).holds
+        const imgs = [].slice.call(stage.children)
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        let cur = 0
+        let timer = null
+        const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
+        const show = function (i) {
+          cur = i
+          imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
+          ;[].slice.call(dots.children).forEach(function (d, k) {
+            d.classList.toggle('cur', k === i)
+            d.classList.toggle('seen', k < i)
+          })
+          lbl.textContent = (i + 1) + ' / ' + imgs.length
+        }
+        const schedule = function () {
+          stop()
+          if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
+          timer = setTimeout(function () {
+            timer = null
+            if (!pc.isConnected || pc.hidden) return         // torn down or another mode fronted
+            show((cur + 1) % imgs.length)
+            schedule()
+          }, window.SBStepper.scaleHold(holds[cur], MEDIA_SPD))
+        }
+        sframes.forEach(function (_, j) {
+          const d = document.createElement('button'); d.type = 'button'; d.className = 'pd'
+          d.setAttribute('aria-label', 'frame ' + (j + 1) + ' of ' + sframes.length)
+          d.addEventListener('click', function () { show(j); schedule() })
+          dots.appendChild(d)
+        })
+        sbar.appendChild(dots); sbar.appendChild(lbl)
+        pc.appendChild(stage); pc.appendChild(sbar)
+        show(0)
+        pc._start = schedule
+        pc._stop = stop
+      }
       panels.clip = pc; body.appendChild(pc)
     }
     // video — the covering test's own recording, the wired .rec node moved in (undone on leave)
@@ -895,23 +972,17 @@ const B = window.__BOARD__ || {}
       }
       panels.video = pv; body.appendChild(pv)
     }
-    // PLAY SPEED, applied to whatever the pane is showing (Task 11). Gif: swap the img to the
-    // variant the harvest cut beside the 1× (an animated webp cannot be rate-controlled in the
-    // browser); a MISSING variant (an old harvest) falls back to the 1× and the button says 1× —
-    // honest, never a broken image. Video: rate the wired player; a player created later (the
-    // cover is clicked after the choice) is rated by the loadstart hook on its panel.
+    // PLAY SPEED, applied to whatever the pane is showing (Task 13). Gif: re-arm the stepper's
+    // pending hold, so the CURRENT frame's remaining time is re-derived at the new pace (holds
+    // scale by division — tools/board/stepper.js scaleHold). Video: rate the wired player across
+    // the native 0.25×–4× range; a player created later (the cover is clicked after the choice)
+    // is rated by the loadstart hook on its panel.
     const applySpd = function () {
-      if (mode === 'clip' && r.ev.clip) {
-        const want = MEDIA_SPD === 1.5 ? r.ev.clip15 : (MEDIA_SPD === 2 ? r.ev.clip2 : r.ev.clip)
-        if (!want && MEDIA_SPD !== 1) MEDIA_SPD = 1
-        const src = MEDIA_SPD === 1.5 ? r.ev.clip15 : (MEDIA_SPD === 2 ? r.ev.clip2 : r.ev.clip)
-        const img = panels.clip && panels.clip.querySelector('.fclip')
-        if (img && src && img.getAttribute('src') !== src) img.setAttribute('src', src)
-      }
+      if (panels.clip && !panels.clip.hidden && panels.clip._start) panels.clip._start()
       if (panels.video) {
         for (const v of panels.video.querySelectorAll('video')) v.playbackRate = MEDIA_SPD
       }
-      sb.textContent = spdLabel(MEDIA_SPD)
+      sb.value = String(MEDIA_SPD)
     }
     if (st === 'changed') {
       const wm = document.createElement('div'); wm.className = 'wmark'
@@ -2948,9 +3019,8 @@ const B = window.__BOARD__ || {}
       req.setAttribute('data-state', f.getAttribute('data-state') || '')
       req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
       // the media pane's inputs are derived too — a run re-harvests the evidence (new content
-      // hashes) and can add or drop the clip; a reopened reader must never show stale media
-      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-clip',
-        'data-ev-clip15', 'data-ev-clip2', 'data-ev-at']) {
+      // hashes, a fresh window); a reopened reader must never show stale media
+      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-window', 'data-ev-at']) {
         const v = f.getAttribute(a)
         if (v == null) req.removeAttribute(a); else req.setAttribute(a, v)
       }
