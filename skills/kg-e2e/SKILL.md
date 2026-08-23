@@ -35,8 +35,8 @@ it. What families *do* change is how you choose what a flow covers: a flow that 
 end ("Containers and roll-up": R3 → R4 → R5) reads on the board as that family going green together,
 which is the most legible proof a screen can show; declare that set with `coverReqs` so a flow that
 stops early leaves the rest of the family honestly not-reached. Do not split a family across two
-shallow tests to make its header fill in — the jump-map shows each requirement's own mark, so a
-half-proven family reads exactly as half-proven.
+shallow tests to make its header fill in — the jump-map (the Focus pager's dots, grouped under their
+family labels) shows each requirement's own mark, so a half-proven family reads exactly as half-proven.
 
 `checkReq` also **narrates the recording**: it paints a topbar into the page under test naming the
 requirement being proven (id + title from the PRD), turning red on a failing check — so the video

@@ -841,6 +841,19 @@ const B = window.__BOARD__ || {}
     return box
   }
 
+  // A pager dot's MARK and TITLE derive from its baked requirement row (data-status, .rt) — called
+  // by the Focus pager's render and again by syncDerived after a run, so the dots' marks are as
+  // fresh as the rows' chips without a rebuild. The glyphs are the card's (CARD_MARK in the builder).
+  const DOT_MARK = { passed: '✓', changed: '◈', failed: '✗', 'not-reached': '◌', untested: '○' }
+  function dotMark (d, rr) {
+    const st = rr.getAttribute('data-status') || 'untested'
+    const ttlEl = rr.querySelector('.rt')
+    const m = d.querySelector('.fm')
+    if (m) { m.className = 'fm ' + st; m.textContent = DOT_MARK[st] || DOT_MARK.untested }
+    d.setAttribute('data-status', st)
+    d.title = rr.getAttribute('data-r') + ' — ' + (ttlEl ? ttlEl.textContent : '') + ' · ' + st.replace('-', ' ')
+  }
+
   // The FOCUS VIEW: the overlay that pages focusBody through the screen's requirements.
   function buildFocus (dt, startId) {
     const scroll = dt.querySelector('.dtscroll')
@@ -881,40 +894,41 @@ const B = window.__BOARD__ || {}
 
       prev.disabled = cur === 0; next.disabled = cur === reqs.length - 1
       dots.innerHTML = ''
-      // first and last page ALWAYS reachable; a window slides around the current one; the gap to an
-      // anchor is an inert ellipsis — "1 … 4 5 6 7 8 … 13"
-      const N = reqs.length
-      const DMAX = 10
-      let idxs
-      if (N <= DMAX) {
-        idxs = []
-        for (let i = 0; i < N; i++) idxs.push(i)
-      } else {
-        const set = {}
-        set[0] = set[N - 1] = 1
-        for (let k = cur - 2; k <= cur + 2; k++) if (k >= 0 && k < N) set[k] = 1
-        idxs = Object.keys(set).map(Number).sort(function (a, b) { return a - b })
-      }
-      let prevIdx = -1
-      idxs.forEach(function (i) {
-        if (prevIdx >= 0 && i - prevIdx > 1) {
-          const gap = document.createElement('span'); gap.className = 'fdotgap'; gap.textContent = '…'
-          dots.appendChild(gap)
-        } else if (prevIdx >= 0 && (reqs[i].getAttribute('data-fam') || '') !== (reqs[prevIdx].getAttribute('data-fam') || '')) {
-          // a family boundary between two adjacent dots (board R17): a thin inert gap groups the
-          // dots by family — structure, not a page; nothing to click
-          const fg = document.createElement('span'); fg.className = 'fdotfam'; fg.setAttribute('aria-hidden', 'true')
-          dots.appendChild(fg)
+      // THE PAGER IS THE MAP (board R17; the human 2026-08-23 merged the top "THE MAP" block and the
+      // number row — two navigators over the same requirements): EVERY requirement is a dot (no
+      // window, no ellipsis — a map that hides entries is not a map), grouped under its family with
+      // the family's `<n> · <name>` label inline and a thin inert tick between families; each dot
+      // carries the requirement's derived MARK (the card's glyphs in their hues, hue never alone)
+      // and exposes its title on hover / keyboard focus (a title attr + the CSS bubble). A screen
+      // with no families renders the same bar with no labels and no ticks.
+      let group = null; let groupKey = null
+      reqs.forEach(function (rr, i) {
+        const fam = rr.getAttribute('data-fam') || ''
+        if (!group || fam !== groupKey) {
+          if (group) {
+            const fg = document.createElement('span'); fg.className = 'fdotfam'; fg.setAttribute('aria-hidden', 'true')
+            dots.appendChild(fg)
+          }
+          group = document.createElement('span'); group.className = 'ffam'
+          if (fam) {
+            group.setAttribute('data-fam', fam)
+            const fl = document.createElement('span'); fl.className = 'ffl'
+            const n = rr.getAttribute('data-famn') || ''
+            if (n) fl.appendChild(document.createTextNode(n + ' · '))
+            const b = document.createElement('b'); b.textContent = fam; fl.appendChild(b)
+            group.appendChild(fl)
+          }
+          dots.appendChild(group); groupKey = fam
         }
-        const rr = reqs[i]
-        const ttlEl = rr.querySelector('.rt')
         const d = document.createElement('button')
-        d.className = 'fdot ' + (rr.getAttribute('data-state') || '') + (i === cur ? ' cur' : '')
-        d.textContent = String(i + 1)
-        d.title = rr.getAttribute('data-r') + ' — ' + (ttlEl ? ttlEl.textContent : '')
+        d.className = 'fdot' + (i === cur ? ' cur' : '')
+        d.setAttribute('data-r', rr.getAttribute('data-r') || '')
+        d.appendChild(document.createTextNode(String(i + 1)))
+        const m = document.createElement('span'); m.className = 'fm'; m.setAttribute('aria-hidden', 'true')
+        d.appendChild(m)
+        dotMark(d, rr)
         d.addEventListener('click', (function (idx) { return function () { cur = idx; render() } })(i))
-        dots.appendChild(d)
-        prevIdx = i
+        group.appendChild(d)
       })
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
@@ -1755,9 +1769,6 @@ const B = window.__BOARD__ || {}
     dt.querySelectorAll('.viewseg .vseg').forEach(function (b) { b.classList.toggle('on', b.dataset.view === view) })
     closeFocus()
     cstopAll()
-    // THE MAP (board R17) belongs to the two views that page requirements — Focus and List; Flow
-    // and the composer hide it (neither has a requirement to jump to)
-    const map = dt.querySelector('.reqmap'); if (map) map.hidden = view === 'flow' || view === 'compose'
     if (cv) cv.hidden = view !== 'compose'
     if (view === 'grid') { if (gv) gv.hidden = false; if (fv) fv.hidden = true }
     else if (view === 'flow') {
@@ -2877,10 +2888,10 @@ const B = window.__BOARD__ || {}
         else if (!cur && nxt) list.insertBefore(nxt.cloneNode(true), list.firstChild)
       }
     }
-    // the jump-map's marks (board R17) are the requirements' own — derived, so a run moves them
-    dt.querySelectorAll('.reqmap .tocit').forEach(function (it) {
-      const f = fresh.querySelector('.reqmap .tocit[data-r="' + cssEsc(it.dataset.r) + '"]'); if (!f) return
-      swapChip(it, f, '.tdot')
+    // the pager-map's marks (board R17) are the requirements' own — derived, so a run moves them:
+    // re-derive each dot from its just-synced row (the Focus pager, when one is open)
+    dt.querySelectorAll('.dtfoot .fdot[data-r]').forEach(function (d) {
+      const rr = dt.querySelector('.reqpane .req[data-r="' + cssEsc(d.dataset.r) + '"]'); if (rr) dotMark(d, rr)
     })
     dt.querySelectorAll('.testpane .test').forEach(function (t) {
       const f = fresh.querySelector('.testpane .test[data-title="' + cssEsc(t.dataset.title) + '"]'); if (!f) return

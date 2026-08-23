@@ -710,16 +710,17 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'passed')   // leave the forced node in a media-bearing state for later reads
     await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
 
-    // a WINDOWED pager: first and last page always anchored, ellipsis in the gap, next moves on
+    // the pager IS the map (board R17, the human 2026-08-23): every requirement is a dot — the
+    // window-and-ellipsis pager of Task 8 is gone, since a map that hides entries is not a map
     const dots = dt.locator('.dtfoot .fdots .fdot')
-    expect(await dots.count()).toBeLessThan(reqCount)
-    // the anchors are the FIRST and LAST requirements in prd order — read off the baked rows, since
-    // families (board R17) order sections by family, so the last id is no longer R<N>
+    await expect(dots).toHaveCount(reqCount)
+    // first and last in prd order — read off the baked rows, since families (board R17) order
+    // sections by family, so the last id is no longer R<N>
     const firstRid = await dt.locator('.reqpane .req').first().getAttribute('data-r')
     const lastRid = await dt.locator('.reqpane .req').last().getAttribute('data-r')
-    await expect(dt.locator(`.dtfoot .fdot[title^="${firstRid} "]`)).toHaveCount(1)
-    await expect(dt.locator(`.dtfoot .fdot[title^="${lastRid} "]`)).toHaveCount(1)
-    await expect(dt.locator('.dtfoot .fdotgap')).not.toHaveCount(0)
+    await expect(dots.first()).toHaveAttribute('title', new RegExp(`^${firstRid} `))
+    await expect(dots.last()).toHaveAttribute('title', new RegExp(`^${lastRid} `))
+    await expect(dt.locator('.dtfoot .fdotgap')).toHaveCount(0)
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
@@ -1843,12 +1844,12 @@ test('Home, the detail, then a finished run refreshes it in place — composed',
 import { rmSync } from 'node:fs'
 import { makeDocumentScreen } from '../_fixture'
 const prdFamilies = (text: string) => {
-  const fams: Array<{ heading: string, name: string, ids: string[] }> = []
-  let cur: { heading: string, name: string, ids: string[] } | null = null
+  const fams: Array<{ heading: string, n: string, name: string, ids: string[] }> = []
+  let cur: { heading: string, n: string, name: string, ids: string[] } | null = null
   const loose: string[] = []
   for (const line of text.split('\n')) {
     const f = /^###\s+(.+)$/.exec(line)
-    if (f) { cur = { heading: f[1].trim(), name: f[1].replace(/^\S+\s+·\s+/, '').replace(/\s+—.*$/, '').trim(), ids: [] }; fams.push(cur); continue }
+    if (f) { cur = { heading: f[1].trim(), n: (/^(\S+)\s+·\s+/.exec(f[1]) || ['', ''])[1], name: f[1].replace(/^\S+\s+·\s+/, '').replace(/\s+—.*$/, '').trim(), ids: [] }; fams.push(cur); continue }
     const r = /^##\s+(R\d+)\s+—/.exec(line)
     if (r) (cur ? cur.ids : loose).push(r[1])
   }
@@ -1856,7 +1857,7 @@ const prdFamilies = (text: string) => {
 }
 const MARKS = ['✓', '◈', '✗', '◌', '○']
 
-test('Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the jump-map', async ({ page }) => {
+test('Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the pager that is the jump-map', async ({ page }) => {
   await coverReqs('R17')
   const prd = prdFamilies(readFileSync('spec/board/prd.md', 'utf8'))
   expect(prd.fams.length, 'the board prd must carry families for this test to mean anything').toBeGreaterThan(1)
@@ -1895,7 +1896,10 @@ test('Requirements sub-group within a screen — family headers on the card and 
     expect(seq).toEqual(want)
   })
 
-  // FOCUS: the counter reads `<family> · n of N`, and the pager groups its dots by family
+  // FOCUS: the counter reads `<family> · n of N`, and THE PAGER IS THE MAP (the human, 2026-08-23 —
+  // the top block and the number list navigated the same requirements twice): one group per family
+  // carrying its `<n> · <name>` label, a thin separator between groups, one marked dot per
+  // requirement in prd order, the current one ringed, the title one hover (or keyboard focus) away
   await checkReq('R17', async () => {
     const rid = 'R17'
     const fam = prd.fams.find(f => f.ids.includes(rid))!
@@ -1904,37 +1908,67 @@ test('Requirements sub-group within a screen — family headers on the card and 
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     await expect(dt.locator('.focusov .fid')).toHaveText(rid)
     await expect(dt.locator('.focusov .fcount')).toHaveText(fam.name + ' · ' + pos + ' of ' + prd.ids.length)
-    // one thin gap per family boundary among the dots the pager shows (dots are windowed past 10:
-    // count the boundaries between CONSECUTIVE shown dots)
-    const dotIdx = (await dt.locator('.dtfoot .fdot').allTextContents()).map(Number)
-    const famOf = (n: number) => prd.fams.findIndex(f => f.ids.includes(prd.ids[n - 1]))
-    let bounds = 0
-    for (let k = 1; k < dotIdx.length; k++) if (dotIdx[k] - dotIdx[k - 1] === 1 && famOf(dotIdx[k]) !== famOf(dotIdx[k - 1])) bounds++
-    await expect(dt.locator('.dtfoot .fdotfam')).toHaveCount(bounds)
-    expect(bounds, 'the pager must show at least one family boundary here').toBeGreaterThan(0)
-  })
-
-  // THE MAP: one column per family, one marked entry per requirement, a click jumps to its Focus page
-  await checkReq('R17', async () => {
-    await page.goto('/#/board')
-    const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-    const map = dt.locator('.reqmap')
-    await expect(map).toBeVisible()
-    await expect(map.locator('.tocg')).toHaveCount(prd.fams.length + (prd.loose.length ? 1 : 0))
-    await expect(map.locator('.tocg .tl')).toHaveText(prd.fams.map(f => f.heading))
-    const items = map.locator('.tocit')
-    await expect(items).toHaveCount(prd.ids.length)
-    expect(await items.evaluateAll(els => els.map(e => e.getAttribute('data-r')))).toEqual(prd.ids)
-    const marks = await items.locator('.tdot').allTextContents()
+    const bar = dt.locator('.dtfoot .fpager')
+    await expect(bar).toBeVisible()
+    // the family labels, in prd order — the short name (before the em-dash gloss) after its number
+    const groups = bar.locator('.fdots .ffam')
+    await expect(groups).toHaveCount(prd.fams.length + (prd.loose.length ? 1 : 0))
+    await expect(bar.locator('.ffam .ffl')).toHaveText(prd.fams.map(f => f.n + ' · ' + f.name))
+    await expect(bar.locator('.fdots .fdotfam'), 'one separator between each pair of families').toHaveCount(prd.fams.length - 1 + (prd.loose.length ? 1 : 0))
+    // every requirement is a dot, in prd order, under its family — no window, no ellipsis
+    const dots = bar.locator('.fdot')
+    await expect(dots).toHaveCount(prd.ids.length)
+    expect(await dots.evaluateAll(els => els.map(e => e.getAttribute('data-r')))).toEqual(prd.ids)
+    expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids.map((_, i) => expect.stringMatching('^' + (i + 1) + '[' + MARKS.join('') + ']$')))
+    for (let k = 0; k < prd.fams.length; k++) {
+      const f = prd.fams[k]
+      const g = groups.nth(k + (prd.loose.length ? 1 : 0))
+      await expect(g.locator('.ffl')).toHaveText(f.n + ' · ' + f.name)
+      expect(await g.locator('.fdot').evaluateAll(els => els.map(e => e.getAttribute('data-r'))), 'family ' + f.n + ' holds exactly its requirements').toEqual(f.ids)
+    }
+    // every dot carries a derived MARK in the board's glyph vocabulary; the mark is the requirement's
+    // own (the baked row's data-status), never a family state — and it wears its state's hue
+    const marks = await dots.locator('.fm').allTextContents()
     expect(marks.length).toBe(prd.ids.length)
-    for (const m of marks) expect(MARKS, 'every entry carries a derived mark').toContain(m.trim())
-    // the mark is the requirement's own — derived from the baked row, never a family state
+    for (const m of marks) expect(MARKS, 'every dot carries a derived mark').toContain(m.trim())
     const r17mark = await dt.locator('.reqpane .req[data-r="R17"]').getAttribute('data-status')
-    await expect(map.locator('.tocit[data-r="R17"] .tdot')).toHaveClass(new RegExp('\\b' + r17mark + '\\b'))
-    await map.locator('summary').click()
-    await map.locator('.tocit[data-r="R17"]').click()
-    await expect(dt.locator('.focusov .fid')).toHaveText('R17')
-    await expect(page).toHaveURL(/#\/board\/R17$/)
+    await expect(bar.locator('.fdot[data-r="R17"]')).toHaveAttribute('data-status', r17mark!)
+    await expect(bar.locator('.fdot[data-r="R17"] .fm')).toHaveClass(new RegExp('\\b' + r17mark + '\\b'))
+    // the current dot is ringed in ink, not inverted (the detail's one inverted element is Run all)
+    const cur = bar.locator('.fdot.cur')
+    await expect(cur).toHaveCount(1)
+    await expect(cur).toHaveAttribute('data-r', 'R17')
+    expect(await cur.evaluate(el => getComputedStyle(el).borderColor)).toBe('rgb(28, 27, 24)')
+    expect(await cur.evaluate(el => getComputedStyle(el).backgroundColor), 'the current dot is not inverted').toBe('rgba(0, 0, 0, 0)')
+    // the title is one hover away, and one keyboard focus away — a title attr AND a visible bubble
+    const firstId = prd.ids[0]
+    const firstTitle = (await dt.locator('.reqpane .req[data-r="' + firstId + '"] .rt').textContent())!.trim()
+    const d1 = bar.locator('.fdot[data-r="' + firstId + '"]')
+    await expect(d1).toHaveAttribute('title', new RegExp('^' + firstId + ' — ' + firstTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+    const bubble = (el: Element) => { const s = getComputedStyle(el, '::after'); return s.visibility === 'visible' && s.opacity !== '0' && s.content.includes(el.getAttribute('data-r') || '\u0000') }
+    expect(await d1.evaluate(bubble), 'no bubble at rest').toBe(false)
+    await d1.hover()
+    await expect.poll(() => d1.evaluate(bubble), { message: 'the bubble shows on hover' }).toBe(true)
+    await page.mouse.move(0, 0)
+    await expect.poll(() => d1.evaluate(bubble)).toBe(false)
+    await bar.locator('.fnav.prev').focus()
+    await page.keyboard.press('Tab')
+    await expect(d1).toBeFocused()
+    await expect.poll(() => d1.evaluate(bubble), { message: 'the bubble shows on keyboard focus' }).toBe(true)
+    // a dot click jumps to that requirement; ‹ › and ← → still page one at a time
+    await d1.click()
+    await expect(dt.locator('.focusov .fid')).toHaveText(firstId)
+    await expect(bar.locator('.fdot.cur')).toHaveAttribute('data-r', firstId)
+    await bar.locator('.fnav.next').click()
+    await expect(dt.locator('.focusov .fid')).toHaveText(prd.ids[1])
+    await page.keyboard.press('ArrowLeft')
+    await expect(dt.locator('.focusov .fid')).toHaveText(firstId)
+    await expect(bar.locator('.fpk')).toHaveText('← → to review one by one')
+    // the old top block is GONE — the pager is the only map (Focus and List alike)
+    await expect(page.locator('.reqmap, .tocg, .tocit')).toHaveCount(0)
+    await page.goto('/#/board/grid')
+    await expect(dt.locator('.gridview')).toBeVisible()
+    await expect(page.locator('.reqmap')).toHaveCount(0)
   })
 
   // a screen with NO families renders exactly as today — no header element anywhere, no map,
@@ -1959,6 +1993,10 @@ test('Requirements sub-group within a screen — family headers on the card and 
       await expect(dt.locator('.focusov .fcount')).toHaveText('1 of 1')
       await expect(dt.locator('.reqmap')).toHaveCount(0)
       await expect(dt.locator('.gridview .lst-fam')).toHaveCount(0)
+      // the same bar: one marked dot, no family label, no separator
+      await expect(dt.locator('.dtfoot .fdot')).toHaveCount(1)
+      await expect(dt.locator('.dtfoot .fdot .fm')).toHaveCount(1)
+      await expect(dt.locator('.dtfoot .ffl')).toHaveCount(0)
       await expect(dt.locator('.dtfoot .fdotfam')).toHaveCount(0)
     } finally {
       rmSync('spec/' + name, { recursive: true, force: true })

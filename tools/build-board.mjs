@@ -470,21 +470,10 @@ const listPane = (s, kindOf) => `<div class="gridview" hidden>
   }).join('')}
 </div>`
 
-// THE MAP (board R17): a collapsible jump-map at the top of the detail, one row per family (the
-// reference catalogue's `.tocg` / `.tl` / `.tocit` / `.tdot` shape), every requirement as `id title`
-// behind its derived mark, each a deep-link to its Focus page (#/<screen>/<rid> — the router's
-// existing sub-path). List and Focus SHARE it (argued in the task-9 report: collapsed it is one
-// 28px summary line, so Focus loses nothing; Flow and the composer hide it since neither pages
-// requirements). A screen with no families bakes NO map at all — it renders exactly as before. The
-// marks are the requirements' own (CARD_MARK), re-synced after a run by syncDerived: a family has
-// no state to store.
-const reqMap = s => {
-  if (!(s.families || []).length) return ''
-  const rows = familyGroups(s).map(g => `<div class="tocg"><span class="tl">${g.family ? esc(g.family.heading) : ''}</span>${
-    g.reqs.map(r => `<a class="tocit" href="#/${esc(s.name)}/${esc(r.id)}" data-r="${esc(r.id)}"><span class="tdot ${esc(r.status)}">${CARD_MARK[r.status] || CARD_MARK.untested}</span><span class="tid">${esc(r.id)}</span>${esc(r.title)}</a>`).join('')
-  }</div>`).join('')
-  return `<details class="reqmap"><summary>The map — click to jump</summary>${rows}</details>`
-}
+// THE MAP (board R17) is the Focus pager itself, drawn by the client (tools/board/client.js
+// buildFocus) off the baked rows' data-fam / data-famn / data-status — the top "THE MAP" block was
+// merged into it on the human's direction (2026-08-23): two navigators over the same requirements
+// read as confusion and cost a strip of space.
 
 // One PLANNED story step, baked from the test's definition (board R10) so it shows before the test
 // has run. It renders "pending" (a hollow mark); loadRuns overlays the recorded outcome — passed,
@@ -1537,7 +1526,6 @@ export function build () {
     <button class="close btn">Close</button>
   </div>
   <div class="dtscroll">
-    ${reqMap(s)}
     <div class="cols" style="display:none">
       ${reqPane(s)}
       ${testPane(s)}
@@ -2010,43 +1998,73 @@ export function build () {
   /* the pager rides a compact, full-width FOOTER BAR (board R13) — its own surface (paper on the canvas
      page) with a hairline and a soft top shadow, so the number row reads as a distinct strip rather
      than floating on the background. Short, and its dots vertically centred. Focus-only (hidden else). */
-  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:var(--s5) var(--s6);
+  .dtfoot { flex:none; display:flex; align-items:center; justify-content:center; padding:var(--s4) var(--s5);
     background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
   .dtfoot[hidden] { display:none; }
   /* Task 8 — the mockup's pager: 30px round pages with no border at rest (a hairline on hover), and
      the "← → to review one by one" hint at the right (--ink-3 on --paper 6.4:1). The mockup INVERTS
      the current page in sumi; the detail already spends its one inverted element on Run all (the
      design system: exactly one per screen), so the current page wears a solid ink RING and a bold
-     number instead — a divergence listed for the human in the Task 8 report. */
-  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:6px; }
-  .fnav { min-width:30px; height:30px; border-radius:999px; border:1px solid transparent; background:none;
+     number instead — a divergence listed for the human in the Task 8 report.
+     Task 10 (board R17, the human 2026-08-23) — THE PAGER IS THE MAP: every requirement is a dot,
+     grouped under an inline family label (n · name, mono uppercase eyebrow, the name in ink) with a
+     hair tick between families; each dot wears its requirement's MARK as a small badge at its
+     shoulder in the state's hue (hue never alone — the glyph is the card's), a failed dot also on
+     the bengara tint; the requirement's title rises as a bubble on hover and keyboard focus. The
+     bar wraps at narrow widths, the hint staying at the right.
+     WCAG AA, measured against spec/_design.css (text on its background, rest and hover):
+       number --ink-2 on --paper 9.48 · on --wash 7.80 (hover) · on --bengara-tint 8.08 (failed);
+       the current (ink) number on --bengara-tint 14.30
+       label --ink-3 on --paper 6.42 · name --ink on --paper 16.79
+       marks on --paper (the badge's own ground, rest and hover): --koke 7.05 · --ai 8.98 ·
+       --bengara 6.46 · --yamabuki 5.23 · --ink-4 5.18 (the worst pair)
+       the bubble, --paper on --ink 16.79 (the inverse pair) */
+  .fpager { flex:none; display:flex; align-items:center; justify-content:center; gap:var(--s1); width:100%; }
+  .fnav { flex:none; min-width:30px; height:30px; border-radius:999px; border:1px solid transparent; background:none;
     color:var(--ink-2); font:var(--t-sm) var(--mono); line-height:1; cursor:pointer; }
   .fnav:hover { border-color:var(--hair-2); }
   .fnav:disabled { opacity:.35; cursor:default; }
-  .fdots { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
-  /* inline-flex + padding:0 so a two-digit number (10–14) sits dead-centre like a single digit does */
-  .fdot { min-width:30px; height:30px; border-radius:999px; border:1px solid transparent; background:none;
+  /* the dots WRAP inside their own strip (17 requirements in 5 families need two lines at 1160px);
+     the arrows stay pinned at the strip's ends and the hint at the bar's right */
+  .fdots { flex:1 1 auto; display:flex; gap:6px; row-gap:var(--s2); flex-wrap:wrap; justify-content:center;
+    align-items:center; min-width:0; }
+  /* one group per family: its label, then its dots */
+  .ffam { display:inline-flex; align-items:center; gap:5px; padding:0 var(--s1); }
+  .ffl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
+    white-space:nowrap; margin-right:2px; }
+  .ffl b { color:var(--ink); font-weight:500; }
+  /* inline-flex + padding:0 so a two-digit number (10–17) sits dead-centre like a single digit does */
+  .fdot { position:relative; min-width:30px; height:30px; border-radius:999px; border:1px solid var(--hair-2); background:none;
     color:var(--ink-2); font:var(--t-sm) var(--mono); flex:none; padding:0 4px; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center;
-    transition:box-shadow .15s ease, border-color .15s ease; }
-  .fdot:hover { border-color:var(--hair-2); }
-  /* a page's STATE rides its number's hue — proven moss, unproven ink-3 — hue never alone: the
-     current page is the inverted one, the others plain */
-  .fdot.proven { color:var(--koke); }
-  .fdot.unproven { color:var(--ink-3); }
-  .fpk { color:var(--ink-3); font-size:var(--t-xs); margin-left:var(--s3); white-space:nowrap; }
-  /* the gap between a jump-anchor (first/last page) and the sliding window — an inert ellipsis,
-     muted so it reads as "there is more between" without competing with the numbered dots. */
-  .fdotgap { flex:none; align-self:center; color:var(--ink-3); font:var(--t-xs) var(--mono);
-    padding:0 1px; user-select:none; }
-  /* the thin gap between two FAMILIES' dots (board R17) — a hair-rule tick, inert, so the dots
-     read grouped without a second row of chrome */
-  .fdotfam { flex:none; align-self:center; width:1px; height:14px; background:var(--hair-2); margin:0 var(--s1); }
-  /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: a scale-up, an integral ink
-     ring, a bold number and a soft shadow, so "you are here" reads cleanly whatever the dot's state.
-     Kept z-index so the grown dot sits over its neighbours; .cur is LAST so it wins the border. */
-  .fdot.cur, .fdot.cur.proven, .fdot.cur.unproven { border-color:var(--ink); color:var(--ink); font-weight:500;
+    transition:box-shadow .15s ease, border-color .15s ease, background-color .15s ease; }
+  .fdot:hover { background:var(--wash); }
+  /* the MARK badge at the dot's shoulder — the glyph carries the state, the hue only names it */
+  .fdot .fm { position:absolute; right:-5px; top:-6px; font-size:var(--t-micro); line-height:1; padding:1px 2px;
+    border-radius:999px; background:var(--paper); color:var(--ink-4); pointer-events:none; }
+  .fdot .fm.passed { color:var(--koke); } .fdot .fm.changed { color:var(--ai); }
+  .fdot .fm.failed { color:var(--bengara); } .fdot .fm.not-reached { color:var(--yamabuki); }
+  .fdot[data-status="failed"] { border-color:var(--bengara-line); background:var(--bengara-tint); }
+  .fdot[data-status="failed"]:hover { background:var(--bengara-tint); border-color:var(--bengara); }
+  .fpk { color:var(--ink-3); font-size:var(--t-xs); margin-left:var(--s3); white-space:nowrap; flex:none; }
+  /* the thin tick between two FAMILIES' groups (board R17) — a hair rule, inert */
+  .fdotfam { flex:none; align-self:center; width:1px; height:22px; background:var(--hair-2); margin:0 var(--s1); }
+  /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: an integral ink ring, a bold
+     number, so "you are here" reads cleanly whatever the dot's state. Kept z-index so the ringed
+     dot sits over its neighbours; .cur is LAST so it wins the border. */
+  .fdot.cur, .fdot.cur[data-status="failed"] { border-color:var(--ink); color:var(--ink); font-weight:500;
     box-shadow:inset 0 0 0 1px var(--ink); position:relative; z-index:1; }
+  /* the TITLE BUBBLE — the requirement's id, title and state, one hover (or one keyboard focus) away;
+     drawn from the dot's title attr so the two can never disagree. Hidden at rest, never in the flow. */
+  .fdot::after { content:attr(title); position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); font:var(--t-xs)/1.3 var(--sans); font-weight:400; letter-spacing:0;
+    padding:5px 9px; border-radius:var(--r-sm); white-space:nowrap; pointer-events:none;
+    visibility:hidden; opacity:0; transition:opacity .12s ease; z-index:3; }
+  .fdot::before { content:''; position:absolute; bottom:calc(100% + 4px); left:50%; transform:translateX(-50%);
+    border:5px solid transparent; border-top-color:var(--ink); border-bottom:0; pointer-events:none;
+    visibility:hidden; opacity:0; transition:opacity .12s ease; z-index:3; }
+  .fdot:hover::after, .fdot:focus-visible::after, .fdot:hover::before, .fdot:focus-visible::before { visibility:visible; opacity:1; }
+  .fdot:focus-visible { outline:none; border-color:var(--ink); }
 
   /* the view TOGGLE in the detail header — Focus / Grid / Flow (board R13) */
   .viewseg { display:inline-flex; border:1px solid var(--hair-2); border-radius:999px; overflow:hidden; }
@@ -2084,30 +2102,6 @@ export function build () {
   .lst-fam:first-child { margin-top:0; }
   .lst-fam .fname { color:var(--ink); font-weight:600; }
   .lst-fam .fgloss { color:var(--ink-3); }
-  /* THE MAP (board R17): a collapsible jump-map at the top of the detail scroll — the reference's
-     .toc/.tocg/.tl/.tocit/.tdot, in the house tokens. Shared by Focus and List (hidden under Flow /
-     compose by setView). Closed it is one summary line; open, one row per family: the family's
-     heading as a mono eyebrow, then a pill per requirement — its derived mark (the card's glyphs in
-     their hues, hue never alone), its id in mono, its title. Hover: a darker hair border, the
-     text unchanged (ink on paper 16.79:1 at rest and hover; the marks as on the card). */
-  .reqmap { flex:none; width:100%; max-width:1160px; margin:0 auto var(--s3); background:var(--card);
-    border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s2) var(--s4); }
-  .reqmap > summary { cursor:pointer; list-style:none; font:var(--t-micro) var(--mono); letter-spacing:.12em;
-    text-transform:uppercase; color:var(--ink-3); padding:2px 0; user-select:none; }
-  .reqmap > summary::-webkit-details-marker { display:none; }
-  .reqmap > summary::before { content:'›'; display:inline-block; width:12px; color:var(--ink-4); transition:transform .12s; }
-  .reqmap[open] > summary::before { transform:rotate(90deg); }
-  .reqmap .tocg { display:flex; gap:6px; align-items:baseline; flex-wrap:wrap; margin:7px 0; }
-  .reqmap .tocg .tl { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3);
-    min-width:180px; flex:none; }
-  .reqmap .tocit { display:inline-flex; gap:6px; align-items:center; font-size:var(--t-xs); padding:2px 10px;
-    border:1px solid var(--hair); border-radius:999px; background:var(--paper); color:var(--ink); text-decoration:none;
-    white-space:nowrap; max-width:100%; }
-  .reqmap .tocit .tid { font-family:var(--mono); color:var(--ink-3); }
-  .reqmap .tocit:hover { border-color:var(--hair-2); background:var(--card); }
-  .reqmap .tdot { flex:none; width:12px; text-align:center; font-size:var(--t-xs); color:var(--ink-4); }
-  .reqmap .tdot.passed { color:var(--koke); } .reqmap .tdot.changed { color:var(--ai); }
-  .reqmap .tdot.failed { color:var(--bengara); } .reqmap .tdot.not-reached { color:var(--yamabuki); }
   .lst-head .chev { color:var(--ink-4); font-size:var(--t-micro); flex:none; width:12px; transition:transform .12s; }
   .lst-card.open > .lst-head .chev { transform:rotate(90deg); }
   .lst-head .lid { font:var(--t-sm) var(--mono); color:var(--ink-3); min-width:34px; flex:none; }
