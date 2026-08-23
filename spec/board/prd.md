@@ -14,6 +14,8 @@ earlier four-column, wireframe-first board with two human gates
 was narrowed here across 2026-07-29/30 — the wireframe left the tool, and the last gate was removed as
 a rubber-stamp. The per-requirement "Narrowed …" notes below record each step.)*
 
+### 1 · The board's shape — one page, every screen
+
 ## R1 — One card per screen, not a row of cells
 
 - **Given** a board of screens, each with its requirements and a latest test recording
@@ -24,6 +26,34 @@ Every screen is one card: its name, its requirement **titles**, and the latest t
 (its cover frame as the still). Requirements are never their own rows; the card is titles, and each
 title's description lives one click away in the detail. There is no PRD / draft / screen / E2E column
 strip — that grid mostly repeated what the two ends already said.
+
+## R9 — Search across requirement text, grouped into areas
+
+- **Given** screens grouped into named areas
+- **When** you search a term
+- **Then** only cards matching a name, route, or requirement stay, and a group with no match hides
+
+Search matches screen names, routes and the text of every requirement; a group with no matching card
+hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order,
+never paginated — a board you page through can no longer answer "what is the state of everything".
+
+## R16 — Home leads with what the board does
+
+- **Given** the board's home with no dismissal preference set
+- **When** it renders
+- **Then** a feature strip of six cards sits above the areas, each opening the live example of itself on this board
+
+The six cards: **beats** · **proof from real runs** · **computed drift** · **the three views** ·
+**compose a flow** · **honest gaps** — each a link into the live example on this board (a
+requirement with beats, a proven requirement's media, a failed/changed requirement, the List view,
+the composer, an untested requirement). A dismiss control hides the strip; the dismissal is a
+**client-side preference, never stored in the tree**, and where no preference exists the strip
+renders again.
+
+*Added 2026-08-21 (the human) with the frozen mockup — onboarding chrome, dismissible, derives
+everything and stores nothing.*
+
+### 2 · Reading a requirement and its proof — the two ends
 
 ## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own
 
@@ -75,6 +105,70 @@ test leads with its flow name, then recording, then tags; both with a reading hi
 reads in Grid rows and the Focus reader, which the tests assert.*
 
 *Reworded 2026-08-22 (the human): Grid→List, hands-to→in-place, with the frozen mockup.*
+
+## R13 — Three views of a screen's requirements: Focus, List, Flow
+
+- **Given** a screen's requirements
+- **When** you toggle Focus / List / Flow
+- **Then** the same requirements render in that view, storing nothing new
+
+The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
+requirement at a time: the **behavior block leads** on the left (one Given, its When→Then beats),
+the prose collapsed beneath it, the **drawn schematic** below (loop · stills; quiet grey when
+stale); the proof sits on the right — Run + ⋯ header, proof line, then media whose **default
+derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
+expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
+a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
+failing test". **List** is one collapsed row per requirement (state · id · title · beat count ·
+test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in place.
+**Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
+rail as the scrubber** (click a chapter to seek, click its gif to zoom); a failing chapter wears
+red and everything after reads not-reached; **＋ New flow opens the composer** (R15 family). Flow
+reads like Focus: **the chapter rail on the left and the player on the right, each scrolling on
+its own** (R2's principle) *(added by the human 2026-08-21)*. All three views derive; none stores.
+
+*Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
+carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
+(read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle
+that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the human's direction:
+**Focus is now the default view**, the id + state fold into the reading card (no full-width bar), the
+evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows
+the human's spoken decisions; the tests assert the behaviour.*
+
+*Reworked 2026-08-18 (the human): the three views are Focus / Grid / Flow — Grid replaced the compact
+List, Flow replaced the Columns view; the text follows the human's logged decision, the tests assert
+the behaviour.*
+
+*Reworded 2026-08-21 (the human): Grid became List — a list of Focus — and the views took the frozen
+visual-requirements mockup as their contract.*
+
+## R14 — The proof is scannable as frames, not only as video
+
+- **Given** a run whose recording holds several checked values
+- **When** you open the requirement's proof as stills
+- **Then** one frame per checked value shows in order, cut from the recording at the instant it fired, each carrying its burned-in topbar and got-vs-expected — a failing value red
+- **When** a run captured no recording
+- **Then** no strip shows at all — never a separately captured picture
+
+A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording,
+its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at
+the instant that check fired (indexed by the run's own beat log), each carrying the same
+self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the
+ring on the exact value asserted. They show as the media pane's **stills** — the default for a
+multi-beat pass and one toolbar click away otherwise — in the test's evidence and the focus card; so
+a person verifies the asserted values by eye, in order, without pressing play; the
+**video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
+frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
+no strip, never a faked or separately-captured one.
+
+*Drafted 2026-08-12 on the human's direction and accepted the same turn: the recording is fast to
+trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the
+video kept for what a picture cannot carry. It amends R10's "no separate screenshot column" — the
+frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
+
+*Reworded 2026-08-22 (the human): the strip is the media pane's stills view — one surface, not two.*
+
+### 3 · Computed truth — state is derived, never stored
 
 ## R4 — Requirement state is computed and assertion-backed
 
@@ -144,6 +238,24 @@ comprehensiveness now lives in a unit test's coverage of its own screen, and flo
 connections between screens. The guard survives unchanged — coverage is bought by a tag plus an
 assertion, never by a test merely existing.*
 
+## R8 — No acceptance gate: requirements are the source of truth as written
+
+- **Given** a requirement written in prd.md — canon the moment it is written
+- **When** you open its screen's detail
+- **Then** it reads straight from the header into the Focus reader — no gate bar, no accept button, nothing waiting to be accepted
+
+There is **no gate**. A requirement is the source of truth the moment you write it — editing the PRD
+*is* the change, and the assertion-backed tests prove it against the real app automatically (R4), with
+no status field and no rubber-stamp. Nothing on the board waits on a human to "accept" a requirement
+it would have accepted anyway.
+
+*Narrowed 2026-07-30: this requirement previously described one human gate — accepting the
+requirements. The human removed it: a decision that is always yes is ceremony, not a gate. Requirement
+state is now just proven / unproven; the "does the build match the intended design?" question moves to
+a separate, interactive wireframe check (planned), not a gate.*
+
+### 4 · What the board refuses to own
+
 ## R7 — specboard owns neither the wireframe nor the design
 
 - **Given** a screen documented by its requirements and the tests that prove them
@@ -162,31 +274,42 @@ detail. Removed at the human's direction — a link specboard never renders, gat
 one more thing to carry, and the tool is meant to be minimal. The `design:` frontmatter field and the
 Design chip are gone.*
 
-## R8 — No acceptance gate: requirements are the source of truth as written
+## R15 — The board hands you a prompt; it never writes a requirement or a test itself
 
-- **Given** a requirement written in prd.md — canon the moment it is written
-- **When** you open its screen's detail
-- **Then** it reads straight from the header into the Focus reader — no gate bar, no accept button, nothing waiting to be accepted
+- **Given** a requirement or a test
+- **When** you pick an action from its ⋯ menu
+- **Then** a ready Claude prompt opens and is copied — the board writes no file
 
-There is **no gate**. A requirement is the source of truth the moment you write it — editing the PRD
-*is* the change, and the assertion-backed tests prove it against the real app automatically (R4), with
-no status field and no rubber-stamp. Nothing on the board waits on a human to "accept" a requirement
-it would have accepted anyway.
+You are staff and the human owns meaning, so the board proposes work but never authors it. Every
+requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
+offers **reword · add a requirement · remove this requirement · add a test to cover it**; a test's
+menu offers **add · edit · remove a test** (unit or flow), with a **picker for the requirements it
+should cover**. Adding a test is reachable from a requirement even when nothing yet tags it — the
+requirement that most needs a test is the one with none. Each action
+opens a **ready prompt for Claude** — pre-loaded with the screen, the exact file
+(`spec/<screen>/prd.md` or `spec/<screen>/test.spec.ts`), the requirement or test in question, and
+the discipline that governs the change (**write the failing test first, tag the requirement with
+`checkReq`, assert something that would fail without it, keep every asserted value visible in the
+recording, and never weaken a test to go green**) — and copies it to the clipboard. You run it, read
+the diff, and keep the words yours. There is no in-board editor and no silent write: the board states
+the rule and hands off the work; a person, not the board, commits the meaning.
 
-*Narrowed 2026-07-30: this requirement previously described one human gate — accepting the
-requirements. The human removed it: a decision that is always yes is ceremony, not a gate. Requirement
-state is now just proven / unproven; the "does the build match the intended design?" question moves to
-a separate, interactive wireframe check (planned), not a gate.*
+*Drafted 2026-08-18 (formalizing the human's 2026-08-17 "test-authoring is prompt-handoff" decision):
+the board never writes or edits a requirement or a test — every add/edit/remove hands the human a
+ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
+awaits the human; the meaning is theirs, the tests assert the behaviour.*
 
-## R9 — Search across requirement text, grouped into areas
+*Amended 2026-08-22 (the human): "never writes a requirement or a test itself" applies to the ⋯
+handoffs — scan, rewrite, and the composer's Claude path. The deterministic compose emit is the
+**one** sanctioned write: `＋ Add test` composes `spec/<start>/test.spec.ts` directly, and only
+from beats that already carry their own red-first proof (the D4 amendment of 2026-08-21,
+CLAUDE.md rule 1's addendum). The board still writes no requirement, ever.*
 
-- **Given** screens grouped into named areas
-- **When** you search a term
-- **Then** only cards matching a name, route, or requirement stay, and a group with no match hides
+*Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
+from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
+menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
 
-Search matches screen names, routes and the text of every requirement; a group with no matching card
-hides itself rather than sitting empty. Screens are grouped into named areas, in a declared order,
-never paginated — a board you page through can no longer answer "what is the state of everything".
+### 5 · Running, and the guide
 
 ## R10 — A test opens to its full evidence, and can be run — watchably or in the background
 
@@ -315,116 +438,3 @@ six-step rail was cut at the human's direction; wording awaits the human, the te
 
 *Amended 2026-08-17 (the human's decision): the rail's "confirm the draft" step (a prd.md without
 `guess`) is gone along with the guess flag it tracked — the derivation is five steps now, not six.*
-
-## R13 — Three views of a screen's requirements: Focus, List, Flow
-
-- **Given** a screen's requirements
-- **When** you toggle Focus / List / Flow
-- **Then** the same requirements render in that view, storing nothing new
-
-The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
-requirement at a time: the **behavior block leads** on the left (one Given, its When→Then beats),
-the prose collapsed beneath it, the **drawn schematic** below (loop · stills; quiet grey when
-stale); the proof sits on the right — Run + ⋯ header, proof line, then media whose **default
-derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
-expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
-a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
-failing test". **List** is one collapsed row per requirement (state · id · title · beat count ·
-test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in place.
-**Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
-rail as the scrubber** (click a chapter to seek, click its gif to zoom); a failing chapter wears
-red and everything after reads not-reached; **＋ New flow opens the composer** (R15 family). Flow
-reads like Focus: **the chapter rail on the left and the player on the right, each scrolling on
-its own** (R2's principle) *(added by the human 2026-08-21)*. All three views derive; none stores.
-
-*Drafted 2026-08-11 ("provide a less-text version — one requirement per page"); enriched 2026-08-13 to
-carry the whole single-test detail; reshaped 2026-08-13 on the human's direction to two containers
-(read left / verify right, the screenshots a larger horizontal strip) and a Focus/List/Columns toggle
-that replaces the old in-reader Columns button. Reworked again 2026-08-13 on the human's direction:
-**Focus is now the default view**, the id + state fold into the reading card (no full-width bar), the
-evidence controls collapse to Run + a ⋯ menu, and the proof-frame label is dropped. Wording follows
-the human's spoken decisions; the tests assert the behaviour.*
-
-*Reworked 2026-08-18 (the human): the three views are Focus / Grid / Flow — Grid replaced the compact
-List, Flow replaced the Columns view; the text follows the human's logged decision, the tests assert
-the behaviour.*
-
-*Reworded 2026-08-21 (the human): Grid became List — a list of Focus — and the views took the frozen
-visual-requirements mockup as their contract.*
-
-## R14 — The proof is scannable as frames, not only as video
-
-- **Given** a run whose recording holds several checked values
-- **When** you open the requirement's proof as stills
-- **Then** one frame per checked value shows in order, cut from the recording at the instant it fired, each carrying its burned-in topbar and got-vs-expected — a failing value red
-- **When** a run captured no recording
-- **Then** no strip shows at all — never a separately captured picture
-
-A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording,
-its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at
-the instant that check fired (indexed by the run's own beat log), each carrying the same
-self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the
-ring on the exact value asserted. They show as the media pane's **stills** — the default for a
-multi-beat pass and one toolbar click away otherwise — in the test's evidence and the focus card; so
-a person verifies the asserted values by eye, in order, without pressing play; the
-**video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
-frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
-no strip, never a faked or separately-captured one.
-
-*Drafted 2026-08-12 on the human's direction and accepted the same turn: the recording is fast to
-trust but slow to scan, so its key moments are pulled out as stills for eye-verification, with the
-video kept for what a picture cannot carry. It amends R10's "no separate screenshot column" — the
-frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
-
-*Reworded 2026-08-22 (the human): the strip is the media pane's stills view — one surface, not two.*
-
-## R15 — The board hands you a prompt; it never writes a requirement or a test itself
-
-- **Given** a requirement or a test
-- **When** you pick an action from its ⋯ menu
-- **Then** a ready Claude prompt opens and is copied — the board writes no file
-
-You are staff and the human owns meaning, so the board proposes work but never authors it. Every
-requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
-offers **reword · add a requirement · remove this requirement · add a test to cover it**; a test's
-menu offers **add · edit · remove a test** (unit or flow), with a **picker for the requirements it
-should cover**. Adding a test is reachable from a requirement even when nothing yet tags it — the
-requirement that most needs a test is the one with none. Each action
-opens a **ready prompt for Claude** — pre-loaded with the screen, the exact file
-(`spec/<screen>/prd.md` or `spec/<screen>/test.spec.ts`), the requirement or test in question, and
-the discipline that governs the change (**write the failing test first, tag the requirement with
-`checkReq`, assert something that would fail without it, keep every asserted value visible in the
-recording, and never weaken a test to go green**) — and copies it to the clipboard. You run it, read
-the diff, and keep the words yours. There is no in-board editor and no silent write: the board states
-the rule and hands off the work; a person, not the board, commits the meaning.
-
-*Drafted 2026-08-18 (formalizing the human's 2026-08-17 "test-authoring is prompt-handoff" decision):
-the board never writes or edits a requirement or a test — every add/edit/remove hands the human a
-ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
-awaits the human; the meaning is theirs, the tests assert the behaviour.*
-
-*Amended 2026-08-22 (the human): "never writes a requirement or a test itself" applies to the ⋯
-handoffs — scan, rewrite, and the composer's Claude path. The deterministic compose emit is the
-**one** sanctioned write: `＋ Add test` composes `spec/<start>/test.spec.ts` directly, and only
-from beats that already carry their own red-first proof (the D4 amendment of 2026-08-21,
-CLAUDE.md rule 1's addendum). The board still writes no requirement, ever.*
-
-*Amended 2026-08-19 (the human): **add a test** is reachable from the requirement ⋯ too, not only
-from a test's menu — otherwise an Untested requirement, the one that most needs a test, has no test
-menu to ask from. Opening it from a requirement pre-picks that requirement in the cover set.*
-
-## R16 — Home leads with what the board does
-
-- **Given** the board's home with no dismissal preference set
-- **When** it renders
-- **Then** a feature strip of six cards sits above the areas, each opening the live example of itself on this board
-
-The six cards: **beats** · **proof from real runs** · **computed drift** · **the three views** ·
-**compose a flow** · **honest gaps** — each a link into the live example on this board (a
-requirement with beats, a proven requirement's media, a failed/changed requirement, the List view,
-the composer, an untested requirement). A dismiss control hides the strip; the dismissal is a
-**client-side preference, never stored in the tree**, and where no preference exists the strip
-renders again.
-
-*Added 2026-08-21 (the human) with the frozen mockup — onboarding chrome, dismissible, derives
-everything and stores nothing.*

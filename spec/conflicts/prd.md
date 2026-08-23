@@ -5,6 +5,8 @@ title: Conflicts
 route: /conflicts
 ---
 
+### 1 · What a conflict is
+
 ## R1 — A conflict is one fact stated two incompatible ways
 
 - **Given** two requirements that cannot both be true
@@ -23,6 +25,8 @@ field. Anything looser fills the list with noise and you stop opening it.
 
 Side by side, each naming its screen and requirement. You are picking a winner, so you have
 to be able to read both without leaving.
+
+### 2 · Deciding, and keeping the decision
 
 ## R3 — You pick which side is canon
 

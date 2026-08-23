@@ -5,6 +5,8 @@ title: Dispatch panel
 route: /run/:job
 ---
 
+### 1 · One job, one panel
+
 ## R1 — One panel per job, opened by the cell you clicked
 
 - **Given** a Run control on a board cell that already knows its screen and its task
@@ -17,26 +19,6 @@ of the conflict for checkout-page" is the whole instruction.
 *Rewritten 2026-08-03 — resolved conflict 90a990d1: the human picked board R7 as canon (specboard
 owns no wireframe), so the example job can no longer be a wireframe draft. The point of R1 is
 unchanged: the job carries its own context.*
-
-## R2 — The work is visible while it runs
-
-- **Given** a job running in the panel
-- **When** the job prints
-- **Then** its lines stream into the panel's log as they arrive — before any verdict, so nobody clicks Run a second time
-
-Claude's output streams into the panel. A button that goes quiet for two minutes gets
-clicked again, and the second run fights the first.
-
-## R3 — Finishing updates the board without a reload
-
-- **Given** a panel whose job is running, the page never reloaded
-- **When** the job ends
-- **Then** the panel's chip reads passed or failed and the cell it was working on changes state in place
-
-The cell the job was fixing changes state in place.
-
-*Trimmed 2026-08-05 at the human's direction: the gate-opening clause described the deleted
-four-column mechanism (doctrine sweep) — the cell simply changes state in place.*
 
 ## R4 — One job at a time; a person's second job takes over, a nested run shares the slot
 
@@ -91,6 +73,17 @@ can never stop a different one that happens to be running by then.
 executing the spec instead, once nesting made those two different things. The suite stopped itself
 half way through and reported nothing.*
 
+### 2 · Watching the work
+
+## R2 — The work is visible while it runs
+
+- **Given** a job running in the panel
+- **When** the job prints
+- **Then** its lines stream into the panel's log as they arrive — before any verdict, so nobody clicks Run a second time
+
+Claude's output streams into the panel. A button that goes quiet for two minutes gets
+clicked again, and the second run fights the first.
+
 ## R6 — The whole log is kept, not just the verdict
 
 - **Given** a finished run
@@ -108,26 +101,6 @@ what each run covered (the screen, or the one case a scoped run named). Removed 
 direction — every case already keeps its own last-ten-run history under the test (R8), each stamped
 with time, duration and commit, so the coarser cross-run list was redundant and only cluttered the
 tests column. A run's log and its scope now live in the per-case record, nowhere else.*
-
-## R7 — The panel stays open when the job ends, and the board updates behind it
-
-- **Given** the run panel with its job ending
-- **When** the job finishes
-- **Then** the panel and its log stay on screen, and the board behind it refreshes in place — no reload, and no background chip anywhere
-
-Finishing does not close the panel or reload the page out from under it. The log and the result stay
-on screen until you dismiss them, so the output is there to read for reference. **The board behind
-the panel refreshes IN PLACE** — a requirement's proven/unproven state, a test's verdict and its
-record all update the moment the run's rebuild lands, with no reload and no manual refresh *(the
-human, 2026-08-13 — the records already refreshed live, but the derived state was baked at build time
-and only reappeared on the reload a panel-close triggered, so the board sat stale under an open
-panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)*. There
-is no "background" that hides a running job behind a chip: a job runs in the open or is cancelled.
-
-*Corrected 2026-07-28: "Run in background" was removed. It hid a live job behind a header chip on the
-theory that a visible chip stops a double-start — but R4 already refuses a second job on the server,
-so the chip bought nothing, and a running job you could not read was more misleading than one you
-could. Keeping the panel open is what "keep it visible" was always meant to buy.*
 
 ## R8 — A test run records each case on its own
 
@@ -165,3 +138,36 @@ while showing nothing. Neither is displayed.
 built and is wrong — running a single test left that one case with steps and stripped every other
 case on the screen down to nothing. It is the same trap as the results index, where a scoped run
 must fold rather than replace, and it needed saying here too.*
+
+### 3 · When it ends
+
+## R3 — Finishing updates the board without a reload
+
+- **Given** a panel whose job is running, the page never reloaded
+- **When** the job ends
+- **Then** the panel's chip reads passed or failed and the cell it was working on changes state in place
+
+The cell the job was fixing changes state in place.
+
+*Trimmed 2026-08-05 at the human's direction: the gate-opening clause described the deleted
+four-column mechanism (doctrine sweep) — the cell simply changes state in place.*
+
+## R7 — The panel stays open when the job ends, and the board updates behind it
+
+- **Given** the run panel with its job ending
+- **When** the job finishes
+- **Then** the panel and its log stay on screen, and the board behind it refreshes in place — no reload, and no background chip anywhere
+
+Finishing does not close the panel or reload the page out from under it. The log and the result stay
+on screen until you dismiss them, so the output is there to read for reference. **The board behind
+the panel refreshes IN PLACE** — a requirement's proven/unproven state, a test's verdict and its
+record all update the moment the run's rebuild lands, with no reload and no manual refresh *(the
+human, 2026-08-13 — the records already refreshed live, but the derived state was baked at build time
+and only reappeared on the reload a panel-close triggered, so the board sat stale under an open
+panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)*. There
+is no "background" that hides a running job behind a chip: a job runs in the open or is cancelled.
+
+*Corrected 2026-07-28: "Run in background" was removed. It hid a live job behind a header chip on the
+theory that a visible chip stops a double-start — but R4 already refuses a second job on the server,
+so the chip bought nothing, and a running job you could not read was more misleading than one you
+could. Keeping the panel open is what "keep it visible" was always meant to buy.*

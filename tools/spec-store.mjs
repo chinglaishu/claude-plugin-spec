@@ -120,6 +120,12 @@ export const inlineDesign = html =>
 
 // Frontmatter + `## R1 — title` blocks. Deliberately tiny: the PRD format is a decision we are
 // still testing, and a parser with opinions is harder to change than one with none.
+// FAMILIES (board R17, the human 2026-08-23): a `### <n> · <family> — <gloss>` line between
+// sections opens a family that owns every requirement that follows it until the next `###`. It is
+// NEVER part of a body — before this, a `###` line was absorbed into the previous requirement's
+// body and moved its meaning hash (9 requirements read Changed on a pure re-grouping). A family
+// carries no state: `families` is structure only — {n, name, gloss, heading, ids}, in prd order —
+// and each requirement carries its family's `n` (null before the first heading, or with none).
 export function parsePrd (text) {
   const fm = {}
   let body = text
@@ -132,13 +138,24 @@ export function parsePrd (text) {
     body = text.slice(m[0].length)
   }
   const reqs = []
-  for (const chunk of body.split(/\n(?=## )/)) {
+  const families = []
+  let family = null
+  for (const chunk of body.split(/\n(?=##[#]? )/)) {
+    const f = chunk.match(/^###\s+(.+)/)
+    if (f) {
+      const heading = f[1].trim()
+      const m = heading.match(/^(?:(\S+)\s+·\s+)?(.*?)(?:\s+—\s+(.*))?$/)
+      family = { n: m?.[1] ?? null, name: (m?.[2] ?? heading).trim(), gloss: (m?.[3] ?? '').trim(), heading, ids: [] }
+      families.push(family)
+      continue
+    }
     const h = chunk.match(/^##\s+(.+)/)
     if (!h) continue
     const [, id, title] = h[1].match(/^(\S+)\s+—\s+(.*)$/) || [null, '', h[1]]
-    reqs.push({ id, title, body: chunk.replace(/^##.*\n/, '').trim() })
+    reqs.push({ id, title, body: chunk.replace(/^##.*\n/, '').trim(), family: family ? family.n ?? family.name : null })
+    if (family) family.ids.push(id)
   }
-  return { fm, reqs }
+  return { fm, reqs, families }
 }
 
 // The board shows a test's steps read from its DEFINITION (board R10), so the full plan is visible

@@ -24,6 +24,8 @@ so every run starts from the same board.
 Requirement ids are stable forever — later passes append, never renumber.
 -->
 
+### 1 · Tasks — add and edit
+
 ## R1 — Adding a task puts it in the list
 
 - **Given** the list, the Add box empty and Add disabled
@@ -48,6 +50,8 @@ same row, Escape cancels. Saving a real change records an "edited" time, replaci
 
 <!-- Proven by renaming a task on screen, reading the new title back off its row, and confirming the
      meta line flipped from "added" to "edited just now". -->
+
+### 2 · Containers and roll-up
 
 ## R3 — A task with sub-tasks is a container with a derived progress ring
 
@@ -94,6 +98,8 @@ one drops the count by its open-leaf count, not by one.
      drops it by exactly one; completing a container of two open sub-tasks drops it by exactly two,
      not three (the container is not a unit). The single most drift-prone rule here. -->
 
+### 3 · Views and dates — derived chips
+
 ## R6 — Smart views filter correctly, and the sidebar counts agree
 
 - **Given** the seeded tasks, some done, some due today
@@ -118,6 +124,8 @@ chip; a task due later shows its date; a done task wears no date chip.
 
 <!-- Proven against the frozen `?now=` clock: the seeded past-due task reads "overdue" and the
      due-today task reads "today", both read off the visible chips. -->
+
+### 4 · Persistence
 
 ## R8 — Everything survives a reload
 
