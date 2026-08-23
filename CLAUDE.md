@@ -173,10 +173,12 @@ change.
   the test I clicked has steps". A run's own screenshots stay board-only; steps, logs and coverage are
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
-  reporter folds the pair (plus the proves-step's clip window, plus a looping clip when ffmpeg and a
-  recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs too. The Focus media
-  pane (`client.js` buildMedia) renders the pair (stills · gif · video); frames are downscaled to the
-  clip's 640px width at the fold when ffmpeg is present (final review M4).
+  reporter folds the pair (plus the proves-step's clip window, plus a looping clip — with its
+  1.5×/2× speed variants, cut at harvest and carried/dropped with the 1× as ONE set (Task 11) —
+  when ffmpeg and a recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs
+  too. The Focus media pane (`client.js` buildMedia) renders the pair (stills · gif · video, each
+  pane with a session-scoped 1×→1.5×→2× speed button); frames are downscaled to the clip's 640px
+  width at the fold when ffmpeg is present (final review M4).
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
