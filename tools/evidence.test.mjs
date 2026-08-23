@@ -1,7 +1,7 @@
 // tools/evidence.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { clipWindow, ffmpegClipArgs, ffmpegFrameArgs, ffmpegDownscaleArgs } from './evidence.mjs'
+import { clipWindow, ffmpegFrameArgs, ffmpegDownscaleArgs } from './evidence.mjs'
 
 const steps = [
   { label: 'Open /todo.html', cat: 'pw:api', t: 0, d: 400 },
@@ -9,6 +9,9 @@ const steps = [
   { label: 'proves board:R6', cat: 'test.step', t: 3000, d: 500 }
 ]
 
+// The window is no longer a cut's input — the webp clip retired with Task 13's frame-stepper —
+// but it is still harvested and folded: it anchors the stepper's before/after frames, so the
+// stepper can play the pair at the assert body's TRUE relative pace (tools/board/stepper.js).
 test('clipWindow finds the proves-step window by bare id', () => {
   assert.deepEqual(clipWindow(steps, 'R5'), { from: 1200, to: 2000 })
 })
@@ -20,17 +23,6 @@ test('clipWindow returns null when the requirement was not reached (no step)', (
 })
 test('clipWindow returns null when the step has no timestamp', () => {
   assert.equal(clipWindow([{ label: 'proves R1', cat: 'test.step' }], 'R1'), null)
-})
-test('ffmpegClipArgs seeks, clamps a minimum duration, scales and loops', () => {
-  const args = ffmpegClipArgs('runs/x/video.webm', { from: 1200, to: 2000 }, 'runs/x/R5.webp')
-  assert.deepEqual(args, [
-    '-y', '-ss', '1.2', '-t', '0.8', '-i', 'runs/x/video.webm',
-    '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', 'runs/x/R5.webp'
-  ])
-})
-test('ffmpegClipArgs clamps a sub-0.4s window up to 0.4s', () => {
-  const args = ffmpegClipArgs('v.webm', { from: 100, to: 200 }, 'o.webp')
-  assert.equal(args[args.indexOf('-t') + 1], '0.4')
 })
 test('ffmpegFrameArgs extracts a single frame at a timestamp, scaled', () => {
   assert.deepEqual(
@@ -57,30 +49,18 @@ test('clipWindow never aliases two DIFFERENT qualified ids — board:R7 is not d
   assert.equal(clipWindow([{ label: 'proves board:R7', t: 100, d: 50 }], 'dispatch:R7'), null)
 })
 
-// ── final review M4 — the harvested frame pair is downscaled like the clip ─
-test('ffmpegDownscaleArgs rescales a frame to the clip width (640, even height), overwriting', () => {
+// ── final review M4 — the harvested frame pair is downscaled like the retired clip was ─
+test('ffmpegDownscaleArgs rescales a frame to the house 640 width (even height), overwriting', () => {
   assert.deepEqual(ffmpegDownscaleArgs('in.png', 'out.png'),
     ['-y', '-i', 'in.png', '-vf', 'scale=640:-2:flags=lanczos', 'out.png'])
 })
 
-// ── Task 11: the speed VARIANTS are cut at harvest (an animated webp cannot be rate-controlled
-// in the browser and the run's video is pruned later). Same window, setpts compresses time, and
-// the fps scales WITH the speed (12·s → 18/24) so every variant keeps the 1× sampling density:
-// each output frame still spans 1/12s of SOURCE time, so the variant has the same frame count,
-// ~the same size, and motion exactly as smooth as the 1× — only the pacing changes.
-test('ffmpegClipArgs at 1.5× — same window, setpts=PTS/1.5, fps 18', () => {
-  assert.deepEqual(ffmpegClipArgs('runs/x/video.webm', { from: 1200, to: 2000 }, 'runs/x/R5.clip.15x.webp', 1.5), [
-    '-y', '-ss', '1.2', '-t', '0.8', '-i', 'runs/x/video.webm',
-    '-an', '-vf', 'setpts=PTS/1.5,scale=640:-2:flags=lanczos,fps=18', '-loop', '0', 'runs/x/R5.clip.15x.webp'
-  ])
-})
-test('ffmpegClipArgs at 2× — setpts=PTS/2, fps 24', () => {
-  const args = ffmpegClipArgs('v.webm', { from: 100, to: 900 }, 'o.webp', 2)
-  assert.equal(args[args.indexOf('-vf') + 1], 'setpts=PTS/2,scale=640:-2:flags=lanczos,fps=24')
-  assert.equal(args[args.indexOf('-t') + 1], '0.8', 'the SOURCE window is identical — speed changes pacing, never the cut')
-})
-test('ffmpegClipArgs at explicit speed 1 stays byte-identical to the default house args', () => {
-  assert.deepEqual(
-    ffmpegClipArgs('v.webm', { from: 1200, to: 2000 }, 'o.webp', 1),
-    ffmpegClipArgs('v.webm', { from: 1200, to: 2000 }, 'o.webp'))
+// ── Task 13: the clip cutter is GONE — the frame-stepper plays harvested frames, so nothing
+// renders a webp clip and nothing may cut one. Retirement is pinned, not assumed: a module that
+// quietly re-exports the cutter is a module about to cut unrendered files again.
+test('T13: the module no longer exports the clip cutter or its speed set', async () => {
+  const mod = await import('./evidence.mjs')
+  assert.equal(mod.ffmpegClipArgs, undefined, 'ffmpegClipArgs retired with the webp clip (Task 13)')
+  assert.equal(mod.CLIP_SPEEDS, undefined, 'the 1.5×/2× variant set retired with it')
+  assert.equal(mod.carryClip, undefined, 'D1\'s carry had only the clip to carry — retired with it')
 })

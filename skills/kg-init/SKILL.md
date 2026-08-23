@@ -27,8 +27,8 @@ containing `.claude-plugin/plugin.json` and `tools/`. Substitute that path.
 
 The scaffold added the `board` / `board:build` / `staff` / `proof` / `e2e` scripts and the two dev deps to your `package.json`.
 It also wrote `spec/.gitignore` (transient run state only). **Commit `spec/<screen>/evidence/`** — the
-harvested proof frames (640px) and clips are what a fresh clone's board shows; nothing the scaffold
-writes ignores them, and `board.html` is committed as before.
+harvested proof frames (640px) are what a fresh clone's board shows (its gif mode plays them as the
+frame-stepper); nothing the scaffold writes ignores them, and `board.html` is committed as before.
 
 ```bash
 npm install

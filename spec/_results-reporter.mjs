@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindow, ffmpegClipArgs, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment, CLIP_SPEEDS } from '../tools/evidence.mjs'
+import { clipWindow, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -168,13 +168,15 @@ function ffmpegOk () {
   return FFMPEG
 }
 
-// Turn the run's raw evidence harvest ({qid: {before, after, window, video}} with attachment paths
-// in the run's output dir, pruned with it) into durable index entries: copy each frame pair to its
-// deterministic home (spec/<screen>/evidence/<rid>.*.png — overwriting is the retention rule), cut
-// the looping clip when a recording and ffmpeg exist, and return {qid: entry} for the fold.
-// Best-effort throughout — a frame that cannot be copied is dropped, never a failed run — and it
-// NEVER creates a screen directory the tree does not have (a stray tag must not materialise a
-// screen; the state guard would have nothing to remove because nothing may appear).
+// Turn the run's raw evidence harvest ({qid: {before, after, window}} with attachment paths in
+// the run's output dir, pruned with it) into durable index entries: copy each frame pair to its
+// deterministic home (spec/<screen>/evidence/<rid>.*.png — overwriting is the retention rule) and
+// return {qid: entry} for the fold. The WINDOW rides the entry — it is what lets the board's
+// frame-stepper (gif mode, Task 13) pace the pair at the assert body's true relative timing; the
+// looping webp the window once fed is retired (the stepper plays the frames, so nothing rendered
+// the clip). Best-effort throughout — a frame that cannot be copied is dropped, never a failed
+// run — and it NEVER creates a screen directory the tree does not have (a stray tag must not
+// materialise a screen; the state guard would have nothing to remove because nothing may appear).
 function harvestEvidence (harvest, ranAt) {
   const out = {}
   const runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
@@ -187,7 +189,6 @@ function harvestEvidence (harvest, ranAt) {
     const entry = {
       before: null,
       after: null,
-      clip: null,
       window: h.window || null,
       runId,
       at: new Date(ranAt).toISOString()
@@ -208,30 +209,6 @@ function harvestEvidence (harvest, ranAt) {
         try { copyFileSync(h[phase], dest); landed = true } catch { /* dropped, never fatal */ }
       }
       if (landed) entry[phase] = paths[phase]
-    }
-    if (h.video && h.window && existsSync(h.video) && ffmpegOk()) {
-      try {
-        execFileSync('ffmpeg', ffmpegClipArgs(h.video, h.window, join(process.cwd(), paths.clip)),
-          { stdio: 'ignore', timeout: 30000 })
-        if (existsSync(join(process.cwd(), paths.clip))) entry.clip = paths.clip
-      } catch { /* no clip — the frame pair alone is the evidence */ }
-      // Task 11 (play speed): where the 1x landed, cut the 1.5x/2x VARIANTS from the same window —
-      // an animated webp cannot be rate-controlled in the browser and this video is pruned later,
-      // so harvest is the only moment the set can exist. One speed failing to cut never blocks the
-      // others or the run; the entry lists only what is really on disk (the board falls back to 1x
-      // for a missing variant — honest, never a broken image).
-      if (entry.clip) {
-        const vars = {}
-        for (const [key, speed] of Object.entries(CLIP_SPEEDS)) {
-          const dest = paths.clipVariants[key]
-          try {
-            execFileSync('ffmpeg', ffmpegClipArgs(h.video, h.window, join(process.cwd(), dest), speed),
-              { stdio: 'ignore', timeout: 30000 })
-            if (existsSync(join(process.cwd(), dest))) vars[key] = dest
-          } catch { /* that speed stays uncut — the 1x stands */ }
-        }
-        if (Object.keys(vars).length) entry.clipVariants = vars
-      }
     }
     if (entry.before || entry.after) out[qid] = entry
   }
@@ -318,10 +295,11 @@ export default class ResultsIndexReporter {
       // per-run record (pruned with the run), never in the committed index.
       const steps = flattenSteps((test.results || []).slice(-1)[0]?.steps)
       // EVIDENCE HARVEST (Task 15, D2): pick up the before/after phase pair checkReq attached for
-      // each requirement, plus the proves-step's clip window off the recorded step times (t/d —
-      // Playwright already stamped them; no re-clocking) and the run's video when there is one.
-      // Qualified to the requirement's screen with the SAME rule coverage uses, so an `x:R3` tag's
-      // evidence lands on screen x. Folded run-wide: the last capture of a requirement wins.
+      // each requirement, plus the proves-step's window off the recorded step times (t/d —
+      // Playwright already stamped them; no re-clocking) — the window is the stepper's timing base
+      // (Task 13), not a cut input any more. Qualified to the requirement's screen with the SAME
+      // rule coverage uses, so an `x:R3` tag's evidence lands on screen x. Folded run-wide: the
+      // last capture of a requirement wins.
       for (const a of atts) {
         const tag = parseEvidenceAttachment(a.name)
         if (!tag || !a.path) continue
@@ -329,7 +307,6 @@ export default class ResultsIndexReporter {
         const h = (evidenceHarvest[qid] ||= {})
         h[tag.phase] = a.path
         h.window = clipWindow(steps, qid) || h.window || null
-        if (video?.path) h.video = video.path
       }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.

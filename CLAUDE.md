@@ -82,7 +82,7 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/evidence/      the harvest (frames + clip) — COMMITTED here and in scaffolded projects (D2 2026-08-22); retention rule in tools/evidence.mjs carryClip
+spec/<screen>/evidence/      the harvest (the before/after frame pair + its window) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
 spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
@@ -102,7 +102,9 @@ tools/reqhash.mjs            pure: the shared requirement-text hash (Changed-dri
 tools/viz.mjs                pure: behavior chain → archetype → the drawn schematic SVG (+ still phases)
 tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg (`node tools/viz-derive.mjs`)
 tools/flow.mjs               pure: a recorded test's steps → its kind (unit/flow) and chapters for the Flow player
-tools/evidence.mjs           pure: clip window, ffmpeg args (clip · frame · downscale), evidence paths, the fold
+tools/evidence.mjs           pure: the proves-step window, ffmpeg args (frame · downscale), evidence paths, the fold
+tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (holds off the window + frame anchors) —
+                             inlined verbatim like client.js, unit-tested via globalThis.SBStepper
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.
@@ -173,12 +175,16 @@ change.
   the test I clicked has steps". A run's own screenshots stay board-only; steps, logs and coverage are
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
-  reporter folds the pair (plus the proves-step's clip window, plus a looping clip — with its
-  1.5×/2× speed variants, cut at harvest and carried/dropped with the 1× as ONE set (Task 11) —
-  when ffmpeg and a recording exist) into `spec/<screen>/evidence/` and the index, from CLI runs
-  too. The Focus media pane (`client.js` buildMedia) renders the pair (stills · gif · video, each
-  pane with a session-scoped 1×→1.5×→2× speed button); frames are downscaled to the clip's 640px
-  width at the fold when ffmpeg is present (final review M4).
+  reporter folds the pair plus the proves-step's WINDOW (its span in the recording) into
+  `spec/<screen>/evidence/` and the index, from CLI runs too. The Focus media pane (`client.js`
+  buildMedia) renders the pair (stills · gif · video); gif mode is the FRAME-STEPPER (Task 13, the
+  human's pick over a webp): it plays before → each asserted-value frame → after with exact dots, a
+  mono n / N count and dot-click jump, paced by `tools/board/stepper.js` off the window + the
+  record frames' `t` (equal holds when an old harvest has no usable timing), and each pane carries
+  a session-scoped 0.25×–4× speed DROPDOWN (video maps it to playbackRate; the schematic to
+  --spd). The webp clip and Task 11's 1.5×/2× variants are RETIRED (2026-08-24) — once the stepper
+  played the frames nothing rendered them; a legacy entry's clip files are pruned at its next
+  fold. Frames are downscaled to 640px at the fold when ffmpeg is present (final review M4).
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A

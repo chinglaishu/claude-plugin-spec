@@ -284,26 +284,16 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   // status is now PASS, stamp a content hash of its wording at this moment. Compared at derive time
   // (enrichReqs) against the current text — a mismatch on a still-passing requirement reads Changed.
   stampProvenHashes(fresh, index)
-  // Fold this run's harvested EVIDENCE (Task 15, D2 — frames + clip window, the raw material any
-  // renderer of proof media needs; the Focus media pane renders it). Per requirement onto the requirement's
-  // screen, fold-never-replace (tools/evidence.mjs, unit-tested); the superseded files it names —
-  // e.g. a stale clip a ffmpeg-less refold replaced with frames alone — are deleted so disk stays
-  // bounded. Deletion is best-effort: a missing file is already what pruning wanted.
-  // D1 (2026-08-22): each entry is pinned to the requirement's CURRENT text hash (the Changed-drift
-  // pin), and the fold is told which requirements stand proven after this fold — together those let
-  // a video-less CLI fold carry a watched run's clip forward (tools/evidence.mjs carryClip) instead
-  // of pruning it on every `npm run e2e`.
+  // Fold this run's harvested EVIDENCE (Task 15, D2 — the frame pair + its window, the raw
+  // material any renderer of proof media needs; the Focus media pane renders it, and its
+  // frame-stepper paces off the window — Task 13). Per requirement onto the requirement's screen,
+  // fold-never-replace (tools/evidence.mjs, unit-tested); the superseded files it names — today
+  // that includes a legacy entry's retired webp clip and Task 11 variants — are deleted so disk
+  // stays bounded. Deletion is best-effort: a missing file is already what pruning wanted. (D1's
+  // clip-carry oracle and per-entry text-hash pin retired WITH the clip, 2026-08-24: they existed
+  // only to decide whether a video-less fold could keep it.)
   if (evidence && Object.keys(evidence).length) {
-    const agg = aggregateCoverage(index)
-    const prdCache = {}
-    for (const [qid, e] of Object.entries(evidence)) {
-      const i = qid.indexOf(':')
-      if (i < 1) continue
-      const body = reqBody(qid.slice(0, i), qid.slice(i + 1), prdCache)
-      e.hash = body == null ? null : reqHash(meaningText(body))
-    }
-    const proven = qid => deriveReqStatus(agg[qid] || []) === 'passed'
-    for (const p of foldEvidence(index, evidence, { proven })) {
+    for (const p of foldEvidence(index, evidence)) {
       try { rmSync(join(ROOT, p), { force: true }) } catch { /* already gone */ }
     }
   }
