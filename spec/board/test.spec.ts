@@ -601,6 +601,39 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(schem13.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
     await expect(schem13.locator('.figfoot')).toContainText('viz@')
     await expect(schem13.locator('.figfoot')).not.toContainText('≠')
+    // Task 11 — the schematic pane's OWN play speed (the reference's per-player pspd): a small
+    // mono button in the caption cycling 1× → 1.5× → 2×, setting --spd on the wrapper. Every
+    // animation-duration is emitted as calc(<X>s / var(--spd,1)) (tools/viz.mjs), so 2× halves
+    // the computed duration; the stills' parked delays divide by the SAME var, so the FRACTION
+    // |delay|/duration — the frame a still shows — is identical at every speed.
+    const spdS = schem13.locator('.figcap .pspd')
+    await expect(spdS).toHaveText('1×')
+    const animOf = (root: ReturnType<typeof schem13.locator>) => root.evaluate((el: Element) => {
+      const a = [...el.querySelectorAll('svg *')].map(e => getComputedStyle(e))
+        .find(st => st.animationName !== 'none')
+      return a ? { dur: parseFloat(a.animationDuration), delay: parseFloat(a.animationDelay) } : null
+    })
+    const at1 = await animOf(schem13.locator('.viz'))
+    expect(at1!.dur).toBeGreaterThan(0)
+    await spdS.click()
+    await expect(spdS).toHaveText('1.5×')
+    await spdS.click()
+    await expect(spdS).toHaveText('2×')
+    const at2 = await animOf(schem13.locator('.viz'))
+    expect(at2!.dur).toBeCloseTo(at1!.dur / 2, 2)
+    // stills at 2×: delay and duration scale together, so the parked frame is unchanged
+    await schem13.locator('.figcap .medbar button[data-sm="stills"]').click()
+    const lastFrame = schem13.locator('.sstills .sframe').last()
+    const still = await animOf(lastFrame)
+    const ph = await lastFrame.evaluate(f =>
+      parseFloat((f.firstElementChild as HTMLElement).style.getPropertyValue('--ph')))
+    expect(still!.dur).toBeCloseTo(at1!.dur / 2, 2)
+    expect(Math.abs(still!.delay) / still!.dur).toBeCloseTo(Math.abs(ph) / at1!.dur, 2)
+    // back to the loop at 1× for the rest of the reads
+    await schem13.locator('.figcap .medbar button[data-sm="loop"]').click()
+    await spdS.click()
+    await expect(spdS).toHaveText('1×')
+    await page.evaluate(() => localStorage.removeItem('sbSchemMode'))
     // …and a requirement the kit cannot draw keeps the honest placeholder (R2: scroll independence
     // fits no archetype — text-only, never a wrong picture)
     await page.goto('/#/board/R2')
@@ -668,6 +701,49 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia'))).toBe('video')
     await media.locator('.medbar button[data-m="frames"]').click()
     await expect(framesPanel).toBeVisible()
+
+    // Task 11 — the pane's PLAY SPEED (session-scoped, the reference's per-player pspd): one mono
+    // button beside the toolbar cycling 1× → 1.5× → 2×. In gif mode the src swaps to the VARIANT
+    // the harvest cut beside the 1× (an animated webp cannot be rate-controlled in the browser);
+    // the ev attrs are forced client-side so the assertion holds on any harvest age.
+    const reqEl = dt.locator(`.reqpane .req[data-r="${evId}"]`)
+    const savedEv = await reqEl.evaluate(el => ({
+      clip: el.getAttribute('data-ev-clip'),
+      c15: el.getAttribute('data-ev-clip15'),
+      c2: el.getAttribute('data-ev-clip2')
+    }))
+    await reqEl.evaluate(el => {
+      el.setAttribute('data-ev-clip', 'spec/board/evidence/T11.clip.webp?h=t')
+      el.setAttribute('data-ev-clip15', 'spec/board/evidence/T11.clip.15x.webp?h=t')
+      el.setAttribute('data-ev-clip2', 'spec/board/evidence/T11.clip.2x.webp?h=t')
+    })
+    await reopen(evId!)
+    const spd = media.locator('.fmbar .pspd')
+    await expect(spd).toHaveText('1×')
+    await media.locator('.medbar button[data-m="clip"]').click()
+    const gif = media.locator('.fmpanel[data-m="clip"] .fclip')
+    await expect(gif).toHaveAttribute('src', /T11\.clip\.webp/)
+    await spd.click()
+    await expect(spd).toHaveText('1.5×')
+    await expect(gif).toHaveAttribute('src', /T11\.clip\.15x\.webp/)
+    await spd.click()
+    await expect(spd).toHaveText('2×')
+    await expect(gif).toHaveAttribute('src', /T11\.clip\.2x\.webp/)
+    await spd.click()                                    // the cycle wraps
+    await expect(spd).toHaveText('1×')
+    await expect(gif).toHaveAttribute('src', /T11\.clip\.webp/)
+    // a MISSING variant (an old harvest) falls back honestly: the 1× plays and the button SAYS 1×
+    await reqEl.evaluate(el => { el.removeAttribute('data-ev-clip15'); el.removeAttribute('data-ev-clip2') })
+    await reopen(evId!)
+    await spd.click()                                    // asks for 1.5× — never cut
+    await expect(spd).toHaveText('1×')
+    await expect(media.locator('.fmpanel[data-m="clip"] .fclip')).toHaveAttribute('src', /T11\.clip\.webp\?h=t$/)
+    await reqEl.evaluate((el, sv) => {
+      const pairs: Array<[string, string | null]> = [
+        ['data-ev-clip', sv.clip], ['data-ev-clip15', sv.c15], ['data-ev-clip2', sv.c2]]
+      for (const [k, v] of pairs) { if (v == null) el.removeAttribute(k); else el.setAttribute(k, v) }
+    }, savedEv)
+    await media.locator('.medbar button[data-m="frames"]').click()
 
     // FAILED → the failed mark on the pane; no gif mode (the mockup skips it), video says what it
     // is. The stills are the NEWEST record's (D3): its own frames when the last run of this test was
@@ -1008,7 +1084,10 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
       watch: false, running: false,
       runs: [{ screen: 'board', runId: 'rf', hasLog: false, at: '2026-08-13T00:00:00.000Z', ms: 6000,
         ok: false, total: 1, failed: 1, shotsByTest: { [R1_TITLE]: {
-          shots: [], video: 'spec/_runs/rf/a.webm', frames, steps: [], log: 'x',
+          // a shot, like every real record: the player's cover — without it a played-out .rec has
+          // no backgroundImage and the rebuilt pane could not re-adopt it (unreal; Task 11's
+          // rebuild leg below rides the adopt)
+          shots: ['spec/board/screen.png'], video: 'spec/_runs/rf/a.webm', frames, steps: [], log: 'x',
           at: '2026-08-13T00:00:00.000Z', ms: 6000, ok: false, commit: 'abc1234'
         } } }]
     } }))
@@ -1045,6 +1124,35 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(ov.locator('.feval .fev .pfstrip')).toBeHidden()
     await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
+    // Task 11 — VIDEO plays at the pane's chosen speed: the pspd button sets playbackRate on the
+    // wired player (1 → 1.5 → 2), and a player standing when the reader rebuilds keeps the rate.
+    await ov.locator('.feval .fmedia .medbar button[data-m="video"]').click()
+    const vp = ov.locator('.feval .fmedia .fmpanel[data-m="video"]')
+    await vp.locator('.rec.playable').click()
+    await expect(vp.locator('video')).toHaveCount(1)
+    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1)
+    const spd14 = ov.locator('.feval .fmedia .fmbar .pspd')
+    await spd14.click()
+    await expect(spd14).toHaveText('1.5×')
+    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1.5)
+    await spd14.click()
+    await expect(spd14).toHaveText('2×')
+    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
+    // session-scoped only: no speed preference lands in storage
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /spd|speed/i.test(k)))).toEqual([])
+    // the reader rebuilt under a standing 2×: paging away and back re-adopts the playing node
+    // (its cover backgroundImage marks it a real player), the button remembers the session speed,
+    // and the pane re-rates the standing video at build — never a silent snap back to 1×
+    await page.goto('/#/board/R2')
+    await page.goto('/#/board/R1')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R1')
+    await expect(spd14).toHaveText('2×')
+    await expect(vp.locator('video')).toHaveCount(1)
+    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
+    // back to 1× and stills for the rest of the test
+    await spd14.click()
+    await expect(spd14).toHaveText('1×')
+    await ov.locator('.feval .fmedia .medbar button[data-m="frames"]').click()
 
     // (1b) D3 (the human, 2026-08-22): the media pane renders the NEWEST record's harvest whatever
     // its status — a FAILING run's own frames show (the value that broke, burned red) instead of

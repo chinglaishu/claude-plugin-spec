@@ -398,6 +398,8 @@ const B = window.__BOARD__ || {}
         before: node.getAttribute('data-ev-before') || '',
         after: node.getAttribute('data-ev-after') || '',
         clip: node.getAttribute('data-ev-clip') || '',
+        clip15: node.getAttribute('data-ev-clip15') || '',
+        clip2: node.getAttribute('data-ev-clip2') || '',
         at: node.getAttribute('data-ev-at') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
@@ -581,6 +583,30 @@ const B = window.__BOARD__ || {}
     return { page: page, restore: restore, id: r.id }
   }
 
+  // PLAY SPEED (Task 11, the reference catalogue's per-player pspd): one small mono button per
+  // pane cycling 1× → 1.5× → 2×. SESSION-scoped on purpose (module state, never storage): readers
+  // are rebuilt on every fold (close-fold-reopen), so the chosen pace must survive a rebuild — but
+  // a preference that quietly persisted across visits would make tomorrow's gif play fast with no
+  // cue why. Two panes, two states: the media pane (gif variant src swap / video playbackRate) and
+  // the schematic pane (--spd on its wrapper — viz emits every duration as calc(<X>s/var(--spd,1))
+  // and the stills CSS divides the parked delay by the SAME var, so a still shows the same frame
+  // at every speed). A global "all players" control is deliberately absent: specboard shows one
+  // player per pane, so per-pane IS the reference's control, honestly scoped.
+  const SPDS = [1, 1.5, 2]
+  const spdLabel = function (v) { return v === 1 ? '1×' : (v === 1.5 ? '1.5×' : '2×') }
+  let MEDIA_SPD = 1
+  let SCHEM_SPD = 1
+  function spdButton (get, set) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'pspd'
+    b.title = 'play speed'
+    b.textContent = spdLabel(get())
+    b.addEventListener('click', function () {
+      set(SPDS[(SPDS.indexOf(get()) + 1) % SPDS.length])
+      b.textContent = spdLabel(get())
+    })
+    return b
+  }
+
   // The SCHEMATIC slot (requirement schematics spec 2026-08-18; task 4): the AUTHORED-side
   // drawing — derived once from the behavior text (tools/viz.mjs), committed at
   // spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media (the golden/expected-vs-current
@@ -606,6 +632,9 @@ const B = window.__BOARD__ || {}
           ? 'stills' : 'loop'
       }
       wrap.className = 'fschem' + (v.stale ? ' isstale' : '')
+      // the pane's play speed (Task 11) — session state reapplied on every render, so a fold's
+      // rebuild never silently drops the chosen pace
+      wrap.style.setProperty('--spd', String(SCHEM_SPD))
       wrap.textContent = ''
       const cap = document.createElement('div'); cap.className = 'figcap'
       const lbl = document.createElement('span'); lbl.textContent = 'schematic · the idea, not the real UI'
@@ -630,6 +659,11 @@ const B = window.__BOARD__ || {}
         })
         mb.appendChild(b)
       })
+      const sb = spdButton(function () { return SCHEM_SPD }, function (nv) {
+        SCHEM_SPD = nv
+        wrap.style.setProperty('--spd', String(nv))
+      })
+      cap.appendChild(sb)
       cap.appendChild(mb)
       wrap.appendChild(cap)
       if (mode === 'stills') {
@@ -722,12 +756,17 @@ const B = window.__BOARD__ || {}
       // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
       (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
     bar.appendChild(lab)
+    // the pane's play speed (Task 11): applies to the ACTIVE mode — gif src swap / video
+    // playbackRate; stills have no pace, the choice simply stands for the other modes
+    const sb = spdButton(function () { return MEDIA_SPD }, function (nv) { MEDIA_SPD = nv; applySpd() })
+    bar.appendChild(sb)
     const mb = document.createElement('span'); mb.className = 'medbar'
     const modes = st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video']
     const panels = {}
     const apply = function (m) {
       ;[].slice.call(mb.children).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m) })
       Object.keys(panels).forEach(function (k) { panels[k].hidden = k !== m })
+      applySpd()
     }
     modes.forEach(function (m) {
       const b = document.createElement('button'); b.type = 'button'; b.dataset.m = m
@@ -821,6 +860,11 @@ const B = window.__BOARD__ || {}
     // video — the covering test's own recording, the wired .rec node moved in (undone on leave)
     {
       const pv = document.createElement('div'); pv.className = 'fmpanel'; pv.dataset.m = 'video'
+      // a video element born inside this panel AFTER the speed was chosen (the cover's ▶ builds it
+      // lazily) starts at the pane's pace — loadstart does not bubble, but capture catches it
+      pv.addEventListener('loadstart', function (e) {
+        if (e.target && e.target.tagName === 'VIDEO') e.target.playbackRate = MEDIA_SPD
+      }, true)
       const rec = primary.querySelector('.rec')
       if (rec && (rec.classList.contains('playable') || rec.style.backgroundImage)) {
         const rw = document.createElement('div'); rw.className = 'frecwrap'
@@ -830,6 +874,24 @@ const B = window.__BOARD__ || {}
         pv.innerHTML = '<div class="noev"><span>no recording kept for this run — stills still stand</span></div>'
       }
       panels.video = pv; body.appendChild(pv)
+    }
+    // PLAY SPEED, applied to whatever the pane is showing (Task 11). Gif: swap the img to the
+    // variant the harvest cut beside the 1× (an animated webp cannot be rate-controlled in the
+    // browser); a MISSING variant (an old harvest) falls back to the 1× and the button says 1× —
+    // honest, never a broken image. Video: rate the wired player; a player created later (the
+    // cover is clicked after the choice) is rated by the loadstart hook on its panel.
+    const applySpd = function () {
+      if (mode === 'clip' && r.ev.clip) {
+        const want = MEDIA_SPD === 1.5 ? r.ev.clip15 : (MEDIA_SPD === 2 ? r.ev.clip2 : r.ev.clip)
+        if (!want && MEDIA_SPD !== 1) MEDIA_SPD = 1
+        const src = MEDIA_SPD === 1.5 ? r.ev.clip15 : (MEDIA_SPD === 2 ? r.ev.clip2 : r.ev.clip)
+        const img = panels.clip && panels.clip.querySelector('.fclip')
+        if (img && src && img.getAttribute('src') !== src) img.setAttribute('src', src)
+      }
+      if (panels.video) {
+        for (const v of panels.video.querySelectorAll('video')) v.playbackRate = MEDIA_SPD
+      }
+      sb.textContent = spdLabel(MEDIA_SPD)
     }
     if (st === 'changed') {
       const wm = document.createElement('div'); wm.className = 'wmark'
@@ -2867,7 +2929,8 @@ const B = window.__BOARD__ || {}
       req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
       // the media pane's inputs are derived too — a run re-harvests the evidence (new content
       // hashes) and can add or drop the clip; a reopened reader must never show stale media
-      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-clip', 'data-ev-at']) {
+      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-clip',
+        'data-ev-clip15', 'data-ev-clip2', 'data-ev-at']) {
         const v = f.getAttribute(a)
         if (v == null) req.removeAttribute(a); else req.setAttribute(a, v)
       }

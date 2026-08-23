@@ -353,7 +353,9 @@ const evAttrs = (s, r) => {
   const e = s.run && s.run.evidence && s.run.evidence[r.id]
   if (!e) return ''
   let out = ''
-  for (const [k, p] of [['before', e.before], ['after', e.after], ['clip', e.clip]]) {
+  const vars = e.clipVariants || {}
+  for (const [k, p] of [['before', e.before], ['after', e.after], ['clip', e.clip],
+    ['clip15', vars['1.5x']], ['clip2', vars['2x']]]) {
     if (!p) continue
     const abs = join(ROOT, String(p))
     if (!existsSync(abs)) continue
@@ -1875,7 +1877,9 @@ export function build () {
     border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
   .fschem .sstills .sframe svg { display:block; width:100%; height:auto; }
   .fschem .sstills .sframe svg * { animation-play-state:paused !important;
-    animation-delay:var(--ph,0s) !important; }
+    /* Task 11: durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs), so the parked delay divides
+       by the SAME var — |delay|/duration is preserved and a still shows the same frame at any speed */
+    animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
   .fschem .sstills .scap { font:var(--t-micro) var(--mono); color:var(--ink-3);
     padding:3px 7px; border-top:1px solid var(--hair); background:var(--wash); }
   .fschem .figfoot { font-size:var(--t-xs); color:var(--ink-3); margin-top:6px; }
@@ -1900,6 +1904,15 @@ export function build () {
   .medbar button + button { border-left:1px solid var(--hair); }
   .medbar button:hover { color:var(--ink); }
   .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
+  /* Task 11 — the per-pane play-speed button (the reference catalogue's pspd): a mono label
+     cycling 1× → 1.5× → 2×, session-scoped (never stored). ink-3 on paper 6.42:1, hover ink. */
+  .pspd { border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper);
+    color:var(--ink-3); font:var(--t-micro) var(--mono); font-weight:500; padding:4px 8px;
+    min-width:40px; cursor:pointer; flex:none; }
+  .pspd:hover { border-color:var(--ink-4); color:var(--ink); }
+  .fmbar .pspd, .fschem .figcap .pspd { margin-left:auto; }
+  .fmbar .pspd ~ .medbar, .fschem .figcap .pspd ~ .medbar { margin-left:var(--s2); }
+  .fschem .figcap .beatdots ~ .pspd { margin-left:var(--s2); }
   .fmbody { position:relative; }
   .fmpanel[hidden] { display:none; }
   /* stills: the harvested frame pair, the per-beat filmstrip — or the run's proof-frame strip (the
