@@ -577,7 +577,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(dt.locator('.dth .dname h2')).toHaveText('Board')
     await expect(dt.locator('.dth .dname .dsub')).toHaveText('Core · /')
     const pos13 = await dt.locator('.reqpane .req').evaluateAll(els => els.findIndex(e => e.getAttribute('data-r') === 'R13') + 1)
-    await expect(ov.locator('.fread .frmeta .fcount')).toHaveText(`${pos13} of ${reqCount}`)
+    // `n of N` — led by the requirement's family name when the prd has families (board R17,
+    // 2026-08-23: the counter reads `<family> · n of N`), so the position is pinned, the prefix is not
+    await expect(ov.locator('.fread .frmeta .fcount')).toHaveText(new RegExp(`(^|· )${pos13} of ${reqCount}$`))
     await expect(ov.locator('.fread .frmeta .fcount + .fmenu .fmenubtn')).toHaveCount(1)   // the ⋯ sits right of the counter
     const beh = ov.locator('.fread .behavior')
     await expect(beh).toHaveCount(1)
@@ -711,8 +713,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // a WINDOWED pager: first and last page always anchored, ellipsis in the gap, next moves on
     const dots = dt.locator('.dtfoot .fdots .fdot')
     expect(await dots.count()).toBeLessThan(reqCount)
-    await expect(dt.locator('.dtfoot .fdot[title^="R1 "]')).toHaveCount(1)
-    await expect(dt.locator(`.dtfoot .fdot[title^="R${reqCount} "]`)).toHaveCount(1)
+    // the anchors are the FIRST and LAST requirements in prd order — read off the baked rows, since
+    // families (board R17) order sections by family, so the last id is no longer R<N>
+    const firstRid = await dt.locator('.reqpane .req').first().getAttribute('data-r')
+    const lastRid = await dt.locator('.reqpane .req').last().getAttribute('data-r')
+    await expect(dt.locator(`.dtfoot .fdot[title^="${firstRid} "]`)).toHaveCount(1)
+    await expect(dt.locator(`.dtfoot .fdot[title^="${lastRid} "]`)).toHaveCount(1)
     await expect(dt.locator('.dtfoot .fdotgap')).not.toHaveCount(0)
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()

@@ -60,9 +60,11 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
     .toBeGreaterThanOrEqual(19)
   // …every requirement row LEADS with its status mark (hue never alone: ✓ ◈ ✗ ◌ ○ by the five-word
   // vocabulary — the same marks the Focus chip and the List row wear)…
-  const rows = first.locator('.rl li:not(.more)')
+  // (a `.fam` row is a FAMILY header — board R17, structure between the requirement rows, no mark
+  // by design — so the requirement rows are the li's that are neither the fold nor a header)
+  const rows = first.locator('.rl li:not(.more):not(.fam)')
   await expect(rows.first().locator('.mk')).toHaveText(/^[✓◈✗◌○]$/)
-  expect(await first.locator('.rl li:not(.more) .mk').count()).toBe(await rows.count())
+  expect(await first.locator('.rl li:not(.more):not(.fam) .mk').count()).toBe(await rows.count())
   // …the right column carries the proven-count pill AND the unit · flow kind chips (derived from the
   // folded tests: flowStep in the source ∪ a cross-screen tag in the record — the union)…
   await expect(first.locator('.metrics .pcount')).toHaveText(/^\d+ \/ \d+ proven$/)
