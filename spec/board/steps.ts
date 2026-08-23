@@ -105,21 +105,30 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
   await expect(ov.locator('.feval')).toBeVisible()
-  // the reading REGION is the left column (.fleft — the reading card plus the schematic below it,
-  // scrolling as one since Task 8 fix round 1 so a tall behaviour table never clips the card)
-  for (const sel of ['.fleft', '.feval']) {
+  // the reading REGION is the requirement card's beats/prose block (.fbeats — Task 12: it scrolls
+  // INTERNALLY between the card header and the pinned in-full footer, so the schematic below stays
+  // on first sight; supersedes Task 8 fix round 1, where the whole left column scrolled as one)
+  for (const sel of ['.fbeats', '.feval']) {
     const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
     expect(['auto', 'scroll']).toContain(oflow)
   }
-  // …proven with a region that REALLY overflows (final review m8: `.fread.scrollTop === 0` held
-  // trivially while `.feval` fit its box): a tall spacer is pushed into the proof region for the
-  // check, the scroll must actually move there (> 0), and the reading must not move at all
+  // …proven with regions that REALLY overflow (final review m8: a scrollTop === 0 check holds
+  // trivially while the region fits its box): a tall spacer is pushed into EACH region in turn,
+  // the scroll must actually move there (> 0), and the other side must not move at all
   await ov.locator('.feval').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'flex:none; min-height:4000px'; el.appendChild(sp) })   // flex:none — a flex child with no content would shrink to nothing
   expect(await ov.locator('.feval').evaluate(el => el.scrollHeight > el.clientHeight), 'the proof region overflows').toBe(true)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
   expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.fleft').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
+  expect(await ov.locator('.fbeats').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
+  // …and the reading region scrolls internally too (Task 12): its own spacer, its own real move,
+  // the proof untouched
+  await ov.locator('.fbeats').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'min-height:4000px'; el.appendChild(sp) })
+  expect(await ov.locator('.fbeats').evaluate(el => el.scrollHeight > el.clientHeight), 'the reading region overflows').toBe(true)
+  await ov.locator('.fbeats').evaluate(el => { el.scrollTop = 60 })
+  expect(await ov.locator('.fbeats').evaluate(el => el.scrollTop), 'the reading region scrolled').toBeGreaterThan(0)
+  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof did not move').toBe(0)
+  await ov.locator('.fbeats').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
   // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay

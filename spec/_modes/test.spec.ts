@@ -271,18 +271,17 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     const rule1 = await fbeh.locator('.brow').nth(1).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     const rule3 = await fbeh.locator('.brow').nth(3).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     expect(rule3, 'a beat boundary rules heavier than a row').toBeGreaterThan(rule1)
-    // …and the collapsed-prose toggle beneath the table is still IN VIEW (fix round 1, A-1): the
-    // taller table must not push a signed R13 element below the card's clipped edge — Playwright
-    // auto-scrolls before a click, so only an explicit viewport check can see this
-    await expect(dt.locator('.focusov .fread .prose-t')).toBeInViewport()
-    // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
-    // the collapsed-prose toggle beneath the table is IN VIEW before anything is clicked (fix round 1,
-    // A-1): the taller table must not push a signed R13 element below the card's clipped edge —
-    // Playwright auto-scrolls before a click, so only an explicit, pre-click viewport check sees it
-    // (on a short window, where the reading card's own clipped edge is what would hide it)
+    // …and the in-full toggle now lives in the card's PINNED FOOTER (Task 12 — supersedes fix
+    // round 1 A-1's whole-column scroll: the beats region scrolls INSIDE the card instead, so the
+    // toggle can never leave the viewport). Both of A-1's pre-click viewport checks are KEPT and
+    // retargeted at the footer: at 900px and on a short 640px window alike, visible before ANY
+    // interaction — Playwright auto-scrolls before a click, so only an explicit, pre-click
+    // viewport check can see this
+    await expect(dt.locator('.focusov .fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
     await page.setViewportSize({ width: 1440, height: 640 })
-    await expect(dt.locator('.focusov .fread .prose-t')).toBeInViewport({ ratio: 1 })
+    await expect(dt.locator('.focusov .fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
     await page.setViewportSize({ width: 1440, height: 900 })
+    // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
     await expect(dt.locator('.fread .fbody')).toBeHidden()
     await dt.locator('.fread .prose-t').click()
     await expect(dt.locator('.fread .fbody')).toContainText('Supporting prose under the shape.')
@@ -332,6 +331,72 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(c1.locator('.lst-body .fread .behavior .brow')).toHaveCount(5)
     await expect(c1.locator('.lst-body .feval .fmedia .fcell img')).toHaveCount(2)
   } finally { restore() }
+})
+
+// ── Task 12: the schematic on first sight, the beats scrolling inside the card ──
+// The human (2026-08-24): on first sight the schematic was not shown. The Focus page FITS the
+// viewport — the requirement card's beats/prose region scrolls INTERNALLY (.fbeats) between a
+// fixed card header and the pinned in-full footer, and the schematic card below keeps its
+// intrinsic height, fully visible on load at a 640px-tall viewport and up. This fixture is TALL
+// on purpose (three beats of wrapping text): under the superseded layout (the left column
+// scrolling as one, Task 8 fix round 1) it pushed the drawing below the fold at BOTH heights.
+test('renders — Focus fits the viewport: the schematic on first sight, the beats scrolling inside the card', async ({ page }) => {
+  const body =
+    '- **Given** a working list of three long-running items, every one of them still open and counted in the header\n' +
+    '- **When** you tick the first of the three long-running items open in the working list this morning\n' +
+    '- **Then** the header count reads 2 remaining, the ticked row struck through where it stands in the list\n' +
+    '- **When** you tick the second of the two long-running items still open in the working list after that\n' +
+    '- **Then** the header count reads 1 remaining, both ticked rows struck through where they stand in the list\n' +
+    '- **When** you tick the last long-running item still open anywhere in the working list at the end of the day\n' +
+    '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows\n\n' +
+    'Supporting prose under the tall shape.\n'
+  const { name, dir } = makeScreen('probe-tall', body)
+  // a COMMITTED drawing, derived exactly as the viz pass does — the thing that must be on first sight
+  const d = deriveSchematic(parseBehavior(body))!
+  expect(d.archetype).toBe('toggle-and-recount')
+  mkdirSync(join(dir, 'viz'), { recursive: true })
+  writeFileSync(join(dir, 'viz', 'R1.svg'), d.svg)
+
+  const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
+  await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
+  const ov = dt.locator('.focusov')
+  const schem = ov.locator('.fleft .fschem')
+  const beats = ov.locator('.fread .fbeats')
+
+  // ON FIRST SIGHT, before ANY interaction: the drawn schematic is FULLY in the viewport at the
+  // default 900px window — and so is the pinned footer's in-full toggle
+  await expect(schem.locator('.viz svg')).toHaveCount(1)
+  await expect(schem).toBeInViewport({ ratio: 1 })
+  await expect(ov.locator('.fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
+  // …because the beats region scrolls INTERNALLY: it really overflows, its scroll really moves,
+  // and moving it moves NEITHER the schematic nor the proof column (R2's independence, at the
+  // region that now owns the reading scroll)
+  expect(await beats.evaluate(el => el.scrollHeight > el.clientHeight), 'the beats region overflows').toBe(true)
+  // the clipped edge carries the scroll cue — the hairline fade on the pinned footer (tokens only)
+  await expect(ov.locator('.fread')).toHaveClass(/\bclipped\b/)
+  expect(await ov.locator('.fread .ffoot').evaluate(el => getComputedStyle(el, '::before').backgroundImage),
+    'the clip cue is a fade').toContain('linear-gradient')
+  await beats.evaluate(el => { el.scrollTop = 80 })
+  expect(await beats.evaluate(el => el.scrollTop), 'the beats region scrolled').toBeGreaterThan(0)
+  await expect(schem).toBeInViewport({ ratio: 1 })
+  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof did not move').toBe(0)
+  // scrolled to the very end, the edge is no longer clipped — the cue clears honestly
+  await beats.evaluate(el => { el.scrollTop = el.scrollHeight })
+  await expect(ov.locator('.fread')).not.toHaveClass(/\bclipped\b/)
+  await beats.evaluate(el => { el.scrollTop = 0 })
+  // the PAGE itself never scrolls: the Focus page ends above the always-visible pager bar
+  const vp = page.viewportSize()!
+  const pb = (await ov.locator('.fpage').boundingBox())!
+  expect(pb.y + pb.height, 'the Focus page fits the viewport').toBeLessThanOrEqual(vp.height)
+  await expect(dt.locator('.dtfoot .fpager')).toBeInViewport()
+
+  // at the 640px floor the schematic is STILL fully on first sight, the footer still pinned,
+  // the beats still scrolling inside the card
+  await page.setViewportSize({ width: 1440, height: 640 })
+  await expect(schem).toBeInViewport({ ratio: 1 })
+  await expect(ov.locator('.fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
+  expect(await beats.evaluate(el => el.scrollHeight > el.clientHeight), 'the beats region still overflows').toBe(true)
+  await page.setViewportSize({ width: 1440, height: 900 })
 })
 
 // ── the drawn schematic fills the Focus slot (requirement schematics, task 4) ──

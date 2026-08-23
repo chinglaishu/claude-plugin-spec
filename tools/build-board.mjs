@@ -1747,6 +1747,11 @@ export function build () {
   .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
     align-items:center; padding:var(--s5) var(--s6) var(--s5); }
+  /* Task 12 — on a short window the vertical breathing room yields to the content: the schematic
+     must stay on first sight at the 640px floor (tokens only; the sides keep their s6) */
+  @media (max-height:760px) {
+    .dtscroll { padding-top:var(--s3); padding-bottom:var(--s3); }
+  }
   .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
 
   /* the two BAKED SOURCE PANES (requirements + tests). Their Columns VIEW was retired 2026-08-18
@@ -1798,7 +1803,9 @@ export function build () {
   /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead */
   @media (max-width:1080px) {
     .fpage { grid-template-columns:1fr; overflow-y:auto; }
-    .fpage > .fread, .fpage > .feval { overflow:visible; }
+    .fpage > .fleft, .fpage > .feval { overflow:visible; }
+    .fleft > .fread { display:block; overflow:visible; }
+    .fread > .fbeats { overflow:visible; }
   }
   .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     box-shadow:var(--sh-sm); overflow-y:auto; overflow-x:hidden; min-height:0; }
@@ -1816,28 +1823,47 @@ export function build () {
      card (behavior leading, prose collapsed beneath) and the schematic slot below it — together they
      form the left column, the proof card the right. The old in-card steps clone left with the
      rewrite (the full step record stays one click away behind the ⋯ menu's Steps window). */
-  /* fix round 1 (A-1): the LEFT COLUMN scrolls as one and the reading card GROWS to its content —
-     a tall behaviour table must never push the collapsed-prose toggle (a signed R13 element) below a
-     clipped card edge with no scroll cue. R2's independent scroll holds: the reading region is the
-     column, the proof card its own. */
-  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; overflow-y:auto; overflow-x:hidden; }
-  .fleft > .fread { flex:none; overflow:visible; }
+  /* Task 12 (the human, 2026-08-24 — supersedes fix round 1 A-1's whole-column scroll): the
+     SCHEMATIC is on FIRST SIGHT. The left column no longer scrolls; the requirement card SHRINKS
+     to the space the viewport leaves (flex:0 1 auto) and its beats/prose region (.fbeats) scrolls
+     INTERNALLY between the fixed card header and the pinned .ffoot (the in-full toggle — the A-1
+     element, now unconditionally visible). The schematic card below keeps its intrinsic height
+     (flex:none), fully visible on load at a 640px-tall viewport and up; only below that floor may
+     the column clip (overflow:hidden — the page still never scrolls). R2's independent scroll
+     holds: the reading region is .fbeats, the proof card its own. */
+  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; overflow:hidden; }
+  .fleft > .fread { flex:0 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  /* the card header and footer NEVER shrink — only the beats region gives way (a crushed title
+     clipped mid-glyph is exactly the old failure in a new place) */
+  .fread > .frmeta, .fread > .fttl { flex:none; }
+  .fread > .fbeats { flex:0 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; }
+  /* the pinned footer: zero-height while empty (a prose-only card has no toggle); when the beats
+     region is clipped, a hairline + a short fade to the card ground mark the cut edge — the fade
+     covers only the last ~1.5 lines ABOVE the clip, where lines are already being truncated; every
+     fully-visible line above it keeps --ink on --card (16.8:1). Tokens only. */
+  .fread > .ffoot { flex:none; position:relative; }
+  .fread > .ffoot .prose-t { display:inline-block; margin-top:var(--s3); }
+  .fread > .ffoot::before { content:''; position:absolute; bottom:100%; left:0; right:0; height:22px;
+    background:linear-gradient(to bottom, transparent, var(--card)); opacity:0; pointer-events:none;
+    transition:opacity .15s; }
+  .fread.clipped > .ffoot::before { opacity:1; }
+  .fread.clipped > .ffoot { box-shadow:0 -1px 0 var(--hair); }
   /* the behavior block LEADS the reading card — drawn as the mockup's bordered TABLE here (Task 8):
      a tinted label column (GIVEN / WHEN 1 / THEN 1 …) ruled off on the right, every row hair-ruled,
      a heavier rule opening each beat after the first, the Given row distinct; the text wraps in the
      right column. The shared _design.css grid stays the baked source row's (hidden) shape.
      Measured: --ink-3 on --wash 5.3:1 (the labels), on --canvas 5.8:1 (Given); --ink on --paper 16.8:1 (the text). */
-  .fread > .behavior { display:block; margin:0 0 var(--s4); padding:0; border:1px solid var(--hair);
+  .fread .fbeats .behavior { display:block; margin:0 0 var(--s4); padding:0; border:1px solid var(--hair);
     border-radius:var(--r-md); overflow:hidden; }
-  .fread > .behavior .brow { display:grid; grid-template-columns:72px 1fr; border-top:1px solid var(--hair); }
-  .fread > .behavior .brow:first-child { border-top:0; }
-  .fread > .behavior .brow.beatstart { border-top:2px solid var(--hair-2); }
-  .fread > .behavior .blab { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  .fread .fbeats .behavior .brow { display:grid; grid-template-columns:72px 1fr; border-top:1px solid var(--hair); }
+  .fread .fbeats .behavior .brow:first-child { border-top:0; }
+  .fread .fbeats .behavior .brow.beatstart { border-top:2px solid var(--hair-2); }
+  .fread .fbeats .behavior .blab { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); padding:10px var(--s3); background:var(--wash); border-right:1px solid var(--hair);
     display:flex; align-items:flex-start; }
-  .fread > .behavior .bgiven .blab { background:var(--canvas); }
-  .fread > .behavior .blab .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:4px; }   /* on the scale (B-1); ink-3 on wash 5.3:1 (ink-4 measured 4.3 — under AA) */
-  .fread > .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
+  .fread .fbeats .behavior .bgiven .blab { background:var(--canvas); }
+  .fread .fbeats .behavior .blab .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:4px; }   /* on the scale (B-1); ink-3 on wash 5.3:1 (ink-4 measured 4.3 — under AA) */
+  .fread .fbeats .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
   /* the PROSE collapses beneath the shape (one click unfolds the authored requirement in full); a
      prose-only requirement has no shape to lead with, so its prose stays open — .noshape marks it */
   .fread .prose-t { font-size:var(--t-xs); color:var(--ink-3); background:none; border:0; padding:0;
@@ -1860,10 +1886,13 @@ export function build () {
   .fschem .beatdots i.on { background:var(--ai); }
   .fschem .noschem { border:1px dashed var(--hair-2); border-radius:var(--r-sm); padding:var(--s4);
     font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
-  /* the loop: one drawing, animating; capped so the figure never crowds the reading card */
+  /* the loop: one drawing, animating; capped so the figure never crowds the reading card.
+     Task 12: the cap FOLLOWS the viewport height (a vector loses nothing by drawing smaller) —
+     220px on a 900px window down to 120px at the 640px floor, so the schematic's intrinsic height
+     always leaves the card header, some beats and the pinned footer on screen. */
+  .fschem .viz svg { display:block; width:100%; height:auto; max-height:clamp(120px, 38.5vh - 126px, 220px); }
   .fschem .viz { position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
-  .fschem .viz svg { display:block; width:100%; height:auto; max-height:220px; }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right */
   .fschem.isstale .viz svg, .fschem.isstale .sstills svg { filter:grayscale(1) opacity(.45); }
   .fschem .staleov { position:absolute; inset:0; display:flex; flex-direction:column;

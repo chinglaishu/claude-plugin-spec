@@ -474,21 +474,41 @@ const B = window.__BOARD__ || {}
     // THE BEHAVIOR LEADS (R13): the baked block (build-board renders it from the escaped PRD via
     // renderBehavior) heads the card; the PROSE collapses beneath it, one click away. A prose-only
     // requirement has no shape to lead with, so its prose stays open.
+    // Task 12 (the human, 2026-08-24 — the schematic on first sight): the beats/prose live in
+    // .fbeats, the card's INTERNAL scroll region, between the fixed header above and the pinned
+    // .ffoot below (the in-full toggle, always visible) — so the card shrinks to the viewport and
+    // the schematic below is on screen from the first paint. The 'clipped' class on the card
+    // drives the footer's hairline fade — the honest cue that more beats sit below the edge.
+    const beatsEl = document.createElement('div'); beatsEl.className = 'fbeats'
     if (r.behHtml) {
       const bl = document.createElement('span'); bl.className = 'flabel'; bl.textContent = 'The behavior'
-      read.appendChild(bl)
-      read.insertAdjacentHTML('beforeend', r.behHtml)
+      beatsEl.appendChild(bl)
+      beatsEl.insertAdjacentHTML('beforeend', r.behHtml)
     }
     const fbody = document.createElement('div')
     fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
     fbody.innerHTML = r.proseHtml
+    beatsEl.appendChild(fbody)
+    read.appendChild(beatsEl)
+    const foot = document.createElement('div'); foot.className = 'ffoot'
+    const syncClip = function () {
+      read.classList.toggle('clipped', beatsEl.scrollHeight - beatsEl.clientHeight - beatsEl.scrollTop > 1)
+    }
+    beatsEl.addEventListener('scroll', syncClip)
+    // a ResizeObserver fires once the region gets a layout (and on every reflow of its box) — the
+    // initial paint's cue without racing the append; content-height changes go through syncClip calls
+    if (window.ResizeObserver) new ResizeObserver(syncClip).observe(beatsEl)
     if (r.behHtml) {
       const pt = document.createElement('button'); pt.type = 'button'; pt.className = 'prose-t'
       pt.textContent = 'the authored requirement — in full'
-      pt.addEventListener('click', function () { fbody.classList.toggle('open') })
-      read.appendChild(pt)
+      pt.addEventListener('click', function () {
+        fbody.classList.toggle('open')
+        if (fbody.classList.contains('open')) fbody.scrollIntoView({ block: 'nearest' })
+        syncClip()
+      })
+      foot.appendChild(pt)
     }
-    read.appendChild(fbody)
+    read.appendChild(foot)
     left.appendChild(read)
     // the schematic slot (task 4): the drawn, hash-pinned loop where a committed drawing exists —
     // quiet grey with the dated ≠ note when the text has moved past it — and the honest
