@@ -31,8 +31,8 @@ export const FILES = [
   // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports
   // it — so it must be listed directly or a scaffolded project has no hands to run the viz pass at all.
   'tools/viz-derive.mjs',
-  // pure evidence-harvest logic (Task 15, D2): clip windows + ffmpeg args + the per-requirement
-  // fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
+  // pure evidence-harvest logic (Task 15, D2): the proves-step window + ffmpeg frame args + the
+  // per-requirement fold/prune — imported by both spec-store.mjs (foldEvidence) and the results reporter, so a
   // scaffolded project can load neither without it (the same guard-caught class of miss).
   'tools/evidence.mjs',
   // pure flow-composer logic (Task 5): parseBeats (spec-store reads each screen's steps.ts through
@@ -82,7 +82,7 @@ export const SCRIPTS = {
 
 // What a scaffolded project's git must NOT track — the transient run state under spec/ and the
 // update scratch at the root. NOT spec/_specboard.json (a committable record of the release), and
-// NOT spec/<screen>/evidence/ or board.html: the harvested frames (640px) and clips are the proof a
+// NOT spec/<screen>/evidence/ or board.html: the harvested frames (640px) are the proof a
 // fresh clone must show, so they are committed (D2, the human 2026-08-22). Pinned by
 // tools/skeleton-ignore.test.mjs.
 export const SPEC_IGNORE = [

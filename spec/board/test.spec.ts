@@ -713,15 +713,22 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const spd = media.locator('.fmbar select.pspd')
     await expect(spd).toHaveValue('1')
     await expect(spd.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
+    // 0.25× BEFORE gif mode, so nothing past the first frame is shown for ≥1.4s — which is what
+    // makes the eager-fetch check below discriminating
+    await spd.selectOption('0.25')
     await media.locator('.medbar button[data-m="clip"]').click()
     const stepper = media.locator('.fmpanel[data-m="clip"]')
     const frameN = await stepper.locator('.fsteps img').count()
     expect(frameN, 'the harvested pair at least — the stepper always has frames to play').toBeGreaterThan(1)
+    // the frames are fetched EAGERLY (release pass M-1): they stack display:none, and a lazy img
+    // is never fetched while hidden — the first loop at 4× flashed blank. Every frame has decoded
+    // (natural width — a positive, not an attribute's absence) well before the loop shows it
+    await expect.poll(() => stepper.locator('.fsteps img').evaluateAll(
+      (els: HTMLImageElement[]) => els.every(i => i.complete && i.naturalWidth > 0)), { timeout: 1000 }).toBe(true)
     // EXACT dots: one per frame, and the count spelled out beside them in mono
     await expect(stepper.locator('.pdots .pd')).toHaveCount(frameN)
     await expect(stepper.locator('.fstepn')).toHaveText(new RegExp(`^\\d+ / ${frameN}$`))
-    // 0.25× first, so the jump below cannot race the auto-advance (every hold is 4× long)
-    await spd.selectOption('0.25')
+    // still 0.25×, so the jump below cannot race the auto-advance (every hold is 4× long)
     // dot-click JUMPS: the clicked dot reads current, the label counts it, exactly one frame shows
     await stepper.locator('.pdots .pd').last().click()
     await expect(stepper.locator('.pdots .pd').last()).toHaveClass(/\bcur\b/)

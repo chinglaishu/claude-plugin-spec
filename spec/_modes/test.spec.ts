@@ -35,10 +35,10 @@ test.afterEach(() => {
 // source of truth the moment it is written, and its state is computed from its tests. `extra` lets a
 // test inject an arbitrary extra frontmatter line — used below to prove a pre-redesign `guess:` line
 // left over in an old PRD is now inert.
-function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { extra = '', evidence = false } = {}) {
+function makeScreen (name: string, body = 'One behaviour, asserted by a test.', { extra = '', evidence = false, title = 'A first requirement' } = {}) {
   const dir = join(SPEC, name); mkdirSync(dir, { recursive: true })
   const prd = `---\nscreen: ${name}\narea: Core\ntitle: ${name}\nroute: /${name}\n` +
-    extra + `---\n\n## R1 — A first requirement\n\n${body}\n`
+    extra + `---\n\n## R1 — ${title}\n\n${body}\n`
   writeFileSync(join(dir, 'prd.md'), prd)
   if (evidence) {
     // a real (1×1) png pair at the harvest's deterministic home, so the baked data-ev-* attributes
@@ -355,7 +355,10 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
     '- **When** you tick the last long-running item still open anywhere in the working list at the end of the day\n' +
     '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows\n\n' +
     'Supporting prose under the tall shape.\n'
-  const { name, dir } = makeScreen('probe-tall', body)
+  // …and a TWO-LINE title (release pass M-3): at the 640px floor a long title once left the
+  // beats region a sliver — "THE BEHAVIOR" over zero beats; the region now keeps one row
+  const { name, dir } = makeScreen('probe-tall', body,
+    { title: 'Ticking the long-running items one by one recounts the header and strikes each row' })
   // a COMMITTED drawing, derived exactly as the viz pass does — the thing that must be on first sight
   const d = deriveSchematic(parseBehavior(body))!
   expect(d.archetype).toBe('toggle-and-recount')
@@ -401,6 +404,14 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
   await expect(schem).toBeInViewport({ ratio: 1 })
   await expect(ov.locator('.fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
   expect(await beats.evaluate(el => el.scrollHeight > el.clientHeight), 'the beats region still overflows').toBe(true)
+  // …and the region is never a heading over nothing (M-3): at least the Given row sits fully
+  // inside it before any scroll — a label with zero beats under it reads as an empty block
+  const firstRow = await beats.evaluate(el => {
+    const row = el.querySelector('.behavior .brow') as HTMLElement
+    return { rowBottom: row.getBoundingClientRect().bottom - el.getBoundingClientRect().top, region: el.clientHeight }
+  })
+  expect(firstRow.rowBottom, `at the 640 floor the beats region (${firstRow.region}px) shows at least its first row`)
+    .toBeLessThanOrEqual(firstRow.region + 0.5)
   await page.setViewportSize({ width: 1440, height: 900 })
 })
 

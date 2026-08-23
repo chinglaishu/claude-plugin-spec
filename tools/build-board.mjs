@@ -1759,6 +1759,11 @@ export function build () {
      must stay on first sight at the 640px floor (tokens only; the sides keep their s6) */
   @media (max-height:760px) {
     .dtscroll { padding-top:var(--s3); padding-bottom:var(--s3); }
+    /* release pass M-3: on a short window the reading card's own padding tightens too, so a
+       2-line-title card keeps its label + one Given row AND its pinned footer above the schematic
+       at the 640 floor (the budget there is 445px; s6/s5 padding cost 24px of it) */
+    .focusov .fread, .lst-body .fread { padding-top:var(--s4); padding-bottom:var(--s4); }
+    .fpage > .fleft { gap:var(--s3); }
   }
   .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
 
@@ -1844,7 +1849,9 @@ export function build () {
   /* the card header and footer NEVER shrink — only the beats region gives way (a crushed title
      clipped mid-glyph is exactly the old failure in a new place) */
   .fread > .frmeta, .fread > .fttl { flex:none; }
-  .fread > .fbeats { flex:0 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; }
+  /* release pass M-3: the region may shrink but never to a heading over nothing — it keeps room
+     for its label plus one wrapped Given row (≈ label + 3 lines + the row's padding) */
+  .fread > .fbeats { flex:0 1 auto; min-height:calc(var(--t-sm) * 1.55 * 4 + var(--s3)); overflow-y:auto; overflow-x:hidden; }
   /* the pinned footer: zero-height while empty (a prose-only card has no toggle); when the beats
      region is clipped, a hairline + a short fade to the card ground mark the cut edge — the fade
      covers only the last ~1.5 lines ABOVE the clip, where lines are already being truncated; every
@@ -1896,9 +1903,13 @@ export function build () {
     font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
   /* the loop: one drawing, animating; capped so the figure never crowds the reading card.
      Task 12: the cap FOLLOWS the viewport height (a vector loses nothing by drawing smaller) —
-     220px on a 900px window down to 120px at the 640px floor, so the schematic's intrinsic height
-     always leaves the card header, some beats and the pinned footer on screen. */
-  .fschem .viz svg { display:block; width:100%; height:auto; max-height:clamp(120px, 38.5vh - 126px, 220px); }
+     ~210px on a 900px window down to ~90px at the 640px floor, so the schematic's intrinsic height
+     always leaves the card header, ONE beat row and the pinned footer on screen. Release pass M-3:
+     the slope steepened (38.5vh−126 → 45vh−200: 205 at 900, 142 at 760, 88 at 640) to pay for
+     .fbeats' one-row minimum at the floor without touching the 900px picture. The constants are
+     measured chrome, not tokens: at 640 the column gets 445px, of which a 2-line-title card's
+     header+footer+one row need ~245 and the schematic card's own caption/foot/borders ~95. */
+  .fschem .viz svg { display:block; width:100%; height:auto; max-height:clamp(88px, 45vh - 200px, 220px); }
   .fschem .viz { position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right */
@@ -1944,14 +1955,20 @@ export function build () {
   /* Task 13 — the per-pane play-speed DROPDOWN (replacing Task 11's cycle button): a native
      <select>, 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, mono, session-scoped (never stored) — the
      keyboard reaches it for free. ink-3 on paper 6.42:1, hover/focus ink. */
+  .pspdwrap { position:relative; display:inline-flex; flex:none; }
   select.pspd { appearance:none; -webkit-appearance:none;
     border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper);
-    color:var(--ink-3); font:var(--t-micro) var(--mono); font-weight:500; padding:4px 8px;
-    min-width:48px; cursor:pointer; flex:none; text-align:center; }
-  select.pspd:hover, select.pspd:focus-visible { border-color:var(--ink-4); color:var(--ink); }
-  .fmbar .pspd, .fschem .figcap .pspd { margin-left:auto; }
-  .fmbar .pspd ~ .medbar, .fschem .figcap .pspd ~ .medbar { margin-left:var(--s2); }
-  .fschem .figcap .beatdots ~ .pspd { margin-left:var(--s2); }
+    color:var(--ink-3); font:var(--t-micro) var(--mono); font-weight:500; padding:4px 18px 4px 8px;
+    min-width:52px; cursor:pointer; }
+  /* the caret (release pass M-6): a select must look like one — a chevron drawn from two borders
+     in --ink-4 (5.18:1 on paper, non-text ≥ 3:1), tokens only (a data-URI could not read a var) */
+  .pspdwrap::after { content:''; position:absolute; right:7px; top:calc(50% - 4px); width:5px; height:5px;
+    border-right:1.5px solid var(--ink-4); border-bottom:1.5px solid var(--ink-4); transform:rotate(45deg);
+    pointer-events:none; }
+  .pspdwrap:hover::after { border-color:var(--ink); }
+  .fmbar .pspdwrap, .fschem .figcap .pspdwrap { margin-left:auto; }
+  .fmbar .pspdwrap ~ .medbar, .fschem .figcap .pspdwrap ~ .medbar { margin-left:var(--s2); }
+  .fschem .figcap .beatdots ~ .pspdwrap { margin-left:var(--s2); }
   .fmbody { position:relative; }
   .fmpanel[hidden] { display:none; }
   /* stills: the harvested frame pair, the per-beat filmstrip — or the run's proof-frame strip (the
@@ -1984,6 +2001,8 @@ export function build () {
     background:none; cursor:pointer; flex:none; }
   .fstepbar .pd.seen { background:var(--ink-4); border-color:var(--ink-4); }
   .fstepbar .pd.cur { background:var(--ai); border-color:var(--ai); outline:1px solid var(--ai); outline-offset:2px; }
+  /* the author outline above would swallow the UA focus ring on the current dot (I-6) */
+  .fstepbar .pd:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
   .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
   .fmpanel .frecwrap { padding:var(--s3); }
   /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */

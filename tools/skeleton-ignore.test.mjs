@@ -1,5 +1,5 @@
 // tools/skeleton-ignore.test.mjs — D2 (the human, 2026-08-22; final review M4): the evidence
-// harvest (spec/<screen>/evidence/*.png at 640px, plus the .webp clip a board run cuts) is
+// harvest (spec/<screen>/evidence/*.png at 640px; the .webp clip retired with Task 13's stepper) is
 // COMMITTED in a scaffolded project, exactly as it is in this repo — the board reads it by path and
 // a fresh clone must show proof, not blanks. board.html stays as it is today (not ignored either).
 // The scaffold's two ignore lists live in _skeleton.mjs so this test can pin what they never cover.
@@ -35,11 +35,12 @@ test('the glob helper reads the list\'s own shapes the way git does', () => {
 })
 
 const EVIDENCE = [
-  'board/evidence/R1.before.png', 'board/evidence/R1.after.png', 'board/evidence/R1.clip.webp',
+  'board/evidence/R1.before.png', 'board/evidence/R1.after.png',
+  'board/evidence/R1.clip.webp',   // a legacy clip still on disk in an older project — never hidden either
   'asset-plan/evidence/R12.after.png'
 ]
 
-test('D2: a scaffolded spec/.gitignore ignores NO evidence frame or clip', () => {
+test('D2: a scaffolded spec/.gitignore ignores NO evidence frame (nor a legacy clip)', () => {
   assert.ok(SPEC_IGNORE.length > 0)
   for (const pat of SPEC_IGNORE) for (const f of EVIDENCE) {
     assert.ok(!ignores(pat, f), `spec/.gitignore pattern "${pat}" would hide ${f}`)

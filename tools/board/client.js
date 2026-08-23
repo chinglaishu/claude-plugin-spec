@@ -173,13 +173,16 @@ const B = window.__BOARD__ || {}
     })
   // closing the detail also tears down an open focus reader, returning every borrowed node to the
   // baked source panes (.cols stays hidden — it is the data source, not a view; board R13 2026-08-18)
+  // the gif-mode frame-stepper's chained timer leaves with whatever held it (Task 13): a reader
+  // being torn down, a Focus page being paged away (release pass M-2 — paging is the commonest way
+  // to leave a page, and the old page's timer used to outlive it until its hold expired). The
+  // tick's isConnected guard is only the backstop, never the plan.
+  function stopSteppers (root) {
+    for (const p of (root || document).querySelectorAll('.fmpanel[data-m="clip"]')) if (p._stop) p._stop()
+  }
   function closeFocus () {
-    // the gif-mode frame-stepper's chained timer leaves with its reader (Task 13) — BOTH reader
-    // kinds hold a media pane, so stop any stepper before the nodes go; the tick's isConnected
-    // guard is only the backstop, never the plan
-    for (const p of document.querySelectorAll('.focusov .fmpanel[data-m="clip"], .lst-card.open .fmpanel[data-m="clip"]')) {
-      if (p._stop) p._stop()
-    }
+    // BOTH reader kinds hold a media pane — stop any stepper before the nodes go
+    for (const o of document.querySelectorAll('.focusov, .lst-card.open')) stopSteppers(o)
     for (const o of document.querySelectorAll('.focusov')) {
       if (o._onKey) { document.removeEventListener('keydown', o._onKey); o._onKey = null }   // the ← → keys leave with the reader (A-4)
       if (o._restore) o._restore()          // put any moved test node/recording back before tearing down —
@@ -637,7 +640,9 @@ const B = window.__BOARD__ || {}
     })
     s.value = String(get())
     s.addEventListener('change', function () { set(parseFloat(s.value) || 1) })
-    return s
+    // wrapped so the CSS can draw the caret (M-6) — a <select> takes no pseudo-element
+    const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
+    return w
   }
 
   // The SCHEMATIC slot (requirement schematics spec 2026-08-18; task 4): the AUTHORED-side
@@ -909,13 +914,19 @@ const B = window.__BOARD__ || {}
       } else {
         const stage = document.createElement('div'); stage.className = 'fsteps'
         sframes.forEach(function (f) {
-          const img = document.createElement('img'); img.loading = 'lazy'; img.src = f.src; img.alt = f.alt
+          // eager on purpose (release pass M-1): the frames stack display:none, and a lazy img is
+          // never fetched while hidden — at 4× the first loop flashed blank. A dozen 640px PNGs at
+          // most, all of which the loop will show within seconds anyway.
+          const img = document.createElement('img'); img.src = f.src; img.alt = f.alt
           stage.appendChild(img)
         })
         const sbar = document.createElement('div'); sbar.className = 'fstepbar'
         const dots = document.createElement('span'); dots.className = 'pdots'
         const lbl = document.createElement('span'); lbl.className = 'fstepn'
-        const holds = window.SBStepper.stepperHolds(sframes.map(function (f) { return f.anchor })).holds
+        const timing = window.SBStepper.stepperHolds(sframes.map(function (f) { return f.anchor }))
+        const holds = timing.holds
+        // the fallback is honest but otherwise invisible — say which pace this loop plays (I-4)
+        lbl.title = timing.timed ? 'true relative timing — from the run\u2019s own step times' : 'equal holds — this harvest carries no usable timing'
         const imgs = [].slice.call(stage.children)
         const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
         let cur = 0
@@ -982,7 +993,7 @@ const B = window.__BOARD__ || {}
       if (panels.video) {
         for (const v of panels.video.querySelectorAll('video')) v.playbackRate = MEDIA_SPD
       }
-      sb.value = String(MEDIA_SPD)
+      sb.querySelector('select').value = String(MEDIA_SPD)
     }
     if (st === 'changed') {
       const wm = document.createElement('div'); wm.className = 'wmark'
@@ -1036,7 +1047,7 @@ const B = window.__BOARD__ || {}
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next); pager.appendChild(hint)
     function render () {
       if (bodyRestore) { bodyRestore(); bodyRestore = null }   // reclaim the previous page's moved nodes
-      const old = ov.querySelector('.fpage'); if (old) old.remove()
+      const old = ov.querySelector('.fpage'); if (old) { stopSteppers(old); old.remove() }
       const r = reqInfo(reqs[cur])
       ov._curId = r.id        // so a loadRuns fold can reopen this reader on the SAME requirement
       // the counter leads with the requirement's FAMILY when the prd has them (board R17):

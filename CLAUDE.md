@@ -184,7 +184,9 @@ change.
   a session-scoped 0.25×–4× speed DROPDOWN (video maps it to playbackRate; the schematic to
   --spd). The webp clip and Task 11's 1.5×/2× variants are RETIRED (2026-08-24) — once the stepper
   played the frames nothing rendered them; a legacy entry's clip files are pruned at its next
-  fold. Frames are downscaled to 640px at the fold when ffmpeg is present (final review M4).
+  fold. This moots **D1**, the human's 2026-08-22 keep-the-clip-across-CLI-folds decision — there
+  is no clip left to keep; the human's stepper choice of 2026-08-24 supersedes it, and carryClip
+  went with the cut. Frames are downscaled to 640px at the fold when ffmpeg is present (final review M4).
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
