@@ -1734,11 +1734,17 @@ test('The compose endpoint composes deterministically and refuses honestly — n
   // entry is patched in place — ranAt pushed past every source (nothing stale) or to zero (every
   // pass stale by source) — and the exact prior bytes restored in `finally`, then the board rebuilt
   // to them so no later test opens onto a fixture index (the _modes precedent, injectIndex).
-  const patchBoardIndex = (mut: (e: any) => void) => {
+  // `mut` runs on the board's entry; `all` on EVERY screen's entry. Coverage is board-wide (R5: a
+  // qualified tag proves another screen's requirement), so board:R1 / board:R2 also carry passes
+  // recorded on init's and dispatch's composed flows — patching the board entry alone left those
+  // current whenever the previous fold was fresh, and the stale branch composed (200) on every
+  // second run (Task 9: runs 2 and 4 red, 1 and 3 green). The stale branch must stale the whole fold.
+  const patchBoardIndex = (mut: (e: any) => void, all?: (e: any) => void) => {
     const before = readFileSync(INDEX_FILE, 'utf8')
     const idx = JSON.parse(before)
     expect(idx.board, 'the board has folded at least once').toBeTruthy()
     mut(idx.board)
+    if (all) for (const e of Object.values(idx)) all(e)
     writeFileSync(INDEX_FILE, JSON.stringify(idx, null, 2) + '\n')
     return () => writeFileSync(INDEX_FILE, before)
   }
@@ -1765,7 +1771,7 @@ test('The compose endpoint composes deterministically and refuses honestly — n
       // the SAME chain against proofs gone stale by source (m2): refused, and the reason is "run
       // first" — proven-but-stale is told apart from never-proven; the emitter never composes on a
       // stale Then
-      restore(); restore = patchBoardIndex(stale)
+      restore(); restore = patchBoardIndex(stale, stale)   // every screen's records — board-wide coverage
       const st = await request.post('/api/compose', { data: { chain: ['b:board:countHomeCards', 'b:board:openDetailReader'], name: 'scratch flow', dryRun: true } })
       expect(st.status(), 'compose (R1/R2 stale): ' + await st.text()).toBe(409)
       expect(await st.text()).toMatch(/^R1, R2 are proven, but stale by source — run spec\/board first$/)
