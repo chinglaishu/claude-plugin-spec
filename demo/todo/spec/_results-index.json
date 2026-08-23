@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)",
         "ok": true,
-        "ms": 2944,
+        "ms": 39522,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Add, rename, grow and roll up the container, then reload — composed",
         "ok": true,
-        "ms": 1346,
+        "ms": 21691,
         "error": null,
         "line": 94,
         "reqs": {
@@ -36,7 +36,7 @@
         }
       }
     ],
-    "ranAt": 1787412845741,
+    "ranAt": 1787465665080,
     "provenHashes": {
       "R1": "af0b673e71b26f86",
       "R2": "5ea4b12f3e9bd0c0",
@@ -51,83 +51,114 @@
       "R1": {
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
-        "clip": null,
+        "clip": "spec/todo/evidence/R1.clip.webp",
         "window": {
-          "from": 128,
-          "to": 461
+          "from": 173,
+          "to": 4561
         },
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "af0b673e71b26f86"
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "af0b673e71b26f86",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R2": {
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
-        "clip": null,
+        "clip": "spec/todo/evidence/R2.clip.webp",
         "window": {
-          "from": 557,
-          "to": 621
+          "from": 4653,
+          "to": 7544
         },
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "5ea4b12f3e9bd0c0"
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "5ea4b12f3e9bd0c0",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R3": {
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
-        "clip": null,
+        "clip": "spec/todo/evidence/R3.clip.webp",
         "window": {
-          "from": 723,
-          "to": 757
+          "from": 7670,
+          "to": 10555
         },
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "038e15a2b915d3a3"
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "038e15a2b915d3a3",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R5": {
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
-        "clip": null,
-        "window": null,
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "235357fb59cf76ee"
+        "clip": "spec/todo/evidence/R5.clip.webp",
+        "window": {
+          "from": 10669,
+          "to": 13583
+        },
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "235357fb59cf76ee",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R4": {
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
-        "clip": null,
-        "window": null,
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "b937fb1f76118e8c"
+        "clip": "spec/todo/evidence/R4.clip.webp",
+        "window": {
+          "from": 13701,
+          "to": 15214
+        },
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "b937fb1f76118e8c",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R6": {
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
-        "clip": null,
-        "window": null,
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "e11257f60f8e5560"
+        "clip": "spec/todo/evidence/R6.clip.webp",
+        "window": {
+          "from": 20159,
+          "to": 31661
+        },
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "e11257f60f8e5560",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R7": {
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
-        "clip": null,
-        "window": null,
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "ef33ff35840f47b6"
+        "clip": "spec/todo/evidence/R7.clip.webp",
+        "window": {
+          "from": 31775,
+          "to": 34673
+        },
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "ef33ff35840f47b6",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       },
       "R8": {
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
-        "clip": null,
-        "window": null,
-        "runId": "1787412845741",
-        "at": "2026-08-22T15:34:05.741Z",
-        "hash": "624daec563e558ac"
+        "clip": "spec/todo/evidence/R8.clip.webp",
+        "window": {
+          "from": 16836,
+          "to": 21255
+        },
+        "runId": "1787465602546",
+        "at": "2026-08-23T06:14:25.080Z",
+        "hash": "624daec563e558ac",
+        "clipRunId": "1787465602546",
+        "clipAt": "2026-08-23T06:14:25.080Z"
       }
     }
   }
