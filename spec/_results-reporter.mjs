@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindow, ffmpegClipArgs, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
+import { clipWindow, ffmpegClipArgs, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment, CLIP_SPEEDS } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -215,6 +215,23 @@ function harvestEvidence (harvest, ranAt) {
           { stdio: 'ignore', timeout: 30000 })
         if (existsSync(join(process.cwd(), paths.clip))) entry.clip = paths.clip
       } catch { /* no clip — the frame pair alone is the evidence */ }
+      // Task 11 (play speed): where the 1x landed, cut the 1.5x/2x VARIANTS from the same window —
+      // an animated webp cannot be rate-controlled in the browser and this video is pruned later,
+      // so harvest is the only moment the set can exist. One speed failing to cut never blocks the
+      // others or the run; the entry lists only what is really on disk (the board falls back to 1x
+      // for a missing variant — honest, never a broken image).
+      if (entry.clip) {
+        const vars = {}
+        for (const [key, speed] of Object.entries(CLIP_SPEEDS)) {
+          const dest = paths.clipVariants[key]
+          try {
+            execFileSync('ffmpeg', ffmpegClipArgs(h.video, h.window, join(process.cwd(), dest), speed),
+              { stdio: 'ignore', timeout: 30000 })
+            if (existsSync(join(process.cwd(), dest))) vars[key] = dest
+          } catch { /* that speed stays uncut — the 1x stands */ }
+        }
+        if (Object.keys(vars).length) entry.clipVariants = vars
+      }
     }
     if (entry.before || entry.after) out[qid] = entry
   }

@@ -24,12 +24,23 @@ export function clipWindow (steps, id) {
   return { from: hit.t, to: hit.t + (typeof hit.d === 'number' ? hit.d : 0) }
 }
 
-export function ffmpegClipArgs (srcRel, { from, to }, outRel) {
+// Task 11 (play speed): an animated webp cannot be rate-controlled in the browser and the run's
+// video is pruned later, so the 1.5x/2x VARIANTS are cut AT HARVEST beside the 1x — same source
+// window (-ss/-t untouched: speed changes pacing, never the cut), setpts compresses time, and the
+// fps scales WITH the speed (12·s → 18/24) so every variant keeps the 1x sampling density: each
+// output frame still spans 1/12s of SOURCE time — same frame count, ~same size, motion exactly as
+// smooth as the 1x. (A flat fps=12 at 2x would halve the sampling and read choppier; a flat 24
+// at 1x would double every file for nothing.)
+export const CLIP_SPEEDS = { '1.5x': 1.5, '2x': 2 }
+export function ffmpegClipArgs (srcRel, { from, to }, outRel, speed = 1) {
   const secs = n => String(Math.round(n) / 1000)
   const dur = Math.max(0.4, (to - from) / 1000)
+  const vf = speed === 1
+    ? 'scale=640:-2:flags=lanczos,fps=12'
+    : `setpts=PTS/${speed},scale=640:-2:flags=lanczos,fps=${Math.round(12 * speed)}`
   return [
     '-y', '-ss', secs(from), '-t', String(dur), '-i', srcRel,
-    '-an', '-vf', 'scale=640:-2:flags=lanczos,fps=12', '-loop', '0', outRel
+    '-an', '-vf', vf, '-loop', '0', outRel
   ]
 }
 
@@ -63,7 +74,10 @@ export function evidencePaths (screen, id) {
     dir,
     before: `${dir}/${rid}.before.png`,
     after: `${dir}/${rid}.after.png`,
-    clip: `${dir}/${rid}.clip.webp`
+    clip: `${dir}/${rid}.clip.webp`,
+    // the speed variants (Task 11), keyed by the label the board's speed button shows — the 1x
+    // keeps the bare name so every pre-variant consumer keeps working untouched
+    clipVariants: { '1.5x': `${dir}/${rid}.clip.15x.webp`, '2x': `${dir}/${rid}.clip.2x.webp` }
   }
 }
 
@@ -108,15 +122,24 @@ export function foldEvidence (index, entries, { proven = () => false } = {}) {
     const entry = (index[scr] ??= {})
     const old = entry.evidence?.[rid]
     let e = raw
+    // the speed variants (Task 11) ride the 1x clip's OWN D1 decision as one set — a carry keeps
+    // them with it, a drop drops them all, a fresh cut brings its own (or none — never invented)
     if (carryClip(old, raw, proven(qid))) {
-      e = { ...raw, clip: old.clip, clipRunId: old.clipRunId || old.runId, clipAt: old.clipAt || old.at }
+      e = {
+        ...raw,
+        clip: old.clip,
+        ...(old.clipVariants ? { clipVariants: old.clipVariants } : {}),
+        clipRunId: old.clipRunId || old.runId,
+        clipAt: old.clipAt || old.at
+      }
     } else if (raw.clip) {
       e = { ...raw, clipRunId: raw.runId, clipAt: raw.at }
     }
     entry.evidence = { ...(entry.evidence || {}), [rid]: e }
     if (old) {
-      const kept = new Set([e.before, e.after, e.clip].filter(Boolean))
-      for (const p of [old.before, old.after, old.clip]) {
+      const vals = x => [x.before, x.after, x.clip, ...Object.values(x.clipVariants || {})]
+      const kept = new Set(vals(e).filter(Boolean))
+      for (const p of vals(old)) {
         if (p && !kept.has(p)) prune.push(p)
       }
     }

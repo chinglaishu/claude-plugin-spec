@@ -62,3 +62,25 @@ test('ffmpegDownscaleArgs rescales a frame to the clip width (640, even height),
   assert.deepEqual(ffmpegDownscaleArgs('in.png', 'out.png'),
     ['-y', '-i', 'in.png', '-vf', 'scale=640:-2:flags=lanczos', 'out.png'])
 })
+
+// ── Task 11: the speed VARIANTS are cut at harvest (an animated webp cannot be rate-controlled
+// in the browser and the run's video is pruned later). Same window, setpts compresses time, and
+// the fps scales WITH the speed (12·s → 18/24) so every variant keeps the 1× sampling density:
+// each output frame still spans 1/12s of SOURCE time, so the variant has the same frame count,
+// ~the same size, and motion exactly as smooth as the 1× — only the pacing changes.
+test('ffmpegClipArgs at 1.5× — same window, setpts=PTS/1.5, fps 18', () => {
+  assert.deepEqual(ffmpegClipArgs('runs/x/video.webm', { from: 1200, to: 2000 }, 'runs/x/R5.clip.15x.webp', 1.5), [
+    '-y', '-ss', '1.2', '-t', '0.8', '-i', 'runs/x/video.webm',
+    '-an', '-vf', 'setpts=PTS/1.5,scale=640:-2:flags=lanczos,fps=18', '-loop', '0', 'runs/x/R5.clip.15x.webp'
+  ])
+})
+test('ffmpegClipArgs at 2× — setpts=PTS/2, fps 24', () => {
+  const args = ffmpegClipArgs('v.webm', { from: 100, to: 900 }, 'o.webp', 2)
+  assert.equal(args[args.indexOf('-vf') + 1], 'setpts=PTS/2,scale=640:-2:flags=lanczos,fps=24')
+  assert.equal(args[args.indexOf('-t') + 1], '0.8', 'the SOURCE window is identical — speed changes pacing, never the cut')
+})
+test('ffmpegClipArgs at explicit speed 1 stays byte-identical to the default house args', () => {
+  assert.deepEqual(
+    ffmpegClipArgs('v.webm', { from: 1200, to: 2000 }, 'o.webp', 1),
+    ffmpegClipArgs('v.webm', { from: 1200, to: 2000 }, 'o.webp'))
+})

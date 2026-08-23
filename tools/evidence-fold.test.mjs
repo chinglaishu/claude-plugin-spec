@@ -11,7 +11,8 @@ test('evidencePaths derives the deterministic per-requirement home under the scr
     dir: 'spec/board/evidence',
     before: 'spec/board/evidence/R4.before.png',
     after: 'spec/board/evidence/R4.after.png',
-    clip: 'spec/board/evidence/R4.clip.webp'
+    clip: 'spec/board/evidence/R4.clip.webp',
+    clipVariants: { '1.5x': 'spec/board/evidence/R4.clip.15x.webp', '2x': 'spec/board/evidence/R4.clip.2x.webp' }
   })
 })
 test('evidencePaths takes the bare id off a qualified one — the home is the requirement\'s screen', () => {
@@ -136,4 +137,52 @@ test('D1: without a proven oracle the fold stays as strict as before (prune on a
   const index = { board: { evidence: { R4: old } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) })
   assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
+})
+
+// ── Task 11: the clip's SPEED VARIANTS (1.5×/2× cut at harvest beside the 1×) ride the SAME D1
+// decision as one set — a fold that keeps the 1× keeps the variants, a drop drops them all. The
+// index shape is `clip` (unchanged — every pre-variant consumer keeps working) + `clipVariants`,
+// an object keyed by the speed label ('1.5x'/'2x'), so a future speed extends the map without a
+// schema change and the client looks a variant up by the label its button shows.
+const VARS = { '1.5x': 'spec/board/evidence/R4.clip.15x.webp', '2x': 'spec/board/evidence/R4.clip.2x.webp' }
+test('T11: a video-less fold carries the clip AND its variants forward together', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', clipVariants: VARS, runId: 'r0', at: '2026-08-20T00:00:00.000Z', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) }, { proven: () => true })
+  assert.deepEqual(prune, [], 'the variant files stay on disk with the 1×')
+  const e = index.board.evidence.R4
+  assert.equal(e.clip, 'spec/board/evidence/R4.clip.webp')
+  assert.deepEqual(e.clipVariants, VARS, 'the set is carried together')
+  assert.equal(e.clipRunId, 'r0')
+})
+test('T11: a drop drops the whole set — every variant file is named for pruning with the 1×', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', clipVariants: VARS, runId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h2' }) }, { proven: () => true })
+  assert.deepEqual(prune.sort(), [
+    'spec/board/evidence/R4.clip.15x.webp',
+    'spec/board/evidence/R4.clip.2x.webp',
+    'spec/board/evidence/R4.clip.webp'
+  ])
+  assert.equal(index.board.evidence.R4.clip, null)
+  assert.equal(index.board.evidence.R4.clipVariants ?? null, null)
+})
+test('T11: a fold WITH a fresh cut replaces the set — a variant the new cut lacks is pruned', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', clipVariants: VARS, runId: 'r0', clipRunId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  // the new cut landed the 1× and the 1.5× at the same deterministic paths, but the 2× cut failed
+  const prune = foldEvidence(index, { 'board:R4': entry({
+    clip: 'spec/board/evidence/R4.clip.webp',
+    clipVariants: { '1.5x': 'spec/board/evidence/R4.clip.15x.webp' }, runId: 'r5', hash: 'h1'
+  }) }, { proven: () => true })
+  assert.deepEqual(prune, ['spec/board/evidence/R4.clip.2x.webp'], 'only the stale 2× file goes')
+  assert.equal(index.board.evidence.R4.clipRunId, 'r5')
+  assert.deepEqual(index.board.evidence.R4.clipVariants, { '1.5x': 'spec/board/evidence/R4.clip.15x.webp' })
+})
+test('T11: an old entry with a clip but NO variants (pre-T11 harvest) carries honestly — clip alone', () => {
+  const old = entry({ clip: 'spec/board/evidence/R4.clip.webp', runId: 'r0', hash: 'h1' })
+  const index = { board: { evidence: { R4: old } } }
+  foldEvidence(index, { 'board:R4': entry({ runId: 'r2', hash: 'h1' }) }, { proven: () => true })
+  assert.equal(index.board.evidence.R4.clip, 'spec/board/evidence/R4.clip.webp')
+  assert.equal(index.board.evidence.R4.clipVariants ?? null, null, 'no variant is ever invented')
 })
