@@ -102,7 +102,12 @@ export function flattenSteps (steps) {
       // fixture/context setup is framework plumbing, not a step of the test
       const keep = ['test.step', 'pw:api', 'expect'].includes(s.category) && !STEP_NOISE.test(title)
       if (keep) {
-        if (out.length >= 80) dropped++              // capped so one test cannot bloat the record…
+        // capped so one test cannot bloat the record… but a `proves <id>` step is never dropped:
+        // it is the requirement's coverage AND its clip window (tools/evidence.mjs clipWindow) —
+        // the cap once swallowed every proof a long flow made late, and those requirements lost
+        // their gifs (Tsumiki R3–R8, 2026-08-23). The cap trims noise, never a proof.
+        const isProof = s.category === 'test.step' && /^proves /.test(title)
+        if (out.length >= 80 && !isProof) dropped++
         else {
           const at = s.startTime ? +new Date(s.startTime) : null
           if (epoch == null && at != null) epoch = at

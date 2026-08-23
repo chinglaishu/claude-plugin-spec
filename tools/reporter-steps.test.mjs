@@ -62,3 +62,21 @@ test('a record trimmed at the step cap says so instead of ending silently', () =
   assert.match(out[80].label, /80/)                                // names the cap…
   assert.match(out[80].label, /10 more/)                           // …and how much it dropped
 })
+
+// A `proves <id>` step is the coverage and clip-window source for that requirement (tools/evidence.mjs
+// clipWindow). The 80-step cap once swallowed every proves step past it — a long flow lost the gifs
+// for everything it proved late (Tsumiki R3–R8, 2026-08-23). The cap trims NOISE, never a proof.
+test('the step cap never drops a proves step — it keeps its offset past the cap', () => {
+  const noise = Array.from({ length: 100 }, (_, i) => step('Click x' + i, 'pw:api', { at: 100 + i, d: 1 }))
+  const out = flattenSteps([
+    step('Create page', 'pw:api', { at: 0 }),
+    ...noise,
+    step('proves R3', 'test.step', { at: 5000, d: 700, steps: [step('Click y', 'pw:api', { at: 5100, d: 10 })] })
+  ])
+  const p = out.find(s => s.label === 'proves R3')
+  assert.ok(p, 'proves R3 must survive the cap')
+  assert.equal(p.t, 5000)
+  assert.equal(p.d, 700)
+  assert.ok(out.length <= 82, 'the cap still bounds the record')   // 80 + proves + the trim marker
+  assert.ok(out.some(s => s.cat === 'note' && /trimmed/.test(s.label)))
+})
