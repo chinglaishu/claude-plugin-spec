@@ -28,6 +28,16 @@ covers. Two helpers, both imported from `'../_base'`:
   reach. A flow that fails partway leaves the ids it never got to recorded **not-reached** — neither
   green nor red — instead of silently absent. `"0 of 0 passing"` reads green; not-reached must not.
 
+**Families do not change how you tag.** A prd may group its `## R<n>` sections under `### <n> ·
+<family> — <gloss>` headings (board R17); a test still tags the requirement *id* (`checkReq('R5', …)`),
+never a family — a family has no state, and the board derives its marks from the requirements under
+it. What families *do* change is how you choose what a flow covers: a flow that walks one family end to
+end ("Containers and roll-up": R3 → R4 → R5) reads on the board as that family going green together,
+which is the most legible proof a screen can show; declare that set with `coverReqs` so a flow that
+stops early leaves the rest of the family honestly not-reached. Do not split a family across two
+shallow tests to make its header fill in — the jump-map shows each requirement's own mark, so a
+half-proven family reads exactly as half-proven.
+
 `checkReq` also **narrates the recording**: it paints a topbar into the page under test naming the
 requirement being proven (id + title from the PRD), turning red on a failing check — so the video
 explains itself. Two optional helpers put the *numbers* on that bar, from `'../_base'` too:

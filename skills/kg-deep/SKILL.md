@@ -62,6 +62,17 @@ name:
 <the authored prose follows, one click away in the reader>
 ```
 
+**Families (board R17).** Once a screen carries more than a handful of requirements, group them
+under `### <n> · <family> — <gloss>` lines placed *between* `## R<n>` sections: a heading opens a
+family that owns every requirement that follows it until the next heading, so move whole sections
+under their family rather than renumbering anything. Families are structure, not meaning — a
+requirement's id, text and proof are untouched by where it sits, a family carries no state of its own
+(its marks are its requirements' marks), and a prd with no headings renders exactly as before. Name a
+family by what the requirements *share* ("Containers and roll-up", "Persistence"), number them in
+reading order, and keep the gloss to a few words; three to five requirements per family is the
+natural size. A family grouping is a meaning decision too — the human signs the family names and
+which ids sit under each, like any other requirement text.
+
 There is **no flag and no acceptance step** — the requirement is canon the moment you write it, so
 rebuild and **show the human**: they correct wording, edit, or remove any requirement as freely as a
 test, because the meaning is theirs. Requirement ids are stable forever — later passes append, never
