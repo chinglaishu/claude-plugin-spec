@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)",
         "ok": true,
-        "ms": 39522,
+        "ms": 3458,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Add, rename, grow and roll up the container, then reload — composed",
         "ok": true,
-        "ms": 21691,
+        "ms": 1428,
         "error": null,
         "line": 94,
         "reqs": {
@@ -36,7 +36,7 @@
         }
       }
     ],
-    "ranAt": 1787465665080,
+    "ranAt": 1787471090379,
     "provenHashes": {
       "R1": "af0b673e71b26f86",
       "R2": "5ea4b12f3e9bd0c0",
@@ -53,11 +53,11 @@
         "after": "spec/todo/evidence/R1.after.png",
         "clip": "spec/todo/evidence/R1.clip.webp",
         "window": {
-          "from": 173,
-          "to": 4561
+          "from": 139,
+          "to": 492
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "af0b673e71b26f86",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -67,11 +67,11 @@
         "after": "spec/todo/evidence/R2.after.png",
         "clip": "spec/todo/evidence/R2.clip.webp",
         "window": {
-          "from": 4653,
-          "to": 7544
+          "from": 587,
+          "to": 654
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "5ea4b12f3e9bd0c0",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -81,11 +81,11 @@
         "after": "spec/todo/evidence/R3.after.png",
         "clip": "spec/todo/evidence/R3.clip.webp",
         "window": {
-          "from": 7670,
-          "to": 10555
+          "from": 774,
+          "to": 809
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "038e15a2b915d3a3",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -95,11 +95,11 @@
         "after": "spec/todo/evidence/R5.after.png",
         "clip": "spec/todo/evidence/R5.clip.webp",
         "window": {
-          "from": 10669,
-          "to": 13583
+          "from": 869,
+          "to": 940
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "235357fb59cf76ee",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -109,11 +109,11 @@
         "after": "spec/todo/evidence/R4.after.png",
         "clip": "spec/todo/evidence/R4.clip.webp",
         "window": {
-          "from": 13701,
-          "to": 15214
+          "from": 1003,
+          "to": 1097
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "b937fb1f76118e8c",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -123,11 +123,11 @@
         "after": "spec/todo/evidence/R6.after.png",
         "clip": "spec/todo/evidence/R6.clip.webp",
         "window": {
-          "from": 20159,
-          "to": 31661
+          "from": 1981,
+          "to": 3048
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "e11257f60f8e5560",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -137,11 +137,11 @@
         "after": "spec/todo/evidence/R7.after.png",
         "clip": "spec/todo/evidence/R7.clip.webp",
         "window": {
-          "from": 31775,
-          "to": 34673
+          "from": 3165,
+          "to": 3230
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "ef33ff35840f47b6",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
@@ -151,11 +151,11 @@
         "after": "spec/todo/evidence/R8.after.png",
         "clip": "spec/todo/evidence/R8.clip.webp",
         "window": {
-          "from": 16836,
-          "to": 21255
+          "from": 1271,
+          "to": 1388
         },
-        "runId": "1787465602546",
-        "at": "2026-08-23T06:14:25.080Z",
+        "runId": "1787471090379",
+        "at": "2026-08-23T07:44:50.379Z",
         "hash": "624daec563e558ac",
         "clipRunId": "1787465602546",
         "clipAt": "2026-08-23T06:14:25.080Z"
