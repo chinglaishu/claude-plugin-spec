@@ -1811,7 +1811,7 @@ export function build () {
      toggle. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
      the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
-  .focusov { width:100%; max-width:1320px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
+  .focusov { width:100%; max-width:1440px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the reader eating vertical space, so both cards start at the top */
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
@@ -1836,10 +1836,11 @@ export function build () {
   /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (the
      independent-scroll guarantee of board R2): a fixed height from the grid, its own overflow —
      scrolling the evidence never moves the requirement, and the page itself does not scroll. */
-  /* the proof column is CHROME layout (Task 14): it scales with the knob (600 × --scale ≈ 480px) so
-     the two-column build keeps the mockup's proportions at the tighter scale; the media INSIDE it
-     (frames, video, schematic) stays at its intrinsic size and simply fills the tightened pane */
-  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) calc(600px * var(--scale));
+  /* BOTH columns are fractional (Task 14b) so the reclaimed width feeds the reading side AND the
+     proof side — a fixed proof column (Task 14's 600 × --scale) starved the proof pane as the cap
+     grew, dumping every extra pixel on the left. Left slightly favoured (1.1) for the behavior prose;
+     the media INSIDE the proof pane (frames, video, schematic) stays intrinsic and fills the pane. */
+  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
     gap:var(--s4); align-items:stretch; }
   /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead.
      Breakpoint computed at emit: base 1080 × the design system's --scale (a media query cannot read

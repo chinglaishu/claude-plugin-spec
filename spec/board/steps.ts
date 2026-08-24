@@ -117,6 +117,16 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
   await expect(ov.locator('.feval')).toBeVisible()
+  // BOTH columns share the width (Task 14b): the proof pane (.feval) is a real FRACTION of the
+  // reading column (.fleft), not a starved fixed strip. The columns are minmax(0,1.1fr) minmax(0,1fr),
+  // so proof/reading ≈ 0.91; the retired fixed proof column (600 × --scale ≈ 480px) made this ≈ 0.6,
+  // dumping every reclaimed pixel on the left. Guard the ratio so that regression can't return.
+  const colRatio = await ov.evaluate(el => {
+    const l = el.querySelector('.fpage > .fleft'); const r = el.querySelector('.fpage > .feval')
+    return (r as HTMLElement).getBoundingClientRect().width / (l as HTMLElement).getBoundingClientRect().width
+  })
+  expect(colRatio, 'the proof pane is a real fraction of the reading column, not a fixed strip').toBeGreaterThan(0.72)
+  expect(colRatio, 'the reading column stays at least as wide as the proof pane').toBeLessThanOrEqual(1.02)
   // the reading REGION is the requirement card's beats/prose block (.fbeats — Task 12: it scrolls
   // INTERNALLY between the card header and the pinned in-full footer, so the schematic below stays
   // on first sight; supersedes Task 8 fix round 1, where the whole left column scrolled as one)

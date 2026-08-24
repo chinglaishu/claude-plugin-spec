@@ -350,17 +350,21 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
   // rows all single-lined in the wider reading column and the region stopped overflowing at 900px,
   // so "the beats region overflows" went red with the behaviour intact (rule 4: the fixture had
   // stopped being tall, not the contract). The beats stay THREE (toggle-and-recount caps there);
-  // each row's text roughly doubles instead, so every row wraps and the shape overflows again at
-  // both heights. The assertions are unchanged.
+  // each row's text is lengthened instead, so every row wraps and the shape overflows again.
+  // Task 14b (2026-08-24): the columns became fractional (both wider), which left the reading
+  // column a touch wider still and cut the overflow margin to ~95px — enough that a settle-timing
+  // jitter under full-suite load flipped it once. Each row is lengthened FURTHER here so the shape
+  // overflows by a comfortable margin (~250px) that no paint jitter can flip. The assertions are
+  // unchanged; the toggle-and-recount keywords (tick / count / remaining) are preserved.
   const body =
-    '- **Given** a working list of three long-running items, every one of them still open and counted in the header, each carrying the kind of long descriptive label a real project accumulates over a season of renaming things until the words finally say what the item is\n' +
-    '- **When** you tick the first of the three long-running items open in the working list this morning, scrolling down past the other two still-open rows to reach it where it has sat at the bottom of the working list since the week it was written\n' +
-    '- **Then** the header count reads 2 remaining, the ticked row struck through where it stands in the list, the strike drawn through every word of its long label so the finished row still reads in place but unmistakably reads as done\n' +
-    '- **When** you tick the second of the two long-running items still open in the working list after that, its own label just as long as the first one and wrapping onto a second line exactly the way the rest of the working list wraps\n' +
-    '- **Then** the header count reads 1 remaining, both ticked rows struck through where they stand in the list, the two strikes reading as a visible history of the morning rather than the rows quietly vanishing from the list\n' +
-    '- **When** you tick the last long-running item still open anywhere in the working list at the end of the day, leaving nothing at all open in the list for the first time since the header count started keeping honest score\n' +
-    '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows so the cleared list still tells you what was finished here rather than presenting a blank pane\n\n' +
-    'Supporting prose under the tall shape.\n'
+    '- **Given** a working list of three long-running items, every one of them still open and counted in the header, each carrying the kind of long descriptive label a real project accumulates over a season of renaming things again and again until the words finally say plainly what the item actually is and why it has stayed open on the list for as long as it has\n' +
+    '- **When** you tick the first of the three long-running items open in the working list this morning, scrolling down past the other two still-open rows to reach it where it has sat quietly at the very bottom of the working list since the week it was first written down and added to the count\n' +
+    '- **Then** the header count reads 2 remaining, the ticked row struck through where it stands in the list, the strike drawn cleanly through every single word of its long label so the finished row still reads in place, right where you left it, but now unmistakably reads as done and no longer counted\n' +
+    '- **When** you tick the second of the two long-running items still open in the working list after that first one, its own label just as long and wandering as the first, wrapping onto a second and very nearly a third line exactly the way the rest of the crowded working list wraps its longer entries\n' +
+    '- **Then** the header count reads 1 remaining, both ticked rows struck through where they stand in the list, the two strikes reading together as a visible running history of the morning’s work rather than the finished rows quietly vanishing from the list the instant they are marked complete\n' +
+    '- **When** you tick the last long-running item still open anywhere in the working list at the very end of the day, leaving nothing at all still open in the list for the first time since the header count first started keeping its honest running score of what remained to be done\n' +
+    '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows so the cleared list still tells you plainly what was finished here over the day rather than presenting a blank and uninformative pane that forgets the work entirely\n\n' +
+    'Supporting prose under the tall shape, itself long enough to add another wrapped line or two of reading beneath the behaviour table so the region has still more reason to overflow its box.\n'
   // …and a TWO-LINE title (release pass M-3): at the 640px floor a long title once left the
   // beats region a sliver — "THE BEHAVIOR" over zero beats; the region now keeps one row.
   // (Lengthened for Task 14 so it still wraps to two lines in the wider scaled column.)
