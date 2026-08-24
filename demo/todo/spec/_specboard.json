@@ -4,7 +4,7 @@
     "tools/spec-store.mjs": "312fbe6ece263d6ab325ba9e1184cc0d46a70ff78e584719ea706f1d8eebfdac",
     "tools/coverage.mjs": "7cfd1577f4f7854d0460bc4a338f6e7d2817b09205d4108433954b0df504111c",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "07799a2269343d428f77ec6739d1f39fbed74a38d234b29db0e028099f8094de",
+    "tools/build-board.mjs": "57629e62bf631cf82a4802f8578e7e5e78f2a587bee273e3d7d2747f681e74c3",
     "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
     "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
     "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
