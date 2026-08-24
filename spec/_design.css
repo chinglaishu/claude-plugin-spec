@@ -24,6 +24,14 @@
  * Canvas is 1280px wide — the width every draft is authored and scaled against. */
 
 :root {
+  /* THE ONE SCALE KNOB (the human, 2026-08-24): the whole chrome — type, 間 ma, radius — tightens
+     uniformly through this factor. The human evaluated browser-80% against font-size-only and chose
+     the WHOLE scale; 0.8 reproduces exactly the rendering they preferred. The base numbers stay
+     visible inside each calc() so the scale itself is still legible, and changing 0.8 → 0.82 is a
+     one-line edit here — never a sweep of hand-multiplied literals. Colour is untouched: contrast
+     ratios do not move with size. */
+  --scale: 0.8;
+
   /* 墨 sumi — ink, and the ash scale under it.
      Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at
      2.2:1 against paper, where 4.5:1 is the floor for text this size. Restraint that cannot be
@@ -74,18 +82,21 @@
      墨 ink = the neutral primary action · 藍 indigo = reserved (no status of its own right now).
      An action is coloured by the STATE IT PRODUCES, so "Looks right" is the green of approved. */
 
-  /* 間 ma — 4px scale */
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+  /* 間 ma — 4px scale (base 4 / 8 / 12 / 16 / 24 / 32 / 48 / 64, × --scale) */
+  --s1:calc(4px * var(--scale));  --s2:calc(8px * var(--scale));
+  --s3:calc(12px * var(--scale)); --s4:calc(16px * var(--scale));
+  --s5:calc(24px * var(--scale)); --s6:calc(32px * var(--scale));
+  --s7:calc(48px * var(--scale)); --s8:calc(64px * var(--scale));
 
   /* radius — softness in proportion to how much you TOUCH the thing.
      Controls you press get it most; surfaces get less; anything meeting the viewport edge or
      separated by a full-bleed rule gets none, because a rounded corner on a full-width bar just
      looks like a mistake. */
-  --r-sm:4px;   /* chips, checks, small marks */
-  --r:6px;      /* buttons, inputs, segmented controls */
-  --r-md:10px;  /* cards, cells, panels */
-  --r-lg:14px;  /* sheets and modals */
-  --rc:10px;    /* legacy alias used by the drafts */
+  --r-sm:calc(4px * var(--scale));   /* chips, checks, small marks */
+  --r:calc(6px * var(--scale));      /* buttons, inputs, segmented controls */
+  --r-md:calc(10px * var(--scale));  /* cards, cells, panels */
+  --r-lg:calc(14px * var(--scale));  /* sheets and modals */
+  --rc:calc(10px * var(--scale));    /* legacy alias used by the drafts */
 
   /* elevation — ONLY for things genuinely floating above the page: modals, popovers, a sticky
      header with content running under it. Never on in-flow cards; a page where every card floats
@@ -98,8 +109,12 @@
   /* type — one family, six sizes, two weights */
   --sans:"Helvetica Neue",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  /* 10px was too small for the tracked uppercase labels that carry the column meanings */
-  --t-micro:11px; --t-xs:11.5px; --t-sm:12.5px; --t-md:13px; --t-lg:15px; --t-xl:19px;
+  /* 10px was too small for the tracked uppercase labels that carry the column meanings.
+     Base 11 / 11.5 / 12.5 / 13 / 15 / 19, × --scale. At 0.8 the smallest label lands at 8.8px —
+     exactly what the human read (and preferred) at browser-80%; honest 0.8 everywhere, no floor. */
+  --t-micro:calc(11px * var(--scale)); --t-xs:calc(11.5px * var(--scale));
+  --t-sm:calc(12.5px * var(--scale)); --t-md:calc(13px * var(--scale));
+  --t-lg:calc(15px * var(--scale));   --t-xl:calc(19px * var(--scale));
 }
 
 * { box-sizing:border-box; }

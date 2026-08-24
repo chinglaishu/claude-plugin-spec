@@ -56,8 +56,20 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   // THE MOCKUP'S CARD (Task 8, the frozen mockup 2026-08-17 — board R1): the name is the card's
   // large title with the screen's ROUTE in mono beneath it…
   await expect(first.locator('.croute')).not.toBeEmpty()
-  expect(parseFloat(await first.locator('.nm').evaluate(el => getComputedStyle(el).fontSize)), 'the title wears the card-title scale (t-xl)')
-    .toBeGreaterThanOrEqual(19)
+  // Task 14 (×0.8 --scale, 2026-08-24): `>= 19` was --t-xl's base literal, so the pin broke the
+  // moment the whole ramp scaled (rule 4: the layout moved, the behaviour did not — watched red on
+  // the scaled board). Retargeted at the BEHAVIOUR: the title wears the card-title token ITSELF,
+  // measured against a probe span resolving var(--t-xl), so the assertion tracks the design
+  // system's own value at any scale — and still fails if .nm ever drops to a lesser step.
+  const [nmPx, xlPx] = await first.locator('.nm').evaluate(el => {
+    const probe = document.createElement('span')
+    probe.style.fontSize = 'var(--t-xl)'
+    document.body.appendChild(probe)
+    const v = [parseFloat(getComputedStyle(el).fontSize), parseFloat(getComputedStyle(probe).fontSize)]
+    probe.remove()
+    return v
+  })
+  expect(nmPx, 'the title wears the card-title scale (t-xl)').toBe(xlPx)
   // …every requirement row LEADS with its status mark (hue never alone: ✓ ◈ ✗ ◌ ○ by the five-word
   // vocabulary — the same marks the Focus chip and the List row wear)…
   // (a `.fam` row is a FAMILY header — board R17, structure between the requirement rows, no mark

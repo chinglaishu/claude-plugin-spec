@@ -1595,7 +1595,11 @@ export function build () {
   /* while a detail (a full-screen fixed window) is open, the page itself must not scroll — only its
      two panes do. Set on <html> by the router when a detail opens, cleared when it closes. */
   html.noscroll { overflow:hidden; }
-  .wrap { max-width:1200px; margin:0 auto; padding:var(--s6) var(--s6) var(--s8); }
+  /* Task 14 (the human, 2026-08-24): the content caps rise 1200/1160 → 1360/1320 and the horizontal
+     page padding drops one step to var(--s5) (scaled ≈ 19px — a sane gutter, never 0), so a wide
+     screen is spent on content rather than margins; the ×0.8 --scale in _design.css tightens the
+     chrome around it. */
+  .wrap { max-width:1360px; margin:0 auto; padding:var(--s6) var(--s5) var(--s8); }
   .empty { padding:var(--s5) var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
   .empty code { font-family:var(--mono); }
 
@@ -1619,7 +1623,7 @@ export function build () {
   .top .btn .chip { padding-top:0; padding-bottom:0; line-height:1.3; }
   /* update-available affordance — the vendored board updates with a CLICK, never a terminal command. */
   .updwrap { display:inline-flex; align-items:center; gap:var(--s2); }
-  .updsetup { max-width:1120px; margin:0 auto var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
+  .updsetup { max-width:1320px; margin:0 auto var(--s4); font-size:var(--t-sm); color:var(--ink-4); }
   .updsetup.avail { color:var(--ai); }
   .gbn { font-size:var(--t-sm); color:var(--ink-4); }
   .none { display:none; padding:var(--s8) 0; text-align:center; color:var(--ink-4); font-size:var(--t-md); }
@@ -1661,7 +1665,7 @@ export function build () {
   /* Task 8 — the frozen mockup's card (2026-08-17): 1fr + a 300px right column; a large title with
      the route in mono beneath; dashed hair-ruled requirement rows each LEADING with its status mark;
      the right column stacks the proven pill, the unit · flow kind chips and the captioned still. */
-  #home .card { display:grid; grid-template-columns:1fr 300px; gap:var(--s5); background:var(--card);
+  #home .card { display:grid; grid-template-columns:1fr calc(300px * var(--scale)); gap:var(--s5); background:var(--card);
     border:1px solid var(--hair); border-radius:var(--r-md); padding:var(--s5); cursor:pointer;
     box-shadow:var(--sh-sm); transition:border-color .12s, box-shadow .12s; }
   #home .card:hover { border-color:var(--hair-2); box-shadow:var(--sh-md); }
@@ -1701,7 +1705,9 @@ export function build () {
   .kchip.unit .km { color:var(--ai); }
   .kchip.flow .km { color:var(--koke); }
   .kchip.none { color:var(--ink-4); }
-  .cshot { width:300px; height:150px; border-radius:var(--r-sm); border:1px solid var(--hair); overflow:hidden;
+  /* the card's media column scales with the chrome (Task 14) — the cover is a recognition
+     thumbnail, not proof imagery; 16:9 held (240×120 at 0.8) */
+  .cshot { width:calc(300px * var(--scale)); height:calc(150px * var(--scale)); border-radius:var(--r-sm); border:1px solid var(--hair); overflow:hidden;
     background:linear-gradient(135deg,var(--wash),var(--sunk)); position:relative; }
   .cshot img { width:100%; height:100%; object-fit:cover; object-position:top left; display:block; }
   .cshot .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
@@ -1734,7 +1740,9 @@ export function build () {
   .featx { position:absolute; right:0; top:0; width:20px; height:20px; border:0; background:transparent;
     color:var(--ink-4); cursor:pointer; font-size:var(--t-sm); line-height:1; padding:0; }
   .featx:hover { color:var(--ink); }
-  @media (max-width:1100px) { .feats { grid-template-columns:repeat(3, 1fr); } }
+  /* breakpoint scaled with the chrome (Task 14, 1100 × 0.8): six scaled cards still read at 880 —
+     the strip folds to three-up before any card's two-liner clips */
+  @media (max-width:880px) { .feats { grid-template-columns:repeat(3, 1fr); } }
 
   /* DETAIL — a fixed FULL-SCREEN window that COVERS the specboard bar, so a detail page has exactly
      ONE header: its own. Below it, R2's two panes each scroll on their own. z-index sits above the
@@ -1754,9 +1762,10 @@ export function build () {
   .dth .dname .dsub { font:var(--t-micro) var(--mono); color:var(--ink-4); }
   .dth .m { font:var(--t-xs) var(--mono); color:var(--ink-4); }
   .dtscroll { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;
-    align-items:center; padding:var(--s5) var(--s6) var(--s5); }
+    align-items:center; padding:var(--s5) var(--s5) var(--s5); }
   /* Task 12 — on a short window the vertical breathing room yields to the content: the schematic
-     must stay on first sight at the 640px floor (tokens only; the sides keep their s6) */
+     must stay on first sight at the 640px floor (tokens only; the sides dropped to s5 with the
+     page gutter, Task 14) */
   @media (max-height:760px) {
     .dtscroll { padding-top:var(--s3); padding-bottom:var(--s3); }
     /* release pass M-3: on a short window the reading card's own padding tightens too, so a
@@ -1765,7 +1774,7 @@ export function build () {
     .focusov .fread, .lst-body .fread { padding-top:var(--s4); padding-bottom:var(--s4); }
     .fpage > .fleft { gap:var(--s3); }
   }
-  .dtscroll > .cols { width:100%; max-width:1200px; flex:1; min-height:0; }
+  .dtscroll > .cols { width:100%; max-width:1360px; flex:1; min-height:0; }
 
   /* the two BAKED SOURCE PANES (requirements + tests). Their Columns VIEW was retired 2026-08-18
      (board R13): .cols ships hidden (inline display:none in the markup) and nothing un-hides it —
@@ -1786,7 +1795,7 @@ export function build () {
      toggle. No new state; the same derived chips. */
   /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
      the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
-  .focusov { width:100%; max-width:1160px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
+  .focusov { width:100%; max-width:1320px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the reader eating vertical space, so both cards start at the top */
   .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
@@ -1811,10 +1820,16 @@ export function build () {
   /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (the
      independent-scroll guarantee of board R2): a fixed height from the grid, its own overflow —
      scrolling the evidence never moves the requirement, and the page itself does not scroll. */
-  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) 600px;
+  /* the proof column is CHROME layout (Task 14): it scales with the knob (600 × --scale ≈ 480px) so
+     the two-column build keeps the mockup's proportions at the tighter scale; the media INSIDE it
+     (frames, video, schematic) stays at its intrinsic size and simply fills the tightened pane */
+  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) calc(600px * var(--scale));
     gap:var(--s4); align-items:stretch; }
-  /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead */
-  @media (max-width:1080px) {
+  /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead.
+     Breakpoint scaled with the chrome (1080 × 0.8 = 864 — a media query cannot read the var): the
+     scaled columns fit two-up well below the old 1080, and at 864 the reading column still gets
+     ≈330px before the collapse, so it collapses before it overflows. */
+  @media (max-width:864px) {
     .fpage { grid-template-columns:1fr; overflow-y:auto; }
     .fpage > .fleft, .fpage > .feval { overflow:visible; }
     .fleft > .fread { display:block; overflow:visible; }
@@ -1824,7 +1839,9 @@ export function build () {
     box-shadow:var(--sh-sm); overflow-y:auto; overflow-x:hidden; min-height:0; }
   .fread { padding:var(--s6) var(--s6) var(--s5); }
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
-  .fread .fttl { font-size:22px; line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
+     knob so the hierarchy holds at any scale (Task 14) */
+  .fread .fttl { font-size:calc(22px * var(--scale)); line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
   .fread .fbody { font-size:var(--t-md); line-height:1.64; color:var(--ink-2); }
   .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
   .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
@@ -1870,7 +1887,7 @@ export function build () {
      Measured: --ink-3 on --wash 5.3:1 (the labels), on --canvas 5.8:1 (Given); --ink on --paper 16.8:1 (the text). */
   .fread .fbeats .behavior { display:block; margin:0 0 var(--s4); padding:0; border:1px solid var(--hair);
     border-radius:var(--r-md); overflow:hidden; }
-  .fread .fbeats .behavior .brow { display:grid; grid-template-columns:72px 1fr; border-top:1px solid var(--hair); }
+  .fread .fbeats .behavior .brow { display:grid; grid-template-columns:calc(72px * var(--scale)) 1fr; border-top:1px solid var(--hair); }
   .fread .fbeats .behavior .brow:first-child { border-top:0; }
   .fread .fbeats .behavior .brow.beatstart { border-top:2px solid var(--hair-2); }
   .fread .fbeats .behavior .blab { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
@@ -2019,7 +2036,7 @@ export function build () {
   /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
      background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
      controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
-  .feval .fptop { display:flex; align-items:center; gap:var(--s3); min-height:22px; }
+  .feval .fptop { display:flex; align-items:center; gap:var(--s3); min-height:calc(22px * var(--scale)); }
   .feval .fpacts { margin-left:auto; display:flex; align-items:center; gap:var(--s2); }
   .feval .fpacts .btn, .feval .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; }
   .feval .fpacts .runone::before { content:'\\25B6'; margin-right:6px; font-size:9px; }   /* the Run glyph */
@@ -2046,11 +2063,11 @@ export function build () {
   .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
   /* Task 8 — the mockup's proof line: PROVEN BY [unit|flow] <test name> on ONE row (the kind chip
      in its hue: unit = indigo tint, flow = moss tint — --ai on --ai-tint 7.6:1, --koke on --koke-tint 6.1:1) */
-  .fpby { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:24px; margin-top:var(--s2);
+  .fpby { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:calc(24px * var(--scale)); margin-top:var(--s2);
     font-size:var(--t-sm); color:var(--ink); }
   .fpby .fpl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
   .fpby .tone { display:inline-flex; align-items:center; gap:6px; min-width:0; }
-  .fpby .tone .tn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:420px; }
+  .fpby .tone .tn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:calc(420px * var(--scale)); }
   .tk { font:var(--t-micro) var(--mono); text-transform:uppercase; letter-spacing:.05em; border-radius:var(--r-sm);
     padding:1px 6px; flex:none; }
   .tk.unit { color:var(--ai); background:var(--ai-tint); } .tk.flow { color:var(--koke); background:var(--koke-tint); }
@@ -2159,8 +2176,8 @@ export function build () {
   /* Run all, the toggle and Close are ONE control family in the detail header (board R13, matching the
      focus mockup): the same 34px height and the same pill radius. Run all stays the one inverted
      element; Close is an outline; the toggle segments. Scoped to .dth so no other .btn is reshaped. */
-  .dth .btn { height:34px; border-radius:999px; padding:0 17px; }
-  .dth .viewseg { height:34px; }
+  .dth .btn { height:calc(34px * var(--scale)); border-radius:999px; padding:0 17px; }
+  .dth .viewseg { height:calc(34px * var(--scale)); }
 
   /* the LIST view (board R13, the frozen mockup — Grid became List, 2026-08-21; router key stays
      'grid'): one collapsed CARD per requirement, a gap-summary strip above, and an open card's body
@@ -2173,7 +2190,7 @@ export function build () {
      background one step lighter — every pair already used on --card clears 4.5:1 on --canvas too:
      --koke 7.05/6.42, --bengara 6.46/5.87, --yamabuki 5.23/4.76, --ink-4 5.18/4.71, --ink-3
      6.42/5.84, --ai 8.98/8.16, --ink 16.79/15.27 (card/canvas). No new colour, no hue reassigned. */
-  .gridview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+  .gridview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1320px;
     margin:0 auto; overflow-y:auto; min-height:0; flex:1; padding-bottom:var(--s6); }
   .lst-card { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     box-shadow:var(--sh-sm); overflow:hidden; flex:none; }
@@ -2230,13 +2247,13 @@ export function build () {
      ✓ passed (koke) · ✗ failed with its beat (bengara) · ◌ not-reached. Every pair measured for AA
      (Task 3b report): worst in this block is --ink-4 on --canvas 4.71:1; the tinted fail/nr rows
      use --ink-3 for their labels because --ink-4 on --bengara-tint measures 4.41:1. */
-  .flowview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+  .flowview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1320px;
     margin:0 auto; flex:1; min-height:0; }
   .flowview[hidden] { display:none; }
   .flowsel { flex:none; display:flex; gap:var(--s2); flex-wrap:wrap; }
   .fsel { display:flex; flex-direction:column; align-items:flex-start; gap:1px; font:inherit;
     border:1px solid var(--hair-2); background:var(--paper); border-radius:var(--r);
-    padding:7px 14px; color:var(--ink-2); cursor:pointer; text-align:left; max-width:340px; }
+    padding:7px 14px; color:var(--ink-2); cursor:pointer; text-align:left; max-width:calc(340px * var(--scale)); }
   .fsel .fsttl { font-size:var(--t-sm); max-width:100%; white-space:nowrap; overflow:hidden;
     text-overflow:ellipsis; }
   .fsel .fk { font:var(--t-micro) var(--mono); color:var(--ink-3); }
@@ -2244,10 +2261,12 @@ export function build () {
   .fsel.on { border-color:var(--line3); background:var(--wash); color:var(--ink); font-weight:500; }
   .fsel.newflow { border-style:dashed; color:var(--ai); }
   .fsel.newflow .fk { color:var(--ai); }
-  .flsplit { flex:1; min-height:0; display:grid; grid-template-columns:390px minmax(0,1fr);
+  .flsplit { flex:1; min-height:0; display:grid; grid-template-columns:calc(390px * var(--scale)) minmax(0,1fr);
     gap:var(--s4); align-items:stretch; }
-  /* stacked on a narrow screen, per-pane scroll would trap content — the split scrolls whole */
-  @media (max-width:1080px) {
+  /* stacked on a narrow screen, per-pane scroll would trap content — the split scrolls whole.
+     Breakpoint scaled with the chrome (Task 14, 1080 × 0.8): the 312px rail leaves the player
+     ≈500px at 864 — it collapses before it overflows. */
+  @media (max-width:864px) {
     .flsplit { grid-template-columns:1fr; overflow-y:auto; }
     .flsplit > .flrail, .flsplit > .flmain { overflow:visible; height:auto; }
   }
@@ -2336,7 +2355,7 @@ export function build () {
      --paper 5.18, --ink-3 on --wash 5.29, --ink-3 on --ai-tint 5.45, --bengara on --ai-tint 5.48,
      --koke on --koke-tint 6.06, --ai on --ai-tint 7.62. A blocked library row is dimmed by COLOUR
      (ink-4 on paper) and a greyed thumbnail, never by opacity on text — that sinks it under 4.5. */
-  .composeview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1160px;
+  .composeview { display:flex; flex-direction:column; gap:var(--s3); width:100%; max-width:1320px;
     margin:0 auto; flex:1; min-height:0; overflow-y:auto; }
   .composeview[hidden] { display:none; }
   .chead { display:flex; align-items:center; gap:var(--s3); flex:none; }
@@ -2347,8 +2366,10 @@ export function build () {
   .cseg .cmode { border:0; background:var(--paper); color:var(--ink-3); font:var(--t-xs) var(--sans);
     padding:4px 10px; cursor:pointer; }
   .cseg .cmode.on { background:var(--wash); color:var(--ink); font-weight:500; }
-  .cwrap { display:grid; grid-template-columns:340px minmax(0,1fr); gap:var(--s4); align-items:start; }
-  @media (max-width:1000px) { .cwrap, .cout { grid-template-columns:1fr; } }
+  .cwrap { display:grid; grid-template-columns:calc(340px * var(--scale)) minmax(0,1fr); gap:var(--s4); align-items:start; }
+  /* breakpoint scaled with the chrome (Task 14, 1000 × 0.8): the 272px library rail leaves the
+     chain ≈490px at 800 — collapses before overflow */
+  @media (max-width:800px) { .cwrap, .cout { grid-template-columns:1fr; } }
   .cpanel { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--paper);
     padding:var(--s3) var(--s4); }
   .cpanel h2 { font-size:var(--t-lg); margin:0; }
@@ -2393,7 +2414,7 @@ export function build () {
     color:var(--ink-2); background:var(--paper); }
   .schip.ok { color:var(--koke); border-color:var(--koke-line); background:var(--koke-tint); }
   .schip.warn { color:var(--yamabuki); border-color:var(--yamabuki-line); background:var(--yamabuki-tint); }
-  .vchain { display:flex; flex-direction:column; max-width:640px; }
+  .vchain { display:flex; flex-direction:column; max-width:calc(640px * var(--scale)); }
   .crow2 { display:flex; align-items:center; gap:10px; border-radius:var(--r); padding:3px 6px 3px 0; }
   .crow2:hover { background:var(--wash); }
   .cdot { width:26px; flex:none; display:flex; justify-content:center; }
@@ -2438,7 +2459,7 @@ export function build () {
   .cjstep.run { color:var(--ink-2); }
   .cjstep.bad { color:var(--bengara); }
   .cjstep a { color:var(--ai); font-weight:500; }
-  .cout { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:var(--s4); margin-top:var(--s3); align-items:start; }
+  .cout { display:grid; grid-template-columns:minmax(0,1fr) calc(300px * var(--scale)); gap:var(--s4); margin-top:var(--s3); align-items:start; }
   .cprompt { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--paper); overflow:hidden; margin-top:10px; }
   .cprompt[hidden] { display:none; }
   .cprompt .ph2 { display:flex; align-items:center; gap:var(--s2); padding:7px 12px; border-bottom:1px solid var(--hair-2);
@@ -2579,7 +2600,7 @@ export function build () {
      at low alpha, the same overlay tone the lightbox uses. */
   .sheet.on { display:block; position:fixed; inset:0; z-index:49; background:rgba(28,27,24,.32); }
   .sheet .box { position:fixed; z-index:50; top:8vh; left:50%; transform:translateX(-50%);
-    width:720px; max-width:calc(100vw - 48px); max-height:80vh;
+    width:calc(720px * var(--scale)); max-width:calc(100vw - 48px); max-height:80vh;
     background:var(--card); border:1px solid var(--hair-2); border-radius:var(--r-lg);
     box-shadow:var(--sh-lg); display:flex; flex-direction:column; overflow:hidden; }
   .sheet .bh { display:flex; align-items:center; gap:var(--s3); padding:var(--s3) var(--s4);
@@ -2691,7 +2712,7 @@ export function build () {
   .lbstage.actual { align-items:flex-start; }
   .lbstage.actual img { max-width:none; max-height:none; }
 
-  .runpanel { position:fixed; right:var(--s5); bottom:var(--s5); z-index:70; width:600px;
+  .runpanel { position:fixed; right:var(--s5); bottom:var(--s5); z-index:70; width:calc(600px * var(--scale));
     max-width:calc(100vw - 48px); background:var(--paper); border:1px solid var(--hair-2);
     border-radius:var(--r-lg); box-shadow:var(--sh-lg); overflow:hidden; }
   .runpanel[hidden] { display:none; }

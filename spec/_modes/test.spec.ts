@@ -346,19 +346,26 @@ test('renders — a beats block leads the requirement, the List reads it, and th
 // on purpose (three beats of wrapping text): under the superseded layout (the left column
 // scrolling as one, Task 8 fix round 1) it pushed the drawing below the fold at BOTH heights.
 test('renders — Focus fits the viewport: the schematic on first sight, the beats scrolling inside the card', async ({ page }) => {
+  // Task 14 (×0.8 --scale, 2026-08-24): the scaled chrome fits MORE — the original seven ~100-char
+  // rows all single-lined in the wider reading column and the region stopped overflowing at 900px,
+  // so "the beats region overflows" went red with the behaviour intact (rule 4: the fixture had
+  // stopped being tall, not the contract). The beats stay THREE (toggle-and-recount caps there);
+  // each row's text roughly doubles instead, so every row wraps and the shape overflows again at
+  // both heights. The assertions are unchanged.
   const body =
-    '- **Given** a working list of three long-running items, every one of them still open and counted in the header\n' +
-    '- **When** you tick the first of the three long-running items open in the working list this morning\n' +
-    '- **Then** the header count reads 2 remaining, the ticked row struck through where it stands in the list\n' +
-    '- **When** you tick the second of the two long-running items still open in the working list after that\n' +
-    '- **Then** the header count reads 1 remaining, both ticked rows struck through where they stand in the list\n' +
-    '- **When** you tick the last long-running item still open anywhere in the working list at the end of the day\n' +
-    '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows\n\n' +
+    '- **Given** a working list of three long-running items, every one of them still open and counted in the header, each carrying the kind of long descriptive label a real project accumulates over a season of renaming things until the words finally say what the item is\n' +
+    '- **When** you tick the first of the three long-running items open in the working list this morning, scrolling down past the other two still-open rows to reach it where it has sat at the bottom of the working list since the week it was written\n' +
+    '- **Then** the header count reads 2 remaining, the ticked row struck through where it stands in the list, the strike drawn through every word of its long label so the finished row still reads in place but unmistakably reads as done\n' +
+    '- **When** you tick the second of the two long-running items still open in the working list after that, its own label just as long as the first one and wrapping onto a second line exactly the way the rest of the working list wraps\n' +
+    '- **Then** the header count reads 1 remaining, both ticked rows struck through where they stand in the list, the two strikes reading as a visible history of the morning rather than the rows quietly vanishing from the list\n' +
+    '- **When** you tick the last long-running item still open anywhere in the working list at the end of the day, leaving nothing at all open in the list for the first time since the header count started keeping honest score\n' +
+    '- **Then** the header count reads 0 remaining, the empty-state line shown under the three struck rows so the cleared list still tells you what was finished here rather than presenting a blank pane\n\n' +
     'Supporting prose under the tall shape.\n'
   // …and a TWO-LINE title (release pass M-3): at the 640px floor a long title once left the
-  // beats region a sliver — "THE BEHAVIOR" over zero beats; the region now keeps one row
+  // beats region a sliver — "THE BEHAVIOR" over zero beats; the region now keeps one row.
+  // (Lengthened for Task 14 so it still wraps to two lines in the wider scaled column.)
   const { name, dir } = makeScreen('probe-tall', body,
-    { title: 'Ticking the long-running items one by one recounts the header and strikes each row' })
+    { title: 'Ticking the long-running items one by one recounts the header and strikes each finished row through where it stands in the working list' })
   // a COMMITTED drawing, derived exactly as the viz pass does — the thing that must be on first sight
   const d = deriveSchematic(parseBehavior(body))!
   expect(d.archetype).toBe('toggle-and-recount')
