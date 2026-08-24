@@ -877,8 +877,11 @@ const B = window.__BOARD__ || {}
         if (r.ev.before) cells.push(cell(r.ev.before, 'before'))
         if (r.ev.after) cells.push(cell(r.ev.after, '✓ after — the asserted value in frame', 'hot'))
       }
+      // Task 15 (the human, 2026-08-24): the container names its shape. Run-frame cells (.rf) make
+      // it a FILMSTRIP — a horizontal scroll of fixed cells; without them it is the before/after
+      // PAIR, which the CSS stacks to full pane width so each frame reads large in the tall pane.
       pf.innerHTML = cells.length
-        ? '<div class="fstrip">' + cells.join('') + '</div>'
+        ? '<div class="fstrip' + (rf.length ? ' filmstrip' : '') + '">' + cells.join('') + '</div>'
         : '<div class="noev"><span>no harvested frames for this proof yet — the next run captures them</span></div>'
       if (st === 'failed') {
         const err = primary.querySelector('.terr')

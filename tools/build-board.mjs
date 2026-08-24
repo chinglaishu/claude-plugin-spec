@@ -2012,6 +2012,14 @@ export function build () {
   .fstrip .fcell.rf { flex:0 0 300px; }
   .fstrip .fcell { flex:1 1 0; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
+  /* Task 15 (the human, 2026-08-24): the before/after PAIR (no .rf cells — buildMedia marks the
+     run-frame strip .filmstrip) STACKS to full pane width, so each frame reads large in the tall
+     pane instead of half-width in a wide one. 39vh ≈ 46% of the Focus pane at the 900-tall daily
+     viewport — full-width frames at 1440×900 stay uncapped (351px natural < 39vh), and on shorter
+     viewports the cap letterboxes (object-fit) rather than distorts. The filmstrip keeps its row. */
+  .fstrip:not(.filmstrip) { flex-direction:column; }
+  .fstrip:not(.filmstrip) .fcell { flex:none; }
+  .fstrip:not(.filmstrip) .fcell img { max-height:39vh; object-fit:contain; }
   .fstrip .fcell img { display:block; width:100%; height:auto; border-bottom:1px solid var(--hair); cursor:zoom-in; }
   .fstrip .fcap { display:flex; align-items:center; gap:6px; font:var(--t-micro) var(--mono); color:var(--ink-3);
     padding:4px 7px; background:var(--wash); }
@@ -2098,7 +2106,10 @@ export function build () {
   .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
   .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
   .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
-  .frecwrap .rec { width:100%; max-width:380px; }
+  /* Task 15: the PROOF recording fills its pane (the pane is wide since 0.29.1). Scoped to
+     .frecwrap on purpose — the global .rec (the test rows' 300px cover) must not blow up. */
+  .frecwrap .rec { width:100%; max-width:none; }
+  .frecwrap .rec.playing { width:100%; }
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
      header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
   .fev { min-width:0; }
@@ -2722,12 +2733,16 @@ export function build () {
   .lbcap { color:#f4f1ea; font-size:var(--t-sm); }
   .lbbar .btn { background:transparent; border-color:rgba(255,255,255,.35); color:#f4f1ea; }
   .lbbar .btn:hover { border-color:#f4f1ea; }
+  /* Task 15: the zoom is NEAR-FULLSCREEN — the frame is drawn across the whole stage (contained,
+     never cropped or distorted), not left at its native 640px in the middle of it. The 640px
+     harvest upscales ≈2× here: soft, but the zoom exists for a glance at the asserted value. */
   .lbstage { flex:1; overflow:auto; display:flex; align-items:flex-start;
-    justify-content:center; padding:var(--s5); cursor:zoom-out; }
-  .lbstage img { max-width:100%; max-height:100%; object-fit:contain;
+    justify-content:center; padding:var(--s3); cursor:zoom-out; }
+  .lbstage img { width:100%; height:100%; object-fit:contain;
     background:var(--paper); box-shadow:var(--sh-lg); }
   .lbstage.actual { align-items:flex-start; }
-  .lbstage.actual img { max-width:none; max-height:none; }
+  /* the Actual-size escape hatch keeps native pixels */
+  .lbstage.actual img { width:auto; height:auto; max-width:none; max-height:none; }
 
   .runpanel { position:fixed; right:var(--s5); bottom:var(--s5); z-index:70; width:calc(600px * var(--scale));
     max-width:calc(100vw - 48px); background:var(--paper); border:1px solid var(--hair-2);

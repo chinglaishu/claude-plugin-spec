@@ -1114,6 +1114,12 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const panel = ov.locator('.feval .fmedia .fmpanel[data-m="frames"]')
     const rf = panel.locator('.fcell.rf')
     await expect(rf).toHaveCount(3)                               // the three of THIS screen's R1 — not the foreign fourth
+    // Task 15 (the human, 2026-08-24): a strip that carries run-frames is the FILMSTRIP — it keeps
+    // the horizontal scroll (fixed .rf cells, one row), marked with the class the stacked
+    // before/after pair must NOT get; without the mark the pair-stacking CSS would stack this too
+    await expect(panel.locator('.fstrip')).toHaveClass(/\bfilmstrip\b/)
+    const rowTops = await panel.locator('.fcell').evaluateAll(els => els.map(el => Math.round(el.getBoundingClientRect().top)))
+    expect(new Set(rowTops).size, 'the filmstrip lays every cell in one row').toBe(1)
     await expect(panel.locator('.fcell.rf', { hasText: 'foreign value' })).toHaveCount(0)
     await expect(rf.nth(0)).toContainText('got 7 · expected 7')
     await expect(rf.nth(2)).toContainText('got 5 · expected 4')
@@ -1144,6 +1150,11 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     // native 0.25×–4× range (the very range the human asked the control to reach).
     await ov.locator('.feval .fmedia .medbar button[data-m="video"]').click()
     const vp = ov.locator('.feval .fmedia .fmpanel[data-m="video"]')
+    // Task 15: the proof recording FILLS the pane — scoped to .frecwrap, so the run-row/global
+    // .rec (the test pane's 300px cover) is untouched by design
+    const vFrac = await vp.locator('.frecwrap .rec').evaluate(el =>
+      el.getBoundingClientRect().width / el.closest('.fmpanel')!.getBoundingClientRect().width)
+    expect(vFrac, 'the proof recording spans the media pane').toBeGreaterThan(0.8)
     await vp.locator('.rec.playable').click()
     await expect(vp.locator('video')).toHaveCount(1)
     expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1)
@@ -1265,6 +1276,28 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const panel2 = dt.locator('.focusov .feval .fmedia .fmpanel[data-m="frames"]')
     await expect(panel2.locator('.fcell')).not.toHaveCount(0)     // the harvested pair still stands
     await expect(panel2.locator('.fcell.rf')).toHaveCount(0)      // …but no strip — no frames, no fake
+
+    // Task 15 (the human, 2026-08-24): the before/after PAIR is not a filmstrip — it STACKS to full
+    // pane width, so each frame is large in the tall pane (the media was half-width in a wide pane)
+    await expect(panel2.locator('.fstrip')).not.toHaveClass(/\bfilmstrip\b/)
+    const cellFrac = await panel2.locator('.fcell').first().evaluate(el =>
+      el.getBoundingClientRect().width / el.closest('.fmpanel')!.getBoundingClientRect().width)
+    expect(cellFrac, 'a stacked pair frame spans the pane').toBeGreaterThan(0.9)
+    // …and its zoom is NEAR-FULLSCREEN: the 640px harvest frame is drawn across the stage, not at
+    // native size in the middle of it (object-fit contained — measure the drawn bitmap, not the box)
+    await panel2.locator('.fcell img').first().click()
+    await expect(page.locator('#lb')).toBeVisible()
+    await page.waitForFunction(() => (document.getElementById('lbimg') as HTMLImageElement).naturalWidth > 0)
+    const lbFrac = await page.locator('#lbimg').evaluate((el: HTMLImageElement) => {
+      const r = el.getBoundingClientRect(); const a = el.naturalWidth / el.naturalHeight
+      return Math.min(r.width, r.height * a) / window.innerWidth
+    })
+    expect(lbFrac, 'the lightbox zoom is near-fullscreen').toBeGreaterThan(0.8)
+    // the Actual-size escape hatch still renders native pixels (the 640px harvest frame as cut)
+    await page.locator('#lbzoom').click()
+    await expect.poll(() => page.locator('#lbimg').evaluate((el: HTMLImageElement) =>
+      Math.round(el.getBoundingClientRect().width))).toBe(640)
+    await page.locator('#lbclose').click()
   })
 })
 
