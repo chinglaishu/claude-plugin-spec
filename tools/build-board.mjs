@@ -376,6 +376,20 @@ const evAttrs = (s, r) => {
   if (out && e.window && typeof e.window.from === 'number' && typeof e.window.to === 'number') {
     out += ` data-ev-window="${esc(e.window.from + ':' + e.window.to)}"`
   }
+  // Task 16 #1: the COMMITTED VIDEO — the screen's primary recording plus this requirement's own
+  // frozen seek offsets. Baked only when the file is really on disk (the reader HIDES the video
+  // button without it — never a broken player), content-hash-busted like the frames. The offsets
+  // ride their own attribute, NOT data-ev-window: a later CLI fold moves the window with the fresh
+  // frames while the video keeps the offsets it was cut against.
+  if (e.video && e.video.path) {
+    const vabs = join(ROOT, String(e.video.path))
+    if (existsSync(vabs)) {
+      out += ` data-ev-video="${esc(String(e.video.path) + '?h=' + shotHash(vabs))}"`
+      if (typeof e.video.from === 'number' && typeof e.video.to === 'number') {
+        out += ` data-ev-vwin="${esc(e.video.from + ':' + e.video.to)}"`
+      }
+    }
+  }
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
 }
@@ -2056,6 +2070,8 @@ export function build () {
   .fstepbar .pd:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
   .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
   .fmpanel .frecwrap { padding:var(--s3); }
+  /* the committed video's honest label (Task 16 #1): whose flow, and where this beat sits in it */
+  .fmpanel .fvlab { padding:0 var(--s3) var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-3); }
   /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */
   .fmbody .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     background:rgba(253,252,249,.55); z-index:5; pointer-events:none; }

@@ -412,6 +412,14 @@ const B = window.__BOARD__ || {}
           const m = /^(\d+):(\d+)$/.exec(node.getAttribute('data-ev-window') || '')
           return m ? { from: +m[1], to: +m[2] } : null
         })(),
+        // the COMMITTED video (Task 16 #1) + its own frozen seek offsets — a separate attribute
+        // from the harvest window on purpose: a CLI fold moves the window with fresh frames while
+        // the video keeps the offsets it was cut against
+        video: node.getAttribute('data-ev-video') || '',
+        vwin: (function () {
+          const m = /^(\d+):(\d+)$/.exec(node.getAttribute('data-ev-vwin') || '')
+          return m ? { from: +m[1], to: +m[2] } : null
+        })(),
         at: node.getAttribute('data-ev-at') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
@@ -602,7 +610,8 @@ const B = window.__BOARD__ || {}
         '<div class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</div>'
       evl.appendChild(ph)
     }
-    // THE MEDIA PANE (D2) — built after the header so its video panel can relocate the recording
+    // THE MEDIA PANE (D2) — video mode plays the screen's COMMITTED recording (Task 16 #1), so
+    // nothing is relocated for it any more; the run's own .rec stays folded inside the moved test
     evl.appendChild(buildMedia(dt, r, primary, move))
     // the moved covering test itself — its proof-frame strip stays visible here (board R14), the
     // rest of its chrome folded away; loadRuns folds it whenever it is home in the pane
@@ -800,7 +809,14 @@ const B = window.__BOARD__ || {}
     const sb = spdSelect(function () { return MEDIA_SPD }, function (nv) { MEDIA_SPD = nv; applySpd() })
     bar.appendChild(sb)
     const mb = document.createElement('span'); mb.className = 'medbar'
-    const modes = st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video']
+    // Task 16 #1 (the human, 2026-08-24): video mode plays the COMMITTED recording only — with
+    // none committed the button is NOT offered at all (the transient _runs .webm is gone on a
+    // fresh clone, and a button over a missing file is a broken player, never an honest surface)
+    const modes = (st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video'])
+      .filter(function (m) { return m !== 'video' || !!r.ev.video })
+    // a stored 'video' preference over a requirement with none committed falls back to stills —
+    // the preference must never leave every panel hidden
+    if (modes.indexOf(mode) < 0) mode = 'frames'
     const panels = {}
     const apply = function (m) {
       ;[].slice.call(mb.children).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m) })
@@ -968,22 +984,55 @@ const B = window.__BOARD__ || {}
       }
       panels.clip = pc; body.appendChild(pc)
     }
-    // video — the covering test's own recording, the wired .rec node moved in (undone on leave)
-    {
+    // video — the screen's COMMITTED recording (Task 16 #1), seeked to THIS requirement's moment.
+    // The old surface moved the run's _runs .rec in, but _runs is transient and gitignored, so a
+    // vendored/fresh-clone board had NO video at all; the committed .webm under the screen's
+    // evidence dir is a real, shipped artifact. The mode itself exists only when it is committed
+    // (the modes filter above) — never a broken/empty player.
+    if (modes.indexOf('video') >= 0) {
       const pv = document.createElement('div'); pv.className = 'fmpanel'; pv.dataset.m = 'video'
-      // a video element born inside this panel AFTER the speed was chosen (the cover's ▶ builds it
-      // lazily) starts at the pane's pace — loadstart does not bubble, but capture catches it
+      // a video element starting AFTER the speed was chosen must open at the pane's pace —
+      // loadstart does not bubble, but capture catches it
       pv.addEventListener('loadstart', function (e) {
         if (e.target && e.target.tagName === 'VIDEO') e.target.playbackRate = MEDIA_SPD
       }, true)
-      const rec = primary.querySelector('.rec')
-      if (rec && (rec.classList.contains('playable') || rec.style.backgroundImage)) {
-        const rw = document.createElement('div'); rw.className = 'frecwrap'
-        pv.appendChild(rw)
-        move(rec, rw, false)
-      } else {
-        pv.innerHTML = '<div class="noev"><span>no recording kept for this run — stills still stand</span></div>'
+      const from = r.ev.vwin ? r.ev.vwin.from : null
+      const to = r.ev.vwin ? r.ev.vwin.to : null
+      const rw = document.createElement('div'); rw.className = 'frecwrap'
+      const shell = document.createElement('div'); shell.className = 'rec playing evrec'
+      const v = document.createElement('video')
+      v.controls = true; v.playsInline = true; v.preload = 'metadata'
+      v.src = r.ev.video
+      // start at this requirement's beat: pre-metadata this sets the default playback start
+      // position (readable back before the file loads — the board test drives exactly that), and
+      // the loadedmetadata belt re-aims a player whose load cleared it
+      const seek = function () { if (from != null) { try { v.currentTime = from / 1000 } catch (e2) { /* not loadable yet */ } } }
+      seek()
+      v.addEventListener('loadedmetadata', function () {
+        if (from != null && Math.abs(v.currentTime - from / 1000) > 0.05) seek()
+      })
+      // the beat ends at the frozen `to`: pause there ONCE on the first play-through, so the pane
+      // shows this requirement's moment while the whole flow stays watchable — pressing play again
+      // simply continues (no re-trap, no control taken away)
+      if (to != null && to > (from || 0)) {
+        let held = false
+        v.addEventListener('timeupdate', function () {
+          if (!held && v.currentTime >= to / 1000) { held = true; v.pause() }
+        })
       }
+      shell.appendChild(v); rw.appendChild(shell); pv.appendChild(rw)
+      // the honest label: whose flow this is, and where THIS beat sits in it
+      const fmtT = function (ms) {
+        const s = Math.floor(ms / 1000)
+        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
+      }
+      const others = primary
+        ? Math.max(0, primary.querySelectorAll('.tststeps .beat[data-step="prove"]').length - 1) : 0
+      const fl = document.createElement('div'); fl.className = 'fvlab'
+      fl.textContent = 'the full flow that proves this' +
+        (others ? ' + ' + others + ' other' + (others > 1 ? 's' : '') : '') +
+        (from != null ? ' · this beat at ' + fmtT(from) + (to != null && to > from ? '–' + fmtT(to) : '') : '')
+      pv.appendChild(fl)
       panels.video = pv; body.appendChild(pv)
     }
     // PLAY SPEED, applied to whatever the pane is showing (Task 13). Gif: re-arm the stepper's
@@ -3034,7 +3083,7 @@ const B = window.__BOARD__ || {}
       req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
       // the media pane's inputs are derived too — a run re-harvests the evidence (new content
       // hashes, a fresh window); a reopened reader must never show stale media
-      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-window', 'data-ev-at']) {
+      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-window', 'data-ev-video', 'data-ev-vwin', 'data-ev-at']) {
         const v = f.getAttribute(a)
         if (v == null) req.removeAttribute(a); else req.setAttribute(a, v)
       }

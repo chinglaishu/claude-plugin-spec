@@ -1,9 +1,10 @@
-import { writeFileSync, copyFileSync, mkdirSync, existsSync } from 'node:fs'
+import { writeFileSync, copyFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindow, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment } from '../tools/evidence.mjs'
+import { clipWindow, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment, evidenceVideoPath, ffmpegVideoArgs } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -177,6 +178,40 @@ function ffmpegOk () {
 // the clip). Best-effort throughout — a frame that cannot be copied is dropped, never a failed
 // run — and it NEVER creates a screen directory the tree does not have (a stray tag must not
 // materialise a screen; the state guard would have nothing to remove because nothing may appear).
+// Task 16 #1: commit ONE recording per source file — content-hash named so an identical recording
+// re-lands on its own path and a changed one appears beside the old (the fold prunes the orphan).
+// Downscaled/re-encoded small when ffmpeg is here (tools/evidence.mjs ffmpegVideoArgs — measured
+// ~0.75 MB for a 40s flow); plain-copied otherwise, bigger but honest. Best-effort throughout: a
+// failed or timed-out encode removes its partial file and simply leaves the entries video-less.
+function commitVideo (srcAbs, screen, cache) {
+  const key = screen + ' ' + srcAbs
+  if (cache.has(key)) return cache.get(key)
+  let rel = null
+  try {
+    const hash = createHash('sha256').update(readFileSync(srcAbs)).digest('hex').slice(0, 12)
+    rel = evidenceVideoPath(screen, hash)
+    const dest = join(process.cwd(), rel)
+    if (!existsSync(dest)) {
+      let landed = false
+      if (ffmpegOk()) {
+        try {
+          execFileSync('ffmpeg', ffmpegVideoArgs(srcAbs, dest), { stdio: 'ignore', timeout: 180000 })
+          landed = existsSync(dest)
+        } catch {
+          try { rmSync(dest, { force: true }) } catch { /* nothing landed */ }
+          landed = false
+        }
+      }
+      if (!landed) {
+        try { copyFileSync(srcAbs, dest); landed = true } catch { /* dropped, never fatal */ }
+      }
+      if (!landed) rel = null
+    }
+  } catch { rel = null }
+  cache.set(key, rel)
+  return rel
+}
+
 function harvestEvidence (harvest, ranAt) {
   const out = {}
   const runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
@@ -211,6 +246,32 @@ function harvestEvidence (harvest, ranAt) {
       if (landed) entry[phase] = paths[phase]
     }
     if (entry.before || entry.after) out[qid] = entry
+  }
+  // Task 16 #1 (the human, 2026-08-24): commit each screen's PRIMARY recording — the one .webm
+  // that proved the most of this run's harvested requirements for that screen (usually the flow) —
+  // to spec/<screen>/evidence/<hash>.webm, and point every entry harvested FROM that recording at
+  // it with the seek offsets frozen alongside (`video: {path, from, to}` — the reader seeks to
+  // `from` so video mode starts at THIS requirement's moment). One video per screen bounds the
+  // repo weight; an entry proven by a different recording stays video-less and the reader hides
+  // the button honestly. A CLI run has no recordings, so this whole step is a no-op there and the
+  // fold's carry keeps whatever stands committed.
+  const byScreen = {}
+  for (const [qid, h] of Object.entries(harvest)) {
+    if (!out[qid] || !h.srcVideo) continue
+    const scr = qid.slice(0, qid.indexOf(':'))
+    const m = (byScreen[scr] ??= new Map())
+    m.set(h.srcVideo, (m.get(h.srcVideo) || 0) + 1)
+  }
+  const cache = new Map()
+  for (const [scr, counts] of Object.entries(byScreen)) {
+    const primary = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    const rel = commitVideo(primary, scr, cache)
+    if (!rel) continue
+    for (const [qid, h] of Object.entries(harvest)) {
+      if (!out[qid] || h.srcVideo !== primary || !qid.startsWith(scr + ':')) continue
+      const w = out[qid].window
+      out[qid].video = { path: rel, from: w ? w.from : null, to: w ? w.to : null }
+    }
   }
   return out
 }
@@ -307,6 +368,10 @@ export default class ResultsIndexReporter {
         const h = (evidenceHarvest[qid] ||= {})
         h[tag.phase] = a.path
         h.window = clipWindow(steps, qid) || h.window || null
+        // the recording this capture came from (Task 16 #1) — harvestEvidence picks each screen's
+        // primary among these and commits it; only a board run records video, so a CLI run's
+        // harvest carries none and the committed video rides the fold's carry instead
+        if (video && video.path) h.srcVideo = video.path
       }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.

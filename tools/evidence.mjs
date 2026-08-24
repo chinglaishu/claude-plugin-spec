@@ -62,6 +62,26 @@ export function evidencePaths (screen, id) {
   }
 }
 
+// Task 16 #1 (the human, 2026-08-24): the screen's COMMITTED RECORDING — the primary flow's .webm,
+// persisted under the same committed evidence dir (spec/** is allowlisted and NOT gitignored; the
+// transient _runs/ home stays fully ignored). Content-hash named, so a re-run with the identical
+// recording overwrites nothing and a changed one lands beside the old until the fold prunes the
+// orphan (foldEvidence refcounts it per screen).
+export function evidenceVideoPath (screen, hash) {
+  return `spec/${screen}/evidence/${hash}.webm`
+}
+
+// The committed cut: house 1280 wide (Task 16 #2's width — text stays legible), VP9 crf 38 which
+// took the measured 40.7s 1440×900 VP8 source from 3.0 MB to ~0.75 MB (crf 44 saved ~200 KB more
+// but softens the very text the proof exists to show), cpu-used 5 + row-mt so the encode runs
+// ~0.65× realtime inside the reporter's onEnd, and -an because a Playwright recording has no audio
+// track worth carrying. Without ffmpeg the caller copies the source as-is — bigger, still honest.
+export function ffmpegVideoArgs (srcRel, outRel) {
+  return ['-y', '-i', srcRel, '-vf', 'scale=1280:-2:flags=lanczos',
+    '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
+    outRel]
+}
+
 // The attachment names checkReq emits — `evidence <id> before` / `evidence <id> after`. Anything
 // else (covers, screenshots, videos) is not evidence and must never be mistaken for it.
 const EVIDENCE_ATT = /^evidence (\S+) (before|after)$/
@@ -82,13 +102,34 @@ export function parseEvidenceAttachment (name) {
 // clip it existed to keep — a carried file nothing renders would live forever).
 export function foldEvidence (index, entries) {
   const prune = []
-  for (const [qid, raw] of Object.entries(entries || {})) {
+  // Task 16 #1: the committed video is SHARED per screen (one primary recording, many
+  // requirements), so its lifecycle differs from the per-entry frames on purpose — carried across
+  // a video-less fold, replaced by a fresh one, and the FILE pruned only when no entry of its
+  // screen references it any more (refcounted below, not per-entry like the frames).
+  const touched = new Set()
+  const beforeVids = new Map()
+  const vidRefs = scr => {
+    const s = new Set()
+    for (const e of Object.values(index[scr]?.evidence || {})) {
+      if (e && e.video && e.video.path) s.add(e.video.path)
+    }
+    return s
+  }
+  for (const [qid, raw0] of Object.entries(entries || {})) {
     const i = String(qid).indexOf(':')
     if (i < 1) continue                       // never invent a screen for an unqualified id
     const scr = qid.slice(0, i)
     const rid = qid.slice(i + 1)
     const entry = (index[scr] ??= {})
+    if (!beforeVids.has(scr)) beforeVids.set(scr, vidRefs(scr))
+    touched.add(scr)
     const old = entry.evidence?.[rid]
+    // The CARRY (D1, resurrected 2026-08-24 for an artifact that has a renderer again — the
+    // reader's video mode plays the committed .webm): a video-less fold (a CLI run) keeps the
+    // committed video, its seek offsets frozen WITH it — the new fold's window indexes a recording
+    // that was never committed, so it must never re-aim the old one. A fold that brings a fresh
+    // video replaces the whole object.
+    const raw = (!raw0.video && old && old.video) ? { ...raw0, video: old.video } : raw0
     entry.evidence = { ...(entry.evidence || {}), [rid]: raw }
     if (old) {
       const vals = x => [x.before, x.after, x.clip, ...Object.values(x.clipVariants || {})]
@@ -97,6 +138,10 @@ export function foldEvidence (index, entries) {
         if (p && !kept.has(p)) prune.push(p)
       }
     }
+  }
+  for (const scr of touched) {
+    const after = vidRefs(scr)
+    for (const p of beforeVids.get(scr) || []) if (!after.has(p)) prune.push(p)
   }
   return prune
 }

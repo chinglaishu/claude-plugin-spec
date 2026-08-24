@@ -108,6 +108,59 @@ test('T13: a fold over a legacy clip-bearing entry names the whole set for pruni
   assert.equal('clip' in e, false, 'no clip field survives the fold')
   assert.equal('clipVariants' in e, false, 'no variant field survives it either')
 })
+// ── Task 16 #1 (the human, 2026-08-24): the COMMITTED VIDEO. A board run commits the screen's
+// primary recording under spec/<screen>/evidence/<hash>.webm and each requirement proven by that
+// recording carries `video: {path, from, to}` — the seek offsets FROZEN at commit time, so a later
+// fold's new window can never mis-seek an old recording. The video is SHARED per screen, so its
+// carry and prune rules differ from the per-entry frames on purpose:
+//   • a video-less fold (a CLI run) KEEPS the committed video — D1's carry, resurrected for an
+//     artifact that has a renderer again (the reader's video mode plays it);
+//   • a fold that brings a FRESH video replaces it;
+//   • the committed file is pruned only when NO entry of its screen references it any more.
+const vid = (path = 'spec/board/evidence/abc123def456.webm', from = 1200, to = 2000) => ({ path, from, to })
+
+test('T16: a video-less fold carries the committed video, offsets frozen', () => {
+  const old = entry({ video: vid() })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', window: { from: 9000, to: 9500 } }) })
+  assert.deepEqual(prune, [], 'nothing is pruned by a carry')
+  const e = index.board.evidence.R4
+  assert.deepEqual(e.video, vid(), 'the video and its own from/to survive the video-less fold')
+  assert.deepEqual(e.window, { from: 9000, to: 9500 }, 'while the frames take the NEW window')
+})
+
+test('T16: a fold with a fresh video replaces the old one — and prunes it once orphaned', () => {
+  const old = entry({ video: vid('spec/board/evidence/oldhash000000.webm') })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', video: vid('spec/board/evidence/newhash111111.webm', 3000, 3400) }) })
+  assert.deepEqual(prune, ['spec/board/evidence/oldhash000000.webm'])
+  assert.deepEqual(index.board.evidence.R4.video, vid('spec/board/evidence/newhash111111.webm', 3000, 3400))
+})
+
+test('T16: a shared video outlives one entry\'s replacement — pruned only when NO entry references it', () => {
+  const shared = 'spec/board/evidence/shared0000000.webm'
+  const index = {
+    board: {
+      evidence: {
+        R4: entry({ video: vid(shared, 1000, 1500) }),
+        R5: entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', video: vid(shared, 4000, 4700) })
+      }
+    }
+  }
+  // R4 alone re-proves with a fresh recording — R5 still plays the shared one
+  let prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', video: vid('spec/board/evidence/fresh00000000.webm') }) })
+  assert.deepEqual(prune, [], 'the shared video is still referenced by R5')
+  // now R5 re-proves on the fresh recording too — the shared file is finally orphaned
+  prune = foldEvidence(index, { 'board:R5': entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', runId: 'r2', video: vid('spec/board/evidence/fresh00000000.webm', 4000, 4700) }) })
+  assert.deepEqual(prune, [shared])
+})
+
+test('T16: an entry that never had a video gains none from a video-less fold', () => {
+  const index = { board: { evidence: { R4: entry() } } }
+  foldEvidence(index, { 'board:R4': entry({ runId: 'r2' }) })
+  assert.equal('video' in index.board.evidence.R4, false)
+})
+
 test('T13: the carry is gone — a proven, hash-matched entry still sheds its legacy clip', () => {
   // exactly the case D1 used to carry: video-less fold, same text hash, still proven — the clip
   // now has no renderer, so keeping the file would be disk for nothing and a lie in the index

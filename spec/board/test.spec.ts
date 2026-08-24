@@ -672,6 +672,14 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // frames, folded from real runs into spec/_results-index.json and baked as data-ev-*) stay real.
     const evId = await dt.locator('.reqpane .req[data-ev-after]').first().getAttribute('data-r')
     expect(evId, 'at least one requirement must carry harvested evidence').toBeTruthy()
+    // Task 16 #1: the video button exists only for a COMMITTED video — whether THIS requirement is
+    // covered by its screen's primary recording is harvest state, so the toolbar legs below force
+    // the baked video attributes on (the same deterministic technique as the forced status; the
+    // real committed artifact is pinned by the R14 test's leg (a))
+    await dt.locator(`.reqpane .req[data-r="${evId}"]`).evaluate(el => {
+      el.setAttribute('data-ev-video', 'spec/board/evidence/stub-committed.webm')
+      el.setAttribute('data-ev-vwin', '2000:4000')
+    })
     const force = (rid: string, st: string) =>
       dt.locator(`.reqpane .req[data-r="${rid}"]`).evaluate((el, s) => el.setAttribute('data-status', s), st)
     const reopen = async (rid: string) => {    // hash-route away and back so the reader rebuilds
@@ -1159,8 +1167,16 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(st13.locator('.pdots .pd')).toHaveCount(5)
     await expect(st13.locator('.fstepn')).toHaveText(/^\d \/ 5$/)
     await ov.locator('.feval .fmedia .medbar button[data-m="frames"]').click()
-    // Task 13 — the same DROPDOWN drives VIDEO: playbackRate follows the selection across the
-    // native 0.25×–4× range (the very range the human asked the control to reach).
+    // Task 16 #1 (the human, 2026-08-24): video mode plays the screen's COMMITTED recording —
+    // seeked to THIS requirement's own moment. Driven deterministically by forcing the baked
+    // attributes onto the real row (the established technique; the artifact itself is pinned by
+    // leg (a) at the end). 9000:12500 = a stub beat window inside the recording.
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
+      el.setAttribute('data-ev-video', 'spec/board/evidence/stub-committed.webm')
+      el.setAttribute('data-ev-vwin', '9000:12500')
+    })
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     await ov.locator('.feval .fmedia .medbar button[data-m="video"]').click()
     const vp = ov.locator('.feval .fmedia .fmpanel[data-m="video"]')
     // Task 15: the proof recording FILLS the pane — scoped to .frecwrap, so the run-row/global
@@ -1168,8 +1184,16 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const vFrac = await vp.locator('.frecwrap .rec').evaluate(el =>
       el.getBoundingClientRect().width / el.closest('.fmpanel')!.getBoundingClientRect().width)
     expect(vFrac, 'the proof recording spans the media pane').toBeGreaterThan(0.8)
-    await vp.locator('.rec.playable').click()
+    // (b) the player exists up front (the committed file IS the surface — no cover click) and it
+    // OPENS AT THIS REQUIREMENT'S MOMENT: currentTime = window.from, the default playback start
+    // position, readable before a byte of the file loads
     await expect(vp.locator('video')).toHaveCount(1)
+    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeCloseTo(9, 1)
+    // (c) the label is honest: whose flow this is, and where the beat sits — derived from the window
+    await expect(vp.locator('.fvlab')).toContainText('the full flow that proves this')
+    await expect(vp.locator('.fvlab')).toContainText('this beat at 0:09–0:12')
+    // Task 13 — the same DROPDOWN drives VIDEO: playbackRate follows the selection across the
+    // native 0.25×–4× range (the very range the human asked the control to reach).
     expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1)
     const spd14 = ov.locator('.feval .fmedia .fmbar select.pspd')
     await spd14.selectOption('0.25')
@@ -1180,15 +1204,15 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
     // session-scoped only: no speed preference lands in storage
     expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /spd|speed/i.test(k)))).toEqual([])
-    // the reader rebuilt under a standing 2×: paging away and back re-adopts the playing node
-    // (its cover backgroundImage marks it a real player), the button remembers the session speed,
-    // and the pane re-rates the standing video at build — never a silent snap back to 1×
+    // the reader rebuilt under a standing 2×: paging away and back rebuilds the pane off the baked
+    // attributes — the fresh player is re-rated AND re-seeked at build, never a silent snap back
     await page.goto('/#/board/R2')
     await page.goto('/#/board/R1')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R1')
     await expect(spd14).toHaveValue('2')
     await expect(vp.locator('video')).toHaveCount(1)
     await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
+    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeCloseTo(9, 1)
     // back to 1× and stills for the rest of the test
     await spd14.selectOption('1')
     await expect(spd14).toHaveValue('1')
@@ -1331,6 +1355,35 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect.poll(() => page.locator('#lbimg').evaluate((el: HTMLImageElement) =>
       Math.round(el.getBoundingClientRect().width) - el.naturalWidth)).toBe(0)
     await page.locator('#lbclose').click()
+
+    // (d) Task 16 #1: with NO committed video the button is NOT offered at all — never a broken
+    // player over a missing file (red-first: the old surface offered the transient _runs recording
+    // here, which a fresh clone never has). A stored 'video' preference falls back to stills.
+    await page.evaluate(() => localStorage.setItem('sbFocusMedia', 'video'))
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
+      el.removeAttribute('data-ev-video'); el.removeAttribute('data-ev-vwin')
+    })
+    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
+    await expect(ov.locator('.feval .fmedia .medbar button[data-m="video"]')).toHaveCount(0)
+    await expect(ov.locator('.feval .fmedia .fmpanel[data-m="video"]')).toHaveCount(0)
+    await expect(ov.locator('.feval .fmedia .medbar button')).toHaveText(['stills', 'gif'])
+    await expect(ov.locator('.feval .fmedia .fmpanel[data-m="frames"]')).toBeVisible()
+    await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
+
+    // (a) Task 16 #1: the committed artifact is REAL — the fold's evidence entries point `video`
+    // at a content-hash-named .webm under the screen's committed evidence dir, and the file exists
+    // in the tree (the same source the bake reads; red until the first recorded board run commits
+    // one, then a video-less CLI fold must KEEP it — the carry this pins).
+    const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
+    const withVideo = Object.values((idx.board && idx.board.evidence) || {})
+      .filter((e: any) => e && e.video && e.video.path) as any[]
+    expect(withVideo.length, 'at least one board requirement carries a committed video').toBeGreaterThan(0)
+    for (const e of withVideo) {
+      expect(e.video.path).toMatch(/^spec\/board\/evidence\/[0-9a-f]{12}\.webm$/)
+      expect(existsSync(e.video.path), 'the committed video exists on disk: ' + e.video.path).toBe(true)
+      expect(typeof e.video.from, 'the seek offset rides the video, frozen at commit').toBe('number')
+    }
   })
 })
 

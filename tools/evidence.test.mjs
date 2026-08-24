@@ -57,6 +57,19 @@ test('ffmpegDownscaleArgs rescales a frame to the house 1280 width (even height)
     ['-y', '-i', 'in.png', '-vf', 'scale=1280:-2:flags=lanczos', 'out.png'])
 })
 
+// ── Task 16 #1 — the committed video: where the primary recording lands and how it is cut ─
+test('T16: evidenceVideoPath names the screen\'s committed recording by content hash', async () => {
+  const { evidenceVideoPath } = await import('./evidence.mjs')
+  assert.equal(evidenceVideoPath('board', 'abc123def456'), 'spec/board/evidence/abc123def456.webm')
+})
+test('T16: ffmpegVideoArgs downscales to the house 1280 and re-encodes small (vp9 crf38, no audio)', async () => {
+  const { ffmpegVideoArgs } = await import('./evidence.mjs')
+  assert.deepEqual(ffmpegVideoArgs('spec/_runs/x/video.webm', 'spec/board/evidence/abc.webm'),
+    ['-y', '-i', 'spec/_runs/x/video.webm', '-vf', 'scale=1280:-2:flags=lanczos',
+      '-c:v', 'libvpx-vp9', '-crf', '38', '-b:v', '0', '-cpu-used', '5', '-row-mt', '1', '-an',
+      'spec/board/evidence/abc.webm'])
+})
+
 // ── Task 13: the clip cutter is GONE — the frame-stepper plays harvested frames, so nothing
 // renders a webp clip and nothing may cut one. Retirement is pinned, not assumed: a module that
 // quietly re-exports the cutter is a module about to cut unrendered files again.
