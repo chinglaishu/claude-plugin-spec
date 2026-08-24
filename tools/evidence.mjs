@@ -27,17 +27,19 @@ export function clipWindow (steps, id) {
   return { from: hit.t, to: hit.t + (typeof hit.d === 'number' ? hit.d : 0) }
 }
 
-// The harvested frame pair, downscaled to the house 640 width at the fold (final review M4): a
-// full-viewport PNG is ~140 KB and the frames are committed with the tree, so a fold of sixty
-// requirements added megabytes per run. The frame stays a PNG at its deterministic path. Without
-// ffmpeg the full-size frame is copied as before.
+// The harvested frame pair, downscaled at the fold (final review M4): a full-viewport PNG is
+// ~140 KB and the frames are committed with the tree, so a fold of sixty requirements added
+// megabytes per run. The frame stays a PNG at its deterministic path. Without ffmpeg the
+// full-size frame is copied as before. House width 1280 since Task 16 #2 (the human, 2026-08-24,
+// signed): 640 read soft once the pane showed frames large (Task 15) and near-fullscreen at the
+// zoom — 1280 is a mild downscale of the 1440-wide viewport shot, crisp at both.
 export function ffmpegDownscaleArgs (srcRel, outRel) {
-  return ['-y', '-i', srcRel, '-vf', 'scale=640:-2:flags=lanczos', outRel]
+  return ['-y', '-i', srcRel, '-vf', 'scale=1280:-2:flags=lanczos', outRel]
 }
 
 export function ffmpegFrameArgs (srcRel, atMs, outRel) {
   const secs = String(Math.round(atMs) / 1000)
-  return ['-y', '-ss', secs, '-i', srcRel, '-frames:v', '1', '-vf', 'scale=640:-2:flags=lanczos', outRel]
+  return ['-y', '-ss', secs, '-i', srcRel, '-frames:v', '1', '-vf', 'scale=1280:-2:flags=lanczos', outRel]
 }
 
 // ---------------------------------------------------------------------------------------------

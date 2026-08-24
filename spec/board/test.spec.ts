@@ -1314,7 +1314,7 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     expect(pairScroll.lastH, 'the second frame is a real frame, not a collapsed row').toBeGreaterThan(100)
     expect(pairScroll.lastBottom, 'scrolled to the end, the second frame sits fully inside the card')
       .toBeLessThanOrEqual(pairScroll.boxBottom + 2)
-    // …and its zoom is NEAR-FULLSCREEN: the 640px harvest frame is drawn across the stage, not at
+    // …and its zoom is NEAR-FULLSCREEN: the harvest frame is drawn across the stage, not at
     // native size in the middle of it (object-fit contained — measure the drawn bitmap, not the box)
     await panel2.locator('.fcell img').first().click()
     await expect(page.locator('#lb')).toBeVisible()
@@ -1324,10 +1324,12 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
       return Math.min(r.width, r.height * a) / window.innerWidth
     })
     expect(lbFrac, 'the lightbox zoom is near-fullscreen').toBeGreaterThan(0.8)
-    // the Actual-size escape hatch still renders native pixels (the 640px harvest frame as cut)
+    // the Actual-size escape hatch still renders native pixels — the frame exactly as cut,
+    // whatever the house harvest width is (640 before Task 16 #2, 1280 since; the exact width is
+    // disk state pinned by tools/evidence.test.mjs, not by this surface)
     await page.locator('#lbzoom').click()
     await expect.poll(() => page.locator('#lbimg').evaluate((el: HTMLImageElement) =>
-      Math.round(el.getBoundingClientRect().width))).toBe(640)
+      Math.round(el.getBoundingClientRect().width) - el.naturalWidth)).toBe(0)
     await page.locator('#lbclose').click()
   })
 })

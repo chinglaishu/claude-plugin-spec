@@ -27,7 +27,7 @@ test('clipWindow returns null when the step has no timestamp', () => {
 test('ffmpegFrameArgs extracts a single frame at a timestamp, scaled', () => {
   assert.deepEqual(
     ffmpegFrameArgs('runs/x/video.webm', 2000, 'runs/x/R5-before.png'),
-    ['-y', '-ss', '2', '-i', 'runs/x/video.webm', '-frames:v', '1', '-vf', 'scale=640:-2:flags=lanczos', 'runs/x/R5-before.png']
+    ['-y', '-ss', '2', '-i', 'runs/x/video.webm', '-frames:v', '1', '-vf', 'scale=1280:-2:flags=lanczos', 'runs/x/R5-before.png']
   )
 })
 test('ffmpegFrameArgs renders sub-second offsets with millisecond precision', () => {
@@ -49,10 +49,12 @@ test('clipWindow never aliases two DIFFERENT qualified ids — board:R7 is not d
   assert.equal(clipWindow([{ label: 'proves board:R7', t: 100, d: 50 }], 'dispatch:R7'), null)
 })
 
-// ── final review M4 — the harvested frame pair is downscaled like the retired clip was ─
-test('ffmpegDownscaleArgs rescales a frame to the house 640 width (even height), overwriting', () => {
+// ── Task 16 #2 (the human, 2026-08-24, signed: 1280px) — the harvested frames read soft when the
+// pane shows them large (Task 15) and at the near-fullscreen zoom; the house width is now 1280:
+// a mild downscale of the 1440-wide viewport shot, crisp in-pane and near-native at the ×~1340 zoom.
+test('ffmpegDownscaleArgs rescales a frame to the house 1280 width (even height), overwriting', () => {
   assert.deepEqual(ffmpegDownscaleArgs('in.png', 'out.png'),
-    ['-y', '-i', 'in.png', '-vf', 'scale=640:-2:flags=lanczos', 'out.png'])
+    ['-y', '-i', 'in.png', '-vf', 'scale=1280:-2:flags=lanczos', 'out.png'])
 })
 
 // ── Task 13: the clip cutter is GONE — the frame-stepper plays harvested frames, so nothing
