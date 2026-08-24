@@ -17,6 +17,17 @@ import { deriveLibrary } from './compose.mjs'
 // pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
 import { deriveKind } from './flow.mjs'
 
+// Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
+// query cannot read a CSS var, so build() parses the knob out of _design.css and computes each
+// breakpoint from its BASE number at emit time (the emit reads `bp(1080)`, keeping the base
+// legible) — changing --scale alone moves the emitted values, the knob's one-line promise kept.
+// Pure and exported for tools/scale-breakpoints.test.mjs.
+export const parseScale = css => {
+  const m = /--scale:\s*([0-9.]+)/.exec(css)
+  return m ? Number(m[1]) : 1
+}
+export const scaledBp = (base, scale) => Math.round(base * scale)
+
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
 // of the square shapes from _design.css (filled · o hollow · h half · n hairline).
@@ -1580,11 +1591,16 @@ export function build () {
   // same bytes directly (tools/stepper.test.mjs), so the pace the board plays is the pace tested
   const stepperJs = readFileSync(join(ROOT, 'tools', 'board', 'stepper.js'), 'utf8')
 
+  // the design system's text is read ONCE and reused: inlined below, and parsed for the --scale
+  // the breakpoint emits compute from (see parseScale/scaledBp at the top of this file)
+  const css = designCss()
+  const bp = base => scaledBp(base, parseScale(css))
+
   const html = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>specboard</title>
-<style>${designCss()}</style>
+<style>${css}</style>
 <style>
   /* board layout only — every colour, size and space above comes from spec/_design.css */
   body { width:auto; }
@@ -1740,9 +1756,9 @@ export function build () {
   .featx { position:absolute; right:0; top:0; width:20px; height:20px; border:0; background:transparent;
     color:var(--ink-4); cursor:pointer; font-size:var(--t-sm); line-height:1; padding:0; }
   .featx:hover { color:var(--ink); }
-  /* breakpoint scaled with the chrome (Task 14, 1100 × 0.8): six scaled cards still read at 880 —
-     the strip folds to three-up before any card's two-liner clips */
-  @media (max-width:880px) { .feats { grid-template-columns:repeat(3, 1fr); } }
+  /* breakpoint computed at emit (base 1100 × --scale): six scaled cards still read at the
+     emitted edge — the strip folds to three-up before any card's two-liner clips */
+  @media (max-width:${bp(1100)}px) { .feats { grid-template-columns:repeat(3, 1fr); } }
 
   /* DETAIL — a fixed FULL-SCREEN window that COVERS the specboard bar, so a detail page has exactly
      ONE header: its own. Below it, R2's two panes each scroll on their own. z-index sits above the
@@ -1826,10 +1842,10 @@ export function build () {
   .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1fr) calc(600px * var(--scale));
     gap:var(--s4); align-items:stretch; }
   /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead.
-     Breakpoint scaled with the chrome (1080 × 0.8 = 864 — a media query cannot read the var): the
-     scaled columns fit two-up well below the old 1080, and at 864 the reading column still gets
+     Breakpoint computed at emit: base 1080 × the design system's --scale (a media query cannot read
+     the var, so build() does — release pass). At the emitted edge the reading column still gets
      ≈330px before the collapse, so it collapses before it overflows. */
-  @media (max-width:864px) {
+  @media (max-width:${bp(1080)}px) {
     .fpage { grid-template-columns:1fr; overflow-y:auto; }
     .fpage > .fleft, .fpage > .feval { overflow:visible; }
     .fleft > .fread { display:block; overflow:visible; }
@@ -2264,9 +2280,9 @@ export function build () {
   .flsplit { flex:1; min-height:0; display:grid; grid-template-columns:calc(390px * var(--scale)) minmax(0,1fr);
     gap:var(--s4); align-items:stretch; }
   /* stacked on a narrow screen, per-pane scroll would trap content — the split scrolls whole.
-     Breakpoint scaled with the chrome (Task 14, 1080 × 0.8): the 312px rail leaves the player
-     ≈500px at 864 — it collapses before it overflows. */
-  @media (max-width:864px) {
+     Breakpoint computed at emit (base 1080 × --scale): the scaled rail leaves the player ≈500px
+     at the emitted edge — it collapses before it overflows. */
+  @media (max-width:${bp(1080)}px) {
     .flsplit { grid-template-columns:1fr; overflow-y:auto; }
     .flsplit > .flrail, .flsplit > .flmain { overflow:visible; height:auto; }
   }
@@ -2367,9 +2383,9 @@ export function build () {
     padding:4px 10px; cursor:pointer; }
   .cseg .cmode.on { background:var(--wash); color:var(--ink); font-weight:500; }
   .cwrap { display:grid; grid-template-columns:calc(340px * var(--scale)) minmax(0,1fr); gap:var(--s4); align-items:start; }
-  /* breakpoint scaled with the chrome (Task 14, 1000 × 0.8): the 272px library rail leaves the
-     chain ≈490px at 800 — collapses before overflow */
-  @media (max-width:800px) { .cwrap, .cout { grid-template-columns:1fr; } }
+  /* breakpoint computed at emit (base 1000 × --scale): the scaled library rail leaves the chain
+     ≈490px at the emitted edge — collapses before overflow */
+  @media (max-width:${bp(1000)}px) { .cwrap, .cout { grid-template-columns:1fr; } }
   .cpanel { border:1px solid var(--hair-2); border-radius:var(--r-md); background:var(--paper);
     padding:var(--s3) var(--s4); }
   .cpanel h2 { font-size:var(--t-lg); margin:0; }
