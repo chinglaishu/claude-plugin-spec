@@ -1976,6 +1976,11 @@ export function build () {
      The default derives from status × beat count; the toolbar overrides it — a client-side
      preference (localStorage), never stored in the tree. */
   .fmedia { border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; background:var(--card); }
+  /* Task 16 #3 (the human, 2026-08-24): the proof card's children must NOT shrink — .fmedia is a
+     flex child of .feval, and its default flex-shrink let the stacked pair (two ~39vh frames) be
+     crushed to fit while .fmedia's own overflow:hidden clipped frame 2 away with scrollTop pinned
+     at 0. Kept intrinsic, the card's existing overflow-y:auto scrolls and both frames are reachable. */
+  .feval > .fmedia, .feval > .fev { flex:none; }
   .fmbar { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono);
     color:var(--ink-3); padding:6px var(--s3); border-bottom:1px solid var(--hair); background:var(--wash); }
   .fmbar .pinned { color:var(--ai); }
@@ -2012,6 +2017,10 @@ export function build () {
   .fstrip .fcell.rf { flex:0 0 300px; }
   .fstrip .fcell { flex:1 1 0; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
+  /* Task 16 #3 (the human, 2026-08-24): in the FILMSTRIP every cell is fixed — the plain given
+     cell was flex:1 1 0 and the fixed .rf cells crushed it to a ~2px sliver; same sizing for all,
+     so the strip overflows honestly and overflow-x:auto scrolls through every cell */
+  .fstrip.filmstrip .fcell { flex:0 0 300px; }
   /* Task 15 (the human, 2026-08-24): the before/after PAIR (no .rf cells — buildMedia marks the
      run-frame strip .filmstrip) STACKS to full pane width, so each frame reads large in the tall
      pane instead of half-width in a wide one. 39vh ≈ 46% of the Focus pane at the 900-tall daily

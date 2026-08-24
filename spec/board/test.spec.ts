@@ -1120,6 +1120,19 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(panel.locator('.fstrip')).toHaveClass(/\bfilmstrip\b/)
     const rowTops = await panel.locator('.fcell').evaluateAll(els => els.map(el => Math.round(el.getBoundingClientRect().top)))
     expect(new Set(rowTops).size, 'the filmstrip lays every cell in one row').toBe(1)
+    // Task 16 #3 (the human, 2026-08-24): the GIVEN cell is a real cell — the same fixed sizing as
+    // the .rf cells, never a flex:1 sliver crushed to ~2px by them — and the strip actually scrolls
+    // sideways through ALL cells when they overflow the pane (fixed cells inside overflow-x:auto).
+    const givenW = await panel.locator('.fcell').first().evaluate(el => el.getBoundingClientRect().width)
+    expect(givenW, 'the given cell keeps a real width, not a collapsed sliver').toBeGreaterThan(120)
+    const stripScroll = await panel.locator('.fstrip.filmstrip').evaluate(el => {
+      el.scrollLeft = 99999
+      const r = { max: el.scrollWidth - el.clientWidth, at: el.scrollLeft }
+      el.scrollLeft = 0
+      return r
+    })
+    expect(stripScroll.max, 'the fixed cells overflow the pane sideways').toBeGreaterThan(50)
+    expect(stripScroll.at, 'and the strip scrolls all the way to the far cell').toBeGreaterThan(stripScroll.max - 2)
     await expect(panel.locator('.fcell.rf', { hasText: 'foreign value' })).toHaveCount(0)
     await expect(rf.nth(0)).toContainText('got 7 · expected 7')
     await expect(rf.nth(2)).toContainText('got 5 · expected 4')
@@ -1283,6 +1296,24 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     const cellFrac = await panel2.locator('.fcell').first().evaluate(el =>
       el.getBoundingClientRect().width / el.closest('.fmpanel')!.getBoundingClientRect().width)
     expect(cellFrac, 'a stacked pair frame spans the pane').toBeGreaterThan(0.9)
+    // Task 16 #3 (the human, 2026-08-24): BOTH frames of the stacked pair are REACHABLE — the two
+    // ~39vh frames overflow the proof card at the pinned 1440×900 viewport, so the card must scroll
+    // vertically (before the fix .fmedia shrank as a flex child and its overflow:hidden clipped
+    // frame 2 away: scrollHeight === clientHeight, scrollTop pinned at 0, the frame ~165px past the
+    // card's bottom with no way to reach it).
+    const pairScroll = await dt.locator('.focusov .feval').evaluate(el => {
+      el.scrollTop = 99999
+      const cells = el.querySelectorAll('.fmpanel[data-m="frames"] .fcell')
+      const last = cells[cells.length - 1].getBoundingClientRect()
+      const box = el.getBoundingClientRect()
+      const r = { at: el.scrollTop, lastBottom: last.bottom, boxBottom: box.bottom, lastH: last.height }
+      el.scrollTop = 0
+      return r
+    })
+    expect(pairScroll.at, 'the proof card scrolls down to the second frame').toBeGreaterThan(40)
+    expect(pairScroll.lastH, 'the second frame is a real frame, not a collapsed row').toBeGreaterThan(100)
+    expect(pairScroll.lastBottom, 'scrolled to the end, the second frame sits fully inside the card')
+      .toBeLessThanOrEqual(pairScroll.boxBottom + 2)
     // …and its zoom is NEAR-FULLSCREEN: the 640px harvest frame is drawn across the stage, not at
     // native size in the middle of it (object-fit contained — measure the drawn bitmap, not the box)
     await panel2.locator('.fcell img').first().click()
