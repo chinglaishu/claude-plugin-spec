@@ -104,6 +104,16 @@ way. Read it before writing your first one.
    value you only read from the API. **The finishing check for the whole test: with the sound off, can
    you SEE every number the test claims? If not, it is not done** — this is the single most common way a
    green test still fails its one job (a recording a human can trust).
+6. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
+   (`fontSize >= 19` because the title token happens to be 19px today) is really asserting the
+   design system's *current arithmetic*, and it breaks the day the system rescales while the
+   behaviour — "the title wears the card-title token" — never moved (specboard's ×0.8 scale broke
+   exactly this pin, 2026-08-24). Resolve the token in the page (a probe element with
+   `font-size:var(--t-xl)`, then compare computed styles) and assert *equality with the token*, or
+   assert the relationship the requirement actually names (fits / visible / larger-than / collapses
+   before overflow). Same for fixtures: one built to overflow at today's sizes silently stops
+   exercising its contract when the chrome tightens — derive the fixture's bulk from the contract
+   ("tall enough to overflow"), not from the pixels of the day.
 
 Never weaken, skip, or delete an assertion to go green (CLAUDE.md rule 3) — neither a unit nor a
 flow test can buy a false green: every requirement still needs a real assertion that would fail
