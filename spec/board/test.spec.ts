@@ -221,10 +221,23 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // recording — the same wired .rec node, moved in (R13 media, the frozen mockup).
     const ov = dt.locator('.focusov')
     await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
+    // Task 16 #1 (the human, 2026-08-24): the media pane's video mode plays the screen's COMMITTED
+    // recording — baked as data-ev-video from the fold, NOT the run's transient _runs .webm — seeked
+    // to THIS requirement's beat (data-ev-vwin, ms into the recording). Give R1 a committed video the
+    // way the fold bakes it, then rebuild the reader: the video panel is built (a fresh .rec.evrec,
+    // never the OLD relocated .rec.playable) and plays that committed src, its label naming the beat.
+    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
+      el.setAttribute('data-status', 'passed')
+      el.setAttribute('data-ev-video', 'spec/board/evidence/committed.webm')
+      el.setAttribute('data-ev-vwin', '1000:2000')
+    })
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.fmpanel[data-m="video"] .rec.playable')).toBeAttached()
+    const vpanel = ov.locator('.fmpanel[data-m="video"]')
+    await expect(vpanel.locator('.rec.evrec')).toBeAttached()
+    await expect(vpanel.locator('.rec video')).toHaveAttribute('src', 'spec/board/evidence/committed.webm')
+    // the committed video is seeked to this beat — the honest label names where the beat sits (from vwin)
+    await expect(vpanel.locator('.fvlab')).toContainText('this beat at 0:01')
     await ov.locator('.feval .fmenubtn').click()
     await ov.locator('.feval .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
@@ -242,7 +255,6 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // Switch the toolbar to video (frames is the D2 default) and play the relocated recording —
     // the same wired .rec node, moved into the media pane's video panel (R13).
     await ov.locator('.fmedia .medbar button[data-m="video"]').click()
-    await ov.locator('.fmpanel[data-m="video"] .rec').click()
     const fit = await ov.locator('.fmpanel[data-m="video"] .rec video').evaluate(el => getComputedStyle(el).objectFit)
     expect(fit).toBe('contain')
     await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
@@ -275,39 +287,39 @@ test('Story-step evidence renders from the test definition', async ({ page }) =>
   })
 })
 
-test('R10 — the player plays the VOICED recording when a run produced one', async ({ page }) => {
+test('R10 — the Flow player plays the VOICED recording when a run produced one', async ({ page }) => {
   // Voice-over (init R6): a voiced run's record carries BOTH the silent video and a voiced mp4, and
-  // the player must play the voiced one. Deterministic through the REAL client pipeline via a stubbed
-  // /api/runs — a real voiced run needs piper, which the suite cannot assume (board R10 rule 3).
+  // the player must play the voiced one. Since Task 16 #1 (the human, 2026-08-24) the Focus MEDIA
+  // pane plays the screen's COMMITTED (silent) recording seeked to the beat; the narrated walkthrough
+  // is the FLOW view's player, which prefers the voiced cut (client.js buildFlow: one.voiced ||
+  // one.video). Deterministic through the REAL client pipeline via a stubbed /api/runs — a real
+  // voiced run needs piper, which the suite cannot assume (board R10 rule 3).
   await coverReqs('R10')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   await checkReq('R10', async () => {
+    // a flow-kind record (the shape flow.mjs emits), one reached chapter, carrying BOTH the silent
+    // .webm and the voiced .mp4 the voice-over pipeline produced beside it
+    const caseRec = {
+      shots: [], video: 'spec/_runs/rv/a.webm', voiced: 'spec/_runs/rv/a.voiced.mp4',
+      kind: 'flow', chapters: [{ title: 'Open the board detail', screen: 'board', t: 0, reqs: ['R1'], ok: true }],
+      steps: [{ label: 'Open the board detail', cat: 'test.step', depth: 0, ok: true, t: 0, d: 100 },
+        { label: 'proves R1', cat: 'test.step', depth: 1, ok: true, t: 50, d: 50 }],
+      at: '2026-08-14T00:00:00.000Z', ms: 4000, ok: true, commit: 'abc1234'
+    }
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
       runs: [{ screen: 'board', runId: 'rv', hasLog: false, at: '2026-08-14T00:00:00.000Z', ms: 4000,
-        ok: true, total: 1, failed: 0, shotsByTest: { [R1_TITLE]: {
-          shots: [], video: 'spec/_runs/rv/a.webm', voiced: 'spec/_runs/rv/a.voiced.mp4',
-          steps: [{ label: 'proves R1', cat: 'test.step', depth: 0, ok: true, t: 0, d: 100 }],
-          at: '2026-08-14T00:00:00.000Z', ms: 4000, ok: true, commit: 'abc1234'
-        } } }]
+        ok: true, total: 1, failed: 0, shotsByTest: { [R1_TITLE]: caseRec } }]
     } }))
     await page.reload()
-    // the reload reopens the detail on the Focus default — R1's page, whose evidence is R1's own
-    // covering test moved in with its WIRED player (R13); the fold hands it the stubbed record and
-    // the media pane's video panel holds the now-playable recording. Force a media-bearing status
-    // first (dogfood lag) and rebuild the reader, then switch the toolbar to video.
-    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-    await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
-    await dt.locator('.viewseg .vseg[data-view="grid"]').click()
-    await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    const rec = dt.locator('.focusov .fmpanel[data-m="video"] .rec')
-    await expect(rec).toBeAttached()
-    await dt.locator('.focusov .fmedia .medbar button[data-m="video"]').click()
-    await expect(rec).toBeVisible()
-    await rec.click()
-    // the VOICED cut is what plays — the same record's silent a.webm would play without init R6
-    const src = await rec.locator('video').getAttribute('src')
+    await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()   // the fold settled
+    // the Flow view's player is the narrated walkthrough — its <video> prefers the VOICED cut; the
+    // same record's silent a.webm would play without init R6
+    await dt.locator('.viewseg .vseg[data-view="flow"]').click()
+    const fplay = dt.locator('.flowview .flplay video')
+    await expect(fplay).toBeAttached()
+    const src = await fplay.getAttribute('src')
     expect(src).toContain('a.voiced.mp4')
     expect(src).not.toContain('a.webm')
   })
