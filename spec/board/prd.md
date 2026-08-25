@@ -57,11 +57,12 @@ everything and stores nothing.*
 
 - **Given** a screen whose prd.md places `###` family headings between its requirements
 - **When** the board renders that screen
-- **Then** every requirement sits under its family — on the home card, in List, and in the Focus pager — and a jump-map names each family with its requirements and their marks, in the prd's order
+- **Then** every requirement sits under its family — on the home card, in List, and in the Focus pager — and a jump-map names each family with its requirements, each dot wearing its own derived state as a hue, in the prd's order
 
-A `### <n> · <family> — <gloss>` line groups the requirements that follow it until the next heading; a screen with no headings renders exactly as today, and requirements before the first heading sit first under no family. A family carries no state of its own: its marks are its requirements' marks, derived and never stored. Families are structure, not meaning — a requirement's id, text and proof are untouched by where it sits.
+A `### <n> · <family> — <gloss>` line groups the requirements that follow it until the next heading; a screen with no headings renders exactly as today, and requirements before the first heading sit first under no family. A family carries no state of its own: its state is its requirements' states, derived and never stored. Families are structure, not meaning — a requirement's id, text and proof are untouched by where it sits.
 
 *Added 2026-08-23 (the human): sub-grouping modelled on the dojostack overlay catalogue's families and jump-map.*
+*Amended 2026-08-25 (the human): the jump-map's dots carry each requirement's derived state by HUE alone — the shoulder ✓/✗/◈/○ glyph is dropped for a cleaner, one-row map — with the state's WORD one hover or keyboard-focus away in the dot's title. A human-approved exception to the design system's "hue never alone" for this dense navigation map; the row and card status chips keep their marks unchanged.*
 
 ### 2 · Reading a requirement and its proof — the two ends
 

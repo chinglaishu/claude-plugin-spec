@@ -1937,9 +1937,16 @@ export function build () {
   .fread .fbody.fprose.open { display:block; }
   /* the schematic slot (task 4) — the drawn, hash-pinned loop where a committed drawing exists;
      the honest placeholder line where none does. loop · stills reuses the media pane's .medbar. */
-  .fschem { flex:none; background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  /* the schematic GROWS to fill the left column's leftover height (the human, 2026-08-25): it was
+     flex:none at its intrinsic height, which left an empty gap between the card and the pager. Now a
+     flex column that takes the space .fread (flex:0 1 auto, content-height) leaves — the drawing
+     scales into it (a vector loses nothing), the caption/footer stay pinned. It still SHRINKS on a
+     short viewport (the viz keeps an 88px×scale floor, the old clamp's low end) so Task 12's
+     schematic-on-first-sight budget at the 640px floor is unchanged. */
+  .fschem { flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+    background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
     box-shadow:var(--sh-sm); padding:var(--s4) var(--s5); }
-  .fschem .figcap { display:flex; align-items:center; gap:var(--s2);
+  .fschem .figcap { flex:none; display:flex; align-items:center; gap:var(--s2);
     font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); margin-bottom:var(--s2); }
   .fschem .figcap .medbar { margin-left:auto; }
@@ -1957,8 +1964,13 @@ export function build () {
      .fbeats' one-row minimum at the floor without touching the 900px picture. The constants are
      measured chrome, not tokens: at 640 the column gets 445px, of which a 2-line-title card's
      header+footer+one row need ~245 and the schematic card's own caption/foot/borders ~95. */
-  .fschem .viz svg { display:block; width:100%; height:auto; max-height:clamp(88px, 45vh - 200px, 220px); }
-  .fschem .viz { position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
+  /* the drawing fills the grown viz box, centred, preserveAspectRatio keeping it undistorted (an
+     svg viewBox scales like object-fit:contain natively) — so the schematic reads as large as the
+     reclaimed gap allows */
+  .fschem .viz svg { display:block; width:100%; height:100%; }
+  .fschem .viz { flex:1 1 auto; min-height:calc(88px * var(--scale));
+    display:flex; align-items:center; justify-content:center;
+    position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
     overflow:hidden; background:var(--paper); }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right */
   .fschem.isstale .viz svg, .fschem.isstale .sstills svg { filter:grayscale(1) opacity(.45); }
@@ -1968,17 +1980,20 @@ export function build () {
   .fschem .staleov b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
   .fschem .staleov span { font-size:var(--t-xs); color:var(--ink-3); }
   /* stills: the loop's own frames — every animation paused, parked per phase by --ph */
-  .fschem .sstills { display:flex; gap:var(--s2); }
-  .fschem .sstills .sframe { flex:1; min-width:0; border:1px solid var(--hair);
-    border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
-  .fschem .sstills .sframe svg { display:block; width:100%; height:auto; }
+  .fschem .sstills { flex:1 1 auto; min-height:calc(88px * var(--scale)); display:flex; gap:var(--s2); }
+  .fschem .sstills .sframe { flex:1; min-width:0; display:flex; flex-direction:column;
+    border:1px solid var(--hair); border-radius:var(--r-sm); overflow:hidden; background:var(--paper); }
+  /* the frame's svg holder grows to fill; the caption stays pinned at its foot */
+  .fschem .sstills .sframe > div:first-child { flex:1 1 auto; min-height:0; display:flex;
+    align-items:center; justify-content:center; }
+  .fschem .sstills .sframe svg { display:block; width:100%; height:100%; }
   .fschem .sstills .sframe svg * { animation-play-state:paused !important;
     /* Task 11: durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs), so the parked delay divides
        by the SAME var — |delay|/duration is preserved and a still shows the same frame at any speed */
     animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
   .fschem .sstills .scap { font:var(--t-micro) var(--mono); color:var(--ink-3);
     padding:3px 7px; border-top:1px solid var(--hair); background:var(--wash); }
-  .fschem .figfoot { font-size:var(--t-xs); color:var(--ink-3); margin-top:6px; }
+  .fschem .figfoot { flex:none; font-size:var(--t-xs); color:var(--ink-3); margin-top:6px; }
   .fschem .figfoot .h { font-family:var(--mono); }
   /* the client already defaults a reduced-motion viewer to stills; if they choose loop anyway,
      the drawing holds still rather than animating */
@@ -2178,10 +2193,13 @@ export function build () {
     color:var(--ink-2); font:var(--t-sm) var(--mono); line-height:1; cursor:pointer; }
   .fnav:hover { border-color:var(--hair-2); }
   .fnav:disabled { opacity:.35; cursor:default; }
-  /* the dots WRAP inside their own strip (17 requirements in 5 families need two lines at 1160px);
-     the arrows stay pinned at the strip's ends and the hint at the bar's right */
-  .fdots { flex:1 1 auto; display:flex; gap:6px; row-gap:var(--s2); flex-wrap:wrap; justify-content:center;
-    align-items:center; min-width:0; }
+  /* the dots stay on ONE row (the human, 2026-08-25 — the wrapped two-line strip read as a second
+     pager): a single nowrap strip that shrinks to the space between the arrows and, only if the
+     families are too wide to fit even then, scrolls sideways rather than wrapping. flex:0 1 auto so
+     it sizes to its content when it fits (the bar's justify-content:center keeps it centred) and
+     shrinks with an internal scroll when it does not — both ends stay reachable (no centre-clip). */
+  .fdots { flex:0 1 auto; display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start;
+    align-items:center; min-width:0; scrollbar-width:thin; }
   /* one group per family: its label, then its dots */
   .ffam { display:inline-flex; align-items:center; gap:5px; padding:0 var(--s1); }
   .ffl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3);
@@ -2193,20 +2211,27 @@ export function build () {
     display:inline-flex; align-items:center; justify-content:center;
     transition:box-shadow .15s ease, border-color .15s ease, background-color .15s ease; }
   .fdot:hover { background:var(--wash); }
-  /* the MARK badge at the dot's shoulder — the glyph carries the state, the hue only names it */
-  .fdot .fm { position:absolute; right:-5px; top:-6px; font-size:var(--t-micro); line-height:1; padding:1px 2px;
-    border-radius:999px; background:var(--paper); color:var(--ink-4); pointer-events:none; }
-  .fdot .fm.passed { color:var(--koke); } .fdot .fm.changed { color:var(--ai); }
-  .fdot .fm.failed { color:var(--bengara); } .fdot .fm.not-reached { color:var(--yamabuki); }
-  .fdot[data-status="failed"] { border-color:var(--bengara-line); background:var(--bengara-tint); }
-  .fdot[data-status="failed"]:hover { background:var(--bengara-tint); border-color:var(--bengara); }
+  /* the dot WEARS its state as a hue (R17, the human 2026-08-25): the shoulder ✓/✗ badge is gone —
+     each derived state paints the whole dot (a strong-hue border + number over the state's tint
+     fill), so the map reads its states by colour at a glance and stays one clean row. Hue-never-alone
+     is met by the state's WORD in the hover/focus title (a human-approved exception for this dense
+     map — the row/card chips keep their glyphs). Untested stays the neutral resting dot (base rule).
+     Measured on the tint fills: koke 6.06 · bengara 5.50 · yamabuki 4.64 · ai 7.62 — all ≥ AA 4.5. */
+  .fdot[data-status="passed"] { border-color:var(--koke); background:var(--koke-tint); color:var(--koke); }
+  .fdot[data-status="changed"] { border-color:var(--ai); background:var(--ai-tint); color:var(--ai); }
+  .fdot[data-status="failed"] { border-color:var(--bengara); background:var(--bengara-tint); color:var(--bengara); }
+  .fdot[data-status="not-reached"] { border-color:var(--yamabuki); background:var(--yamabuki-tint); color:var(--yamabuki); }
+  .fdot[data-status="passed"]:hover { background:var(--koke-tint); }
+  .fdot[data-status="changed"]:hover { background:var(--ai-tint); }
+  .fdot[data-status="failed"]:hover { background:var(--bengara-tint); }
+  .fdot[data-status="not-reached"]:hover { background:var(--yamabuki-tint); }
   .fpk { color:var(--ink-3); font-size:var(--t-xs); margin-left:var(--s3); white-space:nowrap; flex:none; }
   /* the thin tick between two FAMILIES' groups (board R17) — a hair rule, inert */
   .fdotfam { flex:none; align-self:center; width:1px; height:22px; background:var(--hair-2); margin:0 var(--s1); }
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: an integral ink ring, a bold
      number, so "you are here" reads cleanly whatever the dot's state. Kept z-index so the ringed
      dot sits over its neighbours; .cur is LAST so it wins the border. */
-  .fdot.cur, .fdot.cur[data-status="failed"] { border-color:var(--ink); color:var(--ink); font-weight:500;
+  .fdot.cur, .fdot.cur[data-status] { border-color:var(--ink); color:var(--ink); background:none; font-weight:500;
     box-shadow:inset 0 0 0 1px var(--ink); position:relative; z-index:1; }
   /* the TITLE BUBBLE — the requirement's id, title and state, one hover (or one keyboard focus) away;
      drawn from the dot's title attr so the two can never disagree. Hidden at rest, never in the flow. */

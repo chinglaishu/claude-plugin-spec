@@ -1057,15 +1057,14 @@ const B = window.__BOARD__ || {}
     return box
   }
 
-  // A pager dot's MARK and TITLE derive from its baked requirement row (data-status, .rt) — called
-  // by the Focus pager's render and again by syncDerived after a run, so the dots' marks are as
-  // fresh as the rows' chips without a rebuild. The glyphs are the card's (CARD_MARK in the builder).
-  const DOT_MARK = { passed: '✓', changed: '◈', failed: '✗', 'not-reached': '◌', untested: '○' }
+  // A pager dot's STATE and TITLE derive from its baked requirement row (data-status, .rt) — called
+  // by the Focus pager's render and again by syncDerived after a run, so a dot's hue is as fresh as
+  // the row's chip without a rebuild. The state rides on data-status, which the CSS paints as the
+  // dot's hue (R17, 2026-08-25 — the shoulder glyph is gone); the state's WORD is in the title, so
+  // hue-never-alone is met one hover / keyboard-focus away.
   function dotMark (d, rr) {
     const st = rr.getAttribute('data-status') || 'untested'
     const ttlEl = rr.querySelector('.rt')
-    const m = d.querySelector('.fm')
-    if (m) { m.className = 'fm ' + st; m.textContent = DOT_MARK[st] || DOT_MARK.untested }
     d.setAttribute('data-status', st)
     d.title = rr.getAttribute('data-r') + ' — ' + (ttlEl ? ttlEl.textContent : '') + ' · ' + st.replace('-', ' ')
   }
@@ -1114,9 +1113,10 @@ const B = window.__BOARD__ || {}
       // number row — two navigators over the same requirements): EVERY requirement is a dot (no
       // window, no ellipsis — a map that hides entries is not a map), grouped under its family with
       // the family's `<n> · <name>` label inline and a thin inert tick between families; each dot
-      // carries the requirement's derived MARK (the card's glyphs in their hues, hue never alone)
-      // and exposes its title on hover / keyboard focus (a title attr + the CSS bubble). A screen
-      // with no families renders the same bar with no labels and no ticks.
+      // WEARS the requirement's derived state as a hue (R17, 2026-08-25 — no shoulder glyph; the CSS
+      // paints data-status) and exposes its id/title/state on hover / keyboard focus (a title attr +
+      // the CSS bubble, where the state's word lives). A screen with no families renders the same bar
+      // with no labels and no ticks.
       let group = null; let groupKey = null
       reqs.forEach(function (rr, i) {
         const fam = rr.getAttribute('data-fam') || ''
@@ -1140,12 +1140,18 @@ const B = window.__BOARD__ || {}
         d.className = 'fdot' + (i === cur ? ' cur' : '')
         d.setAttribute('data-r', rr.getAttribute('data-r') || '')
         d.appendChild(document.createTextNode(String(i + 1)))
-        const m = document.createElement('span'); m.className = 'fm'; m.setAttribute('aria-hidden', 'true')
-        d.appendChild(m)
         dotMark(d, rr)
         d.addEventListener('click', (function (idx) { return function () { cur = idx; render() } })(i))
         group.appendChild(d)
       })
+      // the strip is ONE row (R17, 2026-08-25); when the families are too wide to fit (this board's
+      // own labels are long) it scrolls, so keep the current dot in view — you always see where you
+      // are. getBoundingClientRect forces the reflow, so the just-appended positions are real.
+      const curd = dots.querySelector('.fdot.cur')
+      if (curd && dots.scrollWidth > dots.clientWidth + 1) {
+        const dr = dots.getBoundingClientRect(); const cr = curd.getBoundingClientRect()
+        dots.scrollLeft += (cr.left - dr.left) - (dots.clientWidth - cr.width) / 2
+      }
     }
     prev.addEventListener('click', function () { if (cur > 0) { cur--; render() } })
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })

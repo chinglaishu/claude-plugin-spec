@@ -2098,7 +2098,12 @@ const prdFamilies = (text: string) => {
   }
   return { fams, loose, ids: [...loose, ...fams.flatMap(f => f.ids)] }
 }
-const MARKS = ['✓', '◈', '✗', '◌', '○']
+// the pager dots carry state by HUE alone now (R17, the human 2026-08-25) — no shoulder glyph.
+// each derived state paints the whole dot: a strong-hue border + number over the state's tint fill
+// (untested stays the neutral resting dot). Computed rgb of the design tokens, so a dot that loses
+// its status colour fails — the same discipline the ink-ring cur-dot assertion already uses.
+const DOT_BORDER = { passed: 'rgb(77, 92, 55)', changed: 'rgb(47, 74, 99)', failed: 'rgb(141, 74, 56)', 'not-reached': 'rgb(138, 100, 18)', untested: 'rgb(205, 199, 184)' }
+const DOT_FILL = { passed: 'rgb(234, 236, 225)', changed: 'rgb(230, 234, 238)', failed: 'rgb(242, 232, 228)', 'not-reached': 'rgb(246, 238, 218)', untested: 'rgba(0, 0, 0, 0)' }
 
 test('Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the pager that is the jump-map', async ({ page }) => {
   await coverReqs('R17')
@@ -2162,21 +2167,29 @@ test('Requirements sub-group within a screen — family headers on the card and 
     const dots = bar.locator('.fdot')
     await expect(dots).toHaveCount(prd.ids.length)
     expect(await dots.evaluateAll(els => els.map(e => e.getAttribute('data-r')))).toEqual(prd.ids)
-    expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids.map((_, i) => expect.stringMatching('^' + (i + 1) + '[' + MARKS.join('') + ']$')))
+    expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids.map((_, i) => String(i + 1)))
     for (let k = 0; k < prd.fams.length; k++) {
       const f = prd.fams[k]
       const g = groups.nth(k + (prd.loose.length ? 1 : 0))
       await expect(g.locator('.ffl')).toHaveText(f.n + ' · ' + f.name)
       expect(await g.locator('.fdot').evaluateAll(els => els.map(e => e.getAttribute('data-r'))), 'family ' + f.n + ' holds exactly its requirements').toEqual(f.ids)
     }
-    // every dot carries a derived MARK in the board's glyph vocabulary; the mark is the requirement's
-    // own (the baked row's data-status), never a family state — and it wears its state's hue
-    const marks = await dots.locator('.fm').allTextContents()
-    expect(marks.length).toBe(prd.ids.length)
-    for (const m of marks) expect(MARKS, 'every dot carries a derived mark').toContain(m.trim())
-    const r17mark = await dt.locator('.reqpane .req[data-r="R17"]').getAttribute('data-status')
-    await expect(bar.locator('.fdot[data-r="R17"]')).toHaveAttribute('data-status', r17mark!)
-    await expect(bar.locator('.fdot[data-r="R17"] .fm')).toHaveClass(new RegExp('\\b' + r17mark + '\\b'))
+    // NO shoulder glyph anywhere — state is the dot's own hue now (R17, 2026-08-25)
+    await expect(bar.locator('.fdot .fm')).toHaveCount(0)
+    // every dot's data-status is the requirement's own (the baked row's), never a family state, and
+    // the dot WEARS that state as a hue: border + fill match the state's tokens (the cur dot, ink-ringed,
+    // is the sole exception and is checked separately below)
+    const dotStates = await dots.evaluateAll(els => els.map(e => ({
+      r: e.getAttribute('data-r'), st: e.getAttribute('data-status'), cur: e.classList.contains('cur'),
+      border: getComputedStyle(e).borderTopColor, bg: getComputedStyle(e).backgroundColor
+    })))
+    for (const d of dotStates) {
+      const baked = await dt.locator('.reqpane .req[data-r="' + d.r + '"]').getAttribute('data-status')
+      expect(d.st, d.r + ' dot mirrors its requirement state').toBe(baked)
+      if (d.cur) continue
+      expect(d.border, d.r + ' (' + d.st + ') dot wears its state hue').toBe(DOT_BORDER[d.st as keyof typeof DOT_BORDER])
+      expect(d.bg, d.r + ' (' + d.st + ') dot fills with its state tint').toBe(DOT_FILL[d.st as keyof typeof DOT_FILL])
+    }
     // the current dot is ringed in ink, not inverted (the detail's one inverted element is Run all)
     const cur = bar.locator('.fdot.cur')
     await expect(cur).toHaveCount(1)
@@ -2236,9 +2249,10 @@ test('Requirements sub-group within a screen — family headers on the card and 
       await expect(dt.locator('.focusov .fcount')).toHaveText('1 of 1')
       await expect(dt.locator('.reqmap')).toHaveCount(0)
       await expect(dt.locator('.gridview .lst-fam')).toHaveCount(0)
-      // the same bar: one marked dot, no family label, no separator
+      // the same bar: one hue-carrying dot (no glyph), no family label, no separator
       await expect(dt.locator('.dtfoot .fdot')).toHaveCount(1)
-      await expect(dt.locator('.dtfoot .fdot .fm')).toHaveCount(1)
+      await expect(dt.locator('.dtfoot .fdot .fm')).toHaveCount(0)
+      await expect(dt.locator('.dtfoot .fdot[data-status]')).toHaveCount(1)
       await expect(dt.locator('.dtfoot .ffl')).toHaveCount(0)
       await expect(dt.locator('.dtfoot .fdotfam')).toHaveCount(0)
     } finally {
