@@ -230,7 +230,7 @@ for a status of its own.*
 
 - **Given** a test that tags the requirement ids it covers — qualified (asset-plan:R5) when the requirement is another screen's
 - **When** you open a requirement
-- **Then** its proof names its covering test, resolved by tag — cross-screen when the tag is qualified, wherever that test's file lives
+- **Then** its proof shows the covering test that tags it, resolved by tag — cross-screen when the tag is qualified, wherever that test's file lives
 
 One test can prove several requirements; one requirement can be proven by several tests. The link
 lives in the **test**, which tags the requirement ids it covers — qualified (e.g. `asset-plan:R5`),

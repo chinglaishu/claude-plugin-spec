@@ -82,6 +82,51 @@ export function ffmpegVideoArgs (srcRel, outRel) {
     outRel]
 }
 
+// The PRIMARY recording per screen is the one that COVERS the most requirements — a union count,
+// NOT the last flow to run. The reporter keeps a run's captures PER recording:
+//   harvest = { qid: { caps: { [key]: {before?, after?, window, srcVideo|null} }, latestKey } }
+// where a key is a recording's video path, or '_novideo' for a capture with no recording (a CLI
+// run). Counting the last capture per requirement (the old h.srcVideo, last-wins) let a shorter
+// COMPOSED flow that reran a few shared beats last steal the primary from the COMPREHENSIVE flow
+// that proved everything — so its screen-only requirements (e.g. the Tsumiki filters/dates beats)
+// were left video-less. Counting coverage as a union fixes that: the comprehensive flow wins, and
+// every requirement it covers resolves to THAT recording's frames + window + video — so the seek
+// offset indexes the recording actually shown. A requirement the primary did not cover keeps its
+// own latest frames and carries no video (the reader hides the button honestly). Pure — the
+// reporter does the file I/O around it; unit-tested in tools/evidence.test.mjs.
+export function resolvePrimaryVideo (harvest) {
+  const byScreen = {}
+  for (const qid of Object.keys(harvest || {})) {
+    const i = qid.indexOf(':'); if (i < 1) continue
+    ;(byScreen[qid.slice(0, i)] ||= []).push(qid)
+  }
+  const out = {}
+  for (const qids of Object.values(byScreen)) {
+    const cover = new Map()               // recording → how many of this screen's reqs it captured
+    for (const qid of qids) {
+      for (const key of Object.keys((harvest[qid] && harvest[qid].caps) || {})) {
+        if (key === '_novideo') continue
+        cover.set(key, (cover.get(key) || 0) + 1)
+      }
+    }
+    let primary = null; let best = 0      // most coverage wins; ties break to the first seen (stable)
+    for (const [key, n] of cover) if (n > best) { best = n; primary = key }
+    for (const qid of qids) {
+      const h = harvest[qid] || {}
+      const caps = h.caps || {}
+      const usePrimary = !!(primary && caps[primary])
+      const cap = (usePrimary ? caps[primary] : caps[h.latestKey]) || {}
+      out[qid] = {
+        before: cap.before || null,
+        after: cap.after || null,
+        window: cap.window || null,
+        srcVideo: usePrimary ? primary : null
+      }
+    }
+  }
+  return out
+}
+
 // The attachment names checkReq emits — `evidence <id> before` / `evidence <id> after`. Anything
 // else (covers, screenshots, videos) is not evidence and must never be mistaken for it.
 const EVIDENCE_ATT = /^evidence (\S+) (before|after)$/

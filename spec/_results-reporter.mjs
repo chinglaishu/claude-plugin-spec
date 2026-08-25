@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindow, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment, evidenceVideoPath, ffmpegVideoArgs } from '../tools/evidence.mjs'
+import { clipWindow, ffmpegDownscaleArgs, evidencePaths, parseEvidenceAttachment, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -215,63 +215,50 @@ function commitVideo (srcAbs, screen, cache) {
 function harvestEvidence (harvest, ranAt) {
   const out = {}
   const runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
-  for (const [qid, h] of Object.entries(harvest)) {
+  // Resolve each requirement to its frames + window + (the primary recording's) video. The PRIMARY
+  // per screen is the recording COVERING THE MOST requirements — not the last flow to run (the old
+  // last-capture count let a shorter composed flow steal it, leaving the comprehensive flow's own
+  // beats video-less). resolvePrimaryVideo (tools/evidence.mjs, pure + unit-tested) makes that call,
+  // and a shared requirement's window comes from the PRIMARY recording, so the seek indexes the
+  // recording actually shown. commitVideo (cached per screen) then writes that one .webm.
+  const resolved = resolvePrimaryVideo(harvest)
+  const cache = new Map()
+  for (const [qid, r] of Object.entries(resolved)) {
     const scr = qid.slice(0, qid.indexOf(':'))
     const rid = qid.slice(qid.indexOf(':') + 1)
     if (!scr || !existsSync(join(process.cwd(), 'spec', scr))) continue
     const paths = evidencePaths(scr, rid)
     try { mkdirSync(join(process.cwd(), paths.dir), { recursive: true }) } catch { continue }
-    const entry = {
-      before: null,
-      after: null,
-      window: h.window || null,
-      runId,
-      at: new Date(ranAt).toISOString()
-    }
+    const entry = { before: null, after: null, window: r.window || null, runId, at: new Date(ranAt).toISOString() }
     for (const phase of ['before', 'after']) {
-      if (!h[phase]) continue
+      if (!r[phase]) continue
       const dest = join(process.cwd(), paths[phase])
-      // downscaled to the clip's width when ffmpeg is here (final review M4 — a full-viewport PNG
-      // per phase per requirement per fold was megabytes of history); the 1× copy otherwise
+      // downscaled to the house 1280 width when ffmpeg is here (final review M4 — a full-viewport
+      // PNG per phase per requirement per fold was megabytes of history); the 1× copy otherwise
       let landed = false
       if (ffmpegOk()) {
         try {
-          execFileSync('ffmpeg', ffmpegDownscaleArgs(h[phase], dest), { stdio: 'ignore', timeout: 15000 })
+          execFileSync('ffmpeg', ffmpegDownscaleArgs(r[phase], dest), { stdio: 'ignore', timeout: 15000 })
           landed = existsSync(dest)
         } catch { landed = false }
       }
       if (!landed) {
-        try { copyFileSync(h[phase], dest); landed = true } catch { /* dropped, never fatal */ }
+        try { copyFileSync(r[phase], dest); landed = true } catch { /* dropped, never fatal */ }
       }
       if (landed) entry[phase] = paths[phase]
     }
-    if (entry.before || entry.after) out[qid] = entry
-  }
-  // Task 16 #1 (the human, 2026-08-24): commit each screen's PRIMARY recording — the one .webm
-  // that proved the most of this run's harvested requirements for that screen (usually the flow) —
-  // to spec/<screen>/evidence/<hash>.webm, and point every entry harvested FROM that recording at
-  // it with the seek offsets frozen alongside (`video: {path, from, to}` — the reader seeks to
-  // `from` so video mode starts at THIS requirement's moment). One video per screen bounds the
-  // repo weight; an entry proven by a different recording stays video-less and the reader hides
-  // the button honestly. A CLI run has no recordings, so this whole step is a no-op there and the
-  // fold's carry keeps whatever stands committed.
-  const byScreen = {}
-  for (const [qid, h] of Object.entries(harvest)) {
-    if (!out[qid] || !h.srcVideo) continue
-    const scr = qid.slice(0, qid.indexOf(':'))
-    const m = (byScreen[scr] ??= new Map())
-    m.set(h.srcVideo, (m.get(h.srcVideo) || 0) + 1)
-  }
-  const cache = new Map()
-  for (const [scr, counts] of Object.entries(byScreen)) {
-    const primary = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
-    const rel = commitVideo(primary, scr, cache)
-    if (!rel) continue
-    for (const [qid, h] of Object.entries(harvest)) {
-      if (!out[qid] || h.srcVideo !== primary || !qid.startsWith(scr + ':')) continue
-      const w = out[qid].window
-      out[qid].video = { path: rel, from: w ? w.from : null, to: w ? w.to : null }
+    if (!(entry.before || entry.after)) continue
+    // Task 16 #1: commit the screen's PRIMARY recording to spec/<screen>/evidence/<hash>.webm and
+    // point this entry at it with the seek offsets (this entry's own window, frozen from the primary
+    // recording) — the reader seeks to `from` so video mode opens at THIS requirement's moment. A
+    // requirement the primary did not cover has r.srcVideo null and stays video-less (button hidden);
+    // a CLI run resolves everything to '_novideo', so this is a no-op and the fold's carry keeps
+    // whatever stands committed. Best-effort: a failed encode leaves the entry video-less.
+    if (r.srcVideo) {
+      const rel = commitVideo(r.srcVideo, scr, cache)
+      if (rel) entry.video = { path: rel, from: entry.window ? entry.window.from : null, to: entry.window ? entry.window.to : null }
     }
+    out[qid] = entry
   }
   return out
 }
@@ -365,13 +352,17 @@ export default class ResultsIndexReporter {
         const tag = parseEvidenceAttachment(a.name)
         if (!tag || !a.path) continue
         const qid = qualify(tag.id, screen)
-        const h = (evidenceHarvest[qid] ||= {})
-        h[tag.phase] = a.path
-        h.window = clipWindow(steps, qid) || h.window || null
-        // the recording this capture came from (Task 16 #1) — harvestEvidence picks each screen's
-        // primary among these and commits it; only a board run records video, so a CLI run's
-        // harvest carries none and the committed video rides the fold's carry instead
-        if (video && video.path) h.srcVideo = video.path
+        // captures are kept PER recording (not last-wins): resolvePrimaryVideo then picks each
+        // screen's primary as the recording COVERING THE MOST requirements — so a shorter flow that
+        // reran a few shared beats last cannot steal it from the comprehensive flow that proved
+        // everything (which had left its screen-only reqs video-less). Only a board run records
+        // video, so a CLI run's captures land under '_novideo' and the committed video rides the fold's carry.
+        const h = (evidenceHarvest[qid] ||= { caps: {} })
+        const key = (video && video.path) ? video.path : '_novideo'
+        const cap = (h.caps[key] ||= { srcVideo: (video && video.path) || null })
+        cap[tag.phase] = a.path
+        cap.window = clipWindow(steps, qid) || cap.window || null
+        h.latestKey = key
       }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.

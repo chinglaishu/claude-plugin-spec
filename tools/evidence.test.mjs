@@ -79,3 +79,42 @@ test('T13: the module no longer exports the clip cutter or its speed set', async
   assert.equal(mod.CLIP_SPEEDS, undefined, 'the 1.5×/2× variant set retired with it')
   assert.equal(mod.carryClip, undefined, 'D1\'s carry had only the clip to carry — retired with it')
 })
+
+// ── the PRIMARY recording is the one covering the MOST requirements (not the last flow to run) ─
+// Two flows on one screen: a COMPREHENSIVE flow (recording A) proving R1–R8, and a shorter COMPOSED
+// flow (recording B) proving R1–R4,R8 that ran LAST. The old count keyed on the LAST capture per
+// requirement (h.srcVideo, last-wins), so B's rerun of the shared beats reassigned them to B — B
+// scored 5, A dropped to 3, and B stole the primary, leaving R6/R7 (A-only) video-less. Captures
+// are kept PER recording now, coverage counted as a union, so A (8) wins and every requirement it
+// proves rides A's recording — with A's own window, so the seek indexes the video that is shown.
+test('T16 fix: primary = the recording covering the most requirements; shared reqs use its window', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const A = 'spec/_runs/x/full.webm'; const B = 'spec/_runs/x/composed.webm'
+  const win = (from, to) => ({ from, to })
+  const harvest = {}
+  for (const r of ['R1', 'R2', 'R3', 'R4', 'R8']) harvest['todo:' + r] = {   // captured by BOTH, B last
+    caps: { [A]: { before: 'A.b', after: 'A.a', window: win(10, 20), srcVideo: A },
+      [B]: { before: 'B.b', after: 'B.a', window: win(90, 99), srcVideo: B } },
+    latestKey: B }
+  for (const r of ['R5', 'R6', 'R7']) harvest['todo:' + r] = {              // A only
+    caps: { [A]: { before: 'A.b', after: 'A.a', window: win(30, 40), srcVideo: A } }, latestKey: A }
+  const res = resolvePrimaryVideo(harvest)
+  for (const r of ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8']) {
+    assert.equal(res['todo:' + r].srcVideo, A, r + ' rides the comprehensive recording A (the primary)')
+  }
+  // a shared requirement uses A's window + frames, NOT B's last capture — the seek must index the shown video
+  assert.equal(res['todo:R1'].window.from, 10, 'R1 keeps the primary recording A window, not B\'s')
+  assert.equal(res['todo:R1'].before, 'A.b')
+})
+test('T16 fix: a lone recording stays primary; a video-less requirement resolves to no video', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const A = 'spec/_runs/y/only.webm'
+  const harvest = {
+    'board:R1': { caps: { [A]: { before: 'b', after: 'a', window: { from: 1, to: 2 }, srcVideo: A } }, latestKey: A },
+    'board:R9': { caps: { _novideo: { before: 'b', after: 'a', window: null, srcVideo: null } }, latestKey: '_novideo' }
+  }
+  const res = resolvePrimaryVideo(harvest)
+  assert.equal(res['board:R1'].srcVideo, A, 'the single recording is the primary')
+  assert.equal(res['board:R9'].srcVideo, null, 'a capture from no recording carries no video')
+  assert.equal(res['board:R9'].before, 'b', 'but it still keeps its frames')
+})
