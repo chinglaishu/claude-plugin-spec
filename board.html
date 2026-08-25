@@ -587,27 +587,29 @@ ins { color:var(--koke); text-decoration:none; }
   .fstory .storycap .pspdwrap ~ .medbar { margin-left:var(--s2); }
   .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
 
-  /* STORYBOARD MODE — one row per phase: a parked still (.sbframe, the same drawing frozen at its
-     phase) beside its beat text (.sbtext). Given leads (canvas-tinted, phase 0); each beat's
-     When->Then sits beside the still of its then. Every row hair-ruled, a heavier rule opening each
-     beat after the first. Measured: --ink-3 on --card 6.0:1 / on --canvas 5.8:1 (labels); --ai on
-     --card 8.6:1 (the Then label); --ink on --card 16.8:1 (the text). */
-  .fstory .sbrow { display:grid; grid-template-columns:calc(150px * var(--scale)) 1fr; align-items:stretch;
-    border-top:1px solid var(--hair); }
+  /* STORYBOARD MODE — one PANEL per phase, the DRAWING as the hero (the human, 2026-08-25: the
+     schematic is the point; the text describes it). The still fills the panel WIDTH at its own 2:1
+     height — big enough to read, not a thumbnail — and its beat text is the CAPTION beneath it.
+     Given leads (phase 0); each beat's When->Then captions the still of its then. Panels hair-ruled,
+     a heavier rule opening each beat after the first. Measured: --ink-3 on --card 6.0:1 / on
+     --canvas 5.8:1 (labels); --ai on --card 8.6:1 (Then); --ink on --card 16.8:1 (the caption). */
+  .fstory .sbrow { border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
-  .fstory .sbframe { border-right:1px solid var(--hair); background:var(--paper);
-    display:flex; align-items:center; justify-content:center; padding:6px;
-    min-height:calc(72px * var(--scale)); overflow:hidden; }
-  .fstory .sbframe svg { display:block; width:100%; height:100%; }
+  /* the DRAWING is the hero: full panel width, its natural 2:1 height (svg viewBox → height:auto),
+     centred, capped so an ultra-wide column does not blow it up past reading size */
+  .fstory .sbframe { background:var(--paper); padding:var(--s3) var(--s4);
+    border-bottom:1px solid var(--hair); overflow:hidden; }
+  .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto;
+    max-width:calc(640px * var(--scale)); }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
      var, keeping |delay|/duration (the frame shown) identical at every speed */
   .fstory .sbframe svg * { animation-play-state:paused !important;
     animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
-  .fstory .sbtext { padding:9px var(--s3); min-width:0; align-self:center; }
-  .fstory .sbstep { display:flex; gap:var(--s2); align-items:baseline; }
+  .fstory .sbtext { padding:var(--s3) var(--s4); min-width:0; }
+  .fstory .sbstep { display:flex; gap:var(--s3); align-items:baseline; }
   .fstory .sbstep + .sbstep { margin-top:6px; }
   .fstory .sbk { flex:none; width:calc(58px * var(--scale)); font:var(--t-micro) var(--mono);
     letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
@@ -637,7 +639,7 @@ ins { color:var(--koke); text-decoration:none; }
   .fstory .sbwrap .behavior .blab .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:4px; }
   .fstory .sbwrap .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
   .fstory .sbwrap .behavior + .viz { border-top:1px solid var(--hair); }
-  .fstory .sbwrap .viz { position:relative; height:calc(200px * var(--scale));
+  .fstory .sbwrap .viz { position:relative; height:calc(320px * var(--scale));
     display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--paper); }
   .fstory .sbwrap .viz svg { display:block; width:100%; height:100%; }
   .fstory .sbwrap .viz .staleov { position:absolute; inset:0; display:flex; flex-direction:column;
