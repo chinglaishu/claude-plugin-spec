@@ -20,7 +20,7 @@ import { openSeededBoard, addTask, renameInPlace, addSubTaskGrowsRing, tickOneSu
 
 const HOLD = recordHold()
 
-test('Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)', async ({ page }) => {
+test('Tsumiki — the full flow (R1–R8)', async ({ page }) => {
   coverReqs('R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8')
   test.slow()
   test.setTimeout(300000)
@@ -91,7 +91,7 @@ test('Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leave
 // (spec/<screen>/steps.ts); this file's first full run passing is the composition's validity
 // (CLAUDE.md rule 1 addendum, the human 2026-08-21). No model was involved and no graph is
 // stored — this is ordinary authored-test material from the moment it was written.
-test('Add, rename, grow and roll up the container, then reload — composed', async ({ page }) => {
+test('Container roll-up — composed (R1–R4, R8)', async ({ page }) => {
   await coverReqs('R1', 'R2', 'R3', 'R5', 'R4', 'R8')
   // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
   test.setTimeout(480000)

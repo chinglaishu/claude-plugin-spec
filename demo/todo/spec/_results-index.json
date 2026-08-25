@@ -4,9 +4,9 @@
     "failed": 0,
     "tests": [
       {
-        "title": "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)",
+        "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 53226,
+        "ms": 53526,
         "error": null,
         "line": 23,
         "reqs": {
@@ -21,9 +21,9 @@
         }
       },
       {
-        "title": "Add, rename, grow and roll up the container, then reload — composed",
+        "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 29566,
+        "ms": 29691,
         "error": null,
         "line": 94,
         "reqs": {
@@ -36,7 +36,7 @@
         }
       }
     ],
-    "ranAt": 1787629640011,
+    "ranAt": 1787640456710,
     "provenHashes": {
       "R1": "af0b673e71b26f86",
       "R2": "5ea4b12f3e9bd0c0",
@@ -52,110 +52,110 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 177,
-          "to": 5975
+          "from": 182,
+          "to": 5966
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 177,
-          "to": 5975
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 182,
+          "to": 5966
         }
       },
       "R2": {
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 6110,
-          "to": 10198
+          "from": 6093,
+          "to": 10199
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 6110,
-          "to": 10198
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 6093,
+          "to": 10199
         }
       },
       "R3": {
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 10292,
-          "to": 14357
+          "from": 10328,
+          "to": 14390
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 10292,
-          "to": 14357
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 10328,
+          "to": 14390
         }
       },
       "R5": {
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 14456,
-          "to": 18528
+          "from": 14492,
+          "to": 18557
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 14456,
-          "to": 18528
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 14492,
+          "to": 18557
         }
       },
       "R4": {
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 18624,
-          "to": 20724
+          "from": 18647,
+          "to": 20758
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 18624,
-          "to": 20724
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 18647,
+          "to": 20758
         }
       },
       "R6": {
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 27676,
-          "to": 42395
+          "from": 27856,
+          "to": 42626
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z"
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z"
       },
       "R7": {
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 42492,
-          "to": 46586
+          "from": 42738,
+          "to": 46843
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z"
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z"
       },
       "R8": {
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 22941,
-          "to": 29100
+          "from": 23009,
+          "to": 29189
         },
-        "runId": "vidrun",
-        "at": "2026-08-25T03:47:20.011Z",
+        "runId": "vidrun2",
+        "at": "2026-08-25T06:47:36.710Z",
         "video": {
-          "path": "spec/todo/evidence/6558a0afce38.webm",
-          "from": 22941,
-          "to": 29100
+          "path": "spec/todo/evidence/73c558cdf5e2.webm",
+          "from": 23009,
+          "to": 29189
         }
       }
     }
