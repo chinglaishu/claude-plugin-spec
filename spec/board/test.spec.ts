@@ -107,11 +107,11 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     const body = row.locator('.lst-body')
     await expect(body.locator('.fread .fttl')).not.toBeEmpty()
     // Since 1413ac1 (the human, 2026-08-22) EVERY requirement leads with its beats, R1 included:
-    // the behavior block heads the open row and the full formatted prose sits one click away
-    // behind 'the authored requirement — in full' (a prose-only requirement would show it open).
-    // The old branch ("R1 is prose-only") was the wrong side of this break — the PRD moved by
-    // the human's hand; the test follows (rule 4).
-    await expect(body.locator('.fread .behavior, .fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    // the STORYBOARD (or, for a requirement the kit cannot draw, the plain behavior grid) heads the
+    // open row and the full formatted prose sits one click away behind 'Full requirement' (a
+    // prose-only requirement would show it open). Board R13, 2026-08-25 #2: the behavior and its
+    // drawing fold into one storyboard; the lead is .fstory now, not a bare .behavior block.
+    await expect(body.locator('.fread .fstory .sbrow, .fread .fstory .behavior, .fread .fbody p, .fread .fbody ul').first()).toBeVisible()
     const proseT = body.locator('.fread .prose-t')
     if (await proseT.count()) {
       await expect(body.locator('.fread .fbody.fprose')).toBeHidden()        // folded beneath the lead
@@ -593,70 +593,87 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(ov.locator('.fread .frmeta .fttl')).toContainText('Three views')       // the title is IN the header row
     await expect(ov.locator('.fread .frmeta .fcount')).toHaveCount(0)                    // the counter is gone (it lives in the pager)
     await expect(ov.locator('.fread .frmeta .fmenu .fmenubtn')).toHaveCount(1)           // the ⋯ rides the header's far edge
-    const beh = ov.locator('.fread .behavior')
-    await expect(beh).toHaveCount(1)
-    await expect(beh.locator('.brow')).toHaveCount(3)          // one Given + a When→Then beat
-    await expect(beh).toContainText('Focus / List / Flow')
-    // …and the PROSE is COLLAPSED beneath it, one click away — never repeated open under the shape
+    // THE BEHAVIOR AND ITS DRAWING ARE ONE BEAT-PAIRED STORYBOARD (R13, reworded 2026-08-25 #2):
+    // the two stacked boxes fold together — each Given / When→Then beat sits beside the still that
+    // draws it (phases align 1:1 with beats: phase 0 = Given, phase i = beat i). R13 is 1 beat →
+    // given + then = TWO rows. The separate .fschem box is GONE; the region is .fstory.
+    const story = ov.locator('.fleft .fstory')
+    await expect(story).toHaveCount(1)
+    await expect(ov.locator('.fleft .fschem')).toHaveCount(0)
+    // storyboard is the DEFAULT: one row per phase, each pairing a drawn still (.sbframe svg) with
+    // its beat text (.sbtext) — no standalone behavior grid, no single looping drawing in this mode
+    const rows = story.locator('.sbwrap .sbrow')
+    await expect(rows).toHaveCount(2)                                     // given + one beat
+    await expect(rows.nth(0)).toHaveClass(/bgiven/)
+    await expect(rows.nth(0).locator('.sbframe svg')).toHaveCount(1)      // the still is paired INSIDE the row
+    await expect(rows.nth(0).locator('.sbtext')).toContainText('Given')
+    await expect(rows.nth(1).locator('.sbtext')).toContainText('Then')
+    await expect(rows.nth(1).locator('.sbtext')).toContainText('render in that view')   // the real Then text
+    await expect(story.locator('.sbwrap .behavior')).toHaveCount(0)       // the plain grid is a loop-mode thing now
+    await expect(story.locator('.sbwrap .viz svg')).toHaveCount(0)        // and no single animated drawing here
+    await expect(story).not.toContainText('no schematic drawn yet')
+    await expect(story).not.toHaveClass(/isstale/)
+    await expect(story.locator('.storycap')).toContainText('schematic · the idea, not the real UI')
+    await expect(story).toHaveAttribute('data-vizhash', /.+/)
+    await expect(story).not.toContainText('≠')
+    // …and the PROSE is COLLAPSED beneath the storyboard, one click away — never repeated open
     const prose = ov.locator('.fread .fbody')
     await expect(prose).toBeHidden()
     await ov.locator('.fread .prose-t').click()
     await expect(prose).toBeVisible()
     await expect(prose).toContainText('The detail header carries a toggle')
-    // the SCHEMATIC slot sits below the reading — R13's OWN drawn loop (dogfood: the board draws
-    // its requirements). Derived from the behavior text by tools/viz.mjs (switch-views archetype)
-    // and committed at spec/board/viz/R13.svg; fresh (text and drawing agree), so no grey, no ≠.
-    const schem13 = ov.locator('.fleft .fschem')
-    await expect(schem13.locator('.viz svg')).toHaveCount(1)
-    await expect(schem13).not.toContainText('no schematic drawn yet')
-    await expect(schem13).not.toHaveClass(/isstale/)
-    await expect(schem13.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
-    // the "drawn from the text · viz@… · loops…" footer is GONE (2026-08-25); the derived hash stays
-    // on the slot for traceability, and a fresh (non-stale) drawing shows no ≠ note anywhere
-    await expect(schem13.locator('.figfoot')).toHaveCount(0)
-    await expect(schem13).toHaveAttribute('data-vizhash', /.+/)
-    await expect(schem13).not.toContainText('≠')
-    // Task 13 — the schematic pane's play speed is the design-system DROPDOWN (replacing Task 11's
-    // cycle button, the human's choice 2026-08-24): 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, a real
-    // <select> so the keyboard reaches it natively. Every animation-duration is emitted as
-    // calc(<X>s / var(--spd,1)) (tools/viz.mjs), so ANY chosen factor scales it; the stills'
-    // parked delays divide by the SAME var, so the FRACTION |delay|/duration — the frame a still
-    // shows — is identical at every speed.
-    const spdS = schem13.locator('.figcap select.pspd')
+    // THE LOOP TOGGLE plays the animated whole + the plain behavior grid (motion, on demand). The
+    // speed DROPDOWN (Task 13) governs it: 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, a real <select> the
+    // keyboard reaches; every animation-duration is calc(<X>s / var(--spd,1)) so any factor scales it.
+    await story.locator('.storycap .medbar button[data-sm="loop"]').click()
+    await expect(story.locator('.sbwrap .viz svg')).toHaveCount(1)        // the single animated drawing
+    await expect(story.locator('.sbwrap .behavior .brow')).toHaveCount(3) // given + when + then, plain
+    await expect(story.locator('.sbwrap .sbrow')).toHaveCount(0)          // the paired rows step aside
+    const spdS = story.locator('.storycap select.pspd')
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
-    const animOf = (root: ReturnType<typeof schem13.locator>) => root.evaluate((el: Element) => {
+    const animOf = (root: ReturnType<typeof story.locator>) => root.evaluate((el: Element) => {
       const a = [...el.querySelectorAll('svg *')].map(e => getComputedStyle(e))
         .find(st => st.animationName !== 'none')
       return a ? { dur: parseFloat(a.animationDuration), delay: parseFloat(a.animationDelay) } : null
     })
-    const at1 = await animOf(schem13.locator('.viz'))
+    const at1 = await animOf(story.locator('.sbwrap .viz'))
     expect(at1!.dur).toBeGreaterThan(0)
-    // the dropdown reaches PAST the old cycle's range in both directions — the same calc scales
     await spdS.selectOption('0.25')
-    const atQ = await animOf(schem13.locator('.viz'))
+    const atQ = await animOf(story.locator('.sbwrap .viz'))
     expect(atQ!.dur).toBeCloseTo(at1!.dur * 4, 1)
     await spdS.selectOption('2')
-    const at2 = await animOf(schem13.locator('.viz'))
+    const at2 = await animOf(story.locator('.sbwrap .viz'))
     expect(at2!.dur).toBeCloseTo(at1!.dur / 2, 2)
-    // stills at 2×: delay and duration scale together, so the parked frame is unchanged
-    await schem13.locator('.figcap .medbar button[data-sm="stills"]').click()
-    const lastFrame = schem13.locator('.sstills .sframe').last()
-    const still = await animOf(lastFrame)
-    const ph = await lastFrame.evaluate(f =>
-      parseFloat((f.firstElementChild as HTMLElement).style.getPropertyValue('--ph')))
-    expect(still!.dur).toBeCloseTo(at1!.dur / 2, 2)
-    expect(Math.abs(still!.delay) / still!.dur).toBeCloseTo(Math.abs(ph) / at1!.dur, 2)
-    // back to the loop at 1× for the rest of the reads
-    await schem13.locator('.figcap .medbar button[data-sm="loop"]').click()
     await spdS.selectOption('1')
-    await expect(spdS).toHaveValue('1')
+    // back to the STORYBOARD: its stills are the SAME drawing parked per phase — paused, each frame
+    // carrying its own --ph, so |delay|/duration (the frame shown) is speed-invariant like the old stills
+    await story.locator('.storycap .medbar button[data-sm="storyboard"]').click()
+    const lastFrame = story.locator('.sbwrap .sbrow').last().locator('.sbframe')
+    const still = await animOf(lastFrame)
+    const ph = await lastFrame.evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    expect(still!.dur).toBeGreaterThan(0)
+    expect(Math.abs(still!.delay) / still!.dur).toBeCloseTo(Math.abs(ph) / at1!.dur, 2)
     await page.evaluate(() => localStorage.removeItem('sbSchemMode'))
+    // A MULTI-BEAT requirement pairs EVERY beat: R4 has 3 beats → given + 3 = FOUR storyboard rows,
+    // each with its own parked still (a distinct --ph per row — phase i draws beat i)
+    await page.goto('/#/board/R4')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
+    const r4rows = ov.locator('.fleft .fstory .sbwrap .sbrow')
+    await expect(r4rows).toHaveCount(4)
+    await expect(r4rows.locator('.sbframe svg')).toHaveCount(4)
+    await expect(r4rows.nth(1).locator('.sbtext')).toContainText('When')
+    await expect(r4rows.nth(3).locator('.sbtext')).toContainText('Then')
+    const phs = await ov.locator('.fleft .fstory .sbwrap .sbrow .sbframe')
+      .evaluateAll(els => els.map(e => (e as HTMLElement).style.getPropertyValue('--ph')))
+    expect(new Set(phs).size).toBe(4)                                     // four distinct parked frames
     // …and a requirement the kit cannot draw keeps the honest placeholder (R2: scroll independence
-    // fits no archetype — text-only, never a wrong picture)
+    // fits no archetype) — the labelled beats show, never empty frames, never a wrong picture
     await page.goto('/#/board/R2')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
-    await expect(ov.locator('.fleft .fschem')).toContainText('no schematic drawn yet')
+    await expect(ov.locator('.fleft .fstory')).toContainText('no schematic drawn yet')
+    await expect(ov.locator('.fleft .fstory .sbframe')).toHaveCount(0)    // no empty frames without a drawing
+    await expect(ov.locator('.fleft .fstory .behavior .brow').first()).toBeVisible()  // the labelled beats still show
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
 
@@ -866,8 +883,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(open13.locator('.fpage')).toHaveCount(1)                 // the Focus body, verbatim
     await expect(open13.locator('.fread .fttl')).toHaveText(
       ((await card13.locator('.lst-head .lttl').textContent()) || '').trim())
-    await expect(open13.locator('.fread .behavior')).toHaveCount(1)       // behavior leads here too
-    await expect(open13.locator('.fleft .fschem .viz svg')).toHaveCount(1) // the drawn loop, in place too
+    await expect(open13.locator('.fread .fstory .sbrow')).toHaveCount(2)  // the storyboard leads here too (given + 1 beat)
+    await expect(open13.locator('.fleft .fstory .sbframe svg')).toHaveCount(2) // each row's drawn still, in place too
     await expect(open13.locator('.feval .fphead')).toBeVisible()
     // the ACCORDION: opening another row closes this one — one open row at a time, ids never collide
     const card2 = list.locator('.lst-card[data-r="R2"]')

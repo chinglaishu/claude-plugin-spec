@@ -492,34 +492,34 @@ const B = window.__BOARD__ || {}
       ['addtest', 'Add a test to cover it', reqAddTestCtx]
     ]))
     read.appendChild(rmeta)
-    // THE BEHAVIOR LEADS (R13): the baked block (build-board renders it from the escaped PRD via
-    // renderBehavior) heads the card; the PROSE collapses beneath it, one click away. A prose-only
-    // requirement has no shape to lead with, so its prose stays open.
-    // Task 12 (the human, 2026-08-24 — the schematic on first sight): the beats/prose live in
-    // .fbeats, the card's INTERNAL scroll region, between the fixed header above and the pinned
-    // .ffoot below (the in-full toggle, always visible) — so the card shrinks to the viewport and
-    // the schematic below is on screen from the first paint. The 'clipped' class on the card
-    // drives the footer's hairline fade — the honest cue that more beats sit below the edge.
-    const beatsEl = document.createElement('div'); beatsEl.className = 'fbeats'
-    // the behavior LEADS with no eyebrow (the human, 2026-08-25): the GIVEN/WHEN/THEN table is self-
-    // evident, so "The behavior" over it was redundant chrome. A prose-only requirement still shows prose.
-    if (r.behHtml) beatsEl.insertAdjacentHTML('beforeend', r.behHtml)
+    // THE STORY LEADS (R13, the human 2026-08-25 #2): the behavior PAIRED with its drawn schematic —
+    // a beat-paired storyboard (each Given/When->Then beside the still that draws it), the animated
+    // whole a loop toggle away. This replaces the old split of a .fbeats behavior grid ABOVE a
+    // separate .fschem drawing — the two boxes said the same thing twice. A prose-only requirement
+    // has no shape to pair, so its prose stays open beneath.
+    // Task 12 (the schematic on first sight), kept and generalized: the story + prose live in
+    // .fscroll, the card's INTERNAL scroll region, between the fixed header above and the pinned
+    // .ffoot below (the Full-requirement toggle, always visible) — so the card shrinks to the
+    // viewport and the storyboard is on screen from the first paint. The 'clipped' class drives the
+    // footer's hairline fade — the honest cue that more sits below the edge.
+    const scroll = document.createElement('div'); scroll.className = 'fscroll'
+    scroll.appendChild(buildStory(r))
     const fbody = document.createElement('div')
     fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
     fbody.innerHTML = r.proseHtml
-    beatsEl.appendChild(fbody)
-    read.appendChild(beatsEl)
+    scroll.appendChild(fbody)
+    read.appendChild(scroll)
     const foot = document.createElement('div'); foot.className = 'ffoot'
     const syncClip = function () {
-      read.classList.toggle('clipped', beatsEl.scrollHeight - beatsEl.clientHeight - beatsEl.scrollTop > 1)
+      read.classList.toggle('clipped', scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop > 1)
     }
-    beatsEl.addEventListener('scroll', syncClip)
+    scroll.addEventListener('scroll', syncClip)
     // a ResizeObserver fires once the region gets a layout (and on every reflow of its box) — the
     // initial paint's cue without racing the append; content-height changes go through syncClip calls
-    if (window.ResizeObserver) new ResizeObserver(syncClip).observe(beatsEl)
+    if (window.ResizeObserver) new ResizeObserver(syncClip).observe(scroll)
     if (r.behHtml) {
-      // the in-full toggle is a PILL now (the human, 2026-08-25) — "Full requirement ⌄", the chevron
-      // flipping when the authored prose unfolds beneath the shape; replaces the plain underlined link
+      // the in-full toggle is a PILL (the human, 2026-08-25) — "Full requirement" with a chevron
+      // that flips when the authored prose unfolds beneath the storyboard
       const pt = document.createElement('button'); pt.type = 'button'; pt.className = 'prose-t'
       pt.innerHTML = 'Full requirement <span class="chev" aria-hidden="true">⌄</span>'
       pt.addEventListener('click', function () {
@@ -532,10 +532,6 @@ const B = window.__BOARD__ || {}
     }
     read.appendChild(foot)
     left.appendChild(read)
-    // the schematic slot (task 4): the drawn, hash-pinned loop where a committed drawing exists —
-    // quiet grey with the dated ≠ note when the text has moved past it — and the honest
-    // placeholder line where none does
-    left.appendChild(buildSchematic(r))
 
     // ── RIGHT: the proof ─────────────────────────────────────────────────────
     const evl = document.createElement('div'); evl.className = 'feval'
@@ -657,96 +653,128 @@ const B = window.__BOARD__ || {}
     return w
   }
 
-  // The SCHEMATIC slot (requirement schematics spec 2026-08-18; task 4): the AUTHORED-side
-  // drawing — derived once from the behavior text (tools/viz.mjs), committed at
-  // spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media (the golden/expected-vs-current
-  // diff was dropped 2026-08-18; the left pane's only media choice is loop vs stills of the SAME
-  // drawing). loop · stills is a client-side preference (localStorage 'sbSchemMode'); a
-  // reduced-motion viewer defaults to the stepped stills. A drawing whose text moved past its pin
-  // renders QUIET GREY under the dated "text ≠ viz" note — honest, never a wrong picture; a
-  // requirement with no committed drawing keeps the placeholder line.
-  function buildSchematic (r) {
-    const wrap = document.createElement('div'); wrap.className = 'fschem'
+  // THE STORY (requirement schematics 2026-08-18; the human, 2026-08-25 #2): the behavior PAIRED
+  // with its drawn schematic — one beat-paired STORYBOARD, replacing the old split of a behavior
+  // grid ABOVE a separate drawing (two boxes saying the same thing twice). The drawing is the
+  // AUTHORED-side picture: derived once from the behavior text (tools/viz.mjs), committed at
+  // spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media. Phases align 1:1 with beats
+  // (phase 0 = Given, phase i = beat i), so each Given / When->Then sits beside the still that draws
+  // it. Two modes, a client-side preference ('sbSchemMode'): STORYBOARD (default — the paired rows,
+  // reduced-motion-safe since the stills are parked) and LOOP (the animated whole + the plain
+  // behavior grid, for motion on demand). A drawing whose text moved past its pin renders QUIET GREY
+  // under the dated stale note — honest, never a wrong picture. A requirement with no committed
+  // drawing shows the labelled beats and the placeholder line — never an empty frame.
+  //
+  // behParts reads the baked .behavior block (the same markup renderBehavior emits) back into the
+  // Given + When/Then beats the storyboard pairs — label innerHTML kept so the WHEN1/THEN1 numbering
+  // survives, text innerHTML kept so its escaping does.
+  function behParts (behHtml) {
+    const tmp = document.createElement('div'); tmp.innerHTML = behHtml || ''
+    const out = { given: null, beats: [] }; let cur = null
+    ;[].slice.call(tmp.querySelectorAll('.behavior .brow')).forEach(function (x) {
+      const lab = x.querySelector('.blab'); const txt = x.querySelector('.btxt')
+      const L = lab ? lab.innerHTML : ''; const T = txt ? txt.innerHTML : ''
+      if (x.classList.contains('bgiven')) out.given = { lab: L, txt: T }
+      else if (x.classList.contains('bwhen')) { cur = { when: { lab: L, txt: T }, then: null }; out.beats.push(cur) }
+      else if (x.classList.contains('bthen') && cur) cur.then = { lab: L, txt: T }
+    })
+    return out
+  }
+  function buildStory (r) {
+    const wrap = document.createElement('div'); wrap.className = 'fstory'
     const v = r.schem
-    if (!v || !v.svg) {
-      wrap.innerHTML = '<div class="figcap">schematic · the idea, not the real UI</div>' +
-        '<div class="noschem">no schematic drawn yet — the next viz pass derives one from the behavior text</div>'
-      return wrap
-    }
+    const beh = r.behHtml ? behParts(r.behHtml) : null
+    const nbeats = beh ? beh.beats.length : 0
+    const phases = (v && v.phases && v.phases.length) ? v.phases : null
+    // the storyboard can pair only when a drawing exists AND its phase count matches the beats
+    // (given + one per beat) — otherwise fall back to the plain grid + animated whole (loop layout)
+    const canPair = !!(v && v.svg && beh && phases && phases.length === nbeats + 1)
     const short = function (h) { return String(h || '').slice(0, 6) }
+    const step = function (labHtml, txtHtml, isThen) {
+      return '<div class="sbstep"><span class="sbk' + (isThen ? ' then' : '') + '">' + labHtml +
+        '</span><span class="sbv">' + txtHtml + '</span></div>'
+    }
     const render = function () {
       let mode = null
       try { mode = localStorage.getItem('sbSchemMode') } catch (e) { mode = null }
-      if (mode !== 'loop' && mode !== 'stills') {
-        mode = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
-          ? 'stills' : 'loop'
-      }
-      wrap.className = 'fschem' + (v.stale ? ' isstale' : '')
-      // the pane's play speed (Task 11) — session state reapplied on every render, so a fold's
+      if (mode !== 'storyboard' && mode !== 'loop') mode = 'storyboard'
+      wrap.className = 'fstory' + (v && v.stale ? ' isstale' : '')
+      // the pane's play speed (Task 13) — session state reapplied on every render, so a fold's
       // rebuild never silently drops the chosen pace
       wrap.style.setProperty('--spd', String(SCHEM_SPD))
+      if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
       wrap.textContent = ''
-      const cap = document.createElement('div'); cap.className = 'figcap'
-      const lbl = document.createElement('span'); lbl.textContent = 'schematic · the idea, not the real UI'
-      cap.appendChild(lbl)
-      if (mode === 'loop' && r.beats > 1) {
-        // one dot per beat — static (first on): a quiet count, not a synced progress indicator
-        const dots = document.createElement('span'); dots.className = 'beatdots'
-        for (let i = 0; i < r.beats; i++) {
-          const d = document.createElement('i'); if (i === 0) d.className = 'on'
-          dots.appendChild(d)
-        }
-        cap.appendChild(dots)
+      // the toolbar rides ONLY when a drawing exists (the honesty caption labels the DRAWING; the
+      // speed dropdown + the storyboard·loop toggle play/pair it). A requirement with no drawing
+      // shows its labelled beats plainly — no "schematic" caption over a grid that isn't one.
+      if (v && v.svg) {
+        const cap = document.createElement('div'); cap.className = 'storycap'
+        const lbl = document.createElement('span'); lbl.className = 'scaplbl'
+        lbl.textContent = 'schematic · the idea, not the real UI'
+        cap.appendChild(lbl)
+        const sb = spdSelect(function () { return SCHEM_SPD }, function (nv) {
+          SCHEM_SPD = nv; wrap.style.setProperty('--spd', String(nv))
+        })
+        cap.appendChild(sb)
+        const mb = document.createElement('span'); mb.className = 'medbar'
+        ;['storyboard', 'loop'].forEach(function (m) {
+          const b = document.createElement('button'); b.type = 'button'; b.dataset.sm = m; b.textContent = m
+          if (m === mode) b.classList.add('on')
+          b.addEventListener('click', function () {
+            try { localStorage.setItem('sbSchemMode', m) } catch (e) { /* preference only, never the tree */ }
+            render()
+          })
+          mb.appendChild(b)
+        })
+        cap.appendChild(mb)
+        wrap.appendChild(cap)
       }
-      const mb = document.createElement('span'); mb.className = 'medbar'
-      ;['loop', 'stills'].forEach(function (m) {
-        const b = document.createElement('button'); b.type = 'button'; b.dataset.sm = m
-        b.textContent = m
-        if (m === mode) b.classList.add('on')
-        b.addEventListener('click', function () {
-          try { localStorage.setItem('sbSchemMode', m) } catch (e) { /* preference only, never the tree */ }
-          render()
+
+      const body = document.createElement('div'); body.className = 'sbwrap'
+      if (canPair && mode === 'storyboard') {
+        // STORYBOARD: one row per phase — a parked still (the same drawing frozen at phase i) beside
+        // its beat text. Given leads (phase 0); each beat's When->Then sits beside the still of its then.
+        if (v.stale) {
+          const sn = document.createElement('div'); sn.className = 'sbstale'
+          sn.innerHTML = '<b>stale — text changed</b><span>the requirement was reworded after this was drawn' +
+            (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn on the next viz pass</span>'
+          body.appendChild(sn)
+        }
+        const rowEl = function (ph, cls, stepsHtml) {
+          const row = document.createElement('div'); row.className = 'sbrow' + (cls ? ' ' + cls : '')
+          const fr = document.createElement('div'); fr.className = 'sbframe'
+          fr.style.setProperty('--ph', ph + 's'); fr.innerHTML = v.svg
+          const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
+          row.appendChild(fr); row.appendChild(tx); return row
+        }
+        body.appendChild(rowEl(phases[0], 'bgiven', step(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)))
+        beh.beats.forEach(function (bt, i) {
+          const html = step(bt.when.lab, bt.when.txt, false) + (bt.then ? step(bt.then.lab, bt.then.txt, true) : '')
+          body.appendChild(rowEl(phases[i + 1], i === 0 ? '' : 'beatstart', html))
         })
-        mb.appendChild(b)
-      })
-      const sb = spdSelect(function () { return SCHEM_SPD }, function (nv) {
-        SCHEM_SPD = nv
-        wrap.style.setProperty('--spd', String(nv))
-      })
-      cap.appendChild(sb)
-      cap.appendChild(mb)
-      wrap.appendChild(cap)
-      if (mode === 'stills') {
-        // the stills ARE the loop's own frames: the same drawing, paused, parked per phase by a
-        // negative animation-delay (the CSS reads --ph off each frame's holder)
-        const st = document.createElement('div'); st.className = 'sstills'
-        const phases = v.phases.length ? v.phases : ['-0.05']
-        phases.forEach(function (ph, i) {
-          const f = document.createElement('div'); f.className = 'sframe'
-          const holder = document.createElement('div'); holder.style.setProperty('--ph', ph + 's')
-          holder.innerHTML = v.svg
-          const c = document.createElement('div'); c.className = 'scap'
-          c.textContent = i === 0 ? 'given' : (phases.length > 2 ? 'beat ' + i + ' · then' : 'then')
-          f.appendChild(holder); f.appendChild(c); st.appendChild(f)
-        })
-        wrap.appendChild(st)
-      } else {
-        const viz = document.createElement('div'); viz.className = 'viz'
-        viz.innerHTML = v.svg
+      } else if (v && v.svg) {
+        // LOOP (or a drawing we cannot pair beat-for-beat): the plain behavior grid + the animated
+        // whole, drawn once. Motion on demand — the reduced-motion default is the parked storyboard.
+        if (beh) body.insertAdjacentHTML('beforeend', r.behHtml)
+        const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
         if (v.stale) {
           const so = document.createElement('div'); so.className = 'staleov'
-          const b = document.createElement('b'); b.textContent = '✎ stale — text changed'
+          const b = document.createElement('b'); b.textContent = 'stale — text changed'
           const s = document.createElement('span')
           s.textContent = 'the requirement was reworded after this was drawn' +
             (v.at ? ' (' + v.at + ')' : '') + ' — redrawn on the next viz pass'
           so.appendChild(b); so.appendChild(s); viz.appendChild(so)
         }
-        wrap.appendChild(viz)
+        body.appendChild(viz)
+      } else {
+        // behavior but NO drawing (or prose-only): the labelled beats where there are any, then the
+        // honest placeholder — never an empty frame, never a wrong picture
+        if (beh) body.insertAdjacentHTML('beforeend', r.behHtml)
+        const no = document.createElement('div'); no.className = 'noschem'
+        no.textContent = 'no schematic drawn yet — the next viz pass derives one from the behavior text'
+        body.appendChild(no)
       }
-      // the "drawn from the text · viz@… · loops · pauses…" footer is GONE (the human, 2026-08-25) —
-      // redundant chrome under the drawing. The stale case still carries its honesty in the .staleov
-      // overlay above; the derived hash stays on the baked source row (data-vizhash) for traceability.
-      wrap.dataset.vizhash = short(v.hash)
+      wrap.appendChild(body)
     }
     render()
     return wrap

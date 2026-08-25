@@ -127,10 +127,11 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   })
   expect(colRatio, 'the proof pane is a real fraction of the reading column, not a fixed strip').toBeGreaterThan(0.72)
   expect(colRatio, 'the reading column stays at least as wide as the proof pane').toBeLessThanOrEqual(1.02)
-  // the reading REGION is the requirement card's beats/prose block (.fbeats — Task 12: it scrolls
-  // INTERNALLY between the card header and the pinned in-full footer, so the schematic below stays
-  // on first sight; supersedes Task 8 fix round 1, where the whole left column scrolled as one)
-  for (const sel of ['.fbeats', '.feval']) {
+  // the reading REGION is the requirement card's story+prose block (.fscroll — Task 12, generalized
+  // 2026-08-25 #2: it scrolls INTERNALLY between the card header and the pinned Full-requirement
+  // footer, so the storyboard's first still is on first sight; supersedes Task 8 fix round 1, where
+  // the whole left column scrolled as one)
+  for (const sel of ['.fscroll', '.feval']) {
     const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
     expect(['auto', 'scroll']).toContain(oflow)
   }
@@ -141,16 +142,16 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   expect(await ov.locator('.feval').evaluate(el => el.scrollHeight > el.clientHeight), 'the proof region overflows').toBe(true)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
   expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.fbeats').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
+  expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
   await ov.locator('.feval').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …and the reading region scrolls internally too (Task 12): its own spacer, its own real move,
   // the proof untouched
-  await ov.locator('.fbeats').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'min-height:4000px'; el.appendChild(sp) })
-  expect(await ov.locator('.fbeats').evaluate(el => el.scrollHeight > el.clientHeight), 'the reading region overflows').toBe(true)
-  await ov.locator('.fbeats').evaluate(el => { el.scrollTop = 60 })
-  expect(await ov.locator('.fbeats').evaluate(el => el.scrollTop), 'the reading region scrolled').toBeGreaterThan(0)
+  await ov.locator('.fscroll').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'min-height:4000px'; el.appendChild(sp) })
+  expect(await ov.locator('.fscroll').evaluate(el => el.scrollHeight > el.clientHeight), 'the reading region overflows').toBe(true)
+  await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 60 })
+  expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the reading region scrolled').toBeGreaterThan(0)
   expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof did not move').toBe(0)
-  await ov.locator('.fbeats').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
+  await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
   // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay

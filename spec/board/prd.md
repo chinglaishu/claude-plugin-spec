@@ -124,10 +124,11 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 - **Then** the same requirements render in that view, storing nothing new
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
-requirement at a time: on the left the id · state · **title** lead one header row, the **behavior
-block** below it (one Given, its When→Then beats), the authored prose folded behind a **Full
-requirement** toggle, and the **drawn schematic** filling the rest (loop · stills; quiet grey when
-stale); the proof sits on the right — its header **names the covering test** (a small pass/fail mark,
+requirement at a time: on the left the id · state · **title** lead one header row, then the
+**behavior paired with its drawn schematic** — each Given / When→Then beat shown beside the still
+that draws it (a beat-paired **storyboard**), the loop-animated whole one **loop** toggle away, quiet
+grey when stale; the authored prose folded behind a **Full requirement** toggle; the proof sits on
+the right — its header **names the covering test** (a small pass/fail mark,
 the test's own name, then Run + ⋯), then media whose **default derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
 expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
 a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
@@ -160,6 +161,13 @@ state · title lead ONE header row (the position moved to the pager); the "THE B
 +N more cover it" proof line are gone; the in-full link became a "Full requirement" pill; the proof
 header simply names the covering test behind a pass/fail mark, and the media pane is shorter so the
 behavior leads. All presentation — the requirements, tags and proof are untouched.*
+
+*Reworded 2026-08-25 (the human, second pass): the behavior grid and the drawn schematic were two
+stacked boxes saying the same thing twice; they FOLD into one **beat-paired storyboard** — each
+Given / When→Then beat beside the still that draws it (phases already align 1:1 with beats: phase 0
+= Given, phase i = beat i). The animated whole stays a **loop** toggle away; a requirement with no
+committed drawing shows the labelled beats alone; a stale drawing greys every frame and keeps its
+note (fresh text beside a wrong picture would mislead). Presentation only — nothing derived changes.*
 
 ## R14 — The proof is scannable as frames, not only as video
 
