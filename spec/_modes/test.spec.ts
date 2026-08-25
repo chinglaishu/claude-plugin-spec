@@ -453,12 +453,15 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
   const schem = dt.locator('.focusov .fleft .fschem')
 
-  // the slot is FILLED: the drawn loop under the caption, the viz@hash note — no placeholder line
+  // the slot is FILLED: the drawn loop under the caption — no placeholder line, and no "drawn from
+  // the text · viz@… · loops…" footer any more (2026-08-25); the derived hash rides the slot
+  // (data-vizhash) for traceability, and a fresh drawing shows no ≠ and no stale overlay
   await expect(schem.locator('.viz svg')).toHaveCount(1)
   await expect(schem.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
   await expect(schem).not.toContainText('no schematic drawn yet')
-  await expect(schem.locator('.figfoot')).toContainText('viz@' + vizat)
-  await expect(schem.locator('.figfoot')).not.toContainText('≠')
+  await expect(schem.locator('.figfoot')).toHaveCount(0)
+  await expect(schem).toHaveAttribute('data-vizhash', vizat)
+  await expect(schem).not.toContainText('≠')
   await expect(schem.locator('.staleov')).toHaveCount(0)          // fresh — no stale overlay at all
 
   // loop · stills: STILLS is the same drawing frozen per beat phase — given + one frame per beat —
@@ -507,8 +510,8 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await expect(stale.locator('.staleov')).toBeVisible()
   await expect(stale.locator('.staleov')).toContainText('stale — text changed')
   await expect(stale.locator('.staleov')).toContainText('redrawn on the next viz pass')
-  await expect(stale.locator('.figfoot')).toContainText('≠')      // text@… ≠ viz@… — both pins named
-  await expect(stale.locator('.figfoot')).toContainText('viz@' + vizat)
+  await expect(stale.locator('.figfoot')).toHaveCount(0)          // the footer is GONE (2026-08-25) — the stale STATE is the isstale class + overlay above
+  await expect(stale).toHaveAttribute('data-vizhash', vizat)      // the derived hash still rides the slot for traceability
 })
 
 // ── the board RENDERS Changed (board R4's fifth word) ──────────────────────
@@ -562,14 +565,14 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(req).toHaveAttribute('data-status', 'changed')
       await expect(req.locator('.h .chip.changed .mark.c')).toHaveCount(1)
       await expect(req.locator('.h .chip.ok')).toHaveCount(0)          // NOT a plain Passed chip
-      // the Focus proof line must AGREE with the chip (client.js:401 invariant) — a Changed requirement
-      // WAS proved by a real passing test, so it reads "proved by …" and names the drift, never the
-      // self-contradictory "covered by … passed — not passed yet".
-      // (Task 8: the proof header is the mockup's one line — `PROVEN BY [kind] <name>` — and the
-      // drift reads on its own stale note beneath it, exactly as the mockup draws it)
-      const fpby = dt.locator('.focusov .feval .fpby')
-      await expect(fpby.locator('.fpl')).toHaveText('proven by')
-      await expect(fpby).not.toContainText('not passed yet')
+      // the Focus proof header's MARK must AGREE with the chip — a Changed requirement WAS proved by a
+      // real passing test, so it reads with the ✓ (pass) mark and names the drift on its own stale
+      // note, never the self-contradictory "not passed yet". (2026-08-25: the proof header is the
+      // covering test's NAME behind a pass/fail mark; the "proven by / covered by" WORD is gone.)
+      const fptop = dt.locator('.focusov .feval .fptop')
+      await expect(fptop.locator('.fpm')).toHaveClass(/\bpass\b/)          // ✓ — it WAS proved
+      await expect(fptop.locator('.fpname')).not.toBeEmpty()               // the covering test's name
+      await expect(dt.locator('.focusov .feval')).not.toContainText('not passed yet')
       await expect(dt.locator('.focusov .feval .stalenote')).toContainText('re-verify')
       // the MEDIA pane wears the pinned-era watermark (D2: changed = last proof media, watermarked)
       const media = dt.locator('.focusov .feval .fmedia')

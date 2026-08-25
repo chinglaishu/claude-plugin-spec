@@ -468,20 +468,23 @@ const B = window.__BOARD__ || {}
     // ── LEFT: the reading stack ──────────────────────────────────────────────
     const left = document.createElement('div'); left.className = 'fleft'
     const read = document.createElement('div'); read.className = 'fread'
+    // ONE header row (the human, 2026-08-25): id · chip · TITLE · ⋯ on a single line — the title
+    // joins the meta so the reading card leads compactly. The position (family · n of N) is DROPPED
+    // from here: the pager IS the map (R17) — the family names its dots and the current one is
+    // ringed, so repeating "· 3 of 8" in the header was redundant chrome. opts.counter is left
+    // unused (a caller may still pass it; nothing renders it now).
     const rmeta = document.createElement('div'); rmeta.className = 'frmeta'
     const fid = document.createElement('span'); fid.className = 'fid'; fid.textContent = r.id
     const fchip = document.createElement('span'); fchip.className = 'fchip ' + r.status
     fchip.textContent = FCHIP[r.status] || FCHIP.untested
     rmeta.appendChild(fid); rmeta.appendChild(fchip)
+    const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
+    rmeta.appendChild(h)
     // the requirement's ⋯ authoring menu (board R15) — fresh reader chrome, no move/restore hazard
     const reqCtx = function () {
       return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title, reqList: screenReqList(dt) }
     }
     const reqAddTestCtx = function () { const c = reqCtx(); c.coverIds = [r.id]; return c }
-    if (opts.counter) {
-      const fc = document.createElement('span'); fc.className = 'fcount'; fc.textContent = opts.counter
-      rmeta.appendChild(fc)
-    }
     rmeta.appendChild(promptMenu('requirement authoring actions', [
       ['reword', 'Reword this requirement', reqCtx],
       ['addreq', 'Add a requirement', reqCtx],
@@ -489,8 +492,6 @@ const B = window.__BOARD__ || {}
       ['addtest', 'Add a test to cover it', reqAddTestCtx]
     ]))
     read.appendChild(rmeta)
-    const h = document.createElement('div'); h.className = 'fttl'; h.textContent = r.title
-    read.appendChild(h)
     // THE BEHAVIOR LEADS (R13): the baked block (build-board renders it from the escaped PRD via
     // renderBehavior) heads the card; the PROSE collapses beneath it, one click away. A prose-only
     // requirement has no shape to lead with, so its prose stays open.
@@ -500,11 +501,9 @@ const B = window.__BOARD__ || {}
     // the schematic below is on screen from the first paint. The 'clipped' class on the card
     // drives the footer's hairline fade — the honest cue that more beats sit below the edge.
     const beatsEl = document.createElement('div'); beatsEl.className = 'fbeats'
-    if (r.behHtml) {
-      const bl = document.createElement('span'); bl.className = 'flabel'; bl.textContent = 'The behavior'
-      beatsEl.appendChild(bl)
-      beatsEl.insertAdjacentHTML('beforeend', r.behHtml)
-    }
+    // the behavior LEADS with no eyebrow (the human, 2026-08-25): the GIVEN/WHEN/THEN table is self-
+    // evident, so "The behavior" over it was redundant chrome. A prose-only requirement still shows prose.
+    if (r.behHtml) beatsEl.insertAdjacentHTML('beforeend', r.behHtml)
     const fbody = document.createElement('div')
     fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
     fbody.innerHTML = r.proseHtml
@@ -519,11 +518,14 @@ const B = window.__BOARD__ || {}
     // initial paint's cue without racing the append; content-height changes go through syncClip calls
     if (window.ResizeObserver) new ResizeObserver(syncClip).observe(beatsEl)
     if (r.behHtml) {
+      // the in-full toggle is a PILL now (the human, 2026-08-25) — "Full requirement ⌄", the chevron
+      // flipping when the authored prose unfolds beneath the shape; replaces the plain underlined link
       const pt = document.createElement('button'); pt.type = 'button'; pt.className = 'prose-t'
-      pt.textContent = 'the authored requirement — in full'
+      pt.innerHTML = 'Full requirement <span class="chev" aria-hidden="true">⌄</span>'
       pt.addEventListener('click', function () {
-        fbody.classList.toggle('open')
-        if (fbody.classList.contains('open')) fbody.scrollIntoView({ block: 'nearest' })
+        const open = fbody.classList.toggle('open')
+        pt.classList.toggle('open', open)
+        if (open) fbody.scrollIntoView({ block: 'nearest' })
         syncClip()
       })
       foot.appendChild(pt)
@@ -543,25 +545,24 @@ const B = window.__BOARD__ || {}
     if (cov.length) {
       const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
       const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
+      const proved = r.status === 'passed' || r.status === 'changed'
       const ph = document.createElement('div'); ph.className = 'fphead'
+      // THE PROOF HEADER IS THE COVERING TEST'S NAME (the human, 2026-08-25): no "THE PROOF" label,
+      // no "proven by / covered by", no unit/flow badge, no "+N more cover it" — a small pass/fail/
+      // not-run MARK leads (the honesty cue that replaces the proven/covered word, so a ✗ run can
+      // never read as green — rule 3), then the test's own name, then the wired Run + ⋯. Coverage is
+      // still many-to-many by tag (R5): the full list of covering tests lives in the List view and on
+      // the baked tags; the header names the PRIMARY (under a failed status, the test that failed).
+      // the MARK tracks the requirement's DERIVED status (board R4) — the same fold that names the
+      // chip — so the header can never read green under a ✗ chip (rule 3): ✓ only when proven, ✗
+      // under a failed requirement, ◌ otherwise (untested / not-reached / covered-not-yet-run).
+      const mark = proved ? '<span class="fpm pass" title="proven">✓</span>'
+        : r.status === 'failed' ? '<span class="fpm fail" title="failed">✗</span>'
+          : '<span class="fpm none" title="' + eh(vword) + '">◌</span>'
       const ptop = document.createElement('div'); ptop.className = 'fptop'
-      ptop.innerHTML = '<span class="fplbl">The proof</span>'
+      ptop.innerHTML = mark + '<span class="fpname" title="' + eh(flows[0] || '') + '">' + eh(flows[0] || '') + '</span>'
       const acts = document.createElement('div'); acts.className = 'fpacts'
       ptop.appendChild(acts); ph.appendChild(ptop)
-      // THE PROOF LINE (Task 8, the frozen mockup): ONE row — `PROVEN BY [unit|flow] <test name>`.
-      // "proven by" tracks r.status (board R4) — the same fold that names the chip names this line;
-      // Changed is passed-family (it WAS proved; the text moved since) — mirroring gridProof. Any
-      // other status reads "covered by": the mockup's label, kept honest (rule 3 — never a fake
-      // green under a ✗ chip). The kind chip is the union List and Flow use (source ∪ record).
-      const proved = r.status === 'passed' || r.status === 'changed'
-      const by = document.createElement('div'); by.className = 'fpby'
-      const kind = testKind(primary)
-      by.innerHTML = '<span class="fpl">' + (proved ? 'proven by' : 'covered by') + '</span>' +
-        '<span class="tone">' + (kind ? '<span class="tk ' + kind + '">' + kind + '</span>' : '') +
-        '<span class="tn" title="' + eh(flows[0] || '') + '">' + eh(flows[0] || '') + '</span>' +
-        (vstate === 'fail' ? ' <span class="fpv fail">✗</span>' : '') + '</span>' +
-        (cov.length > 1 ? '<span class="fpmore">+' + (cov.length - 1) + ' more cover it</span>' : '')
-      ph.appendChild(by)
       if (r.status === 'changed') {
         const sn = document.createElement('div'); sn.className = 'stalenote'
         sn.innerHTML = '◈ the requirement was <b>edited after this proof ran</b> — re-run to re-verify'
@@ -605,9 +606,11 @@ const B = window.__BOARD__ || {}
         pop.addEventListener('click', function () { menu.classList.remove('open') })  // any pick closes it
       }
     } else {
+      // no covering test — the proof header carries the honest gap in the same .fptop shape, no
+      // "The proof" label (the human, 2026-08-25): the ◌ mark leads, then the ungreen line
       const ph = document.createElement('div'); ph.className = 'fphead'
-      ph.innerHTML = '<span class="fplbl">The proof</span>' +
-        '<div class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</div>'
+      ph.innerHTML = '<div class="fptop"><span class="fpm none" title="no test yet">◌</span>' +
+        '<span class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</span></div>'
       evl.appendChild(ph)
     }
     // THE MEDIA PANE (D2) — video mode plays the screen's COMMITTED recording (Task 16 #1), so
@@ -740,12 +743,10 @@ const B = window.__BOARD__ || {}
         }
         wrap.appendChild(viz)
       }
-      const foot = document.createElement('div'); foot.className = 'figfoot'
-      foot.innerHTML = v.stale
-        ? 'drawn from the text · <span class="h">text@' + eh(short(v.textHash)) + ' ≠ viz@' + eh(short(v.hash)) + '</span> — redrawn on the next viz pass'
-        : 'drawn from the text · <span class="h">viz@' + eh(short(v.hash)) + '</span> · ' +
-          (mode === 'stills' ? 'the loop’s own frames, frozen per beat' : 'loops · pauses under reduced-motion')
-      wrap.appendChild(foot)
+      // the "drawn from the text · viz@… · loops · pauses…" footer is GONE (the human, 2026-08-25) —
+      // redundant chrome under the drawing. The stale case still carries its honesty in the .staleov
+      // overlay above; the derived hash stays on the baked source row (data-vizhash) for traceability.
+      wrap.dataset.vizhash = short(v.hash)
     }
     render()
     return wrap

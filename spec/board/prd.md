@@ -124,10 +124,11 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 - **Then** the same requirements render in that view, storing nothing new
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
-requirement at a time: the **behavior block leads** on the left (one Given, its When→Then beats),
-the prose collapsed beneath it, the **drawn schematic** below (loop · stills; quiet grey when
-stale); the proof sits on the right — Run + ⋯ header, proof line, then media whose **default
-derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
+requirement at a time: on the left the id · state · **title** lead one header row, the **behavior
+block** below it (one Given, its When→Then beats), the authored prose folded behind a **Full
+requirement** toggle, and the **drawn schematic** filling the rest (loop · stills; quiet grey when
+stale); the proof sits on the right — its header **names the covering test** (a small pass/fail mark,
+the test's own name, then Run + ⋯), then media whose **default derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
 expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
 a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
 failing test". **List** is one collapsed row per requirement (state · id · title · beat count ·
@@ -152,6 +153,13 @@ the behaviour.*
 
 *Reworded 2026-08-21 (the human): Grid became List — a list of Focus — and the views took the frozen
 visual-requirements mockup as their contract.*
+
+*Reworded 2026-08-25 (the human): the Focus reader was decluttered against a fresh mockup — the id ·
+state · title lead ONE header row (the position moved to the pager); the "THE BEHAVIOR" eyebrow, the
+"drawn from the text · viz@… · loops…" schematic footer and the "THE PROOF / PROVEN BY [unit|flow] /
++N more cover it" proof line are gone; the in-full link became a "Full requirement" pill; the proof
+header simply names the covering test behind a pass/fail mark, and the media pane is shorter so the
+behavior leads. All presentation — the requirements, tags and proof are untouched.*
 
 ## R14 — The proof is scannable as frames, not only as video
 
@@ -222,12 +230,18 @@ for a status of its own.*
 
 - **Given** a test that tags the requirement ids it covers — qualified (asset-plan:R5) when the requirement is another screen's
 - **When** you open a requirement
-- **Then** its proof line shows every test that tags it, resolved by tag, wherever that test's file lives
+- **Then** its proof names its covering test, resolved by tag — cross-screen when the tag is qualified, wherever that test's file lives
 
 One test can prove several requirements; one requirement can be proven by several tests. The link
 lives in the **test**, which tags the requirement ids it covers — qualified (e.g. `asset-plan:R5`),
 so a flow can cover another screen's requirement. A flow's file lives in the screen it **starts** on;
-coverage is by tag, so a requirement lists every test that covers it, wherever that file lives.
+coverage is by tag, so a requirement resolves to every test that covers it, wherever that file lives.
+
+*Reworded 2026-08-25 (the human): the Focus proof header **names the covering test** (the primary,
+under a failed status the one that failed) rather than listing "+N more cover it" on the line — the
+many-to-many link is unchanged, carried by the tags and read in the List view; the header just leads
+with the one test whose recording is shown. Removing the "+N more" phrase was part of the Focus
+declutter the human signed off on.*
 
 ## R6 — Two kinds of test, unit and flow — never long-and-shallow
 

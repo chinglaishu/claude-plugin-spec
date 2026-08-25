@@ -465,7 +465,7 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-head`).click()
     const body = dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-body`)
     await expect(body.locator('.fread .frmeta .fid')).toHaveText(rid!)
-    await expect(body.locator('.feval .fpby')).toContainText(flow)
+    await expect(body.locator('.feval .fptop .fpname')).toContainText(flow)   // the proof header names this very test, resolved by tag
   })
 })
 
@@ -584,15 +584,15 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // carries a Given/When→Then block — via the #/<screen>/<rid> route the feature strip uses too.
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
-    // THE MOCKUP'S CHROME (Task 8, the frozen mockup 2026-08-17): the top bar names the screen with
-    // its area · route beneath; the card header reads `R13  ✓ Passed` left and `n of N  ⋯` right
+    // THE HEADER ROW (R13, reworded 2026-08-25): the top bar names the screen with its area · route
+    // beneath; the reading card's header reads `R13  ✓ Passed  <title>  ⋯` on ONE row — the title
+    // joined the meta line and the position (n of N) MOVED OFF it to the pager (R17), so it no longer
+    // repeats here.
     await expect(dt.locator('.dth .dname h2')).toHaveText('Board')
     await expect(dt.locator('.dth .dname .dsub')).toHaveText('Core · /')
-    const pos13 = await dt.locator('.reqpane .req').evaluateAll(els => els.findIndex(e => e.getAttribute('data-r') === 'R13') + 1)
-    // `n of N` — led by the requirement's family name when the prd has families (board R17,
-    // 2026-08-23: the counter reads `<family> · n of N`), so the position is pinned, the prefix is not
-    await expect(ov.locator('.fread .frmeta .fcount')).toHaveText(new RegExp(`(^|· )${pos13} of ${reqCount}$`))
-    await expect(ov.locator('.fread .frmeta .fcount + .fmenu .fmenubtn')).toHaveCount(1)   // the ⋯ sits right of the counter
+    await expect(ov.locator('.fread .frmeta .fttl')).toContainText('Three views')       // the title is IN the header row
+    await expect(ov.locator('.fread .frmeta .fcount')).toHaveCount(0)                    // the counter is gone (it lives in the pager)
+    await expect(ov.locator('.fread .frmeta .fmenu .fmenubtn')).toHaveCount(1)           // the ⋯ rides the header's far edge
     const beh = ov.locator('.fread .behavior')
     await expect(beh).toHaveCount(1)
     await expect(beh.locator('.brow')).toHaveCount(3)          // one Given + a When→Then beat
@@ -611,8 +611,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(schem13).not.toContainText('no schematic drawn yet')
     await expect(schem13).not.toHaveClass(/isstale/)
     await expect(schem13.locator('.figcap')).toContainText('schematic · the idea, not the real UI')
-    await expect(schem13.locator('.figfoot')).toContainText('viz@')
-    await expect(schem13.locator('.figfoot')).not.toContainText('≠')
+    // the "drawn from the text · viz@… · loops…" footer is GONE (2026-08-25); the derived hash stays
+    // on the slot for traceability, and a fresh (non-stale) drawing shows no ≠ note anywhere
+    await expect(schem13.locator('.figfoot')).toHaveCount(0)
+    await expect(schem13).toHaveAttribute('data-vizhash', /.+/)
+    await expect(schem13).not.toContainText('≠')
     // Task 13 — the schematic pane's play speed is the design-system DROPDOWN (replacing Task 11's
     // cycle button, the human's choice 2026-08-24): 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, a real
     // <select> so the keyboard reaches it natively. Every animation-duration is emitted as
@@ -657,15 +660,13 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
 
-    // THE PROOF on the RIGHT — Run + ⋯ header and the proof line, the covering test's OWN node moved
-    // in wired (no player rebuilt), exactly as before the media pane landed
+    // THE PROOF on the RIGHT — the header NAMES the covering test (R13/R5, reworded 2026-08-25): a
+    // pass/fail/none MARK, then the test's own name, then the wired Run + ⋯. No "THE PROOF" label, no
+    // "proven by", no unit/flow badge, no "+N more cover it".
     await expect(ov.locator('.feval .fphead')).toBeVisible()
-    await expect(ov.locator('.feval .fpby')).toBeVisible()
-    // the proof header is ONE line — `PROVEN BY [unit|flow] <test name>` (the mockup; "covered by"
-    // where the covering test does not currently prove it — rule 3, never a fake green)
-    await expect(ov.locator('.feval .fpby .fpl')).toHaveText(/^(proven|covered) by$/)
-    await expect(ov.locator('.feval .fpby .tk')).toHaveText(/^(unit|flow)$/)
-    await expect(ov.locator('.feval .fpby .tone')).not.toBeEmpty()
+    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()                 // the covering test's name heads the proof
+    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\b(pass|fail|none)\b/) // the honesty mark leads it
+    await expect(ov.locator('.feval .fpby')).toHaveCount(0)                           // the old PROVEN BY proof line is gone
     await expect(ov.locator('.feval .fprun')).toHaveCount(0)          // no separate "last run" line any more
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
     await expect(ov.locator('.feval .fpacts > .runone')).toBeVisible()        // Run always shown in the header
@@ -879,9 +880,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(card2).not.toHaveClass(/\bopen\b/)
     await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)
 
-    // The proof line is COVERAGE-honest and reads the SAME word as the chip (board R4): "proven by"
-    // only for a Passed requirement, "covered by" otherwise (the mockup's label, kept honest). Same forced-status
-    // technique as above; the coverage tags stay real, so .fpby resolves a genuine covering test.
+    // The proof header's MARK is COVERAGE-honest (board R4/R3): a ✓ (pass) only for a Passed
+    // requirement, a ✗ (fail) under a failed run — the honesty cue that replaced the "proven by /
+    // covered by" WORD when the header became the covering test's name (2026-08-25). Same forced-status
+    // technique as above; the coverage tags stay real, so the header resolves a genuine covering test.
     const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
       els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
     expect(otherId, 'R13 needs at least two requirements to exercise both branches').toBeTruthy()
@@ -893,12 +895,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.goto(`/#/board/${passedId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
-    await expect(dt.locator('.focusov .feval .fpby')).toContainText('proven by')
+    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bpass\b/)   // ✓ — proven
     await page.goto(`/#/board/${otherId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
-    await expect(dt.locator('.focusov .feval .fpby')).toContainText('covered by')
-    await expect(dt.locator('.focusov .feval .fpby')).not.toContainText('proven by')
+    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bfail\b/)   // ✗ — a failed run never reads as green
+    await expect(dt.locator('.focusov .feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
   })
 })
 
@@ -1295,7 +1297,7 @@ test('The proof is scannable as frames — the media pane\'s stills ARE the stri
     await expect(panelAB.locator('.fcell.rf', { hasText: 'A value' })).toHaveCount(0)
     await expect(dt.locator('.focusov .feval .fmedia .fmbar .fpv.fail')).toContainText('✗')
     // the proof line names the test whose run failed, too — the pane and its header agree
-    await expect(dt.locator('.focusov .feval .fpby .tn')).toHaveText(B_TITLE)   // the name in the mockup's one-line proof header (Task 8)
+    await expect(dt.locator('.focusov .feval .fptop .fpname')).toHaveText(B_TITLE)   // the covering test's name heads the proof (2026-08-25)
 
     // (3) NO VIDEO → NO STRIP, and NEWEST-RECORD-ONLY (D3): a record that cut no frames yields NO
     // run-frame cells — the harvested pair still stands, never a faked or separately-captured strip.
@@ -2162,12 +2164,12 @@ test('Requirements sub-group within a screen — family headers on the card and 
   // requirement in prd order, the current one ringed, the title one hover (or keyboard focus) away
   await checkReq('R17', async () => {
     const rid = 'R17'
-    const fam = prd.fams.find(f => f.ids.includes(rid))!
-    const pos = prd.ids.indexOf(rid) + 1
     await page.goto('/#/board/' + rid)
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     await expect(dt.locator('.focusov .fid')).toHaveText(rid)
-    await expect(dt.locator('.focusov .fcount')).toHaveText(fam.name + ' · ' + pos + ' of ' + prd.ids.length)
+    // the header counter is GONE (2026-08-25) — the family + position live in the pager below, which
+    // this test verifies in full; a leftover "<family> · n of N" here would be the old chrome
+    await expect(dt.locator('.focusov .fcount')).toHaveCount(0)
     const bar = dt.locator('.dtfoot .fpager')
     await expect(bar).toBeVisible()
     // the family labels, in prd order — the short name (before the em-dash gloss) after its number
@@ -2258,7 +2260,7 @@ test('Requirements sub-group within a screen — family headers on the card and 
         await page.goto('/#/' + name)
         await expect(dt.locator('.focusov')).toBeVisible()
       }).toPass({ timeout: 15000 })
-      await expect(dt.locator('.focusov .fcount')).toHaveText('1 of 1')
+      await expect(dt.locator('.focusov .fcount')).toHaveCount(0)   // no header counter (2026-08-25) — the pager's one dot is the position
       await expect(dt.locator('.reqmap')).toHaveCount(0)
       await expect(dt.locator('.gridview .lst-fam')).toHaveCount(0)
       // the same bar: one hue-carrying dot (no glyph), no family label, no separator

@@ -1828,8 +1828,13 @@ export function build () {
   .focusov { width:100%; max-width:1440px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the reader eating vertical space, so both cards start at the top */
-  .fread .frmeta { display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s4); }
-  .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); }
+  /* ONE header row (the human, 2026-08-25): id · chip · TITLE · ⋯ — the title shares the line and
+     grows (flex:1), so the reading card leads compactly and the ⋯ rides the far edge without a
+     margin-left hack. baseline-aligned so the mono id, the chip and the title's first line sit on one
+     line; a long title wraps under the row and the tags stay on its first line. */
+  .fread .frmeta { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+  .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); flex:none; }
+  .frmeta .fchip { flex:none; }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
   /* board R4, amended 2026-08-17: the same four-word vocabulary as REQ_CHIP/GRID_CHIP above — the
      Focus reader is the detail's DEFAULT view, so it may never be the one surface still speaking the
@@ -1872,7 +1877,8 @@ export function build () {
   .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
   /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
      knob so the hierarchy holds at any scale (Task 14) */
-  .fread .fttl { font-size:calc(22px * var(--scale)); line-height:1.26; letter-spacing:-.02em; margin:0 0 var(--s3); }
+  .fread .fttl { flex:1 1 auto; min-width:0; font-size:calc(19px * var(--scale)); font-weight:600;
+    line-height:1.34; letter-spacing:-.015em; margin:0; color:var(--ink); }
   .fread .fbody { font-size:var(--t-md); line-height:1.64; color:var(--ink-2); }
   .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
   .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
@@ -1893,13 +1899,18 @@ export function build () {
      the column clip (overflow:hidden — the page still never scrolls). R2's independent scroll
      holds: the reading region is .fbeats, the proof card its own. */
   .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; overflow:hidden; }
+  /* the reading card is content-height; the schematic below fills the column's slack (so there is no
+     dead gap). The fix for "the behavior was a sliver" (the human, 2026-08-25) is .fbeats' bigger
+     MINIMUM below — a full Given/When/Then is guaranteed before the schematic gets any room, so the
+     schematic can never squeeze the behavior the way it did. The card still shrinks its .fbeats
+     (min-height:0 here) on a short viewport, scrolling internally between header and pinned toggle. */
   .fleft > .fread { flex:0 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
   /* the card header and footer NEVER shrink — only the beats region gives way (a crushed title
      clipped mid-glyph is exactly the old failure in a new place) */
-  .fread > .frmeta, .fread > .fttl { flex:none; }
+  .fread > .frmeta { flex:none; }
   /* release pass M-3: the region may shrink but never to a heading over nothing — it keeps room
      for its label plus one wrapped Given row (≈ label + 3 lines + the row's padding) */
-  .fread > .fbeats { flex:0 1 auto; min-height:calc(var(--t-sm) * 1.55 * 4 + var(--s3)); overflow-y:auto; overflow-x:hidden; }
+  .fread > .fbeats { flex:0 1 auto; min-height:calc(var(--t-sm) * 1.55 * 7 + var(--s4)); overflow-y:auto; overflow-x:hidden; }
   /* the pinned footer: zero-height while empty (a prose-only card has no toggle); when the beats
      region is clipped, a hairline + a short fade to the card ground mark the cut edge — the fade
      covers only the last ~1.5 lines ABOVE the clip, where lines are already being truncated; every
@@ -1929,9 +1940,14 @@ export function build () {
   .fread .fbeats .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
   /* the PROSE collapses beneath the shape (one click unfolds the authored requirement in full); a
      prose-only requirement has no shape to lead with, so its prose stays open — .noshape marks it */
-  .fread .prose-t { font-size:var(--t-xs); color:var(--ink-3); background:none; border:0; padding:0;
-    cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  .fread .prose-t:hover { color:var(--ink); }
+  /* the in-full toggle is a PILL now (the human, 2026-08-25): "Full requirement ⌄", the chevron
+     flipping when the authored prose unfolds. ink-3 on --canvas 5.84:1 (AA). */
+  .fread .prose-t { display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:var(--t-xs);
+    color:var(--ink-3); background:var(--canvas); border:1px solid var(--hair-2); border-radius:999px;
+    padding:5px 12px; cursor:pointer; }
+  .fread .prose-t:hover { color:var(--ink); border-color:var(--ink-3); }
+  .fread .prose-t .chev { font-size:10px; line-height:1; transition:transform .15s ease; }
+  .fread .prose-t.open .chev { transform:rotate(180deg); }
   .fread .fbody.fprose { display:none; border-top:1px dashed var(--hair); margin-top:var(--s3);
     padding-top:var(--s3); }
   .fread .fbody.fprose.open { display:block; }
@@ -1968,6 +1984,8 @@ export function build () {
      svg viewBox scales like object-fit:contain natively) — so the schematic reads as large as the
      reclaimed gap allows */
   .fschem .viz svg { display:block; width:100%; height:100%; }
+  /* the drawing fills the schematic's slack (the behavior's bigger .fbeats minimum is what keeps it
+     from squeezing the behavior now — the human, 2026-08-25); scales undistorted via the viewBox. */
   .fschem .viz { flex:1 1 auto; min-height:calc(88px * var(--scale));
     display:flex; align-items:center; justify-content:center;
     position:relative; border:1px solid var(--hair); border-radius:var(--r-sm);
@@ -2101,7 +2119,15 @@ export function build () {
   /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
      background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
      controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
-  .feval .fptop { display:flex; align-items:center; gap:var(--s3); min-height:calc(22px * var(--scale)); }
+  /* THE PROOF HEADER (the human, 2026-08-25): one row — a small pass/fail/none MARK, the covering
+     test's NAME (clipped before the wired controls), then Run + ⋯ — ruled off from the media below.
+     No "THE PROOF" label, no "proven by", no unit/flow badge, no "+N more cover it". */
+  .feval .fptop { display:flex; align-items:center; gap:var(--s2); min-height:calc(22px * var(--scale));
+    padding-bottom:var(--s3); border-bottom:1px solid var(--hair); }
+  .feval .fpm { flex:none; font-size:var(--t-sm); line-height:1; }
+  .feval .fpm.pass { color:var(--koke); } .feval .fpm.fail { color:var(--bengara); } .feval .fpm.none { color:var(--ink-4); }
+  .feval .fpname { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:var(--t-md); font-weight:600; color:var(--ink); }
   .feval .fpacts { margin-left:auto; display:flex; align-items:center; gap:var(--s2); }
   .feval .fpacts .btn, .feval .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; }
   .feval .fpacts .runone::before { content:'\\25B6'; margin-right:6px; font-size:9px; }   /* the Run glyph */
@@ -2116,27 +2142,17 @@ export function build () {
   .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
   /* board R15: the divider between the run/log items and the authoring items in the proof ⋯ menu */
   .fmenupop .fmdiv { height:1px; margin:6px 4px; background:var(--hair); }
-  /* the requirement's own ⋯ (board R15) rides the reading card's meta line, pushed to its far edge;
-     in Focus the position counter ("4 of 8", Task 8) sits just left of it */
-  .frmeta .fmenu { margin-left:auto; }
-  .frmeta .fcount { margin-left:auto; font-size:var(--t-xs); color:var(--ink-3); white-space:nowrap; }
-  .frmeta .fcount + .fmenu { margin-left:0; }
+  /* the requirement's own ⋯ (board R15) rides the reading card's header row at its far edge — the
+     title (flex:1) pushes it there; the position counter that once sat here is gone (it lives in the
+     pager — R17, the human 2026-08-25). Kept baseline-safe: align-self so the glyph sits on the row. */
+  .frmeta .fmenu { flex:none; align-self:center; }
   /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
-  .fplbl { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em; color:var(--ink-4); display:block; }
-  /* Task 8 — the mockup's proof line: PROVEN BY [unit|flow] <test name> on ONE row (the kind chip
-     in its hue: unit = indigo tint, flow = moss tint — --ai on --ai-tint 7.6:1, --koke on --koke-tint 6.1:1) */
-  .fpby { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:calc(24px * var(--scale)); margin-top:var(--s2);
-    font-size:var(--t-sm); color:var(--ink); }
-  .fpby .fpl { font:var(--t-micro) var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
-  .fpby .tone { display:inline-flex; align-items:center; gap:6px; min-width:0; }
-  .fpby .tone .tn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:calc(420px * var(--scale)); }
-  .tk { font:var(--t-micro) var(--mono); text-transform:uppercase; letter-spacing:.05em; border-radius:var(--r-sm);
-    padding:1px 6px; flex:none; }
-  .tk.unit { color:var(--ai); background:var(--ai-tint); } .tk.flow { color:var(--koke); background:var(--koke-tint); }
-  /* the Changed drift reads on its own note beneath the line, exactly as the mockup draws it */
+  /* (the Task 8 proof LINE — .fplbl "THE PROOF" + .fpby "proven/covered by [unit|flow] <name> +N more
+     cover it" — is replaced by the .fptop test-name header above; the human, 2026-08-25.) */
+  /* the Changed drift reads on its own note beneath the name row */
   .feval .stalenote { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line);
     border-radius:var(--r-sm); padding:6px 10px; margin-top:var(--s2); }
   .feval .stalenote b { font-weight:500; }
@@ -2144,12 +2160,14 @@ export function build () {
   .fmbar .fmname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:0 1 auto; }
   .fmbar .fmfacts { flex:none; white-space:nowrap; }
   .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
-  .fpnone { font:var(--t-sm) var(--mono); color:var(--ink-3); margin-top:var(--s2); }
-  .fpmore { color:var(--ink-4); font-size:var(--t-sm); }
+  .fpnone { flex:1 1 auto; min-width:0; font:var(--t-sm) var(--mono); color:var(--ink-3); }
   /* Task 15: the PROOF recording fills its pane (the pane is wide since 0.29.1). Scoped to
      .frecwrap on purpose — the global .rec (the test rows' 300px cover) must not blow up. */
   .frecwrap .rec { width:100%; max-width:none; }
   .frecwrap .rec.playing { width:100%; }
+  /* the proof media is SHORTER (the human, 2026-08-25) — cap the recording's height so the reading
+     card on the left leads; the video letterboxes (object-fit:contain) rather than dominating. */
+  .fmpanel .frecwrap .rec { max-height:clamp(170px, 30vh, 280px); }
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
      header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
   .fev { min-width:0; }
