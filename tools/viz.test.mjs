@@ -4,7 +4,7 @@
 // honesty rule: a requirement the kit cannot draw stays text-only, never a wrong picture.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vizHash, vizStale, matchArchetype, deriveSchematic } from './viz.mjs'
+import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash } from './viz.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
 
@@ -357,4 +357,170 @@ test('T11: the still phases are untouched — plain negative seconds for --ph, n
   const d = deriveSchematic(TICK)
   assert.ok(d.phases.every(p => typeof p === 'number' && p < 0))
   assert.ok(d.svg.includes('data-viz-phases="' + d.phases.join(' ') + '"'))
+})
+
+// ── the UI MIRROR (the human, 2026-08-28): a schematic drawn from the REAL screen ──────────────
+// The archetype kit draws the idea; the complaint that bought this pass is that the idea's "2
+// TOTAL → 3 TOTAL" chip is so unlike the app's own counter that nobody could map one onto the
+// other. Where a run harvested the page's layout skeleton around the assertion, the drawing is a
+// wireframe of THAT: the same boxes in the same places, the asserted element ringed, the value it
+// actually read spelled out. Still a drawing — house shapes and dye tokens, never a screenshot.
+const LAY_BEFORE = {
+  w: 1440,
+  h: 900,
+  ring: null,
+  els: [
+    { x: 0, y: 0, w: 1440, h: 64, kind: 'container' },
+    { x: 24, y: 16, w: 220, h: 32, kind: 'heading', text: 'Today · to do' },
+    { x: 24, y: 96, w: 600, h: 44, kind: 'input', text: 'What needs doing?' },
+    { x: 660, y: 96, w: 90, h: 36, kind: 'button', text: 'Add' },
+    { x: 24, y: 160, w: 600, h: 40, kind: 'row' },
+    { x: 1180, y: 96, w: 120, h: 48, kind: 'text', text: '2 to do' }
+  ]
+}
+const LAY_AFTER = {
+  ...LAY_BEFORE,
+  ring: { x: 1180, y: 96, w: 120, h: 48 },
+  els: [
+    ...LAY_BEFORE.els.slice(0, 5),
+    { x: 24, y: 208, w: 600, h: 40, kind: 'row' },
+    { x: 1180, y: 96, w: 120, h: 48, kind: 'text', text: '3 to do', focus: true }
+  ]
+}
+const COUNT = b('a list with two items', 'you add one', 'the counter reads 3 to do')
+
+test('renderWireframe draws the real layout — the asserted value, in the app\'s own words', () => {
+  const d = renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: COUNT })
+  assert.ok(d, 'a harvested layout always draws — no archetype has to fit')
+  assert.equal(d.archetype, 'ui-mirror')
+  assert.equal(d.kind, 'wireframe')
+  assert.ok(d.svg.includes('>3 to do<'), 'the value the assertion read is on the drawing')
+  assert.ok(d.svg.includes('>2 to do<'), 'and the same place one moment earlier, so it reads as a change')
+  assert.ok(d.svg.includes('data-viz-kind="wireframe"'))
+  assert.ok(d.svg.includes('data-viz-layout="' + layoutHash(LAY_BEFORE, LAY_AFTER) + '"'), 'the geometry pin')
+  assert.ok(d.svg.includes('data-viz-hash="' + vizHash(COUNT) + '"'), 'and the TEXT pin the board reads for staleness')
+})
+
+test('the mirror is house-style and safe, exactly like the archetype drawings', () => {
+  const d = renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: COUNT })
+  assert.ok(!/#[0-9a-fA-F]{3}/.test(d.svg), 'no raw hex — the app\'s own colours never reach the drawing')
+  assert.ok(/var\(--/.test(d.svg), 'dye tokens carry every colour')
+  assert.ok(!/<script/i.test(d.svg))
+  assert.ok(!/\sid="/.test(d.svg), 'class-scoped, no ids')
+  assert.ok(!d.svg.includes('`'), 'no backtick')
+  assert.ok(/role="img"/.test(d.svg) && /aria-label="/.test(d.svg))
+  assert.ok(d.svg.trimStart().startsWith('<svg') && d.svg.trimEnd().endsWith('</svg>'))
+  // the same speed contract as the kit (Task 11): one wrapper var retimes the whole drawing
+  for (const a of d.svg.match(/animation:[^;}]*/g) || []) {
+    assert.match(a, /calc\(\d+(\.\d+)?s \/ var\(--spd, 1\)\)/, 'scaled duration in: ' + a)
+  }
+})
+
+test('the mirror pairs with the storyboard: one phase per scene, and it is deterministic', () => {
+  const d = renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: COUNT })
+  assert.equal(d.phases.length, COUNT.beats.length + 1, 'phases = given + one per beat')
+  assert.ok(d.phases.every(p => typeof p === 'number' && p < 0), 'phases are negative animation-delays')
+  assert.equal(renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: COUNT }).svg, d.svg, 'same input, byte-identical')
+  // TWO frames were harvested, so a longer chain parks every later beat at the SAME after frame
+  // rather than inventing motion nobody measured
+  const three = b('g', 'a', 'b', 'c', 'd', 'e', 'f')
+  const d3 = renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: three })
+  assert.equal(d3.phases.length, 4)
+  assert.equal(d3.phases[1], d3.phases[3])
+})
+
+test('a requirement with NO behavior block still mirrors — the drawing comes from the screen', () => {
+  const d = renderWireframe(LAY_BEFORE, LAY_AFTER, {})
+  assert.ok(d && d.phases.length === 2)
+  // …and two such drawings must not collide: with no text there is only one text hash, so the
+  // scope class carries the LAYOUT pin too
+  const other = renderWireframe(LAY_AFTER, LAY_BEFORE, {})
+  const cls = s => (s.match(/class="(vz[0-9a-f]+)"/) || [])[1]
+  assert.ok(cls(d.svg) && cls(other.svg))
+  assert.notEqual(cls(d.svg), cls(other.svg))
+})
+
+test('no usable layout → null, so the requirement falls back to the archetype kit', () => {
+  assert.equal(renderWireframe(null, null, {}), null)
+  assert.equal(renderWireframe({ w: 0, h: 0, els: [] }, null, {}), null)
+  assert.equal(renderWireframe({ w: 1440, h: 900, els: [] }, { w: 1440, h: 900, els: [] }, {}), null)
+})
+
+test('harvested text is data: escaped, and never able to make the builder refuse the figure', () => {
+  const hostile = {
+    w: 400,
+    h: 300,
+    els: [{ x: 0, y: 0, w: 380, h: 40, kind: 'heading', text: '<img src=x onerror="alert(1)"> & "q"' }]
+  }
+  const d = renderWireframe(hostile, hostile, {})
+  assert.ok(d, 'still draws — the text is data, not structure')
+  assert.ok(!/<img/.test(d.svg), 'angle brackets never land raw')
+  // renderSchematic refuses any svg carrying an on*= handler or a javascript:/data: href. An
+  // ESCAPED label can still contain the literal substring ` onerror=`, which would drop the whole
+  // figure — the drawing defuses it rather than losing itself to its own app's copy.
+  assert.ok(!/\son\w+\s*=/i.test(d.svg), 'no on*= substring survives')
+  assert.ok(renderSchematic({ viz: { svg: d.svg, phases: d.phases, hash: 'x', textHash: 'x', stale: false } }) !== '',
+    'so the builder bakes it')
+})
+
+test('layoutHash pins the geometry — same layouts, same hash; a moved box moves it', () => {
+  assert.equal(layoutHash(LAY_BEFORE, LAY_AFTER), layoutHash(LAY_BEFORE, LAY_AFTER))
+  assert.notEqual(layoutHash(LAY_BEFORE, LAY_AFTER), layoutHash(LAY_AFTER, LAY_BEFORE))
+  const moved = { ...LAY_AFTER, els: LAY_AFTER.els.map(e => ({ ...e, x: e.x + 8 })) }
+  assert.notEqual(layoutHash(LAY_BEFORE, LAY_AFTER), layoutHash(LAY_BEFORE, moved))
+})
+
+// ── PER BEAT (2026-08-28): the board is becoming per-beat rows — Given, then one row per When→Then
+// — so the harvest is per beat and the mirror draws ONE FRAME PER SCENE: the Given frame is beat
+// 1's before, each beat's frame is that beat's after. A row and a frame are then the same thing.
+const layAt = (n, text, focus) => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 1180, y: 96, w: 120, h: 48 } : null,
+  els: [
+    ...LAY_BEFORE.els.slice(0, 5),
+    { x: 1180, y: 96, w: 120, h: 48, kind: 'text', text, ...(focus ? { focus: true } : {}) },
+    { x: 24, y: 160 + 48 * n, w: 600, h: 40, kind: 'row' }
+  ]
+})
+const TWO = b('a list with two items',
+  'you add "Walk the dog"', 'the counter reads 3 to do',
+  'you tick it off', 'the counter reads 2 to do')
+const PAIRS = [
+  { before: layAt(1, '2 to do', false), after: layAt(1, '3 to do', true) },
+  { before: layAt(2, '3 to do', false), after: layAt(2, '2 to do', true) }
+]
+
+test('per-beat: one frame per scene — the given, then each beat\'s own after', () => {
+  const d = renderWireframe(PAIRS, { behavior: TWO })
+  assert.ok(d)
+  assert.ok(d.svg.includes('data-viz-frames="3"'), 'given + two beats = three frames')
+  assert.equal(d.phases.length, 3, 'and one phase per scene, so the storyboard pairs row-for-row')
+  assert.equal(new Set(d.phases).size, 3, 'each scene parks on its OWN frame')
+  for (const cls of ['class="wf0"', 'class="wf1"', 'class="wf2"']) assert.ok(d.svg.includes(cls), cls)
+  // each beat's asserted value is drawn on its own frame — beat 1 ends at 3, beat 2 at 2
+  assert.ok(d.svg.includes('>3 to do<') && d.svg.includes('>2 to do<'))
+})
+
+test('per-beat: a harvest that covered fewer beats than the prd lists parks the rest on the last measured frame', () => {
+  // honest: two frames were measured, so beat 3 shows what beat 2 showed rather than inventing one
+  const three = b('g', 'a', 'b', 'c', 'd', 'e', 'f')
+  const d = renderWireframe(PAIRS, { behavior: three })
+  assert.equal(d.phases.length, 4, 'the storyboard still pairs (given + three beats)')
+  assert.equal(d.phases[2], d.phases[3], 'the unmeasured beat parks on the last measured frame')
+  assert.notEqual(d.phases[1], d.phases[2])
+})
+
+test('per-beat: the layout pin covers every beat — a moved box in beat 2 moves the drawing', () => {
+  const moved = [PAIRS[0], { before: PAIRS[1].before, after: layAt(2, '9 to do', true) }]
+  assert.notEqual(layoutHash(PAIRS), layoutHash(moved))
+  assert.notEqual(renderWireframe(PAIRS, { behavior: TWO }).svg, renderWireframe(moved, { behavior: TWO }).svg)
+  assert.equal(renderWireframe(PAIRS, { behavior: TWO }).svg, renderWireframe(PAIRS, { behavior: TWO }).svg)
+})
+
+test('per-beat: a beat with nothing usable is skipped, and an empty harvest is still null', () => {
+  assert.equal(renderWireframe([], { behavior: TWO }), null)
+  assert.equal(renderWireframe([{ before: null, after: null }], { behavior: TWO }), null)
+  const one = renderWireframe([{ before: null, after: layAt(1, '3 to do', true) }], { behavior: TWO })
+  assert.ok(one && one.svg.includes('data-viz-frames="2"'), 'a beat with only its after still draws')
 })

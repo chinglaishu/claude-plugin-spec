@@ -390,6 +390,36 @@ const evAttrs = (s, r) => {
       }
     }
   }
+  // THE PER-BEAT HARVEST (the human, 2026-08-28): the storyline reader shows each beat's own
+  // before/after beside the beat that produced it, so the fold now carries `beats:[{n,before,after,
+  // layoutBefore,layoutAfter,window}]` alongside the requirement-level pair. Baked as ONE JSON
+  // attribute (a per-beat attribute each would be a dozen), on the same terms as every frame above:
+  // only a path whose FILE exists rides, content-hash-busted, and an entry left with no frame at all
+  // is dropped rather than baked empty — the reader's cell then says the gap out loud. An old
+  // harvest has no `beats` and bakes nothing; the reader falls back to the requirement-level pair.
+  if (Array.isArray(e.beats) && e.beats.length) {
+    const path = p => {
+      if (!p) return null
+      const abs = join(ROOT, String(p))
+      return existsSync(abs) ? String(p) + '?h=' + shotHash(abs) : null
+    }
+    const list = e.beats.map(b => {
+      const o = { n: Number(b.n) }
+      for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter']) {
+        const v = path(b[k]); if (v) o[k] = v
+      }
+      if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
+        o.window = { from: b.window.from, to: b.window.to }
+      }
+      // the ringed target's box and the viewport it was measured in — the proof cell's CAMERA
+      // (the human, 2026-08-28). All six numbers or none: a partial box would frame the wrong thing.
+      if (b.focus && ['x', 'y', 'w', 'h', 'vw', 'vh'].every(k => typeof b.focus[k] === 'number' && Number.isFinite(b.focus[k]))) {
+        o.focus = { x: b.focus.x, y: b.focus.y, w: b.focus.w, h: b.focus.h, vw: b.focus.vw, vh: b.focus.vh }
+      }
+      return o
+    }).filter(o => Number.isFinite(o.n) && (o.before || o.after))
+    if (list.length) out += ` data-ev-beats="${esc(JSON.stringify(list))}"`
+  }
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
 }
@@ -1802,7 +1832,6 @@ export function build () {
        2-line-title card keeps its label + one Given row AND its pinned footer above the schematic
        at the 640 floor (the budget there is 445px; s6/s5 padding cost 24px of it) */
     .focusov .fread, .lst-body .fread { padding-top:var(--s4); padding-bottom:var(--s4); }
-    .fpage > .fleft { gap:var(--s3); }
   }
   .dtscroll > .cols { width:100%; max-width:1360px; flex:1; min-height:0; }
 
@@ -1819,13 +1848,15 @@ export function build () {
     padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); display:flex; align-items:center; gap:var(--s2); }
   .pane > h2 .s { margin-left:auto; text-transform:none; letter-spacing:0; }
 
-  /* THE FOCUS READER (board R13): one requirement per page as TWO CONTAINERS — read LEFT (title,
-     description, the flow step by step), verify RIGHT (the proof line, the actions, the scannable
-     screenshot strip, then the recording). One of the views — Focus / Grid / Flow — switched by the header
-     toggle. No new state; the same derived chips. */
-  /* cap the reader's width like the mockup (was full-viewport, so the requirement column sprawled and
-     the proof read cramped); centred, it keeps the two containers balanced with the proof the wider one */
-  .focusov { width:100%; max-width:1440px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
+  /* THE FOCUS READER (board R13; THREE COLUMNS, the human 2026-08-28): one requirement per page as
+     three containers — the SCHEMATIC (the drawing, first-class and full column width), the
+     REQUIREMENT (its beats, then the authored prose in full) and the PROOF (the media pane and the
+     covering test). The old two-container split put the drawing inside the reading card, where it
+     could only ever be an aid beside the words; on its own column it is a picture again. One of the
+     views — Focus / Grid / Flow — switched by the header toggle. No new state; the same derived chips. */
+  /* cap the reader's width (was full-viewport, so the columns sprawled); centred, three columns need
+     more room than two, so the cap moved up with the column count */
+  .focusov { width:100%; max-width:1760px; margin:0 auto; flex:1; min-height:0; display:flex; flex-direction:column; gap:var(--s3); }
   /* the id + state ride INSIDE the reading card (a meta line above the title) — no full-width bar
      above the reader eating vertical space, so both cards start at the top */
   /* ONE header row (the human, 2026-08-25): id · chip · TITLE · ⋯ — the title shares the line and
@@ -1852,111 +1883,179 @@ export function build () {
   .chip.changed  { background:var(--ai-tint); color:var(--ai); box-shadow:inset 0 0 0 1px var(--ai-line); }
   .mark.c { background:transparent; box-shadow:inset 0 0 0 1px currentColor; transform:rotate(45deg); }
 
-  /* the two containers, each a bordered, softly-shadowed card. Each scrolls on its OWN (the
-     independent-scroll guarantee of board R2): a fixed height from the grid, its own overflow —
-     scrolling the evidence never moves the requirement, and the page itself does not scroll. */
-  /* BOTH columns are fractional (Task 14b) so the reclaimed width feeds the reading side AND the
-     proof side — a fixed proof column (Task 14's 600 × --scale) starved the proof pane as the cap
-     grew, dumping every extra pixel on the left. Left slightly favoured (1.1) for the behavior prose;
-     the media INSIDE the proof pane (frames, video, schematic) stays intrinsic and fills the pane. */
-  .fpage { flex:1; min-height:0; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
-    gap:var(--s4); align-items:stretch; }
-  /* stacked on a narrow screen, per-card scroll would trap content — let the whole page scroll instead.
-     Breakpoint computed at emit: base 1080 × the design system's --scale (a media query cannot read
-     the var, so build() does — release pass). At the emitted edge the reading column still gets
-     ≈330px before the collapse, so it collapses before it overflows. */
-  @media (max-width:${bp(1080)}px) {
-    .fpage { grid-template-columns:1fr; overflow-y:auto; }
-    .fpage > .fleft, .fpage > .feval { overflow:visible; }
-    .fleft > .fread { display:block; overflow:visible; }
-    .fread > .fscroll { overflow:visible; }
-  }
-  .fread, .feval { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
-    box-shadow:var(--sh-sm); overflow-y:auto; overflow-x:hidden; min-height:0; }
-  .fread { padding:var(--s6) var(--s6) var(--s5); }
-  .feval { padding:var(--s5); display:flex; flex-direction:column; gap:var(--s4); min-width:0; }
+  /* ONE card, read top to bottom. The reader is no longer a split of containers: it is the
+     behaviour's STORYLINE, a row per beat, and the row is where the three things meet (see .sbrow).
+     The card fills the reader and its .fscroll region scrolls internally between the fixed header
+     and the pinned .ffoot — board R2's independent-scroll guarantee, now between the header and the
+     story rather than between two columns. */
+  .fpage { flex:1; min-height:0; display:flex; flex-direction:column; }
+  .fread { background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+    box-shadow:var(--sh-sm); overflow:hidden; min-height:0; flex:1 1 auto;
+    display:flex; flex-direction:column; padding:var(--s5) var(--s5) var(--s4); }
+  /* the proof BAND — what belongs to the whole requirement (the covering test, the one video), under
+     the beat rows that carry each beat's own frames */
+  .feval { display:flex; flex-direction:column; gap:var(--s4); min-width:0; margin-top:var(--s5); }
+  /* the reader's ONE bar (the human, 2026-08-28): the play speed that paces every animated cell —
+     the drawing, each beat's stepper, the video. No card of its own; it is chrome over the story. */
+  .fbar { flex:none; display:flex; align-items:center; justify-content:flex-end; gap:var(--s2);
+    min-width:0; padding-bottom:var(--s2); }
+  .fbar .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); }
   /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
      knob so the hierarchy holds at any scale (Task 14) */
   .fread .fttl { flex:1 1 auto; min-width:0; font-size:calc(19px * var(--scale)); font-weight:600;
     line-height:1.34; letter-spacing:-.015em; margin:0; color:var(--ink); }
-  .fread .fbody { font-size:var(--t-md); line-height:1.64; color:var(--ink-2); }
+  /* one step up with the beats (the human, 2026-08-28): the requirement column is read, not scanned,
+     and half of it sitting a step below the other half read as two different importances */
+  .fread .fbody { font-size:var(--t-lg); line-height:1.64; color:var(--ink-2); }
   .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
   .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
-  .fread .fsteps { margin-top:var(--s6); }
   .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
     color:var(--ink-4); display:block; margin-bottom:var(--s4); }
 
-  /* THE READING COLUMN (board R13, reworded 2026-08-25 #2 — the behavior paired with its drawing).
-     The left column is ONE card now: header, then the story+prose scroll region, then the pinned
-     Full-requirement footer. The old two-box stack (a behavior grid ABOVE a separate .fschem
-     drawing) is gone — the story .fstory carries both, a beat-paired storyboard by default. */
-  /* Task 12 (the schematic on first sight), kept and generalized: the reading card FILLS the column
-     and its story+prose region (.fscroll) scrolls INTERNALLY between the fixed header and the pinned
-     .ffoot — so the storyboard is on screen from the first paint; only a short viewport clips
-     (overflow:hidden — the page never scrolls). R2's independent scroll holds: .fscroll is the
-     reading region, the proof card its own. */
-  .fpage > .fleft { display:flex; flex-direction:column; gap:var(--s4); min-height:0; min-width:0; overflow:hidden; }
-  .fleft > .fread { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+  /* THE READING CARD (board R13, reworded 2026-08-28 — one card, a row per beat). Header, the speed
+     bar, then the scroll region carrying the beat rows, the proof band and the authored prose in
+     full. No Full-requirement toggle any more — the requirement is the thing the board exists to
+     show, so it is never half-hidden behind a chevron. */
+  /* Task 12 (the shape on first sight), kept and generalized: the card FILLS the reader and its
+     story region (.fscroll) scrolls INTERNALLY between the fixed header and the pinned .ffoot — so
+     the first beat is on screen from the first paint; only a short viewport clips (overflow:hidden —
+     the page never scrolls). */
   /* the card header and footer NEVER shrink — only the scroll region gives way (a crushed title
      clipped mid-glyph is exactly the old failure in a new place) */
   .fread > .frmeta { flex:none; }
   .fread > .fscroll { flex:1 1 auto; min-height:calc(90px * var(--scale)); overflow-y:auto; overflow-x:hidden; }
-  /* the pinned footer: zero-height while empty (a prose-only card has no toggle); when the scroll
-     region is clipped, a hairline + a short fade to the card ground mark the cut edge. Tokens only. */
+  /* the pinned footer: zero-height, drawn only when the scroll region is clipped — a hairline + a
+     short fade to the card ground mark the cut edge. Tokens only. */
   .fread > .ffoot { flex:none; position:relative; }
-  .fread > .ffoot .prose-t { display:inline-block; margin-top:var(--s3); }
   .fread > .ffoot::before { content:''; position:absolute; bottom:100%; left:0; right:0; height:22px;
     background:linear-gradient(to bottom, transparent, var(--card)); opacity:0; pointer-events:none;
     transition:opacity .15s; }
   .fread.clipped > .ffoot::before { opacity:1; }
   .fread.clipped > .ffoot { box-shadow:0 -1px 0 var(--hair); }
 
-  /* THE STORY: the behavior paired with its drawing. A toolbar (.storycap) heads it — the honesty
-     caption, and where a drawing exists the speed dropdown + the storyboard·loop toggle; then the
-     content (.sbwrap), one bordered block in every mode. */
-  .fstory { display:flex; flex-direction:column; }
-  .fstory .storycap { position:sticky; top:0; z-index:1; display:flex; align-items:center; gap:var(--s2);
-    font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3);
-    padding-bottom:var(--s2); background:var(--card); }
-  .fstory .storycap .scaplbl { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .fstory .storycap .pspdwrap { margin-left:auto; }
-  .fstory .storycap .pspdwrap ~ .medbar { margin-left:var(--s2); }
-  .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
-
-  /* STORYBOARD MODE — one row per phase: the Given / When->Then TEXT is the readable hero, its drawn
-     still a compact VISUAL AID beside it (the human, 2026-08-26: the earlier "drawing is the hero"
-     stacked a full-width sparse box ABOVE small caption text — big empty drawings you scrolled past
-     to reach the words. Flip it — the behaviour reads wide on the right, the drawing supports from a
-     fixed column on the left, never dominating). Given leads (phase 0); each beat's When->Then reads
-     beside the still of its then. Rows hair-ruled, a heavier rule opening each beat after the first.
+  /* THE STORYLINE (the human, 2026-08-28): one bordered block, a ROW PER BEAT, and each row carries
+     that beat's three cells side by side — [ the drawn frame | the Given / When→Then | the beat's
+     own harvested proof ]. Read top to bottom it IS the behaviour's story: what was drawn, what it
+     says, and the photograph of it happening, together instead of in three separate places. The
+     .storycap toolbar is gone with the split — its caption named the drawing "the idea, not the real
+     UI" while the drawing is being redrawn to mirror the real screen, and its speed dropdown is now
+     the reader's single control.
      Measured: --ink-3 on --card 6.0:1 / on --canvas 5.8:1 (labels); --ai on --card 8.6:1 (When/Then);
      --ink on --card 16.8:1 / on --canvas 16.3:1 (the behaviour text). */
-  .fstory .sbrow { display:grid; grid-template-columns:calc(320px * var(--scale)) 1fr;
+  .fstory { display:flex; flex-direction:column; }
+  .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
+  /* the drawing and the proof are the same width — the two cells of a row frame the SAME region
+     under the same camera, and comparing them is the point, so a difference in width would read as a
+     difference in the thing shown. The words sit between them, slightly wider. ONE template, named
+     once: the header row and every beat row take it from here, so they cannot drift apart. */
+  .fstory { --sbcols:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr); }
+  .fstory .sbrow { display:grid; grid-template-columns:var(--sbcols);
     align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
-  /* the AID: a compact parked still on paper, centred in a fixed column and ruled off from the text
-     — its natural 2:1 height (svg viewBox), sized to support the reading, never to dominate it */
+  /* THE COLUMN NAMES (the human, 2026-08-28): one header row over the beats, saying what the three
+     cells are. Small-caps mono in --ink-3 — the system's one label style — on the --wash a header
+     wears elsewhere (--ink-3 on --wash 5.5:1, AA). It shares the rows' grid so each name sits over
+     its own column, and it rules off from the first row rather than the row ruling off from it. */
+  .fstory .sbhead { display:grid; grid-template-columns:var(--sbcols);
+    border-bottom:1px solid var(--hair); background:var(--wash); }
+  .fstory .sbhead .sbhc { font:var(--t-micro) var(--mono); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-3); padding:var(--s2) var(--s3); border-right:1px solid var(--hair); }
+  .fstory .sbhead .sbhc:last-child { border-right:0; }
+  .fstory .sbhead + .sbrow { border-top:0; }
   .fstory .sbframe { display:flex; align-items:center; justify-content:center;
-    background:var(--paper); padding:var(--s3); border-right:1px solid var(--hair); overflow:hidden; }
-  .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto;
-    max-width:calc(300px * var(--scale)); }
+    background:var(--paper); padding:var(--s3); overflow:hidden; border-right:1px solid var(--hair); }
+  .fstory .sbrow.bgiven .sbframe { background:var(--canvas); }
+  .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto; }
+  /* the drawing's camera box fills the cell — it is the row's other half of the comparison, not an
+     inset thumbnail; its border is the cell's own rule, so the two cells read as one row */
+  .fstory .sbframe > .pcbox { width:100%; border:0; border-radius:0; background:transparent; }
+  .fstory .sbframe.whole { padding:0; }
+  .fstory .sbframe.whole .viz { width:100%; }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
      var, keeping |delay|/duration (the frame shown) identical at every speed */
   .fstory .sbframe svg * { animation-play-state:paused !important;
     animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
-  /* the READING: wide and roomy, vertically centred against its aid — the row's primary content */
+  /* THE READING (the human, 2026-08-28: the beat text was too small to read comfortably) — the
+     sentence steps up to --t-lg and its label to --t-sm, both a full step above where they sat, and
+     the label column widens to hold WHEN 1 at the larger size. Scale tokens only. */
   .fstory .sbtext { display:flex; flex-direction:column; justify-content:center;
-    padding:var(--s3) var(--s4); min-width:0; }
+    padding:var(--s4); min-width:0; border-right:1px solid var(--hair); }
   .fstory .sbstep { display:flex; gap:var(--s3); align-items:baseline; }
-  .fstory .sbstep + .sbstep { margin-top:var(--s2); }
-  .fstory .sbk { flex:none; width:calc(52px * var(--scale)); font:var(--t-micro) var(--mono);
+  .fstory .sbstep + .sbstep { margin-top:var(--s3); }
+  .fstory .sbk { flex:none; width:calc(68px * var(--scale)); font:var(--t-sm) var(--mono);
     letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
   .fstory .sbk.then { color:var(--ai); }
-  .fstory .sbk .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:2px; }
-  .fstory .sbv { font-size:var(--t-sm); line-height:1.6; color:var(--ink); min-width:0; }
+  .fstory .sbk .bno { font-size:var(--t-sm); line-height:1; color:var(--ink-3); margin-left:2px; }
+  .fstory .sbv { font-size:var(--t-lg); line-height:1.6; color:var(--ink); min-width:0; }
+
+  /* THE PROOF CELL — the beat's own harvested frames, framed by the CAMERA (the human, 2026-08-28).
+     .pcbox is the camera, and the SAME box wraps the drawing in the schematic cell beside it: every
+     .camsub inside one is transformed by the shared maths in tools/board/stepper.js off the beat's
+     ONE focus rect, so the drawn intent and the photographed result are cropped identically and the
+     row is actually comparable. Stills and the stepper take the same code path, so switching mode
+     never moves the view either. Zoom is a VIEW: .pczoom always offers the whole screenshot back,
+     and the frame on disk is untouched. */
+  .fstory .sbproof { display:flex; flex-direction:column; gap:var(--s2); padding:var(--s3);
+    min-width:0; background:var(--paper); }
+  .fstory .sbrow.bgiven .sbproof { background:var(--canvas); }
+  .sbproof .pcstrip { display:flex; gap:var(--s2); min-width:0; }
+  .sbproof .pcfig { flex:1 1 0; min-width:0; margin:0; }
+  /* THE CAMERA BOX — the same element on both sides of a row (the proof cell's frames and the
+     schematic's drawing), so both are framed by one rule set and can never disagree.
+     FULL FRAME (no focus, zoom off, or a camera that refused to magnify): the media FILLS the box's
+     width and the box takes the media's own height — no fixed height, so nothing floats as a postage
+     stamp in a field of background (the human, 2026-08-28).
+     ZOOMED: the box takes the camera height, and the media is laid out at the box's WIDTH with its
+     own aspect — exactly what cameraView assumes — then transformed. The box's overflow is the
+     camera's edge. */
+  .pcbox { position:relative; overflow:hidden;
+    border:1px solid var(--hair); border-radius:var(--r-sm); background:var(--wash); }
+  /* every camera subject is transformed about the same origin — but only a DIRECT child gets its
+     display set here: the stepper's frames are stacked one-on-show by .fsteps img, and a stronger
+     display:block on them would show the whole stack at once */
+  .pcbox .camsub { transform-origin:0 0; }
+  .pcbox > .camsub { display:block; width:100%; height:auto; }
+  .pcbox > .camsub > svg { display:block; width:100%; height:auto; }
+  .pcbox.zoomed { height:calc(170px * var(--scale)); }
+  .pcbox.zoomed > .camsub, .pcbox.zoomed .fsteps img { position:absolute; left:0; top:0; }
+  /* the stepper inside a camera box: full-frame it flows and the box grows with it; zoomed it fills
+     the camera. Its bar is pinned to the foot either way, so the count and dots stay reachable. */
+  .sbproof .pcplay .fsteps-wrap, .sbproof .pcplay .fsteps { position:static; }
+  .sbproof .pcbox.zoomed .fsteps-wrap, .sbproof .pcbox.zoomed .fsteps { position:absolute; inset:0; }
+  .sbproof .pcplay .fstepbar { position:absolute; left:0; right:0; bottom:0; z-index:2;
+    background:var(--paper); border-top:1px solid var(--hair); padding:var(--s1) var(--s2); }
+  .sbproof .pccap { font:var(--t-micro) var(--mono); letter-spacing:.06em; color:var(--ink-3);
+    padding-top:var(--s1); }
+  /* the cell's own controls on ONE row under the media: stills ↔ gif, and zoom ↔ full frame */
+  .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+  .sbproof .pcmodes { margin-left:0; }
+  /* the zoom toggle: quiet, always present where a focus box exists — ink-3 on --canvas 5.84:1 (AA) */
+  .sbproof .pczoom { align-self:flex-start; font:var(--t-micro) var(--mono); color:var(--ink-3);
+    background:var(--canvas); border:1px solid var(--hair-2); border-radius:999px;
+    padding:3px 10px; cursor:pointer; }
+  .sbproof .pczoom:hover { color:var(--ink); border-color:var(--ink-3); }
+  /* an honest gap: this beat has no frame of its own, and the cell says so rather than borrowing
+     its neighbour's (rule 3) */
+  .sbproof .pcnone { display:flex; align-items:center; justify-content:center; text-align:center;
+    min-height:calc(90px * var(--scale)); padding:var(--s3); font-size:var(--t-xs); color:var(--ink-3);
+    border:1px dashed var(--hair-2); border-radius:var(--r-sm); }
+
+  /* a narrow reader STACKS the row's three cells rather than crushing them — the story still reads
+     in the same order, one cell under the next, with the dividing rule turned from side to foot.
+     Emitted AFTER the cell rules on purpose: it is the same one-child specificity, so ahead of them
+     it would lose on source order and the cells would keep their vertical rules while stacked.
+     Breakpoint from the design system's --scale, computed at emit (a media query cannot read it). */
+  @media (max-width:${bp(1180)}px) {
+    .fstory .sbrow { grid-template-columns:1fr; }
+    .fstory .sbframe, .fstory .sbtext { border-right:0; border-bottom:1px solid var(--hair); }
+    /* a column header over one stacked column labels nothing — it goes, the rows keep their rule */
+    .fstory .sbhead { display:none; }
+    .fstory .sbhead + .sbrow { border-top:0; }
+  }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right; the banner
      names it (bengara-tint carries the warning hue, the word carries the meaning) */
   .fstory.isstale .sbframe svg, .fstory.isstale .viz svg { filter:grayscale(1) opacity(.45); }
@@ -1965,21 +2064,8 @@ export function build () {
   .fstory .sbstale b { font-size:var(--t-xs); color:var(--ink-2); font-weight:500; }
   .fstory .sbstale span { font-size:var(--t-micro); color:var(--ink-3); }
 
-  /* LOOP MODE (and the no-pair fallback): the plain behavior grid + the animated whole, inside the
-     same bordered .sbwrap (so the grid drops its own border). Also the shape a no-schematic
-     requirement shows — the labelled beats, then the honest placeholder line, never an empty frame. */
-  .fstory .sbwrap .behavior { display:block; margin:0; padding:0; border:0; border-radius:0; }
-  .fstory .sbwrap .behavior .brow { display:grid; grid-template-columns:calc(72px * var(--scale)) 1fr;
-    border-top:1px solid var(--hair); }
-  .fstory .sbwrap .behavior .brow:first-child { border-top:0; }
-  .fstory .sbwrap .behavior .brow.beatstart { border-top:2px solid var(--hair-2); }
-  .fstory .sbwrap .behavior .blab { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
-    color:var(--ink-3); padding:10px var(--s3); background:var(--wash); border-right:1px solid var(--hair);
-    display:flex; align-items:flex-start; }
-  .fstory .sbwrap .behavior .bgiven .blab { background:var(--canvas); }
-  .fstory .sbwrap .behavior .blab .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:4px; }
-  .fstory .sbwrap .behavior .btxt { padding:9px var(--s3); font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
-  .fstory .sbwrap .behavior + .viz { border-top:1px solid var(--hair); }
+  /* the no-pair fallback: the animated whole, inside the same bordered .sbwrap. Also where a
+     no-schematic requirement shows its honest placeholder line, never an empty frame. */
   .fstory .sbwrap .viz { position:relative; height:calc(320px * var(--scale));
     display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--paper); }
   .fstory .sbwrap .viz svg { display:block; width:100%; height:100%; }
@@ -1989,22 +2075,14 @@ export function build () {
   .fstory .sbwrap .viz .staleov b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
   .fstory .sbwrap .viz .staleov span { font-size:var(--t-xs); color:var(--ink-3); }
   .fstory .noschem { padding:var(--s4); font-size:var(--t-xs); color:var(--ink-3); text-align:center; }
-  .fstory .sbwrap .behavior + .noschem { border-top:1px dashed var(--hair); }
 
-  /* the in-full toggle is a PILL (the human, 2026-08-25): "Full requirement" with a chevron that
-     flips when the authored prose unfolds beneath the storyboard. ink-3 on --canvas 5.84:1 (AA). */
-  .fread .prose-t { display:inline-flex; align-items:center; gap:6px; font:inherit; font-size:var(--t-xs);
-    color:var(--ink-3); background:var(--canvas); border:1px solid var(--hair-2); border-radius:999px;
-    padding:5px 12px; cursor:pointer; }
-  .fread .prose-t:hover { color:var(--ink); border-color:var(--ink-3); }
-  .fread .prose-t .chev { font-size:10px; line-height:1; transition:transform .15s ease; }
-  .fread .prose-t.open .chev { transform:rotate(180deg); }
-  .fread .fbody.fprose { display:none; border-top:1px dashed var(--hair); margin-top:var(--s3);
+  /* the authored prose, ALWAYS shown (the human, 2026-08-28 — the "Full requirement" toggle is
+     gone): a dashed rule is all that separates it from the beats above it. */
+  .fread .fbody.fprose { border-top:1px dashed var(--hair); margin-top:var(--s3);
     padding-top:var(--s3); }
-  .fread .fbody.fprose.open { display:block; }
 
-  /* the client defaults a reduced-motion viewer to the parked storyboard; if they choose loop
-     anyway, the drawing holds still rather than animating */
+  /* the parked frames need no motion query — the client parks every one of them; the animated whole
+     is the only thing left that moves, and a reduced-motion viewer gets it held still */
   @media (prefers-reduced-motion: reduce) {
     .fstory .sbwrap .viz svg * { animation-play-state:paused !important; }
   }
@@ -2028,9 +2106,10 @@ export function build () {
   .medbar button + button { border-left:1px solid var(--hair); }
   .medbar button:hover { color:var(--ink); }
   .medbar button.on { background:var(--wash); color:var(--ink); font-weight:500; }
-  /* Task 13 — the per-pane play-speed DROPDOWN (replacing Task 11's cycle button): a native
-     <select>, 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, mono, session-scoped (never stored) — the
-     keyboard reaches it for free. ink-3 on paper 6.42:1, hover/focus ink. */
+  /* Task 13 — the play-speed DROPDOWN (replacing Task 11's cycle button): a native <select>,
+     0.25× · 0.5× · 1× · 1.5× · 2× · 4×, mono, session-scoped (never stored) — the keyboard reaches
+     it for free. ONE per reader since 2026-08-28, in the reader bar: it paces the schematic and the
+     proof media together. ink-3 on paper 6.42:1, hover/focus ink. */
   .pspdwrap { position:relative; display:inline-flex; flex:none; }
   select.pspd { appearance:none; -webkit-appearance:none;
     border:1px solid var(--hair-2); border-radius:var(--r-sm); background:var(--paper);
@@ -2042,8 +2121,6 @@ export function build () {
     border-right:1.5px solid var(--ink-4); border-bottom:1.5px solid var(--ink-4); transform:rotate(45deg);
     pointer-events:none; }
   .pspdwrap:hover::after { border-color:var(--ink); }
-  .fmbar .pspdwrap { margin-left:auto; }
-  .fmbar .pspdwrap ~ .medbar { margin-left:var(--s2); }
   .fmbody { position:relative; }
   .fmpanel[hidden] { display:none; }
   /* stills: the harvested frame pair, the per-beat filmstrip — or the run's proof-frame strip (the
@@ -2075,13 +2152,14 @@ export function build () {
   .fmpanel .xva { border:1px solid var(--bengara-line); background:var(--bengara-tint);
     border-radius:var(--r-sm); margin:0 var(--s3) var(--s3); padding:var(--s2) var(--s3);
     font:var(--t-xs)/1.7 var(--mono); color:var(--ink-2); white-space:pre-wrap; }
-  /* gif mode is the FRAME-STEPPER (Task 13): the harvested frames stacked, one on show, over a
-     slim bar of EXACT dots + the mono n / N count. Dot states carry a non-hue mark beside the
-     hue (current = ai fill + offset ring, seen = ink-4 fill, upcoming = hollow ink-4 ring), and
-     the count spells the position out — hue never alone. */
-  .fmpanel .fsteps img { display:none; width:100%; height:auto; cursor:zoom-in; }
-  .fmpanel .fsteps img.on { display:block; }
-  .fmpanel .fstepbar { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
+  /* the FRAME-STEPPER (Task 13): the harvested frames stacked, one on show, over a slim bar of
+     EXACT dots + the mono n / N count. Dot states carry a non-hue mark beside the hue (current = ai
+     fill + offset ring, seen = ink-4 fill, upcoming = hollow ink-4 ring), and the count spells the
+     position out — hue never alone. Scoped to the stepper's own classes since the per-beat split
+     (2026-08-28): it plays inside a proof CELL now, not only inside a media panel. */
+  .fsteps img { display:none; width:100%; height:auto; cursor:zoom-in; }
+  .fsteps img.on { display:block; }
+  .fstepbar { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
     border-top:1px solid var(--hair); background:var(--paper); }
   .fstepbar .pdots { display:inline-flex; gap:6px; align-items:center; }
   .fstepbar .pd { width:9px; height:9px; padding:0; border-radius:999px; border:1px solid var(--ink-4);
@@ -2094,6 +2172,9 @@ export function build () {
   .fmpanel .frecwrap { padding:var(--s3); }
   /* the committed video's honest label (Task 16 #1): whose flow, and where this beat sits in it */
   .fmpanel .fvlab { padding:0 var(--s3) var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  /* the per-beat jumps (2026-08-28): the SAME recording, aimed at the beat you are reading — never a
+     second cut file, so nothing here can drift from what the video actually shows */
+  .fmpanel .fvjumps { display:flex; flex-wrap:wrap; gap:var(--s2); padding:0 var(--s3) var(--s3); }
   /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */
   .fmbody .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     background:rgba(253,252,249,.55); z-index:5; pointer-events:none; }
@@ -2306,14 +2387,16 @@ export function build () {
   .lst-head .lpf .lkind { font-family:var(--mono); color:var(--ink-4); }
   .lst-body { border-top:1px solid var(--hair); padding:var(--s4); background:var(--wash); }
   .lst-body[hidden] { display:none; }
-  /* an open row hosts the full Focus body — a bounded page so its two containers keep their OWN
-     scroll (R2), exactly as in the Focus view. In Focus itself .fpage gets its bound for free
+  /* an open row hosts the full Focus body — a bounded page so the reading card keeps its OWN
+     internal scroll (R2), exactly as in the Focus view. In Focus itself .fpage gets its bound for free
      (flex:1 inside .dt's fixed inset:0 viewport overlay); inline in the list there is no such
      ancestor, so the bound has to be stated directly. A bare 560px was arbitrary and off any
      token/scale (fix round 1, 2026-08-22): clamp() to a viewport fraction instead, so the row
      answers to the actual window rather than a fixed guess, floored/ceilinged so it stays usable on
      a short laptop screen and doesn't balloon on a tall monitor. */
-  .lst-body .fpage { height:clamp(420px, 65vh, 640px); }
+  /* raised with the storyline (2026-08-28): a beat row is three cells tall now, so the old 420/640
+     bound showed barely one of them before the card scrolled */
+  .lst-body .fpage { height:clamp(480px, 72vh, 780px); }
   /* the gap-summary strip: what is not green, counted, with the add-test handoff (R15) */
   .remind { display:flex; align-items:center; gap:var(--s3); background:var(--card);
     border:1px solid var(--hair-2); border-radius:var(--r-md); padding:var(--s3) var(--s4);

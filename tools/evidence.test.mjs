@@ -91,13 +91,14 @@ test('T16 fix: primary = the recording covering the most requirements; shared re
   const { resolvePrimaryVideo } = await import('./evidence.mjs')
   const A = 'spec/_runs/x/full.webm'; const B = 'spec/_runs/x/composed.webm'
   const win = (from, to) => ({ from, to })
+  // 2026-08-28: a capture holds its BEATS, and the requirement-level pair is derived from them
+  const cap = (tag, w, v) => ({ beats: { 1: { before: tag + '.b', after: tag + '.a', window: w } }, order: [1], srcVideo: v })
   const harvest = {}
   for (const r of ['R1', 'R2', 'R3', 'R4', 'R8']) harvest['todo:' + r] = {   // captured by BOTH, B last
-    caps: { [A]: { before: 'A.b', after: 'A.a', window: win(10, 20), srcVideo: A },
-      [B]: { before: 'B.b', after: 'B.a', window: win(90, 99), srcVideo: B } },
+    caps: { [A]: cap('A', win(10, 20), A), [B]: cap('B', win(90, 99), B) },
     latestKey: B }
   for (const r of ['R5', 'R6', 'R7']) harvest['todo:' + r] = {              // A only
-    caps: { [A]: { before: 'A.b', after: 'A.a', window: win(30, 40), srcVideo: A } }, latestKey: A }
+    caps: { [A]: cap('A', win(30, 40), A) }, latestKey: A }
   const res = resolvePrimaryVideo(harvest)
   for (const r of ['R1', 'R2', 'R3', 'R4', 'R5', 'R6', 'R7', 'R8']) {
     assert.equal(res['todo:' + r].srcVideo, A, r + ' rides the comprehensive recording A (the primary)')
@@ -109,12 +110,73 @@ test('T16 fix: primary = the recording covering the most requirements; shared re
 test('T16 fix: a lone recording stays primary; a video-less requirement resolves to no video', async () => {
   const { resolvePrimaryVideo } = await import('./evidence.mjs')
   const A = 'spec/_runs/y/only.webm'
+  const one = v => ({ beats: { 1: { before: 'b', after: 'a', window: v ? { from: 1, to: 2 } : null } }, order: [1], srcVideo: v })
   const harvest = {
-    'board:R1': { caps: { [A]: { before: 'b', after: 'a', window: { from: 1, to: 2 }, srcVideo: A } }, latestKey: A },
-    'board:R9': { caps: { _novideo: { before: 'b', after: 'a', window: null, srcVideo: null } }, latestKey: '_novideo' }
+    'board:R1': { caps: { [A]: one(A) }, latestKey: A },
+    'board:R9': { caps: { _novideo: one(null) }, latestKey: '_novideo' }
   }
   const res = resolvePrimaryVideo(harvest)
   assert.equal(res['board:R1'].srcVideo, A, 'the single recording is the primary')
   assert.equal(res['board:R9'].srcVideo, null, 'a capture from no recording carries no video')
   assert.equal(res['board:R9'].before, 'b', 'but it still keeps its frames')
+})
+
+// ── 2026-08-28: per-BEAT evidence. A requirement proven by several checks harvests a pair per
+// beat, and the requirement-level pair every existing reader consumes is DERIVED from them: beat
+// 1's before, the last beat's after, and the span covering every beat between.
+test('per-beat: the requirement-level pair is derived, and every beat keeps its own frames, layouts and window', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const V = 'spec/_runs/z/flow.webm'
+  const harvest = {
+    'todo:R5': {
+      caps: {
+        [V]: {
+          srcVideo: V,
+          order: [1, 2],
+          beats: {
+            1: { before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', window: { from: 100, to: 400 } },
+            2: { before: 'b2.png', after: 'a2.png', layoutBefore: 'b2.json', layoutAfter: 'a2.json', window: { from: 900, to: 1200 } }
+          }
+        }
+      },
+      latestKey: V
+    }
+  }
+  const r = resolvePrimaryVideo(harvest)['todo:R5']
+  assert.equal(r.before, 'b1.png', 'the requirement opens on beat 1\'s before')
+  assert.equal(r.after, 'a2.png', 'and closes on the last beat\'s after')
+  assert.deepEqual(r.window, { from: 100, to: 1200 }, 'its window spans every beat')
+  assert.equal(r.beats.length, 2)
+  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', window: { from: 100, to: 400 } })
+  assert.deepEqual(r.beats[1].window, { from: 900, to: 1200 }, 'each beat keeps its OWN span, so a per-beat row seeks its own moment')
+})
+
+// ── the WINDOWS of every check, in order — a requirement proven three times has three `proves`
+// steps, and each beat must be paced and seeked by its own.
+test('clipWindows returns one window per proves-step, in order', async () => {
+  const { clipWindows } = await import('./evidence.mjs')
+  const many = [
+    { label: 'proves R5', cat: 'test.step', t: 100, d: 300 },
+    { label: 'Click the row', cat: 'pw:api', t: 500, d: 10 },
+    { label: 'proves R5', cat: 'test.step', t: 900, d: 300 }
+  ]
+  assert.deepEqual(clipWindows(many, 'R5'), [{ from: 100, to: 400 }, { from: 900, to: 1200 }])
+  assert.deepEqual(clipWindows(many, 'R9'), [], 'a requirement never reached has no window')
+})
+
+// ── the FOCUS RECT — where the ring stood when the beat's after-frame was taken, so the board can
+// zoom the media onto the component being proven. It is lifted out of the layout skeleton that
+// already recorded it; no cropped file is ever written.
+test('focusFromLayout lifts the ring + viewport out of a layout skeleton', async () => {
+  const { focusFromLayout } = await import('./evidence.mjs')
+  assert.deepEqual(
+    focusFromLayout({ w: 1440, h: 900, ring: { x: 1180, y: 96, w: 120, h: 48 }, els: [] }),
+    { x: 1180, y: 96, w: 120, h: 48, vw: 1440, vh: 900 })
+})
+test('focusFromLayout is null when no ring was painted, or the skeleton is unusable', async () => {
+  const { focusFromLayout } = await import('./evidence.mjs')
+  assert.equal(focusFromLayout({ w: 1440, h: 900, ring: null, els: [] }), null)
+  assert.equal(focusFromLayout({ w: 1440, h: 900, ring: { x: 1, y: 1, w: 0, h: 10 }, els: [] }), null)
+  assert.equal(focusFromLayout({ ring: { x: 1, y: 1, w: 10, h: 10 } }), null, 'no viewport, no zoom')
+  assert.equal(focusFromLayout(null), null)
 })

@@ -26,6 +26,14 @@ export const vizHash = behavior => reqHash(behaviorText(behavior))
 // hashes differently too, so it reads stale rather than silently surviving its own text.
 export const vizStale = (stamp, behavior) => isStale(stamp, behaviorText(behavior))
 
+// THE ONE EXCEPTION to "abstract, never the real UI" (the human, 2026-08-28): renderWireframe at
+// the foot of this file draws the schematic from the page's own captured LAYOUT SKELETON. The
+// complaint that bought it: an archetype's "2 TOTAL → 3 TOTAL" chip is so unlike the app's actual
+// counter that nobody could map one onto the other. A mirror is still a DRAWING — house shapes,
+// dye tokens, no pixels, no app colours, no app fonts — but its boxes sit where the app's boxes
+// sit, so the reader recognises the screen. 2026-08-18 decision #2 stands for everything the
+// harvest never measured: with no layout files a requirement falls back to the archetype kit.
+
 // ── shared vocabulary (the mockup's drawing language, tokens only) ─────────
 const esc = s => String(s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -545,4 +553,306 @@ function drawTypeAppend (b, t, k, kf) {
     `<text x="210" y="104" font-size="10" font-family="var(--sans)" fill="var(--mute)" letter-spacing="1.5">TOTAL</text>` +
     `<g class="cur">${CURSOR}</g>`
   return { css, body }
+}
+
+// ── the UI MIRROR (the human, 2026-08-28) ──────────────────────────────────
+// A schematic drawn from the REAL screen's geometry instead of from an archetype. The harvest
+// (spec/_base.ts snapLayout) photographs a layout SKELETON around every checkReq assertion — the
+// viewport size, the ring target, and up to ~150 visible boxes with a rough kind and, for leaves,
+// their text — and the reporter folds the pair to
+// spec/<screen>/evidence/<id>.before.layout.json / <id>.after.layout.json. viz-derive reads those
+// and calls this INSTEAD of the archetype kit, so the drawing beside the requirement is the app's
+// own layout: the same rows in the same places, the asserted element ringed, carrying the value
+// the assertion actually read ("5 to do", not an invented TOTAL chip).
+//
+// Still a drawing, and still honest:
+//   · house shapes and dye tokens only — never a screenshot, never a colour or font from the app;
+//   · exactly TWO frames, because the harvest captured exactly two states (before the assertion
+//     body, after it) — a chain of N beats parks every beat after the first at the SAME after
+//     frame rather than inventing per-beat motion nobody measured;
+//   · the drawing carries its layout pin (data-viz-layout) beside the text pin (data-viz-hash), so
+//     a re-harvest that moves the geometry re-derives, exactly as moved text does.
+
+const LAYOUT_W = 600                        // the drawing's internal width; the pane scales by CSS
+const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+
+// The layout files are HARVESTED data, not authored: every field is untrusted. Anything malformed
+// is dropped rather than drawn, and a layout with no usable box yields null — the caller then
+// falls back to the archetype kit, never to an empty frame.
+function normLayout (l) {
+  if (!l || typeof l !== 'object') return null
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : null)
+  const w = num(l.w); const h = num(l.h)
+  if (!(w > 0) || !(h > 0)) return null
+  const els = []
+  const seen = new Set()
+  for (const e of (Array.isArray(l.els) ? l.els : [])) {
+    if (!e || typeof e !== 'object' || els.length >= 200) continue
+    const x = num(e.x); const y = num(e.y); const ew = num(e.w); const eh = num(e.h)
+    if (x == null || y == null || !(ew > 0) || !(eh > 0)) continue
+    const kind = KINDS.has(e.kind) ? e.kind : 'container'
+    // wrapper divs stack identical boxes; one drawn shape per geometry keeps the mirror readable
+    const key = kind + '|' + Math.round(x) + '|' + Math.round(y) + '|' + Math.round(ew) + '|' + Math.round(eh)
+    if (seen.has(key)) continue
+    seen.add(key)
+    els.push({ x, y, w: ew, h: eh, kind, text: typeof e.text === 'string' ? e.text : '', focus: !!e.focus })
+  }
+  const r = l.ring && typeof l.ring === 'object' ? l.ring : null
+  const ring = r && num(r.x) != null && num(r.y) != null && num(r.w) > 0 && num(r.h) > 0
+    ? { x: num(r.x), y: num(r.y), w: num(r.w), h: num(r.h) }
+    : null
+  return { w, h, ring, els }
+}
+
+// The layout PIN — the same role reqHash plays for the text. Hashes the layouts exactly as they
+// were handed in, so a re-harvest whose geometry did not move redraws byte-identically (and
+// viz-derive then leaves the committed file untouched). Takes either the per-beat list or the
+// legacy single pair, matching renderWireframe's two call forms.
+export const layoutHash = (a, b) =>
+  reqHash(JSON.stringify(Array.isArray(a) ? a : [{ before: a || null, after: b || null }]))
+
+// App text is untrusted: collapse whitespace, drop control characters and backticks (the builder
+// interpolates this into board.html), then XML-escape.
+//
+// …and then DEFUSE the two shapes build-board's renderSchematic refuses on sight. A label reading
+// `<img src=x onerror="…">` escapes to harmless text, but the literal substring ` onerror=` still
+// trips that guard's /\son\w+=/ and the whole figure would be dropped — a page whose copy happens
+// to mention an attribute would silently lose its drawing. Dropping the `=` keeps the words and
+// keeps the drawing renderable; it can never resurrect a handler, because the text is escaped.
+const say = s => esc(String(s == null ? '' : s).replace(/[`\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim())
+  .replace(/\bon([a-z0-9-]+)\s*=/gi, 'on$1 ')
+  .replace(/\bhref\s*=/gi, 'href ')
+// Fit a label to its box — a truncated word beats a drawing that overflows its own shapes. It cuts
+// the RAW text and escapes after (say() below), never the other way round: truncating escaped text
+// can slice an entity in half and leave `&qu…` in the middle of the drawing.
+const raw = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim()
+const fitText = (s, wpx, fs) => {
+  const max = Math.max(1, Math.floor(wpx / (fs * 0.55)))
+  const t = raw(s)
+  return t.length <= max ? t : t.slice(0, Math.max(1, max - 1)) + '…'
+}
+const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
+  `<text x="${r1(x)}" y="${r1(y)}" font-size="${r1(fs)}" font-family="var(--${fam})" fill="var(--${fill})"${extra}>${txt}</text>`
+
+// THE VALUE PILL — the asserted value in the app's own words, tagged to the box it was read in.
+// It rides BESIDE the box rather than inside it, because a whole 1440px page squeezed into this
+// viewBox leaves a counter about twenty units tall, and the one thing a reader must be able to
+// read is this value. `hot` is the after frame's (ringed) reading; the quiet one is the same place
+// one moment earlier, so "2 to do → 3 to do" is legible in the drawing itself.
+function valuePill (f, text, W, H, hot) {
+  const label = fitText(text, 460, 16)
+  if (!label) return ''
+  const fs = 16
+  const pw = r1(Math.min(label.length * fs * 0.62 + 16, W - 12))
+  const ph = r1(fs * 1.65)
+  const x = r1(clamp(f.x + f.w / 2 - pw / 2, 6, Math.max(6, W - pw - 6)))
+  const below = f.y + f.h + 6 + ph <= H - 6
+  const y = r1(below ? f.y + f.h + 6 : Math.max(6, f.y - 6 - ph))
+  return `<rect x="${x}" y="${y}" width="${pw}" height="${ph}" rx="${r1(ph / 2)}" fill="var(--paper)" stroke="var(--${hot ? 'ai' : 'line2'})" stroke-width="${hot ? 1.2 : 1}"/>` +
+    svgText(r1(x + pw / 2), r1(y + ph / 2 + fs * 0.35), fs, hot ? 'ink' : 'ink-3', 'mono', say(label), ' text-anchor="middle"')
+}
+
+// ONE frame of the mirror: every captured box in house shapes, biggest first so the page chrome
+// sits behind the rows and the words sit on top. `withFocus` adds the ring and the real value on
+// the element the assertion read — the before frame has none, because nothing was asserted yet;
+// it is handed `anchors` (the after frame's focus boxes, in page coordinates) instead, so it can
+// show the SAME place's earlier value.
+function frameBody (L, S, W, H, withFocus, anchors = null) {
+  const px = v => r1(v * S)
+  const parts = []
+  const focus = []
+  // the before frame's ghosts: for each of the after frame's anchor boxes, THIS layout's element in
+  // the same place. Matched up front so the main pass can skip drawing their small label — the
+  // pill below says it at a size a reader can actually read.
+  const ghosts = []
+  for (const a of (withFocus ? [] : (anchors || []))) {
+    let best = null; let bestOv = 0
+    for (const e of L.els) {
+      const ox = Math.max(0, Math.min(e.x + e.w, a.x + a.w) - Math.max(e.x, a.x))
+      const oy = Math.max(0, Math.min(e.y + e.h, a.y + a.h) - Math.max(e.y, a.y))
+      const ov = (ox * oy) / Math.max(1, Math.max(e.w * e.h, a.w * a.h))
+      if (ov > bestOv) { bestOv = ov; best = e }
+    }
+    if (best && bestOv >= 0.4 && best.text) ghosts.push({ a, el: best })
+  }
+  const ghosted = new Set(ghosts.map(g => g.el))
+  const els = L.els.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h))
+  for (const e of els) {
+    if (ghosted.has(e)) continue
+    const x = px(e.x); const y = px(e.y); const w = px(e.w); const h = px(e.h)
+    if (w < 4 || h < 2.5) continue                    // below this a shape is a smudge, not a box
+    // the ringed element is drawn by the focus pass below, at a size a person can actually read —
+    // drawing its label here too would stack two copies of the same value on one another
+    if (e.focus) { focus.push({ x, y, w, h, text: e.text }); if (withFocus) continue }
+    const fs = clamp(h * 0.62, 5, 16)
+    const label = raw(e.text)
+    const readable = fs >= 7.5 && !!label             // smaller than this, real text is mush — draw a bar
+    const mid = y + h / 2
+    switch (e.kind) {
+      case 'heading':
+        parts.push(readable
+          ? svgText(x, mid + fs * 0.34, fs, 'ink', 'sans', say(fitText(label, w, fs)), ' font-weight="600"')
+          : bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)'))
+        break
+      case 'text':
+        parts.push(readable
+          ? svgText(x, mid + fs * 0.32, fs, 'ink-3', 'sans', say(fitText(label, w, fs)))
+          : bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)'))
+        break
+      case 'input':
+        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1"/>`)
+        if (w > 16 && h > 8) parts.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
+        break
+      case 'button':
+        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r1(Math.min(h / 2, 7))}" fill="var(--wash)" stroke="var(--line2)" stroke-width="0.9"/>`)
+        parts.push(readable
+          ? svgText(r1(x + w / 2), r1(mid + fs * 0.32), fs, 'ink-3', 'sans', say(fitText(label, w - 6, fs)), ' text-anchor="middle"')
+          : bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)'))
+        break
+      case 'image':
+        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--wash)" stroke="var(--hair)" stroke-width="0.8"/>`)
+        break
+      case 'row':
+        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="0.9"/>`)
+        break
+      default:
+        // a container earns a hairline only when it is a real region — and never when it is the
+        // page shell itself, which the frame beneath already draws
+        if (w >= 30 && h >= 18 && (w * h) < 0.8 * W * H) {
+          parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="none" stroke="var(--hair)" stroke-width="0.8"/>`)
+        }
+    }
+  }
+  if (withFocus) {
+    // nothing matched the ring (a canvas cell, a shadow root, an element that moved): ring the
+    // MEASURED box instead, so the drawing still points at what the assertion read
+    const marks = focus.length
+      ? focus
+      : (L.ring ? [{ x: px(L.ring.x), y: px(L.ring.y), w: px(L.ring.w), h: px(L.ring.h), text: '' }] : [])
+    for (const f of marks) {
+      const rx = r1(f.x - 3); const ry = r1(f.y - 3); const rw = r1(f.w + 6); const rh = r1(f.h + 6)
+      parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="5" fill="var(--ai)" opacity="0.07"/>`)
+      parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="5" fill="none" stroke="var(--ai)" stroke-width="1.6"/>`)
+      parts.push(valuePill(f, f.text, W, H, true))     // THE POINT of the mirror: the asserted value
+    }
+  } else {
+    // the BEFORE frame knows nothing about the ring (nothing was being asserted yet), so it draws
+    // its ghosts: the same places, one moment earlier. That is what makes the two frames read as a
+    // CHANGE — "2 to do" dissolving into "3 to do" — instead of two near-identical pictures.
+    for (const g of ghosts) {
+      parts.push(valuePill({ x: px(g.a.x), y: px(g.a.y), w: px(g.a.w), h: px(g.a.h) }, g.el.text, W, H, false))
+    }
+  }
+  return parts.join('')
+}
+
+// renderWireframe(layoutBefore, layoutAfter, meta) → { archetype, kind, svg, phases, layoutHash },
+// or null when neither layout is usable. `meta.behavior` is the parsed behavior chain (or null): it
+// supplies the TEXT pin the board's staleness check reads and the beat count the storyboard pairs
+// against — nothing about the DRAWING is derived from the words.
+// The MIRROR'S timeline: one frame per scene (the Given, then one per beat) and one crossfade per
+// transition, so the board's per-beat row scrubs exactly its own beat's change. Every duration is
+// calc(<X>s / var(--spd,1)) like the archetype kit, and the still phases stay plain negative
+// seconds — the board CSS divides the parked delay by the SAME var, so the frame a still shows is
+// identical at every speed (Task 11's contract).
+function wfTimeline (m) {
+  const dur = r2(2.5 + 1.5 * m)
+  const A = 10; const B = 90
+  const segs = Array.from({ length: m }, (_, i) => {
+    const s = A + (i * (B - A)) / m
+    const e = A + ((i + 1) * (B - A)) / m
+    return { s: r1(s), m: r1(s + 0.5 * (e - s)), e: r1(e) }
+  })
+  const reset = 97                                  // the loop's snap back to the first frame
+  // where each frame PARKS: frame 0 inside the intro hold, frame k just before its own segment
+  // ends — the crossfade finished, the change settled
+  const phases = [-r2(0.08 * dur), ...segs.map(g => -r2((g.e / 100) * dur - 0.1))]
+  return { dur, durCss: `calc(${dur}s / var(--spd, 1))`, segs, phases, reset }
+}
+// frame k's opacity across the loop: invisible until its own transition fades it in, held until
+// the next transition fades it out, and the last frame held to the reset.
+function wfFade (k, t, m) {
+  if (k === 0) {
+    return stops([[0, 'opacity:1'], [t.segs[0].s, 'opacity:1'], [t.segs[0].m, 'opacity:0'],
+      [r1(t.reset - 0.1), 'opacity:0'], [t.reset, 'opacity:1'], [100, 'opacity:1']])
+  }
+  if (k < m) {
+    return stops([[0, 'opacity:0'], [t.segs[k - 1].s, 'opacity:0'], [t.segs[k - 1].m, 'opacity:1'],
+      [t.segs[k].s, 'opacity:1'], [t.segs[k].m, 'opacity:0'], [100, 'opacity:0']])
+  }
+  return stops([[0, 'opacity:0'], [t.segs[m - 1].s, 'opacity:0'], [t.segs[m - 1].m, 'opacity:1'],
+    [r1(t.reset - 0.1), 'opacity:1'], [t.reset, 'opacity:0'], [100, 'opacity:0']])
+}
+
+// renderWireframe(beatLayouts, meta) → { archetype, kind, svg, phases, layoutHash }, or null when
+// no layout is usable. `beatLayouts` is the requirement's harvest IN BEAT ORDER —
+// [{ before, after }, …], one entry per beat that was captured (spec/<screen>/evidence/
+// <id>.b<n>.{before,after}.layout.json). The drawing gets ONE FRAME PER SCENE: the Given frame is
+// beat 1's before, and each beat's frame is that beat's after — which is exactly what the board's
+// per-beat rows show, one row one frame. `meta.behavior` is the parsed behavior chain (or null):
+// it supplies the TEXT pin the board's staleness check reads and the beat count the storyboard
+// pairs against — nothing about the DRAWING is derived from the words. A requirement whose harvest
+// covered fewer beats than its prd lists pads the missing phases with the last measured frame,
+// rather than inventing motion nobody measured.
+//
+// The legacy 3-argument call renderWireframe(before, after, meta) is still accepted as one beat.
+export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
+  const asBeats = Array.isArray(beatLayouts)
+  // one canonical shape for BOTH call forms, so the layout pin is the same either way
+  const pairsIn = asBeats ? beatLayouts : [{ before: beatLayouts || null, after: metaOrAfter || null }]
+  const meta = (asBeats ? metaOrAfter : maybeMeta) || {}
+  const pairs = (pairsIn || []).map(p => ({
+    before: normLayout(p && p.before),
+    after: normLayout(p && p.after)
+  })).map(p => ({
+    before: p.before && p.before.els.length ? p.before : null,
+    after: p.after && p.after.els.length ? p.after : null
+  })).filter(p => p.before || p.after)
+  if (!pairs.length) return null
+  const src = pairs[0].before || pairs[0].after
+  const S = LAYOUT_W / src.w
+  const H = Math.round(clamp(LAYOUT_W * (src.h / src.w), 180, 900))
+  const behavior = meta.behavior && wellFormed(meta.behavior) ? meta.behavior : null
+  const m = pairs.length                               // transitions drawn = beats harvested
+  const n = behavior ? behavior.beats.length : m       // scenes the storyboard will pair against
+  const hash = vizHash(behavior)                       // spec-store's staleness authority: the TEXT
+  const lhash = layoutHash(pairsIn)                    // …and the geometry's own pin beside it
+  // the scope class carries BOTH pins: two requirements with no behavior block would otherwise
+  // share one text hash, and their drawings' keyframes would collide in the same document
+  const k = 'vz' + hash.slice(0, 8) + lhash.slice(0, 4)
+  const kf = suffix => 'v' + hash.slice(0, 8) + lhash.slice(0, 4) + suffix
+  const t = wfTimeline(m)
+  // FRAME 0 is beat 1's before; frame i is beat i's after. Each after-frame rings what its check
+  // read; frame 0 has no ring (nothing was asserted yet) and instead shows beat 1's anchors one
+  // moment earlier, so the pair reads as a change.
+  const anchorsOf = L => {
+    if (!L) return []
+    const a = L.els.filter(e => e.focus).map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h }))
+    if (!a.length && L.ring) a.push({ ...L.ring })
+    return a
+  }
+  const frames = [{ L: pairs[0].before || pairs[0].after, ring: false, anchors: anchorsOf(pairs[0].after) }]
+  for (const p of pairs) frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [] })
+  let css = ''
+  const groups = frames.map((f, i) => {
+    css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
+      `@keyframes ${kf('f' + i)}{${wfFade(i, t, m)}}`
+    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors)}</g>`
+  }).join('')
+  const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
+  const body = shell + groups
+  // one phase per SCENE. A beat past what the harvest measured parks on the last measured frame —
+  // the loop window is then zero-length and the board simply holds that still.
+  const phases = Array.from({ length: n + 1 }, (_, i) => t.phases[Math.min(i, m)])
+  const label = esc('wireframe schematic — the app’s own layout, drawn frame by frame: the given, then each beat' +
+    (behavior
+      ? '. given ' + behavior.given + '; ' +
+        behavior.beats.map((x, i) => 'beat ' + (i + 1) + ': ' + x.when + ' → ' + x.then).join('; ')
+      : ''))
+  const svg = `<svg class="${k}" viewBox="0 0 ${LAYOUT_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"` +
+    ` data-viz-hash="${hash}" data-viz-archetype="ui-mirror" data-viz-kind="wireframe" data-viz-layout="${lhash}"` +
+    ` data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}">` +
+    `<style>${css}</style>${body}</svg>`
+  return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash }
 }

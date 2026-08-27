@@ -1,8 +1,9 @@
 import { test as base, expect } from '@playwright/test'
 import type { BrowserContext, Page, Locator } from '@playwright/test'
-import { readFileSync, appendFileSync } from 'node:fs'
+import { readFileSync, appendFileSync, writeFileSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseBehavior } from '../tools/behavior.mjs'
 
 export { expect }
 
@@ -76,7 +77,8 @@ export const test = windowed.extend<{ page: Page, _failAggregate: void }>({
     FAILED_PAINTED = false
     STEP_FAILURES = []
     REQ_CHIPS = []
-    PROVING = null; CLAIM = null; NOTE = ''
+    PROVING = null; CLAIM = null; NOTE = ''; BEHAVIOR = null
+    BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null
     // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
     // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
     // out like any other line, so the opening narration finishes before the bar starts moving.
@@ -254,34 +256,72 @@ function reqTitle (qid: string): string {
   return TITLE_CACHE[scr][rid] || ''
 }
 
-// The in-video narration TOPBAR (board R10). Painted INTO the page under test, so it is burned
-// into the recording and its cover — one consistent bar fixed to the top, never a caption card
-// mid-frame. pointer-events:none so it can never swallow a click the test meant for the app;
-// inline styles because it renders inside arbitrary apps that know nothing of the board's design
-// system (the values mirror the design tokens: ink, paper, and a deep bengara for failure).
-// The bar is a designed, glanceable card (board R10): a bold title line for the current story
-// step, the announced values stacked beneath — accumulating within a step the way a person would
-// list them, capped so the bar cannot swallow the frame.
+// A requirement's BEHAVIOUR in words — its Given + When→Then beats — parsed from the SAME prd block
+// the board's storyboard renders (tools/behavior.mjs), so the recording narrates a requirement in the
+// exact words the left shows. Slice each `## R# — Title` heading's body (up to the next heading) and
+// run the shared parser; a prose-only requirement (no beat block) yields null and the bar falls back
+// to the bare requirement tag. Cached per screen like the titles.
+const BEHAVIOR_CACHE: Record<string, Record<string, { given: string, beats: { when: string, then: string }[] } | null>> = {}
+function reqBehavior (qid: string): { given: string, beats: { when: string, then: string }[] } | null {
+  const i = qid.indexOf(':')
+  const scr = i > -1 ? qid.slice(0, i) : basename(dirname(String(test.info().file || '')))
+  const rid = i > -1 ? qid.slice(i + 1) : qid
+  if (!(scr in BEHAVIOR_CACHE)) {
+    const map: Record<string, { given: string, beats: { when: string, then: string }[] } | null> = {}
+    try {
+      const md = readFileSync(join(SPEC_DIR, scr, 'prd.md'), 'utf8')
+      const heads = [...md.matchAll(/^##\s+(R\d+)\s+—\s+.+$/gm)]
+      for (let j = 0; j < heads.length; j++) {
+        const start = (heads[j].index || 0) + heads[j][0].length
+        const end = j + 1 < heads.length ? (heads[j + 1].index || md.length) : md.length
+        map[heads[j][1]] = parseBehavior(md.slice(start, end))
+      }
+    } catch { /* not every screen has a PRD yet — the bar then shows the id alone */ }
+    BEHAVIOR_CACHE[scr] = map
+  }
+  return BEHAVIOR_CACHE[scr][rid] || null
+}
+
+// The in-video NARRATION, painted INTO the page under test so it is burned into the recording and
+// its cover. Not a top banner (retired 2026-08-27 — it dumped the whole requirement up top,
+// disconnected from the thing being proven, and shoved the app halfway down the frame). Instead a
+// product-tour CALLOUT anchored to the element the check rings — the Arcade / Driver.js pattern: a
+// light dim over the app, a ring on the proven element, and a small card beside it carrying the
+// CURRENT beat in the requirement's own words (When → Then), the SAME words the board's storyboard
+// shows on the left, so the two ends read as one language. pointer-events:none so it never swallows
+// a click; inline styles (the design tokens) because it renders inside apps that know nothing of
+// _design.css.
 const HUD = { head: '' }
-// The latest check as a structured CLAIM — a muted label plus expected vs got as two prominent
-// values — so the topbar reads as ONE clear claim instead of a dense running list of got/expected
-// lines. The full text still goes to the board as a `note:` step (emitNote); this is only how the
-// burn-in shows it. `ok` reddens `got` the instant the values disagree, before the assertion throws.
+// The latest check's got vs expected — surfaced in the callout only on a FAILURE (a passing check's
+// value is already named by the Then it proves). The full text still goes to the board as a `note:`
+// step (emitNote); `ok` is kept so a caller can redden before the assertion throws.
 let CLAIM: { label: string, expected: string, got: string, ok: boolean } | null = null
 // One freeform line (hudNote), or the aggregate failure summary (multi-line, pre-wrapped).
 let NOTE = ''
-// The band's fixed height under a recording. Fixed on purpose: the page below is shifted by
-// exactly this much, and a bar that grew with its detail lines would bounce the whole app on
-// every narration line.
-const BAND_H = 142
-// The PROVING line — steps and requirements are two different numbering systems (Step N = what the
-// flow DOES, R# = what it PROVES, many-to-many), and a watcher hearing "requirement five" while the
-// head says "Step 1" needs the bar itself to say which is which. While a checkReq runs, this
-// dedicated line names the requirement under the step head — "▸ proving R5 — <its title>" — and it
-// HOLDS the verdict ("✕ R5 failed — …") through the step's red frame, so the voice explaining the
-// failure always has its R# on screen. Cleared when a new step starts.
+// The ACTIVE requirement as its Given / When → Then behaviour (parsed from the prd by reqBehavior —
+// the same source the storyboard renders), plus its verdict: ▸ active while the checkReq runs, ✓
+// proven, ✕ failed. BEAT_IDX is which When→Then the callout is on (a requirement proven by several
+// checks advances through its beats — BEAT_CURSOR counts checkReq calls per id). Per-test.
+type HudBeat = { when: string, then: string }
+let BEHAVIOR: { id: string, title: string, given: string, beats: HudBeat[], state: 'active' | 'pass' | 'fail' } | null = null
+let BEAT_IDX = 0
+let BEAT_CURSOR: Record<string, number> = {}
+// The last ringed element's box, so a state change (the verdict flipping to ✓, a nav repaint) can
+// re-render the callout in place without a fresh target. Cleared when a step starts clean.
+type Box = { x: number, y: number, width: number, height: number }
+let LAST_BOX: Box | null = null
+// Vestigial since the narration stopped rendering a "proving R5" line and the id strip (2026-08-27):
+// the verdict now rides on BEHAVIOR.state. Kept only because checkReq still assigns it and the
+// per-test reset clears it; to be removed with the chip strip in the follow-up pass.
 let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
-// A goto WIPES the injected bar — and real flows navigate mid-beat (a cross-page read). Repaint
+// The current beat the callout shows: the active requirement's BEAT_IDX-th When→Then, tagged with its
+// id, title and verdict. Null (callout hidden) before the first checkReq.
+function curBeat (): { id: string, title: string, when: string, then: string, state: 'active' | 'pass' | 'fail' } | null {
+  if (!BEHAVIOR) return null
+  const b = BEHAVIOR.beats[BEAT_IDX] || BEHAVIOR.beats[BEHAVIOR.beats.length - 1]
+  return { id: BEHAVIOR.id, title: BEHAVIOR.title, when: b ? b.when : '', then: b ? b.then : '', state: BEHAVIOR.state }
+}
+// A goto WIPES the injected overlay — and real flows navigate mid-beat (a cross-page read). Repaint
 // after every main-frame navigation so the narration is consistently on screen, not only until
 // the first goto. One listener per page, installed lazily on first paint.
 const HOOKED = new WeakSet<Page>()
@@ -289,7 +329,7 @@ function repaintOnNav (page: Page): void {
   if (HOOKED.has(page)) return
   HOOKED.add(page)
   page.on('framenavigated', f => {
-    if (f !== page.mainFrame() || !HUD.head || page !== CURRENT_PAGE) return
+    if (f !== page.mainFrame() || !(HUD.head || BEHAVIOR) || page !== CURRENT_PAGE) return
     // Repaint AFTER the new document is ready. Evaluating the instant `framenavigated`
     // fires races the execution-context teardown and REJECTS — the reject is caught, but
     // Playwright still records it as a failed "Run a script on the page" step, a spurious
@@ -297,197 +337,195 @@ function repaintOnNav (page: Page): void {
     // land on a live context. Fully fire-and-forget: never awaited by the flow, and the
     // wait's own failure (page closed / superseded nav) is swallowed.
     void page.waitForLoadState('domcontentloaded')
-      .then(() => { if (HUD.head && page === CURRENT_PAGE) return paintHud({}) })
+      .then(() => { if ((HUD.head || BEHAVIOR) && page === CURRENT_PAGE) return paintHud({}) })
       .catch(() => {})
   })
 }
 async function paintHud (s: { head?: string, failed?: boolean }): Promise<void> {
-  const page = CURRENT_PAGE
-  if (!page) return
-  repaintOnNav(page)
-  if (s.head !== undefined) HUD.head = s.head   // CLAIM / NOTE are cleared by flowStep at step start
-  await page.evaluate(({ head, claim, note, failed, chips, band, proving }) => {
-    let el = document.getElementById('__specboard-hud')
-    if (!el) {
-      el = document.createElement('div')
-      el.id = '__specboard-hud'
-      el.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;pointer-events:none;' +
-        'display:flex;flex-direction:column;gap:4px;padding:12px 22px 10px;box-sizing:border-box;' +
-        'font-family:system-ui,sans-serif;color:#f4f1ea;background:rgba(28,27,24,.94);' +
-        'border-bottom:3px solid rgba(244,241,234,.30);box-shadow:0 2px 14px rgba(0,0,0,.30)'
-      const row = document.createElement('div')
-      row.id = '__specboard-hud-row'
-      row.style.cssText = 'display:flex;align-items:flex-start;gap:18px'
-      const h = document.createElement('div')
-      h.id = '__specboard-hud-head'
-      h.style.cssText = 'flex:1;font-weight:700;font-size:19px;line-height:1.25;letter-spacing:-.01em;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
-      const c = document.createElement('div')
-      c.id = '__specboard-hud-reqs'
-      c.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px'
-      row.append(h, c)
-      const p = document.createElement('div')
-      p.id = '__specboard-hud-proving'
-      p.style.cssText = 'font-weight:600;font-size:15px;line-height:1.4;letter-spacing:.01em;' +
-        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis'
-      // THE CLAIM — one line: a muted label, then expected vs got as two prominent values. Replaces
-      // the old dense stack of got/expected note lines so the bar is glanceable.
-      const cl = document.createElement('div')
-      cl.id = '__specboard-hud-claim'
-      cl.style.cssText = 'display:flex;align-items:baseline;white-space:nowrap;overflow:hidden'
-      const clLbl = document.createElement('span')
-      clLbl.id = '__specboard-hud-claim-lbl'
-      // margin-right, not flex gap — the separation must survive regardless of the app's own reset
-      clLbl.style.cssText = 'font-size:13px;color:rgba(244,241,234,.72);overflow:hidden;' +
-        'text-overflow:ellipsis;flex:0 1 auto;margin-right:20px'
-      const clVals = document.createElement('span')
-      clVals.style.cssText = 'font-size:16px;font-weight:600;flex:none;letter-spacing:-.005em'
-      clVals.innerHTML =
-        '<span style="font-size:12px;font-weight:400;color:rgba(244,241,234,.6)">expected </span>' +
-        '<span id="__specboard-hud-exp"></span>' +
-        '<span style="font-size:12px;font-weight:400;color:rgba(244,241,234,.6)">  ·  got </span>' +
-        '<span id="__specboard-hud-got"></span>'
-      cl.append(clLbl, clVals)
-      const nt = document.createElement('div')
-      nt.id = '__specboard-hud-note'
-      nt.style.cssText = 'font-weight:400;font-size:14px;line-height:1.5;opacity:.9;white-space:pre-line'
-      el.append(row, p, cl, nt)
-      // Hang the bar off <html>, NOT <body>. Under a recording the body is transformed down by the
-      // band height so the bar sits ABOVE the site instead of on top of it — nothing is ever
-      // covered, and because a transformed body becomes the containing block for its fixed
-      // descendants, the app's own fixed chrome (sidebars, sticky headers) shifts down too. The
-      // bar itself must therefore live OUTSIDE the body, or it would shift with everything else.
-      document.documentElement.appendChild(el)
-    }
-    if (band) {
-      el.style.height = band + 'px'
-      el.style.overflow = 'hidden'
-      document.body.style.transform = 'translateY(' + band + 'px)'
-    }
-    el.style.background = failed ? 'rgba(122,47,29,.96)' : 'rgba(28,27,24,.94)'
-    el.style.borderBottomColor = failed ? 'rgba(232,161,138,.65)' : 'rgba(244,241,234,.30)'
-    const hd = document.getElementById('__specboard-hud-head')
-    if (hd) hd.textContent = head
-    // the claim — expected in paper, got in koke on a match and bengara the instant it disagrees
-    const clEl = document.getElementById('__specboard-hud-claim')
-    if (clEl) {
-      clEl.style.display = claim ? '' : 'none'
-      if (claim) {
-        const lbl = document.getElementById('__specboard-hud-claim-lbl')
-        const exp = document.getElementById('__specboard-hud-exp')
-        const got = document.getElementById('__specboard-hud-got')
-        if (lbl) lbl.textContent = claim.label
-        if (exp) { exp.textContent = claim.expected; exp.style.color = '#f4f1ea' }
-        if (got) { got.textContent = claim.got; got.style.color = claim.ok ? '#bcc4a8' : '#e8a18a' }
-      }
-    }
-    const ntEl = document.getElementById('__specboard-hud-note')
-    if (ntEl) { ntEl.textContent = note; ntEl.style.display = note ? '' : 'none' }
-    // the requirement being proven, labeled as such — paper while running, koke on proven,
-    // bengara-tint on failed (every state also carries its mark, per the design rule)
-    const pv = document.getElementById('__specboard-hud-proving')
-    if (pv) {
-      pv.style.display = proving ? '' : 'none'
-      if (proving) {
-        pv.textContent = proving.text
-        pv.style.color = proving.state === 'fail' ? '#e8a18a' : proving.state === 'pass' ? '#bcc4a8' : '#f4f1ea'
-      }
-    }
-    // The requirement chips — rebuilt each paint (a handful of spans; idempotent and cheap). Every
-    // state wears a MARK as well as a colour: ▸ active, ✓ passed, ✕ failed, pending bare (design
-    // rule: hue names a state but never carries it alone). The palette mirrors the design tokens the
-    // HUD already uses — paper on ink, koke-line for a pass, bengara for a failure.
-    const strip = document.getElementById('__specboard-hud-reqs')
-    if (strip) {
-      strip.innerHTML = ''
-      strip.style.display = chips.length ? '' : 'none'
-      const MARK: Record<string, string> = { pending: '', active: '▸ ', pass: '✓ ', fail: '✕ ' }
-      const CSS: Record<string, string> = {
-        pending: 'color:rgba(244,241,234,.72);border:1px solid rgba(244,241,234,.35);background:transparent',
-        active: 'color:#1c1b18;border:1px solid #f4f1ea;background:#f4f1ea',
-        pass: 'color:#bcc4a8;border:1px solid rgba(188,196,168,.55);background:transparent',
-        fail: 'color:#f4f1ea;border:1px solid rgba(232,161,138,.65);background:rgba(122,47,29,.96)'
-      }
-      for (const chip of chips) {
-        const s = document.createElement('span')
-        s.setAttribute('data-req', chip.id)
-        s.style.cssText = 'font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap;' +
-          'padding:3px 10px;border-radius:999px;' + CSS[chip.state]
-        s.textContent = MARK[chip.state] + chip.id
-        strip.appendChild(s)
-      }
-    }
-  }, {
-    head: HUD.head,
-    claim: CLAIM ? { ...CLAIM } : null,
-    note: NOTE,
-    failed: !!s.failed,
-    chips: REQ_CHIPS.map(c => ({ ...c })),
-    // the band-and-shift layout only under a recording — a plain suite run must leave the page
-    // geometry exactly alone (tests may assert on positions, and nobody is watching anyway)
-    band: process.env.BOARD_RECORD ? BAND_H : 0,
-    proving: PROVING ? { ...PROVING } : null
-  }).catch(() => {})
+  if (s.head !== undefined) HUD.head = s.head
+  await renderOverlay(LAST_BOX, !!s.failed)
 }
 
-// The FOCUS overlay (board R10 — the recording is the proof a human checks). A dense table's topbar
-// names a value but not WHERE it is; this paints the eye onto the exact cell reveal() centres. Like
-// the HUD it is injected INTO the page, so it is burned into the video and shown in the live watch: a
-// full-width dim BAND that lights only the target's row (so the topbar's words tie to the row on the
-// left), and a RING on the target itself — sumi ink normally, deep bengara on a failed check (the one
-// place red belongs — it mirrors the topbar going red). Gated on a board recording, so a plain
-// `npm run e2e` paints nothing and stays fast. pointer-events:none so it never swallows a click, and a
-// z-index just BELOW the HUD so the narration always sits on top. Best-effort: an off-screen or
-// detached target (no box) simply leaves the previous frame's overlay as it was.
-async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
+// THE OVERLAY (board R10 — the recording is the proof a human checks). A light dim over the app, a
+// ring on the element the check reveals, and a CALLOUT beside it carrying the CURRENT beat's When →
+// Then in the requirement's own words (the same words the storyboard shows). Injected INTO the page
+// so it burns into the video and the live watch; gated on a board recording so a plain `npm run e2e`
+// paints nothing and stays fast. pointer-events:none so it never swallows a click. Best-effort: a
+// failed evaluate (page torn down mid-nav) is swallowed, leaving the previous frame's overlay standing.
+async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   const page = CURRENT_PAGE
   if (!page || !process.env.BOARD_RECORD) return
-  // Apply the band shift BEFORE measuring. A bare proveVisible with no flowStep in front would
-  // otherwise measure the cell pre-shift, paint the ring, and then the first hudCheck's paint
-  // would shift the page — leaving the ring BAND_H px above the cell it claims to point at.
-  await page.evaluate((band) => { document.body.style.transform = 'translateY(' + band + 'px)' }, BAND_H).catch(() => {})
-  const box = await target.first().boundingBox().catch(() => null)
-  if (!box) return
-  await page.evaluate(({ box, failed }) => {
-    const RING = failed ? '#7a2f1d' : '#1c1b18'                       // bengara on failure, sumi ink on a pass
-    const GLOW = failed ? 'rgba(122,47,29,.38)' : 'rgba(28,27,24,.28)'
+  repaintOnNav(page)
+  await page.evaluate(({ beat, claim, failed, box }) => {
+    const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
+    const FAIL = failed || (beat && beat.state === 'fail')
     let el = document.getElementById('__specboard-focus')
     if (!el) {
       el = document.createElement('div')
       el.id = '__specboard-focus'
-      el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none'
-      // outside the (possibly transformed) body, like the HUD — a fixed overlay inside a
-      // transformed body would be re-rooted and land BAND_H px below the cell it rings
+      // OUTSIDE the body (on <html>): a fixed overlay kept out of the app's own stacking contexts is
+      // the one that reliably sits on top of everything the app paints.
+      el.style.cssText = 'position:fixed;inset:0;z-index:2147483646;pointer-events:none;font-family:system-ui,sans-serif'
       document.documentElement.appendChild(el)
       const veil = document.createElement('div')
       veil.className = 'sb-veil'
-      // a transparent full-width band; its huge box-shadow dims everything ABOVE and BELOW it, so the
-      // target's row stays lit while the rest of the table recedes.
-      veil.style.cssText = 'position:fixed;left:0;width:100vw;box-shadow:0 0 0 100vmax rgba(28,27,24,.5);' +
-        'transition:top .18s ease,height .18s ease'
+      // a LIGHT wash — the surrounding state that PRODUCES the proven value stays readable, it just recedes
+      veil.style.cssText = 'position:fixed;inset:0;background:rgba(28,27,24,.12);transition:opacity .18s ease'
       const ring = document.createElement('div')
       ring.className = 'sb-ring'
-      ring.style.cssText = 'position:fixed;border-radius:5px;transition:all .18s ease'
-      el.append(veil, ring)
+      ring.style.cssText = 'position:fixed;border-radius:6px;transition:all .16s ease;display:none'
+      const ptr = document.createElement('div')
+      ptr.className = 'sb-ptr'
+      ptr.style.cssText = 'position:fixed;width:12px;height:12px;background:' + PAPER + ';display:none'
+      const call = document.createElement('div')
+      call.className = 'sb-call'
+      call.style.cssText = 'position:fixed;width:300px;box-sizing:border-box;background:' + PAPER + ';border:1px solid ' + HAIR +
+        ';border-radius:11px;box-shadow:0 10px 30px rgba(28,27,24,.24);padding:12px 15px;transition:all .16s ease;display:none'
+      el.append(veil, ring, ptr, call)
     }
     el.style.display = ''
-    const veil = el.querySelector('.sb-veil') as HTMLElement
     const ring = el.querySelector('.sb-ring') as HTMLElement
-    veil.style.top = (box.y - 2) + 'px'
-    veil.style.height = (box.height + 4) + 'px'
-    ring.style.left = (box.x - 3) + 'px'
-    ring.style.top = (box.y - 3) + 'px'
-    ring.style.width = (box.width + 6) + 'px'
-    ring.style.height = (box.height + 6) + 'px'
-    ring.style.border = '2px solid ' + RING
-    ring.style.boxShadow = '0 0 0 3px rgba(244,241,234,.7),0 0 12px ' + GLOW
-  }, { box, failed: !!opts.failed }).catch(() => {})
+    const call = el.querySelector('.sb-call') as HTMLElement
+    const ptr = el.querySelector('.sb-ptr') as HTMLElement
+    // the ring on the proven element
+    if (box) {
+      ring.style.display = ''
+      ring.style.left = (box.x - 4) + 'px'
+      ring.style.top = (box.y - 4) + 'px'
+      ring.style.width = (box.width + 8) + 'px'
+      ring.style.height = (box.height + 8) + 'px'
+      ring.style.border = '2px solid ' + (FAIL ? BENG : AI)
+      ring.style.boxShadow = '0 0 0 3px rgba(253,252,249,.92),0 0 16px ' + (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
+    } else ring.style.display = 'none'
+    // the callout — the current beat in words
+    if (!beat) { call.style.display = 'none'; ptr.style.display = 'none'; return }
+    call.style.display = ''
+    call.style.borderColor = FAIL ? BENG : HAIR
+    call.innerHTML = ''
+    const mk = (t: string, txt: string, css: string) => { const s = document.createElement(t); if (txt) s.textContent = txt; s.style.cssText = css; return s }
+    const MONO = 'font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;'
+    // tag row: id + title
+    const tagRow = mk('div', '', 'display:flex;gap:7px;align-items:baseline;font-size:11px;color:' + INK3 + ';margin-bottom:8px')
+    tagRow.append(
+      mk('span', beat.id, 'font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;border:1px solid ' +
+        (FAIL ? 'rgba(141,74,56,.4)' : HAIR) + ';border-radius:4px;padding:1px 5px;color:' + (FAIL ? BENG : INK3)),
+      mk('span', beat.title, 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap')
+    )
+    call.append(tagRow)
+    // When
+    if (beat.when) {
+      const w = mk('div', '', 'font-size:12.5px;color:' + INK3 + ';margin-bottom:3px;line-height:1.35')
+      w.append(mk('span', 'When ', MONO + 'color:' + INK3), mk('span', beat.when, ''))
+      call.append(w)
+    }
+    // Then + verdict
+    const t = mk('div', '', 'font-size:15px;font-weight:600;line-height:1.36;color:' + INK)
+    t.append(mk('span', 'Then ', MONO + 'color:' + AI + ';margin-right:2px'), mk('span', beat.then, ''))
+    if (FAIL) {
+      if (claim) t.append(mk('span', ' — got ' + claim.got, 'color:' + BENG + ';font-weight:700'))
+      t.append(mk('span', ' ✕', 'color:' + BENG + ';font-weight:700'))
+    } else if (beat.state === 'pass') {
+      t.append(mk('span', ' ✓', 'color:' + KOKE + ';font-weight:700'))
+    }
+    call.append(t)
+    // POSITION — the card must read as ATTACHED to the ring, and must never cover it (2026-08-27
+    // defect: on R3's small progress ring inside a wide row, "prefer right" put the card straight
+    // over that row's own title and its neighbours — the callout hid the very context the value is
+    // read in). So: BELOW the target first (pointer up), then ABOVE (pointer down), then beside it
+    // — each aligned to the target's centre and clamped to the viewport, and each candidate
+    // REJECTED if it overlaps the target box at all. Only when the target is so large that every
+    // placement would overlap does the card fall back to the side with the most free room, and
+    // then its pointer is hidden rather than drawn pointing at nothing.
+    const vw = window.innerWidth, vh = window.innerHeight, cw = 300, pad = 12
+    // 12px keeps the notch (a 12px square rotated 45°, so ~8.5px of it protrudes) touching the
+    // ring's outer edge, which sits 6px out from the box — attached, never floating.
+    const gap = 12
+    const ch = Math.ceil(call.getBoundingClientRect().height)
+    const clampX = (v: number) => Math.max(pad, Math.min(v, Math.max(pad, vw - cw - pad)))
+    const clampY = (v: number) => Math.max(pad, Math.min(v, Math.max(pad, vh - ch - pad)))
+    let left = pad, top = pad, side = 'none'
+    if (box) {
+      const cx = box.x + box.width / 2
+      const cands = [
+        { side: 'below', left: clampX(cx - cw / 2), top: box.y + box.height + gap },
+        { side: 'above', left: clampX(cx - cw / 2), top: box.y - gap - ch },
+        { side: 'right', left: box.x + box.width + gap, top: clampY(box.y - 6) },
+        { side: 'leftof', left: box.x - gap - cw, top: clampY(box.y - 6) }
+      ]
+      const inView = (c: { left: number, top: number }) =>
+        c.left >= pad && c.left + cw <= vw - pad && c.top >= pad && c.top + ch <= vh - pad
+      const covers = (c: { left: number, top: number }) =>
+        !(c.left + cw <= box.x || c.left >= box.x + box.width ||
+          c.top + ch <= box.y || c.top >= box.y + box.height)
+      const hit = cands.find(c => inView(c) && !covers(c))
+      if (hit) { left = hit.left; top = hit.top; side = hit.side } else {
+        // nothing fits cleanly (a target as tall as the viewport, a tiny window): take the side
+        // with the most room, clamp into view, and drop the pointer — an honest float beats a
+        // notch aimed at a box the card is sitting on.
+        const room = [
+          { side: 'below', v: vh - (box.y + box.height) - gap - pad },
+          { side: 'above', v: box.y - gap - pad },
+          { side: 'right', v: vw - (box.x + box.width) - gap - pad },
+          { side: 'leftof', v: box.x - gap - pad }
+        ].sort((a, b) => b.v - a.v)[0]
+        const c = cands.find(x => x.side === room.side)!
+        left = clampX(c.left); top = clampY(c.top); side = 'none'
+      }
+    } else { left = (vw - cw) / 2; top = pad }
+    call.style.left = left + 'px'
+    call.style.top = top + 'px'
+    // the notch, pointing back at the ring. A square rotated 45° shows the corner whose two edges
+    // carry a border: top+left → the TOP corner (points up), bottom+right → down, left+bottom →
+    // left, right+top → right. Every border is set explicitly so a re-render never keeps the
+    // previous placement's arrow.
+    if (box && side !== 'none') {
+      ptr.style.display = ''
+      const bc = FAIL ? BENG : HAIR
+      const on = '1px solid ' + bc
+      ptr.style.transform = 'rotate(45deg)'
+      ptr.style.borderTop = 'none'; ptr.style.borderRight = 'none'
+      ptr.style.borderBottom = 'none'; ptr.style.borderLeft = 'none'
+      if (side === 'below' || side === 'above') {
+        // sit the notch under the target's centre, but never off the card's own edge
+        const px = Math.max(left + 16, Math.min(box.x + box.width / 2, left + cw - 16))
+        ptr.style.left = (px - 6) + 'px'
+        if (side === 'below') { ptr.style.top = (top - 6) + 'px'; ptr.style.borderTop = on; ptr.style.borderLeft = on }
+        else { ptr.style.top = (top + ch - 6) + 'px'; ptr.style.borderBottom = on; ptr.style.borderRight = on }
+      } else {
+        const py = Math.max(top + 16, Math.min(box.y + box.height / 2, top + ch - 16))
+        ptr.style.top = (py - 6) + 'px'
+        if (side === 'right') { ptr.style.left = (left - 6) + 'px'; ptr.style.borderLeft = on; ptr.style.borderBottom = on }
+        else { ptr.style.left = (left + cw - 6) + 'px'; ptr.style.borderRight = on; ptr.style.borderTop = on }
+      }
+    } else ptr.style.display = 'none'
+  }, {
+    beat: curBeat(),
+    claim: CLAIM ? { ...CLAIM } : null,
+    failed,
+    box
+  }).catch(() => {})
 }
-// Hide the focus overlay so a NEW step starts clean — the ring reappears only once the step reveals a
-// value to prove, never lingering on the previous step's cell.
+
+// Ring an element and anchor the callout to it (board R10 — the recording is the proof a human
+// checks). A dense table names a value but not WHERE it is; this paints the eye onto the exact cell
+// reveal() centres, and the callout beside it says what is being proven there. Measures the target's
+// box (no page transform now — the app is never shifted), remembers it as LAST_BOX so a later
+// verdict repaint lands in the same place, and hands it to renderOverlay. A detached / off-screen
+// target (no box) leaves the previous frame's overlay standing.
+async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page || !process.env.BOARD_RECORD) return
+  const box = await target.first().boundingBox().catch(() => null)
+  if (!box) return
+  LAST_BOX = box
+  await renderOverlay(box, !!opts.failed)
+}
+// Hide the overlay so a NEW step starts clean — the ring and callout reappear only once the step
+// reveals a value to prove, never lingering on the previous step's cell.
 async function hideFocus (): Promise<void> {
   const page = CURRENT_PAGE
   if (!page || !process.env.BOARD_RECORD) return
+  LAST_BOX = null
   await page.evaluate(() => {
     const el = document.getElementById('__specboard-focus')
     if (el) el.style.display = 'none'
@@ -609,7 +647,7 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
   const n = ++FLOW_N
   await paceGate('step', n + '. ' + title)
   beat('step', n + '. ' + title)
-  PROVING = null; CLAIM = null; NOTE = ''                    // a new step starts clean
+  PROVING = null; CLAIM = null; NOTE = ''; BEHAVIOR = null   // a new step starts clean — no stale callout
   // The head is the step's plain ACTION, unnumbered. Requirements (R#) are the only numbering a
   // watcher sees — on the chips and the proving line — because two number systems side by side is
   // how the first narrated cut got misread ("✗ 1." on the bar while the voice said "requirement
@@ -650,15 +688,133 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
 // works in a plain CLI run — no board, no video needed. Strictly a BY-PRODUCT, never a gate: any
 // failure is swallowed and the shot itself is time-bounded, so a slow or dying page costs at most
 // the bound and never fails the test.
-async function snapEvidence (id: string, phase: 'before' | 'after'): Promise<void> {
+async function snapEvidence (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   try {
     const info = test.info()
-    const file = info.outputPath(`evidence-${id.replace(/[^a-zA-Z0-9_.-]+/g, '_')}-${phase}.png`)
+    // seq (which check of this id) keys the FILE, not the attachment: two checks clamped onto the
+    // same beat must not share a path, or the second's screenshot silently overwrites the first's
+    // and the reporter's first-wins fold picks an already-clobbered file.
+    const file = info.outputPath(`evidence-${safeId(id)}-b${beat}-c${seq}-${phase}.png`)
     await page.screenshot({ path: file, timeout: 2500 })
-    info.attachments.push({ name: `evidence ${id} ${phase}`, path: file, contentType: 'image/png' })
+    info.attachments.push({ name: `evidence ${id}#${beat} ${phase}`, path: file, contentType: 'image/png' })
   } catch { /* evidence is a by-product — the proof is the assertion, never the photo */ }
+}
+const safeId = (id: string) => id.replace(/[^a-zA-Z0-9_.-]+/g, '_')
+
+// A promise with a deadline, resolving null when it runs out — the same "never a gate" contract
+// snapEvidence's screenshot timeout gives the frames. The timer is unref'd so a bounded wait can
+// never hold the process open.
+function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
+  return new Promise<T | null>(resolve => {
+    const t: any = setTimeout(() => resolve(null), ms)
+    if (t && typeof t.unref === 'function') t.unref()
+    p.then(v => { clearTimeout(t); resolve(v) }, () => { clearTimeout(t); resolve(null) })
+  })
+}
+
+// THE LAYOUT SKELETON (2026-08-28, the human: the schematic must look like the real screen).
+// Beside each evidence frame, a cheap measurement of WHERE the page's boxes are — the viewport
+// size, the ring target, and up to 150 visible, meaningfully-sized elements, each with a rough
+// kind (heading / text / input / button / row / container / image), its text where it is a leaf
+// (or the ringed element itself), and `focus` on whatever the ring is actually around.
+// tools/viz.mjs renderWireframe draws the requirement's schematic FROM this pair, so the picture
+// beside the requirement is the app's own layout rather than an abstract archetype nobody could
+// map onto it. Attached as `layout <id> before|after`, mirroring the frames, and folded by the
+// reporter to spec/<screen>/evidence/<id>.<phase>.layout.json.
+//
+// A by-product exactly like the frames: bounded (a walk budget in the page, a deadline outside
+// it), every failure swallowed. It measures and never touches the page, so it cannot change what
+// the assertion then reads.
+async function snapLayout (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page) return
+  try {
+    const info = test.info()
+    const data: any = await raceTimeout(page.evaluate((ring: Box | null) => {
+      const OVERLAY = '__specboard-focus'
+      const CAP = 150            // enough boxes to recognise a screen, few enough to draw
+      const MAXD = 14            // depth cap — a deep component tree adds wrappers, not information
+      const MIN = 12             // px: below this an element is a divider or an icon fleck
+      const BUDGET = 6000        // nodes visited, so a huge app costs a bounded walk
+      const vw = window.innerWidth || 0
+      const vh = window.innerHeight || 0
+      const rb = ring ? { x: ring.x, y: ring.y, w: ring.width, h: ring.height } : null
+      const rArea = rb ? Math.max(1, rb.w * rb.h) : 0
+      const els: any[] = []
+      let visited = 0
+      const clean = (s: any) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 48)
+      const kindOf = (el: any, tag: string, leaf: boolean, text: string) => {
+        const role = (el.getAttribute && el.getAttribute('role')) || ''
+        if (/^H[1-6]$/.test(tag) || role === 'heading') return 'heading'
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return 'input'
+        if (tag === 'BUTTON' || tag === 'A' || role === 'button' || role === 'link' || role === 'tab') return 'button'
+        if (tag === 'IMG' || tag === 'SVG' || tag === 'CANVAS' || tag === 'VIDEO' || tag === 'PICTURE') return 'image'
+        if (tag === 'LI' || tag === 'TR' || role === 'row' || role === 'listitem') return 'row'
+        if (leaf && text) return 'text'
+        return 'container'
+      }
+      const walk = (node: any, depth: number) => {
+        if (depth > MAXD) return
+        const kids = node.children || []
+        for (let i = 0; i < kids.length; i++) {
+          if (els.length >= CAP || visited >= BUDGET) return
+          const el = kids[i]
+          visited++
+          if (el.id === OVERLAY) continue                 // never measure our own narration overlay
+          const tag = String(el.tagName || '').toUpperCase()
+          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' ||
+            tag === 'LINK' || tag === 'META') continue
+          const r = el.getBoundingClientRect()
+          if (!r || r.width < 1 || r.height < 1) continue                 // display:none, and its subtree
+          if (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh) continue   // off-screen
+          if (r.width >= MIN && r.height >= MIN) {
+            const leaf = el.childElementCount === 0
+            let text = leaf ? clean(el.textContent) : ''
+            if (tag === 'INPUT') text = clean(el.value || el.getAttribute('placeholder') || '')
+            let focus = false
+            if (rb) {
+              const ox = Math.max(0, Math.min(r.right, rb.x + rb.w) - Math.max(r.left, rb.x))
+              const oy = Math.max(0, Math.min(r.bottom, rb.y + rb.h) - Math.max(r.top, rb.y))
+              const area = Math.max(1, r.width * r.height)
+              // the RINGED element, not every ancestor containing it: most of the element must lie
+              // inside the ring, and it may not be far larger than the ring itself
+              focus = (ox * oy) / area >= 0.6 && area <= rArea * 4
+            }
+            // the asserted value is the whole point of the mirror — take it however it is nested
+            if (focus && !text) text = clean(el.innerText || el.textContent)
+            const rec: any = {
+              x: Math.round(r.left), y: Math.round(r.top),
+              w: Math.round(r.width), h: Math.round(r.height),
+              kind: kindOf(el, tag, leaf, text)
+            }
+            if (text) rec.text = text
+            if (focus) rec.focus = true
+            els.push(rec)
+          }
+          if (tag !== 'SVG') walk(el, depth + 1)     // an inline svg is ONE picture, not a shape tree
+        }
+      }
+      if (document.body) walk(document.body, 0)
+      return { w: vw, h: vh, ring: rb, els }
+    }, LAST_BOX), 2500)
+    if (!data || !Array.isArray(data.els) || !data.els.length) return
+    const file = info.outputPath(`layout-${safeId(id)}-b${beat}-c${seq}-${phase}.json`)  // seq keys the file only — see snapEvidence
+    writeFileSync(file, JSON.stringify(data))
+    info.attachments.push({ name: `layout ${id}#${beat} ${phase}`, path: file, contentType: 'application/json' })
+  } catch { /* the drawing is a by-product too — a page that would not measure simply has none */ }
+}
+
+// The pair a phase leaves behind, keyed by the BEAT it proves (2026-08-28 — the board is becoming
+// per-beat rows, so every artefact is per beat too): the frame a person looks at, and the geometry
+// the schematic is drawn from. The layout also carries the RING (the after phase's `ring` is the
+// focus rect the board zooms the media onto — tools/evidence.mjs focusFromLayout lifts it into the
+// index), so there is one measurement and one source of truth. Photograph FIRST — the picture is
+// the evidence; the measurement rides after it.
+async function snapPhase (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
+  await snapEvidence(id, beat, seq, phase)
+  await snapLayout(id, beat, seq, phase)
 }
 
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
@@ -676,6 +832,19 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   setChip(id, 'active')
   beat('req', id + (title ? ' — ' + title : ''))
   PROVING = { state: 'active', text: '▸ proving ' + id + (title ? ' — ' + title : '') }
+  // The callout now narrates the requirement in its OWN When → Then (from the prd — the same words
+  // the board's storyboard shows), so left and right read as one language. A requirement proven by
+  // several checks advances through its beats: the Nth checkReq(id) of this test shows the Nth beat
+  // (clamped to the last), so R5's two checks narrate its two beats in turn. Verdict rides on state.
+  const beh = reqBehavior(id)
+  const cursor = BEAT_CURSOR[id] || 0
+  BEAT_CURSOR[id] = cursor + 1
+  BEAT_IDX = beh && beh.beats.length ? Math.min(cursor, beh.beats.length - 1) : 0
+  BEHAVIOR = { id, title, given: beh ? beh.given : '', beats: beh ? beh.beats : [], state: 'active' }
+  // …and the SAME cursor keys the harvest (2026-08-28): this check's frames, layout skeletons and
+  // window are filed under the beat it proves, so the board's per-beat rows each carry their own
+  // proof. Held in a local, because a nested checkReq inside fn would move the global on us.
+  const beatNo = BEAT_IDX + 1
   if (nested) {
     // inside a flowStep: run the proof in its `proves` step and let a failure PROPAGATE — the
     // enclosing flowStep catches it, records it, paints the red frame and continues the flow. The
@@ -683,25 +852,27 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // and the chip advances ▸ → ✓/✕ so the strip tracks the proof through the whole flow.
     await emitNote('▸ proving ' + id + (title ? ' — ' + title : ''))
     await paintHud({})
-    await snapEvidence(id, 'before')
+    await snapPhase(id, beatNo, cursor + 1, 'before')
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
       PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
+      if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'pass'
       await paceGate('req-done', id + ' pass', false)
       beat('req-done', id + ' pass')
       await paintHud({})
     } catch (err) {
       // the verdict stays on the bar through the step's red frame — the voice explaining WHY this
-      // requirement failed must always have its R# on screen, whatever the step head says
+      // requirement failed must always have the requirement on screen, whatever the step head says
       setChip(id, 'fail')
       PROVING = { state: 'fail', text: '✕ ' + id + ' failed' + (title ? ' — ' + title : '') }
+      if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'fail'
       await paceGate('req-done', id + ' fail', false)
       beat('req-done', id + ' fail')
       throw err
     } finally {
       // the AFTER frame lands pass or fail — a failed proof's pair shows the state it broke in
-      await snapEvidence(id, 'after')
+      await snapPhase(id, beatNo, cursor + 1, 'after')
     }
     return
   }
@@ -710,11 +881,12 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // not just the first that broke. The test still fails — _failAggregate throws the aggregate.
   CLAIM = null; NOTE = ''
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
-  await snapEvidence(id, 'before')
+  await snapPhase(id, beatNo, cursor + 1, 'before')
   try {
     await test.step('proves ' + id, async () => { await fn() })
     setChip(id, 'pass')
     PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
+    if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'pass'
     await paceGate('req-done', id + ' pass', false)
     beat('req-done', id + ' pass')
     await paintHud({ head: '✓ ' + id + (title ? ' — ' + title : '') })
@@ -722,6 +894,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     STEP_FAILURES.push({ n: 0, title: id + (title ? ' — ' + title : ''), message: String((err as Error).message || err) })
     setChip(id, 'fail')
     PROVING = { state: 'fail', text: '✕ ' + id + ' failed' + (title ? ' — ' + title : '') }
+    if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'fail'
     await paceGate('req-done', id + ' fail', false)
     beat('req-done', id + ' fail')
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), failed: true })
@@ -729,7 +902,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   } finally {
     // the AFTER frame lands pass or fail — here after the verdict paint, so a failed proof's
     // after-frame carries the red bar a renderer would want to show
-    await snapEvidence(id, 'after')
+    await snapPhase(id, beatNo, cursor + 1, 'after')
   }
 }
 export function coverReqs (...ids: string[]): void {

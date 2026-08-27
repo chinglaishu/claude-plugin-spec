@@ -13,18 +13,26 @@ const bare = id => String(id).slice(String(id).lastIndexOf(':') + 1)
 // `proves dispatch:R7` in one test, and the bare-id alias once handed dispatch:R7 the earlier R7
 // window. The bare fallback stays only when ONE side is unqualified — two different qualified ids
 // never alias.
-export function clipWindow (steps, id) {
+// EVERY window, in order (2026-08-28, per-beat evidence): a requirement proven by three checks
+// emits three `proves <id>` steps, one per BEAT, and each beat's frames must be paced by — and its
+// video seek must land on — its OWN span. The step name is unchanged (coverage derives from it);
+// this just stops collapsing the list to its first entry.
+export function clipWindows (steps, id) {
   const want = String(id)
-  const exact = (steps || []).find(s => String(s.label || '') === 'proves ' + want)
-  const hit = exact || (steps || []).find(s => {
-    const l = String(s.label || '')
-    if (!l.startsWith('proves ')) return false
-    const sid = l.slice('proves '.length)
-    return (!want.includes(':') || !sid.includes(':')) && bare(sid) === bare(want)
-  })
-  if (!hit) return null
-  if (typeof hit.t !== 'number') return null
-  return { from: hit.t, to: hit.t + (typeof hit.d === 'number' ? hit.d : 0) }
+  const exact = (steps || []).filter(s => String(s.label || '') === 'proves ' + want)
+  const hits = exact.length
+    ? exact
+    : (steps || []).filter(s => {
+      const l = String(s.label || '')
+      if (!l.startsWith('proves ')) return false
+      const sid = l.slice('proves '.length)
+      return (!want.includes(':') || !sid.includes(':')) && bare(sid) === bare(want)
+    })
+  return hits.filter(h => typeof h.t === 'number')
+    .map(h => ({ from: h.t, to: h.t + (typeof h.d === 'number' ? h.d : 0) }))
+}
+export function clipWindow (steps, id) {
+  return clipWindows(steps, id)[0] || null
 }
 
 // The harvested frame pair, downscaled at the fold (final review M4): a full-viewport PNG is
@@ -52,6 +60,10 @@ export function ffmpegFrameArgs (srcRel, atMs, outRel) {
 // Where a requirement's evidence lives: spec/<screen>/evidence/<rid>.*. Deterministic on purpose —
 // re-harvesting overwrites in place, which is most of the retention rule (one set per requirement,
 // the newest fold wins). Accepts a qualified id; the home is always the REQUIREMENT's screen.
+// Since 2026-08-28 this pair is DERIVED, not captured: the harvest is per BEAT (below), and the
+// requirement-level pair is beat 1's before with the last beat's after — the whole requirement in
+// two frames, which is what every existing reader (the cover, the Focus media pane, the stepper)
+// already consumes. Same paths as before, so nothing downstream moves.
 export function evidencePaths (screen, id) {
   const dir = `spec/${screen}/evidence`
   const rid = bare(id)
@@ -59,6 +71,25 @@ export function evidencePaths (screen, id) {
     dir,
     before: `${dir}/${rid}.before.png`,
     after: `${dir}/${rid}.after.png`
+  }
+}
+
+// PER BEAT (2026-08-28 — the board is becoming per-beat rows: Given, then one row per When→Then,
+// each row showing that beat's schematic · text · proof). A requirement proven by three checks
+// harvests three frame pairs and three layout pairs, keyed by the 1-based beat number the check
+// proves (spec/_base.ts checkReq's BEAT_CURSOR, the same mapping the storyboard uses). The LAYOUT
+// SKELETONS ride beside their frames on the same deterministic rule: the JSON the schematic is
+// drawn from lives one name away from the PNG it was measured on.
+export function beatEvidencePaths (screen, id, n) {
+  const dir = `spec/${screen}/evidence`
+  const rid = bare(id)
+  const b = `${rid}.b${Number(n) || 1}`
+  return {
+    dir,
+    before: `${dir}/${b}.before.png`,
+    after: `${dir}/${b}.after.png`,
+    layoutBefore: `${dir}/${b}.before.layout.json`,
+    layoutAfter: `${dir}/${b}.after.layout.json`
   }
 }
 
@@ -83,8 +114,11 @@ export function ffmpegVideoArgs (srcRel, outRel) {
 }
 
 // The PRIMARY recording per screen is the one that COVERS the most requirements — a union count,
-// NOT the last flow to run. The reporter keeps a run's captures PER recording:
-//   harvest = { qid: { caps: { [key]: {before?, after?, window, srcVideo|null} }, latestKey } }
+// NOT the last flow to run. The reporter keeps a run's captures PER recording, and inside each
+// capture PER BEAT (2026-08-28):
+//   harvest = { qid: { caps: { [key]: { srcVideo|null, order:[n…],
+//                                       beats: { n: {before?, after?, layoutBefore?, layoutAfter?, window} } } },
+//               latestKey } }
 // where a key is a recording's video path, or '_novideo' for a capture with no recording (a CLI
 // run). Counting the last capture per requirement (the old h.srcVideo, last-wins) let a shorter
 // COMPOSED flow that reran a few shared beats last steal the primary from the COMPREHENSIVE flow
@@ -116,10 +150,33 @@ export function resolvePrimaryVideo (harvest) {
       const caps = h.caps || {}
       const usePrimary = !!(primary && caps[primary])
       const cap = (usePrimary ? caps[primary] : caps[h.latestKey]) || {}
+      // the BEATS of that one capture, in beat order. The layout skeletons ride with their own
+      // frames — the schematic must be drawn from the geometry of the frames it is shown beside,
+      // never from another recording's page.
+      const beats = Object.keys(cap.beats || {}).map(Number).sort((a, b) => a - b).map(n => {
+        const s = cap.beats[n] || {}
+        return {
+          n,
+          before: s.before || null,
+          after: s.after || null,
+          layoutBefore: s.layoutBefore || null,
+          layoutAfter: s.layoutAfter || null,
+          window: s.window || null
+        }
+      })
+      // the REQUIREMENT-level pair is derived, never captured: the first beat's before, the last
+      // beat's after, and the span that covers every beat between them (what the frame-stepper
+      // paces the two-frame pair by, and what a video seek opens on).
+      const wins = beats.map(b => b.window).filter(Boolean)
+      const firstFrame = beats.find(b => b.before)
+      const lastFrame = [...beats].reverse().find(b => b.after)
       out[qid] = {
-        before: cap.before || null,
-        after: cap.after || null,
-        window: cap.window || null,
+        before: (firstFrame && firstFrame.before) || null,
+        after: (lastFrame && lastFrame.after) || null,
+        window: wins.length
+          ? { from: Math.min(...wins.map(w => w.from)), to: Math.max(...wins.map(w => w.to)) }
+          : null,
+        beats,
         srcVideo: usePrimary ? primary : null
       }
     }
@@ -129,10 +186,37 @@ export function resolvePrimaryVideo (harvest) {
 
 // The attachment names checkReq emits — `evidence <id> before` / `evidence <id> after`. Anything
 // else (covers, screenshots, videos) is not evidence and must never be mistaken for it.
-const EVIDENCE_ATT = /^evidence (\S+) (before|after)$/
+// Since 2026-08-28 the name carries the BEAT: `evidence <id>#<n> before`. The un-keyed form is
+// still read (a record from an older run, a mixed tree) and folded as beat 1, so nothing that was
+// harvested before this change reads as unharvested.
+const EVIDENCE_ATT = /^evidence ([^#\s]+)(?:#(\d+))? (before|after)$/
 export function parseEvidenceAttachment (name) {
   const m = EVIDENCE_ATT.exec(String(name || ''))
-  return m ? { id: m[1], phase: m[2] } : null
+  return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
+}
+
+// The LAYOUT attachment names snapLayout emits — `layout <id>#<n> before|after`, mirroring the
+// frame pair exactly (2026-08-28, the UI-mirror schematic). Same strictness: any other name is not
+// a layout and must never be folded as one.
+const LAYOUT_ATT = /^layout ([^#\s]+)(?:#(\d+))? (before|after)$/
+export function parseLayoutAttachment (name) {
+  const m = LAYOUT_ATT.exec(String(name || ''))
+  return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
+}
+
+// THE FOCUS RECT (2026-08-28): where the ring was when the beat's AFTER frame was taken, in page
+// coordinates, with the viewport it was measured in — so the board can ZOOM the proof media onto
+// the component being proven instead of showing a full-page frame and asking a reader to hunt.
+// It rides inside the layout skeleton (snapLayout already records the ring and the viewport), so
+// there is one source of truth and no extra attachment; this lifts it into the index shape.
+// Null when that beat painted no ring, and the key is then simply absent.
+export function focusFromLayout (layout) {
+  const r = layout && layout.ring
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : null)
+  if (!r || num(r.x) == null || num(r.y) == null || !(num(r.w) > 0) || !(num(r.h) > 0)) return null
+  const vw = num(layout.w); const vh = num(layout.h)
+  if (!(vw > 0) || !(vh > 0)) return null
+  return { x: num(r.x), y: num(r.y), w: num(r.w), h: num(r.h), vw, vh }
 }
 
 // Fold one run's harvest into the results index — the same rules coverage follows: merged per
@@ -174,10 +258,32 @@ export function foldEvidence (index, entries) {
     // committed video, its seek offsets frozen WITH it — the new fold's window indexes a recording
     // that was never committed, so it must never re-aim the old one. A fold that brings a fresh
     // video replaces the whole object.
-    const raw = (!raw0.video && old && old.video) ? { ...raw0, video: old.video } : raw0
+    let raw = (!raw0.video && old && old.video) ? { ...raw0, video: old.video } : raw0
+    // The LAYOUT carry (2026-08-28), per beat and on the video's rule rather than the frames': a
+    // layout is the SOURCE the committed schematic was drawn from, so a run whose capture failed
+    // (a page torn down mid-assert) must not delete the drawing's source and silently drop the
+    // requirement back to an archetype. A beat that brings fresh layouts replaces its own.
+    const oldBeat = n => (old && old.beats ? old.beats.find(b => b && b.n === n) : null)
+    if (Array.isArray(raw.beats) && old && Array.isArray(old.beats)) {
+      const beats = raw.beats.map(b => {
+        if (b.layoutBefore || b.layoutAfter) return b
+        const o = oldBeat(b.n)
+        if (!o || !(o.layoutBefore || o.layoutAfter)) return b
+        const carried = { ...b }
+        if (o.layoutBefore) carried.layoutBefore = o.layoutBefore
+        if (o.layoutAfter) carried.layoutAfter = o.layoutAfter
+        if (!carried.focus && o.focus) carried.focus = o.focus   // the zoom rides with its layout
+        return carried
+      })
+      if (beats.some((b, j) => b !== raw.beats[j])) raw = { ...raw, beats }
+    }
     entry.evidence = { ...(entry.evidence || {}), [rid]: raw }
     if (old) {
-      const vals = x => [x.before, x.after, x.clip, ...Object.values(x.clipVariants || {})]
+      // every file an entry names — the requirement-level pair, every beat's four, and a legacy
+      // entry's retired clip set — so a path the new entry dropped is named for deletion
+      const vals = x => [x.before, x.after, x.clip, ...Object.values(x.clipVariants || {}),
+        ...(Array.isArray(x.beats) ? x.beats : []).flatMap(b =>
+          b ? [b.before, b.after, b.layoutBefore, b.layoutAfter] : [])]
       const kept = new Set(vals(raw).filter(Boolean))
       for (const p of vals(old)) {
         if (p && !kept.has(p)) prune.push(p)

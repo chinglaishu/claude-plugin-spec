@@ -7,7 +7,7 @@
 // pruning, so an old index cleans itself up on its next fold.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { evidencePaths, parseEvidenceAttachment, foldEvidence } from './evidence.mjs'
+import { evidencePaths, beatEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, foldEvidence } from './evidence.mjs'
 
 test('evidencePaths derives the deterministic per-requirement home under the screen dir — frames only', () => {
   assert.deepEqual(evidencePaths('board', 'R4'), {
@@ -16,19 +16,52 @@ test('evidencePaths derives the deterministic per-requirement home under the scr
     after: 'spec/board/evidence/R4.after.png'
   })
 })
+
+// ── 2026-08-28: the harvest is PER BEAT (the board is becoming per-beat rows), and the
+// requirement-level pair above is derived from it. Each beat keeps its frames and the layout
+// skeletons its schematic frame is drawn from, one name away from the picture they measured.
+test('beatEvidencePaths keys the harvest by the beat the check proves', () => {
+  assert.deepEqual(beatEvidencePaths('board', 'R4', 2), {
+    dir: 'spec/board/evidence',
+    before: 'spec/board/evidence/R4.b2.before.png',
+    after: 'spec/board/evidence/R4.b2.after.png',
+    layoutBefore: 'spec/board/evidence/R4.b2.before.layout.json',
+    layoutAfter: 'spec/board/evidence/R4.b2.after.layout.json'
+  })
+})
+test('beatEvidencePaths takes the bare id off a qualified one, and defaults to beat 1', () => {
+  assert.equal(beatEvidencePaths('asset-plan', 'asset-plan:R5', 1).before, 'spec/asset-plan/evidence/R5.b1.before.png')
+  assert.equal(beatEvidencePaths('board', 'R4').layoutAfter, 'spec/board/evidence/R4.b1.after.layout.json')
+})
 test('evidencePaths takes the bare id off a qualified one — the home is the requirement\'s screen', () => {
   assert.equal(evidencePaths('asset-plan', 'asset-plan:R5').before, 'spec/asset-plan/evidence/R5.before.png')
 })
 
-test('parseEvidenceAttachment reads the phase pair names checkReq attaches', () => {
-  assert.deepEqual(parseEvidenceAttachment('evidence R4 before'), { id: 'R4', phase: 'before' })
-  assert.deepEqual(parseEvidenceAttachment('evidence asset-plan:R5 after'), { id: 'asset-plan:R5', phase: 'after' })
+test('parseEvidenceAttachment reads the beat-keyed phase pair names checkReq attaches', () => {
+  assert.deepEqual(parseEvidenceAttachment('evidence R4#1 before'), { id: 'R4', beat: 1, phase: 'before' })
+  assert.deepEqual(parseEvidenceAttachment('evidence asset-plan:R5#3 after'), { id: 'asset-plan:R5', beat: 3, phase: 'after' })
+  // the un-keyed form still reads (an older run, a mixed tree) — the fold files it as beat 1
+  assert.deepEqual(parseEvidenceAttachment('evidence R4 before'), { id: 'R4', beat: null, phase: 'before' })
 })
 test('parseEvidenceAttachment refuses every other attachment name', () => {
   assert.equal(parseEvidenceAttachment('screenshot'), null)
   assert.equal(parseEvidenceAttachment('evidence R4 during'), null)
   assert.equal(parseEvidenceAttachment('failure-cover'), null)
   assert.equal(parseEvidenceAttachment(''), null)
+  assert.equal(parseEvidenceAttachment('layout R4 before'), null, 'a layout is not a frame')
+})
+
+// ── 2026-08-28: the LAYOUT skeleton rides beside the frame pair, named the same way ──
+test('parseLayoutAttachment reads the layout pair names snapLayout attaches', () => {
+  assert.deepEqual(parseLayoutAttachment('layout R4#1 before'), { id: 'R4', beat: 1, phase: 'before' })
+  assert.deepEqual(parseLayoutAttachment('layout asset-plan:R5#2 after'), { id: 'asset-plan:R5', beat: 2, phase: 'after' })
+  assert.deepEqual(parseLayoutAttachment('layout R4 before'), { id: 'R4', beat: null, phase: 'before' })
+})
+test('parseLayoutAttachment refuses every other attachment name', () => {
+  assert.equal(parseLayoutAttachment('evidence R4 before'), null, 'a frame is not a layout')
+  assert.equal(parseLayoutAttachment('layout R4 during'), null)
+  assert.equal(parseLayoutAttachment('screenshot'), null)
+  assert.equal(parseLayoutAttachment(''), null)
 })
 
 const entry = (over = {}) => ({
@@ -159,6 +192,62 @@ test('T16: an entry that never had a video gains none from a video-less fold', (
   const index = { board: { evidence: { R4: entry() } } }
   foldEvidence(index, { 'board:R4': entry({ runId: 'r2' }) })
   assert.equal('video' in index.board.evidence.R4, false)
+})
+
+// ── 2026-08-28: PER-BEAT evidence. An entry carries `beats: [{n, before, after, layoutBefore,
+// layoutAfter, window, focus?}]` beside the derived requirement-level pair. Every beat file is
+// named for pruning when the new entry drops it, and the LAYOUT (the source the committed
+// schematic was drawn from) follows the video's carry rule rather than the frames': a run whose
+// capture failed must not delete the drawing's source and silently drop the requirement back to
+// an archetype. A beat that brings fresh layouts replaces its own.
+const beat = (n, over = {}) => ({
+  n,
+  before: `spec/board/evidence/R4.b${n}.before.png`,
+  after: `spec/board/evidence/R4.b${n}.after.png`,
+  layoutBefore: `spec/board/evidence/R4.b${n}.before.layout.json`,
+  layoutAfter: `spec/board/evidence/R4.b${n}.after.layout.json`,
+  window: { from: 100 * n, to: 100 * n + 50 },
+  ...over
+})
+const noLay = n => beat(n, { layoutBefore: null, layoutAfter: null })
+
+test('beats: a fold lands every beat, each with its own frames, layouts and window', () => {
+  const index = {}
+  const prune = foldEvidence(index, { 'board:R4': entry({ beats: [beat(1), beat(2)] }) })
+  assert.deepEqual(prune, [])
+  const e = index.board.evidence.R4
+  assert.equal(e.beats.length, 2)
+  assert.equal(e.beats[1].after, 'spec/board/evidence/R4.b2.after.png')
+  assert.deepEqual(e.beats[1].window, { from: 200, to: 250 })
+})
+
+test('beats: a layout-less re-fold carries each beat\'s committed skeletons (and its focus rect)', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [beat(1, { focus: { x: 1, y: 2, w: 3, h: 4, vw: 1440, vh: 900 } })] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [noLay(1)] }) })
+  assert.deepEqual(prune, [], 'nothing is pruned by a carry')
+  const b = index.board.evidence.R4.beats[0]
+  assert.equal(b.layoutBefore, 'spec/board/evidence/R4.b1.before.layout.json')
+  assert.equal(b.layoutAfter, 'spec/board/evidence/R4.b1.after.layout.json')
+  assert.deepEqual(b.focus, { x: 1, y: 2, w: 3, h: 4, vw: 1440, vh: 900 }, 'the zoom rides with its layout')
+  assert.equal(index.board.evidence.R4.runId, 'r2', 'while everything else takes the new fold')
+})
+
+test('beats: a beat the new harvest dropped has all four of its files named for pruning', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [beat(1), beat(2)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1)] }) })
+  assert.deepEqual(prune.sort(), [
+    'spec/board/evidence/R4.b2.after.layout.json',
+    'spec/board/evidence/R4.b2.after.png',
+    'spec/board/evidence/R4.b2.before.layout.json',
+    'spec/board/evidence/R4.b2.before.png'
+  ], 'beat 2 no longer exists — its whole set goes')
+})
+
+test('beats: an entry that never had layouts gains none from a layout-less fold', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [noLay(1)] }) } } }
+  foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [noLay(1)] }) })
+  assert.equal(index.board.evidence.R4.beats[0].layoutBefore, null)
+  assert.equal('focus' in index.board.evidence.R4.beats[0], false)
 })
 
 test('T13: the carry is gone — a proven, hash-matched entry still sheds its legacy clip', () => {

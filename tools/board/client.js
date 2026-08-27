@@ -177,8 +177,11 @@ const B = window.__BOARD__ || {}
   // being torn down, a Focus page being paged away (release pass M-2 — paging is the commonest way
   // to leave a page, and the old page's timer used to outlive it until its hold expired). The
   // tick's isConnected guard is only the backstop, never the plan.
+  // Every frame-stepper in a subtree, stopped. Since the per-beat split (2026-08-28) a reader holds
+  // one per beat row rather than one per media pane, so they are found by the data-stepper marker
+  // makeStepper sets — never by where they happen to be mounted.
   function stopSteppers (root) {
-    for (const p of (root || document).querySelectorAll('.fmpanel[data-m="clip"]')) if (p._stop) p._stop()
+    for (const p of (root || document).querySelectorAll('[data-stepper]')) if (p._stop) p._stop()
   }
   function closeFocus () {
     // BOTH reader kinds hold a media pane — stop any stepper before the nodes go
@@ -200,6 +203,8 @@ const B = window.__BOARD__ || {}
       if (body) { body.innerHTML = ''; body.hidden = true }
       card.classList.remove('open')
     }
+    // the torn-down cells' speed and zoom subscriptions go with them — no detached-node backlog
+    pruneSpd(); pruneZoom()
   }
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
@@ -420,6 +425,14 @@ const B = window.__BOARD__ || {}
           const m = /^(\d+):(\d+)$/.exec(node.getAttribute('data-ev-vwin') || '')
           return m ? { from: +m[1], to: +m[2] } : null
         })(),
+        // the PER-BEAT harvest (the human, 2026-08-28) — [{n, before, after, layoutBefore,
+        // layoutAfter, window, focus}], baked as one JSON attribute. Absent on an older harvest, and
+        // the storyline reader falls back to the requirement-level pair rather than inventing one.
+        beats: (function () {
+          const raw = node.getAttribute('data-ev-beats')
+          if (!raw) return []
+          try { const v = JSON.parse(raw); return Array.isArray(v) ? v : [] } catch (e) { return [] }
+        })(),
         at: node.getAttribute('data-ev-at') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
@@ -463,10 +476,13 @@ const B = window.__BOARD__ || {}
       moved.length = 0
     }
 
+    // THE STORYLINE READER (the human, 2026-08-28): ONE card, read top to bottom as the behaviour's
+    // own story. Every row is one beat and carries that beat's three cells side by side —
+    // [ the schematic frame | the Given / When→Then text | the beat's own proof frames ] — so the
+    // drawing, the sentence and the photograph of it happening are read together instead of being
+    // hunted for in three separate places. Under the rows: the one video for the whole requirement,
+    // then the authored prose in full.
     const page = document.createElement('div'); page.className = 'fpage'
-
-    // ── LEFT: the reading stack ──────────────────────────────────────────────
-    const left = document.createElement('div'); left.className = 'fleft'
     const read = document.createElement('div'); read.className = 'fread'
     // ONE header row (the human, 2026-08-25): id · chip · TITLE · ⋯ on a single line — the title
     // joins the meta so the reading card leads compactly. The position (family · n of N) is DROPPED
@@ -492,48 +508,27 @@ const B = window.__BOARD__ || {}
       ['addtest', 'Add a test to cover it', reqAddTestCtx]
     ]))
     read.appendChild(rmeta)
-    // THE STORY LEADS (R13, the human 2026-08-25 #2): the behavior PAIRED with its drawn schematic —
-    // a beat-paired storyboard (each Given/When->Then beside the still that draws it), the animated
-    // whole a loop toggle away. This replaces the old split of a .fbeats behavior grid ABOVE a
-    // separate .fschem drawing — the two boxes said the same thing twice. A prose-only requirement
-    // has no shape to pair, so its prose stays open beneath.
-    // Task 12 (the schematic on first sight), kept and generalized: the story + prose live in
-    // .fscroll, the card's INTERNAL scroll region, between the fixed header above and the pinned
-    // .ffoot below (the Full-requirement toggle, always visible) — so the card shrinks to the
-    // viewport and the storyboard is on screen from the first paint. The 'clipped' class drives the
-    // footer's hairline fade — the honest cue that more sits below the edge.
+    // ONE play speed for the whole reader (the human, 2026-08-28): the schematic frames, every beat
+    // cell's stepper and the video are views of the SAME beat, so they play at the same pace. It
+    // rides only where there is something to pace — a control over an empty reader is chrome.
+    const paceable = !!(r.schem && r.schem.svg) ||
+      !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
+    if (paceable) {
+      const bar = document.createElement('div'); bar.className = 'fbar'
+      const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
+      bar.appendChild(bl); bar.appendChild(spdSelect())
+      read.appendChild(bar)
+    }
+    // THE REQUIREMENT, WHOLE (the human, 2026-08-28): the beat rows lead, the video and the authored
+    // prose follow — no "Full requirement" toggle any more. A requirement's text is what the board is
+    // FOR; hiding half of it behind a chevron made the reader guess whether there was more.
+    // Task 12 (the shape on first sight), kept and generalized: the storyline lives in .fscroll, the
+    // card's INTERNAL scroll region, between the fixed header above and the pinned .ffoot below — so
+    // the card shrinks to the viewport and the first beat is on screen from the first paint. The
+    // 'clipped' class drives the footer's hairline fade — the honest cue that more sits below.
     const scroll = document.createElement('div'); scroll.className = 'fscroll'
-    scroll.appendChild(buildStory(r))
-    const fbody = document.createElement('div')
-    fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
-    fbody.innerHTML = r.proseHtml
-    scroll.appendChild(fbody)
-    read.appendChild(scroll)
-    const foot = document.createElement('div'); foot.className = 'ffoot'
-    const syncClip = function () {
-      read.classList.toggle('clipped', scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop > 1)
-    }
-    scroll.addEventListener('scroll', syncClip)
-    // a ResizeObserver fires once the region gets a layout (and on every reflow of its box) — the
-    // initial paint's cue without racing the append; content-height changes go through syncClip calls
-    if (window.ResizeObserver) new ResizeObserver(syncClip).observe(scroll)
-    if (r.behHtml) {
-      // the in-full toggle is a PILL (the human, 2026-08-25) — "Full requirement" with a chevron
-      // that flips when the authored prose unfolds beneath the storyboard
-      const pt = document.createElement('button'); pt.type = 'button'; pt.className = 'prose-t'
-      pt.innerHTML = 'Full requirement <span class="chev" aria-hidden="true">⌄</span>'
-      pt.addEventListener('click', function () {
-        const open = fbody.classList.toggle('open')
-        pt.classList.toggle('open', open)
-        if (open) fbody.scrollIntoView({ block: 'nearest' })
-        syncClip()
-      })
-      foot.appendChild(pt)
-    }
-    read.appendChild(foot)
-    left.appendChild(read)
-
-    // ── RIGHT: the proof ─────────────────────────────────────────────────────
+    scroll.appendChild(buildStoryline(r))
+    // ── the proof band: the covering test's header, the one video, the moved test node ───────
     const evl = document.createElement('div'); evl.className = 'feval'
     // the proof line names the PRIMARY first (under a failed status, the test whose run failed — A-1)
     const ordered = primary ? [primary].concat(cov.filter(function (t) { return t !== primary })) : cov
@@ -609,9 +604,10 @@ const B = window.__BOARD__ || {}
         '<span class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</span></div>'
       evl.appendChild(ph)
     }
-    // THE MEDIA PANE (D2) — video mode plays the screen's COMMITTED recording (Task 16 #1), so
-    // nothing is relocated for it any more; the run's own .rec stays folded inside the moved test
-    evl.appendChild(buildMedia(dt, r, primary, move))
+    // THE MEDIA BAND (D2, reshaped 2026-08-28): the per-beat frames now ride their own rows, so what
+    // is left here is what belongs to the WHOLE requirement — the committed recording (Task 16 #1),
+    // and, on a failure, the run's own frames and its expected-vs-actual
+    evl.appendChild(buildMedia(dt, r, primary))
     // the moved covering test itself — its proof-frame strip stays visible here (board R14), the
     // rest of its chrome folded away; loadRuns folds it whenever it is home in the pane
     if (primary) {
@@ -619,55 +615,71 @@ const B = window.__BOARD__ || {}
       evl.appendChild(ev)
       move(primary, ev, true)
     }
-    page.appendChild(left); page.appendChild(evl)
+    scroll.appendChild(evl)
+    const fbody = document.createElement('div')
+    fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
+    fbody.innerHTML = r.proseHtml
+    scroll.appendChild(fbody)
+    read.appendChild(scroll)
+    const foot = document.createElement('div'); foot.className = 'ffoot'
+    const syncClip = function () {
+      read.classList.toggle('clipped', scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop > 1)
+    }
+    scroll.addEventListener('scroll', syncClip)
+    // a ResizeObserver fires once the region gets a layout (and on every reflow of its box) — the
+    // initial paint's cue without racing the append; content-height changes go through syncClip calls
+    if (window.ResizeObserver) new ResizeObserver(syncClip).observe(scroll)
+    read.appendChild(foot)
+    page.appendChild(read)
     return { page: page, restore: restore, id: r.id }
   }
 
-  // PLAY SPEED (Task 13, superseding Task 11's cycle button): one design-system <select> per pane
-  // — 0.25× · 0.5× · 1× · 1.5× · 2× · 4× (the human's chosen range; a cycle button cannot carry
+  // PLAY SPEED (Task 13, superseding Task 11's cycle button): a design-system <select> —
+  // 0.25× · 0.5× · 1× · 1.5× · 2× · 4× (the human's chosen range; a cycle button cannot carry
   // six stops, and a native select is keyboard-reachable for free). SESSION-scoped on purpose
   // (module state, never storage): readers are rebuilt on every fold (close-fold-reopen), so the
   // chosen pace must survive a rebuild — but a preference that quietly persisted across visits
-  // would make tomorrow's proof play fast with no cue why. Two panes, two states: the media pane
-  // (the gif-mode frame-stepper's holds / video playbackRate — the native rate covers the whole
-  // range) and the schematic pane (--spd on its wrapper — viz emits every duration as
-  // calc(<X>s/var(--spd,1)), which takes any factor, and the stills CSS divides the parked delay
-  // by the SAME var, so a still shows the same frame at every speed). A global "all players"
-  // control is deliberately absent: specboard shows one player per pane, so per-pane IS the
-  // reference's control, honestly scoped.
+  // would make tomorrow's proof play fast with no cue why.
+  //
+  // ONE control per reader (the human, 2026-08-28), not one per pane: the schematic and the proof
+  // are the two halves of the same requirement, so watching them drift apart at different paces was
+  // the defect. The single state drives BOTH — the schematic's --spd (viz emits every duration as
+  // calc(<X>s/var(--spd,1)), and the parked-still CSS divides its delay by the SAME var, so a still
+  // shows the same frame at every speed) and the media pane (the frame-stepper's holds / a video's
+  // playbackRate across the native range). Panes subscribe with onSpd and are pruned once their node
+  // leaves the DOM, so a rebuilt reader never accumulates dead listeners.
   const SPDS = [0.25, 0.5, 1, 1.5, 2, 4]
   const spdLabel = function (v) { return v + '×' }
-  let MEDIA_SPD = 1
-  let SCHEM_SPD = 1
-  function spdSelect (get, set) {
+  let PLAY_SPD = 1
+  const SPD_W = []
+  function onSpd (node, fn) { SPD_W.push({ node: node, fn: fn }) }
+  // dropped only where a node is KNOWN gone (a torn-down reader, or a fold's rebuild) — never at
+  // registration time, when the freshly-built page is still detached and every watcher would go
+  function pruneSpd () {
+    for (let i = SPD_W.length - 1; i >= 0; i--) if (!SPD_W[i].node.isConnected) SPD_W.splice(i, 1)
+  }
+  function setSpd (v) {
+    PLAY_SPD = v
+    pruneSpd()
+    for (const w of SPD_W) w.fn(v)
+  }
+  function spdSelect () {
     const s = document.createElement('select'); s.className = 'pspd'
     s.title = 'play speed'; s.setAttribute('aria-label', 'play speed')
     SPDS.forEach(function (v) {
       const o = document.createElement('option'); o.value = String(v); o.textContent = spdLabel(v)
       s.appendChild(o)
     })
-    s.value = String(get())
-    s.addEventListener('change', function () { set(parseFloat(s.value) || 1) })
+    s.value = String(PLAY_SPD)
+    s.addEventListener('change', function () { setSpd(parseFloat(s.value) || 1) })
     // wrapped so the CSS can draw the caret (M-6) — a <select> takes no pseudo-element
     const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
     return w
   }
 
-  // THE STORY (requirement schematics 2026-08-18; the human, 2026-08-25 #2): the behavior PAIRED
-  // with its drawn schematic — one beat-paired STORYBOARD, replacing the old split of a behavior
-  // grid ABOVE a separate drawing (two boxes saying the same thing twice). The drawing is the
-  // AUTHORED-side picture: derived once from the behavior text (tools/viz.mjs), committed at
-  // spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media. Phases align 1:1 with beats
-  // (phase 0 = Given, phase i = beat i), so each Given / When->Then sits beside the still that draws
-  // it. Two modes, a client-side preference ('sbSchemMode'): STORYBOARD (default — the paired rows,
-  // reduced-motion-safe since the stills are parked) and LOOP (the animated whole + the plain
-  // behavior grid, for motion on demand). A drawing whose text moved past its pin renders QUIET GREY
-  // under the dated stale note — honest, never a wrong picture. A requirement with no committed
-  // drawing shows the labelled beats and the placeholder line — never an empty frame.
-  //
   // behParts reads the baked .behavior block (the same markup renderBehavior emits) back into the
-  // Given + When/Then beats the storyboard pairs — label innerHTML kept so the WHEN1/THEN1 numbering
-  // survives, text innerHTML kept so its escaping does.
+  // Given + When/Then beats the storyline splits into rows — label innerHTML kept so the WHEN1/THEN1
+  // numbering survives, text innerHTML kept so its escaping does.
   function behParts (behHtml) {
     const tmp = document.createElement('div'); tmp.innerHTML = behHtml || ''
     const out = { given: null, beats: [] }; let cur = null
@@ -680,25 +692,297 @@ const B = window.__BOARD__ || {}
     })
     return out
   }
-  function buildStory (r) {
+  // one Given / When / Then line: the tracked label, then the sentence
+  function behStep (labHtml, txtHtml, isThen) {
+    return '<div class="sbstep"><span class="sbk' + (isThen ? ' then' : '') + '">' + labHtml +
+      '</span><span class="sbv">' + txtHtml + '</span></div>'
+  }
+  // ── THE CAMERA ───────────────────────────────────────────────────────────────────────────────
+  // A proof cell frames the FOCUSED component, not the whole screen (the human, 2026-08-28): the
+  // harvest records the ringed target's box and the viewport it was measured in, and the cell holds
+  // the media under a fixed window, scaled and translated so that box — padded generously — reads
+  // large. The maths is pure and shared (tools/board/stepper.js cameraView/cameraCss) precisely so
+  // stills, the stepper's frames and the video are framed IDENTICALLY: switching mode inside a cell
+  // must never move the view. It is a VIEW, never a crop — every cell carries the toggle back to the
+  // whole screenshot, and the evidence on disk is untouched either way.
+  let ZOOMED = true            // session-scoped, like the play speed; zoom is the default
+  const ZOOM_W = []            // {node, fn} — cells re-aim themselves when the choice changes
+  function onZoom (node, fn) { ZOOM_W.push({ node: node, fn: fn }) }
+  function pruneZoom () {
+    for (let i = ZOOM_W.length - 1; i >= 0; i--) if (!ZOOM_W[i].node.isConnected) ZOOM_W.splice(i, 1)
+  }
+  function setZoom (v) {
+    ZOOMED = v
+    pruneZoom()
+    for (const w of ZOOM_W) w.fn(v)
+  }
+  // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
+  // screenshot: it has its own viewBox, and while the wireframe is drawn at the layout viewport's
+  // aspect, nothing guarantees it. Re-expressing the rect as the same FRACTION of the drawing keeps
+  // the two cells framing the same region even when the aspects differ — the camera then works off
+  // the drawing's own coordinates, so the claim "same region" stays true rather than nearly true.
+  function focusInSvg (focus, svgEl) {
+    if (!focus || !svgEl) return focus || null
+    const vb = String(svgEl.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number)
+    if (vb.length !== 4 || !vb.every(function (n) { return typeof n === 'number' && isFinite(n) })) return focus
+    const sw = vb[2]; const sh = vb[3]
+    if (!(sw > 0 && sh > 0) || !(focus.vw > 0 && focus.vh > 0)) return focus
+    return {
+      x: focus.x / focus.vw * sw, y: focus.y / focus.vh * sh,
+      w: focus.w / focus.vw * sw, h: focus.h / focus.vh * sh, vw: sw, vh: sh
+    }
+  }
+  // Aim one camera box at its focus rect — the SAME call for a proof frame and for the schematic
+  // beside it (the human, 2026-08-28): a row is only comparable if both cells frame the same region,
+  // so they take the same focus rect through the same maths. The transform is recomputed on every
+  // resize, so a reflowed reader keeps the framing.
+  //
+  // The class is set BEFORE the box is measured, because the box only HAS a camera height while it
+  // is .zoomed — full-frame it takes its media's own height (so nothing floats letterboxed in a
+  // field of background). It is set again after, so a camera that refuses to magnify (cameraView's
+  // ok:false — a target as wide as the frame) drops honestly back to the filling full-frame.
+  function aimCamera (box, focus, opts) {
+    // apply is IDEMPOTENT — the class change resizes the box and wakes the observer that called it,
+    // and the second pass computes the same classes, so the echo dies on the next frame
+    const apply = function () {
+      const want = !!(ZOOMED && focus)
+      box.classList.toggle('zoomed', want)
+      const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, opts) : null
+      const css = window.SBStepper.cameraCss(view)
+      for (const m of box.querySelectorAll('.camsub')) m.style.transform = css
+      box.classList.toggle('zoomed', !!(view && view.ok))
+    }
+    apply()
+    if (window.ResizeObserver) new ResizeObserver(apply).observe(box)
+    if (focus) onZoom(box, apply)
+    return apply
+  }
+
+  // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
+  // Task 13's player, extracted from the old media pane so a per-beat proof CELL can play its own
+  // pair: the frames stacked, one on show, over a slim bar of exact dots and the mono n / N count.
+  // It carries data-stepper so closeFocus's sweep finds it wherever it is mounted, and it re-arms
+  // itself at the reader's one speed.
+  function makeStepper (frames) {
+    const el = document.createElement('div'); el.className = 'fsteps-wrap'; el.dataset.stepper = '1'
+    const stage = document.createElement('div'); stage.className = 'fsteps'
+    frames.forEach(function (f) {
+      // eager on purpose (release pass M-1): the frames stack display:none, and a lazy img is never
+      // fetched while hidden — at 4× the first loop flashed blank.
+      const img = document.createElement('img'); img.className = 'camsub'; img.src = f.src; img.alt = f.alt || ''
+      stage.appendChild(img)
+    })
+    const sbar = document.createElement('div'); sbar.className = 'fstepbar'
+    const dots = document.createElement('span'); dots.className = 'pdots'
+    const lbl = document.createElement('span'); lbl.className = 'fstepn'
+    const timing = window.SBStepper.stepperHolds(frames.map(function (f) { return f.anchor }))
+    const holds = timing.holds
+    // the fallback is honest but otherwise invisible — say which pace this loop plays (I-4)
+    lbl.title = timing.timed ? 'true relative timing — from the run’s own step times' : 'equal holds — this harvest carries no usable timing'
+    const imgs = [].slice.call(stage.children)
+    const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    let cur = 0
+    let timer = null
+    const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
+    const show = function (i) {
+      cur = i
+      imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
+      ;[].slice.call(dots.children).forEach(function (d, k) {
+        d.classList.toggle('cur', k === i)
+        d.classList.toggle('seen', k < i)
+      })
+      lbl.textContent = (i + 1) + ' / ' + imgs.length
+    }
+    // a dot click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest
+    // rule that guarantees the chosen frame its read time
+    const schedule = function () {
+      stop()
+      if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
+      timer = setTimeout(function () {
+        timer = null
+        if (!el.isConnected || el.hidden) return         // torn down, or the cell shows its stills
+        show((cur + 1) % imgs.length)
+        schedule()
+      }, window.SBStepper.scaleHold(holds[cur], PLAY_SPD))
+    }
+    frames.forEach(function (_, j) {
+      const d = document.createElement('button'); d.type = 'button'; d.className = 'pd'
+      d.setAttribute('aria-label', 'frame ' + (j + 1) + ' of ' + frames.length)
+      d.addEventListener('click', function () { show(j); schedule() })
+      dots.appendChild(d)
+    })
+    sbar.appendChild(dots); sbar.appendChild(lbl)
+    el.appendChild(stage); el.appendChild(sbar)
+    show(0)
+    el._start = schedule; el._stop = stop
+    onSpd(el, function () { if (!el.hidden) schedule() })
+    return el
+  }
+
+  // THE ROW'S FOCUS RECT — the one both of its cells frame (the human, 2026-08-28). The GIVEN row is
+  // the CONTEXT row: it shows the whole page on both sides, because the point of it is where the
+  // component sits, not what it says. Every beat row takes its beat's own recorded box. A prose-only
+  // requirement has one row and no context row to spare, so it keeps beat 1's box if there is one.
+  // i: 0 = the Given row, 1..nbeats = beat i.
+  function beatFocus (r, i, nbeats) {
+    if (i === 0 && nbeats) return null
+    const want = i || 1
+    const b = (r.ev.beats || []).filter(function (x) { return Number(x.n) === want })[0]
+    return (b && b.focus) ? b.focus : null
+  }
+  // ── THE PROOF a beat row shows ───────────────────────────────────────────────────────────────
+  // `ev.beats` is the per-beat harvest: beat n's own before/after and the window it spans. An OLDER
+  // harvest carries none, and then only the requirement-level pair is honest — its before opens the
+  // story on the Given row, its after closes it on the LAST beat row, and every row in between says
+  // the gap out loud. Nothing is ever borrowed from a neighbouring beat to fill a cell (rule 3).
+  // i: 0 = the Given row, 1..nbeats = beat i.
+  function beatShots (r, i, nbeats) {
+    const per = (r.ev.beats || [])
+    const at = function (n) { return per.filter(function (b) { return Number(b.n) === n })[0] || null }
+    // ONE focus rect for the whole row — the same one the schematic cell is aimed at, so the two
+    // cells can never frame different regions of the same beat
+    const rf = beatFocus(r, i, nbeats)
+    const shot = function (src, cap, anchor) {
+      return { src: src, cap: cap, anchor: (typeof anchor === 'number') ? anchor : null, focus: rf }
+    }
+    const pair = function (b, capA, capB) {
+      const out = []
+      if (b.before) out.push(shot(b.before, capA, b.window ? b.window.from : null))
+      if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null))
+      return out
+    }
+    if (per.length) {
+      if (i === 0) {
+        const b1 = at(1)
+        if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
+        // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
+        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null)] : []) : pair(b1, 'before', 'after')
+        return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
+      }
+      const b = at(i)
+      if (!b) return { shots: [], why: 'no per-beat evidence yet — the next run harvests it' }
+      const out = pair(b, 'before', 'after')
+      return out.length ? { shots: out } : { shots: [], why: 'no per-beat evidence yet — the next run harvests it' }
+    }
+    // the fallback: the requirement-level pair, at the two ends of the story it actually covers
+    if (i === 0) {
+      const out = []
+      if (r.ev.before) out.push(shot(r.ev.before, 'before', r.ev.window ? r.ev.window.from : null))
+      // no beat rows to close the story on — a prose-only requirement's one row carries both ends
+      if (!nbeats && r.ev.after) out.push(shot(r.ev.after, 'after — the asserted value in frame', r.ev.window ? r.ev.window.to : null))
+      return out.length ? { shots: out } : { shots: [], why: 'no evidence harvested yet' }
+    }
+    if (i === nbeats) {
+      return r.ev.after
+        ? { shots: [shot(r.ev.after, 'after — the asserted value in frame', r.ev.window ? r.ev.window.to : null)] }
+        : { shots: [], why: 'no evidence harvested yet' }
+    }
+    return { shots: [], why: 'no per-beat evidence yet — this harvest only spans the whole requirement' }
+  }
+
+  // one beat row's PROOF cell: the beat's frames under the camera, stills by default with the
+  // stepper one click away where there is more than one frame, and the zoom ↔ full-frame toggle
+  // wherever the harvest recorded a focus box.
+  function proofCell (r, i, nbeats) {
+    const cell = document.createElement('div'); cell.className = 'sbproof'
+    const got = beatShots(r, i, nbeats)
+    if (!got.shots.length) {
+      const no = document.createElement('div'); no.className = 'pcnone'
+      no.textContent = '◌ ' + (got.why || 'no evidence yet')
+      cell.appendChild(no)
+      return cell
+    }
+    const focus = got.shots[0].focus
+    const cam = document.createElement('div'); cam.className = 'pccam'
+    // STILLS — the default: the beat's frames side by side, each its own camera box
+    const strip = document.createElement('div'); strip.className = 'pcstrip'
+    got.shots.forEach(function (s) {
+      const fig = document.createElement('figure'); fig.className = 'pcfig'
+      const box = document.createElement('div'); box.className = 'pcbox'
+      const im = document.createElement('img'); im.className = 'camsub'; im.src = s.src; im.alt = s.cap
+      box.appendChild(im); fig.appendChild(box)
+      const cp = document.createElement('figcaption'); cp.className = 'pccap'; cp.textContent = s.cap
+      fig.appendChild(cp); strip.appendChild(fig)
+      aimCamera(box, s.focus)
+    })
+    cam.appendChild(strip)
+    // GIF — the same frames played, in one camera box so the view never moves between modes
+    const bar = document.createElement('div'); bar.className = 'pcbar'
+    if (got.shots.length > 1) {
+      const sbox = document.createElement('div'); sbox.className = 'pcbox pcplay'
+      const step = makeStepper(got.shots.map(function (s) {
+        return { src: s.src, alt: s.cap, anchor: s.anchor }
+      }))
+      // hidden on BOTH the box and the player: makeStepper's tick checks its own `hidden`, so a
+      // speed change must not quietly restart a loop the cell is not showing
+      sbox.appendChild(step)
+      sbox.hidden = true; step.hidden = true
+      cam.appendChild(sbox)
+      aimCamera(sbox, focus)
+      const modes = document.createElement('span'); modes.className = 'medbar pcmodes'
+      const mk = function (label, on, fn) {
+        const b = document.createElement('button'); b.type = 'button'; b.textContent = label
+        b.classList.toggle('on', on); b.addEventListener('click', fn); return b
+      }
+      const pick = function (play) {
+        strip.hidden = play; sbox.hidden = !play; step.hidden = !play
+        bStills.classList.toggle('on', !play); bGif.classList.toggle('on', play)
+        if (play) step._start(); else step._stop()
+      }
+      const bStills = mk('stills', true, function () { pick(false) })
+      const bGif = mk('gif', false, function () { pick(true) })
+      modes.appendChild(bStills); modes.appendChild(bGif)
+      bar.appendChild(modes)
+    }
+    cell.appendChild(cam)
+    // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and
+    // never a claim about what was captured. It flips the reader's ONE zoom state, which is what
+    // aims the schematic cell too: the two halves of a row can never end up framing different
+    // regions, because there is only one choice to make.
+    if (focus) {
+      const zb = document.createElement('button'); zb.type = 'button'; zb.className = 'pczoom'
+      const label = function () {
+        zb.textContent = ZOOMED ? '⤢ full frame' : '⤡ zoom to the component'
+        zb.title = ZOOMED
+          ? 'show the whole screenshot — drawing and proof together'
+          : 'frame the focused component — drawing and proof together'
+      }
+      label()
+      zb.addEventListener('click', function () { setZoom(!ZOOMED); label() })
+      onZoom(zb, label)
+      bar.appendChild(zb)
+    }
+    if (bar.childNodes.length) cell.appendChild(bar)
+    return cell
+  }
+
+  // ── THE STORYLINE: one row per beat, three cells wide ────────────────────────────────────────
+  // (the human, 2026-08-28) [ the drawn frame | the Given / When→Then | the beat's own proof ]. The
+  // rows read top to bottom as the behaviour's story, so the picture, the sentence and the
+  // photograph of it happening are read together. Given leads (phase 0); beat i draws the motion
+  // from phase i to phase i+1 and shows the frames harvested around its assertion.
+  //
+  // The drawing is the AUTHORED-side picture: derived once from the behavior text (tools/viz.mjs),
+  // committed at spec/<screen>/viz/<id>.svg, hash-pinned — NEVER captured media. Its phases align
+  // 1:1 with the beats, so each row gets its own frame; a drawing that CANNOT be split that way goes
+  // whole into the Given row's cell and the rest of the rows say so rather than showing a wrong
+  // picture. A drawing whose text moved past its pin renders quiet grey under the dated stale note.
+  // The honesty caption ("the idea, not the real UI") is gone — the drawing is being redrawn to
+  // mirror the real screen, so the disclaimer would now be false.
+  function buildStoryline (r) {
     const wrap = document.createElement('div'); wrap.className = 'fstory'
     const v = r.schem
     const beh = r.behHtml ? behParts(r.behHtml) : null
     const nbeats = beh ? beh.beats.length : 0
     const phases = (v && v.phases && v.phases.length) ? v.phases : null
-    // the storyboard can pair only when a drawing exists AND its phase count matches the beats
-    // (given + one per beat) — otherwise fall back to the plain grid + animated whole (loop layout)
+    // the frames key to the beats only when a drawing exists AND its phase count matches them
+    // (given + one per beat) — otherwise the whole drawing rides the Given row, unsplit
     const canPair = !!(v && v.svg && beh && phases && phases.length === nbeats + 1)
     const short = function (h) { return String(h || '').slice(0, 6) }
-    const step = function (labHtml, txtHtml, isThen) {
-      return '<div class="sbstep"><span class="sbk' + (isThen ? ' then' : '') + '">' + labHtml +
-        '</span><span class="sbv">' + txtHtml + '</span></div>'
-    }
-    // per-beat LOOP (the human, 2026-08-26): storyboard and loop COMBINE — each beat row scrubs the
-    // paused drawing across ITS beat's own time-window and loops, so the storyboard is a list of short
-    // per-beat loops (no storyboard/loop toggle any more). The Given row is a state, not an action, so
-    // it stays a parked still. Under reduced motion every row parks at its beat. ONE rAF drives every
-    // looping row's --ph and self-cleans when the wrap leaves the DOM (a re-render or a close).
+    // per-beat LOOP (the human, 2026-08-26): each beat's frame scrubs the paused drawing across ITS
+    // beat's own time-window and loops. The Given frame is a state, not an action, so it stays a
+    // parked still. Under reduced motion every frame parks at its beat. ONE rAF drives every looping
+    // frame's --ph and self-cleans when the wrap leaves the DOM (a re-render or a close).
     const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     const startLoops = function () {
       const frames = [].slice.call(wrap.querySelectorAll('.sbframe[data-loop]'))
@@ -708,7 +992,7 @@ const B = window.__BOARD__ || {}
       const tick = function (now) {
         if (!wrap.isConnected) return         // detached (re-render / close) → stop, never reschedule
         if (start === null) start = now
-        const spd = SCHEM_SPD || 1
+        const spd = PLAY_SPD || 1
         const elapsed = ((now - start) / 1000) * spd
         for (let i = 0; i < frames.length; i++) {
           const fr = frames[i]
@@ -723,96 +1007,109 @@ const B = window.__BOARD__ || {}
       }
       requestAnimationFrame(tick)
     }
-    const render = function () {
-      wrap.className = 'fstory' + (v && v.stale ? ' isstale' : '')
-      // the pane's play speed (Task 13) — session state reapplied on every render, so a fold's
-      // rebuild never silently drops the chosen pace
-      wrap.style.setProperty('--spd', String(SCHEM_SPD))
-      if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
-      wrap.textContent = ''
-      // the caption rides ONLY when a drawing exists (the honesty caption labels the DRAWING; the
-      // speed dropdown paces the loops). A requirement with no drawing shows its labelled beats
-      // plainly — no "schematic" caption over a grid that isn't one, and no toggle anywhere.
-      if (v && v.svg) {
-        const cap = document.createElement('div'); cap.className = 'storycap'
-        const lbl = document.createElement('span'); lbl.className = 'scaplbl'
-        lbl.textContent = 'schematic · the idea, not the real UI'
-        cap.appendChild(lbl)
-        const sb = spdSelect(function () { return SCHEM_SPD }, function (nv) {
-          SCHEM_SPD = nv; wrap.style.setProperty('--spd', String(nv))
-        })
-        cap.appendChild(sb)
-        wrap.appendChild(cap)
-      }
-
-      const body = document.createElement('div'); body.className = 'sbwrap'
-      if (canPair) {
-        // STORYBOARD: one row per phase. The Given row is PARKED at its still (a state); every
-        // When->Then row LOOPS its beat — data-loop plus the window [prev phase .. this phase] the
-        // rAF scrubs. Given leads (phase 0); beat i draws the motion from phase i to phase i+1.
-        if (v.stale) {
-          const sn = document.createElement('div'); sn.className = 'sbstale'
-          sn.innerHTML = '<b>stale — text changed</b><span>the requirement was reworded after this was drawn' +
-            (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn on the next viz pass</span>'
-          body.appendChild(sn)
-        }
-        const rowEl = function (cls, stepsHtml, park, loopWin) {
-          const row = document.createElement('div'); row.className = 'sbrow' + (cls ? ' ' + cls : '')
-          const fr = document.createElement('div'); fr.className = 'sbframe'
-          if (loopWin && !reduced) { fr.dataset.loop = '1'; fr.dataset.s = String(loopWin[0]); fr.dataset.e = String(loopWin[1]) }
-          fr.style.setProperty('--ph', (loopWin ? loopWin[1] : park) + 's')   // park at the still (or, before the rAF starts, the loop's result frame)
-          fr.innerHTML = v.svg
-          const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
-          row.appendChild(fr); row.appendChild(tx); return row
-        }
-        body.appendChild(rowEl('bgiven', step(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false), phases[0], null))
-        beh.beats.forEach(function (bt, i) {
-          const html = step(bt.when.lab, bt.when.txt, false) + (bt.then ? step(bt.then.lab, bt.then.txt, true) : '')
-          body.appendChild(rowEl(i === 0 ? '' : 'beatstart', html, phases[i + 1], [phases[i], phases[i + 1]]))
-        })
-      } else if (v && v.svg) {
-        // a drawing we cannot pair beat-for-beat: the plain behavior grid + the animated whole, drawn
-        // once (it loops on its own — the same motion, unsplit).
-        if (beh) body.insertAdjacentHTML('beforeend', r.behHtml)
-        const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
-        if (v.stale) {
-          const so = document.createElement('div'); so.className = 'staleov'
-          const b = document.createElement('b'); b.textContent = 'stale — text changed'
-          const s = document.createElement('span')
-          s.textContent = 'the requirement was reworded after this was drawn' +
-            (v.at ? ' (' + v.at + ')' : '') + ' — redrawn on the next viz pass'
-          so.appendChild(b); so.appendChild(s); viz.appendChild(so)
-        }
-        body.appendChild(viz)
-      } else {
-        // behavior but NO drawing (or prose-only): the labelled beats where there are any, then the
-        // honest placeholder — never an empty frame, never a wrong picture
-        if (beh) body.insertAdjacentHTML('beforeend', r.behHtml)
-        const no = document.createElement('div'); no.className = 'noschem'
-        no.textContent = 'no schematic drawn yet — the next viz pass derives one from the behavior text'
-        body.appendChild(no)
-      }
-      wrap.appendChild(body)
-      startLoops()
+    // ONE ROW'S DRAWING CELL, under the SAME camera as its proof (the human, 2026-08-28). The
+    // wireframe draws the page at the layout viewport's aspect and the focus rect carries that
+    // viewport (vw/vh), so the identical fractional transform frames the identical region — which is
+    // the whole point of the zoom: the drawn intent and the photographed result, same crop, side by
+    // side. With no focus (the Given context row, or an old harvest) both cells stay full-frame.
+    const frameCell = function (park, loopWin, focus) {
+      const fr = document.createElement('div'); fr.className = 'sbframe'
+      if (loopWin && !reduced) { fr.dataset.loop = '1'; fr.dataset.s = String(loopWin[0]); fr.dataset.e = String(loopWin[1]) }
+      fr.style.setProperty('--ph', (loopWin ? loopWin[1] : park) + 's')   // park at the still (or, before the rAF starts, the loop's result frame)
+      const box = document.createElement('div'); box.className = 'pcbox'
+      const sub = document.createElement('div'); sub.className = 'camsub'; sub.innerHTML = v.svg
+      box.appendChild(sub); fr.appendChild(box)
+      // cap the drawing's magnification: same region as the proof, more context instead of more
+      // pixels — an uncapped zoom onto a ~30px rect blows the wireframe's strokes into abstraction
+      aimCamera(box, focusInSvg(focus, sub.querySelector('svg')), { maxScale: 2.2 })
+      return fr
     }
-    render()
+    const wholeCell = function () {
+      const cell = document.createElement('div'); cell.className = 'sbframe whole'
+      const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
+      cell.appendChild(viz); return cell
+    }
+    const noCell = function (why) {
+      const cell = document.createElement('div'); cell.className = 'sbframe'
+      const no = document.createElement('div'); no.className = 'noschem'; no.textContent = why
+      cell.appendChild(no); return cell
+    }
+    const textCell = function (stepsHtml) {
+      const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
+      return tx
+    }
+    const row = function (cls, frame, text, proof) {
+      const el = document.createElement('div'); el.className = 'sbrow' + (cls ? ' ' + cls : '')
+      el.appendChild(frame); el.appendChild(text); el.appendChild(proof)
+      return el
+    }
+    // the column names, as a table header over the rows (the human, 2026-08-28) — the one row that
+    // says what the three cells ARE. Small-caps mono like every other label in the system; it shares
+    // the rows' grid so each name sits over its own column, and it folds away when the row stacks
+    // (a header over a single stacked column labels nothing).
+    const headRow = function () {
+      const el = document.createElement('div'); el.className = 'sbhead'
+      ;[['schematic', 'the drawn intent'], ['behavior', 'what the requirement says'], ['proof', 'the harvested frames']]
+        .forEach(function (p) {
+          const c = document.createElement('span'); c.className = 'sbhc'
+          c.textContent = p[0]; c.title = p[1]
+          el.appendChild(c)
+        })
+      return el
+    }
+
+    wrap.className = 'fstory' + (v && v.stale ? ' isstale' : '')
+    wrap.style.setProperty('--spd', String(PLAY_SPD))
+    if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
+    const body = document.createElement('div'); body.className = 'sbwrap'
+    if (v && v.stale) {
+      const sn = document.createElement('div'); sn.className = 'sbstale'
+      sn.innerHTML = '<b>stale — text changed</b><span>the requirement was reworded after this was drawn' +
+        (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn on the next viz pass</span>'
+      body.appendChild(sn)
+    }
+    body.appendChild(headRow())
+    if (beh) {
+      const noDraw = v && v.svg
+        ? 'the drawing does not split beat by beat — it is whole on the Given row'
+        : 'no schematic drawn yet — the next viz pass derives one from the behavior text'
+      // the GIVEN row is the context row: whole page on BOTH sides (beatFocus returns none for it)
+      const givenFrame = canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw))
+      body.appendChild(row('bgiven', givenFrame,
+        textCell(behStep(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
+        proofCell(r, 0, nbeats)))
+      beh.beats.forEach(function (bt, i) {
+        const html = behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
+        const fc = canPair ? frameCell(phases[i + 1], [phases[i], phases[i + 1]], beatFocus(r, i + 1, nbeats)) : noCell(noDraw)
+        body.appendChild(row(i === 0 ? '' : 'beatstart', fc, textCell(html), proofCell(r, i + 1, nbeats)))
+      })
+    } else {
+      // PROSE-ONLY: no Given/When→Then to split into beats, so the story is one row — the drawing if
+      // there is one, the pointer to the text below, and whatever proof the requirement carries. The
+      // evidence is not dropped just because the requirement was written as prose.
+      const cellText = 'This requirement is written as prose — the full text reads below.'
+      body.appendChild(row('bgiven',
+        (v && v.svg) ? wholeCell() : noCell('no schematic drawn yet — a schematic derives from a behavior shape'),
+        textCell('<div class="sbstep"><span class="sbv">' + cellText + '</span></div>'),
+        proofCell(r, 0, 0)))
+    }
+    wrap.appendChild(body)
+    startLoops()
+    onSpd(wrap, function (sp) { wrap.style.setProperty('--spd', String(sp)) })
     return wrap
   }
 
-  // The MEDIA pane (D2, the frozen mockup): default derives from status × beat count —
-  //   passed, 1 beat  → the harvested before/after frame pair
-  //   passed, N beats → the per-beat filmstrip (given + the run's per-requirement frames, or the
-  //                     harvested after-frame closing the chain when no recording captured them)
-  //   failed          → the NEWEST record's own frames when it cut any (D3: the failing value red),
-  //                     else the red after-frame — plus the covering test's expected-vs-actual and
-  //                     the ✗ failed mark on the bar
-  //   changed         → the last proof's media under a pinned-era watermark
-  //   untested / not-reached → no media: "no proof yet · ＋ write the failing test"
-  // — under a stills · gif · video toolbar. The override is a client-side preference (localStorage),
-  // never stored in the tree; gif mode is the frame-stepper (Task 13) — it plays the harvested
-  // frames themselves, so it needs no cut file at all (a requirement with no frames yet says so
-  // honestly).
-  function buildMedia (dt, r, primary, move) {
+  // THE PROOF BAND (D2, reshaped 2026-08-28). The per-beat frames moved onto the beat rows they
+  // belong to, so what stays here is what belongs to the WHOLE requirement:
+  //   the covering test's bar (name · proves R · run id, plus the pinned / ✗ failed marks),
+  //   under a FAILURE the newest record's own frames (D3 — the failing value, burned red) and the
+  //   covering test's expected-vs-actual,
+  //   then ONE video: the screen's COMMITTED recording (Task 16 #1), seeked to this requirement's
+  //   moment, with a "play this beat" jump per beat where the harvest recorded per-beat windows.
+  //   untested / not-reached → no media at all: "no proof yet · ＋ write the failing test".
+  // The stills · gif · video toolbar went with the split — each beat cell carries its own now — and
+  // the sbFocusMedia preference went with it: there is no pane-wide mode left to remember.
+  function buildMedia (dt, r, primary) {
     const box = document.createElement('div'); box.className = 'fmedia'
     const st = r.status
     if (!primary || st === 'untested' || st === 'not-reached') {
@@ -832,11 +1129,6 @@ const B = window.__BOARD__ || {}
       box.appendChild(bar); box.appendChild(no)
       return box
     }
-    const LBL = { frames: 'stills', clip: 'gif', video: st === 'failed' ? 'video@fail' : 'video' }
-    let mode = null
-    try { mode = localStorage.getItem('sbFocusMedia') } catch (e) { mode = null }
-    if (['frames', 'clip', 'video'].indexOf(mode) < 0) mode = 'frames'
-    if (st === 'failed' && mode === 'clip') mode = 'frames'   // the mockup skips gif on a failure
     const bar = document.createElement('div'); bar.className = 'fmbar'
     // the mockup's gbar (Task 8): `<test name> · proves R4 · run <id>` — the name clipped first
     const ttlEl = primary.querySelector('.ttl')
@@ -848,62 +1140,16 @@ const B = window.__BOARD__ || {}
     lab.innerHTML = (tname ? '· ' : '') + 'proves ' + eh(r.id) +
       (runId ? ' · <span class="frun">run ' + eh(runId) + '</span>' : (r.ev.at ? ' · ' + eh(r.ev.at) : '')) +
       (st === 'changed' ? ' · <span class="pinned">◈ pinned era</span>' : '') +
-      // D3: a failing run's media shows — so the pane itself carries the failed state, with the
+      // D3: a failing run's media shows — so the band itself carries the failed state, with the
       // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
       (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
     bar.appendChild(lab)
-    // the pane's play speed (Task 13's dropdown): applies to the ACTIVE mode — the frame-stepper's
-    // holds / video playbackRate; stills have no pace, the choice simply stands for the other modes
-    const sb = spdSelect(function () { return MEDIA_SPD }, function (nv) { MEDIA_SPD = nv; applySpd() })
-    bar.appendChild(sb)
-    const mb = document.createElement('span'); mb.className = 'medbar'
-    // Task 16 #1 (the human, 2026-08-24): video mode plays the COMMITTED recording only — with
-    // none committed the button is NOT offered at all (the transient _runs .webm is gone on a
-    // fresh clone, and a button over a missing file is a broken player, never an honest surface)
-    const modes = (st === 'failed' ? ['frames', 'video'] : ['frames', 'clip', 'video'])
-      .filter(function (m) { return m !== 'video' || !!r.ev.video })
-    // a stored 'video' preference over a requirement with none committed falls back to stills —
-    // the preference must never leave every panel hidden
-    if (modes.indexOf(mode) < 0) mode = 'frames'
-    const panels = {}
-    const apply = function (m) {
-      ;[].slice.call(mb.children).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m) })
-      Object.keys(panels).forEach(function (k) { panels[k].hidden = k !== m })
-      // the stepper runs only while its panel shows — a mode switch stops the timer, never orphans it
-      if (panels.clip && panels.clip._stop && m !== 'clip') panels.clip._stop()
-      applySpd()
-    }
-    modes.forEach(function (m) {
-      const b = document.createElement('button'); b.type = 'button'; b.dataset.m = m
-      b.textContent = LBL[m]
-      b.addEventListener('click', function () {
-        mode = m
-        try { localStorage.setItem('sbFocusMedia', m) } catch (e) { /* preference only */ }
-        apply(m)
-      })
-      mb.appendChild(b)
-    })
-    bar.appendChild(mb)
     box.appendChild(bar)
     const body = document.createElement('div'); body.className = 'fmbody'
-    const cell = function (src, cap, cls) {
-      return '<div class="fcell' + (cls ? ' ' + cls : '') + '">' +
-        '<img loading="lazy" src="' + eh(src) + '" alt="' + eh(cap) + '">' +
-        '<div class="fcap">' + eh(cap) + '</div></div>'
-    }
-    // THE RUN'S PROOF FRAMES (board R14, as signed 2026-08-22): the media pane's stills ARE the
-    // scannable strip — one surface in the focus card, not a near-duplicate pair. Where the NEWEST
-    // record covers this requirement with frames, its per-value stills render as the strip's
-    // cells: one per checked value, in order, the got-vs-expected in the caption, red on a failure.
-    // Frames are frames OF the recording (the harvest cuts them), so a record with no video has
-    // none — no strip, never a faked or separately-captured one. Read off the record loadRuns
-    // stashed (never the DOM strip, which is folded away here) — a qualified req tag counts only
-    // for its own screen.
-    // D3 (the human, 2026-08-22; task-3b review L3): NEWEST RECORD ONLY, whatever its status. The
-    // old rule took the newest record that HAD frames and so had to blank the strip under a failed
-    // chip (an older passing run's green strip there is a fake green); reading only hist[0] lets a
-    // failing run's own frames show — the value that broke, burned red — with no fake-green path,
-    // and a later video-less CLI run falls back to the harvested pair (that fold's own frames).
+    // THE RUN'S OWN FRAMES, under a failure only (D3, the human 2026-08-22; task-3b review L3):
+    // NEWEST RECORD ONLY, whatever its status — reading only hist[0] lets the failing run's own
+    // frames show, the value that broke burned red, with no fake-green path. A passing requirement
+    // needs none of this here: its beat rows already carry the harvested per-beat proof.
     const runFrames = function () {
       const slot = primary.querySelector('.tststeps')
       const hist = (slot && slot._hist) || []
@@ -917,133 +1163,44 @@ const B = window.__BOARD__ || {}
         return bare === r.id && scr === dt.dataset.screen && fr.img
       })
     }
-    // frames
-    const pf = document.createElement('div'); pf.className = 'fmpanel'; pf.dataset.m = 'frames'
-    {
+    const cell = function (src, cap, cls) {
+      return '<div class="fcell' + (cls ? ' ' + cls : '') + '">' +
+        '<img loading="lazy" src="' + eh(src) + '" alt="' + eh(cap) + '">' +
+        '<div class="fcap">' + eh(cap) + '</div></div>'
+    }
+    if (st === 'failed') {
+      const pf = document.createElement('div'); pf.className = 'fmpanel'
       const cells = []
       const rf = runFrames()
       if (rf.length) {
-        // the merged R14 strip — one cell per checked value, its own caption, red where it failed
         if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
         rf.forEach(function (fr) {
           cells.push(cell(fr.img, (fr.ok === false ? '✗ ' : '✓ ') + (fr.cap || 'checked value'),
             (fr.ok === false ? 'hotbad' : 'hot') + ' rf'))
         })
-      } else if (st === 'failed') {
+      } else if (r.ev.after) {
         // no frames on the newest record (a CLI run): the D2 red-frame default — the harvested after
-        // IS the red frame (the harvest paints the verdict before snapping), expected-vs-actual beneath
-        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
-        if (r.ev.after) cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
-      } else if (r.beats > 1) {
-        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
-        if (r.ev.after) cells.push(cell(r.ev.after, '✓ beat ' + r.beats + ' · then — the asserted value in frame', 'hot'))
-      } else {
-        if (r.ev.before) cells.push(cell(r.ev.before, 'before'))
-        if (r.ev.after) cells.push(cell(r.ev.after, '✓ after — the asserted value in frame', 'hot'))
+        // IS the red frame (the harvest paints the verdict before snapping)
+        cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
       }
-      // Task 15 (the human, 2026-08-24): the container names its shape. Run-frame cells (.rf) make
-      // it a FILMSTRIP — a horizontal scroll of fixed cells; without them it is the before/after
-      // PAIR, which the CSS stacks to full pane width so each frame reads large in the tall pane.
-      pf.innerHTML = cells.length
-        ? '<div class="fstrip' + (rf.length ? ' filmstrip' : '') + '">' + cells.join('') + '</div>'
-        : '<div class="noev"><span>no harvested frames for this proof yet — the next run captures them</span></div>'
-      if (st === 'failed') {
-        const err = primary.querySelector('.terr')
-        if (err && err.textContent) {
-          const x = document.createElement('div'); x.className = 'xva'
-          x.textContent = err.textContent.slice(0, 400)
-          pf.appendChild(x)
-        }
+      if (cells.length) {
+        pf.innerHTML = '<div class="fstrip filmstrip">' + cells.join('') + '</div>'
       }
+      const err = primary.querySelector('.terr')
+      if (err && err.textContent) {
+        const x = document.createElement('div'); x.className = 'xva'
+        x.textContent = err.textContent.slice(0, 400)
+        pf.appendChild(x)
+      }
+      if (pf.childNodes.length) body.appendChild(pf)
     }
-    panels.frames = pf; body.appendChild(pf)
-    // gif — the FRAME-STEPPER (Task 13, the human's choice over the retired webp: a webp exposes
-    // no current frame, so exact dots and 0.25×–4× pace need JS-held frames). It plays the
-    // harvested frames — before → each asserted-value frame (the newest record's, same source as
-    // the stills strip) → after — holding each for its TRUE relative duration
-    // (tools/board/stepper.js): the baked window anchors the ends, each record frame's `t` the
-    // middles; an old harvest with no usable timing falls back to equal holds, honestly. A dot
-    // click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest rule
-    // that guarantees the chosen frame its read time. Reduced-motion pauses the auto-advance
-    // exactly like the schematic's loop; the dots still step by hand. The timer is chained, stops
-    // with the panel (mode switch, applySpd re-arm) and with the reader (closeFocus calls _stop;
-    // the tick also self-stops when its panel leaves the DOM — never an orphan interval).
-    if (modes.indexOf('clip') >= 0) {
-      const pc = document.createElement('div'); pc.className = 'fmpanel'; pc.dataset.m = 'clip'
-      const sframes = []
-      if (r.ev.before) sframes.push({ src: r.ev.before, alt: 'given', anchor: r.ev.window ? r.ev.window.from : null })
-      runFrames().forEach(function (fr) {
-        sframes.push({ src: fr.img, alt: fr.cap || 'checked value', anchor: (typeof fr.t === 'number') ? fr.t : null })
-      })
-      if (r.ev.after) sframes.push({ src: r.ev.after, alt: 'after — the asserted value in frame', anchor: r.ev.window ? r.ev.window.to : null })
-      if (!sframes.length) {
-        pc.innerHTML = '<div class="noev"><span>no harvested frames for this proof yet — the next run captures them</span></div>'
-      } else {
-        const stage = document.createElement('div'); stage.className = 'fsteps'
-        sframes.forEach(function (f) {
-          // eager on purpose (release pass M-1): the frames stack display:none, and a lazy img is
-          // never fetched while hidden — at 4× the first loop flashed blank. A dozen 640px PNGs at
-          // most, all of which the loop will show within seconds anyway.
-          const img = document.createElement('img'); img.src = f.src; img.alt = f.alt
-          stage.appendChild(img)
-        })
-        const sbar = document.createElement('div'); sbar.className = 'fstepbar'
-        const dots = document.createElement('span'); dots.className = 'pdots'
-        const lbl = document.createElement('span'); lbl.className = 'fstepn'
-        const timing = window.SBStepper.stepperHolds(sframes.map(function (f) { return f.anchor }))
-        const holds = timing.holds
-        // the fallback is honest but otherwise invisible — say which pace this loop plays (I-4)
-        lbl.title = timing.timed ? 'true relative timing — from the run\u2019s own step times' : 'equal holds — this harvest carries no usable timing'
-        const imgs = [].slice.call(stage.children)
-        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        let cur = 0
-        let timer = null
-        const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
-        const show = function (i) {
-          cur = i
-          imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
-          ;[].slice.call(dots.children).forEach(function (d, k) {
-            d.classList.toggle('cur', k === i)
-            d.classList.toggle('seen', k < i)
-          })
-          lbl.textContent = (i + 1) + ' / ' + imgs.length
-        }
-        const schedule = function () {
-          stop()
-          if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
-          timer = setTimeout(function () {
-            timer = null
-            if (!pc.isConnected || pc.hidden) return         // torn down or another mode fronted
-            show((cur + 1) % imgs.length)
-            schedule()
-          }, window.SBStepper.scaleHold(holds[cur], MEDIA_SPD))
-        }
-        sframes.forEach(function (_, j) {
-          const d = document.createElement('button'); d.type = 'button'; d.className = 'pd'
-          d.setAttribute('aria-label', 'frame ' + (j + 1) + ' of ' + sframes.length)
-          d.addEventListener('click', function () { show(j); schedule() })
-          dots.appendChild(d)
-        })
-        sbar.appendChild(dots); sbar.appendChild(lbl)
-        pc.appendChild(stage); pc.appendChild(sbar)
-        show(0)
-        pc._start = schedule
-        pc._stop = stop
-      }
-      panels.clip = pc; body.appendChild(pc)
-    }
-    // video — the screen's COMMITTED recording (Task 16 #1), seeked to THIS requirement's moment.
-    // The old surface moved the run's _runs .rec in, but _runs is transient and gitignored, so a
-    // vendored/fresh-clone board had NO video at all; the committed .webm under the screen's
-    // evidence dir is a real, shipped artifact. The mode itself exists only when it is committed
-    // (the modes filter above) — never a broken/empty player.
-    if (modes.indexOf('video') >= 0) {
-      const pv = document.createElement('div'); pv.className = 'fmpanel'; pv.dataset.m = 'video'
-      // a video element starting AFTER the speed was chosen must open at the pane's pace —
-      // loadstart does not bubble, but capture catches it
-      pv.addEventListener('loadstart', function (e) {
-        if (e.target && e.target.tagName === 'VIDEO') e.target.playbackRate = MEDIA_SPD
-      }, true)
+    // THE VIDEO — the screen's COMMITTED recording (Task 16 #1), seeked to THIS requirement's
+    // moment. The old surface moved the run's _runs .rec in, but _runs is transient and gitignored,
+    // so a vendored/fresh-clone board had NO video at all; the committed .webm under the screen's
+    // evidence dir is a real, shipped artifact. Absent, the band says so — never a broken player.
+    let vid = null
+    if (r.ev.video) {
+      const pv = document.createElement('div'); pv.className = 'fmpanel'
       const from = r.ev.vwin ? r.ev.vwin.from : null
       const to = r.ev.vwin ? r.ev.vwin.to : null
       const rw = document.createElement('div'); rw.className = 'frecwrap'
@@ -1051,49 +1208,63 @@ const B = window.__BOARD__ || {}
       const v = document.createElement('video')
       v.controls = true; v.playsInline = true; v.preload = 'metadata'
       v.src = r.ev.video
+      v.playbackRate = PLAY_SPD
+      vid = v
       // start at this requirement's beat: pre-metadata this sets the default playback start
       // position (readable back before the file loads — the board test drives exactly that), and
       // the loadedmetadata belt re-aims a player whose load cleared it
-      const seek = function () { if (from != null) { try { v.currentTime = from / 1000 } catch (e2) { /* not loadable yet */ } } }
-      seek()
+      const seek = function (ms) { try { v.currentTime = ms / 1000 } catch (e2) { /* not loadable yet */ } }
+      if (from != null) seek(from)
       v.addEventListener('loadedmetadata', function () {
-        if (from != null && Math.abs(v.currentTime - from / 1000) > 0.05) seek()
+        v.playbackRate = PLAY_SPD
+        if (from != null && Math.abs(v.currentTime - from / 1000) > 0.05) seek(from)
       })
-      // the beat ends at the frozen `to`: pause there ONCE on the first play-through, so the pane
+      // the beat ends at the frozen `to`: pause there ONCE on the first play-through, so the band
       // shows this requirement's moment while the whole flow stays watchable — pressing play again
-      // simply continues (no re-trap, no control taken away)
-      if (to != null && to > (from || 0)) {
-        let held = false
-        v.addEventListener('timeupdate', function () {
-          if (!held && v.currentTime >= to / 1000) { held = true; v.pause() }
-        })
-      }
+      // simply continues (no re-trap, no control taken away). A per-beat jump re-arms the same hold
+      // against ITS window, so "play this beat" stops where that beat stops.
+      let stopAt = (to != null && to > (from || 0)) ? to : null
+      let held = false
+      v.addEventListener('timeupdate', function () {
+        if (stopAt != null && !held && v.currentTime >= stopAt / 1000) { held = true; v.pause() }
+      })
       shell.appendChild(v); rw.appendChild(shell); pv.appendChild(rw)
       // the honest label: whose flow this is, and where THIS beat sits in it
       const fmtT = function (ms) {
         const s = Math.floor(ms / 1000)
         return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
       }
-      const others = primary
-        ? Math.max(0, primary.querySelectorAll('.tststeps .beat[data-step="prove"]').length - 1) : 0
+      const others = Math.max(0, primary.querySelectorAll('.tststeps .beat[data-step="prove"]').length - 1)
       const fl = document.createElement('div'); fl.className = 'fvlab'
       fl.textContent = 'the full flow that proves this' +
         (others ? ' + ' + others + ' other' + (others > 1 ? 's' : '') : '') +
         (from != null ? ' · this beat at ' + fmtT(from) + (to != null && to > from ? '–' + fmtT(to) : '') : '')
       pv.appendChild(fl)
-      panels.video = pv; body.appendChild(pv)
-    }
-    // PLAY SPEED, applied to whatever the pane is showing (Task 13). Gif: re-arm the stepper's
-    // pending hold, so the CURRENT frame's remaining time is re-derived at the new pace (holds
-    // scale by division — tools/board/stepper.js scaleHold). Video: rate the wired player across
-    // the native 0.25×–4× range; a player created later (the cover is clicked after the choice)
-    // is rated by the loadstart hook on its panel.
-    const applySpd = function () {
-      if (panels.clip && !panels.clip.hidden && panels.clip._start) panels.clip._start()
-      if (panels.video) {
-        for (const v of panels.video.querySelectorAll('video')) v.playbackRate = MEDIA_SPD
+      // OPTIONAL POLISH: where the harvest recorded per-beat windows, a jump per beat seeks the ONE
+      // recording rather than cutting a second one — the same file, aimed at the beat you are reading.
+      const wins = (r.ev.beats || []).filter(function (b) { return b.window && typeof b.window.from === 'number' })
+      if (wins.length > 1) {
+        const jumps = document.createElement('div'); jumps.className = 'fvjumps'
+        wins.forEach(function (b) {
+          const j = document.createElement('button'); j.type = 'button'; j.className = 'btn sm'
+          j.textContent = '▶ beat ' + b.n
+          j.title = 'play beat ' + b.n + ' of this recording'
+          j.addEventListener('click', function () {
+            stopAt = (typeof b.window.to === 'number' && b.window.to > b.window.from) ? b.window.to : null
+            held = false
+            seek(b.window.from)
+            v.play().catch(function () { /* a browser that refuses autoplay leaves it seeked, honestly */ })
+          })
+          jumps.appendChild(j)
+        })
+        pv.appendChild(jumps)
       }
-      sb.querySelector('select').value = String(MEDIA_SPD)
+      body.appendChild(pv)
+    } else {
+      const nv = document.createElement('div'); nv.className = 'fmpanel'
+      const fl = document.createElement('div'); fl.className = 'fvlab'
+      fl.textContent = 'no recording committed for this screen yet — the beat frames above are the proof'
+      nv.appendChild(fl); body.appendChild(nv)
     }
     if (st === 'changed') {
       const wm = document.createElement('div'); wm.className = 'wmark'
@@ -1101,7 +1272,8 @@ const B = window.__BOARD__ || {}
       body.appendChild(wm)
     }
     box.appendChild(body)
-    apply(mode)
+    // the reader's one speed rates the player across the native 0.25×–4× range
+    if (vid) onSpd(box, function (sp) { vid.playbackRate = sp })
     return box
   }
 

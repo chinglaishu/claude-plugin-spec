@@ -1,13 +1,16 @@
-// The topbar must say WHICH requirement the recording is proving, the whole time. A watcher of a
-// five-requirement flow sees values ringed and narrated, but nothing on screen ties the current beat
-// to R1…R5 or shows how far the proof has come. So the HUD carries a REQUIREMENT CHIP STRIP: one
-// chip per id the flow declared (coverReqs), each wearing a mark for its state — pending (no mark),
-// ▸ while its checkReq runs, ✓ once it passed, ✕ on bengara once it failed. Hue never carries the
-// state alone (the design rule): every state change also changes the mark. And when BOARD_BEAT_LOG
-// names a file, every flowStep / checkReq / narration appends a wall-clock JSONL line — the timeline
-// a voice-over or subtitle track is cut against. This test drives the REAL helpers and fails if the
-// chips stop appearing, stop advancing pending → active → passed, stop going bengara on a failure,
-// or the beat log stops recording the timeline.
+// THE NARRATION OVERLAY — what a watcher of the recording actually sees (rewritten 2026-08-27,
+// when the burned-in top banner was retired). The banner dumped the whole requirement across the
+// top of the frame, disconnected from the thing being proven and shoving the app halfway down the
+// picture. In its place: a product-tour CALLOUT anchored to the element the check rings — a light
+// dim over the app, a ring on the proven element, a pointer notch, and a small card carrying the
+// CURRENT beat in the requirement's own words (When → Then, read from the prd — the same words the
+// board's storyboard shows), its verdict riding on the card (✓ proven, ✕ with the got value).
+//
+// This test drives the REAL helpers and fails if the callout stops appearing, stops speaking the
+// prd's words, stops marking its verdict, stops ringing the element — or, the 2026-08-28 defect,
+// starts COVERING the thing it is pointing at. And when BOARD_BEAT_LOG names a file, every
+// flowStep / checkReq / narration appends a wall-clock JSONL line — the timeline a voice-over or
+// subtitle track is cut against.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -18,143 +21,210 @@ import { fileURLToPath } from 'node:url'
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)))
 const BASE = join(ROOT, 'spec', '_base.ts')
 
-// The same tiny table the focus test proves against; #t is the cell the flow reads.
+// A WIDE ROW with a small cell at its end — the exact shape that broke the callout: R3's little
+// progress ring sat inside a wide row, the card went to its right, and it covered the row's own
+// title and its neighbours. #t is the ringed cell; #name is the context that must stay readable.
 const TABLE = 'data:text/html,' + encodeURIComponent(
-  '<table><tr><td>Housekeeping</td><td id="a">1.80%</td></tr>' +
-  '<tr><td>Repair</td><td id="t">4.00%</td></tr>' +
-  '<tr><td>Advertising</td><td id="b">2.20%</td></tr></table>')
+  '<body style="margin:0;font:14px system-ui">' +
+  '<table style="width:1200px;border-collapse:collapse">' +
+  '<tr><td id="name" style="width:900px">Repair and maintenance — the whole row title</td>' +
+  '<td id="t">4.00%</td></tr>' +
+  '<tr><td>Housekeeping</td><td id="a">1.80%</td></tr>' +
+  '</table></body>')
 
+// The requirement the callout must narrate, in the prd's own words. It lives in the temp SCREEN
+// directory the spec file sits in, because that is where _base.ts reads a requirement's title and
+// its Given/When/Then from (spec/<screen>/prd.md) — the same file the board's storyboard renders.
+const PRD = [
+  '---',
+  'screen: chips',
+  'area: Fixtures',
+  'title: Chips fixture',
+  'route: /chips',
+  '---',
+  '',
+  '## R1 — The R&M growth rate',
+  '',
+  '- **Given** a table of operating expense growth rates',
+  '- **When** you read the Repair row',
+  '- **Then** it shows 4.00%',
+  '',
+  '## R2 — Never reached',
+  '',
+  '- **Given** a declared requirement no check touches',
+  '- **When** the flow ends',
+  '- **Then** it stays honestly unproven',
+  ''
+].join('\n')
+
+// The temp screen lives UNDER spec/ (so _base.ts finds its prd) and is `_`-prefixed, which is
+// exactly what the board and the state guard skip — it can never read as a real row, and it is
+// removed the moment the run ends.
 function run (spec, env, grep) {
-  const dir = mkdtempSync(join(ROOT, '.chips-'))
+  const dir = mkdtempSync(join(ROOT, 'spec', '_chips-'))
   try {
+    writeFileSync(join(dir, 'prd.md'), PRD)
     writeFileSync(join(dir, 'chips.spec.ts'), spec(dir))
     writeFileSync(join(dir, 'chips.config.ts'),
-      `import { defineConfig } from '@playwright/test'\n` +
+      'import { defineConfig } from \'@playwright/test\'\n' +
       `export default defineConfig({ testDir: ${JSON.stringify(dir)}, testMatch: 'chips.spec.ts', workers: 1,\n` +
       `  outputDir: ${JSON.stringify(join(dir, 'out'))}, use: {} })\n`)
     const r = spawnSync('npx', ['playwright', 'test', '-c', join(dir, 'chips.config.ts'), '-g', grep], {
-      cwd: ROOT, encoding: 'utf8', timeout: 120000, env: { ...process.env, FORCE_COLOR: '0', ...env }
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: 120000,
+      env: {
+        ...process.env,
+        FORCE_COLOR: '0',
+        // the overlay paints only under a board RECORDING (a plain suite run stays fast), and the
+        // pace is pinned to 1ms so these checks are not paying a watcher's reading holds
+        BOARD_RECORD: join(dir, 'rec'),
+        BOARD_STEP_DELAY_MS: '1',
+        ...env
+      }
     })
-    r.readSide = (name) => existsSync(join(dir, name)) ? JSON.parse(readFileSync(join(dir, name), 'utf8')) : null
-    r.beats = () => existsSync(join(dir, 'beats.jsonl'))
-      ? readFileSync(join(dir, 'beats.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
-      : []
     return r
   } finally {
-    // the sidecar reads above happen before this returns via the closures binding `dir`… which rmSync
-    // would break — so snapshot them eagerly instead.
+    // the sidecar reads happen after this returns, so snapshot them eagerly — rmSync would
+    // otherwise take the file out from under the closure
     const side = existsSync(join(dir, 'side.json')) ? JSON.parse(readFileSync(join(dir, 'side.json'), 'utf8')) : null
-    const beats = existsSync(join(dir, 'beats.jsonl'))
-      ? readFileSync(join(dir, 'beats.jsonl'), 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l))
-      : []
     rmSync(dir, { recursive: true, force: true })
     LAST.side = side
-    LAST.beats = beats
   }
 }
-const LAST = { side: null, beats: [] }
+const LAST = { side: null }
 
-test('the chip strip advances pending → active → passed, and the beat log records the timeline', () => {
+// The reader every spec below uses: the overlay's own words and geometry, straight off the page.
+const READ = (dir) =>
+  'const readOverlay = async () => await page.evaluate(() => {\n' +
+  '  const el = document.getElementById(\'__specboard-focus\')\n' +
+  '  if (!el) return { present: false }\n' +
+  '  const q = (s: string) => el.querySelector(s) as HTMLElement\n' +
+  '  const box = (n: HTMLElement | null) => { if (!n) return null; const r = n.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height } }\n' +
+  '  const shown = (n: HTMLElement | null) => !!n && getComputedStyle(n).display !== \'none\'\n' +
+  '  const call = q(\'.sb-call\'); const ring = q(\'.sb-ring\'); const ptr = q(\'.sb-ptr\'); const veil = q(\'.sb-veil\')\n' +
+  '  const target = document.getElementById(\'t\')\n' +
+  '  const name = document.getElementById(\'name\')\n' +
+  '  return { present: true, veil: shown(veil), ringShown: shown(ring), ptrShown: shown(ptr),\n' +
+  '    text: call ? (call.textContent || \'\') : \'\', callShown: shown(call),\n' +
+  '    call: box(call), ring: box(ring), ptr: box(ptr),\n' +
+  '    target: target ? box(target as HTMLElement) : null, name: name ? box(name as HTMLElement) : null }\n' +
+  '})\n' +
+  `const save = (o: any) => writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify(o))\n`
+
+const overlaps = (a, b) =>
+  !(a.x + a.w <= b.x || a.x >= b.x + b.w || a.y + a.h <= b.y || a.y >= b.y + b.h)
+
+test('the callout speaks the requirement in the prd\'s own words, and marks it proven', () => {
   const r = run((dir) =>
-    `import { test, expect, checkReq, coverReqs, flowStep } from ${JSON.stringify(BASE)}\n` +
-    `import { writeFileSync } from 'node:fs'\n` +
+    `import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
+    'import { writeFileSync } from \'node:fs\'\n' +
     `const TABLE = ${JSON.stringify(TABLE)}\n` +
-    `test('chips advance', async ({ page }) => {\n` +
-    `  coverReqs('R1', 'R2')\n` +
-    `  await page.goto(TABLE)\n` +
-    `  const states: any = {}\n` +
-    `  await flowStep('Read the table', async () => {\n` +
-    `    await checkReq('R1', async () => {\n` +
-    `      states.duringR1 = await page.locator('[data-req="R1"]').textContent()\n` +
-    `      states.provingDuring = await page.locator('#__specboard-hud-proving').textContent()\n` +
-    `      await expect(page.locator('#t')).toHaveText('4.00%')\n` +
-    `    })\n` +
-    `  })\n` +
-    `  states.chipCount = await page.locator('#__specboard-hud-reqs [data-req]').count()\n` +
-    `  states.afterR1 = await page.locator('[data-req="R1"]').textContent()\n` +
-    `  states.pendingR2 = await page.locator('[data-req="R2"]').textContent()\n` +
-    `  states.head = await page.locator('#__specboard-hud-head').textContent()\n` +
-    `  states.provingAfter = await page.locator('#__specboard-hud-proving').textContent()\n` +
-    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify(states))\n` +
-    `})\n`,
-  {}, 'chips advance')
-  assert.equal(r.status, 0, `the chip flow should pass:\n${r.stdout}\n${r.stderr}`)
+    'test(\'callout narrates\', async ({ page }) => {\n' +
+    READ(dir) +
+    '  coverReqs(\'R1\', \'R2\')\n' +
+    '  await page.goto(TABLE)\n' +
+    '  let during: any = null\n' +
+    '  await flowStep(\'Read the table\', async () => {\n' +
+    '    await checkReq(\'R1\', async () => {\n' +
+    '      await proveVisible(page.locator(\'#t\'), \'4.00%\', \'the R&M growth rate\')\n' +
+    '      during = await readOverlay()\n' +
+    '    })\n' +
+    '  })\n' +
+    '  const after = await readOverlay()\n' +
+    '  save({ during, after })\n' +
+    '})\n',
+  {}, 'callout narrates')
+  assert.equal(r.status, 0, `the narrated flow should pass:\n${r.stdout}\n${r.stderr}`)
   const s = LAST.side
   assert.ok(s, 'the spec wrote its observations')
-  assert.equal(s.chipCount, 2, 'one chip per declared requirement')
-  assert.match(String(s.duringR1), /▸/, 'the chip is marked active while its checkReq runs')
-  assert.match(String(s.afterR1), /✓/, 'the chip is marked passed once its checkReq passed')
-  assert.ok(!/[✓✕▸]/.test(String(s.pendingR2)), 'an untouched chip stays pending, with no mark')
-  // Requirements are the ONLY numbering system a watcher sees: the head is the step's plain
-  // action description with NO number (a "1." beside an "R5" is how the first cut got misread),
-  // while the proving line and the chips carry the R#s — one system, labeled.
-  assert.match(String(s.head), /✓ Read the table/, 'the head is the action, unnumbered')
-  assert.ok(!/\b[Ss]tep\s*\d|^\d+[.·]/.test(String(s.head)), 'no step number for a watcher to confuse with an R#')
-  assert.match(String(s.provingDuring), /▸ proving R1/, 'the proving line names the requirement while it runs')
-  assert.match(String(s.provingAfter), /✓ R1 proven/, 'the proving line reports the verdict after the check')
+  assert.equal(s.during.present, true, 'the overlay is injected into the page under test')
+  assert.equal(s.during.callShown, true, 'the callout is on screen while the check runs')
+  assert.equal(s.during.ringShown, true, 'and the proven element is ringed')
+  assert.equal(s.during.veil, true, 'over a light dim of the app — receded, never hidden')
+  // the requirement, in the words the board's storyboard shows
+  assert.match(s.during.text, /R1/, 'the callout names the requirement it is proving')
+  assert.match(s.during.text, /The R&M growth rate/, 'and its title')
+  assert.match(s.during.text, /When/, 'the beat is labelled')
+  assert.match(s.during.text, /you read the Repair row/, 'the prd\'s own When')
+  assert.match(s.during.text, /Then/)
+  assert.match(s.during.text, /it shows 4\.00%/, 'the prd\'s own Then')
+  // the verdict rides on the card once the check has passed
+  assert.match(s.after.text, /✓/, 'a passed requirement is marked proven on the callout')
+  assert.ok(!/✕/.test(s.after.text), 'and carries no failure mark')
 })
 
-test('the claim line shows expected vs got as two values, and got reddens on a mismatch', () => {
+test('the callout is ATTACHED to the ring — never covering it, never covering the row beside it', () => {
   const r = run((dir) =>
-    `import { test, expect, hudCheck } from ${JSON.stringify(BASE)}\n` +
-    `import { writeFileSync } from 'node:fs'\n` +
+    `import { test, expect, checkReq, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
+    'import { writeFileSync } from \'node:fs\'\n' +
     `const TABLE = ${JSON.stringify(TABLE)}\n` +
-    `test('claim', async ({ page }) => {\n` +
-    `  await page.goto(TABLE)\n` +
-    `  await hudCheck('R&M growth', '4.00%', '4.00%')\n` +
-    `  const okColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
-    `  const okGot = await page.locator('#__specboard-hud-got').textContent()\n` +
-    `  const exp = await page.locator('#__specboard-hud-exp').textContent()\n` +
-    `  let threw = false\n` +
-    `  try { await hudCheck('R&M growth', '4.00%', '9.99%') } catch { threw = true }\n` +  // hudCheck now ASSERTS (76714c5): it paints the red claim, THEN throws — catch it and read the frame it left
-    `  const badColor = await page.locator('#__specboard-hud-got').evaluate((el: any) => getComputedStyle(el).color)\n` +
-    `  const badGot = await page.locator('#__specboard-hud-got').textContent()\n` +
-    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({ okColor, okGot, exp, badColor, badGot, threw }))\n` +
-    `})\n`,
-  {}, 'claim')
-  assert.equal(r.status, 0, `the claim spec should pass:\n${r.stdout}\n${r.stderr}`)
+    'test(\'callout placed\', async ({ page }) => {\n' +
+    READ(dir) +
+    '  await page.goto(TABLE)\n' +
+    '  let during: any = null\n' +
+    '  await flowStep(\'Read the small cell in a wide row\', async () => {\n' +
+    '    await checkReq(\'R1\', async () => {\n' +
+    '      await proveVisible(page.locator(\'#t\'), \'4.00%\', \'the R&M growth rate\')\n' +
+    '      during = await readOverlay()\n' +
+    '    })\n' +
+    '  })\n' +
+    '  save(during)\n' +
+    '})\n',
+  {}, 'callout placed')
+  assert.equal(r.status, 0, `the placement flow should pass:\n${r.stdout}\n${r.stderr}`)
   const s = LAST.side
-  assert.ok(s, 'observations written')
-  assert.equal(s.exp, '4.00%', 'the claim shows the expected value on its own')
-  assert.equal(s.okGot, '4.00%', 'the claim shows the got value on its own')
-  assert.equal(s.badGot, '9.99%', 'the got value updates to the mismatching read')
-  assert.match(String(s.badColor), /232, 161, 138/, 'got reddens (bengara) the moment it disagrees')
-  assert.ok(!/232, 161, 138/.test(String(s.okColor)), 'got is not red on a match')
-  assert.equal(s.threw, true, 'a mismatching hudCheck still throws — it paints the red claim, THEN asserts (76714c5)')
+  assert.ok(s && s.call && s.target, 'the callout and its target were both measured')
+  // THE DEFECT (2026-08-27): a small ring inside a wide row put the card over the row's own title.
+  assert.ok(!overlaps(s.call, s.target), 'the callout never covers the element it is ringing')
+  assert.ok(!overlaps(s.call, s.ring), 'nor the ring drawn around it')
+  assert.ok(!overlaps(s.call, s.name), 'nor the row\'s own title beside it — the context stays readable')
+  // …and it reads as ATTACHED: below the target by default, with the notch touching the ring.
+  assert.ok(s.call.y >= s.target.y + s.target.h, 'the card sits BELOW the target it points at')
+  assert.ok(s.call.y - (s.target.y + s.target.h) <= 24,
+    `right next to it — a ${Math.round(s.call.y - (s.target.y + s.target.h))}px gap`)
+  assert.equal(s.ptrShown, true, 'the pointer notch is drawn')
+  assert.ok(s.ptr.y < s.call.y, 'above the card\'s top edge, pointing back up at the ring')
+  assert.ok(s.ptr.y + s.ptr.h >= s.call.y - 1, 'and touching the card, so the two read as one object')
+  const ptrMid = s.ptr.x + s.ptr.w / 2
+  assert.ok(ptrMid >= s.call.x && ptrMid <= s.call.x + s.call.w, 'the notch stays on the card\'s own edge')
+  assert.ok(Math.abs(ptrMid - (s.target.x + s.target.w / 2)) <= s.target.w / 2 + 8,
+    'and sits under the target, so it points at the ring rather than off into the page')
 })
 
-test('a failed checkReq turns its chip bengara with a ✕ mark', () => {
+test('a failed check reddens the callout: the value it GOT, and the ✕ mark', () => {
   const r = run((dir) =>
-    `import { test, expect, checkReq, coverReqs, flowStep } from ${JSON.stringify(BASE)}\n` +
-    `import { writeFileSync } from 'node:fs'\n` +
+    `import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from ${JSON.stringify(BASE)}\n` +
+    'import { writeFileSync } from \'node:fs\'\n' +
     `const TABLE = ${JSON.stringify(TABLE)}\n` +
-    `test('chip fails red', async ({ page }) => {\n` +
-    `  coverReqs('R1')\n` +
-    `  await page.goto(TABLE)\n` +
-    `  await flowStep('A wrong value', async () => {\n` +
-    `    await checkReq('R1', async () => { expect('4.00%', 'forced failure').toBe('9.99%') })\n` +
-    `  })\n` +
-    `  const chip = page.locator('[data-req="R1"]')\n` +
-    `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify({\n` +
-    `    mark: await chip.textContent(),\n` +
-    `    bg: await chip.evaluate((el: any) => getComputedStyle(el).backgroundColor),\n` +
-    `    proving: await page.locator('#__specboard-hud-proving').textContent(),\n` +
-    `    head: await page.locator('#__specboard-hud-head').textContent()\n` +
-    `  }))\n` +
-    `})\n`,
-  {}, 'chip fails red')
-  // the aggregate auto fixture (_failAggregate, Task 16) fails the test — expected; the chip
-  // observations rode out in the sidecar.
+    'test(\'callout fails red\', async ({ page }) => {\n' +
+    READ(dir) +
+    '  coverReqs(\'R1\')\n' +
+    '  await page.goto(TABLE)\n' +
+    '  await flowStep(\'A wrong value\', async () => {\n' +
+    '    await checkReq(\'R1\', async () => {\n' +
+    '      await proveVisible(page.locator(\'#t\'), \'9.99%\', \'the R&M growth rate\')\n' +
+    '    })\n' +
+    '  })\n' +
+    '  const failed = await readOverlay()\n' +
+    '  const ringColor = await page.evaluate(() => {\n' +
+    '    const el = document.getElementById(\'__specboard-focus\')\n' +
+    '    const ring = el ? el.querySelector(\'.sb-ring\') as HTMLElement : null\n' +
+    '    return ring ? getComputedStyle(ring).borderColor : \'\'\n' +
+    '  })\n' +
+    '  save({ ...failed, ringColor })\n' +
+    '})\n',
+  {}, 'callout fails red')
+  // the aggregate auto fixture (_failAggregate) fails the test — expected; the observations rode
+  // out in the sidecar, written before the teardown.
   assert.notEqual(r.status, 0, 'a flow with a failed check must fail')
   const s = LAST.side
   assert.ok(s, 'the spec wrote its observations before the aggregate failure')
-  assert.match(String(s.mark), /✕/, 'the failed chip wears the ✕ mark')
-  assert.match(String(s.bg), /122, 47, 29/, 'the failed chip is bengara')
-  // The moment that confused a watcher: the step head goes "✗ Step 1 failed" while the VOICE is
-  // still explaining R1 — the proving line must hold the requirement's verdict on the bar through
-  // the red frame, so both numbering systems are on screen and labeled.
-  assert.match(String(s.proving), /✕ R1 failed/, 'the proving line keeps naming the failed requirement')
-  assert.match(String(s.head), /✗ Failed — A wrong value/, 'the failed head is the action, unnumbered')
+  assert.match(s.text, /R1/, 'the failed callout still names the requirement')
+  assert.match(s.text, /it shows 4\.00%/, 'and still shows the beat it was proving')
+  assert.match(s.text, /got 4\.00%/, 'plus the value it actually read')
+  assert.match(s.text, /✕/, 'marked failed — hue never carries the state alone')
+  assert.match(String(s.ringColor), /141, 74, 56/, 'and the ring turns bengara')
 })
 
 test('BOARD_BEAT_LOG records a wall-clock JSONL timeline of steps, checks and notes', () => {
@@ -163,17 +233,17 @@ test('BOARD_BEAT_LOG records a wall-clock JSONL timeline of steps, checks and no
   const r = run(() =>
     `import { test, expect, checkReq, coverReqs, flowStep, hudNote } from ${JSON.stringify(BASE)}\n` +
     `const TABLE = ${JSON.stringify(TABLE)}\n` +
-    `test('beats recorded', async ({ page }) => {\n` +
-    `  coverReqs('R1')\n` +
-    `  await page.goto(TABLE)\n` +
-    `  await flowStep('Read the table', async () => {\n` +
-    `    await hudNote('about to read the cell')\n` +
-    `    await checkReq('R1', async () => { await expect(page.locator('#t')).toHaveText('4.00%') })\n` +
-    `  })\n` +
-    `})\n`,
+    'test(\'beats recorded\', async ({ page }) => {\n' +
+    '  coverReqs(\'R1\')\n' +
+    '  await page.goto(TABLE)\n' +
+    '  await flowStep(\'Read the table\', async () => {\n' +
+    '    await hudNote(\'about to read the cell\')\n' +
+    '    await checkReq(\'R1\', async () => { await expect(page.locator(\'#t\')).toHaveText(\'4.00%\') })\n' +
+    '  })\n' +
+    '})\n',
   { BOARD_BEAT_LOG: beatFile }, 'beats recorded')
   const beats = existsSync(beatFile)
-    ? readFileSync(beatFile, 'utf8').trim().split('\n').map(l => JSON.parse(l))
+    ? readFileSync(beatFile, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l))
     : []
   rmSync(beatFile, { force: true })
   assert.equal(r.status, 0, `the beat flow should pass:\n${r.stdout}\n${r.stderr}`)
