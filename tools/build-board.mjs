@@ -1931,7 +1931,7 @@ export function build () {
      beside the still of its then. Rows hair-ruled, a heavier rule opening each beat after the first.
      Measured: --ink-3 on --card 6.0:1 / on --canvas 5.8:1 (labels); --ai on --card 8.6:1 (When/Then);
      --ink on --card 16.8:1 / on --canvas 16.3:1 (the behaviour text). */
-  .fstory .sbrow { display:grid; grid-template-columns:calc(200px * var(--scale)) 1fr;
+  .fstory .sbrow { display:grid; grid-template-columns:calc(320px * var(--scale)) 1fr;
     align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
@@ -1941,7 +1941,7 @@ export function build () {
   .fstory .sbframe { display:flex; align-items:center; justify-content:center;
     background:var(--paper); padding:var(--s3); border-right:1px solid var(--hair); overflow:hidden; }
   .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto;
-    max-width:calc(184px * var(--scale)); }
+    max-width:calc(300px * var(--scale)); }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
      var, keeping |delay|/duration (the frame shown) identical at every speed */

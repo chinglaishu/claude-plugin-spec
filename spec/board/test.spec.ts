@@ -2198,7 +2198,10 @@ test('Requirements sub-group within a screen — family headers on the card and 
     const dots = bar.locator('.fdot')
     await expect(dots).toHaveCount(prd.ids.length)
     expect(await dots.evaluateAll(els => els.map(e => e.getAttribute('data-r')))).toEqual(prd.ids)
-    expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids.map((_, i) => String(i + 1)))
+    // each dot's VISIBLE text is the requirement's own id now (the human, 2026-08-26): a sequential
+    // 1..N position read as an id and clashed with the R-id it sat beside (pager said "15", header
+    // said "R10"). The dot, the header, the prd (## R10) and the tag (checkReq('R10')) now agree.
+    expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids)
     for (let k = 0; k < prd.fams.length; k++) {
       const f = prd.fams[k]
       const g = groups.nth(k + (prd.loose.length ? 1 : 0))

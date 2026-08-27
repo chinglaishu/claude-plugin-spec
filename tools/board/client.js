@@ -1168,7 +1168,10 @@ const B = window.__BOARD__ || {}
         const d = document.createElement('button')
         d.className = 'fdot' + (i === cur ? ' cur' : '')
         d.setAttribute('data-r', rr.getAttribute('data-r') || '')
-        d.appendChild(document.createTextNode(String(i + 1)))
+        // the dot shows the requirement's OWN id (board R17 / the human 2026-08-26), so the pager,
+        // the header, the prd (## R10) and the test tag (checkReq('R10')) all speak one number — a
+        // sequential 1..N position read as an id and clashed with the R-id it was next to
+        d.appendChild(document.createTextNode(rr.getAttribute('data-r') || String(i + 1)))
         dotMark(d, rr)
         d.addEventListener('click', (function (idx) { return function () { cur = idx; render() } })(i))
         group.appendChild(d)
