@@ -694,19 +694,45 @@ const B = window.__BOARD__ || {}
       return '<div class="sbstep"><span class="sbk' + (isThen ? ' then' : '') + '">' + labHtml +
         '</span><span class="sbv">' + txtHtml + '</span></div>'
     }
+    // per-beat LOOP (the human, 2026-08-26): storyboard and loop COMBINE — each beat row scrubs the
+    // paused drawing across ITS beat's own time-window and loops, so the storyboard is a list of short
+    // per-beat loops (no storyboard/loop toggle any more). The Given row is a state, not an action, so
+    // it stays a parked still. Under reduced motion every row parks at its beat. ONE rAF drives every
+    // looping row's --ph and self-cleans when the wrap leaves the DOM (a re-render or a close).
+    const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    const startLoops = function () {
+      const frames = [].slice.call(wrap.querySelectorAll('.sbframe[data-loop]'))
+      if (!frames.length || reduced) return
+      const HOLD = 0.7                        // seconds held on the result before the loop repeats
+      let start = null
+      const tick = function (now) {
+        if (!wrap.isConnected) return         // detached (re-render / close) → stop, never reschedule
+        if (start === null) start = now
+        const spd = SCHEM_SPD || 1
+        const elapsed = ((now - start) / 1000) * spd
+        for (let i = 0; i < frames.length; i++) {
+          const fr = frames[i]
+          const s = parseFloat(fr.dataset.s); const e = parseFloat(fr.dataset.e)
+          const play = Math.abs(e - s)
+          if (!(play > 0.01)) { fr.style.setProperty('--ph', e + 's'); continue }
+          const tau = elapsed % (play + HOLD)
+          const ph = tau < play ? s + (e - s) * (tau / play) : e   // scrub the segment forward, then hold
+          fr.style.setProperty('--ph', ph + 's')
+        }
+        requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    }
     const render = function () {
-      let mode = null
-      try { mode = localStorage.getItem('sbSchemMode') } catch (e) { mode = null }
-      if (mode !== 'storyboard' && mode !== 'loop') mode = 'storyboard'
       wrap.className = 'fstory' + (v && v.stale ? ' isstale' : '')
       // the pane's play speed (Task 13) — session state reapplied on every render, so a fold's
       // rebuild never silently drops the chosen pace
       wrap.style.setProperty('--spd', String(SCHEM_SPD))
       if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
       wrap.textContent = ''
-      // the toolbar rides ONLY when a drawing exists (the honesty caption labels the DRAWING; the
-      // speed dropdown + the storyboard·loop toggle play/pair it). A requirement with no drawing
-      // shows its labelled beats plainly — no "schematic" caption over a grid that isn't one.
+      // the caption rides ONLY when a drawing exists (the honesty caption labels the DRAWING; the
+      // speed dropdown paces the loops). A requirement with no drawing shows its labelled beats
+      // plainly — no "schematic" caption over a grid that isn't one, and no toggle anywhere.
       if (v && v.svg) {
         const cap = document.createElement('div'); cap.className = 'storycap'
         const lbl = document.createElement('span'); lbl.className = 'scaplbl'
@@ -716,45 +742,37 @@ const B = window.__BOARD__ || {}
           SCHEM_SPD = nv; wrap.style.setProperty('--spd', String(nv))
         })
         cap.appendChild(sb)
-        const mb = document.createElement('span'); mb.className = 'medbar'
-        ;['storyboard', 'loop'].forEach(function (m) {
-          const b = document.createElement('button'); b.type = 'button'; b.dataset.sm = m; b.textContent = m
-          if (m === mode) b.classList.add('on')
-          b.addEventListener('click', function () {
-            try { localStorage.setItem('sbSchemMode', m) } catch (e) { /* preference only, never the tree */ }
-            render()
-          })
-          mb.appendChild(b)
-        })
-        cap.appendChild(mb)
         wrap.appendChild(cap)
       }
 
       const body = document.createElement('div'); body.className = 'sbwrap'
-      if (canPair && mode === 'storyboard') {
-        // STORYBOARD: one row per phase — a parked still (the same drawing frozen at phase i) beside
-        // its beat text. Given leads (phase 0); each beat's When->Then sits beside the still of its then.
+      if (canPair) {
+        // STORYBOARD: one row per phase. The Given row is PARKED at its still (a state); every
+        // When->Then row LOOPS its beat — data-loop plus the window [prev phase .. this phase] the
+        // rAF scrubs. Given leads (phase 0); beat i draws the motion from phase i to phase i+1.
         if (v.stale) {
           const sn = document.createElement('div'); sn.className = 'sbstale'
           sn.innerHTML = '<b>stale — text changed</b><span>the requirement was reworded after this was drawn' +
             (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn on the next viz pass</span>'
           body.appendChild(sn)
         }
-        const rowEl = function (ph, cls, stepsHtml) {
+        const rowEl = function (cls, stepsHtml, park, loopWin) {
           const row = document.createElement('div'); row.className = 'sbrow' + (cls ? ' ' + cls : '')
           const fr = document.createElement('div'); fr.className = 'sbframe'
-          fr.style.setProperty('--ph', ph + 's'); fr.innerHTML = v.svg
+          if (loopWin && !reduced) { fr.dataset.loop = '1'; fr.dataset.s = String(loopWin[0]); fr.dataset.e = String(loopWin[1]) }
+          fr.style.setProperty('--ph', (loopWin ? loopWin[1] : park) + 's')   // park at the still (or, before the rAF starts, the loop's result frame)
+          fr.innerHTML = v.svg
           const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
           row.appendChild(fr); row.appendChild(tx); return row
         }
-        body.appendChild(rowEl(phases[0], 'bgiven', step(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)))
+        body.appendChild(rowEl('bgiven', step(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false), phases[0], null))
         beh.beats.forEach(function (bt, i) {
           const html = step(bt.when.lab, bt.when.txt, false) + (bt.then ? step(bt.then.lab, bt.then.txt, true) : '')
-          body.appendChild(rowEl(phases[i + 1], i === 0 ? '' : 'beatstart', html))
+          body.appendChild(rowEl(i === 0 ? '' : 'beatstart', html, phases[i + 1], [phases[i], phases[i + 1]]))
         })
       } else if (v && v.svg) {
-        // LOOP (or a drawing we cannot pair beat-for-beat): the plain behavior grid + the animated
-        // whole, drawn once. Motion on demand — the reduced-motion default is the parked storyboard.
+        // a drawing we cannot pair beat-for-beat: the plain behavior grid + the animated whole, drawn
+        // once (it loops on its own — the same motion, unsplit).
         if (beh) body.insertAdjacentHTML('beforeend', r.behHtml)
         const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
         if (v.stale) {
@@ -775,6 +793,7 @@ const B = window.__BOARD__ || {}
         body.appendChild(no)
       }
       wrap.appendChild(body)
+      startLoops()
     }
     render()
     return wrap

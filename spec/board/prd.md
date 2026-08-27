@@ -125,9 +125,10 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
 requirement at a time: on the left the id · state · **title** lead one header row, then the
-**behavior paired with its drawn schematic** — each Given / When→Then beat shown beside the still
-that draws it (a beat-paired **storyboard**), the loop-animated whole one **loop** toggle away, quiet
-grey when stale; the authored prose folded behind a **Full requirement** toggle; the proof sits on
+**behavior paired with its drawn schematic** — each Given / When→Then beat shown beside a **short,
+looping animation of the drawing performing that beat's action** (a beat-paired **storyboard** of
+per-beat loops), quiet grey when stale, parked as a still under reduced motion; the authored prose
+folded behind a **Full requirement** toggle; the proof sits on
 the right — its header **names the covering test** (a small pass/fail mark,
 the test's own name, then Run + ⋯), then media whose **default derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
 expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
@@ -168,6 +169,13 @@ Given / When→Then beat beside the still that draws it (phases already align 1:
 = Given, phase i = beat i). The animated whole stays a **loop** toggle away; a requirement with no
 committed drawing shows the labelled beats alone; a stale drawing greys every frame and keeps its
 note (fresh text beside a wrong picture would mislead). Presentation only — nothing derived changes.*
+
+*Reworded 2026-08-26 (the human): storyboard and loop **combine** — each beat's *still* becomes a
+short, looping animation of the drawing performing *that beat's* action, so the storyboard is a list
+of per-beat loops, each short and easy to read. The separate whole-sequence loop mode and the
+storyboard/loop toggle are **gone** (folded in); reduced motion parks each loop at its beat as a
+still. Presentation only — the committed drawing is unchanged (no re-derive), only how each row plays
+it: its schematic scrubs the paused animation across that beat's own time-window and loops.*
 
 ## R14 — The proof is scannable as frames, not only as video
 

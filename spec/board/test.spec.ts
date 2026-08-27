@@ -609,8 +609,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(rows.nth(0).locator('.sbtext')).toContainText('Given')
     await expect(rows.nth(1).locator('.sbtext')).toContainText('Then')
     await expect(rows.nth(1).locator('.sbtext')).toContainText('render in that view')   // the real Then text
-    await expect(story.locator('.sbwrap .behavior')).toHaveCount(0)       // the plain grid is a loop-mode thing now
-    await expect(story.locator('.sbwrap .viz svg')).toHaveCount(0)        // and no single animated drawing here
+    await expect(story.locator('.sbwrap .behavior')).toHaveCount(0)       // a paired storyboard has no plain grid
+    await expect(story.locator('.sbwrap .viz svg')).toHaveCount(0)        // and no single whole-animation drawing here
     await expect(story).not.toContainText('no schematic drawn yet')
     await expect(story).not.toHaveClass(/isstale/)
     await expect(story.locator('.storycap')).toContainText('schematic · the idea, not the real UI')
@@ -622,41 +622,26 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await ov.locator('.fread .prose-t').click()
     await expect(prose).toBeVisible()
     await expect(prose).toContainText('The detail header carries a toggle')
-    // THE LOOP TOGGLE plays the animated whole + the plain behavior grid (motion, on demand). The
-    // speed DROPDOWN (Task 13) governs it: 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, a real <select> the
-    // keyboard reaches; every animation-duration is calc(<X>s / var(--spd,1)) so any factor scales it.
-    await story.locator('.storycap .medbar button[data-sm="loop"]').click()
-    await expect(story.locator('.sbwrap .viz svg')).toHaveCount(1)        // the single animated drawing
-    await expect(story.locator('.sbwrap .behavior .brow')).toHaveCount(3) // given + when + then, plain
-    await expect(story.locator('.sbwrap .sbrow')).toHaveCount(0)          // the paired rows step aside
+    // NO TOGGLE (the human, 2026-08-26): storyboard and loop COMBINED — each row loops its OWN beat,
+    // so there is no storyboard/loop switch and no separate whole-animation mode.
+    await expect(story.locator('.storycap .medbar')).toHaveCount(0)
+    await expect(story.locator('[data-sm]')).toHaveCount(0)
+    // the GIVEN row is a state — a parked still (no data-loop). Every When->Then row LOOPS its beat:
+    // it carries data-loop and its --ph is SCRUBBED across the beat's own time-window, so it MOVES
+    // over time. This asserts the motion the old parked stills did not have.
+    await expect(rows.nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)   // given parked
+    const beatFr = rows.nth(1).locator('.sbframe')
+    await expect(beatFr).toHaveAttribute('data-loop', '1')
+    const samplePh = () => beatFr.evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    const phSamples = new Set<number>()
+    for (let s = 0; s < 4; s++) { phSamples.add(await samplePh()); await page.waitForTimeout(180) }
+    expect(phSamples.size, 'the beat loop scrubs --ph over time (not a parked still)').toBeGreaterThan(1)
+    // the speed dropdown still paces the loops (Task 13): 0.25× · 0.5× · 1× · 1.5× · 2× · 4×, a real
+    // <select> the keyboard reaches — and there is no other control beside the honesty caption
     const spdS = story.locator('.storycap select.pspd')
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
-    const animOf = (root: ReturnType<typeof story.locator>) => root.evaluate((el: Element) => {
-      const a = [...el.querySelectorAll('svg *')].map(e => getComputedStyle(e))
-        .find(st => st.animationName !== 'none')
-      return a ? { dur: parseFloat(a.animationDuration), delay: parseFloat(a.animationDelay) } : null
-    })
-    const at1 = await animOf(story.locator('.sbwrap .viz'))
-    expect(at1!.dur).toBeGreaterThan(0)
-    await spdS.selectOption('0.25')
-    const atQ = await animOf(story.locator('.sbwrap .viz'))
-    expect(atQ!.dur).toBeCloseTo(at1!.dur * 4, 1)
-    await spdS.selectOption('2')
-    const at2 = await animOf(story.locator('.sbwrap .viz'))
-    expect(at2!.dur).toBeCloseTo(at1!.dur / 2, 2)
-    await spdS.selectOption('1')
-    // back to the STORYBOARD: its stills are the SAME drawing parked per phase — paused, each frame
-    // carrying its own --ph, so |delay|/duration (the frame shown) is speed-invariant like the old stills
-    await story.locator('.storycap .medbar button[data-sm="storyboard"]').click()
-    const lastFrame = story.locator('.sbwrap .sbrow').last().locator('.sbframe')
-    const still = await animOf(lastFrame)
-    const ph = await lastFrame.evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
-    expect(still!.dur).toBeGreaterThan(0)
-    expect(Math.abs(still!.delay) / still!.dur).toBeCloseTo(Math.abs(ph) / at1!.dur, 2)
-    await page.evaluate(() => localStorage.removeItem('sbSchemMode'))
-    // A MULTI-BEAT requirement pairs EVERY beat: R4 has 3 beats → given + 3 = FOUR storyboard rows,
-    // each with its own parked still (a distinct --ph per row — phase i draws beat i)
+    // A MULTI-BEAT requirement loops EVERY beat: R4 has 3 beats → given (parked) + 3 LOOPING rows
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
     const r4rows = ov.locator('.fleft .fstory .sbwrap .sbrow')
@@ -664,9 +649,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(r4rows.locator('.sbframe svg')).toHaveCount(4)
     await expect(r4rows.nth(1).locator('.sbtext')).toContainText('When')
     await expect(r4rows.nth(3).locator('.sbtext')).toContainText('Then')
-    const phs = await ov.locator('.fleft .fstory .sbwrap .sbrow .sbframe')
-      .evaluateAll(els => els.map(e => (e as HTMLElement).style.getPropertyValue('--ph')))
-    expect(new Set(phs).size).toBe(4)                                     // four distinct parked frames
+    await expect(r4rows.nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)         // given parked
+    await expect(ov.locator('.fleft .fstory .sbframe[data-loop]')).toHaveCount(3)     // three beats loop
     // …and a requirement the kit cannot draw keeps the honest placeholder (R2: scroll independence
     // fits no archetype) — the labelled beats show, never empty frames, never a wrong picture
     await page.goto('/#/board/R2')

@@ -467,33 +467,25 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await expect(schem).not.toContainText('≠')
   await expect(schem.locator('.sbstale')).toHaveCount(0)          // fresh — no stale banner at all
 
-  // STORYBOARD (default): given + one row per beat, each pairing a parked still with its beat text
-  await expect(schem.locator('.medbar button[data-sm="storyboard"]')).toHaveClass(/\bon\b/)
+  // STORYBOARD: given + one row per beat, NO toggle (the human, 2026-08-26) — the given is a parked
+  // still, each When->Then row LOOPS its own beat
+  await expect(schem.locator('.medbar')).toHaveCount(0)
+  await expect(schem.locator('[data-sm]')).toHaveCount(0)
   await expect(schem.locator('.sbrow')).toHaveCount(3)            // given + 2 beats
   await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)
   await expect(schem.locator('.sbrow').nth(0)).toHaveClass(/bgiven/)
   await expect(schem.locator('.sbrow').nth(1).locator('.sbtext')).toContainText('When')
   await expect(schem.locator('.sbrow').nth(1).locator('.sbtext')).toContainText('Then')
-  await expect(schem.locator('.viz')).toHaveCount(0)             // no single animated drawing in storyboard
-  // LOOP is a client-side preference (localStorage), never stored in the tree: the animated whole +
-  // the plain behavior grid
-  await schem.locator('.medbar button[data-sm="loop"]').click()
-  await expect(schem.locator('.viz svg')).toHaveCount(1)
-  await expect(schem.locator('.behavior .brow')).toHaveCount(5)  // given + 2 × (when + then)
-  await expect(schem.locator('.sbrow')).toHaveCount(0)
-  expect(await page.evaluate(() => localStorage.getItem('sbSchemMode'))).toBe('loop')
-  // clearing the preference restores the storyboard default on the next open — client-only, nothing baked
-  await page.evaluate(() => localStorage.removeItem('sbSchemMode'))
-  await page.goto('/#/' + name + '/R2')
-  await page.goto('/#/' + name + '/R1')
-  await expect(schem.locator('.medbar button[data-sm="storyboard"]')).toHaveClass(/\bon\b/)
-  await expect(schem.locator('.sbrow .sbframe svg')).toHaveCount(3)
+  await expect(schem.locator('.viz')).toHaveCount(0)             // no single whole-animation drawing
+  await expect(schem.locator('.sbrow').nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)  // given parked
+  await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(2)                           // both beats loop
 
-  // reduced motion → the storyboard by default: its stills are parked, so it needs no animation
+  // reduced motion → every row is a parked still (no loops at all), so it needs no animation
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/#/' + name + '/R2')
   await page.goto('/#/' + name + '/R1')
   await expect(schem.locator('.sbrow')).toHaveCount(3)
+  await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(0)    // parked, not looping
   await page.emulateMedia({ reducedMotion: null })
 
   // a requirement with NO drawing keeps the honest placeholder line
