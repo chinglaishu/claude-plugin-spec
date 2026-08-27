@@ -1923,35 +1923,40 @@ export function build () {
   .fstory .storycap .pspdwrap ~ .medbar { margin-left:var(--s2); }
   .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
 
-  /* STORYBOARD MODE — one PANEL per phase, the DRAWING as the hero (the human, 2026-08-25: the
-     schematic is the point; the text describes it). The still fills the panel WIDTH at its own 2:1
-     height — big enough to read, not a thumbnail — and its beat text is the CAPTION beneath it.
-     Given leads (phase 0); each beat's When->Then captions the still of its then. Panels hair-ruled,
-     a heavier rule opening each beat after the first. Measured: --ink-3 on --card 6.0:1 / on
-     --canvas 5.8:1 (labels); --ai on --card 8.6:1 (Then); --ink on --card 16.8:1 (the caption). */
-  .fstory .sbrow { border-top:1px solid var(--hair); }
+  /* STORYBOARD MODE — one row per phase: the Given / When->Then TEXT is the readable hero, its drawn
+     still a compact VISUAL AID beside it (the human, 2026-08-26: the earlier "drawing is the hero"
+     stacked a full-width sparse box ABOVE small caption text — big empty drawings you scrolled past
+     to reach the words. Flip it — the behaviour reads wide on the right, the drawing supports from a
+     fixed column on the left, never dominating). Given leads (phase 0); each beat's When->Then reads
+     beside the still of its then. Rows hair-ruled, a heavier rule opening each beat after the first.
+     Measured: --ink-3 on --card 6.0:1 / on --canvas 5.8:1 (labels); --ai on --card 8.6:1 (When/Then);
+     --ink on --card 16.8:1 / on --canvas 16.3:1 (the behaviour text). */
+  .fstory .sbrow { display:grid; grid-template-columns:calc(200px * var(--scale)) 1fr;
+    align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
-  /* the DRAWING is the hero: full panel width, its natural 2:1 height (svg viewBox → height:auto),
-     centred, capped so an ultra-wide column does not blow it up past reading size */
-  .fstory .sbframe { background:var(--paper); padding:var(--s3) var(--s4);
-    border-bottom:1px solid var(--hair); overflow:hidden; }
+  /* the AID: a compact parked still on paper, centred in a fixed column and ruled off from the text
+     — its natural 2:1 height (svg viewBox), sized to support the reading, never to dominate it */
+  .fstory .sbframe { display:flex; align-items:center; justify-content:center;
+    background:var(--paper); padding:var(--s3); border-right:1px solid var(--hair); overflow:hidden; }
   .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto;
-    max-width:calc(640px * var(--scale)); }
+    max-width:calc(184px * var(--scale)); }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
      var, keeping |delay|/duration (the frame shown) identical at every speed */
   .fstory .sbframe svg * { animation-play-state:paused !important;
     animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
-  .fstory .sbtext { padding:var(--s3) var(--s4); min-width:0; }
+  /* the READING: wide and roomy, vertically centred against its aid — the row's primary content */
+  .fstory .sbtext { display:flex; flex-direction:column; justify-content:center;
+    padding:var(--s3) var(--s4); min-width:0; }
   .fstory .sbstep { display:flex; gap:var(--s3); align-items:baseline; }
-  .fstory .sbstep + .sbstep { margin-top:6px; }
-  .fstory .sbk { flex:none; width:calc(58px * var(--scale)); font:var(--t-micro) var(--mono);
+  .fstory .sbstep + .sbstep { margin-top:var(--s2); }
+  .fstory .sbk { flex:none; width:calc(52px * var(--scale)); font:var(--t-micro) var(--mono);
     letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
   .fstory .sbk.then { color:var(--ai); }
   .fstory .sbk .bno { font-size:var(--t-micro); line-height:1; color:var(--ink-3); margin-left:2px; }
-  .fstory .sbv { font-size:var(--t-sm); line-height:1.55; color:var(--ink); min-width:0; }
+  .fstory .sbv { font-size:var(--t-sm); line-height:1.6; color:var(--ink); min-width:0; }
   /* stale: the SAME drawing, quiet grey — shown, never hidden, never passing for right; the banner
      names it (bengara-tint carries the warning hue, the word carries the meaning) */
   .fstory.isstale .sbframe svg, .fstory.isstale .viz svg { filter:grayscale(1) opacity(.45); }
