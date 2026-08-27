@@ -203,8 +203,8 @@ const B = window.__BOARD__ || {}
       if (body) { body.innerHTML = ''; body.hidden = true }
       card.classList.remove('open')
     }
-    // the torn-down cells' speed and zoom subscriptions go with them — no detached-node backlog
-    pruneSpd(); pruneZoom()
+    // the torn-down cells' speed, zoom and order subscriptions go with them — no detached backlog
+    pruneSpd(); pruneZoom(); pruneOrder()
   }
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
@@ -513,10 +513,16 @@ const B = window.__BOARD__ || {}
     // rides only where there is something to pace — a control over an empty reader is chrome.
     const paceable = !!(r.schem && r.schem.svg) ||
       !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
-    if (paceable) {
+    {
       const bar = document.createElement('div'); bar.className = 'fbar'
-      const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
-      bar.appendChild(bl); bar.appendChild(spdSelect())
+      // the column order — which of the two visual columns the story leads with. Always offered:
+      // it is a reading preference, not a property of this requirement's evidence.
+      const ol = document.createElement('span'); ol.className = 'fbarl'; ol.textContent = 'columns'
+      bar.appendChild(ol); bar.appendChild(orderPicker())
+      if (paceable) {
+        const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
+        bar.appendChild(bl); bar.appendChild(spdSelect())
+      }
       read.appendChild(bar)
     }
     // THE REQUIREMENT, WHOLE (the human, 2026-08-28): the beat rows lead, the video and the authored
@@ -676,6 +682,27 @@ const B = window.__BOARD__ || {}
     const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
     return w
   }
+  // the column-order control: two stops, so it is a segmented pair rather than a dropdown (the same
+  // .medbar the proof cells use for their two modes). Each button NAMES the order it produces.
+  function orderPicker () {
+    const box = document.createElement('span'); box.className = 'medbar'
+    const mk = function (val, label) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label
+      b.title = 'read the story ' + label
+      b.addEventListener('click', function () { setOrder(val) })
+      return b
+    }
+    const a = mk('sbp', 'schematic first')
+    const b = mk('bsp', 'behavior first')
+    const paint = function () {
+      a.classList.toggle('on', COLORDER === 'sbp')
+      b.classList.toggle('on', COLORDER === 'bsp')
+    }
+    paint()
+    onOrder(box, paint)
+    box.appendChild(a); box.appendChild(b)
+    return box
+  }
 
   // behParts reads the baked .behavior block (the same markup renderBehavior emits) back into the
   // Given + When/Then beats the storyline splits into rows — label innerHTML kept so the WHEN1/THEN1
@@ -705,6 +732,14 @@ const B = window.__BOARD__ || {}
   // stills, the stepper's frames and the video are framed IDENTICALLY: switching mode inside a cell
   // must never move the view. It is a VIEW, never a crop — every cell carries the toggle back to the
   // whole screenshot, and the evidence on disk is untouched either way.
+  //
+  // ONE option set for BOTH cells of a row (the human, 2026-08-28). The cap is not a per-cell taste:
+  // a row is comparable only while the drawing and the photograph frame the SAME region, so the
+  // moment the two sides take different caps they frame different regions and the comparison is
+  // gone. 2.2 is the drawing's readable limit — a wireframe magnified harder is smeared strokes —
+  // and minFrac holds the framed region to at least 45% of the page width, so a 30px checkbox still
+  // reads inside the row it sits in instead of filling the cell alone.
+  const CAM = { maxScale: 2.2, minFrac: 0.38 }
   let ZOOMED = true            // session-scoped, like the play speed; zoom is the default
   const ZOOM_W = []            // {node, fn} — cells re-aim themselves when the choice changes
   function onZoom (node, fn) { ZOOM_W.push({ node: node, fn: fn }) }
@@ -715,6 +750,30 @@ const B = window.__BOARD__ || {}
     ZOOMED = v
     pruneZoom()
     for (const w of ZOOM_W) w.fn(v)
+  }
+  // COLUMN ORDER (the human, 2026-08-28) — 'sbp' schematic · behavior · proof, or 'bsp' behavior ·
+  // schematic · proof. Session-scoped like the speed and the zoom, for the same reason: a reader is
+  // rebuilt on every fold, so the choice must survive the rebuild, but a preference that persisted
+  // across visits would silently reorder tomorrow's board with no cue why. The whole story reorders
+  // at once — the header row and every beat row take one class, so a header can never end up
+  // labelling the column beside the one it names.
+  let COLORDER = 'sbp'
+  const ORD_W = []
+  function onOrder (node, fn) { ORD_W.push({ node: node, fn: fn }) }
+  function pruneOrder () {
+    for (let i = ORD_W.length - 1; i >= 0; i--) if (!ORD_W[i].node.isConnected) ORD_W.splice(i, 1)
+  }
+  function setOrder (v) {
+    COLORDER = (v === 'bsp') ? 'bsp' : 'sbp'
+    pruneOrder()
+    for (const w of ORD_W) w.fn(COLORDER)
+  }
+  // the class a storyline wears for the current order — applied on build AND on every change, so a
+  // rebuilt reader opens in the order the reader was left in
+  function orderClass (el) {
+    const paint = function () { el.classList.toggle('ord-bsp', COLORDER === 'bsp') }
+    paint()
+    onOrder(el, paint)
   }
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
   // screenshot: it has its own viewBox, and while the wireframe is drawn at the layout viewport's
@@ -880,9 +939,12 @@ const B = window.__BOARD__ || {}
     return { shots: [], why: 'no per-beat evidence yet — this harvest only spans the whole requirement' }
   }
 
-  // one beat row's PROOF cell: the beat's frames under the camera, stills by default with the
-  // stepper one click away where there is more than one frame, and the zoom ↔ full-frame toggle
-  // wherever the harvest recorded a focus box.
+  // one beat row's PROOF cell: the beat's frames under the camera. It AUTO-RUNS (the human,
+  // 2026-08-28) — the beat's before→after loops on the reader's shared speed, exactly as the
+  // schematic beside it loops that beat's own motion, so a row plays as one thing rather than as an
+  // animation next to a photograph you have to click. Stills stay one click away for reading a frame
+  // still, and the zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box. The
+  // Given row has one frame and nothing to loop, so it stays the still it is.
   function proofCell (r, i, nbeats) {
     const cell = document.createElement('div'); cell.className = 'sbproof'
     const got = beatShots(r, i, nbeats)
@@ -903,10 +965,12 @@ const B = window.__BOARD__ || {}
       box.appendChild(im); fig.appendChild(box)
       const cp = document.createElement('figcaption'); cp.className = 'pccap'; cp.textContent = s.cap
       fig.appendChild(cp); strip.appendChild(fig)
-      aimCamera(box, s.focus)
+      aimCamera(box, s.focus, CAM)
     })
     cam.appendChild(strip)
-    // GIF — the same frames played, in one camera box so the view never moves between modes
+    // THE LOOP — the same frames played, in one camera box so the view never moves between modes.
+    // It is the DEFAULT: the strip is hidden behind it and the timer is armed on build, so the cell
+    // is already running when the row is read.
     const bar = document.createElement('div'); bar.className = 'pcbar'
     if (got.shots.length > 1) {
       const sbox = document.createElement('div'); sbox.className = 'pcbox pcplay'
@@ -916,9 +980,9 @@ const B = window.__BOARD__ || {}
       // hidden on BOTH the box and the player: makeStepper's tick checks its own `hidden`, so a
       // speed change must not quietly restart a loop the cell is not showing
       sbox.appendChild(step)
-      sbox.hidden = true; step.hidden = true
+      strip.hidden = true
       cam.appendChild(sbox)
-      aimCamera(sbox, focus)
+      aimCamera(sbox, focus, CAM)
       const modes = document.createElement('span'); modes.className = 'medbar pcmodes'
       const mk = function (label, on, fn) {
         const b = document.createElement('button'); b.type = 'button'; b.textContent = label
@@ -929,10 +993,14 @@ const B = window.__BOARD__ || {}
         bStills.classList.toggle('on', !play); bGif.classList.toggle('on', play)
         if (play) step._start(); else step._stop()
       }
-      const bStills = mk('stills', true, function () { pick(false) })
-      const bGif = mk('gif', false, function () { pick(true) })
-      modes.appendChild(bStills); modes.appendChild(bGif)
+      const bStills = mk('stills', false, function () { pick(false) })
+      const bGif = mk('loop', true, function () { pick(true) })
+      modes.appendChild(bGif); modes.appendChild(bStills)
       bar.appendChild(modes)
+      // armed on build. The cell is still detached here, but the reader is appended synchronously in
+      // this same task and the shortest hold is 350ms, so the first hop always lands with the node in
+      // the document — the tick's isConnected guard stops orphans, never this.
+      step._start()
     }
     cell.appendChild(cam)
     // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and
@@ -1021,7 +1089,7 @@ const B = window.__BOARD__ || {}
       box.appendChild(sub); fr.appendChild(box)
       // cap the drawing's magnification: same region as the proof, more context instead of more
       // pixels — an uncapped zoom onto a ~30px rect blows the wireframe's strokes into abstraction
-      aimCamera(box, focusInSvg(focus, sub.querySelector('svg')), { maxScale: 2.2 })
+      aimCamera(box, focusInSvg(focus, sub.querySelector('svg')), CAM)
       return fr
     }
     const wholeCell = function () {
@@ -1096,6 +1164,7 @@ const B = window.__BOARD__ || {}
     wrap.appendChild(body)
     startLoops()
     onSpd(wrap, function (sp) { wrap.style.setProperty('--spd', String(sp)) })
+    orderClass(wrap)   // the header row and every beat row reorder together, off this one class
     return wrap
   }
 
@@ -3279,10 +3348,19 @@ const B = window.__BOARD__ || {}
           ' run' + (hist.length === 1 ? '' : 's') + '</summary><ol class="lghist">' + runs + '</ol></details>'
       }
     }
-    // reopen the reader now that its borrowed node has been folded back into the pane
+    // reopen the reader now that its borrowed node has been folded back into the pane. A NAVIGATION
+    // DURING the fold supersedes the restore (2026-08-28): a deep-link landing between our close and
+    // this reopen used to be yanked back to the pre-fold requirement (board R13's test caught it once
+    // the per-beat fold grew slow enough to race). Reopen what is open NOW when something is — and
+    // close it first, so it re-borrows its node from the pane the fold just refreshed.
     if (reopen && reopen.dt) {
-      if (reopen.kind === 'list') openListRow(reopen.dt, reopen.id)
-      else setView(reopen.dt, 'focus', reopen.id)
+      const ovNow = document.querySelector('.dt:not([hidden]) .focusov')
+      const rowNow = ovNow ? null : document.querySelector('.dt:not([hidden]) .lst-card.open')
+      const cur = ovNow ? { kind: 'focus', dt: ovNow.closest('.dt'), id: ovNow._curId }
+        : rowNow ? { kind: 'list', dt: rowNow.closest('.dt'), id: rowNow.dataset.r } : reopen
+      if (ovNow || rowNow) closeFocus()
+      if (cur.kind === 'list') openListRow(cur.dt, cur.id)
+      else if (cur.dt) setView(cur.dt, 'focus', cur.id)
     }
     // an OPEN Flow view rebuilds off the fresh fold (it reads records and moves no shared nodes,
     // so a rebuild is safe) — this is also what fills it in on a fresh deep-link, where the boot
@@ -3312,7 +3390,10 @@ const B = window.__BOARD__ || {}
       req.setAttribute('data-status', f.getAttribute('data-status') || '')  // Focus reads this on reopen
       // the media pane's inputs are derived too — a run re-harvests the evidence (new content
       // hashes, a fresh window); a reopened reader must never show stale media
-      for (const a of ['data-beats', 'data-ev-before', 'data-ev-after', 'data-ev-window', 'data-ev-video', 'data-ev-vwin', 'data-ev-at']) {
+      // data-ev-beats included (2026-08-28): the per-beat harvest is derived like the pair — a run
+      // re-harvests every beat's frames/window/focus, and a reopened reader must never render the
+      // previous run's beat cells over the new run's band.
+      for (const a of ['data-beats', 'data-ev-beats', 'data-ev-before', 'data-ev-after', 'data-ev-window', 'data-ev-video', 'data-ev-vwin', 'data-ev-at']) {
         const v = f.getAttribute(a)
         if (v == null) req.removeAttribute(a); else req.setAttribute(a, v)
       }

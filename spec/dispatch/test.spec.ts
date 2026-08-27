@@ -28,7 +28,7 @@ const BOARD = SELF_RUN ? '/?runid=' + SELF_RUN + '#/board' : '/#/board'
 // Two of the board's OWN test titles — any real board case works as "a fast, deterministic run to
 // drive the panel". Kept in sync with spec/board/test.spec.ts; they are safe cases (no state writes).
 const B_R1 = 'Home lists every screen as a card'
-const B_R2 = 'A requirement and its proof read side by side, each scrolling on its own'
+const B_R2 = 'A requirement and its proof are read together in one card that scrolls inside itself'
 // Focus is the live default (board R13) and the Columns view is retired (2026-08-18): a screen's
 // test rows live baked in the HIDDEN source pane, which Focus borrows from and loadRuns folds into.
 // These tests read the per-case records off those hidden rows by count/text/attached (visibility
@@ -233,7 +233,7 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
   // failure could be read back long after the panel that showed it live is gone
   expect(log).toContain('Home lists every screen as a card')
-  expect(log).toContain('A requirement and its proof read side by side, each scrolling on its own')
+  expect(log).toContain('A requirement and its proof are read together in one card that scrolls inside itself')
   expect(log.length).toBeGreaterThan(200)
 
   // R8: each case keeps its OWN record — a self-contained log leading with what it was and how it

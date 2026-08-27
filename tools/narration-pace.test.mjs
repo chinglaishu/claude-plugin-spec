@@ -103,20 +103,30 @@ test('introMs reserves the intro line at test start — the first step waits it 
     `the first step waited out the intro (${step1.t - r.side.t0}ms >= ~1500 reserved before the test body began)`)
 })
 
-test('under BOARD_RECORD the HUD is a band that pushes the site down; without it the page is untouched', () => {
+test('under BOARD_RECORD the narration is a callout overlay that never shifts the page; without it nothing is injected', () => {
+  // The top BANNER (a band that pushed the body down by 142px) was retired 2026-08-28 for the
+  // tour CALLOUT anchored to the ringed element (#__specboard-focus, spec/_base.ts renderOverlay).
+  // The layout contract inverted with it: the page is NEVER shifted, recording or not — the
+  // overlay floats above the app — and a plain run injects nothing at all.
   const recDir = join(ROOT, '.pace-rec-out')
   const spec = (dir) =>
-    `import { test, expect, flowStep } from ${JSON.stringify(BASE)}\n` +
+    `import { test, expect, checkReq, proveVisible } from ${JSON.stringify(BASE)}\n` +
     `import { writeFileSync } from 'node:fs'\n` +
     `const TABLE = ${JSON.stringify(TABLE)}\n` +
     `test('band layout', async ({ page }) => {\n` +
     `  await page.goto(TABLE)\n` +
-    `  await flowStep('Paint the bar', async () => { await expect(page.locator('#t')).toHaveText('4.00%') })\n` +
+    `  await checkReq('R1', async () => { await proveVisible(page.locator('#t'), '4.00%', 'the cell') })\n` +
     `  writeFileSync(${JSON.stringify(join(dir, 'side.json'))}, JSON.stringify(await page.evaluate(() => {\n` +
-    `    const hud = document.getElementById('__specboard-hud')\n` +
+    `    const ov = document.getElementById('__specboard-focus')\n` +
+    `    const call = ov ? ov.querySelector('.sb-call') : null\n` +
+    `    const ring = ov ? ov.querySelector('.sb-ring') : null\n` +
+    `    const cell = document.getElementById('t').getBoundingClientRect()\n` +
+    `    const callBox = call && call.style.display !== 'none' ? call.getBoundingClientRect() : null\n` +
     `    return {\n` +
-    `      parent: hud && hud.parentElement ? hud.parentElement.tagName : null,\n` +
-    `      height: hud ? hud.getBoundingClientRect().height : null,\n` +
+    `      parent: ov && ov.parentElement ? ov.parentElement.tagName : null,\n` +
+    `      hasCall: !!callBox, hasRing: !!(ring && ring.style.display !== 'none'),\n` +
+    `      callText: call ? call.textContent : null,\n` +
+    `      overlaps: callBox ? !(callBox.right < cell.left || callBox.left > cell.right || callBox.bottom < cell.top || callBox.top > cell.bottom) : null,\n` +
     `      bodyTransform: getComputedStyle(document.body).transform,\n` +
     `      tableTop: document.querySelector('table').getBoundingClientRect().top\n` +
     `    }\n` +
@@ -124,15 +134,19 @@ test('under BOARD_RECORD the HUD is a band that pushes the site down; without it
     `})\n`
   const rec = run(spec, { BOARD_RECORD: recDir, BOARD_STEP_DELAY_MS: '1' }, 'band layout')
   rmSync(recDir, { recursive: true, force: true })
-  assert.equal(rec.status, 0, `recorded band run should pass:\n${rec.stdout}\n${rec.stderr}`)
+  assert.equal(rec.status, 0, `recorded callout run should pass:\n${rec.stdout}\n${rec.stderr}`)
   const s = rec.side
   assert.ok(s, 'the spec wrote its observations')
-  assert.equal(s.parent, 'HTML', 'the HUD hangs off <html>, outside the shifted body')
-  assert.equal(Math.round(s.height), 142, 'the HUD is a fixed-height band (incl. the proving line)')
-  assert.match(String(s.bodyTransform), /matrix\(1, 0, 0, 1, 0, 142\)/, 'the body is shifted down by the band height')
-  assert.ok(s.tableTop >= 142, `page content starts below the band (top ${s.tableTop})`)
+  assert.equal(s.parent, 'HTML', 'the overlay hangs off <html>, outside the app\'s stacking contexts')
+  assert.ok(s.hasRing, 'the proven cell is ringed')
+  assert.ok(s.hasCall, 'the callout card is shown beside it')
+  assert.match(String(s.callText), /R1/, 'the callout names the requirement')
+  assert.equal(s.overlaps, false, 'the callout never covers the ringed cell')
+  assert.equal(String(s.bodyTransform), 'none', 'the page is never shifted — the overlay floats above it')
+  assert.ok(s.tableTop < 142, `page content stays where the app put it (top ${s.tableTop})`)
 
   const off = run(spec, {}, 'band layout')
   assert.equal(off.status, 0, `plain run should pass:\n${off.stdout}\n${off.stderr}`)
-  assert.equal(String(off.side.bodyTransform), 'none', 'no recording → the page is never shifted')
+  assert.equal(off.side.parent, null, 'no recording → nothing is injected at all')
+  assert.equal(String(off.side.bodyTransform), 'none', 'no recording → the page is never touched')
 })

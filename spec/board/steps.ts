@@ -102,57 +102,65 @@ export async function searchRequirementText (page: Page, state: FlowState): Prom
   state.searched = 'canon'
 }
 
-// R2 — a requirement and its proof read side by side, each scrolling on its own. Opens the board's
-// own detail (the Focus default) and settles the boot fold first: loadRuns close-fold-reopens the
-// reader (CLAUDE.md), and a filled .tmeta means the fold is completely done.
+// R2 — a requirement and its proof are read TOGETHER, in ONE card whose story scrolls inside it
+// (the human's 2026-08-28 redesign: the reader is no longer two containers side by side, it is a
+// storyline of per-beat ROWS, and the row is where the words and their proof meet). Opens the
+// board's own detail (the Focus default) and settles the boot fold first: loadRuns
+// close-fold-reopens the reader (CLAUDE.md), and a filled .tmeta means the fold is completely done.
 export async function openDetailReader (page: Page, state: FlowState): Promise<void> {
   await page.goto('/#/board')
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   await expect(dt.locator('.focusov')).toBeVisible()
   await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-  // The two regions are the FOCUS reader's containers (R2, reworked 2026-08-18): the reading on the
-  // left, the covering test's proof on the right — each with its OWN overflow, so scrolling the
-  // proof never moves the reading…
+  // ONE reading card, carrying both ends: the storyline of beat rows and, under them, the proof
+  // band that belongs to the whole requirement.
   const ov = dt.locator('.focusov')
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
   await expect(ov.locator('.feval')).toBeVisible()
-  // BOTH columns share the width (Task 14b): the proof pane (.feval) is a real FRACTION of the
-  // reading column (.fleft), not a starved fixed strip. The columns are minmax(0,1.1fr) minmax(0,1fr),
-  // so proof/reading ≈ 0.91; the retired fixed proof column (600 × --scale ≈ 480px) made this ≈ 0.6,
-  // dumping every reclaimed pixel on the left. Guard the ratio so that regression can't return.
-  const colRatio = await ov.evaluate(el => {
-    const l = el.querySelector('.fpage > .fleft'); const r = el.querySelector('.fpage > .feval')
-    return (r as HTMLElement).getBoundingClientRect().width / (l as HTMLElement).getBoundingClientRect().width
+  // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28): every beat row lays three cells
+  // left to right on ONE line — [ the drawn schematic | the behaviour's words | that beat's own
+  // harvested proof ]. The drawing and the photograph are aimed at the SAME region by the same
+  // camera, so comparing them is the point and they must be the same width; the words between them
+  // are the caption and take visibly less. A reader that stacked the cells, put the proof somewhere
+  // other than beside the words, or let the two visual halves drift apart in width, fails here.
+  const geom = await ov.evaluate(el => {
+    const row = el.querySelector('.fstory .sbwrap .sbrow')
+    if (!row) return null
+    const box = (s: string) => {
+      const n = row.querySelector(':scope > ' + s) as HTMLElement | null
+      if (!n) return null
+      const r = n.getBoundingClientRect()
+      return { x: r.left, w: r.width, y: Math.round(r.top) }
+    }
+    return { frame: box('.sbframe'), text: box('.sbtext'), proof: box('.sbproof') }
   })
-  expect(colRatio, 'the proof pane is a real fraction of the reading column, not a fixed strip').toBeGreaterThan(0.72)
-  expect(colRatio, 'the reading column stays at least as wide as the proof pane').toBeLessThanOrEqual(1.02)
-  // the reading REGION is the requirement card's story+prose block (.fscroll — Task 12, generalized
-  // 2026-08-25 #2: it scrolls INTERNALLY between the card header and the pinned Full-requirement
-  // footer, so the storyboard's first still is on first sight; supersedes Task 8 fix round 1, where
-  // the whole left column scrolled as one)
-  for (const sel of ['.fscroll', '.feval']) {
-    const oflow = await ov.locator(sel).evaluate(el => getComputedStyle(el).overflowY)
-    expect(['auto', 'scroll']).toContain(oflow)
-  }
-  // …proven with regions that REALLY overflow (final review m8: a scrollTop === 0 check holds
-  // trivially while the region fits its box): a tall spacer is pushed into EACH region in turn,
-  // the scroll must actually move there (> 0), and the other side must not move at all
-  await ov.locator('.feval').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'flex:none; min-height:4000px'; el.appendChild(sp) })   // flex:none — a flex child with no content would shrink to nothing
-  expect(await ov.locator('.feval').evaluate(el => el.scrollHeight > el.clientHeight), 'the proof region overflows').toBe(true)
-  await ov.locator('.feval').evaluate(el => { el.scrollTop = 60 })
-  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the reading did not move').toBe(0)
-  await ov.locator('.feval').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
-  // …and the reading region scrolls internally too (Task 12): its own spacer, its own real move,
-  // the proof untouched
+  expect(geom, 'the reader is a storyline of per-beat rows').not.toBeNull()
+  const { frame, text, proof } = geom!
+  expect(!!(frame && text && proof), 'a beat row carries schematic · behavior · proof').toBe(true)
+  expect(new Set([frame!.y, text!.y, proof!.y]).size, 'the three cells sit on ONE row, not stacked').toBe(1)
+  expect(frame!.x, 'the schematic opens the row').toBeLessThan(text!.x)
+  expect(text!.x, 'the proof closes the row, beside the words it proves').toBeLessThan(proof!.x)
+  expect(Math.abs(frame!.w - proof!.w) / Math.max(frame!.w, proof!.w),
+    'the drawing and the proof are the same width — the row is a comparison').toBeLessThan(0.02)
+  expect(text!.w, 'the words are the caption between them and take visibly less').toBeLessThan(frame!.w * 0.9)
+  // …and the card's STORY REGION scrolls INTERNALLY (Task 12, kept): between the pinned header and
+  // the pinned footer, so the first beat is on screen from the first paint. Proven with a region
+  // that REALLY overflows (final review m8: a scrollTop === 0 check holds trivially while the
+  // region fits its box) — a tall spacer is pushed in, the scroll must actually move (> 0), the
+  // card's own header must NOT move with it, and the page must not move at all.
+  const oflow = await ov.locator('.fscroll').evaluate(el => getComputedStyle(el).overflowY)
+  expect(['auto', 'scroll']).toContain(oflow)
+  const headAt = () => ov.locator('.fread > .frmeta').evaluate(el => Math.round(el.getBoundingClientRect().top))
+  const headTop = await headAt()
   await ov.locator('.fscroll').evaluate(el => { const sp = document.createElement('div'); sp.className = 'r2spacer'; sp.style.cssText = 'min-height:4000px'; el.appendChild(sp) })
-  expect(await ov.locator('.fscroll').evaluate(el => el.scrollHeight > el.clientHeight), 'the reading region overflows').toBe(true)
+  expect(await ov.locator('.fscroll').evaluate(el => el.scrollHeight > el.clientHeight), 'the story region overflows').toBe(true)
   await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 60 })
-  expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the reading region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof did not move').toBe(0)
+  expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the story region scrolled').toBeGreaterThan(0)
+  expect(await headAt(), 'the card header stays pinned while the story scrolls').toBe(headTop)
+  expect(await page.evaluate(() => window.scrollY), 'and the page itself never scrolls').toBe(0)
   await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
-  // …and neither region scrolls the PAGE — the open detail locks the page's own scroll
+  // …because the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
   // The dedicated two-column view this requirement used to describe is RETIRED: its panes stay
   // baked as the hidden shared source (R13), and NO view the toggle offers ever shows them.

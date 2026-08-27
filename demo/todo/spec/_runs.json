@@ -1,5 +1,19 @@
 [
   {
+    "at": "2026-08-27T19:21:41.897Z",
+    "screen": "todo",
+    "grep": null,
+    "ms": 6293,
+    "total": 0,
+    "failed": 0,
+    "ok": false,
+    "note": "no tests ran — the run matched no cases (exit null)",
+    "runId": "1787858501897",
+    "hasLog": true,
+    "shotsByTest": {},
+    "archive": null
+  },
+  {
     "at": "2026-08-27T08:34:30.652Z",
     "screen": "todo",
     "grep": null,

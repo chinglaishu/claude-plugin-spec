@@ -274,19 +274,21 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     const rule1 = await fst.locator('.sbrow').nth(1).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     const rule3 = await fst.locator('.sbrow').nth(2).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
     expect(rule3, 'a beat boundary rules heavier than a row').toBeGreaterThan(rule1)
-    // …and the in-full toggle now lives in the card's PINNED FOOTER (Task 12 — supersedes fix
-    // round 1 A-1's whole-column scroll: the beats region scrolls INSIDE the card instead, so the
-    // toggle can never leave the viewport). Both of A-1's pre-click viewport checks are KEPT and
-    // retargeted at the footer: at 900px and on a short 640px window alike, visible before ANY
+    // …the card's HEADER is pinned (Task 12 — the beats region scrolls INSIDE the card, so the
+    // header can never leave the viewport). Both of A-1's pre-click viewport checks are KEPT and
+    // retargeted at that header: at 900px and on a short 640px window alike, visible before ANY
     // interaction — Playwright auto-scrolls before a click, so only an explicit, pre-click
-    // viewport check can see this
-    await expect(dt.locator('.focusov .fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
+    // viewport check can see this.
+    await expect(dt.locator('.focusov .fread > .frmeta')).toBeInViewport({ ratio: 1 })
     await page.setViewportSize({ width: 1440, height: 640 })
-    await expect(dt.locator('.focusov .fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
+    await expect(dt.locator('.focusov .fread > .frmeta')).toBeInViewport({ ratio: 1 })
     await page.setViewportSize({ width: 1440, height: 900 })
-    // the PROSE is collapsed beneath the shape — one click unfolds the authored requirement in full
-    await expect(dt.locator('.fread .fbody')).toBeHidden()
-    await dt.locator('.fread .prose-t').click()
+    // …and the authored PROSE is ALWAYS SHOWN beneath the beats (the human, 2026-08-28): the
+    // 'Full requirement' toggle is GONE, so the full text reads with no interaction at all —
+    // there is no control left to click, and none is needed
+    await expect(dt.locator('.focusov .fread .prose-t')).toHaveCount(0)
+    await expect(dt.locator('.focusov .fread > .ffoot button')).toHaveCount(0)
+    await expect(dt.locator('.fread .fbody')).toBeVisible()
     await expect(dt.locator('.fread .fbody')).toContainText('Supporting prose under the shape.')
 
     // THE BAKED SOURCE ROW (hidden — count/text reads work there): the block renders inside R1's
@@ -305,24 +307,24 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     // and the prose-only requirement renders NO block — no wrapper, no empty grid
     await expect(dt.locator('.reqpane .req[data-r="R2"] .body .behavior')).toHaveCount(0)
 
-    // MEDIA (D2): a PASSED requirement with more than one beat defaults to the per-beat FILMSTRIP —
-    // the harvested pair read as given → beat frames — under the stills · gif · video toolbar
+    // MEDIA (D2, re-split by the human 2026-08-28): the harvested frames ride the BEAT ROWS they
+    // belong to. This fixture's index entry is a requirement-level pair only — no per-beat harvest —
+    // so the reader has to place it HONESTLY: the `before` opens the story on the Given row, the
+    // `after` closes it on the LAST beat row, and the row in between says the gap out loud rather
+    // than borrowing a neighbour's frame to look complete (rule 3).
+    const proof = dt.locator('.focusov .fread .fstory .sbrow .sbproof')
+    await expect(proof).toHaveCount(3)                                  // one per row: given + 2 beats
+    await expect(proof.locator('.pcstrip .pcfig img')).toHaveCount(2)   // exactly the pair that exists
+    await expect(proof.nth(0).locator('.pccap')).toHaveText('before')
+    await expect(proof.nth(1).locator('.pcnone')).toContainText('no per-beat evidence yet')
+    await expect(proof.nth(1).locator('img')).toHaveCount(0)            // nothing invented for the gap
+    await expect(proof.nth(2).locator('.pccap')).toContainText('after')
+    // …and the band beneath the rows carries only what belongs to the WHOLE requirement: the
+    // stills · gif · video toolbar and its stored preference went with the split
     const media = dt.locator('.focusov .feval .fmedia')
-    await expect(media.locator('.medbar button[data-m="frames"]')).toHaveClass(/\bon\b/)
-    const strip = media.locator('.fmpanel[data-m="frames"] .fstrip')
-    await expect(strip.locator('.fcell img')).toHaveCount(2)
-    await expect(strip.locator('.fcap').nth(0)).toContainText('given')
-    await expect(strip.locator('.fcap').nth(1)).toContainText('beat')
-    // gif mode is the FRAME-STEPPER (Task 13): no clip file exists or is needed — the harvested
-    // pair itself plays as frames, with an EXACT dot per frame and the count written out. This
-    // entry carries no window (an old-harvest shape), so the equal-holds fallback paces it.
-    await media.locator('.medbar button[data-m="clip"]').click()
-    const stepper = media.locator('.fmpanel[data-m="clip"]')
-    await expect(stepper.locator('.fsteps img')).toHaveCount(2)
-    await expect(stepper.locator('.pdots .pd')).toHaveCount(2)
-    await expect(stepper.locator('.fstepn')).toHaveText(/^\d \/ 2$/)
-    await media.locator('.medbar button[data-m="frames"]').click()
-    await page.evaluate(() => localStorage.removeItem('sbFocusMedia'))
+    await expect(media.locator('.medbar')).toHaveCount(0)
+    await expect(media.locator('.fmpanel[data-m]')).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia'))).toBeNull()
 
     // LIST view (board R13: Grid became List, a list of Focus): one collapsed row per requirement —
     // the row carries the BEAT COUNT; the gap strip above counts the untested R2 and offers the
@@ -334,10 +336,10 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(c1.locator('.lst-head .lbeats')).toHaveText('2 beats')
     await expect(c1.locator('.lst-head .lpf')).toContainText('Passed')
     await expect(dt.locator('.gridview .lst-card[data-r="R2"] .lbeats')).toHaveCount(0)
-    // an OPEN row is the Focus body itself, in place — same storyboard, same media pane
+    // an OPEN row is the Focus body itself, in place — same storyline, same per-beat proof cells
     await c1.locator('.lst-head').click()
     await expect(c1.locator('.lst-body .fread .fstory .sbrow')).toHaveCount(3)
-    await expect(c1.locator('.lst-body .feval .fmedia .fcell img')).toHaveCount(2)
+    await expect(c1.locator('.lst-body .fread .fstory .sbproof .pcstrip .pcfig img')).toHaveCount(2)
   } finally { restore() }
 })
 
@@ -382,30 +384,32 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
   const ov = dt.locator('.focusov')
-  const story = ov.locator('.fleft .fstory')
+  const story = ov.locator('.fread .fstory')
   const scroll = ov.locator('.fread .fscroll')
 
-  // ON FIRST SIGHT, before ANY interaction: the storyboard LEADS with the Given row and its drawn
+  // ON FIRST SIGHT, before ANY interaction: the storyline LEADS with the Given row and its drawn
   // still — the paired drawing is on screen from the first paint (Task 12, generalized to the
-  // storyboard) — and so is the pinned footer's Full-requirement toggle
+  // storyline) — and the card's header is pinned above it
   await expect(story.locator('.sbrow').first().locator('.sbframe svg')).toBeVisible()
   await expect(story.locator('.sbrow').first()).toBeInViewport({ ratio: 1 })
-  await expect(ov.locator('.fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
-  // the story+prose region scrolls INTERNALLY (the storyboard packs the two old boxes into one, so
-  // a real reading card fits without natural overflow — a tall spacer pushed IN proves the internal
-  // scroll deterministically, the steps.ts R2 technique): the region really overflows, its scroll
-  // really moves, the clipped cue lights, and moving it moves NEITHER the proof column nor the page
-  // (dispatch a scroll so the clip sync runs — appending a child grows scrollHeight but not the
-  // region's own box, so the ResizeObserver that normally fires syncClip on layout does not)
+  await expect(ov.locator('.fread > .frmeta')).toBeInViewport({ ratio: 1 })
+  // the story+proof+prose region scrolls INTERNALLY (the storyline packs what used to be several
+  // boxes into one, so a real reading card fits without natural overflow — a tall spacer pushed IN
+  // proves the internal scroll deterministically, the steps.ts R2 technique): the region really
+  // overflows, its scroll really moves, the clipped cue lights, and the card's own header does not
+  // move with it (dispatch a scroll so the clip sync runs — appending a child grows scrollHeight but
+  // not the region's own box, so the ResizeObserver that normally fires syncClip on layout does not)
   await scroll.evaluate(el => { const sp = document.createElement('div'); sp.className = 'probe-spacer'; sp.style.cssText = 'min-height:4000px'; el.appendChild(sp); el.dispatchEvent(new Event('scroll')) })
   expect(await scroll.evaluate(el => el.scrollHeight > el.clientHeight), 'the reading region overflows').toBe(true)
   // the clipped edge carries the scroll cue — the hairline fade on the pinned footer (tokens only)
   await expect(ov.locator('.fread')).toHaveClass(/\bclipped\b/)
   expect(await ov.locator('.fread .ffoot').evaluate(el => getComputedStyle(el, '::before').backgroundImage),
     'the clip cue is a fade').toContain('linear-gradient')
+  const headTop = () => ov.locator('.fread > .frmeta').evaluate(el => Math.round(el.getBoundingClientRect().top))
+  const headBefore = await headTop()
   await scroll.evaluate(el => { el.scrollTop = 80 })
   expect(await scroll.evaluate(el => el.scrollTop), 'the reading region scrolled').toBeGreaterThan(0)
-  expect(await ov.locator('.feval').evaluate(el => el.scrollTop), 'the proof did not move').toBe(0)
+  expect(await headTop(), 'the card header stayed pinned').toBe(headBefore)
   // scrolled to the very end, the edge is no longer clipped — the cue clears honestly
   await scroll.evaluate(el => { el.scrollTop = el.scrollHeight })
   await expect(ov.locator('.fread')).not.toHaveClass(/\bclipped\b/)
@@ -416,11 +420,11 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
   expect(pb.y + pb.height, 'the Focus page fits the viewport').toBeLessThanOrEqual(vp.height)
   await expect(dt.locator('.dtfoot .fpager')).toBeInViewport()
 
-  // at the 640px floor the storyboard STILL leads with the Given row's drawn still on first sight,
-  // the footer still pinned — a drawing paired from the first paint at any height
+  // at the 640px floor the storyline STILL leads with the Given row's drawn still on first sight,
+  // the header still pinned — a drawing paired from the first paint at any height
   await page.setViewportSize({ width: 1440, height: 640 })
   await expect(story.locator('.sbrow').first().locator('.sbframe svg')).toBeVisible()
-  await expect(ov.locator('.fread .ffoot .prose-t')).toBeInViewport({ ratio: 1 })
+  await expect(ov.locator('.fread > .frmeta')).toBeInViewport({ ratio: 1 })
   // …and it is never a heading over nothing (M-3): the first storyboard row sits inside the region,
   // near the top (below the sticky toolbar, never pushed off)
   const firstTop = await scroll.evaluate(el => {
@@ -457,11 +461,16 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
 
   const dt = page.locator('.dt[data-screen="' + name + '"]:not([hidden])')
   await settleAt(page, '/#/' + name, dt.locator('.viewseg'))
-  const schem = dt.locator('.focusov .fleft .fstory')
+  const schem = dt.locator('.focusov .fread .fstory')
 
-  // the STORYBOARD is the default: each beat paired with its drawn still — no placeholder line, no
+  // the STORYLINE is the default: each beat paired with its drawn still — no placeholder line, no
   // stale banner (fresh); the derived hash rides the slot (data-vizhash) for traceability
-  await expect(schem.locator('.storycap')).toContainText('schematic · the idea, not the real UI')
+  // The honesty CAPTION row ("schematic · the idea, not the real UI") is GONE with the 2026-08-28
+  // redesign — the drawing mirrors the real screen now, so the disclaimer would be false — and what
+  // names the cells instead is the three-label header row over them.
+  await expect(schem.locator('.storycap')).toHaveCount(0)
+  await expect(schem).not.toContainText('the idea, not the real UI')
+  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['schematic', 'behavior', 'proof'])
   await expect(schem).not.toContainText('no schematic drawn yet')
   await expect(schem).toHaveAttribute('data-vizhash', vizat)
   await expect(schem).not.toContainText('≠')
@@ -490,7 +499,7 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
 
   // a requirement with NO drawing keeps the honest placeholder line
   await page.goto('/#/' + name + '/R2')
-  await expect(dt.locator('.focusov .fleft .fstory')).toContainText('no schematic drawn yet')
+  await expect(dt.locator('.focusov .fread .fstory')).toContainText('no schematic drawn yet')
 
   // THE TEXT MOVES PAST THE DRAWING → quiet grey + the dated stale banner. The committed SVG stays
   // byte-identical; only prd.md changes — staleness is COMPUTED from the pin, never stored. A goto
@@ -504,7 +513,7 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
     await expect(dt.locator('.reqpane .req[data-r="R1"] .schematic[data-stale="1"]')).toHaveCount(1, { timeout: 2000 })
   }).toPass({ timeout: 60000 })
   await page.goto('/#/' + name + '/R1')
-  const stale = dt.locator('.focusov .fleft .fstory')
+  const stale = dt.locator('.focusov .fread .fstory')
   await expect(stale).toHaveClass(/\bisstale\b/)
   await expect(stale.locator('.sbrow .sbframe svg')).toHaveCount(3)   // the old drawing, greyed per row — shown, not hidden
   await expect(stale.locator('.sbstale')).toBeVisible()

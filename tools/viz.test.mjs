@@ -4,7 +4,7 @@
 // honesty rule: a requirement the kit cannot draw stays text-only, never a wrong picture.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash } from './viz.mjs'
+import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion } from './viz.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
 
@@ -523,4 +523,176 @@ test('per-beat: a beat with nothing usable is skipped, and an empty harvest is s
   assert.equal(renderWireframe([{ before: null, after: null }], { behavior: TWO }), null)
   const one = renderWireframe([{ before: null, after: layAt(1, '3 to do', true) }], { behavior: TWO })
   assert.ok(one && one.svg.includes('data-viz-frames="2"'), 'a beat with only its after still draws')
+})
+
+// ── THE BURN-IN'S OWN LANGUAGE (the human, 2026-08-28): a beat row shows the schematic cell beside
+// the proof cell, and the two must read as ONE thing. The proof frame is a photograph of the app
+// wearing the narration overlay (spec/_base.ts renderOverlay): a light dim, a ring on the proven
+// element, and a tour card carrying the requirement's own When → Then. So the mirror's beat frames
+// wear the same overlay, drawn: the same structure, the same wording, the same dye tokens.
+const nest = (count, focus) => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 1150, y: 92, w: 150, h: 52 } : null,
+  els: [
+    ...LAY_BEFORE.els.slice(0, 5),
+    // the counter AND the digit span inside it — the capture marks both, which once drew two value
+    // pills stacked on one another ("6" over "6 to do") at the board's zoom
+    { x: 1150, y: 92, w: 150, h: 52, kind: 'text', text: count + ' to do', ...(focus ? { focus: true } : {}) },
+    { x: 1160, y: 104, w: 34, h: 28, kind: 'text', text: String(count), ...(focus ? { focus: true } : {}) }
+  ]
+})
+const NESTED = [
+  { before: nest(2, false), after: nest(3, true) },
+  { before: nest(3, false), after: nest(2, true) }
+]
+const CARD = { behavior: TWO, id: 'R5', title: 'The remaining counter recounts', pass: true }
+const frameOf = (svg, n) => {
+  const i = svg.indexOf('<g class="wf' + n + '">')
+  return i < 0 ? '' : svg.slice(i, svg.indexOf('</g>', i))
+}
+
+test('each beat frame wears the dim, the ring and the tour callout — in THAT beat\'s own words', () => {
+  const d = renderWireframe(NESTED, CARD)
+  const f1 = frameOf(d.svg, 1); const f2 = frameOf(d.svg, 2)
+  for (const [f, n] of [[f1, 1], [f2, 2]]) {
+    assert.ok(/fill="var\(--ink\)" opacity="0\.12"/.test(f), `frame ${n} dims the page around the proof`)
+    assert.ok(/stroke="var\(--ai\)"/.test(f), `frame ${n} rings the proven element in indigo`)
+    assert.ok(f.includes('>R5<'), `frame ${n} carries the R-id chip`)
+    assert.ok(f.includes('>WHEN<') && f.includes('>THEN<'), `frame ${n} labels the beat like the burn-in`)
+    assert.ok(/The remaining counter/.test(f), `frame ${n} carries the requirement title`)
+  }
+  // each frame says ITS OWN beat, exactly as the recording's callout did at that moment
+  assert.ok(f1.includes('you add') && !f1.includes('you tick'), 'beat 1\'s When')
+  assert.ok(f2.includes('you tick') && !f2.includes('you add'), 'beat 2\'s When')
+  // the Then wraps across the card's lines, so pin the VALUE each beat settles on instead
+  assert.ok(f1.includes('3 to do') && !f1.includes('2 to do'), 'beat 1 settles on 3')
+  assert.ok(f2.includes('2 to do') && !f2.includes('3 to do'), 'beat 2 settles back on 2')
+})
+
+test('the given frame stays clean — no dim, no ring, no callout, because nothing was asserted yet', () => {
+  const f0 = frameOf(renderWireframe(NESTED, CARD).svg, 0)
+  assert.ok(!/opacity="0\.12"/.test(f0), 'no dim')
+  assert.ok(!/stroke="var\(--ai\)"/.test(f0), 'no ring')
+  assert.ok(!f0.includes('>WHEN<') && !f0.includes('>THEN<'), 'no callout')
+  assert.ok(f0.includes('>2 to do<'), 'just the state it opens on, readable')
+})
+
+test('a counter and the span inside it draw ONE value, not two stacked (the overlap defect)', () => {
+  const d = renderWireframe(NESTED, CARD)
+  const f1 = frameOf(d.svg, 1)
+  // the value PILL is the mono one; the card's Then says the same words in sans, which is not a
+  // duplicate but the requirement quoting the app
+  const pills = t => (t.match(/var\(--mono\)"[^>]*>[^<]*to do</g) || []).length
+  assert.equal(pills(f1), 1, 'the ringed counter gets ONE pill, not one per nested element')
+  assert.ok(!/>3</.test(f1), 'and its inner digit span is not drawn a second time on top')
+  // the RING's own box decides which of the nest is the reading — not the tightest child
+  assert.ok(/>3 to do</.test(f1), 'and the reading is the counter, not the bare digit inside it')
+  assert.equal(pills(frameOf(d.svg, 0)), 1, 'the same pick runs on the given frame\'s ghosts')
+})
+
+test('the ✓ is drawn (never typed) and only when the requirement reads passed at derive time', () => {
+  const pass = renderWireframe(NESTED, CARD)
+  const plain = renderWireframe(NESTED, { ...CARD, pass: false })
+  assert.ok(pass.svg.includes('stroke="var(--ok)"'), 'a passing requirement gets the koke check')
+  assert.ok(!plain.svg.includes('stroke="var(--ok)"'), 'an unproven one gets no mark — never a fake green')
+  assert.ok(!pass.svg.includes('✓'), 'drawn as a path: a missing glyph must never tofu the one unambiguous mark')
+})
+
+test('callout text is bounded: two lines a section, ellipsis rather than overflow', () => {
+  const long = b('a screen',
+    'you do something with a very long sentence that would run off the end of any callout card ever drawn here and keep going for a while yet',
+    'it settles into a state described at equally exhausting length, well past anything a small card could ever hold on two lines of type')
+  const d = renderWireframe(NESTED, { behavior: long, id: 'R1', title: 'A very long requirement title that cannot fit', pass: false })
+  const f1 = frameOf(d.svg, 1)
+  assert.ok(f1.includes('…'), 'the overrun is elided')
+  // WHEN + THEN, at most two lines each, plus the label runs and the chip/title
+  const whenish = (f1.match(/font-family="var\(--sans\)"/g) || []).length
+  assert.ok(whenish <= 14, 'the card never grows extra lines to fit its text: ' + whenish)
+})
+
+test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-2"'))
+})
+
+// ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
+// show the whole drawing — it zooms onto the beat's focus rect by tools/board/stepper.js's
+// cameraView, so the only thing that counts as "on screen" is that framed region. R5's counter sits
+// at the page's right edge, the region is the right third of the page, and the card had been placed
+// to the LEFT of it: cut mid-word. renderWireframe now computes the same region and refuses any
+// placement — card OR notch — that falls outside it.
+test('framedRegion is cameraView\'s own region: padded, centred, clamped, capped', () => {
+  // a small target mid-page: the 2.75 pad wants 3.5× magnification, the 2.2 cap wins, so the region
+  // is the frame divided by 2.2 centred on the focus
+  const mid = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, 600, 375)
+  assert.equal(Math.round(mid.w), Math.round(600 / 2.2))
+  assert.equal(Math.round(mid.h), Math.round(375 / 2.2))
+  assert.ok(Math.abs((mid.x + mid.w / 2) - 300) < 0.01, 'centred on the focus')
+  // …and it never leaves the frame: a target at the right edge pans, it never shows void
+  const edge = framedRegion({ x: 540, y: 20, w: 55, h: 20 }, 600, 375)
+  assert.ok(edge.x >= 0 && edge.x + edge.w <= 600.01 && edge.y >= 0 && edge.y + edge.h <= 375.01)
+  assert.equal(Math.round(edge.x + edge.w), 600, 'clamped hard against the edge it sits on')
+  // nothing to magnify → the whole frame, cameraView's honest no-zoom answer
+  assert.deepEqual(framedRegion({ x: 0, y: 0, w: 600, h: 375 }, 600, 375), { x: 0, y: 0, w: 600, h: 375 })
+})
+
+// the R5 shape: the counter hard against the right edge, high up — the corner that left the card
+// nowhere to go inside the framed region
+const EDGE = focus => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 1290, y: 96, w: 130, h: 46 } : null,
+  els: [
+    ...LAY_BEFORE.els.slice(0, 5),
+    { x: 1290, y: 96, w: 130, h: 46, kind: 'text', text: '3 to do', ...(focus ? { focus: true } : {}) }
+  ]
+})
+
+test('the callout and its notch land INSIDE the framed region, even at the page\'s edge (R5)', () => {
+  const d = renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD)
+  const f1 = frameOf(d.svg, 1)
+  const S = 600 / 1440
+  const H = Math.round(600 * (900 / 1440))
+  const reg = framedRegion({ x: 1290 * S, y: 96 * S, w: 130 * S, h: 46 * S }, 600, H)
+  assert.ok(reg.w < 600, 'the cell really is zoomed in on this one')
+  const inside = (x, y) => x >= reg.x - 0.02 && x <= reg.x + reg.w + 0.02 &&
+    y >= reg.y - 0.02 && y <= reg.y + reg.h + 0.02
+  // the card: the one paper rect with the hairline border (the chip is fill:none, a hot pill is --ai)
+  const cards = [...f1.matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--line2\)"/g)]
+  assert.equal(cards.length, 1, 'one card is drawn')
+  const [x, y, w, h] = cards[0].slice(1).map(Number)
+  assert.ok(inside(x, y) && inside(x + w, y + h), `the whole card is framed: ${x},${y} ${w}x${h} in ${JSON.stringify(reg)}`)
+  // …and the notch, whose tip reaches PAST the card edge toward the ring
+  const tri = [...f1.matchAll(/<path d="M([-\d.]+) ([-\d.]+) L([-\d.]+) ([-\d.]+) L([-\d.]+) ([-\d.]+) Z"/g)]
+  assert.equal(tri.length, 1, 'the notch is drawn — the card is attached, not floating')
+  const p = tri[0].slice(1).map(Number)
+  assert.ok(inside(p[0], p[1]) && inside(p[2], p[3]) && inside(p[4], p[5]), 'every corner of the notch is framed too')
+})
+
+test('a tight region shrinks the card past its own floor rather than letting it be cut', () => {
+  const d = renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD)
+  const f1 = frameOf(d.svg, 1)
+  const w = Number(/<rect x="[-\d.]+" y="[-\d.]+" width="([-\d.]+)"[^>]*fill="var\(--paper\)" stroke="var\(--line2\)"/.exec(f1)[1])
+  const S = 600 / 1440
+  const reg = framedRegion({ x: 1290 * S, y: 96 * S, w: 130 * S, h: 46 * S }, 600, Math.round(600 * (900 / 1440)))
+  assert.ok(w <= reg.w * 0.8 + 0.01, `the card is at most 0.8 of the framed region: ${w} vs ${reg.w}`)
+  assert.ok(w > reg.w * 0.35, 'but never shrunk to a token: ' + w)
+})
+
+test('the value is drawn INSIDE the ringed box when it reads there — a pill only when it cannot', () => {
+  // the counter case: the app draws its value inside the counter, so the mirror does too
+  const wide = renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD)
+  const f1 = frameOf(wide.svg, 1)
+  assert.ok(/var\(--mono\)"[^>]*>3 to do</.test(f1), 'the value is drawn')
+  assert.ok(!/rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--ai\)"/.test(f1),
+    'and needs no pill of its own — it sits inside the ring, like the screen it mirrors')
+  // a box too small to read the value inside falls back to the pill rather than shrinking to dust
+  const tiny = n => ({
+    w: 1440,
+    h: 900,
+    ring: n ? { x: 700, y: 400, w: 26, h: 26 } : null,
+    els: [...LAY_BEFORE.els.slice(0, 5), { x: 700, y: 400, w: 26, h: 26, kind: 'text', text: 'Overdue by 4 days', ...(n ? { focus: true } : {}) }]
+  })
+  const small = frameOf(renderWireframe([{ before: tiny(false), after: tiny(true) }], CARD).svg, 1)
+  assert.ok(/rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--ai\)"/.test(small), 'a pill carries what the box cannot')
 })

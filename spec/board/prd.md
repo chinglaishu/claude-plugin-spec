@@ -66,25 +66,38 @@ A `### <n> · <family> — <gloss>` line groups the requirements that follow it 
 
 ### 2 · Reading a requirement and its proof — the two ends
 
-## R2 — A requirement and the tests that prove it are read side by side, each scrolling on its own
+## R2 — A requirement and the tests that prove it are read side by side, in one card that scrolls inside itself
 
-- **Given** a requirement and its proof shown together
-- **When** you scroll the proof
-- **Then** the reading stays still, and neither region scrolls the page
+- **Given** a requirement and its proof read together in one card
+- **When** you scroll the card's story
+- **Then** it scrolls inside the card, the card's header stays pinned, and the page itself never scrolls
 
-Wherever a requirement is opened, its **reading and its proof are shown together and scroll
-independently** — scrolling the proof never moves the reading, and neither scrolls the page; the
-headers stay pinned. And what sits beside the reading is the **proof itself** — the covering test's
-own controls, frames and recording — never a wireframe or a built-screen mock-up: the wireframe is
-not a specboard artifact at all (R7), and a test's evidence (recording, screenshot) lives inside the
-test (R3, R10). This is the durable shape the detail must keep; the particular **views that deliver
-it belong to R13** (Focus is the reader where it lives today).
+Wherever a requirement is opened, its **reading and its proof are shown together** — and *side by
+side* now means **on the row**: every beat of the behaviour lays its drawn schematic, its words and
+its own harvested proof across one line, the drawing and the photograph at the same width because
+comparing them is the point. The whole thing is **one card**: its story region scrolls **inside**
+it, between a pinned header and a pinned footer, and the page never scrolls at all. And what sits
+beside the reading is the **proof itself** — the covering test's own controls, frames and recording
+— never a wireframe or a built-screen mock-up: the wireframe is not a specboard artifact at all
+(R7), and a test's evidence (recording, screenshot) lives inside the test (R3, R10). This is the
+durable shape the detail must keep; the particular **views that deliver it belong to R13** (Focus is
+the reader where it lives today).
 
 *Reworked 2026-08-19 (the human): R2 is the view-agnostic **principle** now — proof beside the
 reading, each scrolling on its own, no wireframe region — kept deliberately separate from R13, which
 owns the particular views (Focus / Grid / Flow) that embody it. It previously described a dedicated
 two-column "Columns" view, retired when Grid and Flow replaced it (R13); the earlier note asked
 whether to fold R2 into R13, and the human chose to keep it as the standalone principle.*
+
+<!-- Reworded 2026-08-28 (the human's storyline redesign, in this session): the reader stopped being
+     two containers with two independent scrollbars, so "scrolling the proof never moves the reading"
+     described a shape that no longer exists — leaving it would have made this requirement quietly
+     false (CLAUDE.md rule 6). The PRINCIPLE is intact and now stronger: the proof sits beside the
+     words on every beat row, and the card scrolls internally so the story never drags the page. The
+     Flow view's own left/right split, which still scrolls on two sides, is R13's sentence. -->
+*Reworded 2026-08-28 (the human): "each scrolling on its own" becomes **one card that scrolls inside
+itself** — the two-container reader is gone; side by side is now per beat row, and the independent
+scroll it protected is the card's internal story region between its pinned header and footer.*
 
 ## R3 — A requirement is a title that expands; a test is a title, a recording, and its tags
 
@@ -124,17 +137,23 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 - **Then** the same requirements render in that view, storing nothing new
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
-requirement at a time: on the left the id · state · **title** lead one header row, then the
-**behavior paired with its drawn schematic** — each Given / When→Then beat shown beside a **short,
-looping animation of the drawing performing that beat's action** (a beat-paired **storyboard** of
-per-beat loops), quiet grey when stale, parked as a still under reduced motion; the authored prose
-folded behind a **Full requirement** toggle; the proof sits on
-the right — its header **names the covering test** (a small pass/fail mark,
-the test's own name, then Run + ⋯), then media whose **default derives from status × beat count** (frame pair · per-beat filmstrip · red frame with
-expected-vs-actual · pinned-era watermark · none) under a **stills · gif · video** toolbar that is
-a client-side preference, never stored; an untested requirement reads "no proof yet · ＋ write the
-failing test". **List** is one collapsed row per requirement (state · id · title · beat count ·
-test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in place.
+requirement at a time, as **one card read top to bottom**: the id · state · **title** lead one
+header row, then a slim bar carrying the reader's **one play speed** and a **column-order** toggle
+(*schematic first* ↔ *behavior first*), then the requirement's **storyline — a row per beat** under
+a **schematic · behavior · proof** header row. Each row carries that beat's three cells side by
+side: the **drawn schematic** frame (a short, looping animation of the drawing performing *that
+beat's* action, quiet grey when stale, parked as a still under reduced motion), the beat's **Given /
+When→Then words**, and that beat's **own harvested proof** — its before/after frames looping by
+default, stills one click away — with the drawing and the photograph aimed at the **same region** by
+one shared **zoom camera** that every cell flips together. Below the rows sits the proof band for
+the whole requirement: a header that **names the covering test** (a small pass/fail mark, the test's
+own name, then Run + ⋯), a failing run's own red frames and its expected-vs-actual, a **pinned-era
+watermark** when the text has drifted, and **one full-width video** — the screen's committed
+recording seeked to this requirement's moment, with a **▶ beat n** jump per beat. The authored
+**prose is always shown** beneath it, never folded away. An untested requirement reads "no proof
+yet · ＋ write the failing test". **List** is one collapsed row per requirement (state · id · title ·
+beat count · test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in
+place.
 **Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
 rail as the scrubber** (click a chapter to seek, click its gif to zoom); a failing chapter wears
 red and everything after reads not-reached; **＋ New flow opens the composer** (R15 family). Flow
@@ -177,21 +196,40 @@ storyboard/loop toggle are **gone** (folded in); reduced motion parks each loop 
 still. Presentation only — the committed drawing is unchanged (no re-derive), only how each row plays
 it: its schematic scrubs the paused animation across that beat's own time-window and loops.*
 
+<!-- Reworded 2026-08-28 (the human's storyline redesign, ordered and reviewed in this session). The
+     sentence above described a reader that no longer exists: a left reading column and a right proof
+     pane, one media pane per requirement under a stills · gif · video toolbar, a "Full requirement"
+     chevron, a speed dropdown per pane, and a honesty caption over the drawing. Conforming the tests
+     to the new DOM without correcting this text would have left the requirement quietly false
+     (CLAUDE.md rule 6), so it is corrected here with the reason attached. The Given/When→Then block
+     is deliberately untouched — the toggle it describes is unchanged, and its committed schematic is
+     pinned to that text. -->
+*Reworded 2026-08-28 (the human): Focus becomes a **storyline of per-beat rows** — schematic ·
+behavior · proof, named by a header row, each beat's drawing and its own harvested frames framed on
+the same region by one shared zoom camera. The two-container left/right reader, the per-pane
+`stills · gif · video` toolbar and its stored preference, the per-pane speed dropdowns and the
+"Full requirement" toggle are **gone**: one play speed and one column-order control serve the whole
+reader, the prose is always shown, and what is left of the old media pane is the whole
+requirement's band — the covering test, a failure's red frames, and one full-ratio video with a
+per-beat jump. Presentation only; nothing derived changes.*
+
 ## R14 — The proof is scannable as frames, not only as video
 
 - **Given** a run whose recording holds several checked values
-- **When** you open the requirement's proof as stills
-- **Then** one frame per checked value shows in order, cut from the recording at the instant it fired, each carrying its burned-in topbar and got-vs-expected — a failing value red
+- **When** you open the requirement's proof
+- **Then** one frame per checked value shows in order, cut from the recording at the instant it fired, each carrying its burned-in callout and got-vs-expected — a failing value red
 - **When** a run captured no recording
 - **Then** no strip shows at all — never a separately captured picture
 
 A reviewer shouldn't have to play a video to check a proven value. Where a run captured a recording,
 its **proof frames** are surfaced too — **one still per checked value**, taken from the recording at
 the instant that check fired (indexed by the run's own beat log), each carrying the same
-self-narrating topbar it burned in (the requirement, the got-vs-expected, red on a failure) and the
-ring on the exact value asserted. They show as the media pane's **stills** — the default for a
-multi-beat pass and one toolbar click away otherwise — in the test's evidence and the focus card; so
-a person verifies the asserted values by eye, in order, without pressing play; the
+self-narrating callout it burned in (the requirement, its When→Then, red on a failure) and the
+ring on the exact value asserted. They show **where they belong**: each beat's own before/after pair
+on that beat's **row** of the reader — looping by default, stills one click away — and a **failing**
+run's checked-value frames as the proof band's own filmstrip beneath the rows, in the test's evidence
+and in the reader alike; so a person verifies the asserted values by eye, in order, without pressing
+play; the
 **video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
 frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
 no strip, never a faked or separately-captured one.
@@ -202,6 +240,16 @@ video kept for what a picture cannot carry. It amends R10's "no separate screens
 frames are the recording indexed, not a second capture, so the one-artifact rule still holds.*
 
 *Reworded 2026-08-22 (the human): the strip is the media pane's stills view — one surface, not two.*
+
+<!-- Reworded 2026-08-28 (the human's storyline redesign, in this session): there is no media pane
+     with a stills · gif · video toolbar left to be "the default for a multi-beat pass", and the
+     burned-in topbar the frames carried is now a tour callout. The frames themselves are unchanged —
+     still cut from the ONE recording, still never a second capture — so only WHERE they are read
+     moved: onto the beat rows, plus the failure filmstrip in the band. Corrected in place with the
+     reason attached (CLAUDE.md rule 6). -->
+*Reworded 2026-08-28 (the human): the frames are read **per beat, on the row they prove**, with a
+failing run's checked-value frames in the proof band beneath. No toolbar, no pane default — the
+frames sit beside the words. The one-recording rule is untouched.*
 
 ### 3 · Computed truth — state is derived, never stored
 
@@ -358,7 +406,7 @@ menu to ask from. Opening it from a requirement pre-picks that requirement in th
 - **When** you open the test
 - **Then** its numbered story steps show from its definition — before any run — each wearing the run's passed / failed / not-reached mark
 - **When** a step asserts a value while the run records
-- **Then** the topbar burned into the recording names the requirement and shows the check as expected and got — red on a failure, the asserted value scrolled into view
+- **Then** a callout burned into the recording rings the asserted element and names the requirement beside that beat's When→Then in the requirement's own words — reddened and naming the got value on a failure, the asserted value scrolled into view
 - **When** you pick Logs from the ⋯ menu
 - **Then** the whole run log opens in a floating window, not a full-screen scrim
 
@@ -389,18 +437,20 @@ itself — and where it exists, its key moments are also surfaced as scannable *
 Those frames are frames *of* the recording, never an independent capture, so there is still no second,
 disagreeing screenshot source — only the one recording, read two ways: played, or scanned. The
 recording **narrates itself from inside the
-video**: while a run executes, the harness paints a **topbar into the page under test** — burned into
-the recording and its cover, not overlaid by the board. The bar is **large enough to read at a
-glance** — a bold title line naming the current story step (or the requirement being proven, id and
-title), and beneath it the current check as **one clear claim**: its label, then its **expected and
-got as two values** (not a dense stacked list — the full got-vs-expected of every check is recorded
-as the test's step evidence instead). On a failing check the got reddens and the bar turns red and
-names it, so the video alone explains what was being tested and which part failed. One consistent
-topbar, always in the
-same place — never a floating caption card in the middle of the frame. The recording is captured at
+video**: while a run executes, the harness paints a **product-tour callout into the page under
+test** — burned into the recording and its cover, not overlaid by the board. The app dims lightly,
+a **ring lands on the exact element the check reveals**, and a card **attached to that ring** names
+the requirement (its id and title) and carries the current beat's **When → Then in the
+requirement's own words** — the same words the board's storyline shows, so the recording and the
+board read as one language. On a failing check the ring, the card and the **got value** all redden,
+so the video alone explains what was being tested and which part failed; the got value shows **only
+on a failure** (every check's full got-vs-expected is recorded as the test's step evidence instead).
+The card is placed **below the ring first, then above, then beside it**, and **never covers the
+element it points at** — the surrounding state that produces the proven value must stay readable.
+The recording is captured at
 the **app's real size** (not a shrunken thumbnail), and a step that asserts on a value **scrolls
 that value into view and holds** before asserting, so the frame actually shows what is being proven
-rather than asking you to trust the topbar. A **failing run keeps its recording too** — the video is
+rather than asking you to trust the callout. A **failing run keeps its recording too** — the video is
 the best evidence of a failure, so it is never dropped just because the test went red. Every test can
 be **Run** (a real browser opens and drives the app in front of you — the watchable run) or **Run in
 background** (headless — nothing to watch, it just goes). *(Renamed from Run / Watch — the human,
@@ -409,7 +459,7 @@ detail header stays a background run — running the whole suite watchably is ra
 Both stay wherever a test is shown; in the **Focus** reader (R13), Run is always shown in the proof
 header and Run in background folds into a **⋯ menu** with Logs and Steps.
 
-The self-narrating topbar can also be **spoken aloud**. When voice-over is on (a Setup switch, init
+The self-narrating callout can also be **spoken aloud**. When voice-over is on (a Setup switch, init
 R6 — **off by default, saved per project**) and the running screen has a **narration pack**
 (`spec/<screen>/narration.json`, authored once with pass *and* fail lines), a single watchable run is
 **paced to the narration** and its recording is **voiced**: piper synthesizes each line and it is
@@ -417,6 +467,19 @@ muxed at the beat times, the same words shown as subtitles — and the player th
 recording** in place of the silent one. With no pack, no voice-over, or no synthesizer present, the
 recording stays **silent** — the voice is never faked (rule 3), and a screen with no pack simply
 plays silent.
+
+<!-- Reworded 2026-08-28 (the human's storyline redesign, ordered and reviewed in this session): the
+     burned-in TOP BANNER is gone — with its step head, its requirement-chip strip and its
+     expected · got claim line. What narrates the recording now is a product-tour CALLOUT anchored to
+     the ringed element, carrying the beat's When→Then in the prd's own words. The old text promised
+     "one consistent topbar, always in the same place — never a floating caption card", which the
+     redesign deliberately reverses, so the sentence had to be corrected here rather than left to rot
+     against the code (CLAUDE.md rule 6). The narration pack, the pacing and the voice-over below are
+     unchanged — they key on beats, not on the surface that draws them. -->
+*Reworded 2026-08-28 (the human): the narration is a **tour callout**, not a topbar — a light dim, a
+ring on the asserted element, and a card attached to that ring naming the requirement and its
+current When→Then. It never covers the element it points at, and the got value appears only on a
+failure. Same beats, same words as the board's storyline; only the drawn surface changed.*
 
 *Amended 2026-08-14 at the human's direction: the recording can be VOICED, not only subtitled. A
 per-project Setup switch (init R6, off by default) turns it on; a single watchable run of a screen

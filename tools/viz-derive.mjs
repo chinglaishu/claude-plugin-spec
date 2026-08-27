@@ -70,7 +70,16 @@ for (const s of screens) {
     // requirement with layouts needs no behavior block at all — the drawing comes from the screen.
     const nbeats = (r.behavior && r.behavior.beats && r.behavior.beats.length) || 12
     const lays = beatLayouts(s.name, r.id, nbeats)
-    const mirror = lays.length ? renderWireframe(lays, { behavior: r.behavior }) : null
+    // The drawn TOUR CALLOUT says exactly what the recording's burn-in said, so the schematic cell
+    // and the proof cell of a beat row read as one language: the R-id chip, the requirement title,
+    // the beat's When → Then, and the ✓. `pass` is the board's OWN derived status read at derive
+    // time (spec-store computes it from the folded coverage — nothing is stored in the drawing);
+    // the requirement's live chip stays the authority, and the next viz pass redraws this.
+    const mirror = lays.length
+      ? renderWireframe(lays, {
+        behavior: r.behavior, id: r.id, title: r.title || '', pass: r.status === 'passed'
+      })
+      : null
     if (!mirror && !r.behavior) continue
     const d = mirror || deriveSchematic(r.behavior)
     const p = join(dir, `${r.id}.svg`)

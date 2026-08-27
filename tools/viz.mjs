@@ -574,6 +574,12 @@ function drawTypeAppend (b, t, k, kf) {
 //     a re-harvest that moves the geometry re-derives, exactly as moved text does.
 
 const LAYOUT_W = 600                        // the drawing's internal width; the pane scales by CSS
+// THE RENDERER PIN. Staleness on this board is a BODY comparison — viz-derive redraws whenever the
+// committed file differs from what the kit draws today — so a renderer change already lands on the
+// next pass with no bump at all, and no committed drawing ever needs deleting. This stamp exists so
+// the reason is legible ON DISK: `mirror-2` is the pass that gave every beat frame the burn-in's own
+// overlay (dim · ring · tour callout), `mirror-1` the plain wireframe before it.
+const MIRROR_KIT = 'mirror-2'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
@@ -635,30 +641,323 @@ const fitText = (s, wpx, fs) => {
 const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
   `<text x="${r1(x)}" y="${r1(y)}" font-size="${r1(fs)}" font-family="var(--${fam})" fill="var(--${fill})"${extra}>${txt}</text>`
 
-// THE VALUE PILL — the asserted value in the app's own words, tagged to the box it was read in.
-// It rides BESIDE the box rather than inside it, because a whole 1440px page squeezed into this
-// viewBox leaves a counter about twenty units tall, and the one thing a reader must be able to
-// read is this value. `hot` is the after frame's (ringed) reading; the quiet one is the same place
-// one moment earlier, so "2 to do → 3 to do" is legible in the drawing itself.
-function valuePill (f, text, W, H, hot) {
-  const label = fitText(text, 460, 16)
-  if (!label) return ''
-  const fs = 16
-  const pw = r1(Math.min(label.length * fs * 0.62 + 16, W - 12))
+// THE BOARD'S CAMERA, computed here (the human, 2026-08-28: the drawn callout was being CLIPPED).
+// Every beat cell zooms onto the beat's focus rect, and the schematic cell zooms this drawing by
+// the SAME math — tools/board/stepper.js cameraView: pad the focus rect by 2.75, centre the padded
+// rect on it, clamp it inside the frame, and cap the magnification (2.2×, with a floor of 0.38 of
+// the frame's width said as a scale — the stricter wins). Anything the drawing puts OUTSIDE that
+// region is simply not on screen in a beat row, which is how R5's card ended up cut mid-word: its
+// counter sits at the page's right edge, so the framed region is the right third of the page and
+// the card had been placed to the LEFT of it. Cheap and pure, so the drawing can respect it.
+//
+// Expressed for a cell whose box follows the frame's own aspect (which is how the board lays the
+// media out: width = cell width, height following the frame), the capped region is simply the frame
+// divided by the scale, centred on the focus and clamped in. Returns the whole frame when there is
+// nothing to magnify — cameraView's own honest no-zoom answer.
+export function framedRegion (f, W, H, opts = {}) {
+  const pad = opts.pad != null ? opts.pad : 2.75
+  const minFrac = opts.minFrac != null ? opts.minFrac : 0.38
+  let maxScale = opts.maxScale != null ? opts.maxScale : 2.2
+  if (minFrac > 0 && minFrac <= 1) maxScale = Math.min(maxScale, 1 / minFrac)
+  const whole = { x: 0, y: 0, w: W, h: H }
+  if (!f || !(f.w > 0) || !(f.h > 0) || !(W > 0) || !(H > 0)) return whole
+  let pw = Math.min(W, f.w * pad); let ph = Math.min(H, f.h * pad)
+  let scale = Math.min(W / pw, H / ph)
+  if (scale > maxScale) { scale = maxScale; pw = Math.min(W, W / scale); ph = Math.min(H, H / scale) }
+  if (!(scale > 1)) return whole
+  return {
+    x: Math.min(Math.max(0, f.x + f.w / 2 - pw / 2), W - pw),
+    y: Math.min(Math.max(0, f.y + f.h / 2 - ph / 2), H - ph),
+    w: pw,
+    h: ph
+  }
+}
+const insideRegion = (b, reg) => b.x >= reg.x - 0.01 && b.y >= reg.y - 0.01 &&
+  b.x + b.w <= reg.x + reg.w + 0.01 && b.y + b.h <= reg.y + reg.h + 0.01
+
+// THE ASSERTED VALUE, in the app's own words. IN THE BOX by preference (the human, 2026-08-28):
+// the app draws its counter's value inside the counter, and a ring box with a separate pill stacked
+// under it reads like two objects where the screen has one. The pill is the fallback for a box the
+// value cannot be read inside — a value in a 6-unit-tall cell — and it is clamped into the camera's
+// framed region so it can never fall outside the beat cell either. Returns the box it occupies
+// (null when the value sits inside the ring, which is already the callout's obstacle).
+function valueMark (f, text, W, H, hot, fs, region) {
+  const label = fitText(text, 460, fs)
+  if (!label) return { svg: '', box: null }
+  const ink = hot ? 'ink' : 'ink-3'
+  // Inside the ringed box, if it can be read there at a size that survives the zoom. The floor is
+  // in DRAWING units, and the cell is showing about 272 of them across ~360px — so 9.5 units lands
+  // near 12px on screen, which reads. Below that the value goes to a pill instead of shrinking into
+  // the box until nobody can read it.
+  const fit = Math.min(fs, (f.w - fs * 0.5) / (label.length * 0.62), f.h * 0.72)
+  if (fit >= Math.min(9.5, fs)) {
+    return {
+      svg: svgText(f.x + f.w / 2, f.y + f.h / 2 + fit * 0.35, fit, ink, 'mono', say(label), ' text-anchor="middle"'),
+      box: null
+    }
+  }
+  const reg = region || { x: 0, y: 0, w: W, h: H }
+  const pw = r1(Math.min(label.length * fs * 0.62 + fs, reg.w - 4, W - 12))
   const ph = r1(fs * 1.65)
-  const x = r1(clamp(f.x + f.w / 2 - pw / 2, 6, Math.max(6, W - pw - 6)))
-  const below = f.y + f.h + 6 + ph <= H - 6
-  const y = r1(below ? f.y + f.h + 6 : Math.max(6, f.y - 6 - ph))
-  return `<rect x="${x}" y="${y}" width="${pw}" height="${ph}" rx="${r1(ph / 2)}" fill="var(--paper)" stroke="var(--${hot ? 'ai' : 'line2'})" stroke-width="${hot ? 1.2 : 1}"/>` +
-    svgText(r1(x + pw / 2), r1(y + ph / 2 + fs * 0.35), fs, hot ? 'ink' : 'ink-3', 'mono', say(label), ' text-anchor="middle"')
+  // ABOVE the box by preference, so the space BELOW stays free for the tour card — which prefers
+  // exactly there (renderOverlay's order). The two then sit either side of the ring instead of
+  // queueing under it, and neither ever covers the other.
+  const x = r1(clamp(f.x + f.w / 2 - pw / 2, Math.max(reg.x + 2, 6), Math.max(reg.x + 2, Math.min(W - pw - 6, reg.x + reg.w - pw - 2))))
+  const above = f.y - 5 - ph >= reg.y + 2
+  const y = r1(above
+    ? f.y - 5 - ph
+    : clamp(f.y + f.h + 5, reg.y + 2, Math.max(reg.y + 2, reg.y + reg.h - ph - 2)))
+  const svg = `<rect x="${x}" y="${y}" width="${pw}" height="${ph}" rx="${r1(ph / 2)}" fill="var(--paper)" stroke="var(--${hot ? 'ai' : 'line2'})" stroke-width="${hot ? 1.2 : 1}"/>` +
+    svgText(r1(x + pw / 2), r1(y + ph / 2 + fs * 0.35), fs, ink, 'mono', say(label), ' text-anchor="middle"')
+  return { svg, box: { x, y, w: pw, h: ph } }
+}
+
+// ONE text run wrapped to at most `maxLines`, each line cut to the width it has (line 0 is shorter
+// where a label sits beside it). Overflow ends in an ellipsis — the card never grows to fit its
+// text and text never runs past the card. Widths are in drawing units; 0.52·fs is the average glyph
+// advance the whole kit estimates with.
+function wrapText (text, fs, widths, maxLines) {
+  const words = raw(text).split(' ').filter(Boolean)
+  if (!words.length) return []
+  const cap = i => Math.max(4, Math.floor(widths[Math.min(i, widths.length - 1)] / (fs * 0.52)))
+  const lines = []
+  let cur = ''
+  let wi = 0
+  while (wi < words.length && lines.length < maxLines) {
+    const t = cur ? cur + ' ' + words[wi] : words[wi]
+    if (t.length <= cap(lines.length)) { cur = t; wi++; continue }
+    if (!cur) { cur = words[wi].slice(0, Math.max(1, cap(lines.length) - 1)) + '…'; wi++ }
+    lines.push(cur); cur = ''
+  }
+  if (cur && lines.length < maxLines) { cur = (wi = words.length, lines.push(cur), '') }
+  if (wi < words.length) {
+    const j = lines.length - 1
+    const c = cap(j)
+    lines[j] = lines[j].length + 1 > c ? lines[j].slice(0, Math.max(1, c - 1)) + '…' : lines[j] + '…'
+  }
+  return lines
+}
+
+// THE RINGED ELEMENT, de-duplicated (2026-08-28 fix). The capture marks every element lying inside
+// the ring, so a counter and the span inside it BOTH come back focused — and the drawing put a
+// value pill on each, stacking "6" over "6 to do" at the board's zoom. Draw ONE box per nest:
+//   · a box with words beats a wrapper with none;
+//   · the box that best MATCHES THE RING wins — the ring is the element the assertion actually
+//     pointed at, so its counter ("3 to do") is the reading, not the digit span inside it;
+//   · with no ring measured, the tightest box wins;
+//   · anything nesting with a box already kept is dropped.
+function pickFocus (marks, ring) {
+  const texted = marks.filter(f => raw(f.text))
+  const pool = texted.length ? texted : marks
+  const areaOf = f => Math.max(1, f.w * f.h)
+  const iou = f => {
+    if (!ring) return 0
+    const ox = Math.max(0, Math.min(f.x + f.w, ring.x + ring.w) - Math.max(f.x, ring.x))
+    const oy = Math.max(0, Math.min(f.y + f.h, ring.y + ring.h) - Math.max(f.y, ring.y))
+    const inter = ox * oy
+    return inter / Math.max(1, areaOf(f) + ring.w * ring.h - inter)
+  }
+  const nests = (a, b) => a.x >= b.x - 0.6 && a.y >= b.y - 0.6 &&
+    a.x + a.w <= b.x + b.w + 0.6 && a.y + a.h <= b.y + b.h + 0.6
+  const kept = []
+  for (const f of pool.slice().sort((a, b) => (iou(b) - iou(a)) || (areaOf(a) - areaOf(b)))) {
+    if (kept.some(k => nests(k, f) || nests(f, k))) continue
+    kept.push(f)
+  }
+  return kept
+}
+// The verdict mark, DRAWN rather than typed: the burn-in can lean on the browser's UI font for ✓,
+// a committed SVG cannot — the glyph is missing from plenty of the families a --sans stack lands
+// on, and a missing glyph renders as a tofu box on the one mark that must never be ambiguous.
+const checkMark = (x, y, s) =>
+  `<path d="M${r1(x)} ${r1(y)} l${r1(s * 0.34)} ${r1(s * 0.34)} l${r1(s * 0.66)} ${r1(-s * 0.8)}" ` +
+  `fill="none" stroke="var(--ok)" stroke-width="${r1(Math.max(1, s * 0.2))}" stroke-linecap="round" stroke-linejoin="round"/>`
+
+// THE DIM, without a mask. The burn-in washes the whole page at rgba(28,27,24,.12) and the ring
+// sits on top of it; an SVG hole would need a <mask id=…>, and this kit emits NO ids (many drawings
+// and their stills share one document). Four bands around the focus region are the same picture —
+// the surrounding state recedes, the proven element stays at full strength.
+function dimBands (f, W, H) {
+  const out = []
+  const push = (x, y, w, h) => {
+    if (w > 0.5 && h > 0.5) out.push(`<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" fill="var(--ink)" opacity="0.12"/>`)
+  }
+  push(0, 0, W, f.y)
+  push(0, f.y + f.h, W, H - (f.y + f.h))
+  push(0, f.y, f.x, f.h)
+  push(f.x + f.w, f.y, W - (f.x + f.w), f.h)
+  return out.join('')
+}
+
+// THE TOUR CALLOUT, in SVG (the human, 2026-08-28: the schematic cell and the proof cell in a beat
+// row must read as ONE language). This is renderOverlay's card from spec/_base.ts — the same
+// structure, the same wording, the same palette — redrawn as shapes:
+//   · a paper card, 1px --line2 hairline, ~11/300 corner radius, a soft drop under it;
+//   · a bordered mono R-id chip, then the requirement title in muted ink;
+//   · WHEN in small-caps mono --ink-3 beside the beat's When;
+//   · THEN in small-caps mono --ai beside the beat's Then, set bold in --ink, and the koke ✓;
+//   · a notch touching the ring, placed below → above → right → left, never over the ring.
+//
+// EVERYTHING LIVES INSIDE THE CAMERA'S FRAMED REGION (the clipping defect, 2026-08-28). The beat
+// cell shows only that region, so "inside the drawing" is not the constraint — "inside the region"
+// is. Card AND notch must land in it, or the candidate is refused like any other. The card is sized
+// against the region (≤0.8 of its width) and, when no placement fits at that size, REMEASURED
+// smaller — down past the 150-unit floor if the region is genuinely that tight, because a smaller
+// card that can be read whole beats a bigger one cut mid-word.
+function measureCard (spec, cardW) {
+  const id = raw(spec.id) || 'R?'
+  const pad = cardW * 0.052
+  const inner = cardW - 2 * pad
+  const fsId = cardW * 0.048
+  const fsTitle = cardW * 0.052
+  const fsWhen = cardW * 0.06
+  const fsThen = cardW * 0.073
+  const lh = 1.35
+  const chipW = id.length * fsId * 0.66 + fsId
+  const chipH = fsId * 1.9
+  const titleGap = fsId * 0.7
+  const title = fitText(spec.title, Math.max(inner - chipW - titleGap, fsTitle * 3), fsTitle)
+  const fsWL = fsWhen * 0.8                       // the burn-in's labels are 10px against 12.5/15px
+  const fsTL = fsThen * 0.67
+  const wLabW = 4 * fsWL * 0.78 + fsWL * 0.7      // "WHEN" / "THEN", letter-spaced
+  const tLabW = 4 * fsTL * 0.78 + fsTL * 0.7
+  const whenLines = wrapText(spec.when, fsWhen, [inner - wLabW], 2)
+  const thenLines = wrapText(spec.then, fsThen, [inner - tLabW], 2)
+  const gap1 = pad * 0.8
+  const gap2 = pad * 0.45
+  const whenH = whenLines.length * fsWhen * lh
+  const thenH = Math.max(thenLines.length, 1) * fsThen * lh
+  const cardH = r1(pad + chipH + gap1 + whenH + gap2 + thenH + pad)
+  // the ink, once a placement is chosen — the card's own content never depends on where it landed
+  const draw = (x, y) => {
+    const parts = []
+    const tx = x + pad
+    let cy = y + pad
+    parts.push(`<rect x="${r1(tx)}" y="${r1(cy)}" width="${r1(chipW)}" height="${r1(chipH)}" rx="${r1(fsId * 0.45)}" fill="none" stroke="var(--line2)" stroke-width="1"/>`)
+    parts.push(svgText(tx + chipW / 2, cy + chipH / 2 + fsId * 0.36, fsId, 'ink-3', 'mono', say(id), ' text-anchor="middle" font-weight="600"'))
+    if (title) parts.push(svgText(tx + chipW + titleGap, cy + chipH / 2 + fsTitle * 0.34, fsTitle, 'ink-3', 'sans', say(title)))
+    cy += chipH + gap1
+    whenLines.forEach((ln, i) => {
+      const base = cy + i * fsWhen * lh + fsWhen * 0.95
+      if (i === 0) parts.push(svgText(tx, base, fsWL, 'ink-3', 'mono', 'WHEN', ' font-weight="600" letter-spacing="' + r2(fsWL * 0.08) + '"'))
+      parts.push(svgText(tx + wLabW, base, fsWhen, 'ink-3', 'sans', say(ln)))
+    })
+    cy += whenH + gap2
+    thenLines.forEach((ln, i) => {
+      const base = cy + i * fsThen * lh + fsThen * 0.95
+      if (i === 0) parts.push(svgText(tx, base, fsTL, 'ai', 'mono', 'THEN', ' font-weight="600" letter-spacing="' + r2(fsTL * 0.08) + '"'))
+      parts.push(svgText(tx + tLabW, base, fsThen, 'ink', 'sans', say(ln), ' font-weight="600"'))
+      // the verdict rides the last line, exactly where the burn-in puts it. It is the state at
+      // DERIVE time (viz-derive reads the board's own derived status), never a status stored in the
+      // drawing: the live chip beside the requirement is the authority, and the next pass redraws.
+      if (spec.pass && i === thenLines.length - 1) {
+        const endX = Math.min(tx + tLabW + ln.length * fsThen * 0.52 + fsThen * 0.55, x + cardW - pad - fsThen * 0.9)
+        parts.push(checkMark(endX, base - fsThen * 0.26, fsThen * 0.9))
+      }
+    })
+    return parts.join('')
+  }
+  return { cardW, cardH, fsThen, draw }
+}
+
+function calloutSVG (spec, f, W, H, extra, region) {
+  const reg = region || { x: 0, y: 0, w: W, h: H }
+  // sized against the REGION the cell will actually show, never the whole page
+  const capW = Math.min(reg.w * 0.8, 320)
+  const wish = Math.max(f.w * 2.4, reg.w * 0.62)
+  const widths = []
+  for (let cw = Math.min(Math.max(wish, Math.min(150, capW)), capW); cw >= capW * 0.4; cw *= 0.86) widths.push(cw)
+  if (!widths.length) widths.push(Math.max(capW, 40))
+
+  const rr = Math.max(2.5, capW * 0.018)          // the ring's own outer offset
+  const ring = { x: f.x - rr, y: f.y - rr, w: f.w + 2 * rr, h: f.h + 2 * rr }
+  const M = 3
+  const cx = f.x + f.w / 2
+  const obst = [ring, ...(extra ? [extra] : [])]
+  // the search: preference order first, then a smaller card — a candidate is only good if the card
+  // AND its notch land inside the framed region and cover neither the ring nor the value
+  const place = (card, avoid) => {
+    const notch = card.cardW * 0.055
+    const gap = notch                             // so the notch's tip lands on the ring
+    const clampX = v => clamp(v, reg.x + M, Math.max(reg.x + M, reg.x + reg.w - card.cardW - M))
+    const clampY = v => clamp(v, reg.y + M, Math.max(reg.y + M, reg.y + reg.h - card.cardH - M))
+    const cands = [
+      { side: 'below', x: clampX(cx - card.cardW / 2), y: ring.y + ring.h + gap },
+      { side: 'above', x: clampX(cx - card.cardW / 2), y: ring.y - gap - card.cardH },
+      { side: 'right', x: ring.x + ring.w + gap, y: clampY(f.y - card.fsThen) },
+      { side: 'left', x: ring.x - gap - card.cardW, y: clampY(f.y - card.fsThen) }
+    ]
+    const box = c => ({ x: c.x, y: c.y, w: card.cardW, h: card.cardH })
+    // the notch's own reach beyond the card edge, so the arrow is never the part that gets cut
+    const withNotch = c => {
+      const b = box(c)
+      const n = notch * 0.9
+      if (c.side === 'below') return { x: b.x, y: b.y - n, w: b.w, h: b.h + n }
+      if (c.side === 'above') return { x: b.x, y: b.y, w: b.w, h: b.h + n }
+      if (c.side === 'right') return { x: b.x - n, y: b.y, w: b.w + n, h: b.h }
+      return { x: b.x, y: b.y, w: b.w + n, h: b.h }
+    }
+    const covers = c => avoid.some(o => !(c.x + card.cardW <= o.x || c.x >= o.x + o.w ||
+      c.y + card.cardH <= o.y || c.y >= o.y + o.h))
+    return cands.find(c => insideRegion(withNotch(c), reg) && !covers(c)) || null
+  }
+  let card = null; let hit = null
+  for (const avoid of [obst, [ring]]) {           // the value pill yields before the ring ever does
+    for (const cw of widths) {
+      const c = measureCard(spec, cw)
+      const p = place(c, avoid)
+      if (p) { card = c; hit = p; break }
+    }
+    if (hit) break
+  }
+  let side = hit ? hit.side : 'none'
+  if (!hit) {
+    // the region is too tight for any clean placement: take the smallest card, clamp it INSIDE the
+    // region and drop the notch. Overlapping is bad; being cut off the cell is worse, because a
+    // reader cannot even tell what they are missing.
+    card = measureCard(spec, widths[widths.length - 1])
+    hit = {
+      x: clamp(cx - card.cardW / 2, reg.x + M, Math.max(reg.x + M, reg.x + reg.w - card.cardW - M)),
+      y: clamp(ring.y + ring.h + card.cardW * 0.055, reg.y + M, Math.max(reg.y + M, reg.y + reg.h - card.cardH - M))
+    }
+  }
+  const cardW = card.cardW; const cardH = card.cardH
+  const notch = cardW * 0.055
+  const x = r1(hit.x); const y = r1(hit.y)
+  const rad = r1(cardW * 0.037)
+  const parts = []
+  // the soft drop the burn-in casts (0 10px 30px rgba(28,27,24,.24)) — one offset plate, no filter
+  parts.push(`<rect x="${r1(x + cardW * 0.006)}" y="${r1(y + cardW * 0.014)}" width="${r1(cardW)}" height="${cardH}" rx="${rad}" fill="var(--ink)" opacity="0.1"/>`)
+  parts.push(`<rect x="${x}" y="${y}" width="${r1(cardW)}" height="${cardH}" rx="${rad}" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`)
+  // the notch: a triangle where the burn-in rotates a square 45°, its base sitting ON the card's
+  // border so the two read as one object and the border under the base is covered
+  if (side !== 'none') {
+    const tri = (tipX, tipY, aX, aY, bX, bY) =>
+      `<path d="M${r1(aX)} ${r1(aY)} L${r1(tipX)} ${r1(tipY)} L${r1(bX)} ${r1(bY)} Z" fill="var(--paper)"/>` +
+      `<path d="M${r1(aX)} ${r1(aY)} L${r1(tipX)} ${r1(tipY)} L${r1(bX)} ${r1(bY)}" fill="none" stroke="var(--line2)" stroke-width="1" stroke-linejoin="round"/>`
+    if (side === 'below' || side === 'above') {
+      const tipX = clamp(cx, x + notch + 2, x + cardW - notch - 2)
+      const edge = side === 'below' ? y + 0.5 : y + cardH - 0.5
+      const tipY = side === 'below' ? y - notch * 0.9 : y + cardH + notch * 0.9
+      parts.push(tri(tipX, tipY, tipX - notch, edge, tipX + notch, edge))
+    } else {
+      const tipY = clamp(f.y + f.h / 2, y + notch + 2, y + cardH - notch - 2)
+      const edge = side === 'right' ? x + 0.5 : x + cardW - 0.5
+      const tipX = side === 'right' ? x - notch * 0.9 : x + cardW + notch * 0.9
+      parts.push(tri(tipX, tipY, edge, tipY - notch, edge, tipY + notch))
+    }
+  }
+  parts.push(card.draw(x, y))
+  return { svg: parts.join(''), box: { x, y, w: cardW, h: cardH }, side }
 }
 
 // ONE frame of the mirror: every captured box in house shapes, biggest first so the page chrome
-// sits behind the rows and the words sit on top. `withFocus` adds the ring and the real value on
-// the element the assertion read — the before frame has none, because nothing was asserted yet;
-// it is handed `anchors` (the after frame's focus boxes, in page coordinates) instead, so it can
-// show the SAME place's earlier value.
-function frameBody (L, S, W, H, withFocus, anchors = null) {
+// sits behind the rows and the words sit on top. `withFocus` adds the burn-in's own overlay — the
+// dim, the ring, the value pill and (when `callout` carries the beat) the tour card. The GIVEN
+// frame has none of it, because the given proof frame has none of it either: nothing was being
+// asserted yet. It is handed `anchors` (the first beat's focus boxes, in page coordinates) instead,
+// so it can show the SAME place's earlier value.
+function frameBody (L, S, W, H, withFocus, anchors = null, callout = null) {
   const px = v => r1(v * S)
   const parts = []
   const focus = []
@@ -674,9 +973,17 @@ function frameBody (L, S, W, H, withFocus, anchors = null) {
       const ov = (ox * oy) / Math.max(1, Math.max(e.w * e.h, a.w * a.h))
       if (ov > bestOv) { bestOv = ov; best = e }
     }
-    if (best && bestOv >= 0.4 && best.text) ghosts.push({ a, el: best })
+    if (best && bestOv >= 0.4 && best.text && !ghosts.some(g => g.el === best)) ghosts.push({ a, el: best })
   }
   const ghosted = new Set(ghosts.map(g => g.el))
+  // …and whatever nests inside one: the same twin the ringed frames drop (a counter's digit span),
+  // which otherwise leaves a stray bar sitting behind the value the ghost just drew
+  for (const e of L.els) {
+    for (const g of ghosts) {
+      if (e !== g.el && e.x >= g.el.x - 0.6 && e.y >= g.el.y - 0.6 &&
+        e.x + e.w <= g.el.x + g.el.w + 0.6 && e.y + e.h <= g.el.y + g.el.h + 0.6) ghosted.add(e)
+    }
+  }
   const els = L.els.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h))
   for (const e of els) {
     if (ghosted.has(e)) continue
@@ -727,30 +1034,57 @@ function frameBody (L, S, W, H, withFocus, anchors = null) {
   if (withFocus) {
     // nothing matched the ring (a canvas cell, a shadow root, an element that moved): ring the
     // MEASURED box instead, so the drawing still points at what the assertion read
-    const marks = focus.length
-      ? focus
-      : (L.ring ? [{ x: px(L.ring.x), y: px(L.ring.y), w: px(L.ring.w), h: px(L.ring.h), text: '' }] : [])
-    for (const f of marks) {
-      const rx = r1(f.x - 3); const ry = r1(f.y - 3); const rw = r1(f.w + 6); const rh = r1(f.h + 6)
-      parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="5" fill="var(--ai)" opacity="0.07"/>`)
-      parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="5" fill="none" stroke="var(--ai)" stroke-width="1.6"/>`)
-      parts.push(valuePill(f, f.text, W, H, true))     // THE POINT of the mirror: the asserted value
+    const ringPx = L.ring
+      ? { x: px(L.ring.x), y: px(L.ring.y), w: px(L.ring.w), h: px(L.ring.h) }
+      : null
+    const marks = pickFocus(focus.length ? focus : (ringPx ? [{ ...ringPx, text: '' }] : []), ringPx)
+    if (marks.length) {
+      // ONE dim, with one hole: the region every mark sits in. The burn-in washes the whole page and
+      // leaves the proven element at full strength; this is that picture without a mask.
+      const hole = marks.reduce((a, m) => ({
+        x: Math.min(a.x, m.x), y: Math.min(a.y, m.y),
+        r: Math.max(a.r, m.x + m.w), b: Math.max(a.b, m.y + m.h)
+      }), { x: Infinity, y: Infinity, r: -Infinity, b: -Infinity })
+      const pad = Math.max(3, W * 0.008)
+      parts.push(dimBands({ x: hole.x - pad, y: hole.y - pad, w: hole.r - hole.x + 2 * pad, h: hole.b - hole.y + 2 * pad }, W, H))
+      const sw = clamp(W * 0.0033, 1.2, 3)          // the burn-in's 2px ring, at this drawing's scale
+      // THE CAMERA'S FRAMED REGION (2026-08-28): the beat cell shows only this much of the drawing,
+      // so every mark of the overlay — the value and the card both — has to land inside it or it is
+      // simply cut off screen. Aimed at the PRIMARY mark, exactly as the board aims the cell.
+      const region = framedRegion(marks[0], W, H)
+      const pills = []
+      for (const f of marks) {
+        const rr = Math.max(2.5, sw * 1.6)
+        const rx = r1(f.x - rr); const ry = r1(f.y - rr)
+        const rw = r1(f.w + 2 * rr); const rh = r1(f.h + 2 * rr)
+        // paper halo, pale glow, then the indigo ring — the burn-in's box-shadow stack, drawn
+        parts.push(`<rect x="${r1(rx - sw)}" y="${r1(ry - sw)}" width="${r1(rw + 2 * sw)}" height="${r1(rh + 2 * sw)}" rx="${r1(sw * 3)}" fill="none" stroke="var(--paper)" stroke-width="${r1(sw * 1.6)}" opacity="0.92"/>`)
+        parts.push(`<rect x="${r1(rx - sw * 1.8)}" y="${r1(ry - sw * 1.8)}" width="${r1(rw + sw * 3.6)}" height="${r1(rh + sw * 3.6)}" rx="${r1(sw * 3.6)}" fill="none" stroke="var(--ai)" stroke-width="${r1(sw)}" opacity="0.18"/>`)
+        parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="${r1(sw * 2.4)}" fill="var(--ai)" opacity="0.07"/>`)
+        parts.push(`<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="${r1(sw * 2.4)}" fill="none" stroke="var(--ai)" stroke-width="${r1(sw)}"/>`)
+        // THE POINT of the mirror: the asserted value, in the app's own words — inside the ringed
+        // box where it can be read there (the app's own composition), a pill beside it otherwise
+        const val = valueMark(f, f.text, W, H, true, clamp(W * 0.027, 11, 18), region)
+        if (val.svg) { parts.push(val.svg); if (val.box) pills.push(val.box) }
+      }
+      // …and the requirement's own words, in the burn-in's card, beside the primary mark
+      if (callout && (callout.when || callout.then)) {
+        parts.push(calloutSVG(callout, marks[0], W, H, pills[0] || null, region).svg)
+      }
     }
   } else {
-    // the BEFORE frame knows nothing about the ring (nothing was being asserted yet), so it draws
-    // its ghosts: the same places, one moment earlier. That is what makes the two frames read as a
-    // CHANGE — "2 to do" dissolving into "3 to do" — instead of two near-identical pictures.
+    // the BEFORE frame draws its ghosts: the same places, one moment earlier. That is what makes the
+    // frames read as a CHANGE — "2 to do" becoming "3 to do" — instead of near-identical pictures.
     for (const g of ghosts) {
-      parts.push(valuePill({ x: px(g.a.x), y: px(g.a.y), w: px(g.a.w), h: px(g.a.h) }, g.el.text, W, H, false))
+      // the given cell aims its camera at the SAME rect the first beat rings, so the ghost obeys
+      // the same framed region — a before-value cut off the cell would be no better than a cut card
+      const box = { x: px(g.a.x), y: px(g.a.y), w: px(g.a.w), h: px(g.a.h) }
+      parts.push(valueMark(box, g.el.text, W, H, false, clamp(W * 0.027, 11, 18), framedRegion(box, W, H)).svg)
     }
   }
   return parts.join('')
 }
 
-// renderWireframe(layoutBefore, layoutAfter, meta) → { archetype, kind, svg, phases, layoutHash },
-// or null when neither layout is usable. `meta.behavior` is the parsed behavior chain (or null): it
-// supplies the TEXT pin the board's staleness check reads and the beat count the storyboard pairs
-// against — nothing about the DRAWING is derived from the words.
 // The MIRROR'S timeline: one frame per scene (the Given, then one per beat) and one crossfade per
 // transition, so the board's per-beat row scrubs exactly its own beat's change. Every duration is
 // calc(<X>s / var(--spd,1)) like the archetype kit, and the still phases stay plain negative
@@ -790,11 +1124,14 @@ function wfFade (k, t, m) {
 // [{ before, after }, …], one entry per beat that was captured (spec/<screen>/evidence/
 // <id>.b<n>.{before,after}.layout.json). The drawing gets ONE FRAME PER SCENE: the Given frame is
 // beat 1's before, and each beat's frame is that beat's after — which is exactly what the board's
-// per-beat rows show, one row one frame. `meta.behavior` is the parsed behavior chain (or null):
-// it supplies the TEXT pin the board's staleness check reads and the beat count the storyboard
-// pairs against — nothing about the DRAWING is derived from the words. A requirement whose harvest
-// covered fewer beats than its prd lists pads the missing phases with the last measured frame,
-// rather than inventing motion nobody measured.
+// per-beat rows show, one row one frame.
+//
+// `meta` carries what the WORDS side already knows, so the drawn callout says exactly what the
+// burn-in said: `behavior` (the parsed chain — its beats supply each frame's When/Then, and its
+// text is the pin the board's staleness check reads), `id` and `title` for the card's chip, and
+// `pass` for the koke ✓. Nothing about the LAYOUT is derived from the words. A requirement whose
+// harvest covered fewer beats than its prd lists pads the missing phases with the last measured
+// frame, rather than inventing motion nobody measured.
 //
 // The legacy 3-argument call renderWireframe(before, after, meta) is still accepted as one beat.
 export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
@@ -823,22 +1160,31 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   const k = 'vz' + hash.slice(0, 8) + lhash.slice(0, 4)
   const kf = suffix => 'v' + hash.slice(0, 8) + lhash.slice(0, 4) + suffix
   const t = wfTimeline(m)
-  // FRAME 0 is beat 1's before; frame i is beat i's after. Each after-frame rings what its check
-  // read; frame 0 has no ring (nothing was asserted yet) and instead shows beat 1's anchors one
-  // moment earlier, so the pair reads as a change.
+  // FRAME 0 is beat 1's before; frame i is beat i's after. Each after-frame wears the burn-in's own
+  // overlay — dim, ring, value pill, and the tour card carrying THAT beat's When → Then. Frame 0
+  // wears none of it (nothing was asserted yet) and instead shows beat 1's anchors one moment
+  // earlier, so the pair reads as a change.
+  // …and the SAME de-duplication the ringed frames use (2026-08-28 fix): the capture marks a
+  // counter and the digit span inside it, so an un-picked anchor list drew "2" stacked on "2 to do"
+  // in the given frame too. pickFocus runs here in PAGE units, where both the marks and the ring are.
   const anchorsOf = L => {
     if (!L) return []
-    const a = L.els.filter(e => e.focus).map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h }))
-    if (!a.length && L.ring) a.push({ ...L.ring })
-    return a
+    const marks = L.els.filter(e => e.focus)
+    const picked = marks.length ? pickFocus(marks, L.ring) : (L.ring ? [L.ring] : [])
+    return picked.map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h }))
   }
-  const frames = [{ L: pairs[0].before || pairs[0].after, ring: false, anchors: anchorsOf(pairs[0].after) }]
-  for (const p of pairs) frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [] })
+  const cardFor = i => {
+    const bt = behavior && behavior.beats[Math.min(i, behavior.beats.length - 1)]
+    if (!bt) return null
+    return { id: meta.id || '', title: meta.title || '', when: bt.when, then: bt.then, pass: !!meta.pass }
+  }
+  const frames = [{ L: pairs[0].before || pairs[0].after, ring: false, anchors: anchorsOf(pairs[0].after), card: null }]
+  pairs.forEach((p, i) => frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [], card: cardFor(i) }))
   let css = ''
   const groups = frames.map((f, i) => {
     css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('f' + i)}{${wfFade(i, t, m)}}`
-    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors)}</g>`
+    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card)}</g>`
   }).join('')
   const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
   const body = shell + groups
@@ -852,7 +1198,7 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
       : ''))
   const svg = `<svg class="${k}" viewBox="0 0 ${LAYOUT_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"` +
     ` data-viz-hash="${hash}" data-viz-archetype="ui-mirror" data-viz-kind="wireframe" data-viz-layout="${lhash}"` +
-    ` data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}">` +
+    ` data-viz-kit="${MIRROR_KIT}" data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}">` +
     `<style>${css}</style>${body}</svg>`
   return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash }
 }

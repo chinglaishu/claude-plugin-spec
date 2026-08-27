@@ -1898,9 +1898,15 @@ export function build () {
   /* the reader's ONE bar (the human, 2026-08-28): the play speed that paces every animated cell —
      the drawing, each beat's stepper, the video. No card of its own; it is chrome over the story. */
   .fbar { flex:none; display:flex; align-items:center; justify-content:flex-end; gap:var(--s2);
-    min-width:0; padding-bottom:var(--s2); }
+    flex-wrap:wrap; min-width:0; padding-bottom:var(--s2); }
   .fbar .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); }
+  /* two labelled control groups on one row — the second gets air so the labels read as headings for
+     the control beside them, not as one run of words */
+  .fbar .fbarl:not(:first-child) { margin-left:var(--s4); }
+  /* .medbar's auto margin is for a media bar that pushes its modes to the far edge; in the reader
+     bar the groups are already flush right and it would tear them apart */
+  .fbar .medbar { margin-left:0; }
   /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
      knob so the hierarchy holds at any scale (Task 14) */
   .fread .fttl { flex:1 1 auto; min-width:0; font-size:calc(19px * var(--scale)); font-weight:600;
@@ -1947,9 +1953,16 @@ export function build () {
   .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
   /* the drawing and the proof are the same width — the two cells of a row frame the SAME region
      under the same camera, and comparing them is the point, so a difference in width would read as a
-     difference in the thing shown. The words sit between them, slightly wider. ONE template, named
-     once: the header row and every beat row take it from here, so they cannot drift apart. */
-  .fstory { --sbcols:minmax(0,1fr) minmax(0,1.15fr) minmax(0,1fr); }
+     difference in the thing shown. The words are the CAPTION between them and take visibly less
+     (the human, 2026-08-28): the visuals are what the row is for. ONE template, named once — the
+     header row and every beat row take it from here, so they cannot drift apart.
+     COLUMN ORDER (the human, 2026-08-28): .ord-bsp leads with the behavior instead, which is the
+     same three widths dealt in the order the cells then sit in. The cells move by the order
+     property, so the DOM stays schematic · behavior · proof and every rule below still names the
+     cell it means. */
+  .fstory { --sbcols:minmax(0,1.15fr) minmax(0,0.75fr) minmax(0,1.15fr); }
+  .fstory.ord-bsp { --sbcols:minmax(0,0.75fr) minmax(0,1.15fr) minmax(0,1.15fr); }
+  .fstory.ord-bsp .sbtext, .fstory.ord-bsp .sbhead .sbhc:nth-child(2) { order:-1; }
   .fstory .sbrow { display:grid; grid-template-columns:var(--sbcols);
     align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
@@ -2235,9 +2248,16 @@ export function build () {
      .frecwrap on purpose — the global .rec (the test rows' 300px cover) must not blow up. */
   .frecwrap .rec { width:100%; max-width:none; }
   .frecwrap .rec.playing { width:100%; }
-  /* the proof media is SHORTER (the human, 2026-08-25) — cap the recording's height so the reading
-     card on the left leads; the video letterboxes (object-fit:contain) rather than dominating. */
-  .fmpanel .frecwrap .rec { max-height:clamp(170px, 30vh, 280px); }
+  /* THE FULL-FLOW VIDEO KEEPS ITS OWN RATIO (the human, 2026-08-28). The global .rec is a 16:9 cover
+     tile with an ink ground, and a 16:10 recording contained inside it wore black bars on two sides
+     while a max-height squeezed it into a strip. The evidence player is not a tile: it drops the
+     fixed aspect and the ground, takes the width it is given, and lets its height follow the file's
+     own ratio — no bars, no strip. Width-capped so a 1700px reader does not hand it the whole page.
+     Scoped to .evrec so the test rows' 300px covers are untouched. */
+  .fmpanel .frecwrap .rec.evrec { aspect-ratio:auto; max-height:none; height:auto;
+    width:min(100%, calc(900px * var(--scale))); background:none; border:0; border-radius:0; }
+  .fmpanel .frecwrap .rec.evrec video { position:static; width:100%; height:auto;
+    background:none; border:1px solid var(--hair-2); border-radius:var(--r); }
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
      header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
   .fev { min-width:0; }

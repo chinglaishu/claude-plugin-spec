@@ -68,11 +68,18 @@
   function cameraView (focus, cell, opts) {
     var o = opts || {}
     var pad = o.pad != null ? o.pad : 2.75
-    // maxScale caps the magnification: a DRAWING (the wireframe schematic) zoomed as hard as a
-    // screenshot blows its strokes into unreadable curves — the schematic cell passes a cap so the
-    // camera frames the same region with more context instead of more pixels. The pad grows to
-    // spend the spare magnification on surroundings, keeping the focus centred.
+    // TWO FLOORS ON THE ZOOM, both spending spare magnification on surroundings rather than pixels,
+    // and both keeping the focus centred:
+    //   maxScale — a hard cap. A DRAWING zoomed as hard as a screenshot blows its strokes into
+    //     unreadable curves, and a screenshot zoomed onto a 30px checkbox fills the cell with a
+    //     checkbox and loses the row it sits in (the human, 2026-08-28).
+    //   minFrac — the framed region never narrower than this fraction of the frame's own width. It
+    //     is the same cap said in the units that actually matter: a target's size varies wildly, the
+    //     amount of PAGE you can still see is what makes the frame readable. Expressed as a scale
+    //     (framed width = vw / scale) it simply joins maxScale, and the stricter of the two wins.
     var maxScale = o.maxScale != null ? +o.maxScale : Infinity
+    var minFrac = o.minFrac != null ? +o.minFrac : 0
+    if (minFrac > 0 && minFrac <= 1) maxScale = Math.min(maxScale, 1 / minFrac)
     var none = { scale: 1, tx: 0, ty: 0, ok: false }
     if (!focus || !cell) return none
     var vw = +focus.vw; var vh = +focus.vh
