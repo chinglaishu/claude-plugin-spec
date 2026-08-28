@@ -2015,6 +2015,8 @@ export function build () {
   .fstory .sbproof { display:flex; flex-direction:column; gap:var(--s2); padding:var(--s3);
     min-width:0; background:var(--paper); }
   .fstory .sbrow.bgiven .sbproof { background:var(--canvas); }
+  /* the single-frame cell (the Given row, or a half-harvest): one captioned still where a beat has
+     nothing to loop. A multi-frame cell is the loop and nothing else. */
   .sbproof .pcstrip { display:flex; gap:var(--s2); min-width:0; }
   .sbproof .pcfig { flex:1 1 0; min-width:0; margin:0; }
   /* THE CAMERA BOX — the same element on both sides of a row (the proof cell's frames and the
@@ -2033,7 +2035,11 @@ export function build () {
   .pcbox .camsub { transform-origin:0 0; }
   .pcbox > .camsub { display:block; width:100%; height:auto; }
   .pcbox > .camsub > svg { display:block; width:100%; height:auto; }
-  .pcbox.zoomed { height:calc(170px * var(--scale)); }
+  /* A ZOOMED cell takes the PAGE'S OWN ASPECT (2026-08-28), not a fixed height: the camera's framed
+     region is W/scale x H/scale of the page, so a cell with the page's aspect shows EXACTLY that
+     region — and the callout the drawing (and the burn-in) placed inside the region can never be
+     clipped by the cell edge, which a fixed 170px band did to every card placed above the ring. */
+  .pcbox.zoomed { aspect-ratio: 16 / 10; height:auto; }
   .pcbox.zoomed > .camsub, .pcbox.zoomed .fsteps img { position:absolute; left:0; top:0; }
   /* the stepper inside a camera box: full-frame it flows and the box grows with it; zoomed it fills
      the camera. Its bar is pinned to the foot either way, so the count and dots stay reachable. */
@@ -2043,9 +2049,9 @@ export function build () {
     background:var(--paper); border-top:1px solid var(--hair); padding:var(--s1) var(--s2); }
   .sbproof .pccap { font:var(--t-micro) var(--mono); letter-spacing:.06em; color:var(--ink-3);
     padding-top:var(--s1); }
-  /* the cell's own controls on ONE row under the media: stills ↔ gif, and zoom ↔ full frame */
+  /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
+     (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
-  .sbproof .pcmodes { margin-left:0; }
   /* the zoom toggle: quiet, always present where a focus box exists — ink-3 on --canvas 5.84:1 (AA) */
   .sbproof .pczoom { align-self:flex-start; font:var(--t-micro) var(--mono); color:var(--ink-3);
     background:var(--canvas); border:1px solid var(--hair-2); border-radius:999px;

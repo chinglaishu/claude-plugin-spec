@@ -792,7 +792,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. It AUTO-RUNS
     // (the human, 2026-08-28): the beat's before → after loops on the reader's shared speed, exactly
     // as the schematic beside it loops that beat's motion, with ONE dot per frame, the mono n / N
-    // count, dot-click jump, and `stills` one click away for reading a frame still.
+    // count and dot-click jump. There is NO mode switch: the loop is the only mode a proof cell has
+    // (the human, 2026-08-28 — a toolbar over two frames asked a question nobody had).
     const proofCells = ov.locator('.fread .fstory .sbrow .sbproof')
     const playCell = proofCells.filter({ has: page.locator('.pcplay') }).first()
     await expect(playCell).toHaveCount(1)          // a harvested beat plays; a row with no frames says so
@@ -807,9 +808,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // EXACT dots: one per frame, and the count spelled out beside them in mono
     await expect(stepper.locator('.pdots .pd')).toHaveCount(frameN)
     await expect(stepper.locator('.fstepn')).toHaveText(new RegExp(`^\\d+ / ${frameN}$`))
-    // LOOP is the default and `stills` is the alternate — the cell's own two-stop mode bar
-    await expect(playCell.locator('.pcmodes button')).toHaveText(['loop', 'stills'])
-    await expect(playCell.locator('.pcmodes button', { hasText: 'loop' })).toHaveClass(/\bon\b/)
+    // the loop is the ONLY mode: no mode toolbar in the cell at all, and it is already running
+    await expect(playCell.locator('.pcmodes')).toHaveCount(0)
+    await expect(stepper).toBeVisible()
     // 0.25× BEFORE the dot jump, so nothing can race the auto-advance (every hold is 4× long)
     await spdS.selectOption('0.25')
     await stepper.locator('.pdots .pd').last().click()
@@ -842,24 +843,20 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       expect(back[0], 'the drawing and the proof are aimed together, never one alone').toBe(back[1])
       await expect(zoomRow.locator('.pczoom')).toContainText('full frame')
     }
-    // `stills` shows the same frames side by side, each captioned, and the loop stops
-    await playCell.locator('.pcmodes button', { hasText: 'stills' }).click()
-    await expect(playCell.locator('.pcstrip .pcfig img')).toHaveCount(frameN)
-    await expect(playCell.locator('.pcstrip .pccap').first()).toContainText(/before|given/)
-    await expect(stepper).toBeHidden()
-    // a still is a thumbnail; clicking it opens the frame full in the shared lightbox. Read at FULL
-    // FRAME, so the click lands on the whole image rather than on a camera-transformed sliver.
+    // the frame ON SHOW is still a real frame you can open: clicking it puts THAT frame in the
+    // shared lightbox. Read at FULL FRAME, so the click lands on the whole image rather than on a
+    // camera-transformed sliver.
     const zoomedNow = !!(await zoomBtn.count()) && ((await zoomBtn.textContent()) || '').includes('full frame')
     if (zoomedNow) await zoomBtn.click()
-    const stillSrc = (await playCell.locator('.pcstrip .pcfig img').first().getAttribute('src'))!
-    await playCell.locator('.pcstrip .pcfig img').first().click()
+    const shown = stepper.locator('.fsteps img.on')
+    await expect(shown).toHaveCount(1)
+    const stillSrc = (await shown.getAttribute('src'))!
+    await shown.click()
     await expect(page.locator('#lb')).toBeVisible()
-    expect((await page.locator('#lbimg').getAttribute('src'))!, 'the zoom shows the frame that was clicked')
+    expect((await page.locator('#lbimg').getAttribute('src'))!, 'the zoom shows the frame that was playing')
       .toContain(stillSrc.split('?')[0].split('/').pop()!)
     await page.locator('#lbclose').click()
     if (zoomedNow) await zoomBtn.click()
-    await playCell.locator('.pcmodes button', { hasText: 'loop' }).click()
-    await expect(stepper).toBeVisible()
 
     // FAILED → the failed mark on the band, and the failing run's own frames beneath it. The stills
     // are the NEWEST record's (D3): its own frames when the last run of this test was a recorded
@@ -1434,33 +1431,27 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await expect(panel2.locator('.fcell.rf')).toHaveCount(0)      // …but no run strip — no frames, no fake
 
     // THE HARVESTED PAIR ITSELF lives on the beat rows now (the human, 2026-08-28): it is read
-    // beside the words it proves, its two frames side by side inside the row, each a REAL frame —
-    // never a sliver — and each still zoomable. Back to passed, where the rows are the whole proof.
+    // beside the words it proves, PLAYED as the beat's own loop — one camera box filling the cell,
+    // each frame a REAL frame (never a sliver) and still zoomable. Back to passed, where the rows
+    // are the whole proof.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const cellP = dt.locator('.focusov .fread .fstory .sbrow .sbproof').filter({ has: page.locator('.pcplay') }).first()
-    await cellP.locator('.pcmodes button', { hasText: 'stills' }).click()
-    // read the pair at FULL FRAME: the camera is a VIEW, so the whole screenshot is always one click
-    // away — and the geometry below (and the lightbox click) must measure the frames, not a crop
+    // read the frame at FULL FRAME: the camera is a VIEW, so the whole screenshot is always one click
+    // away — and the geometry below (and the lightbox click) must measure the frame, not a crop
     const zoomP = cellP.locator('.pczoom')
     if (await zoomP.count() && ((await zoomP.textContent()) || '').includes('full frame')) await zoomP.click()
-    const figs = cellP.locator('.pcstrip .pcfig')
-    await expect(figs).toHaveCount(2)
+    const playing = cellP.locator('.pcplay .fsteps img.on')
+    await expect(playing).toHaveCount(1)
     const pairGeom = await cellP.evaluate(el => {
-      const f = [].slice.call(el.querySelectorAll('.pcstrip .pcfig')) as HTMLElement[]
-      const cell = el.getBoundingClientRect()
-      return {
-        tops: f.map(x => Math.round(x.getBoundingClientRect().top)),
-        minW: Math.min(...f.map(x => x.getBoundingClientRect().width)),
-        cellW: cell.width
-      }
+      const box = el.querySelector('.pcplay') as HTMLElement
+      return { boxW: box.getBoundingClientRect().width, cellW: el.getBoundingClientRect().width }
     })
-    expect(new Set(pairGeom.tops).size, 'the beat pair reads on one line, before beside after').toBe(1)
-    expect(pairGeom.minW / pairGeom.cellW, 'neither frame is crushed to a sliver').toBeGreaterThan(0.35)
+    expect(pairGeom.boxW / pairGeom.cellW, 'the loop fills its cell — never a sliver').toBeGreaterThan(0.8)
     // …and its zoom is NEAR-FULLSCREEN: the harvest frame is drawn across the stage, not at
     // native size in the middle of it (object-fit contained — measure the drawn bitmap, not the box)
-    await figs.first().locator('img').click()
+    await playing.click()
     await expect(page.locator('#lb')).toBeVisible()
     await page.waitForFunction(() => (document.getElementById('lbimg') as HTMLImageElement).naturalWidth > 0)
     const lbFrac = await page.locator('#lbimg').evaluate((el: HTMLImageElement) => {

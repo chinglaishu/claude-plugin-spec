@@ -612,7 +612,7 @@ test('callout text is bounded: two lines a section, ellipsis rather than overflo
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-2"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-3"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -621,9 +621,9 @@ test('the mirror stamps its renderer pin, so a kit change is legible on disk', (
 // at the page's right edge, the region is the right third of the page, and the card had been placed
 // to the LEFT of it: cut mid-word. renderWireframe now computes the same region and refuses any
 // placement — card OR notch — that falls outside it.
-test('framedRegion is cameraView\'s own region: padded, centred, clamped, capped', () => {
-  // a small target mid-page: the 2.75 pad wants 3.5× magnification, the 2.2 cap wins, so the region
-  // is the frame divided by 2.2 centred on the focus
+test('framedRegion is the cell\'s own region: padded, COVER-fit, centred, clamped, capped', () => {
+  // a small target mid-page: the 2.75 pad wants far more magnification than the cap allows, so the
+  // region is the frame divided by 2.2, centred on the focus
   const mid = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, 600, 375)
   assert.equal(Math.round(mid.w), Math.round(600 / 2.2))
   assert.equal(Math.round(mid.h), Math.round(375 / 2.2))
@@ -632,8 +632,20 @@ test('framedRegion is cameraView\'s own region: padded, centred, clamped, capped
   const edge = framedRegion({ x: 540, y: 20, w: 55, h: 20 }, 600, 375)
   assert.ok(edge.x >= 0 && edge.x + edge.w <= 600.01 && edge.y >= 0 && edge.y + edge.h <= 375.01)
   assert.equal(Math.round(edge.x + edge.w), 600, 'clamped hard against the edge it sits on')
-  // nothing to magnify → the whole frame, cameraView's honest no-zoom answer
+  // nothing to magnify → the whole frame, the camera's honest no-zoom answer
   assert.deepEqual(framedRegion({ x: 0, y: 0, w: 600, h: 375 }, 600, 375), { x: 0, y: 0, w: 600, h: 375 })
+})
+
+test('framedRegion COVERS: a wide short row crops at the sides instead of refusing to zoom', () => {
+  // 820×48 of a 1440×900 page, in drawing units — the padded rect is wider than the frame, so a
+  // contain-fit camera would have refused (scale 1, the whole page) and the row would have stayed a
+  // hairline. Cover-fit takes the bigger ratio and crops the row's sides, which is what the cell
+  // now does — and what the drawing must place its callout inside.
+  const S = 600 / 1440
+  const wide = framedRegion({ x: 300 * S, y: 400 * S, w: 820 * S, h: 48 * S }, 600, 375)
+  assert.ok(wide.w < 600, 'it really does zoom: ' + wide.w)
+  assert.equal(Math.round(wide.w), Math.round(600 / 2.2), 'at the cap, so the region is the frame ÷ 2.2')
+  assert.ok(wide.x > 0 && wide.x + wide.w < 600, 'and the row is cropped at both sides')
 })
 
 // the R5 shape: the counter hard against the right edge, high up — the corner that left the card
@@ -669,14 +681,40 @@ test('the callout and its notch land INSIDE the framed region, even at the page\
   assert.ok(inside(p[0], p[1]) && inside(p[2], p[3]) && inside(p[4], p[5]), 'every corner of the notch is framed too')
 })
 
-test('a tight region shrinks the card past its own floor rather than letting it be cut', () => {
-  const d = renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD)
-  const f1 = frameOf(d.svg, 1)
-  const w = Number(/<rect x="[-\d.]+" y="[-\d.]+" width="([-\d.]+)"[^>]*fill="var\(--paper\)" stroke="var\(--line2\)"/.exec(f1)[1])
+// ── THE BURN-IN'S OWN PAGE GEOMETRY (the human, 2026-08-28). The drawn callout and the
+// photographed one must be the SAME PICTURE. So the card is renderOverlay's 300 page pixels wide,
+// converted by the ONE ratio the drawing already uses for every box it copies (drawingW ÷ page
+// width) — never sized against the drawing, the focus rect or the camera. Both cells cover-fit at
+// the same scale, so the two callouts then land at the same apparent size.
+test('the card is the burn-in\'s 300 page pixels, scaled only by the page-to-drawing ratio', () => {
   const S = 600 / 1440
-  const reg = framedRegion({ x: 1290 * S, y: 96 * S, w: 130 * S, h: 46 * S }, 600, Math.round(600 * (900 / 1440)))
-  assert.ok(w <= reg.w * 0.8 + 0.01, `the card is at most 0.8 of the framed region: ${w} vs ${reg.w}`)
-  assert.ok(w > reg.w * 0.35, 'but never shrunk to a token: ' + w)
+  const cardOf = svg => [...frameOf(svg, 1).matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="([\d.]+)" fill="var\(--paper\)" stroke="var\(--line2\)"/g)].map(m => m.slice(1).map(Number))[0]
+  const edge = cardOf(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg)
+  assert.ok(Math.abs(edge[2] - 300 * S) < 0.15, `300px card at scale S: ${edge[2]} vs ${300 * S}`)
+  assert.ok(Math.abs(edge[4] - 11 * S) < 0.15, `11px radius at scale S: ${edge[4]}`)
+  // …and the SAME width whatever the focus rect is: a wide row's card is not a wider card
+  const nested = cardOf(renderWireframe(NESTED, CARD).svg)
+  assert.ok(Math.abs(nested[2] - edge[2]) < 0.15, 'the card never resizes itself to its target')
+})
+
+test('the card holds its true size wherever the region allows, and shrinks ONLY when it cannot fit', () => {
+  const S = 600 / 1440
+  const H = Math.round(600 * (900 / 1440))
+  const card = svg => Number(/<rect x="[-\d.]+" y="[-\d.]+" width="([-\d.]+)"[^>]*fill="var\(--paper\)" stroke="var\(--line2\)"/.exec(frameOf(svg, 1))[1])
+  assert.ok(Math.abs(card(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg) - 300 * S) < 0.15,
+    'the corner case still gets the full card')
+  // a viewport so narrow that the framed region cannot hold 300px: the card shrinks rather than
+  // hanging off the cell — an edge the owner takes over a clipped card
+  const narrow = n => ({
+    w: 420, h: 900, ring: n ? { x: 40, y: 300, w: 60, h: 30 } : null,
+    els: [{ x: 0, y: 0, w: 420, h: 80, kind: 'container', text: '' },
+      { x: 40, y: 300, w: 60, h: 30, kind: 'text', text: '3 to do', ...(n ? { focus: true } : {}) }]
+  })
+  const small = renderWireframe([{ before: narrow(false), after: narrow(true) }], CARD)
+  const reg = framedRegion({ x: 40 * (600 / 420), y: 300 * (600 / 420), w: 60 * (600 / 420), h: 30 * (600 / 420) }, 600, Math.round(600 * (900 / 420)))
+  const w = card(small.svg)
+  assert.ok(w <= reg.w + 0.01, `the card fits the crop it has to live in: ${w} vs ${reg.w}`)
+  assert.ok(w < 300 * (600 / 420), 'which means it shrank below the burn-in\'s own size')
 })
 
 test('the value is drawn INSIDE the ringed box when it reads there — a pill only when it cannot', () => {

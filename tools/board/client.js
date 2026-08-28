@@ -939,12 +939,13 @@ const B = window.__BOARD__ || {}
     return { shots: [], why: 'no per-beat evidence yet — this harvest only spans the whole requirement' }
   }
 
-  // one beat row's PROOF cell: the beat's frames under the camera. It AUTO-RUNS (the human,
-  // 2026-08-28) — the beat's before→after loops on the reader's shared speed, exactly as the
-  // schematic beside it loops that beat's own motion, so a row plays as one thing rather than as an
-  // animation next to a photograph you have to click. Stills stay one click away for reading a frame
-  // still, and the zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box. The
-  // Given row has one frame and nothing to loop, so it stays the still it is.
+  // one beat row's PROOF cell: the beat's frames under the camera. It ALWAYS LOOPS (the human,
+  // 2026-08-28) — the beat's before→after plays on the reader's shared speed, exactly as the
+  // schematic beside it loops that beat's own motion, so a row plays as ONE thing. There is no
+  // loop/stills switch any more: a mode toolbar over two frames was chrome asking a question nobody
+  // had, and every cell answering it differently broke the row's rhythm. A beat with a single frame
+  // — the Given row, or a half-harvest — has nothing to loop and stays the still it is; the
+  // zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box.
   function proofCell (r, i, nbeats) {
     const cell = document.createElement('div'); cell.className = 'sbproof'
     const got = beatShots(r, i, nbeats)
@@ -956,51 +957,32 @@ const B = window.__BOARD__ || {}
     }
     const focus = got.shots[0].focus
     const cam = document.createElement('div'); cam.className = 'pccam'
-    // STILLS — the default: the beat's frames side by side, each its own camera box
-    const strip = document.createElement('div'); strip.className = 'pcstrip'
-    got.shots.forEach(function (s) {
+    const bar = document.createElement('div'); bar.className = 'pcbar'
+    if (got.shots.length > 1) {
+      // THE LOOP — one camera box, the frames played in it, armed on build. The cell is still
+      // detached here, but the reader is appended synchronously in this same task and the shortest
+      // hold is 350ms, so the first hop always lands with the node in the document; the tick's
+      // isConnected guard stops orphans, never this.
+      const sbox = document.createElement('div'); sbox.className = 'pcbox pcplay'
+      const step = makeStepper(got.shots.map(function (s) {
+        return { src: s.src, alt: s.cap, anchor: s.anchor }
+      }))
+      sbox.appendChild(step)
+      cam.appendChild(sbox)
+      aimCamera(sbox, focus, CAM)
+      step._start()
+    } else {
+      // ONE frame: a still, captioned, under the same camera the loop would use
+      const s = got.shots[0]
+      const strip = document.createElement('div'); strip.className = 'pcstrip'
       const fig = document.createElement('figure'); fig.className = 'pcfig'
       const box = document.createElement('div'); box.className = 'pcbox'
       const im = document.createElement('img'); im.className = 'camsub'; im.src = s.src; im.alt = s.cap
       box.appendChild(im); fig.appendChild(box)
       const cp = document.createElement('figcaption'); cp.className = 'pccap'; cp.textContent = s.cap
       fig.appendChild(cp); strip.appendChild(fig)
+      cam.appendChild(strip)
       aimCamera(box, s.focus, CAM)
-    })
-    cam.appendChild(strip)
-    // THE LOOP — the same frames played, in one camera box so the view never moves between modes.
-    // It is the DEFAULT: the strip is hidden behind it and the timer is armed on build, so the cell
-    // is already running when the row is read.
-    const bar = document.createElement('div'); bar.className = 'pcbar'
-    if (got.shots.length > 1) {
-      const sbox = document.createElement('div'); sbox.className = 'pcbox pcplay'
-      const step = makeStepper(got.shots.map(function (s) {
-        return { src: s.src, alt: s.cap, anchor: s.anchor }
-      }))
-      // hidden on BOTH the box and the player: makeStepper's tick checks its own `hidden`, so a
-      // speed change must not quietly restart a loop the cell is not showing
-      sbox.appendChild(step)
-      strip.hidden = true
-      cam.appendChild(sbox)
-      aimCamera(sbox, focus, CAM)
-      const modes = document.createElement('span'); modes.className = 'medbar pcmodes'
-      const mk = function (label, on, fn) {
-        const b = document.createElement('button'); b.type = 'button'; b.textContent = label
-        b.classList.toggle('on', on); b.addEventListener('click', fn); return b
-      }
-      const pick = function (play) {
-        strip.hidden = play; sbox.hidden = !play; step.hidden = !play
-        bStills.classList.toggle('on', !play); bGif.classList.toggle('on', play)
-        if (play) step._start(); else step._stop()
-      }
-      const bStills = mk('stills', false, function () { pick(false) })
-      const bGif = mk('loop', true, function () { pick(true) })
-      modes.appendChild(bGif); modes.appendChild(bStills)
-      bar.appendChild(modes)
-      // armed on build. The cell is still detached here, but the reader is appended synchronously in
-      // this same task and the shortest hold is 350ms, so the first hop always lands with the node in
-      // the document — the tick's isConnected guard stops orphans, never this.
-      step._start()
     }
     cell.appendChild(cam)
     // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and

@@ -48,21 +48,30 @@
     return Math.max(40, Math.round(ms / s))
   }
 
-  // THE PROOF CELL'S CAMERA (the human, 2026-08-28). A beat's proof cell shows the FOCUSED
+  // THE BEAT ROW'S CAMERA (the human, 2026-08-28). A row's two visual cells show the FOCUSED
   // component, not the whole screen: the harvest records the ringed target's box and the viewport it
-  // was measured in (`focus:{x,y,w,h,vw,vh}`), and the cell frames that box like a camera — the media
-  // is scaled and translated under a fixed-size window, never cropped. The full screenshot is always
-  // one toggle away, so this is a VIEW, not a claim about the evidence.
+  // was measured in (`focus:{x,y,w,h,vw,vh}`), and both cells frame that box like a camera — the
+  // media scaled and translated under a fixed window. The whole screenshot stays one toggle away, so
+  // this is a VIEW, not a claim about the evidence.
   //
-  // The maths, once, here — because stills, the stepper's frames and the video must all be framed
-  // IDENTICALLY or the view jumps as the cell changes mode.
+  // The maths, once, here — because the drawing, the stepper's frames and the stills must be framed
+  // IDENTICALLY, or the row stops being a comparison and the view jumps as a cell changes mode.
   //   · pad the rect by `pad` (≈2.75× its size) about its centre, so the component is read in
   //     context rather than cropped to its own edges;
   //   · clamp the padded rect inside the frame — a target near an edge pans, it never shows void;
-  //   · fit that rect INSIDE the cell (min, not max): the whole padded rect is always visible, so a
-  //     cell of any aspect shows more context rather than hiding part of the target;
-  //   · never scale below 1 — a rect wider than the cell would otherwise shrink the evidence, and a
-  //     "zoom" that zooms out is a lie.
+  //   · COVER the cell with that rect (max, not min) — see below;
+  //   · cap the magnification (maxScale / minFrac) and re-frame at the cap;
+  //   · never scale below 1 — a "zoom" that zooms out is a lie;
+  //   · hold the scaled media over the cell, so a pan can never expose blank ground.
+  //
+  // COVER, NOT CONTAIN (the human, 2026-08-28 — the second miss). Fitting the padded rect INSIDE the
+  // cell meant a wide, short target — a whole task row, ~800px of a 1280px page — computed a
+  // horizontal scale of 1, gave up, and showed the full screenshot, while the drawing beside it was
+  // zoomed. Two cells, two different regions: exactly the incomparability the camera exists to
+  // remove. Covering instead zooms on whichever axis needs it and crops the other, so a wide-short
+  // target is magnified vertically with its sides cropped, still centred. Only a target that really
+  // does span the page (scale ≤ 1 even under cover) may honestly show full-frame.
+  //
   // Returns the transform for a media element laid out at width = cell.w (its height following the
   // frame's own aspect), with transform-origin 0 0: translate(tx, ty) scale(scale), in cell pixels.
   function cameraView (focus, cell, opts) {
@@ -92,9 +101,11 @@
     var pw = Math.min(vw, w * pad); var ph = Math.min(vh, h * pad)
     var px = Math.min(Math.max(0, x + w / 2 - pw / 2), vw - pw)
     var py = Math.min(Math.max(0, y + h / 2 - ph / 2), vh - ph)
-    // the media renders at cell width, so one source pixel is r cell pixels
+    // the media renders at cell width, so one source pixel is r cell pixels, and the media's own
+    // rendered height at scale 1 follows the frame's aspect
     var r = cw / vw
-    var scale = Math.min(cw / (pw * r), ch / (ph * r))
+    var mh = cw * vh / vw
+    var scale = Math.max(cw / (pw * r), ch / (ph * r))
     if (scale > maxScale) {
       // re-frame at the cap: widen the padded rect so the capped zoom still fills the cell
       scale = maxScale
@@ -105,6 +116,11 @@
     if (!(scale > 1)) return none          // nothing to magnify — show the frame whole, honestly
     var tx = (cw - pw * r * scale) / 2 - px * r * scale
     var ty = (ch - ph * r * scale) / 2 - py * r * scale
+    // hold the scaled media over the cell: covering crops, and a crop that slid past the frame's own
+    // edge would show blank ground beside the evidence. Centre instead on the axis that cannot cover.
+    var mw = cw * scale; var mhs = mh * scale
+    tx = mw >= cw ? Math.min(0, Math.max(cw - mw, tx)) : (cw - mw) / 2
+    ty = mhs >= ch ? Math.min(0, Math.max(ch - mhs, ty)) : (ch - mhs) / 2
     return { scale: scale, tx: tx, ty: ty, ok: true }
   }
 
