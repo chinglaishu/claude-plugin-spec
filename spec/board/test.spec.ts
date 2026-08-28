@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, hudCheck, flowStep } from '../_base'
+import { test, expect, checkReq, coverReqs, hudCheck, flowStep, reveal } from '../_base'
 // the board's own composable beats (the beat-function convention, Task 5): the assertion bodies the
 // tests below were proven red-first with, lifted into exported step functions so the composer can
 // chain them — each test keeps its checkReq AROUND the call, so the proof's power is unchanged
@@ -665,27 +665,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
     await expect(fbar.locator('.medbar button')).toHaveText(['schematic first', 'behavior first'])
-    // the order control REORDERS the story — the same three widths dealt the other way round, header
-    // row and beat rows together, so a header can never end up labelling the column beside the one it
-    // names. Measured, not a class read: the behavior cell must actually move to the left edge.
-    const leadCell = () => story.locator('.sbwrap .sbrow').first().evaluate(el => {
-      const cells = [].slice.call(el.children) as HTMLElement[]
-      return cells.slice().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0].className.split(' ')[0]
-    })
-    expect(await leadCell(), 'schematic first is the default order').toBe('sbframe')
-    await fbar.locator('.medbar button', { hasText: 'behavior first' }).click()
-    await expect(story).toHaveClass(/\bord-bsp\b/)
-    expect(await leadCell(), 'behavior first really leads with the words').toBe('sbtext')
-    // the header row moves WITH the cells it names: 'schematic' still sits over the schematic cell
-    // (both in visual column 2 now), never over the words that took its old place
-    const headDrift = await story.evaluate(el => {
-      const h = el.querySelector('.sbwrap .sbhead .sbhc') as HTMLElement          // DOM #1 = 'schematic'
-      const f = el.querySelector('.sbwrap .sbrow .sbframe') as HTMLElement
-      return Math.abs(h.getBoundingClientRect().left - f.getBoundingClientRect().left)
-    })
-    expect(headDrift, 'the "schematic" label still sits over the schematic cell').toBeLessThan(2)
-    await fbar.locator('.medbar button', { hasText: 'schematic first' }).click()
-    await expect(story).not.toHaveClass(/\bord-bsp\b/)
+    // (what FLIPPING that pair does — the whole story re-dealt together, and the choice held for the
+    // session as you page on — is board R21's own requirement now, drafted 2026-08-28; its
+    // assertions were moved out of here into that test verbatim, and grew the persistence leg. R13
+    // keeps the control's EXISTENCE, which is the sentence it actually carries.)
     // A MULTI-BEAT requirement loops EVERY beat: R4 has 3 beats → given (parked) + 3 LOOPING rows
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
@@ -697,32 +680,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(r4rows.nth(3).locator('.sbtext')).toContainText('Then')
     await expect(r4rows.nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)         // given parked
     await expect(ov.locator('.fread .fstory .sbframe[data-loop]')).toHaveCount(3)     // three beats loop
-    // …and a requirement with no committed drawing keeps the honest placeholder in every frame cell —
-    // the labelled beats still show, never a wrong picture. FORCED through the real pipeline
-    // (2026-08-28): the ui-mirror pass now draws every harvested requirement (R2's old "fits no
-    // archetype" premise died with it), so no live specimen lacks a drawing — serve board.html with
-    // R2's baked schematic stripped and let the client parse it as drawing-less end-to-end.
-    // the DOCUMENT itself is served at '/' (the static server maps it to board.html), so match both —
-    // a '**/board.html' pattern alone lets the reload sail past the stub
-    const stripR2 = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
-    await page.route(stripR2, async rt => {
-      const res = await rt.fetch(); const html = await res.text()
-      // scope to THE BOARD SCREEN's R2 — every screen on this board has an R2 of its own
-      const scr = html.indexOf('data-screen="board"')
-      const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
-      const seg = html.slice(i, j).replace(/<figure class="schematic"[\s\S]*?<\/figure>/, '')
-      await rt.fulfill({ body: html.slice(0, i) + seg + html.slice(j), contentType: 'text/html' })
-    })
-    await page.goto('/#/board/R2')
-    await page.reload()
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
-    const r2story = ov.locator('.fread .fstory')
-    await expect(r2story).toContainText('no schematic drawn yet')
-    await expect(r2story.locator('.sbframe svg')).toHaveCount(0)         // no picture where none was drawn
-    await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
-    await expect(r2story.locator('.sbrow .sbtext .sbstep').first()).toBeVisible()   // the labelled beats still show
-    await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
-    await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
+    // (the honest placeholder a requirement with NO committed drawing keeps — the labelled beats,
+    // never a wrong picture — is board R18's own requirement now, drafted 2026-08-28: the drawing is
+    // a MIRROR of the real UI, so what happens when there is no measured layout to mirror belongs to
+    // that requirement. Its assertions were moved out of here into the R18 test verbatim.)
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
 
@@ -987,6 +948,372 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
     await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bfail\b/)   // ✗ — a failed run never reads as green
     await expect(dt.locator('.focusov .feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+  })
+})
+
+// ── THE STORYLINE READER'S OWN REQUIREMENTS (R18–R21, drafted 2026-08-28 on the human's behalf from
+// the redesign they ordered and reviewed this session) ────────────────────────────────────────────
+// The four behaviours below were built and asserted inside the R13 test above; giving them their own
+// ids means giving them their own PROOF, so the assertions that belong to each were MOVED here, not
+// copied — a requirement proven under somebody else's tag is not proven at all (R4/R6). What is new
+// is what the split exposed: R19's camera equality, R20's already-running loop, R21's persistence.
+import { parseBehavior } from '../../tools/behavior.mjs'
+
+// The board's own harvested SPECIMENS: a requirement whose beats were photographed WITH their layout
+// skeletons and whose mirror drawing is committed beside them, in a form that splits beat by beat
+// (phases = beats + 1, which is what pairs a drawing to the rows). Read off the fold and the tree, so
+// these tests follow the harvest rather than pinning one id forever.
+const mirrorSpecimens = () => {
+  const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
+  const ev = (idx.board && idx.board.evidence) || {}
+  const out: Array<{ rid: string, beat: any, svg: string }> = []
+  for (const rid of Object.keys(ev)) {
+    const beat = ((ev[rid] || {}).beats || [])[0]
+    const file = 'spec/board/viz/' + rid + '.svg'
+    if (!beat || !beat.before || !beat.after || !beat.layoutBefore) continue
+    if (!existsSync(file) || !existsSync(beat.layoutBefore)) continue
+    const svg = readFileSync(file, 'utf8')
+    const phases = (/data-viz-phases="([^"]*)"/.exec(svg) || ['', ''])[1].split(/\s+/).filter(Boolean)
+    const beats = Number((/data-viz-beats="(\d+)"/.exec(svg) || ['', '0'])[1])
+    if (!beats || phases.length !== beats + 1) continue
+    out.push({ rid, beat, svg })
+  }
+  return out
+}
+// the requirement's authored beats, read straight from the prd — the oracle for what BOTH sides of a
+// row must be saying (parseBehavior is the same parser the board and the viz pass each use, read
+// here independently of either render)
+const prdBeats = (rid: string) => {
+  const md = readFileSync('spec/board/prd.md', 'utf8')
+  const i = md.indexOf('\n## ' + rid + ' — ')
+  if (i < 0) return null
+  const j = md.indexOf('\n## ', i + 1)
+  return parseBehavior(md.slice(i, j < 0 ? undefined : j)) as
+    { given: string, beats: Array<{ when: string, then: string }> } | null
+}
+const plain = (s: string) => String(s || '').replace(/[`*]/g, '').replace(/\s+/g, ' ').trim()
+
+// Board R18 — THE SCHEMATIC MIRRORS THE REAL UI. The drawn half of a row is derived from the app's
+// own measured layout (the skeleton captured beside every evidence frame), not from the shape of the
+// sentence — which is what makes a row a comparison instead of an illustration. And where no layout
+// was ever measured, the board draws NOTHING rather than a guess.
+test('The schematic mirrors the real UI — the app\'s own measured layout, or honestly no picture', async ({ page }) => {
+  await coverReqs('R18')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+
+  // beat 1 — a HARVESTED requirement's drawing IS its page. The oracle is the harvest itself: the
+  // fold names the layout skeleton each beat was measured from, and the committed drawing must carry
+  // that geometry. An archetype kit — a fixed handful of shapes, no layout pin, no relation to the
+  // measured page — fails every line of this.
+  await checkReq('R18', async () => {
+    const spec = mirrorSpecimens()[0]
+    expect(spec, 'a board requirement harvested WITH its layout skeleton, drawing committed').toBeTruthy()
+    const layout = JSON.parse(readFileSync(spec.beat.layoutBefore, 'utf8'))
+    expect(layout.w, 'the skeleton records the viewport it was measured in').toBeGreaterThan(0)
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    const svg = ov.locator('.fread .fstory .sbwrap .sbrow .sbframe .pcbox .camsub svg').first()
+    await expect(svg, 'the drawing pairs beat by beat, so every row carries its own frame').toHaveCount(1)
+    await reveal(svg)
+    // the MARKS of the mirror, read off the board's own rendered drawing (not the file)
+    await expect(svg).toHaveAttribute('data-viz-kind', 'wireframe')
+    await expect(svg).toHaveAttribute('data-viz-layout', /^[0-9a-f]{16}$/)   // the geometry's own pin
+    await expect(svg).toHaveAttribute('aria-label', /the app.s own layout/)
+    await hudCheck('the drawing is derived from the app\'s layout', 'ui-mirror',
+      await svg.getAttribute('data-viz-archetype'))
+    // …and it is TIED to the measurement, two ways. (a) the frame is the measured VIEWPORT: 600 wide
+    // at the page's own aspect (tools/viz.mjs clamps the height into 180…900).
+    const wantH = Math.round(Math.min(900, Math.max(180, 600 * (layout.h / layout.w))))
+    await hudCheck('…at the measured viewport\'s own aspect', '0 0 600 ' + wantH,
+      await svg.getAttribute('viewBox'))
+    // (b) the drawing carries the measured page BOX FOR BOX: one shape per drawable element, give or
+    // take the kinds that merge or drop. A drawing derived from the sentence has no such relation —
+    // its shape count is a property of the archetype, not of this page.
+    const S = 600 / layout.w
+    const px = (v: number) => Math.round(v * S * 10) / 10
+    const drawable = (layout.els || []).filter((e: any) => px(e.w) >= 4 && px(e.h) >= 2.5).length
+    expect(drawable, 'the skeleton measured a real page, not a stub').toBeGreaterThan(20)
+    const shapes = await svg.evaluate(el => {
+      const g = el.querySelector('.wf0') || el.querySelector('g')
+      return g ? g.children.length : 0
+    })
+    expect(shapes, 'the drawing carries the measured page, box for box — not a fixed archetype kit')
+      .toBeGreaterThan(drawable * 0.4)
+    expect(shapes, 'and it draws THIS page, not an inflated one').toBeLessThan(drawable * 3)
+  })
+
+  // beat 2 — NO LAYOUT, NO PICTURE (moved here verbatim from the R13 test, 2026-08-28: the honest
+  // placeholder is what the MIRROR does when there is nothing to mirror, so it belongs to R18).
+  // FORCED through the real pipeline: the ui-mirror pass draws every harvested requirement, so no
+  // live specimen lacks a drawing — serve board.html with one requirement's baked schematic stripped
+  // and let the client parse it as drawing-less, end to end.
+  await checkReq('R18', async () => {
+    // the DOCUMENT itself is served at '/' (the static server maps it to board.html), so match both —
+    // a '**/board.html' pattern alone lets the reload sail past the stub
+    const stripR2 = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
+    await page.route(stripR2, async rt => {
+      const res = await rt.fetch(); const html = await res.text()
+      // scope to THE BOARD SCREEN's R2 — every screen on this board has an R2 of its own
+      const scr = html.indexOf('data-screen="board"')
+      const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
+      const seg = html.slice(i, j).replace(/<figure class="schematic"[\s\S]*?<\/figure>/, '')
+      await rt.fulfill({ body: html.slice(0, i) + seg + html.slice(j), contentType: 'text/html' })
+    })
+    await page.goto('/#/board/R2')
+    await page.reload()
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
+    const r2story = ov.locator('.fread .fstory')
+    await reveal(r2story)
+    await expect(r2story).toContainText('no schematic drawn yet')
+    await expect(r2story.locator('.sbframe svg')).toHaveCount(0)         // no picture where none was drawn
+    await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
+    await expect(r2story.locator('.sbrow .sbtext .sbstep').first()).toBeVisible()   // the labelled beats still show
+    await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
+    await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
+  })
+})
+
+// Board R19 — A BEAT ROW IS A COMPARISON. The two cells are the same view of the same moment: one
+// camera aims both, and both carry that beat's own words. The Given row is the context row and
+// carries neither.
+//
+// The FOCUS RECT is the one piece of the harvest the board's own suite does not produce on every
+// beat: tools/evidence.mjs lifts it from the ring the run painted, and a check that never calls
+// reveal() rings nothing. So it is forced onto the real row here — the established deterministic
+// technique used all through this file — with the frames, the windows and the layouts left real.
+const FOCUS = { x: 500, y: 300, w: 240, h: 80, vw: 1440, vh: 900 }
+const armFocus = async (dt: any, rid: string) =>
+  dt.locator(`.reqpane .req[data-r="${rid}"]`).evaluate((el: Element, focus: any) => {
+    const beats = JSON.parse(el.getAttribute('data-ev-beats') || '[]')
+    const b1 = beats.filter((b: any) => Number(b.n) === 1)[0]
+    if (!b1) return null
+    if (!b1.focus) b1.focus = focus
+    el.setAttribute('data-ev-beats', JSON.stringify(beats))
+    return b1.focus
+  }, FOCUS)
+// the region a camera box actually frames, read back OUT of its own transform, as a fraction of the
+// media it frames — which is the whole page on both sides, so the two cells are comparable even
+// though one is a drawing at its own viewBox and the other a screenshot at its own pixel size
+const framedRegion = (box: any) => box.evaluate((el: Element) => {
+  const sub = (el.querySelector('.fsteps img.on') || el.querySelector('.camsub')) as HTMLElement
+  if (!sub) return null
+  const t = getComputedStyle(sub).transform
+  if (!t || t === 'none') return null
+  const m = new DOMMatrixReadOnly(t)
+  const mw = sub.offsetWidth; const mh = sub.offsetHeight; const s = m.a
+  if (!(mw > 0 && mh > 0 && s > 0)) return null
+  return {
+    x: -m.e / (s * mw), y: -m.f / (s * mh),
+    w: (el as HTMLElement).clientWidth / (s * mw), h: (el as HTMLElement).clientHeight / (s * mh)
+  }
+})
+
+test('A beat row is a comparison — one camera on one region, one beat in both cells', async ({ page }) => {
+  await coverReqs('R19')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const spec = mirrorSpecimens()[0]
+  expect(spec, 'a board requirement harvested with a beat pair and a mirror drawing').toBeTruthy()
+
+  // beat 1 — ONE CAMERA, ONE REGION. Both cells zoom together, and the rectangle each one actually
+  // frames — computed back out of its own transform — is the same fraction of the same page, aimed
+  // at the focused component. Aim one cell somewhere else and this fails.
+  await checkReq('R19', async () => {
+    const focus = await armFocus(dt, spec.rid)
+    expect(focus, 'the requirement carries a harvested beat to frame').toBeTruthy()
+    // a hash hop REBUILDS the reader off the forced attribute; a goto to the URL the page is already
+    // on would reload and wipe it, so the hop always lands somewhere else first
+    await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)     // beat 1's own row
+    await reveal(row)
+    const drawn = row.locator('.sbframe .pcbox')
+    const shot = row.locator('.sbproof .pcbox')
+    await expect(drawn).toHaveClass(/\bzoomed\b/)
+    await expect(shot).toHaveClass(/\bzoomed\b/)
+    // the frames must have DECODED before their laid-out height means anything
+    await expect.poll(() => row.locator('.sbproof .fsteps img').evaluateAll(
+      (els: HTMLImageElement[]) => els.length > 0 && els.every(i => i.complete && i.naturalWidth > 0)),
+    { timeout: 5000 }).toBe(true)
+    const a = await framedRegion(drawn)
+    const b = await framedRegion(shot)
+    expect(a, 'the drawing is under a camera').toBeTruthy()
+    expect(b, 'and so is the proof').toBeTruthy()
+    for (const k of ['x', 'y', 'w', 'h'] as const) {
+      expect(Math.abs(a[k] - b[k]), `the drawing and the proof frame the same region (${k})`).toBeLessThan(0.03)
+    }
+    // …and that region is aimed at the FOCUSED COMPONENT: the ringed box's centre lies inside both
+    const cx = (focus.x + focus.w / 2) / focus.vw
+    const cy = (focus.y + focus.h / 2) / focus.vh
+    for (const [name, r] of [['the drawing', a], ['the proof', b]] as Array<[string, any]>) {
+      expect(cx > r.x && cx < r.x + r.w, name + ' is aimed at the focused component (x)').toBe(true)
+      expect(cy > r.y && cy < r.y + r.h, name + ' is aimed at the focused component (y)').toBe(true)
+    }
+    await hudCheck('one camera, one region', 'same region', Math.abs(a.x - b.x) < 0.03 && Math.abs(a.w - b.w) < 0.03 ? 'same region' : 'two regions')
+  })
+
+  // beat 2 — ONE BEAT, BOTH SIDES. The row's words and the drawing beside them are two derivations
+  // of ONE prd sentence (the board's render, and the viz pass's), so they must not disagree; and the
+  // Given row carries the Given alone — whole page, no beat, no camera control.
+  await checkReq('R19', async () => {
+    const beh = prdBeats(spec.rid)
+    expect(beh && beh.beats.length > 0, spec.rid + ' must carry a behavior block').toBe(true)
+    const story = ov.locator('.fread .fstory')
+    // a drawing whose text has moved past its pin is a DIFFERENT beat — it reads grey and waits for
+    // the viz pass; a comparison cannot be made against it, so the row demands a fresh one
+    await expect(story, 'the drawing is fresh — a stale one draws another beat').not.toHaveClass(/\bisstale\b/)
+    const row = story.locator('.sbwrap .sbrow').nth(1)
+    await reveal(row.locator('.sbtext'))
+    const words = plain(await row.locator('.sbtext').innerText())
+    expect(words, 'the row shows the prd\'s own When').toContain(plain(beh!.beats[0].when))
+    expect(words, '…and its own Then').toContain(plain(beh!.beats[0].then))
+    // the DRAWING carries the same beat — viz.mjs writes each beat's When → Then into the picture it
+    // draws and into the label that names it, derived from the prd independently of the board's render
+    const label = plain((await row.locator('.sbframe .pcbox .camsub svg').getAttribute('aria-label')) || '')
+    expect(label, 'the drawing is labelled with the very beat the words say')
+      .toContain(plain('beat 1: ' + beh!.beats[0].when + ' → ' + beh!.beats[0].then))
+    // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
+    const given = story.locator('.sbwrap .sbrow').first()
+    await expect(given).toHaveClass(/\bbgiven\b/)
+    await expect(given.locator('.sbtext .sbk')).toHaveCount(1)
+    await expect(given.locator('.sbtext .sbk')).toContainText('Given')
+    await expect(given.locator('.pcbox.zoomed')).toHaveCount(0)      // whole page, both cells
+    await expect(given.locator('.pczoom')).toHaveCount(0)            // and nothing to aim
+  })
+})
+
+// Board R20 — THE PROOF PLAYS ITSELF. One mode, no toolbar, already running, zoomed onto the focus
+// with the whole frame one toggle away; and the Given row, which has one frame and nothing to loop,
+// stays the captioned still it is.
+test('The proof plays itself — already looping, zoomed, the whole frame one toggle away', async ({ page }) => {
+  await coverReqs('R20')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const spec = mirrorSpecimens()[0]
+  expect(spec, 'a board requirement harvested with a beat pair').toBeTruthy()
+
+  await checkReq('R20', async () => {
+    await armFocus(dt, spec.rid)
+    await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))   // hop, so the reader rebuilds
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const cell = row.locator('.sbproof')
+    await reveal(cell)
+    // NO MODE SWITCH EXISTS — not a mode that defaults to the loop: there is no toolbar in the cell
+    await expect(cell.locator('.pcmodes')).toHaveCount(0)
+    const stepper = cell.locator('.pcplay .fsteps-wrap')
+    await expect(stepper).toBeVisible()
+    const frameN = await stepper.locator('.fsteps img').count()
+    expect(frameN, 'the beat harvested a pair — a loop needs frames to play').toBeGreaterThan(1)
+    await expect(stepper.locator('.pdots .pd')).toHaveCount(frameN)
+    await expect(stepper.locator('.fstepn')).toHaveText(new RegExp(`^\\d+ / ${frameN}$`))
+    // ALREADY RUNNING: nothing has been clicked, and the count moves on its own at the reader's one
+    // speed. 4× bounds every hold at ~1.5s, so the wait is bounded — real timers, because a fake
+    // clock would freeze the board's own SSE/fold timers this very screen is proving.
+    const spd = ov.locator('.fread > .fbar select.pspd')
+    await spd.selectOption('4')
+    const at = await stepper.locator('.fstepn').textContent()
+    await expect.poll(() => stepper.locator('.fstepn').textContent(), { timeout: 15000 }).not.toBe(at)
+    await spd.selectOption('1')
+    // ZOOMED BY DEFAULT — and the whole frame is exactly ONE toggle away, and one toggle back
+    const zb = cell.locator('.pczoom')
+    await expect(zb).toContainText('full frame')                 // i.e. it is zoomed right now
+    await expect(row.locator('.pcbox.zoomed')).toHaveCount(2)    // the drawing and the proof together
+    await zb.click()
+    await expect(row.locator('.pcbox.zoomed')).toHaveCount(0)
+    await expect(zb).toContainText('zoom to the component')
+    await hudCheck('the whole frame is one toggle away', '0 zoomed cells',
+      (await row.locator('.pcbox.zoomed').count()) + ' zoomed cells')
+    await zb.click()
+    await expect(row.locator('.pcbox.zoomed')).toHaveCount(2)
+  })
+
+  // the GIVEN row is a STATE, not an action: one frame, so nothing to loop and nothing to step
+  await checkReq('R20', async () => {
+    const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
+    await reveal(given.locator('.sbproof'))
+    await expect(given.locator('.sbproof .pcplay')).toHaveCount(0)
+    await expect(given.locator('.sbproof .fsteps-wrap')).toHaveCount(0)
+    await expect(given.locator('.sbproof .pcstrip .pcfig img')).toHaveCount(1)   // the one still
+    await expect(given.locator('.sbproof .pccap')).not.toBeEmpty()               // captioned, honestly
+  })
+})
+
+// Board R21 — THE READER READS IN YOUR ORDER. The column-order control deals the whole story the
+// other way round — header row and every beat row together — and the choice comes with you to the
+// next requirement. (The flip assertions were moved here from the R13 test, 2026-08-28; the
+// per-row and persistence legs are new.)
+test('The reader reads in your order — the whole story re-deals, and it holds for the session', async ({ page }) => {
+  await coverReqs('R21')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const story = () => ov.locator('.fread .fstory')
+  const medbar = () => ov.locator('.fread > .fbar .medbar')
+  // measured, never a class read: which cell actually sits at the row's left edge
+  const leadCell = () => story().locator('.sbwrap .sbrow').first().evaluate(el => {
+    const cells = [].slice.call(el.children) as HTMLElement[]
+    return cells.slice().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0]
+      .className.split(' ')[0]
+  })
+  // the worst distance between a header label and the cell it names, across EVERY row — a header that
+  // ends up over the column beside the one it names shows up here as a whole column's width
+  const headDrift = () => story().evaluate(el => {
+    const heads = [].slice.call(el.querySelectorAll('.sbwrap .sbhead .sbhc')) as HTMLElement[]
+    const rows = [].slice.call(el.querySelectorAll('.sbwrap .sbrow')) as HTMLElement[]
+    if (heads.length !== 3 || !rows.length) return 9999
+    let worst = 0
+    for (const r of rows) {
+      const cells = ['.sbframe', '.sbtext', '.sbproof'].map(s => r.querySelector(s) as HTMLElement)
+      for (let i = 0; i < 3; i++) {
+        if (!cells[i]) return 9999
+        worst = Math.max(worst, Math.abs(heads[i].getBoundingClientRect().left - cells[i].getBoundingClientRect().left))
+      }
+    }
+    return Math.round(worst)
+  })
+
+  await checkReq('R21', async () => {
+    await page.goto('/#/board/R13')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
+    await reveal(medbar())
+    await expect(medbar().locator('button')).toHaveText(['schematic first', 'behavior first'])
+    expect(await leadCell(), 'schematic first is the default order').toBe('sbframe')
+    expect(await headDrift(), 'every header label starts over the cell it names').toBeLessThan(2)
+    await medbar().locator('button', { hasText: 'behavior first' }).click()
+    await expect(story()).toHaveClass(/\bord-bsp\b/)
+    expect(await leadCell(), 'behavior first really leads with the words').toBe('sbtext')
+    // THE WHOLE STORY RE-DEALT: the header row moved with the cells it names, in every row — not just
+    // the first. A reader that re-dealt the rows and left the header behind fails here.
+    await hudCheck('the header re-deals with every row', '0px drift', (await headDrift()) + 'px drift')
+    // the control says which order is live
+    await expect(medbar().locator('button.on')).toHaveText('behavior first')
+  })
+
+  await checkReq('R21', async () => {
+    // IT HOLDS AS YOU PAGE ON — the reader is rebuilt for the next requirement and opens in the order
+    // you chose, header and rows alike…
+    await page.goto('/#/board/R4')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
+    await reveal(story())
+    await expect(story()).toHaveClass(/\bord-bsp\b/)
+    expect(await leadCell(), 'the order you chose still leads on the next requirement').toBe('sbtext')
+    expect(await headDrift(), 'and every header label came with it').toBeLessThan(2)
+    await expect(medbar().locator('button.on')).toHaveText('behavior first')
+    // …for the SESSION and no longer: nothing about the order is written down
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /ord|colorder|column/i.test(k))),
+      'the column order is session-scoped — never stored').toEqual([])
+    // and flipping back re-deals again, so the choice is a choice both ways
+    await medbar().locator('button', { hasText: 'schematic first' }).click()
+    await expect(story()).not.toHaveClass(/\bord-bsp\b/)
+    expect(await leadCell()).toBe('sbframe')
+    expect(await headDrift(), 'the header came back with the cells too').toBeLessThan(2)
   })
 })
 

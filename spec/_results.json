@@ -7,7 +7,7 @@
       "--config=playwright.board.ts",
       "spec/board/test.spec.ts",
       "-g",
-      "Focus leads with the behavior"
+      "Steps read from the definition"
     ],
     "configFile": "/Users/laishuching/workspace/claude-plugin-spec/playwright.board.ts",
     "rootDir": "/Users/laishuching/workspace/claude-plugin-spec/spec",
@@ -87,7 +87,7 @@
       "line": 0,
       "specs": [
         {
-          "title": "The detail offers a Focus / List / Flow toggle — Focus leads with the behavior, and media derives from status × beats",
+          "title": "Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself",
           "ok": true,
           "tags": [],
           "tests": [
@@ -96,7 +96,7 @@
               "annotations": [
                 {
                   "type": "covers",
-                  "description": "R13"
+                  "description": "R10"
                 }
               ],
               "expectedStatus": "passed",
@@ -107,44 +107,54 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5698,
+                  "duration": 1548,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
                   "steps": [
                     {
-                      "title": "proves R13",
-                      "duration": 5312
+                      "title": "proves R10",
+                      "duration": 692,
+                      "steps": [
+                        {
+                          "title": "note: first check — got 1 · expected 1",
+                          "duration": 0
+                        },
+                        {
+                          "title": "note: second check — got 2 · expected 2",
+                          "duration": 0
+                        }
+                      ]
                     }
                   ],
-                  "startTime": "2026-08-27T20:49:52.602Z",
+                  "startTime": "2026-08-28T03:47:40.417Z",
                   "annotations": [
                     {
                       "type": "covers",
-                      "description": "R13"
+                      "description": "R10"
                     }
                   ],
                   "attachments": [
                     {
-                      "name": "evidence R13#1 before",
+                      "name": "evidence R10#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-before.png"
                     },
                     {
-                      "name": "layout R13#1 before",
+                      "name": "layout R10#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-before.json"
                     },
                     {
-                      "name": "evidence R13#1 after",
+                      "name": "evidence R10#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-after.png"
                     },
                     {
-                      "name": "layout R13#1 after",
+                      "name": "layout R10#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-after.json"
                     }
                   ]
                 }
@@ -152,9 +162,9 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-e01614e01c9da2980330",
+          "id": "a4d8056b74ea4749de01-6a83629bc47f175c87b4",
           "file": "board/test.spec.ts",
-          "line": 583,
+          "line": 135,
           "column": 1
         }
       ]
@@ -162,8 +172,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-27T20:49:51.261Z",
-    "duration": 7193.504,
+    "startTime": "2026-08-28T03:47:39.296Z",
+    "duration": 3082.57,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

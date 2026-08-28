@@ -356,6 +356,12 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   const page = CURRENT_PAGE
   if (!page || !process.env.BOARD_RECORD) return
   repaintOnNav(page)
+  // NO RING, NO OVERLAY (the human, 2026-08-28). A callout with no ringed target used to float at a
+  // fallback position — so a beat's BEFORE frame photographed a card claiming the Then before the
+  // When had happened, while the drawn given frame was clean: the two sides disagreed on the one
+  // row that sets the scene. The overlay now exists only while an element is actually ringed; every
+  // before/given frame is clean on BOTH sides and the loop reads as a reveal.
+  if (!box) { await hideOverlay(page); return }
   await page.evaluate(({ beat, claim, failed, box }) => {
     const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
     const FAIL = failed || (beat && beat.state === 'fail')
@@ -526,6 +532,11 @@ async function hideFocus (): Promise<void> {
   const page = CURRENT_PAGE
   if (!page || !process.env.BOARD_RECORD) return
   LAST_BOX = null
+  await hideOverlay(page)
+}
+// The DOM half of hiding, shared with renderOverlay's no-ring branch (which must not clear LAST_BOX —
+// a nav repaint with the box momentarily unmeasured should not forget where the ring was).
+async function hideOverlay (page: Page): Promise<void> {
   await page.evaluate(() => {
     const el = document.getElementById('__specboard-focus')
     if (el) el.style.display = 'none'
@@ -852,7 +863,10 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // and the chip advances ▸ → ✓/✕ so the strip tracks the proof through the whole flow.
     await emitNote('▸ proving ' + id + (title ? ' — ' + title : ''))
     await paintHud({})
-    await snapPhase(id, beatNo, cursor + 1, 'before')
+    await hideFocus()                                  // the previous beat's ring must not haunt this
+  // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
+  // a target (renderOverlay's no-ring rule)
+  await snapPhase(id, beatNo, cursor + 1, 'before')
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
@@ -881,6 +895,9 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // not just the first that broke. The test still fails — _failAggregate throws the aggregate.
   CLAIM = null; NOTE = ''
   await paintHud({ head: 'proving ' + id + (title ? ' — ' + title : '') })
+  await hideFocus()                                  // the previous beat's ring must not haunt this
+  // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
+  // a target (renderOverlay's no-ring rule)
   await snapPhase(id, beatNo, cursor + 1, 'before')
   try {
     await test.step('proves ' + id, async () => { await fn() })

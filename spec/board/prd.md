@@ -251,6 +251,120 @@ frames are the recording indexed, not a second capture, so the one-artifact rule
 failing run's checked-value frames in the proof band beneath. No toolbar, no pane default — the
 frames sit beside the words. The one-recording rule is untouched.*
 
+## R18 — The schematic mirrors the real UI
+
+- **Given** a requirement whose beats were harvested with their layout skeletons
+- **When** its schematic derives
+- **Then** it is drawn from the app's own measured layout — the page's real structure at the viewport it was measured in, with the focused element's own text where a beat ringed one
+- **When** no layout was ever harvested for it
+- **Then** it falls back to the archetype drawing, or to the labelled beats under an honest "no schematic drawn yet" — never a guessed picture
+
+The drawn half of a beat row used to be an **archetype**: a house diagram chosen from the *shape* of
+the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
+derived from the page's own measured boxes (the layout skeleton captured beside every evidence
+frame, `spec/<screen>/evidence/<id>.b<n>.<phase>.layout.json`), one frame per scene, at the
+viewport's own aspect, carrying the ringed element's real text where a beat ringed one. That is what
+makes a row a **comparison** instead of an illustration: the left cell is the same screen as the
+right one, drawn rather than photographed. Two pins ride the svg — the requirement text's hash, which
+is what stales it, and the **layout's own hash**, the geometry it was drawn from. A requirement whose
+harvest carries no layout is **not given a picture anyway**: it keeps the archetype drawing where the
+text yields one, and otherwise its rows read as labelled beats with the drawing's absence said out
+loud. A guessed picture beside a real photograph would be the most convincing lie this board could
+tell.
+
+*Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
+reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+
+<!-- Proven by spec/board/test.spec.ts, "The schematic mirrors the real UI …" — beat 1 reads a
+     harvested board requirement's committed drawing off the live reader and asserts the mirror
+     marks (data-viz-archetype="ui-mirror", data-viz-kind="wireframe", a layout pin, the app's own
+     layout in its accessible label) plus the two ties to the measured skeleton: the viewBox is the
+     harvested viewport's own aspect, and the drawn shape count tracks the measured element count.
+     Beat 2 serves board.html with one requirement's schematic stripped and asserts the honest
+     placeholder — labelled beats, no svg, no borrowed picture. -->
+
+## R19 — A beat row is a comparison: same region, same beat, one drawn, one real
+
+- **Given** a beat whose harvest recorded the focus box its assertion ringed
+- **When** its row renders
+- **Then** the schematic cell and the proof cell are aimed by ONE camera at the same region of the same page, so the drawing and the photograph can never frame different things
+- **When** you read the words that caption them
+- **Then** both sides carry that beat and no other — the drawing derived from and labelled with its When → Then, the row's text cell showing the same sentence — while the Given row stays whole-page and uncaptioned on both sides
+
+A row is only worth its width if the two halves are **the same view of the same moment**. The focus
+rect the harvest recorded (the ring the assertion painted) is the row's one camera: the proof cell
+frames it, and the drawing beside it is framed by the identical fractional transform, re-expressed
+in the drawing's own coordinates so the region matches even when the aspects do not. One toggle aims
+both; there is no way to move one alone, because there is only one choice to make. The **words** are
+the same beat too: `tools/viz.mjs` draws the callout from the requirement's own When → Then, the
+harness burns those same words into the recording the proof frames are cut from, and the row's text
+cell reads them off the prd — one language across the row, three surfaces that must agree. The
+**Given row is the context row**: it is about *where* the component sits, not what it says, so both
+its cells stay whole-page and carry no beat and no callout.
+
+*Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
+reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+
+<!-- Proven by spec/board/test.spec.ts, "A beat row is a comparison …" — beat 1 forces a focus rect
+     onto a real requirement's harvested beat (the established deterministic technique; the frames
+     and layouts stay real) and asserts BOTH cells of that row are zoomed and frame the same region:
+     each camera's framed rectangle is computed back out of its own transform and box, compared as a
+     fraction of the page, and shown to contain the focus rect's centre. Beat 2 asserts the words
+     agree across the row — the row's text cell and the drawing's own label both carrying the beat's
+     When → Then as parseBehavior reads them from prd.md — and that the Given row carries the Given
+     alone, unzoomed, with no zoom control at all. -->
+
+## R20 — The proof plays itself
+
+- **Given** a beat whose harvest holds a before/after pair
+- **When** its row renders
+- **Then** the proof cell is already looping — no mode to pick, no play to press — zoomed onto the focus by default, with the whole frame exactly one toggle away
+- **When** the row is the Given
+- **Then** its one frame stays a still: a state, not an action
+
+A proof cell has **one mode**, so it needs no toolbar. The beat's before → after runs the moment the
+row exists, on the reader's one speed, exactly as the drawing beside it loops that beat's own
+motion — a row plays as one thing. The old `stills · gif · video` switch over two frames was chrome
+asking a question nobody had, and every cell answering it differently broke the rhythm of the rows.
+The camera is a **view, never a claim**: the cell opens zoomed onto the focused component (the small
+thing being proven, not a full page you have to hunt in) and the whole screenshot is one toggle
+back — the frame on disk is untouched either way. The **Given row** has a single frame and nothing
+to loop, so it stays the captioned still it is.
+
+*Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
+reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+
+<!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
+     row's proof cell carries no mode toolbar at all, is already armed (its frame counter advances on
+     its own at the reader's speed, with nothing clicked), opens zoomed, and flips to the full frame
+     and back on the row's one control. Beat 2 asserts the Given row's cell is a captioned still: one
+     frame, no stepper, no dots. -->
+
+## R21 — The reader reads in your order
+
+- **Given** the reader's column-order control — *schematic first* ↔ *behavior first*
+- **When** you flip it
+- **Then** the header row and every beat row re-deal together, so no row can disagree with the header it sits under
+- **When** you page on to another requirement
+- **Then** it still reads in the order you chose — held for the session, stored nowhere
+
+Some people read the picture first and some read the sentence first, and neither is wrong. The
+reader's bar carries one control that deals the same three columns the other way round, and it deals
+**the whole story at once**: the header row and every beat row take one class, so "schematic" can
+never end up sitting over the words. The choice is **session-scoped**, like the speed and the zoom
+beside it — a reader is rebuilt on every fold, so the order must survive the rebuild and the next
+requirement you page to; a preference that persisted across visits would silently reorder tomorrow's
+board with no cue why. Nothing about it is stored in the tree.
+
+*Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
+reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+
+<!-- Proven by spec/board/test.spec.ts, "The reader reads in your order …" — beat 1 flips the control
+     and measures: the behavior cell really takes the left edge, and every header label still sits
+     over the cell it names in EVERY row (retagged here from the R13 test, where these assertions
+     were written). Beat 2 pages to another requirement and asserts the chosen order came with it,
+     with nothing written to storage. -->
+
 ### 3 · Computed truth — state is derived, never stored
 
 ## R4 — Requirement state is computed and assertion-backed
