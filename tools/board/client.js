@@ -845,6 +845,11 @@ const B = window.__BOARD__ || {}
     const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
     const show = function (i) {
       cur = i
+      // the row's DRAWING rides this same step (2026-08-29): buildStoryline hands the cell an
+      // `_onFrame` that moves the schematic to the scene this frame belongs to, over this frame's
+      // own hold — so the two halves of a beat row change at the same moment, in the same order,
+      // instead of each running its own clock.
+      if (el._onFrame) el._onFrame(i, window.SBStepper.scaleHold(holds[i], PLAY_SPD))
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
       ;[].slice.call(dots.children).forEach(function (d, k) {
         d.classList.toggle('cur', k === i)
@@ -873,6 +878,7 @@ const B = window.__BOARD__ || {}
     sbar.appendChild(dots); sbar.appendChild(lbl)
     el.appendChild(stage); el.appendChild(sbar)
     show(0)
+    el._count = imgs.length
     el._start = schedule; el._stop = stop
     onSpd(el, function () { if (!el.hidden) schedule() })
     return el
@@ -904,9 +910,23 @@ const B = window.__BOARD__ || {}
     const shot = function (src, cap, anchor) {
       return { src: src, cap: cap, anchor: (typeof anchor === 'number') ? anchor : null, focus: rf }
     }
+    // THE ASSERTED VALUES BETWEEN THE ENDS (2026-08-29, the human: the When has to be visible in the
+    // proof too). A beat's before/after pair photographs the two ends of the assertion body, and the
+    // action itself falls between them — a box carrying what was just typed is empty in the before
+    // frame and cleared again by the after one. proveVisible photographs each value it rings, and
+    // each frame carries `at`, its offset from the start of the beat's own window, so the loop plays
+    // them at the run's true relative pace. A frame with no offset simply has no anchor, and the
+    // stepper falls back to equal holds for the whole loop rather than inventing one.
+    const values = function (b) {
+      return (b.values || []).filter(function (v) { return v && v.frame }).map(function (v) {
+        const at = (b.window && typeof v.at === 'number') ? b.window.from + v.at : null
+        return shot(v.frame, 'the asserted value in frame', at)
+      })
+    }
     const pair = function (b, capA, capB) {
       const out = []
       if (b.before) out.push(shot(b.before, capA, b.window ? b.window.from : null))
+      for (const v of values(b)) out.push(v)
       if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null))
       return out
     }
@@ -970,6 +990,7 @@ const B = window.__BOARD__ || {}
       sbox.appendChild(step)
       cam.appendChild(sbox)
       aimCamera(sbox, focus, CAM)
+      cell._stepper = step        // the row's drawing locks to this loop (buildStoryline)
       step._start()
     } else {
       // ONE frame: a still, captioned, under the same camera the loop would use
@@ -1029,14 +1050,40 @@ const B = window.__BOARD__ || {}
     // (given + one per beat) — otherwise the whole drawing rides the Given row, unsplit
     const canPair = !!(v && v.svg && beh && phases && phases.length === nbeats + 1)
     const short = function (h) { return String(h || '').slice(0, 6) }
+    // THE BEAT'S OWN SCENES (2026-08-29). A drawing that enacts its beat carries one park point per
+    // scene of that beat — the state it starts in, then each asserted value, then the result —
+    // published on the svg as `data-viz-subphases`, one group per beat separated by `|`. It is what
+    // lets the drawing step in lock-step with the proof beside it: frame j of the proof loop and
+    // park point j of the drawing are the same moment of the same beat. Absent (or the wrong shape
+    // for this harvest), the drawing free-runs its own scrub exactly as before.
+    const subphases = (function () {
+      const m = /data-viz-subphases="([^"]*)"/.exec((v && v.svg) || '')
+      if (!m) return null
+      const groups = m[1].split('|').map(function (g) {
+        return g.trim().split(/\s+/).filter(Boolean).map(Number)
+      })
+      const ok = groups.length === nbeats && groups.every(function (g) {
+        return g.length >= 2 && g.every(function (n) { return isFinite(n) })
+      })
+      return ok ? groups : null
+    })()
     // per-beat LOOP (the human, 2026-08-26): each beat's frame scrubs the paused drawing across ITS
     // beat's own time-window and loops. The Given frame is a state, not an action, so it stays a
     // parked still. Under reduced motion every frame parks at its beat. ONE rAF drives every looping
     // frame's --ph and self-cleans when the wrap leaves the DOM (a re-render or a close).
     const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    // …and the DRIVEN frames beside them (2026-08-29): a drawing whose proof cell is looping takes
+    // its scene from that loop instead of a clock of its own. `_drive(from, to, ms)` asks for the
+    // move the proof just made; the tween runs over the first part of the frame's own hold and then
+    // settles, so the change is animated and the SETTLED state is what a reader looks at for most
+    // of the hold — the same shape the free-running scrub has.
+    const driven = []
     const startLoops = function () {
-      const frames = [].slice.call(wrap.querySelectorAll('.sbframe[data-loop]'))
-      if (!frames.length || reduced) return
+      // a DRIVEN frame loops too — its beat is stepped by the proof cell beside it — so it carries
+      // data-loop like any looping frame and is excluded here by data-driven, never by pretending
+      // it is a parked still
+      const frames = [].slice.call(wrap.querySelectorAll('.sbframe[data-loop]:not([data-driven])'))
+      if ((!frames.length && !driven.length) || reduced) return
       const HOLD = 0.7                        // seconds held on the result before the loop repeats
       let start = null
       const tick = function (now) {
@@ -1053,6 +1100,12 @@ const B = window.__BOARD__ || {}
           const ph = tau < play ? s + (e - s) * (tau / play) : e   // scrub the segment forward, then hold
           fr.style.setProperty('--ph', ph + 's')
         }
+        for (let j = 0; j < driven.length; j++) {
+          const d = driven[j]
+          if (d.t0 == null) continue
+          const p = d.ms > 0 ? Math.min(1, (now - d.t0) / d.ms) : 1
+          d.el.style.setProperty('--ph', (d.from + (d.to - d.from) * p) + 's')
+        }
         requestAnimationFrame(tick)
       }
       requestAnimationFrame(tick)
@@ -1062,9 +1115,12 @@ const B = window.__BOARD__ || {}
     // viewport (vw/vh), so the identical fractional transform frames the identical region — which is
     // the whole point of the zoom: the drawn intent and the photographed result, same crop, side by
     // side. With no focus (the Given context row, or an old harvest) both cells stay full-frame.
-    const frameCell = function (park, loopWin, focus) {
+    const frameCell = function (park, loopWin, focus, drivenBy) {
       const fr = document.createElement('div'); fr.className = 'sbframe'
       if (loopWin && !reduced) { fr.dataset.loop = '1'; fr.dataset.s = String(loopWin[0]); fr.dataset.e = String(loopWin[1]) }
+      // a DRIVEN cell loops its beat too — the proof's own loop steps it (see the beats pass below),
+      // so it says data-loop like any looping frame and data-driven says what moves it
+      if (drivenBy && !reduced) { fr.dataset.loop = '1'; fr.dataset.driven = '1' }
       fr.style.setProperty('--ph', (loopWin ? loopWin[1] : park) + 's')   // park at the still (or, before the rAF starts, the loop's result frame)
       const box = document.createElement('div'); box.className = 'pcbox'
       const sub = document.createElement('div'); sub.className = 'camsub'; sub.innerHTML = v.svg
@@ -1072,6 +1128,19 @@ const B = window.__BOARD__ || {}
       // cap the drawing's magnification: same region as the proof, more context instead of more
       // pixels — an uncapped zoom onto a ~30px rect blows the wireframe's strokes into abstraction
       aimCamera(box, focusInSvg(focus, sub.querySelector('svg')), CAM)
+      // the hook the proof loop drives this cell with (2026-08-29) — registered HERE, at build time,
+      // for a cell that is actually linked, so the rAF is running before the first step arrives. (It
+      // was registered lazily on the first drive at first, and then a story whose every row was
+      // driven started no rAF at all and never moved: the board's own R13 caught it.)
+      const d = { el: fr, from: park, to: park, ms: 0, t0: null }
+      if (drivenBy) driven.push(d)
+      fr._drive = function (from, to, ms) {
+        d.from = from; d.to = to
+        // the move takes the first stretch of the hold, then the scene settles for the rest
+        d.ms = reduced ? 0 : Math.max(0, Math.min(ms * 0.55, 900))
+        d.t0 = (window.performance && performance.now) ? performance.now() : Date.now()
+        if (!(d.ms > 0)) fr.style.setProperty('--ph', to + 's')
+      }
       return fr
     }
     const wholeCell = function () {
@@ -1130,8 +1199,26 @@ const B = window.__BOARD__ || {}
         proofCell(r, 0, nbeats)))
       beh.beats.forEach(function (bt, i) {
         const html = behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
-        const fc = canPair ? frameCell(phases[i + 1], [phases[i], phases[i + 1]], beatFocus(r, i + 1, nbeats)) : noCell(noDraw)
-        body.appendChild(row(i === 0 ? '' : 'beatstart', fc, textCell(html), proofCell(r, i + 1, nbeats)))
+        const pc = proofCell(r, i + 1, nbeats)
+        // LOCK-STEP (2026-08-29, the human: same story order, comparable timing). The drawing takes
+        // its scenes from the proof's own loop when the two agree on how many there are — the beat's
+        // drawn park points against the beat's harvested frames. They disagree only when one side is
+        // older than the other (a drawing not yet redrawn under a fresh harvest, or the reverse), and
+        // then the drawing free-runs its own scrub rather than showing a scene that is not the one in
+        // the photograph beside it.
+        const grp = subphases && subphases[i]
+        const link = !!(canPair && grp && pc._stepper && pc._stepper._count === grp.length)
+        const fc = canPair
+          ? frameCell(link ? grp[0] : phases[i + 1], link ? null : [phases[i], phases[i + 1]],
+            beatFocus(r, i + 1, nbeats), link)
+          : noCell(noDraw)
+        if (link) {
+          pc._stepper._onFrame = function (j, ms) {
+            const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
+            fc._drive(from, grp[j], ms)
+          }
+        }
+        body.appendChild(row(i === 0 ? '' : 'beatstart', fc, textCell(html), pc))
       })
     } else {
       // PROSE-ONLY: no Given/When→Then to split into beats, so the story is one row — the drawing if

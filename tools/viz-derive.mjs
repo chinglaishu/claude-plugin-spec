@@ -37,8 +37,10 @@ const stampAt = svg => svg.replace('<svg ', `<svg data-viz-at="${today}" `)
 
 // The harvested layout skeleton for one BEAT's phase, or null. Malformed JSON is a missing
 // capture, never a crash: viz.mjs then falls back to the archetype kit.
+// `phase` is 'before' / 'after', or null when `n` already names the whole slot ('1.v2' — beat 1's
+// second asserted value), which keeps the one path rule in one place.
 const layoutOf = (screen, id, n, phase) => {
-  const p = join(SPEC, screen, 'evidence', `${id}.b${n}.${phase}.layout.json`)
+  const p = join(SPEC, screen, 'evidence', `${id}.b${n}${phase ? '.' + phase : ''}.layout.json`)
   if (!existsSync(p)) return null
   try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return null }
 }
@@ -46,13 +48,28 @@ const layoutOf = (screen, id, n, phase) => {
 // drawing takes one frame per scene from this (the given frame is beat 1's before, each beat's
 // frame is that beat's after), which is exactly what the board's per-beat rows show. Reading stops
 // at the first beat with nothing: a gap in the middle is a harvest that never happened.
+// …and each beat's ASSERTED-VALUE skeletons in the order it proved them (2026-08-29): the drawing
+// enacts the beat scene by scene, so it needs the geometry of each value the run rang and read, not
+// only the state it ended in. Numbering is 1-based and contiguous — the first gap ends the beat's
+// list, because a value the harvest never took is a scene that never happened.
+const VMAX = 12
+const valueLayouts = (screen, id, n) => {
+  const out = []
+  for (let k = 1; k <= VMAX; k++) {
+    const l = layoutOf(screen, id, `${n}.v${k}`, null)
+    if (!l) break
+    out.push(l)
+  }
+  return out
+}
 const beatLayouts = (screen, id, max) => {
   const out = []
   for (let n = 1; n <= max; n++) {
     const before = layoutOf(screen, id, n, 'before')
     const after = layoutOf(screen, id, n, 'after')
-    if (!before && !after) break
-    out.push({ before, after })
+    const values = valueLayouts(screen, id, n)
+    if (!before && !after && !values.length) break
+    out.push({ before, after, values })
   }
   return out
 }

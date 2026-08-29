@@ -416,6 +416,18 @@ const evAttrs = (s, r) => {
       if (b.focus && ['x', 'y', 'w', 'h', 'vw', 'vh'].every(k => typeof b.focus[k] === 'number' && Number.isFinite(b.focus[k]))) {
         o.focus = { x: b.focus.x, y: b.focus.y, w: b.focus.w, h: b.focus.h, vw: b.focus.vw, vh: b.focus.vh }
       }
+      // the beat's ASSERTED-VALUE frames (2026-08-29), in check order: what the loop plays BETWEEN
+      // the two ends, each with its offset into the beat's own window so the pace stays true. Only
+      // the frame and the offset travel — the skeleton beside it is the schematic's source, not the
+      // reader's. A value whose frame did not land is dropped, exactly like a missing pair member.
+      const vals = (Array.isArray(b.values) ? b.values : []).map(v => {
+        const src = path(v && v.frame)
+        if (!src) return null
+        const o2 = { frame: src }
+        if (typeof v.at === 'number' && Number.isFinite(v.at)) o2.at = v.at
+        return o2
+      }).filter(Boolean)
+      if (vals.length) o.values = vals
       return o
     }).filter(o => Number.isFinite(o.n) && (o.before || o.after))
     if (list.length) out += ` data-ev-beats="${esc(JSON.stringify(list))}"`

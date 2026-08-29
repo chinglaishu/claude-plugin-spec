@@ -97,18 +97,33 @@
     var nums = [vw, vh, cw, ch, x, y, w, h]
     for (var i = 0; i < nums.length; i++) if (typeof nums[i] !== 'number' || !isFinite(nums[i])) return none
     if (vw <= 0 || vh <= 0 || cw <= 0 || ch <= 0 || w <= 0 || h <= 0) return none
-    // the padded rect, clamped into the frame
-    var pw = Math.min(vw, w * pad); var ph = Math.min(vh, h * pad)
+    // the padded rect, clamped into the frame — and where the pad does NOT fit, a MARGIN instead of
+    // the whole frame (2026-08-29). A beat's camera frames the union of its rings now, so a target
+    // can be a third of the page; clamping that to the frame gave up the zoom altogether and the row
+    // became two 0.39× screenshots of a 1440px app. Mirrored verbatim in tools/viz.mjs framedRegion.
+    var MARGIN = 1.12
+    var padOne = function (size, frame) {
+      var want = size * pad
+      return want <= frame ? want : Math.min(frame, size * MARGIN)
+    }
+    var pw = padOne(w, vw); var ph = padOne(h, vh)
     var px = Math.min(Math.max(0, x + w / 2 - pw / 2), vw - pw)
     var py = Math.min(Math.max(0, y + h / 2 - ph / 2), vh - ph)
     // the media renders at cell width, so one source pixel is r cell pixels, and the media's own
     // rendered height at scale 1 follows the frame's aspect
     var r = cw / vw
     var mh = cw * vh / vw
+    // …and NEVER past the scale at which the FOCUS ITSELF stops fitting (2026-08-29). Cover is the
+    // right rule for a small target read in context, but a beat's camera frames the union of its
+    // rings now, and covering a union taller than the cell crops the beat's first scene straight out
+    // of the row — the demo's R1 put the typed Add box above the crop, so "the When is visible in
+    // both cells" was still false at the zoom. A small target never reaches this: maxScale bites long
+    // before it does. Mirrored in tools/viz.mjs framedRegion.
+    var cap = Math.min(maxScale, Math.min(cw / (w * MARGIN * r), ch / (h * MARGIN * r)))
     var scale = Math.max(cw / (pw * r), ch / (ph * r))
-    if (scale > maxScale) {
+    if (scale > cap) {
       // re-frame at the cap: widen the padded rect so the capped zoom still fills the cell
-      scale = maxScale
+      scale = cap
       pw = Math.min(vw, cw / (r * scale)); ph = Math.min(vh, ch / (r * scale))
       px = Math.min(Math.max(0, x + w / 2 - pw / 2), vw - pw)
       py = Math.min(Math.max(0, y + h / 2 - ph / 2), vh - ph)

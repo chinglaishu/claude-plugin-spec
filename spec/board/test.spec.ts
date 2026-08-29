@@ -677,10 +677,27 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(rows.nth(0).locator('.sbframe[data-loop]')).toHaveCount(0)   // given parked
     const beatFr = rows.nth(1).locator('.sbframe')
     await expect(beatFr).toHaveAttribute('data-loop', '1')
-    const samplePh = () => beatFr.evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
-    const phSamples = new Set<number>()
-    for (let s = 0; s < 4; s++) { phSamples.add(await samplePh()); await page.waitForTimeout(180) }
-    expect(phSamples.size, 'the beat loop scrubs --ph over time (not a parked still)').toBeGreaterThan(1)
+    // ONE STORY, ONE CLOCK (2026-08-29, the human: "same story order, comparable timing"). The beat's
+    // drawing no longer runs a clock of its own: its PROOF cell loops the beat's harvested frames,
+    // and the drawing parks on the scene each of those frames belongs to — so the two halves of a row
+    // can never be showing different moments of the same beat. Proven by DRIVING it: the drawing
+    // publishes one park point per scene (data-viz-subphases), the proof carries exactly one dot per
+    // scene, and clicking a dot moves --ph to that scene's park point. (This replaces a wall-clock
+    // sampler of --ph, which measured that the cell moved but not that it moved WITH anything — and
+    // which now has to catch a stepper's hold to see motion at all. Deterministic, and it proves more.)
+    const phOf = () => beatFr.evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    const sub = await beatFr.evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
+      .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
+    expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
+    const pdots = rows.nth(1).locator('.sbproof .pdots .pd')
+    await expect(pdots).toHaveCount(sub.length)          // both halves agree on how many scenes the beat has
+    const slow = ov.locator('.fread > .fbar select.pspd')
+    await slow.selectOption('0.25')                      // holds stretch, so a driven step is observable
+    await pdots.nth(sub.length - 1).click()
+    await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[sub.length - 1], 2)
+    await pdots.nth(0).click()
+    await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[0], 2)
+    await slow.selectOption('1')
     // ONE reader bar, ONE speed (the human, 2026-08-28 — superseding the per-pane dropdowns): the
     // schematic frames, every beat cell's stepper and the video are views of the SAME beat, so they
     // play at one pace. Beside it, the COLUMN-ORDER pair, each button naming the order it produces.

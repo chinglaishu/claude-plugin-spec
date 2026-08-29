@@ -636,16 +636,25 @@ test('framedRegion is the cell\'s own region: padded, COVER-fit, centred, clampe
   assert.deepEqual(framedRegion({ x: 0, y: 0, w: 600, h: 375 }, 600, 375), { x: 0, y: 0, w: 600, h: 375 })
 })
 
-test('framedRegion COVERS: a wide short row crops at the sides instead of refusing to zoom', () => {
+test('framedRegion COVERS: a wide short row zooms rather than refusing — and is no longer side-cropped', () => {
   // 820×48 of a 1440×900 page, in drawing units — the padded rect is wider than the frame, so a
   // contain-fit camera would have refused (scale 1, the whole page) and the row would have stayed a
-  // hairline. Cover-fit takes the bigger ratio and crops the row's sides, which is what the cell
-  // now does — and what the drawing must place its callout inside.
+  // hairline. Cover-fit takes the bigger ratio, which is what the cell does — and what the drawing
+  // must place its callout inside.
+  //
+  // The EXPECTED NUMBER MOVED on 2026-08-29 (rule 4 — the code is the right side here). Cover used to
+  // run to the 2.2 cap and crop this row's sides; the camera now also refuses to zoom past the scale
+  // that still shows the whole FOCUS, because a beat's focus is the union of its rings and cropping
+  // it hides a whole scene of the beat (the demo's R1 lost the typed Add box off the top). The
+  // human's 2026-08-28 complaint was a camera that gave up and showed the full page — that is still
+  // fixed: this row zooms 1.76×. What it no longer does is cut the ringed thing itself.
   const S = 600 / 1440
-  const wide = framedRegion({ x: 300 * S, y: 400 * S, w: 820 * S, h: 48 * S }, 600, 375)
+  const f = { x: 300 * S, y: 400 * S, w: 820 * S, h: 48 * S }
+  const wide = framedRegion(f, 600, 375)
   assert.ok(wide.w < 600, 'it really does zoom: ' + wide.w)
-  assert.equal(Math.round(wide.w), Math.round(600 / 2.2), 'at the cap, so the region is the frame ÷ 2.2')
-  assert.ok(wide.x > 0 && wide.x + wide.w < 600, 'and the row is cropped at both sides')
+  assert.equal(Math.round(wide.w), Math.round(f.w * 1.12), 'capped where the whole row still fits, with its margin')
+  assert.ok(wide.w >= f.w - 0.01, 'the ringed row is never cut: ' + JSON.stringify(wide))
+  assert.ok(wide.x >= 0 && wide.x + wide.w <= 600.01, 'and the region stays inside the frame')
 })
 
 // the R5 shape: the counter hard against the right edge, high up — the corner that left the card
@@ -733,4 +742,171 @@ test('the value is drawn INSIDE the ringed box when it reads there — a pill on
   })
   const small = frameOf(renderWireframe([{ before: tiny(false), after: tiny(true) }], CARD).svg, 1)
   assert.ok(/rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--ai\)"/.test(small), 'a pill carries what the box cannot')
+})
+
+// ── THE ENACTED BEAT (the human, 2026-08-29) ──────────────────────────────────────────────────
+// A beat's drawing used to be ONE frame: the result. So the WHEN — "you type 'Water the plants' and
+// press Add" — was nowhere in the picture, exactly as it was nowhere in the proof beside it (a box
+// carrying what was typed is empty before the beat and cleared again after it). proveVisible now
+// photographs and MEASURES every value it rings, so a beat arrives as scenes: the values it proved,
+// in order, then its result. The drawing plays the same scenes, so the two halves of a row tell one
+// story — and publishes its park points per beat (data-viz-subphases) so the board can step the
+// drawing in lock-step with the proof's own loop.
+const typedLay = (value, focus) => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 24, y: 96, w: 600, h: 44 } : null,
+  els: [
+    ...LAY_BEFORE.els.slice(0, 2),
+    { x: 24, y: 96, w: 600, h: 44, kind: 'input', text: value, ...(focus ? { focus: true } : {}) },
+    { x: 660, y: 96, w: 90, h: 36, kind: 'button', text: 'Add' },
+    { x: 24, y: 160, w: 600, h: 40, kind: 'row' }
+  ]
+})
+const rowLay = (title, focus) => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 24, y: 208, w: 600, h: 40 } : null,
+  els: [
+    ...LAY_BEFORE.els.slice(0, 2),
+    { x: 24, y: 96, w: 600, h: 44, kind: 'input', text: 'What needs doing?' },
+    { x: 660, y: 96, w: 90, h: 36, kind: 'button', text: 'Add' },
+    { x: 24, y: 160, w: 600, h: 40, kind: 'row' },
+    { x: 24, y: 208, w: 600, h: 40, kind: 'text', text: title, ...(focus ? { focus: true } : {}) }
+  ]
+})
+const ADD = b('the list, the Add box empty',
+  'you type "Water the plants" and press Add',
+  'a new row appears at the bottom, stamped added just now')
+const ENACTED = [{
+  before: typedLay('What needs doing?', false),
+  values: [typedLay('Water the plants', true), rowLay('Water the plants', true)],
+  after: rowLay('added just now', true)
+}]
+
+test('enacted: a beat draws one frame per scene it proved — the When is IN the picture', () => {
+  const d = renderWireframe(ENACTED, { behavior: ADD, id: 'R1', title: 'Adding a task' })
+  assert.ok(d)
+  // given + two proved values + the result
+  assert.ok(d.svg.includes('data-viz-frames="4"'), 'four scenes were measured: ' + d.svg.slice(0, 400))
+  assert.equal(d.phases.length, 2, 'the storyboard still pairs one park point per BEAT (given + 1)')
+  const typed = frameOf(d.svg, 1)
+  assert.ok(typed.includes('Water the plants'), 'the box carrying what was typed is drawn, with its own text')
+})
+
+test('enacted: the beat publishes its park points, one per scene, so the proof can drive it', () => {
+  const d = renderWireframe(ENACTED, { behavior: ADD })
+  const m = /data-viz-subphases="([^"]*)"/.exec(d.svg)
+  assert.ok(m, 'the drawing says where each of its scenes parks')
+  const groups = m[1].split('|').map(g => g.trim().split(/\s+/).map(Number))
+  assert.equal(groups.length, 1, 'one group per beat')
+  assert.equal(groups[0].length, 4, 'the beat opens where it started, then each value, then its result')
+  assert.equal(groups[0][0], d.phases[0], 'it opens on the Given scene')
+  assert.equal(groups[0][3], d.phases[1], 'and closes exactly where the beat parks')
+})
+
+test('enacted: an intermediate scene says the WHEN alone — the Then has not happened yet', () => {
+  const d = renderWireframe(ENACTED, { behavior: ADD, id: 'R1', title: 'Adding a task', pass: true })
+  const mid = frameOf(d.svg, 1); const last = frameOf(d.svg, 3)
+  assert.ok(mid.includes('>WHEN<'), 'the action is called out')
+  assert.ok(!mid.includes('>THEN<'), 'but not its result — nothing has been proven at this moment')
+  assert.ok(last.includes('>WHEN<') && last.includes('>THEN<'), 'the beat\'s own frame carries both')
+})
+
+test('enacted: a beat with no values draws exactly as it did before — one frame, one scene', () => {
+  const plain = renderWireframe(PAIRS, { behavior: TWO })
+  const withEmpty = renderWireframe(PAIRS.map(p => ({ ...p, values: [] })), { behavior: TWO })
+  assert.equal(withEmpty.svg, plain.svg, 'an empty value list changes nothing')
+})
+
+test('enacted: the timing stamp the harvest rides on is NOT part of the layout pin', () => {
+  // `at` is a wall-clock offset that never repeats; hashing it would redraw every schematic on
+  // every run and call the geometry changed when nothing moved
+  const timed = ENACTED.map(p => ({ ...p, values: p.values.map((v, i) => ({ ...v, at: 400 + i * 111 })) }))
+  assert.equal(layoutHash(timed), layoutHash(ENACTED))
+  assert.equal(renderWireframe(timed, { behavior: ADD }).svg, renderWireframe(ENACTED, { behavior: ADD }).svg)
+})
+
+test('enacted: a ringed element with no text of its own falls back to the beat\'s own quoted words', () => {
+  // the honest fallback: the requirement's OWN When names the string, so the drawing may say it —
+  // in the quiet ink, because it was authored, not measured
+  const blank = {
+    w: 1440,
+    h: 900,
+    ring: { x: 24, y: 96, w: 600, h: 44 },
+    els: [...LAY_BEFORE.els.slice(0, 2), { x: 24, y: 96, w: 600, h: 44, kind: 'input', text: '', focus: true }]
+  }
+  const d = renderWireframe([{ before: typedLay('', false), values: [blank], after: rowLay('added just now', true) }],
+    { behavior: ADD })
+  // the VALUE, in the mono the kit draws every read value in — not merely the words of the callout
+  assert.match(frameOf(d.svg, 1), /var\(--mono\)"[^>]*>Water the plants</,
+    'the quoted string from the When carries the scene')
+})
+
+// ── A TARGET TOO BIG TO PAD STILL ZOOMS (the human, 2026-08-29: "hard to read") ────────────────
+// A beat's camera frames the UNION of its rings now, so the row can show the value the When typed
+// AND the value the Then produced. The demo's R1 union is 39% of the page wide and 73% tall; padded
+// 2.75× that exceeds the frame on both axes, and the pad rule then surrendered to the WHOLE page —
+// two 0.39× screenshots of a 1440px app side by side, which is precisely the unreadable row this
+// work exists to fix. A target too big to pad keeps a margin instead of the whole frame.
+test('framedRegion: a big target keeps a margin rather than surrendering to the whole page', () => {
+  const W = 600; const H = 375
+  const S = W / 1440
+  const union = { x: 312 * S, y: 126 * S, w: 562 * S, h: 655 * (H / 900) }
+  const reg = framedRegion(union, W, H)
+  assert.ok(reg.w < W * 0.85, 'it still zooms: ' + JSON.stringify(reg))
+  assert.ok(reg.w >= union.w * 0.99, 'and the target still fits across it: ' + JSON.stringify(reg))
+  // a SMALL target is untouched — the generous 2.75 pad is what makes a 30px chip readable in context
+  const small = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, W, H)
+  assert.ok(Math.abs(small.w - W / 2.2) < 0.01, 'the cap still governs a small target: ' + JSON.stringify(small))
+})
+
+// the SAME rule on the board's side of the mirror — tools/board/stepper.js cameraView and this
+// module's framedRegion are two implementations of one camera, and a row is only a comparison while
+// they agree. (Nothing unit-tested cameraView before; a divergence here is invisible until a reader
+// shows two different crops.)
+test('cameraView agrees with framedRegion — the same region, in cell pixels', async () => {
+  await import('./board/stepper.js')
+  const cam = globalThis.SBStepper
+  const focus = { x: 312, y: 126, w: 562, h: 655, vw: 1440, vh: 900 }
+  const cell = { w: 560, h: 350 }
+  const view = cam.cameraView(focus, cell, { maxScale: 2.2, minFrac: 0.38 })
+  assert.ok(view.ok && view.scale > 1.2, 'the board zooms the big union too: ' + JSON.stringify(view))
+  // framedRegion, in page units, must frame the same width the board's transform shows
+  const reg = framedRegion(focus, 1440, 900)
+  assert.ok(Math.abs(reg.w - (1440 / view.scale)) < 1,
+    'same framed width: ' + reg.w + ' vs ' + (1440 / view.scale))
+})
+
+// ── NEVER CROP THE THING YOU ARE POINTING AT (the human, 2026-08-29) ──────────────────────────
+// Cover-fit magnifies on whichever axis needs it and crops the other — the right rule for a small
+// target read in context (their 2026-08-28 call, kept). But a beat's camera now frames the UNION of
+// its rings, and covering a union taller than the cell crops the beat's FIRST scene straight out of
+// the row: for the demo's R1 the typed Add box sat above the crop, so "the When is visible in both
+// cells" was still false at the zoom. Cover, then cap at the largest scale that still shows the
+// whole focus. Small targets are unaffected — maxScale bites long before this does.
+test('framedRegion never crops the focus it frames', () => {
+  const W = 600; const H = 375
+  const union = { x: 130, y: 52, w: 234, h: 273 }        // R1's union, in drawing units
+  const reg = framedRegion(union, W, H)
+  assert.ok(reg.h >= union.h - 0.01, 'the whole beat is in frame: ' + JSON.stringify(reg))
+  assert.ok(reg.w >= union.w - 0.01)
+  assert.ok(reg.w < W, 'and it still zooms')
+  // a small chip is governed by the cap, exactly as before
+  const chip = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, W, H)
+  assert.ok(Math.abs(chip.w - W / 2.2) < 0.01, JSON.stringify(chip))
+})
+
+test('cameraView never crops the focus either — one camera, one rule', async () => {
+  await import('./board/stepper.js')
+  const cam = globalThis.SBStepper
+  const focus = { x: 312, y: 126, w: 562, h: 655, vw: 1440, vh: 900 }
+  const cell = { w: 570, h: 390 }
+  const v = cam.cameraView(focus, cell, { maxScale: 2.2, minFrac: 0.38 })
+  assert.ok(v.ok && v.scale > 1, 'it zooms: ' + JSON.stringify(v))
+  // the framed page rectangle, back out of the transform: everything of the focus must be inside it
+  const r = cell.w / focus.vw
+  const fw = cell.w / (r * v.scale); const fh = cell.h / (r * v.scale)
+  assert.ok(fw >= focus.w - 0.5 && fh >= focus.h - 0.5,
+    'the whole focus fits the framed region: ' + fw + '×' + fh + ' vs ' + focus.w + '×' + focus.h)
 })

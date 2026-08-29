@@ -613,12 +613,23 @@ function normLayout (l) {
   return { w, h, ring, els }
 }
 
-// The layout PIN — the same role reqHash plays for the text. Hashes the layouts exactly as they
-// were handed in, so a re-harvest whose geometry did not move redraws byte-identically (and
-// viz-derive then leaves the committed file untouched). Takes either the per-beat list or the
-// legacy single pair, matching renderWireframe's two call forms.
+// The layout PIN — the same role reqHash plays for the text. Hashes the GEOMETRY the drawing was
+// made of, so a re-harvest whose boxes did not move redraws byte-identically (and viz-derive then
+// leaves the committed file untouched). Takes either the per-beat list or the legacy single pair,
+// matching renderWireframe's two call forms.
+//
+// Two things are deliberately normalised OUT of it (2026-08-29):
+//   · `at` — the harvest's wall-clock offset for a value frame. It never repeats, so hashing it
+//     would redraw every schematic on every run and call the geometry changed when nothing moved.
+//   · a missing vs empty `values` list — a beat that proved no value is the same beat either way.
+const pinShape = p => ({
+  before: (p && p.before) || null,
+  after: (p && p.after) || null,
+  values: (p && Array.isArray(p.values) ? p.values : []).filter(Boolean)
+})
 export const layoutHash = (a, b) =>
-  reqHash(JSON.stringify(Array.isArray(a) ? a : [{ before: a || null, after: b || null }]))
+  reqHash(JSON.stringify((Array.isArray(a) ? a : [{ before: a || null, after: b || null }]).map(pinShape),
+    (k, v) => (k === 'at' ? undefined : v)))
 
 // App text is untrusted: collapse whitespace, drop control characters and backticks (the builder
 // interpolates this into board.html), then XML-escape.
@@ -653,15 +664,31 @@ const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
 //
 // Because BOTH cells cover-fit at the same scale, an overlay drawn at the burn-in's own page
 // geometry lands at the same apparent size as the photographed one — which is the whole point.
+// ONE AXIS OF THE PADDED RECT (2026-08-29). The generous 2.75 pad is what makes a 30px chip
+// readable in context, but a BIG target — since a beat's camera frames the union of its rings, a
+// target can be a third of the page — pads past the frame, and clamping to the frame then gave up
+// the zoom entirely: two 0.39× screenshots of a 1440px app side by side, the unreadable row the
+// human called out. So padding that would not fit falls back to a MARGIN (×1.12), which still
+// frames the target rather than the whole page. Mirrored verbatim in tools/board/stepper.js
+// cameraView — the two are one camera, and a row is a comparison only while they agree.
+const MARGIN = 1.12
+function padded (size, frame, pad) {
+  const want = size * pad
+  return want <= frame ? want : Math.min(frame, size * MARGIN)
+}
 export function framedRegion (f, W, H, opts = {}) {
   const pad = opts.pad != null ? opts.pad : 2.75
   const maxScale = opts.maxScale != null ? opts.maxScale : 2.2
   const whole = { x: 0, y: 0, w: W, h: H }
   if (!f || !(f.w > 0) || !(f.h > 0) || !(W > 0) || !(H > 0)) return whole
-  const pw = Math.min(W, f.w * pad); const ph = Math.min(H, f.h * pad)
+  const pw = padded(f.w, W, pad); const ph = padded(f.h, H, pad)
   // COVER, not contain: the bigger of the two ratios fills the cell, cropping the padded rect's
   // long side instead of refusing to zoom at all
-  const scale = Math.min(maxScale, Math.max(W / pw, H / ph))
+  // …and NEVER past the scale at which the focus itself stops fitting (2026-08-29): covering a union
+  // taller than the cell would crop the beat's own first scene out of the row. Small targets never
+  // reach this — maxScale bites first.
+  const fit = Math.min(W / (f.w * MARGIN), H / (f.h * MARGIN))
+  const scale = Math.min(maxScale, fit, Math.max(W / pw, H / ph))
   if (!(scale > 1)) return whole
   const rw = W / scale; const rh = H / scale
   return {
@@ -844,7 +871,9 @@ function measureCard (spec, S, u) {
   const thenLines = wrapText(spec.then, fsThen, [inner - labW], 2)
   const lhW = fsWhen * OV.lhWhen; const lhT = fsThen * OV.lhThen
   const whenH = whenLines.length * lhW
-  const thenH = Math.max(thenLines.length, 1) * lhT
+  // a mid-beat card says the WHEN alone (2026-08-29) — no Then has happened yet — so it reserves no
+  // line for one. A card that HAS a Then keeps its minimum line, exactly as before.
+  const thenH = Math.max(thenLines.length, raw(spec.then) ? 1 : 0) * lhT
   const cardH = r1(padY + chipH + OV.tagGap * k + whenH + OV.whenGap * k + thenH + padY)
   const draw = (x, y) => {
     const parts = []
@@ -964,6 +993,18 @@ function calloutSVG (spec, f, W, H, extra, region, S) {
   return { svg: parts.join(''), box: { x, y, w: cardW, h: cardH }, side }
 }
 
+// The first literal a beat's own words QUOTE — "Water the plants" out of `you type "Water the
+// plants" and press Add`. Straight or curly quotes; the When first, because a beat's quoted string
+// is almost always the thing it types or picks. Only ever used where nothing was measured.
+const QUOTED = /["“]([^"”]{1,48})["”]/
+function quotedIn (callout) {
+  for (const s of [callout && callout.when, callout && callout.then]) {
+    const m = QUOTED.exec(raw(s))
+    if (m && raw(m[1])) return raw(m[1])
+  }
+  return ''
+}
+
 // ONE frame of the mirror: every captured box in house shapes, biggest first so the page chrome
 // sits behind the rows and the words sit on top. `withFocus` adds the burn-in's own overlay — the
 // dim, the ring, the value pill and (when `callout` carries the beat) the tour card. The GIVEN
@@ -1068,11 +1109,18 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
       // simply cut off screen. Aimed at the PRIMARY mark, exactly as the board aims the cell.
       const region = framedRegion(camPx || marks[0], W, H)
       const pills = []
+      // …and where the capture measured NO text on the ringed element (a box whose value the
+      // skeleton could not reach, an element that carries its value in an attribute), the
+      // requirement's OWN quoted words stand in — its When names the string in so many letters, and
+      // this is the authored side of the row. Quiet ink, never the asserted ink, so a drawn value
+      // that was read off the page and one that was read off the prd never look alike (2026-08-29).
+      const spoken = quotedIn(callout)
       for (const f of marks) {
         parts.push(ringSVG(f, S))
         // THE POINT of the mirror: the asserted value, in the app's own words — inside the ringed
         // box, where the page itself draws it; a pill beside it only when it cannot go there
-        const val = valueMark(f, f.text, W, H, true, region)
+        const measured = raw(f.text)
+        const val = valueMark(f, measured || (f === marks[0] ? spoken : ''), W, H, !!measured, region)
         if (val.svg) { parts.push(val.svg); if (val.box) pills.push(val.box) }
       }
       // …and the requirement's own words, in the burn-in's card, beside the primary mark
@@ -1098,6 +1146,10 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
 // calc(<X>s / var(--spd,1)) like the archetype kit, and the still phases stay plain negative
 // seconds — the board CSS divides the parked delay by the SAME var, so the frame a still shows is
 // identical at every speed (Task 11's contract).
+// `m` is the number of TRANSITIONS the drawing plays — one per scene after the Given. Since
+// 2026-08-29 a beat can hold several scenes (each value it proved, then its result), so this is no
+// longer "one per beat"; wfBeatPhases below folds the scene phases back into the per-beat park
+// points the storyboard pairs against.
 function wfTimeline (m) {
   const dur = r2(2.5 + 1.5 * m)
   const A = 10; const B = 90
@@ -1147,20 +1199,26 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   // one canonical shape for BOTH call forms, so the layout pin is the same either way
   const pairsIn = asBeats ? beatLayouts : [{ before: beatLayouts || null, after: metaOrAfter || null }]
   const meta = (asBeats ? metaOrAfter : maybeMeta) || {}
+  const usable = L => (L && L.els.length ? L : null)
   const pairs = (pairsIn || []).map(p => ({
-    before: normLayout(p && p.before),
-    after: normLayout(p && p.after)
-  })).map(p => ({
-    before: p.before && p.before.els.length ? p.before : null,
-    after: p.after && p.after.els.length ? p.after : null
-  })).filter(p => p.before || p.after)
+    before: usable(normLayout(p && p.before)),
+    after: usable(normLayout(p && p.after)),
+    // …and the beat's ASSERTED VALUES, in the order it proved them (2026-08-29): each one is a
+    // scene of the beat, so the drawing ENACTS the When instead of only showing what it produced.
+    values: (p && Array.isArray(p.values) ? p.values : []).map(v => usable(normLayout(v))).filter(Boolean)
+  })).filter(p => p.before || p.after || p.values.length)
   if (!pairs.length) return null
   const src = pairs[0].before || pairs[0].after
   const S = LAYOUT_W / src.w
   const H = Math.round(clamp(LAYOUT_W * (src.h / src.w), 180, 900))
   const behavior = meta.behavior && wellFormed(meta.behavior) ? meta.behavior : null
-  const m = pairs.length                               // transitions drawn = beats harvested
-  const n = behavior ? behavior.beats.length : m       // scenes the storyboard will pair against
+  // SCENES PER BEAT: every value the beat proved, then its result — so a beat that proved the
+  // typed box and then the row it produced draws both, in that order. A beat that proved nothing
+  // beyond its own end is one scene, exactly as before.
+  const sizes = pairs.map(p => p.values.length + 1)
+  const m = sizes.reduce((a, b) => a + b, 0)           // transitions drawn = scenes after the Given
+  const nb = pairs.length                              // beats harvested
+  const n = behavior ? behavior.beats.length : nb      // beats the storyboard will pair against
   const hash = vizHash(behavior)                       // spec-store's staleness authority: the TEXT
   const lhash = layoutHash(pairsIn)                    // …and the geometry's own pin beside it
   // the scope class carries BOTH pins: two requirements with no behavior block would otherwise
@@ -1181,16 +1239,33 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
     const picked = marks.length ? pickFocus(marks, L.ring) : (L.ring ? [L.ring] : [])
     return picked.map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h }))
   }
-  const cardFor = i => {
+  // `done:false` is a scene MID-beat — the When has been performed and read, but the beat's Then
+  // has not happened yet, so the card says the action alone and wears no ✓. Anything else would
+  // claim a proof one scene before it exists.
+  const cardFor = (i, done) => {
     const bt = behavior && behavior.beats[Math.min(i, behavior.beats.length - 1)]
     if (!bt) return null
-    return { id: meta.id || '', title: meta.title || '', when: bt.when, then: bt.then, pass: !!meta.pass }
+    return {
+      id: meta.id || '', title: meta.title || '', when: bt.when,
+      then: done ? bt.then : '', pass: done ? !!meta.pass : false
+    }
   }
-  // the rect each cell's camera will be aimed at: the beat's RING, which is exactly what the
-  // reporter stores as that beat's focus rect. The given cell is aimed at the first beat's.
-  const camOf = L => (L && L.ring) ? L.ring : null
-  const frames = [{ L: pairs[0].before || pairs[0].after, ring: false, anchors: anchorsOf(pairs[0].after), card: null, cam: camOf(pairs[0].after) }]
-  pairs.forEach((p, i) => frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [], card: cardFor(i), cam: camOf(p.after) }))
+  // the rect each cell's camera will be aimed at: the UNION of the beat's rings (tools/evidence.mjs
+  // focusFromLayouts computes exactly this for the proof side), so every scene of a beat is inside
+  // the region the row frames — a camera on the result alone would crop the When off both cells.
+  const camOf = p => {
+    const rings = [...p.values.map(v => v && v.ring), p.after && p.after.ring].filter(Boolean)
+    if (!rings.length) return null
+    const x = Math.min(...rings.map(r => r.x)); const y = Math.min(...rings.map(r => r.y))
+    const rx = Math.max(...rings.map(r => r.x + r.w)); const by = Math.max(...rings.map(r => r.y + r.h))
+    return { x, y, w: rx - x, h: by - y }
+  }
+  const frames = [{ L: pairs[0].before || pairs[0].after, ring: false, anchors: anchorsOf(pairs[0].after), card: null, cam: camOf(pairs[0]) }]
+  pairs.forEach((p, i) => {
+    const cam = camOf(p)
+    for (const v of p.values) frames.push({ L: v, ring: true, anchors: [], card: cardFor(i, false), cam })
+    frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [], card: cardFor(i, true), cam })
+  })
   let css = ''
   const groups = frames.map((f, i) => {
     css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
@@ -1199,9 +1274,22 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   }).join('')
   const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
   const body = shell + groups
-  // one phase per SCENE. A beat past what the harvest measured parks on the last measured frame —
-  // the loop window is then zero-length and the board simply holds that still.
-  const phases = Array.from({ length: n + 1 }, (_, i) => t.phases[Math.min(i, m)])
+  // ONE PARK POINT PER BEAT — what the storyboard pairs its rows against, unchanged: the Given,
+  // then where each beat comes to rest (its LAST scene). A beat past what the harvest measured parks
+  // on the last measured frame — the loop window is then zero-length and the board holds that still.
+  const beatEnd = []                                   // frame index each harvested beat rests on
+  sizes.reduce((at, k) => { beatEnd.push(at + k); return at + k }, 0)
+  const phases = Array.from({ length: n + 1 }, (_, i) =>
+    t.phases[i === 0 ? 0 : (beatEnd[Math.min(i, nb) - 1] || m)])
+  // …and EVERY park point, grouped by beat (2026-08-29): where the beat opens, then each scene it
+  // proved. The board steps this drawing in lock-step with the proof loop beside it — frame j of
+  // that loop and park point j here are the same moment of the same beat — so a row plays as one
+  // thing. A beat the harvest never reached publishes its resting point twice: nothing to step.
+  const subphases = Array.from({ length: n }, (_, i) => {
+    if (i >= nb) return [phases[i], phases[i + 1]]
+    const start = beatEnd[i] - sizes[i]
+    return Array.from({ length: sizes[i] + 1 }, (_, j) => t.phases[start + j])
+  })
   const label = esc('wireframe schematic — the app’s own layout, drawn frame by frame: the given, then each beat' +
     (behavior
       ? '. given ' + behavior.given + '; ' +
@@ -1209,7 +1297,8 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
       : ''))
   const svg = `<svg class="${k}" viewBox="0 0 ${LAYOUT_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"` +
     ` data-viz-hash="${hash}" data-viz-archetype="ui-mirror" data-viz-kind="wireframe" data-viz-layout="${lhash}"` +
-    ` data-viz-kit="${MIRROR_KIT}" data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}">` +
+    ` data-viz-kit="${MIRROR_KIT}" data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}"` +
+    ` data-viz-subphases="${subphases.map(g => g.join(' ')).join('|')}">` +
     `<style>${css}</style>${body}</svg>`
   return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash }
 }
