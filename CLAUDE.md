@@ -176,17 +176,24 @@ change.
   always recorded — and so, since the D2 evidence harvest (Task 15, 2026-08-21), are each requirement's
   before/after EVIDENCE frames: `checkReq` photographs the page around every assertion body and the
   reporter folds the pair plus the proves-step's WINDOW (its span in the recording) into
-  `spec/<screen>/evidence/` and the index, from CLI runs too. The Focus media pane (`client.js`
-  buildMedia) renders the pair (stills · gif · video); gif mode is the FRAME-STEPPER (Task 13, the
-  human's pick over a webp): it plays before → each asserted-value frame → after with exact dots, a
-  mono n / N count and dot-click jump, paced by `tools/board/stepper.js` off the window + the
-  record frames' `t` (equal holds when an old harvest has no usable timing), and each pane carries
-  a session-scoped 0.25×–4× speed DROPDOWN (video maps it to playbackRate; the schematic to
-  --spd). The webp clip and Task 11's 1.5×/2× variants are RETIRED (2026-08-24) — once the stepper
-  played the frames nothing rendered them; a legacy entry's clip files are pruned at its next
-  fold. This moots **D1**, the human's 2026-08-22 keep-the-clip-across-CLI-folds decision — there
-  is no clip left to keep; the human's stepper choice of 2026-08-24 supersedes it, and carryClip
-  went with the cut. Frames are downscaled to 640px at the fold when ffmpeg is present (final review M4).
+  `spec/<screen>/evidence/` and the index, from CLI runs too. Since the per-beat storyline redesign
+  (33049fb/3fbbaec, 2026-08-28) the Focus reader is per-beat ROWS: each beat's proof is a
+  `proofCell` (`client.js`) that ALWAYS loops before → each asserted-value frame → after — no
+  stills·gif·video toolbar exists any more (board R20 asserts `.pcmodes` is absent), only a
+  per-cell zoom toggle (`.pczoom`) — paced by `tools/board/stepper.js` off the window + the record
+  frames' `t` (equal holds when an old harvest has no usable timing). `buildMedia` now renders only
+  the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
+  watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
+  pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the
+  schematic to --spd) — the old per-pane dropdowns are gone with the toolbar. *(This paragraph
+  previously described the pre-storyline pane — stills·gif·video toggle + per-pane dropdowns —
+  corrected 2026-08-29, rule 6.)* The webp clip and Task 11's 1.5×/2× variants are RETIRED
+  (2026-08-24) — once the stepper played the frames nothing rendered them; a legacy entry's clip
+  files are pruned at its next fold. This moots **D1**, the human's 2026-08-22
+  keep-the-clip-across-CLI-folds decision — there is no clip left to keep; the human's stepper
+  choice of 2026-08-24 supersedes it, and carryClip went with the cut. Frames are downscaled to
+  1280px at the fold when ffmpeg is present (640px originally, final review M4; raised to 1280 by
+  Task 16 #2, the human's 2026-08-24 sign-off — 640 was visibly soft in the wider panes).
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A

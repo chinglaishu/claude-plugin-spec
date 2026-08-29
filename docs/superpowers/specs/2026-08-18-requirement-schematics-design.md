@@ -117,3 +117,20 @@ Phases 0–1 are isolated (new files only) and safe anytime. Phase 2 is ~3 lines
   non-deterministic. Keep it the exception.
 - **Deterministic derivation needs a well-formed Given/When/Then.** Requirements without one get no
   derived schematic — a gentle nudge toward structuring behaviour, consistent with the behavior grid.
+
+## Amendments (recorded after the fact — rule 6)
+
+1. **Decision #2 ("abstract, never the real UI") — REVERSED 2026-08-28** by board **R18** ("The
+   schematic mirrors the real UI"): schematics became **UI-mirror wireframes** derived from the
+   page's own measured boxes (`checkReq` captures a `layout.json` skeleton; `viz.mjs
+   renderWireframe` draws from it — its own comment marks it "THE ONE EXCEPTION to 'abstract,
+   never the real UI'"). Reason: the human's storyline redesign made schematic and proof **twins**
+   — same camera, same callout (R19) — which only reads if the drawing shares the real page's
+   geometry. The dropped golden-diff stays dropped: the mirror is a *drawn skeleton from measured
+   boxes*, never a captured screenshot on the authored side.
+2. **Decision #4 ("its only drift axis is text↔picture") — EXTENDED 2026-08-28**: R18 adds a second
+   pin, the **layout hash** (`data-viz-layout`), so a schematic also goes honestly stale when the
+   measured UI moves, not only when the text does.
+3. *(This note added 2026-08-29: the reversals shipped in commits `33049fb`/`e33e49c` with the
+   human's storyline verdicts, but this spec was never amended at the time — the sibling beats spec
+   set the amendment convention; recorded here so the historical record stops contradicting canon.)*

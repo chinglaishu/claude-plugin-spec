@@ -185,3 +185,19 @@ path stays as the manual fallback.
   the view anatomy is board R13/R2 territory, so any requirement-text touch goes to the human
   first (rule 5).
 - Composer: none yet — it is a mockup.
+
+## Amendments to THIS spec (recorded after the fact — rule 6)
+
+- **D2's media table + toolbar and D3's two-pane Focus split — SUPERSEDED 2026-08-28** by the
+  per-beat **storyline** redesign (commits `0379f33`…`e33e49c`, the human's iterated verdicts):
+  the reader is now per-beat ROWS (schematic · behavior · proof in one row, R19 twins), per-beat
+  proof **always loops** with no stills·gif·video toolbar (board **R20** asserts the toolbar's
+  absence), and one reader-wide 0.25×–4× speed dropdown replaces per-pane controls. The
+  status-derived *defaults* of D2 survive only in `buildMedia`'s whole-requirement band
+  (failed-run filmstrip · committed video · Changed watermark). `spec/board/prd.md` R13/R14
+  self-corrected in place on 2026-08-28; this note brings the design record level with them
+  (added 2026-08-29).
+- **D4's "the board writes nothing" — AMENDED 2026-08-21/22** (recorded in R15 and CLAUDE.md at the
+  time): the deterministic compose emit is the **one sanctioned write**, hard-gated on every
+  chained node being a proven beat (`compose.mjs composable()`); the Claude path still only hands
+  off a prompt job.
