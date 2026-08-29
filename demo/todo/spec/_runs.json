@@ -1,5 +1,3007 @@
 [
   {
+    "at": "2026-08-29T15:11:53.610Z",
+    "screen": "todo",
+    "ms": 13651,
+    "total": 2,
+    "failed": 2,
+    "ok": false,
+    "runId": "1788016313610",
+    "shotsByTest": {
+      "Tsumiki — the full flow (R1–R8)": {
+        "shots": [],
+        "video": null,
+        "steps": [
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 44,
+            "d": 45
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 90,
+            "d": 9
+          },
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 100,
+            "d": 9
+          },
+          {
+            "label": "Check the “.task[data-id=\"k1\"]” is visible",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true,
+            "t": 113,
+            "d": 16
+          },
+          {
+            "label": "Add a task",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": false,
+            "t": 130,
+            "d": 406
+          },
+          {
+            "label": "▸ proving R1 — Adding a task puts it in the list",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 131,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 132,
+            "d": 29
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 162,
+            "d": 11
+          },
+          {
+            "label": "proves R1",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 174,
+            "d": 322
+          },
+          {
+            "label": "Count the “.addrow”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 175,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 177,
+            "d": 11
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 189,
+            "d": 203
+          },
+          {
+            "label": "Type into the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 396,
+            "d": 24
+          },
+          {
+            "label": "Count the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 422,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 425,
+            "d": 7
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 433,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 434,
+            "d": 4
+          },
+          {
+            "label": "The task typed into the Add box — got Water the plants · expected Water the plant",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 439,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 440,
+            "d": 45
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 486,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 493,
+            "d": 1
+          },
+          {
+            "label": "The task typed into the Add box — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": false,
+            "t": 495,
+            "d": 1
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 497,
+            "d": 33
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 531,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 536,
+            "d": 903
+          },
+          {
+            "label": "Rename it in place",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": false,
+            "t": 1440,
+            "d": 128
+          },
+          {
+            "label": "▸ proving R2 — A task can be edited in place, and the edit is stamped",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 1441,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1442,
+            "d": 57
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1500,
+            "d": 8
+          },
+          {
+            "label": "proves R2",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 1509,
+            "d": 10
+          },
+          {
+            "label": "Double-click the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": false,
+            "t": 1510,
+            "d": 9
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1520,
+            "d": 42
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1563,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 1568,
+            "d": 903
+          },
+          {
+            "label": "Open a task that has sub-tasks",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 2472,
+            "d": 265
+          },
+          {
+            "label": "▸ proving R3 — A task with sub-tasks is a container with a derived progress ring",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 2473,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2474,
+            "d": 58
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2534,
+            "d": 6
+          },
+          {
+            "label": "proves R3",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 2541,
+            "d": 146
+          },
+          {
+            "label": "Count the “.task[data-id=\"k1\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2542,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2544,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2548,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2549,
+            "d": 2
+          },
+          {
+            "label": "The container ring — one of three done — got 1/3 · expected 1/3",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2552,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2552,
+            "d": 46
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2599,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2605,
+            "d": 1
+          },
+          {
+            "label": "The container ring — one of three done — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2607,
+            "d": 0
+          },
+          {
+            "label": "a container has no checkbox of its own — only a ring locator('.task[data-id=\"k1\"]').locator('.trow > .cb')",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2607,
+            "d": 2
+          },
+          {
+            "label": "Type into the “#sub-k1”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2609,
+            "d": 3
+          },
+          {
+            "label": "Press \"Enter\" locator('#sub-k1')",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2613,
+            "d": 4
+          },
+          {
+            "label": "Count the “.task[data-id=\"k1\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2618,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2619,
+            "d": 8
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2627,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2629,
+            "d": 3
+          },
+          {
+            "label": "Adding a sub-task grew the ring by itself — one of four — got 1/4 · expected 1/4",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2632,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2633,
+            "d": 47
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2681,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2687,
+            "d": 0
+          },
+          {
+            "label": "Adding a sub-task grew the ring by itself — one of four — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2687,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2688,
+            "d": 42
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2731,
+            "d": 5
+          },
+          {
+            "label": "Finish the sub-tasks — the parent finishes itself",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 2737,
+            "d": 766
+          },
+          {
+            "label": "▸ proving R5 — \"To do\" counts remaining leaves only",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 2737,
+            "d": 1
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2738,
+            "d": 41
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2780,
+            "d": 4
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 2785,
+            "d": 221
+          },
+          {
+            "label": "Count the “#left”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2786,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2787,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2790,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2793,
+            "d": 2
+          },
+          {
+            "label": "To do — 6 leaves of work left — got 6 · expected 6",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2795,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2796,
+            "d": 51
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2849,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2854,
+            "d": 1
+          },
+          {
+            "label": "To do — 6 leaves of work left — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2856,
+            "d": 0
+          },
+          {
+            "label": "Click the “.srow[data-id=\"k1b\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2856,
+            "d": 41
+          },
+          {
+            "label": "Count the “#left”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2897,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2899,
+            "d": 39
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2938,
+            "d": 2
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3119,
+            "d": 141
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3369,
+            "d": 70
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3552,
+            "d": 90
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3718,
+            "d": 54
+          },
+          {
+            "label": "proves R6",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3835,
+            "d": 1014
+          },
+          {
+            "label": "proves R7",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 4973,
+            "d": 131
+          },
+          {
+            "label": "proves R8",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 5167,
+            "d": 87
+          },
+          {
+            "label": "… trimmed here — 157 more steps ran (the record keeps the first 80)",
+            "cat": "note",
+            "depth": 0,
+            "ok": true
+          }
+        ],
+        "log": "Tsumiki — the full flow (R1–R8)\n✗ failed · 7674ms\n\n--- error ---\nError: 3 step(s) failed:\n  ✗ step 1 \"Add a task\": The task typed into the Add box — the value read off the screen\n  ✗ step 2 \"Rename it in place\": locator.dblclick: Error: strict mode violation: locator('.task').filter({ has: locator('.ttl') }).locator('.ttl') resolved to 5 elements:\n  ✗ step 8 \"Reload — everything comes back\": The rename survived the reload — the value read off the screen\nError: 3 step(s) failed:\n  ✗ step 1 \"Add a task\": The task typed into the Add box — the value read off the screen\n  ✗ step 2 \"Rename it in place\": locator.dblclick: Error: strict mode violation: locator('.task').filter({ has: locator('.ttl') }).locator('.ttl') resolved to 5 elements:\n  ✗ step 8 \"Reload — everything comes back\": The rename survived the reload — the value read off the screen\n    at Object.windowed.extend._failAggregate.auto (/Users/laishuching/workspace/claude-plugin-spec/demo/todo/spec/_base.ts:162:11)",
+        "at": "2026-08-29T15:11:53.610Z",
+        "ms": 7674,
+        "ok": false,
+        "commit": "36afef6"
+      },
+      "Container roll-up — composed (R1–R4, R8)": {
+        "shots": [],
+        "video": null,
+        "steps": [
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 61,
+            "d": 19
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 80,
+            "d": 16
+          },
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 98,
+            "d": 7
+          },
+          {
+            "label": "Check the “.task[data-id=\"k1\"]” is visible",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true,
+            "t": 110,
+            "d": 13
+          },
+          {
+            "label": "type \"Water the plants\" and press Add — a new row at the bottom, stamped added just now",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": false,
+            "t": 124,
+            "d": 412
+          },
+          {
+            "label": "▸ proving R1 — Adding a task puts it in the list",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 126,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 127,
+            "d": 37
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 166,
+            "d": 10
+          },
+          {
+            "label": "proves R1",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 178,
+            "d": 322
+          },
+          {
+            "label": "Count the “.addrow”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 178,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 180,
+            "d": 12
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 192,
+            "d": 203
+          },
+          {
+            "label": "Type into the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 399,
+            "d": 23
+          },
+          {
+            "label": "Count the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 424,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 427,
+            "d": 8
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 436,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 439,
+            "d": 3
+          },
+          {
+            "label": "The task typed into the Add box — got Water the plants · expected Water the plant",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 443,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 444,
+            "d": 42
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 487,
+            "d": 6
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 494,
+            "d": 4
+          },
+          {
+            "label": "The task typed into the Add box — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": false,
+            "t": 498,
+            "d": 2
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 500,
+            "d": 30
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 531,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 536,
+            "d": 903
+          },
+          {
+            "label": "double-click the new task and retype it — the same row, stamp flipped to edited",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": false,
+            "t": 1439,
+            "d": 96
+          },
+          {
+            "label": "▸ proving R2 — A task can be edited in place, and the edit is stamped",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 1440,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1441,
+            "d": 41
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1483,
+            "d": 5
+          },
+          {
+            "label": "proves R2",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 1489,
+            "d": 7
+          },
+          {
+            "label": "Double-click the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": false,
+            "t": 1490,
+            "d": 6
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1497,
+            "d": 32
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 1530,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 1536,
+            "d": 901
+          },
+          {
+            "label": "add a sub-task to the container — the ring grows by itself, no checkbox on the parent",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 2438,
+            "d": 230
+          },
+          {
+            "label": "▸ proving R3 — A task with sub-tasks is a container with a derived progress ring",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 2439,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2441,
+            "d": 62
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2504,
+            "d": 7
+          },
+          {
+            "label": "proves R3",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 2512,
+            "d": 127
+          },
+          {
+            "label": "Count the “.task[data-id=\"k1\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2513,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2515,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2519,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2521,
+            "d": 3
+          },
+          {
+            "label": "The container ring — one of three done — got 1/3 · expected 1/3",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2524,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2525,
+            "d": 42
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2568,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2573,
+            "d": 2
+          },
+          {
+            "label": "The container ring — one of three done — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2575,
+            "d": 0
+          },
+          {
+            "label": "a container has no checkbox of its own — only a ring locator('.task[data-id=\"k1\"]').locator('.trow > .cb')",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2576,
+            "d": 1
+          },
+          {
+            "label": "Type into the “#sub-k1”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2578,
+            "d": 2
+          },
+          {
+            "label": "Press \"Enter\" locator('#sub-k1')",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2581,
+            "d": 4
+          },
+          {
+            "label": "Count the “.task[data-id=\"k1\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2585,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2587,
+            "d": 7
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2594,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2595,
+            "d": 3
+          },
+          {
+            "label": "Adding a sub-task grew the ring by itself — one of four — got 1/4 · expected 1/4",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2598,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2599,
+            "d": 32
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2632,
+            "d": 4
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2637,
+            "d": 1
+          },
+          {
+            "label": "Adding a sub-task grew the ring by itself — one of four — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2639,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2639,
+            "d": 23
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2663,
+            "d": 5
+          },
+          {
+            "label": "tick one sub-task — To do drops by exactly one",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 2668,
+            "d": 302
+          },
+          {
+            "label": "▸ proving R5 — \"To do\" counts remaining leaves only",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 2669,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2669,
+            "d": 25
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 2695,
+            "d": 4
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 2700,
+            "d": 206
+          },
+          {
+            "label": "Count the “#left”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2701,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2702,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2705,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2707,
+            "d": 3
+          },
+          {
+            "label": "To do — 6 leaves of work left — got 6 · expected 6",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2710,
+            "d": 0
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2710,
+            "d": 37
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2748,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2754,
+            "d": 1
+          },
+          {
+            "label": "To do — 6 leaves of work left — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 2756,
+            "d": 0
+          },
+          {
+            "label": "Click the “.srow[data-id=\"k1b\"]”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2756,
+            "d": 42
+          },
+          {
+            "label": "Count the “#left”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2799,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2800,
+            "d": 39
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2840,
+            "d": 0
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3019,
+            "d": 141
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 3270,
+            "d": 70
+          },
+          {
+            "label": "proves R8",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": false,
+            "t": 3454,
+            "d": 85
+          },
+          {
+            "label": "… trimmed here — 64 more steps ran (the record keeps the first 80)",
+            "cat": "note",
+            "depth": 0,
+            "ok": true
+          }
+        ],
+        "log": "Container roll-up — composed (R1–R4, R8)\n✗ failed · 5977ms\n\n--- error ---\nError: 3 step(s) failed:\n  ✗ step 1 \"type \"Water the plants\" and press Add — a new row at the bottom, stamped added just now\": The task typed into the Add box — the value read off the screen\n  ✗ step 2 \"double-click the new task and retype it — the same row, stamp flipped to edited\": locator.dblclick: Error: strict mode violation: locator('.task').filter({ has: locator('.ttl') }).locator('.ttl') resolved to 5 elements:\n  ✗ step 7 \"reload — the rename, the ring and a completed stamp come back\": The rename survived the reload — the value read off the screen\nError: 3 step(s) failed:\n  ✗ step 1 \"type \"Water the plants\" and press Add — a new row at the bottom, stamped added just now\": The task typed into the Add box — the value read off the screen\n  ✗ step 2 \"double-click the new task and retype it — the same row, stamp flipped to edited\": locator.dblclick: Error: strict mode violation: locator('.task').filter({ has: locator('.ttl') }).locator('.ttl') resolved to 5 elements:\n  ✗ step 7 \"reload — the rename, the ring and a completed stamp come back\": The rename survived the reload — the value read off the screen\n    at Object.windowed.extend._failAggregate.auto (/Users/laishuching/workspace/claude-plugin-spec/demo/todo/spec/_base.ts:162:11)",
+        "at": "2026-08-29T15:11:53.610Z",
+        "ms": 5977,
+        "ok": false,
+        "commit": "36afef6"
+      }
+    },
+    "archive": null
+  },
+  {
+    "at": "2026-08-29T09:30:46.054Z",
+    "screen": "todo",
+    "grep": null,
+    "ms": 151650,
+    "total": 2,
+    "failed": 0,
+    "ok": true,
+    "note": null,
+    "runId": "1787995846054",
+    "hasLog": true,
+    "shotsByTest": {
+      "Tsumiki — the full flow (R1–R8)": {
+        "shots": [
+          "spec/_runs/1787995846054/todo-test-Tsumiki-—-the-full-flow-R1–R8-/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1787995846054/todo-test-Tsumiki-—-the-full-flow-R1–R8-/video.webm",
+        "steps": [
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 101,
+            "d": 97
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 199,
+            "d": 8
+          },
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 212,
+            "d": 15
+          },
+          {
+            "label": "Check the “.task[data-id=\"k1\"]” is visible",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true,
+            "t": 237,
+            "d": 25
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 266,
+            "d": 19
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 287,
+            "d": 5
+          },
+          {
+            "label": "Add a task",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 294,
+            "d": 4596
+          },
+          {
+            "label": "▸ proving R1 — Adding a task puts it in the list",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 297,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 300,
+            "d": 4
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 307,
+            "d": 2
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 311,
+            "d": 55
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 381,
+            "d": 25
+          },
+          {
+            "label": "proves R1",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 407,
+            "d": 4396
+          },
+          {
+            "label": "Count the “.addrow”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 408,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 415,
+            "d": 23
+          },
+          {
+            "label": "Measure where the “.addrow” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 439,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 446,
+            "d": 9
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 456,
+            "d": 1401
+          },
+          {
+            "label": "Type into the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1860,
+            "d": 17
+          },
+          {
+            "label": "Click the “.go”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1878,
+            "d": 35
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1915,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1920,
+            "d": 20
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1942,
+            "d": 7
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1951,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1955,
+            "d": 0
+          },
+          {
+            "label": "The new task, read off the list — got Water the plants · expected Water the plants",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 1961,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1962,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1964,
+            "d": 1402
+          },
+          {
+            "label": "The new task, read off the list — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 3367,
+            "d": 1
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3370,
+            "d": 3
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3375,
+            "d": 4
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3380,
+            "d": 4
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3385,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3388,
+            "d": 0
+          },
+          {
+            "label": "Its activity stamp — got added just now · expected added just now",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 3393,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3396,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3400,
+            "d": 1401
+          },
+          {
+            "label": "Its activity stamp: on-screen \"added just now\" vs expected \"added just now\"",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 4803,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4805,
+            "d": 4
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4810,
+            "d": 64
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4876,
+            "d": 12
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 4892,
+            "d": 4
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 4897,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 4900,
+            "d": 3
+          },
+          {
+            "label": "Rename it in place",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 4903,
+            "d": 3053
+          },
+          {
+            "label": "▸ proving R2 — A task can be edited in place, and the edit is stamped",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 4903,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4904,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4906,
+            "d": 3
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4911,
+            "d": 40
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 4953,
+            "d": 9
+          },
+          {
+            "label": "proves R2",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 4963,
+            "d": 2914
+          },
+          {
+            "label": "Double-click the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 4964,
+            "d": 27
+          },
+          {
+            "label": "Type into the “.edit”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 4992,
+            "d": 5
+          },
+          {
+            "label": "Press \"Enter\" locator('.edit')",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 4998,
+            "d": 8
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5008,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5012,
+            "d": 7
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5020,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5027,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5032,
+            "d": 2
+          },
+          {
+            "label": "The renamed task, read back off its row — got Water the office plants · expected Water the office plants",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 5038,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5039,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5044,
+            "d": 1402
+          },
+          {
+            "label": "The renamed task, read back off its row — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 6447,
+            "d": 0
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6449,
+            "d": 3
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6454,
+            "d": 3
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6458,
+            "d": 3
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6461,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6464,
+            "d": 0
+          },
+          {
+            "label": "The stamp flipped to edited — got edited just now · expected edited just now",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 6467,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6468,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6472,
+            "d": 1402
+          },
+          {
+            "label": "The stamp flipped to edited: on-screen \"edited just now\" vs expected \"edited just now\"",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 7876,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 7880,
+            "d": 2
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 7884,
+            "d": 50
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 7943,
+            "d": 11
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 7956,
+            "d": 4
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 7961,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 7963,
+            "d": 1
+          },
+          {
+            "label": "Open a task that has sub-tasks",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 7964,
+            "d": 3112
+          },
+          {
+            "label": "▸ proving R3 — A task with sub-tasks is a container with a derived progress ring",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 7965,
+            "d": 0
+          },
+          {
+            "label": "proves R3",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 8059,
+            "d": 2935
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 11143,
+            "d": 3035
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 14350,
+            "d": 1546
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 16056,
+            "d": 1488
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 17770,
+            "d": 1550
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 19434,
+            "d": 1428
+          },
+          {
+            "label": "proves R6",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 21013,
+            "d": 11510
+          },
+          {
+            "label": "proves R7",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 32690,
+            "d": 3085
+          },
+          {
+            "label": "proves R8",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 35959,
+            "d": 4545
+          },
+          {
+            "label": "… trimmed here — 279 more steps ran (the record keeps the first 80)",
+            "cat": "note",
+            "depth": 0,
+            "ok": true
+          }
+        ],
+        "log": "Tsumiki — the full flow (R1–R8)\n✓ passed · 41318ms",
+        "at": "2026-08-29T09:31:53.639Z",
+        "ms": 41318,
+        "ok": true,
+        "commit": "8962dea",
+        "frames": [
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/0.png",
+            "ok": true,
+            "cap": "The new task, read off the list — got Water the plants · expected Water the plants",
+            "req": "R1",
+            "t": 2081
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/1.png",
+            "ok": true,
+            "cap": "Its activity stamp — got added just now · expected added just now",
+            "req": "R1",
+            "t": 3513
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/2.png",
+            "ok": true,
+            "cap": "The renamed task, read back off its row — got Water the office plants · expected Water the office plants",
+            "req": "R2",
+            "t": 5158
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/3.png",
+            "ok": true,
+            "cap": "The stamp flipped to edited — got edited just now · expected edited just now",
+            "req": "R2",
+            "t": 6587
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/4.png",
+            "ok": true,
+            "cap": "",
+            "req": "R3",
+            "t": 9559
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/5.png",
+            "ok": true,
+            "cap": "",
+            "req": "R5",
+            "t": 12643
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/6.png",
+            "ok": true,
+            "cap": "",
+            "req": "R4",
+            "t": 15278
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/7.png",
+            "ok": true,
+            "cap": "",
+            "req": "R5",
+            "t": 16949
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/8.png",
+            "ok": true,
+            "cap": "",
+            "req": "R4",
+            "t": 18700
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/9.png",
+            "ok": true,
+            "cap": "",
+            "req": "R5",
+            "t": 20291
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/10.png",
+            "ok": true,
+            "cap": "",
+            "req": "R6",
+            "t": 22513
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Tsumiki-the-full-flow-R1-R8/11.png",
+            "ok": true,
+            "cap": "",
+            "req": "R7",
+            "t": 34190
+          }
+        ]
+      },
+      "Container roll-up — composed (R1–R4, R8)": {
+        "shots": [
+          "spec/_runs/1787995846054/todo-test-Container-roll-up-—-composed-R1–R4-R8-/test-finished-1.png"
+        ],
+        "video": "spec/_runs/1787995846054/todo-test-Container-roll-up-—-composed-R1–R4-R8-/video.webm",
+        "steps": [
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 129,
+            "d": 69
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 199,
+            "d": 6
+          },
+          {
+            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 206,
+            "d": 59
+          },
+          {
+            "label": "Check the “.task[data-id=\"k1\"]” is visible",
+            "cat": "expect",
+            "depth": 0,
+            "ok": true,
+            "t": 267,
+            "d": 31
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 299,
+            "d": 41
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 343,
+            "d": 21
+          },
+          {
+            "label": "type \"Water the plants\" and press Add — a new row at the bottom, stamped added just now",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 364,
+            "d": 4768
+          },
+          {
+            "label": "▸ proving R1 — Adding a task puts it in the list",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 364,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 370,
+            "d": 8
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 379,
+            "d": 4
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 385,
+            "d": 80
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 506,
+            "d": 15
+          },
+          {
+            "label": "proves R1",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 526,
+            "d": 4515
+          },
+          {
+            "label": "Count the “.addrow”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 528,
+            "d": 5
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 534,
+            "d": 30
+          },
+          {
+            "label": "Measure where the “.addrow” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 565,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 572,
+            "d": 9
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 583,
+            "d": 1402
+          },
+          {
+            "label": "Type into the “#nt”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1987,
+            "d": 10
+          },
+          {
+            "label": "Click the “.go”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 1998,
+            "d": 46
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2045,
+            "d": 1
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2047,
+            "d": 28
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2076,
+            "d": 22
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2106,
+            "d": 8
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2115,
+            "d": 1
+          },
+          {
+            "label": "The new task, read off the list — got Water the plants · expected Water the plants",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 2122,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2123,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 2127,
+            "d": 1403
+          },
+          {
+            "label": "The new task, read off the list — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 3531,
+            "d": 1
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3535,
+            "d": 12
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3553,
+            "d": 31
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3585,
+            "d": 8
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3595,
+            "d": 8
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3613,
+            "d": 4
+          },
+          {
+            "label": "Its activity stamp — got added just now · expected added just now",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 3628,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3629,
+            "d": 5
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 3636,
+            "d": 1402
+          },
+          {
+            "label": "Its activity stamp: on-screen \"added just now\" vs expected \"added just now\"",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 5041,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5042,
+            "d": 5
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5049,
+            "d": 67
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5118,
+            "d": 13
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 5134,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 5141,
+            "d": 7
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 5151,
+            "d": 6
+          },
+          {
+            "label": "double-click the new task and retype it — the same row, stamp flipped to edited",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 5161,
+            "d": 3208
+          },
+          {
+            "label": "▸ proving R2 — A task can be edited in place, and the edit is stamped",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 5175,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5181,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5186,
+            "d": 3
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5191,
+            "d": 47
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 5241,
+            "d": 12
+          },
+          {
+            "label": "proves R2",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 5254,
+            "d": 2988
+          },
+          {
+            "label": "Double-click the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5255,
+            "d": 28
+          },
+          {
+            "label": "Type into the “.edit”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5284,
+            "d": 10
+          },
+          {
+            "label": "Press \"Enter\" locator('.edit')",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5298,
+            "d": 28
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5327,
+            "d": 4
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5333,
+            "d": 15
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5351,
+            "d": 8
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5360,
+            "d": 3
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5368,
+            "d": 17
+          },
+          {
+            "label": "The renamed task, read back off its row — got Water the office plants · expected Water the office plants",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 5399,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5400,
+            "d": 6
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 5407,
+            "d": 1400
+          },
+          {
+            "label": "The renamed task, read back off its row — the value read off the screen",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 6809,
+            "d": 0
+          },
+          {
+            "label": "Count the “.task”",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6811,
+            "d": 2
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6815,
+            "d": 6
+          },
+          {
+            "label": "Measure where the “.task” is",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6823,
+            "d": 3
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6827,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6830,
+            "d": 1
+          },
+          {
+            "label": "The stamp flipped to edited — got edited just now · expected edited just now",
+            "cat": "info",
+            "depth": 2,
+            "ok": true,
+            "t": 6834,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6835,
+            "d": 2
+          },
+          {
+            "label": "Pause briefly",
+            "cat": "pw:api",
+            "depth": 2,
+            "ok": true,
+            "t": 6839,
+            "d": 1401
+          },
+          {
+            "label": "The stamp flipped to edited: on-screen \"edited just now\" vs expected \"edited just now\"",
+            "cat": "expect",
+            "depth": 2,
+            "ok": true,
+            "t": 8242,
+            "d": 0
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 8243,
+            "d": 4
+          },
+          {
+            "label": "Take a screenshot",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 8250,
+            "d": 69
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 1,
+            "ok": true,
+            "t": 8323,
+            "d": 43
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 8385,
+            "d": 38
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 8462,
+            "d": 6
+          },
+          {
+            "label": "Run a script on the page",
+            "cat": "pw:api",
+            "depth": 0,
+            "ok": true,
+            "t": 8507,
+            "d": 3
+          },
+          {
+            "label": "add a sub-task to the container — the ring grows by itself, no checkbox on the parent",
+            "cat": "test.step",
+            "depth": 0,
+            "ok": true,
+            "t": 8512,
+            "d": 3208
+          },
+          {
+            "label": "▸ proving R3 — A task with sub-tasks is a container with a derived progress ring",
+            "cat": "info",
+            "depth": 1,
+            "ok": true,
+            "t": 8513,
+            "d": 0
+          },
+          {
+            "label": "proves R3",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 8618,
+            "d": 3001
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 11858,
+            "d": 3017
+          },
+          {
+            "label": "proves R4",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 15011,
+            "d": 1540
+          },
+          {
+            "label": "proves R5",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 16718,
+            "d": 1434
+          },
+          {
+            "label": "proves R8",
+            "cat": "test.step",
+            "depth": 1,
+            "ok": true,
+            "t": 18418,
+            "d": 4474
+          },
+          {
+            "label": "… trimmed here — 153 more steps ran (the record keeps the first 80)",
+            "cat": "note",
+            "depth": 0,
+            "ok": true
+          }
+        ],
+        "log": "Container roll-up — composed (R1–R4, R8)\n✓ passed · 23540ms",
+        "at": "2026-08-29T09:31:53.639Z",
+        "ms": 23540,
+        "ok": true,
+        "commit": "8962dea",
+        "frames": [
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/0.png",
+            "ok": true,
+            "cap": "The new task, read off the list — got Water the plants · expected Water the plants",
+            "req": "R1",
+            "t": 2242
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/1.png",
+            "ok": true,
+            "cap": "Its activity stamp — got added just now · expected added just now",
+            "req": "R1",
+            "t": 3748
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/2.png",
+            "ok": true,
+            "cap": "The renamed task, read back off its row — got Water the office plants · expected Water the office plants",
+            "req": "R2",
+            "t": 5519
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/3.png",
+            "ok": true,
+            "cap": "The stamp flipped to edited — got edited just now · expected edited just now",
+            "req": "R2",
+            "t": 6954
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/4.png",
+            "ok": true,
+            "cap": "",
+            "req": "R3",
+            "t": 10118
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/5.png",
+            "ok": true,
+            "cap": "",
+            "req": "R5",
+            "t": 13358
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/6.png",
+            "ok": true,
+            "cap": "",
+            "req": "R4",
+            "t": 15935
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/7.png",
+            "ok": true,
+            "cap": "",
+            "req": "R5",
+            "t": 17578
+          },
+          {
+            "img": "spec/_runs/1787995846054/frames/Container-roll-up-composed-R1-R4-R8/8.png",
+            "ok": true,
+            "cap": "",
+            "req": "R8",
+            "t": 19918
+          }
+        ]
+      }
+    },
+    "archive": null
+  },
+  {
     "at": "2026-08-28T03:22:58.037Z",
     "screen": "todo",
     "grep": null,
@@ -19759,697 +22761,6 @@
         "ms": 1378,
         "ok": true,
         "commit": "23e2c5b"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-08-22T14:33:15.440Z",
-    "screen": "todo",
-    "ms": 3096,
-    "total": 1,
-    "failed": 0,
-    "ok": true,
-    "runId": "1787409195440",
-    "shotsByTest": {
-      "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)": {
-        "shots": [],
-        "video": null,
-        "steps": [
-          {
-            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 42,
-            "d": 73
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 116,
-            "d": 12
-          },
-          {
-            "label": "Open /todo.html?now=2026-08-11T09%3A00%3A00.000Z",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 129,
-            "d": 10
-          },
-          {
-            "label": "Check the “.task[data-id=\"k1\"]” is visible",
-            "cat": "expect",
-            "depth": 0,
-            "ok": true,
-            "t": 143,
-            "d": 14
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 158,
-            "d": 2
-          },
-          {
-            "label": "Add a task",
-            "cat": "test.step",
-            "depth": 0,
-            "ok": true,
-            "t": 161,
-            "d": 510
-          },
-          {
-            "label": "▸ proving R1 — Adding a task puts it in the list",
-            "cat": "info",
-            "depth": 1,
-            "ok": true,
-            "t": 161,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 162,
-            "d": 2
-          },
-          {
-            "label": "Take a screenshot",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 165,
-            "d": 40
-          },
-          {
-            "label": "proves R1",
-            "cat": "test.step",
-            "depth": 1,
-            "ok": true,
-            "t": 206,
-            "d": 388
-          },
-          {
-            "label": "Count the “.addrow”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 206,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 208,
-            "d": 14
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 222,
-            "d": 202
-          },
-          {
-            "label": "Type into the “#nt”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 429,
-            "d": 50
-          },
-          {
-            "label": "Click the “.go”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 481,
-            "d": 47
-          },
-          {
-            "label": "Count the “.task”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 530,
-            "d": 34
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 565,
-            "d": 3
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 569,
-            "d": 2
-          },
-          {
-            "label": "The new task, read off the list — got Water the plants · expected Water the plants",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 573,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 574,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 575,
-            "d": 1
-          },
-          {
-            "label": "The new task, read off the list — the value read off the screen",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 576,
-            "d": 0
-          },
-          {
-            "label": "Count the “.task”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 577,
-            "d": 4
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 581,
-            "d": 3
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 585,
-            "d": 1
-          },
-          {
-            "label": "Its activity stamp — got added just now · expected added just now",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 589,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 590,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 592,
-            "d": 2
-          },
-          {
-            "label": "Its activity stamp: on-screen \"added just now\" vs expected \"added just now\"",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 594,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 595,
-            "d": 1
-          },
-          {
-            "label": "Take a screenshot",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 596,
-            "d": 75
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 672,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 673,
-            "d": 1
-          },
-          {
-            "label": "Rename it in place",
-            "cat": "test.step",
-            "depth": 0,
-            "ok": true,
-            "t": 674,
-            "d": 228
-          },
-          {
-            "label": "▸ proving R2 — A task can be edited in place, and the edit is stamped",
-            "cat": "info",
-            "depth": 1,
-            "ok": true,
-            "t": 675,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 675,
-            "d": 1
-          },
-          {
-            "label": "Take a screenshot",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 676,
-            "d": 78
-          },
-          {
-            "label": "proves R2",
-            "cat": "test.step",
-            "depth": 1,
-            "ok": true,
-            "t": 755,
-            "d": 72
-          },
-          {
-            "label": "Double-click the “.task”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 756,
-            "d": 29
-          },
-          {
-            "label": "Type into the “.edit”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 786,
-            "d": 4
-          },
-          {
-            "label": "Press \"Enter\" locator('.edit')",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 791,
-            "d": 3
-          },
-          {
-            "label": "Count the “.task”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 795,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 797,
-            "d": 3
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 800,
-            "d": 2
-          },
-          {
-            "label": "The renamed task, read back off its row — got Water the office plants · expected Water the office plants",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 803,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 804,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 805,
-            "d": 2
-          },
-          {
-            "label": "The renamed task, read back off its row — the value read off the screen",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 807,
-            "d": 0
-          },
-          {
-            "label": "Count the “.task”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 808,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 809,
-            "d": 7
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 818,
-            "d": 1
-          },
-          {
-            "label": "The stamp flipped to edited — got edited just now · expected edited just now",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 822,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 823,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 825,
-            "d": 1
-          },
-          {
-            "label": "The stamp flipped to edited: on-screen \"edited just now\" vs expected \"edited just now\"",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 827,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 827,
-            "d": 2
-          },
-          {
-            "label": "Take a screenshot",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 829,
-            "d": 73
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 903,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 0,
-            "ok": true,
-            "t": 904,
-            "d": 1
-          },
-          {
-            "label": "Open a task that has sub-tasks",
-            "cat": "test.step",
-            "depth": 0,
-            "ok": true,
-            "t": 905,
-            "d": 97
-          },
-          {
-            "label": "▸ proving R3 — A task with sub-tasks is a container with a derived progress ring",
-            "cat": "info",
-            "depth": 1,
-            "ok": true,
-            "t": 905,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 906,
-            "d": 1
-          },
-          {
-            "label": "Take a screenshot",
-            "cat": "pw:api",
-            "depth": 1,
-            "ok": true,
-            "t": 907,
-            "d": 29
-          },
-          {
-            "label": "proves R3",
-            "cat": "test.step",
-            "depth": 1,
-            "ok": true,
-            "t": 936,
-            "d": 36
-          },
-          {
-            "label": "Count the “.task[data-id=\"k1\"]”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 937,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 938,
-            "d": 2
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 941,
-            "d": 2
-          },
-          {
-            "label": "The container ring — one of three done — got 1/3 · expected 1/3",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 944,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 945,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 946,
-            "d": 2
-          },
-          {
-            "label": "The container ring — one of three done — the value read off the screen",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 948,
-            "d": 0
-          },
-          {
-            "label": "a container has no checkbox of its own — only a ring locator('.task[data-id=\"k1\"]').locator('.trow > .cb')",
-            "cat": "expect",
-            "depth": 2,
-            "ok": true,
-            "t": 949,
-            "d": 1
-          },
-          {
-            "label": "Type into the “#sub-k1”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 951,
-            "d": 2
-          },
-          {
-            "label": "Press \"Enter\" locator('#sub-k1')",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 954,
-            "d": 3
-          },
-          {
-            "label": "Count the “.task[data-id=\"k1\"]”",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 958,
-            "d": 1
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 959,
-            "d": 5
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 965,
-            "d": 1
-          },
-          {
-            "label": "Adding a sub-task grew the ring by itself — one of four — got 1/4 · expected 1/4",
-            "cat": "info",
-            "depth": 2,
-            "ok": true,
-            "t": 968,
-            "d": 0
-          },
-          {
-            "label": "Run a script on the page",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 968,
-            "d": 1
-          },
-          {
-            "label": "Pause briefly",
-            "cat": "pw:api",
-            "depth": 2,
-            "ok": true,
-            "t": 970,
-            "d": 1
-          },
-          {
-            "label": "… trimmed here — 197 more steps ran (the record keeps the first 80)",
-            "cat": "note",
-            "depth": 0,
-            "ok": true
-          }
-        ],
-        "log": "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)\n✓ passed · 3096ms",
-        "at": "2026-08-22T14:33:15.440Z",
-        "ms": 3096,
-        "ok": true,
-        "commit": "c361fb7"
-      }
-    },
-    "archive": null
-  },
-  {
-    "at": "2026-08-10T17:55:25.874Z",
-    "screen": "todo",
-    "ms": 0,
-    "total": 1,
-    "failed": 1,
-    "ok": false,
-    "runId": "1786384525874",
-    "shotsByTest": {
-      "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)": {
-        "shots": [],
-        "video": null,
-        "steps": [],
-        "log": "Tsumiki — add, edit, sub-tasks that roll up, a counter that counts leaves, filters, dates, and a reload (R1–R8)\n✗ failed · 0ms",
-        "at": "2026-08-10T17:55:25.874Z",
-        "ms": 0,
-        "ok": false,
-        "commit": "2317bcd"
       }
     },
     "archive": null

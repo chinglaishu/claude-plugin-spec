@@ -54,6 +54,12 @@ export const BEATS = [
 export async function addTask (page: Page, state: FlowState): Promise<void> {
   await reveal(page.locator('.addrow'))
   await page.locator('#nt').fill('Water the plants')
+  // THE WHEN, PROVEN AND PHOTOGRAPHED (2026-08-29, the human): the requirement says you TYPE "Water
+  // the plants" and press Add, and until this assertion existed that half of the beat was invisible
+  // — the box is empty in the beat's before frame and cleared again by its after one, so neither the
+  // proof nor the drawing beside it ever showed the action. proveVisible reads a control's own value
+  // now, so the typed string is asserted, ringed, held and harvested as its own scene.
+  await proveVisible(page.locator('#nt'), 'Water the plants', 'The task typed into the Add box')
   await page.locator('.go').click()
   const row = rowByTitle(page, 'Water the plants')
   await proveVisible(row.locator('.ttl'), 'Water the plants', 'The new task, read off the list')
