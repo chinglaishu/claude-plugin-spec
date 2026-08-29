@@ -1,7 +1,8 @@
 // The recording must POINT at the value it is proving. On a dense table the narration topbar names a
 // number ("Repair & Maintenance growth — got 4.00%") but a viewer cannot tell WHICH cell it means. So
 // reveal()/proveVisible() paint a focus overlay into the page — a full-width dim band that lights only
-// the asserted row, and a ring on the exact cell (ink normally, bengara on a failed check) — burned
+// the asserted row, and a ring on the exact cell (indigo normally, bengara on a failed check — since
+// 33049fb the ring wears the schematic callout's own indigo so drawn and real share ONE geometry, R19) — burned
 // into the video and shown in the live watch. This test drives the REAL helpers and fails if the
 // overlay stops appearing, stops tracking the cell, stops going red on failure, or starts appearing
 // when nobody is recording. Headless; the ring geometry is identical headed or not.
@@ -27,7 +28,7 @@ function run (env, grep) {
     writeFileSync(join(dir, 'focus.spec.ts'),
       `import { test, expect, proveVisible } from ${JSON.stringify(BASE)}\n` +
       `const TABLE = ${JSON.stringify(TABLE)}\n` +
-      `test('ring tracks the asserted cell in ink', async ({ page }) => {\n` +
+      `test('ring tracks the asserted cell in indigo', async ({ page }) => {\n` +
       `  await page.goto(TABLE)\n` +
       `  const cell = page.locator('#t')\n` +
       `  await proveVisible(cell, '4.00%', 'R&M growth')\n` +
@@ -35,14 +36,14 @@ function run (env, grep) {
       `  await expect(ring).toBeVisible()\n` +
       `  const rb = await ring.boundingBox(); const cb = await cell.boundingBox()\n` +
       `  expect(Math.abs(rb.x - cb.x) < 8 && Math.abs(rb.y - cb.y) < 8, 'ring should sit on the cell').toBe(true)\n` +
-      `  await expect(ring).toHaveCSS('border-top-color', 'rgb(28, 27, 24)')\n` +   // ink, not red, on a pass
+      `  await expect(ring).toHaveCSS('border-top-color', 'rgb(47, 74, 99)')\n` +   // indigo (#2f4a63), not red, on a pass
       `})\n` +
       `test('ring goes bengara when the check fails', async ({ page }) => {\n` +
       `  await page.goto(TABLE)\n` +
       `  let threw = false\n` +
       `  try { await proveVisible(page.locator('#t'), '9.99%', 'R&M growth') } catch { threw = true }\n` +
       `  expect(threw, 'a wrong value must fail the check').toBe(true)\n` +
-      `  await expect(page.locator('#__specboard-focus .sb-ring')).toHaveCSS('border-top-color', 'rgb(122, 47, 29)')\n` +  // bengara
+      `  await expect(page.locator('#__specboard-focus .sb-ring')).toHaveCSS('border-top-color', 'rgb(141, 74, 56)')\n` +  // bengara (#8d4a38, the token)
       `})\n` +
       `test('no overlay when nobody is recording', async ({ page }) => {\n` +
       `  await page.goto(TABLE)\n` +
