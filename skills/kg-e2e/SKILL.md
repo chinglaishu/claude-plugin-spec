@@ -100,10 +100,22 @@ way. Read it before writing your first one.
    walking across **each** item (year by year, row by row). A summary or an average is **not** proof of
    the per-item values; showing only the endpoints is not showing the series. `reveal(locator)` centres
    a cell and holds; `proveVisible(locator, expected, label)` does the whole thing — centre, read the
-   on-screen text, assert it equals `expected`, announce it, and hold. Prefer those over asserting a
+   on-screen value (an input's or textarea's own `value`, anything else's rendered text), assert it
+   equals `expected`, announce it, and hold. Prefer those over asserting a
    value you only read from the API. **The finishing check for the whole test: with the sound off, can
    you SEE every number the test claims? If not, it is not done** — this is the single most common way a
    green test still fails its one job (a recording a human can trust).
+
+   **Prove the WHEN, not only the Then** *(2026-08-29 — the human, on the Tsumiki demo's R1)*. A beat's
+   proof on the board plays `before → each value you proved → after`, and **`proveVisible` is what takes
+   those middle frames**: every value it rings is photographed and measured where it stands, and the
+   requirement's schematic beside it draws the same scenes from the same skeletons. So a beat that asserts
+   only its outcome has an **invisible action** — the box you typed into is empty in the before frame and
+   cleared again by the after one, and the When the requirement names is nowhere in the row, on either
+   side. Assert the action's own visible value first — `await proveVisible(page.locator('#new-task'),
+   'Water the plants', 'The task typed into the box')` **before** the click that submits it — and the
+   typed string is ringed, held, photographed and drawn. The value you PROVE should be the value a
+   reader SEES happening, not only the one it left behind.
 6. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
    (`fontSize >= 19` because the title token happens to be 19px today) is really asserting the
    design system's *current arithmetic*, and it breaks the day the system rescales while the

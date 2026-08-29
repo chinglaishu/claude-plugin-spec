@@ -181,7 +181,19 @@ change.
   `proofCell` (`client.js`) that ALWAYS loops before → each asserted-value frame → after — no
   stills·gif·video toolbar exists any more (board R20 asserts `.pcmodes` is absent), only a
   per-cell zoom toggle (`.pczoom`) — paced by `tools/board/stepper.js` off the window + the record
-  frames' `t` (equal holds when an old harvest has no usable timing). `buildMedia` now renders only
+  frames' `t` (equal holds when an old harvest has no usable timing). The **asserted-value frames
+  are real since 2026-08-29** (the human: the When must be visible in the proof, not only the Then —
+  a box carrying what was typed is empty in the before frame and cleared again by the after one):
+  every `proveVisible` inside a `checkReq` photographs the page with its ring on, files the frame
+  and its layout skeleton as `evidence|layout <id>#<beat> v<k>`, and stamps `at` — its offset from
+  the beat's `proves` step — into the skeleton, which the reporter turns into the frame's anchor
+  inside the beat's window. `proveVisible` reads an input's/textarea's/select's **value** (rendered
+  text for everything else), which is what makes that assertion writable at all. A beat's focus rect
+  is now the **union** of its rings (`focusFromLayouts`), so one camera (board R19) frames the whole
+  beat instead of cropping its earlier scenes away. The drawing draws the same scenes from the same
+  skeletons and publishes their park points as `data-viz-subphases`, and the row's proof loop
+  **steps the drawing** (`_onFrame` → `frameCell._drive`, marked `data-driven`), so both halves of a
+  row are always on the same moment of the same beat. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
   pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the
