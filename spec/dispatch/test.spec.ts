@@ -58,6 +58,19 @@ const toGrid = async (page: any, screen: string) => {
 const startRun = (request: any, data: any = {}) =>
   request.post('/api/run', { data: { ...data, parent: SELF_RUN } })
 
+// HOW LONG A NESTED BOARD RUN IS ALLOWED TO TAKE. The slowest thing this file ever waits on is a
+// whole nested run of spec/board/test.spec.ts, and that wait GROWS WITH THE BOARD FILE — it has been
+// raised twice already (2026-08-21 for R13/R16, 2026-08-22 when the watched nested run measured
+// 147 s). Raised again 2026-08-29: with board carrying R18–R21 and the run RECORDED (every nested
+// case records video and screenshots), nested runs measured 1.6–2.8 MINUTES across this file, which
+// put the old 150 s bound below the median and failed the harvest on a run that was merely slow,
+// not wrong — exactly the "green alone, red in the suite" trap playwright.board.ts warns about.
+// This number is PATIENCE, never an assertion: nothing about what these tests prove changes with it,
+// and a run that never finishes still fails, just later. The enclosing test budgets below are sized
+// off it, so raising one without the other only moves where the timeout lands.
+const NEST_WAIT_MS = 300_000
+const NEST_TEST_MS = 420_000
+
 const idle = async (request: any) => {
   // poll the server's own view of what is running rather than reading a chip — the chip lags a
   // frame behind the SSE 'done', and "is a job running" is the thing R4 and R5 actually turn on.
@@ -66,7 +79,7 @@ const idle = async (request: any) => {
   await expect.poll(async () => {
     const j = await request.get('/api/runs').then((r: any) => r.json())
     return j.running === null || (SELF_RUN && j.runningId === SELF_RUN) ? null : j.running
-  }, { timeout: 150000 }).toBeNull()
+  }, { timeout: NEST_WAIT_MS }).toBeNull()
 }
 
 test.afterEach(async ({ request }) => {
@@ -86,7 +99,7 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
   // — a whole nested board-file run records video and now takes over a minute, so the default 60s
   // ceiling cut the run mid-flight and the orphaned job cascaded into the tests after it. The
   // assertions are unchanged; only the wall clock follows the suite's real size.
-  test.setTimeout(300_000)   // raised 2026-08-22 (Task 6 fix round 1): the WATCHED nested board run measured 147 s
+  test.setTimeout(NEST_TEST_MS)   // 2026-08-22: the WATCHED nested board run measured 147 s; sized off NEST_WAIT_MS since 2026-08-29
   // Task 7 (2026-08-22): the three assertion bodies moved VERBATIM into ./steps.ts as composable
   // beats (the beat-function convention) and are now TAGGED — R1, R2 and R3 were asserted here all
   // along but never wore a checkReq, so they read Untested on the board they prove. R3 gained the
@@ -107,7 +120,7 @@ test('R1/R2 — the panel opens on the click and streams the job while it runs',
 })
 
 test('R4 — a person\'s second run takes over the running one: accepted, not refused', async ({ request }) => {
-  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
+  test.setTimeout(NEST_TEST_MS)   // sized off idle()'s bound (NEST_WAIT_MS) — the 60 s default could not even wait it out (final review m8)
   await idle(request)
   const first = await startRun(request, { screen: 'board' })
   expect(first.ok(), 'the first run is accepted').toBeTruthy()
@@ -170,7 +183,7 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
 })
 
 test('R4 — a run may nest inside the run driving it, and nesting is bounded', async ({ request }) => {
-  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
+  test.setTimeout(NEST_TEST_MS)   // sized off idle()'s bound (NEST_WAIT_MS) — the 60 s default could not even wait it out (final review m8)
   // The board puts every run it starts in the one job slot. This spec proves the run panel BY
   // starting runs, so without nesting the dispatch row is the one row that can never be run from
   // the board: it would wait for the slot its own run is holding. That is the blank browser window.
@@ -211,7 +224,7 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
 })
 
 test('running one screen leaves every other screen\'s E2E result standing', async ({ page, request }) => {
-  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
+  test.setTimeout(NEST_TEST_MS)   // a whole nested board run — see NEST_WAIT_MS and the R1/R2 note
   // The board offers a per-screen Run on every row. A run writes a report covering only the
   // screens that ran, and the board reads a persistent index it is folded INTO — so a board-only
   // run must update board and leave conflicts, init and the rest exactly as they were. Replacing
@@ -230,7 +243,7 @@ test('running one screen leaves every other screen\'s E2E result standing', asyn
 })
 
 test('R6/R8 — a run saves its whole log, and records every test case on its own', async ({ request }) => {
-  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
+  test.setTimeout(NEST_TEST_MS)   // a whole nested board run — see NEST_WAIT_MS and the R1/R2 note
   await idle(request)
   const r = await startRun(request, { screen: 'board' })
   expect(r.ok()).toBeTruthy()
@@ -285,7 +298,7 @@ test('R8 — running ONE case leaves every other case\'s steps and log standing'
   // The record must FOLD across runs, never be read out of one run. A run filtered to a single test
   // records only that test — so taking every case's record from "the newest run" strips the steps
   // and the log off every case that run did not include, which is every other case on the screen.
-  test.setTimeout(240_000)   // a whole nested board run — see the R1/R2 note
+  test.setTimeout(NEST_TEST_MS)   // a whole nested board run — see NEST_WAIT_MS and the R1/R2 note
   await idle(request)
   const full = await startRun(request, { screen: 'board' })
   expect(full.ok()).toBeTruthy()
@@ -358,7 +371,7 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   // This one genuinely does a lot: a whole headless board run (~40s), then it opens and inspects EVERY
   // one of that screen's cases. The default 60s cannot cover the run AND the per-case sweep, so it timed
   // out mid-loop (the page closing under it) — give the heavy integration test the wall-clock it needs.
-  test.setTimeout(300_000)   // raised again 2026-08-21: the board file grew with R13/R16
+  test.setTimeout(NEST_TEST_MS)   // raised 2026-08-21 as the board file grew with R13/R16; sized off NEST_WAIT_MS since 2026-08-29
   // The record must cover every case a run covered. It did not: a case only had steps if the BOARD
   // had run it, so a screen showed detail for the single case somebody had pressed Run on and
   // nothing for its neighbours — even though the suite had run them all many times.
@@ -410,7 +423,7 @@ test('R7 — the run panel offers no background run', async ({ page }) => {
 })
 
 test('R7 — the panel and its log stay on screen after the run ends', async ({ page, request }) => {
-  test.setTimeout(300_000)   // a whole WATCHED nested board run — see the R1/R2 note (147 s measured)
+  test.setTimeout(NEST_TEST_MS)   // a whole WATCHED nested board run — see NEST_WAIT_MS (147 s measured 2026-08-22)
   await idle(request)
   await page.goto(BOARD)
   await page.locator('.dt[data-i="0"] .runbtn').first().click()
@@ -430,7 +443,7 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
 })
 
 test('R5 — cancel stops the job, and cancelling nothing is refused not crashed', async ({ request }) => {
-  test.setTimeout(240_000)   // idle()'s budget is 150 s — the 60 s default could not even wait it out (final review m8)
+  test.setTimeout(NEST_TEST_MS)   // sized off idle()'s bound (NEST_WAIT_MS) — the 60 s default could not even wait it out (final review m8)
   await idle(request)
   const started = await startRun(request, { screen: 'board' })
   expect(started.status()).toBe(200)
