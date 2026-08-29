@@ -263,7 +263,9 @@ The drawn half of a beat row used to be an **archetype**: a house diagram chosen
 the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
 derived from the page's own measured boxes (the layout skeleton captured beside every evidence
 frame, `spec/<screen>/evidence/<id>.b<n>.<phase>.layout.json`), one frame per scene, at the
-viewport's own aspect, carrying the ringed element's real text where a beat ringed one. That is what
+viewport's own aspect, carrying the ringed element's real text where a beat ringed one. A beat is
+drawn **scene by scene**: one frame per value it proved, in the order it proved them, then the state
+it left — so the When is in the picture, not only its result. That is what
 makes a row a **comparison** instead of an illustration: the left cell is the same screen as the
 right one, drawn rather than photographed. Two pins ride the svg — the requirement text's hash, which
 is what stales it, and the **layout's own hash**, the geometry it was drawn from. A requirement whose
@@ -273,7 +275,10 @@ loud. A guessed picture beside a real photograph would be the most convincing li
 tell.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
-reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+reviewed in this session — canon as written, and theirs to reword or remove like any other.
+Amended 2026-08-29 on the human's ask (both cells must reflect the When and the Then, with the
+actual content — "you type \"Water the plants\"" visible as typed): the drawing now enacts the
+beat scene by scene rather than ringing only its outcome.*
 
 <!-- Proven by spec/board/test.spec.ts, "The schematic mirrors the real UI …" — beat 1 reads a
      harvested board requirement's committed drawing off the live reader and asserts the mirror
@@ -292,10 +297,13 @@ reviewed in this session — canon as written, and theirs to reword or remove li
 - **Then** both sides carry that beat and no other — the drawing derived from and labelled with its When → Then, the row's text cell showing the same sentence — while the Given row stays whole-page and uncaptioned on both sides
 
 A row is only worth its width if the two halves are **the same view of the same moment**. The focus
-rect the harvest recorded (the ring the assertion painted) is the row's one camera: the proof cell
+rect the harvest recorded — the **union of the rings** this beat's assertions painted — is the row's
+one camera: the proof cell
 frames it, and the drawing beside it is framed by the identical fractional transform, re-expressed
 in the drawing's own coordinates so the region matches even when the aspects do not. One toggle aims
-both; there is no way to move one alone, because there is only one choice to make. The **words** are
+both; there is no way to move one alone, because there is only one choice to make. And the two cells
+step **together**: the proof's own loop drives the drawing, so frame *n* of the photograph and scene
+*n* of the drawing are the same moment — same region, same clock. The **words** are
 the same beat too: `tools/viz.mjs` draws the callout from the requirement's own When → Then, the
 harness burns those same words into the recording the proof frames are cut from, and the row's text
 cell reads them off the prd — one language across the row, three surfaces that must agree. The
@@ -303,7 +311,9 @@ cell reads them off the prd — one language across the row, three surfaces that
 its cells stay whole-page and carry no beat and no callout.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
-reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+reviewed in this session — canon as written, and theirs to reword or remove like any other.
+Amended 2026-08-29 on the human's ask: the camera is the union of the beat's rings (so the first
+scene is never cropped away), and the two cells now share one clock — the proof drives the drawing.*
 
 <!-- Proven by spec/board/test.spec.ts, "A beat row is a comparison …" — beat 1 forces a focus rect
      onto a real requirement's harvested beat (the established deterministic technique; the frames
@@ -316,13 +326,14 @@ reviewed in this session — canon as written, and theirs to reword or remove li
 
 ## R20 — The proof plays itself
 
-- **Given** a beat whose harvest holds a before/after pair
+- **Given** a beat whose harvest holds its before, each value it proved, and its after
 - **When** its row renders
 - **Then** the proof cell is already looping — no mode to pick, no play to press — zoomed onto the focus by default, with the whole frame exactly one toggle away
 - **When** the row is the Given
 - **Then** its one frame stays a still: a state, not an action
 
-A proof cell has **one mode**, so it needs no toolbar. The beat's before → after runs the moment the
+A proof cell has **one mode**, so it needs no toolbar. The beat's before → each asserted value →
+after runs the moment the
 row exists, on the reader's one speed, exactly as the drawing beside it loops that beat's own
 motion — a row plays as one thing. The old `stills · gif · video` switch over two frames was chrome
 asking a question nobody had, and every cell answering it differently broke the rhythm of the rows.
@@ -332,7 +343,9 @@ back — the frame on disk is untouched either way. The **Given row** has a sing
 to loop, so it stays the captioned still it is.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
-reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+reviewed in this session — canon as written, and theirs to reword or remove like any other.
+Amended 2026-08-29 on the human's ask: the loop now carries each value the beat proved between
+its before and after, so the When is watchable, not inferred.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries no mode toolbar at all, is already armed (its frame counter advances on
