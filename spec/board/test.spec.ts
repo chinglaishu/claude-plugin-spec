@@ -152,10 +152,22 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // burn-in for the video, and a plain `npm run e2e` must leave the page's geometry alone. Both
     // branches are real: under a recording the callout must carry the requirement's own words, and
     // without one nothing may be injected at all.
+    //
+    // Corrected 2026-08-29 (rule 4 — the TEST was the wrong side). NO RING, NO OVERLAY (the human,
+    // 2026-08-28, e33e49c): renderOverlay now hides — and never creates — the overlay while nothing
+    // is ringed, and checkReq opens every beat by clearing the previous ring. So at the top of this
+    // beat `#__specboard-focus` does not exist yet, and asserting it was attached there was
+    // unsatisfiable under a recording; the test only ever "passed solo" because a plain run takes
+    // the else-branch. RING SOMETHING FIRST — which is what the paragraph above actually claims
+    // ("a ring on the asserted element") — then assert the card that must appear beside it. Under a
+    // plain run reveal() paints nothing (paintFocus is recording-gated), so the else-branch keeps
+    // its full power: nothing may be injected even after a reveal.
+    await reveal(dt.locator('.focusov .fread .frmeta .fid'))
     const focusOv = page.locator('#__specboard-focus')
     const call = focusOv.locator('.sb-call')
     if (process.env.BOARD_RECORD) {
       await expect(focusOv).toBeAttached()
+      await expect(focusOv.locator('.sb-ring')).toBeVisible()   // the ring the callout is anchored to
       await expect(call).toBeVisible()
       await expect(call).toContainText('R10')
       await expect(call).toContainText(await titleOf('R10'))
@@ -541,7 +553,22 @@ test('A requirement names the tests that cover it', async ({ page }) => {
         }
       })
     })
-    expect(screens.some(s => s.hasTests && s.untagged > 0)).toBeTruthy()   // the case that makes it real
+    // (There USED to be an `expect(screens.some(s => s.hasTests && s.untagged > 0)).toBeTruthy()`
+    // here — "the case that makes it real", written when conflicts had one test and five
+    // requirements. Removed 2026-08-29, rule 4: 8962dea's tag backfill left ZERO untagged
+    // requirements board-wide, so that line pinned a TREE SHAPE — a coverage gap — and a good change
+    // that closed the last gap correctly broke it. Same correction, same reasoning, as the composer
+    // test's own "at least one such requirement" removal below.
+    //
+    // Be honest about what that costs: while the tree has no untagged requirement, the loop below is
+    // VACUOUS, so this beat now proves the first half of R6's Then (a tag plus an assertion is what
+    // buys green — anyMulti above) and stands as a standing regression net for the second half, not
+    // as live proof of it. The second half IS proven deterministically, against a fabricated screen
+    // that always carries an untagged requirement, by spec/_modes/test.spec.ts — 'unproven — a
+    // requirement with no passing test reads unproven'. It is deliberately NOT cross-tagged to
+    // board:R6 from there: a cross-screen checkReq('board:…') in _modes made a board requirement
+    // proven-via-cross-tag while the board's own chip lagged in the pane, and broke this very walk
+    // (see the note at spec/_modes/test.spec.ts, 'renders — a Changed requirement …').)
     for (const s of screens) {
       expect(s.untaggedGreen, s.screen + ' — no test tags these, so none may read proven').toEqual([])
     }
