@@ -6,7 +6,7 @@
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 895,
+        "ms": 1476,
         "error": null,
         "line": 39,
         "reqs": {
@@ -16,7 +16,7 @@
       {
         "title": "A requirement and its proof are read together in one card that scrolls inside itself",
         "ok": true,
-        "ms": 711,
+        "ms": 1031,
         "error": null,
         "line": 64,
         "reqs": {
@@ -26,7 +26,7 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 555,
+        "ms": 885,
         "error": null,
         "line": 72,
         "reqs": {
@@ -36,7 +36,7 @@
       {
         "title": "Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself",
         "ok": true,
-        "ms": 1334,
+        "ms": 2694,
         "error": null,
         "line": 135,
         "reqs": {
@@ -46,7 +46,7 @@
       {
         "title": "Story-step evidence renders from the test definition",
         "ok": true,
-        "ms": 402,
+        "ms": 602,
         "error": null,
         "line": 298,
         "reqs": {
@@ -56,7 +56,7 @@
       {
         "title": "R10 — the Flow player plays the VOICED recording when a run produced one",
         "ok": true,
-        "ms": 514,
+        "ms": 914,
         "error": null,
         "line": 316,
         "reqs": {
@@ -66,7 +66,7 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 395,
+        "ms": 896,
         "error": null,
         "line": 354,
         "reqs": {
@@ -76,7 +76,7 @@
       {
         "title": "A test tags the requirements it covers — and Focus serves that link",
         "ok": true,
-        "ms": 458,
+        "ms": 679,
         "error": null,
         "line": 475,
         "reqs": {
@@ -86,7 +86,7 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 377,
+        "ms": 506,
         "error": null,
         "line": 498,
         "reqs": {
@@ -96,7 +96,7 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 362,
+        "ms": 532,
         "error": null,
         "line": 578,
         "reqs": {
@@ -106,7 +106,7 @@
       {
         "title": "No acceptance gate — nothing on the detail waits to be accepted",
         "ok": true,
-        "ms": 392,
+        "ms": 773,
         "error": null,
         "line": 590,
         "reqs": {
@@ -116,7 +116,7 @@
       {
         "title": "The detail offers a Focus / List / Flow toggle — Focus leads with the behavior, and media derives from status × beats",
         "ok": true,
-        "ms": 5403,
+        "ms": 9014,
         "error": null,
         "line": 610,
         "reqs": {
@@ -126,7 +126,7 @@
       {
         "title": "The schematic mirrors the real UI — the app's own measured layout, or honestly no picture",
         "ok": true,
-        "ms": 1781,
+        "ms": 4645,
         "error": null,
         "line": 1044,
         "reqs": {
@@ -136,7 +136,7 @@
       {
         "title": "A beat row is a comparison — one camera on one region, one beat in both cells",
         "ok": true,
-        "ms": 1211,
+        "ms": 3887,
         "error": null,
         "line": 1157,
         "reqs": {
@@ -146,7 +146,7 @@
       {
         "title": "The proof plays itself — already looping, zoomed, the whole frame one toggle away",
         "ok": true,
-        "ms": 1533,
+        "ms": 5036,
         "error": null,
         "line": 1236,
         "reqs": {
@@ -156,7 +156,7 @@
       {
         "title": "The reader reads in your order — the whole story re-deals, and it holds for the session",
         "ok": true,
-        "ms": 1234,
+        "ms": 4314,
         "error": null,
         "line": 1296,
         "reqs": {
@@ -166,7 +166,7 @@
       {
         "title": "Flow reads like Focus — the rail on the left scrubs the one recording, a failure stops it and the rest reads not-reached",
         "ok": true,
-        "ms": 1470,
+        "ms": 1683,
         "error": null,
         "line": 1372,
         "reqs": {
@@ -176,7 +176,7 @@
       {
         "title": "The proof is scannable as frames — one still per checked value, cut from the recording",
         "ok": true,
-        "ms": 2122,
+        "ms": 2516,
         "error": null,
         "line": 1548,
         "reqs": {
@@ -186,7 +186,7 @@
       {
         "title": "A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)",
         "ok": true,
-        "ms": 909,
+        "ms": 1138,
         "error": null,
         "line": 1874,
         "reqs": {
@@ -196,7 +196,7 @@
       {
         "title": "hudCheck asserts the value it paints — a mismatch throws, a match does not",
         "ok": true,
-        "ms": 190,
+        "ms": 512,
         "error": null,
         "line": 1885,
         "reqs": {}
@@ -204,7 +204,7 @@
       {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 469,
+        "ms": 671,
         "error": null,
         "line": 1893,
         "reqs": {
@@ -214,7 +214,7 @@
       {
         "title": "Home leads with a dismissible feature strip of six cards",
         "ok": true,
-        "ms": 977,
+        "ms": 1223,
         "error": null,
         "line": 1904,
         "reqs": {
@@ -224,7 +224,7 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 480,
+        "ms": 867,
         "error": null,
         "line": 1962,
         "reqs": {
@@ -234,7 +234,7 @@
       {
         "title": "The guide opens as manager and staff — without, then with",
         "ok": true,
-        "ms": 464,
+        "ms": 741,
         "error": null,
         "line": 1989,
         "reqs": {
@@ -244,7 +244,7 @@
       {
         "title": "Acts 1 and 2 play once, hold, and stand still under reduced motion",
         "ok": true,
-        "ms": 5828,
+        "ms": 6073,
         "error": null,
         "line": 2076,
         "reqs": {
@@ -254,7 +254,7 @@
       {
         "title": "The walkthrough steps on click and holds — never auto-advances",
         "ok": true,
-        "ms": 1579,
+        "ms": 1755,
         "error": null,
         "line": 2122,
         "reqs": {
@@ -264,7 +264,7 @@
       {
         "title": "A deep-linked skill URL shows the skill detail on cold load",
         "ok": true,
-        "ms": 259,
+        "ms": 468,
         "error": null,
         "line": 2147,
         "reqs": {
@@ -274,7 +274,7 @@
       {
         "title": "The guide ends with the derived next action, and there is no rail",
         "ok": true,
-        "ms": 359,
+        "ms": 676,
         "error": null,
         "line": 2161,
         "reqs": {
@@ -284,7 +284,7 @@
       {
         "title": "The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself",
         "ok": true,
-        "ms": 940,
+        "ms": 1324,
         "error": null,
         "line": 2199,
         "reqs": {
@@ -294,7 +294,7 @@
       {
         "title": "＋ New flow opens the composer — a derived library, the joint check, a truthful two-path button",
         "ok": true,
-        "ms": 1181,
+        "ms": 1509,
         "error": null,
         "line": 2340,
         "reqs": {
@@ -305,7 +305,7 @@
       {
         "title": "The compose endpoint composes deterministically and refuses honestly — no job spawns on a refusal",
         "ok": true,
-        "ms": 1099,
+        "ms": 1267,
         "error": null,
         "line": 2452,
         "reqs": {
@@ -315,7 +315,7 @@
       {
         "title": "Home, the detail, then a finished run refreshes it in place — composed",
         "ok": true,
-        "ms": 1257,
+        "ms": 1475,
         "error": null,
         "line": 2545,
         "reqs": {
@@ -327,7 +327,7 @@
       {
         "title": "Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the pager that is the jump-map",
         "ok": true,
-        "ms": 1708,
+        "ms": 2187,
         "error": null,
         "line": 2589,
         "reqs": {
@@ -335,7 +335,7 @@
         }
       }
     ],
-    "ranAt": 1788017937780,
+    "ranAt": 1788018383217,
     "provenHashes": {
       "R1": "f46deb79833df795",
       "R2": "e0468ff70c5fc041",
@@ -354,9 +354,9 @@
       "R15": "3ea50d4bbe1c8a47",
       "R16": "7838b4c0ba3814e6",
       "R17": "c143717225fa7ada",
-      "R18": "7cc340298b0d3b96",
-      "R19": "3c7cc203ff82e48c",
-      "R20": "01342962208957c9",
+      "R18": "c52ef1232b7ce088",
+      "R19": "2c23bda386a788af",
+      "R20": "d51dcfa3280a1474",
       "R21": "4a39109299c344db"
     },
     "evidence": {
@@ -364,8 +364,8 @@
         "before": "spec/board/evidence/R1.before.png",
         "after": "spec/board/evidence/R1.after.png",
         "window": {
-          "from": 332,
-          "to": 405
+          "from": 387,
+          "to": 456
         },
         "beats": [
           {
@@ -375,26 +375,26 @@
             "layoutBefore": "spec/board/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R1.b1.after.layout.json",
             "window": {
-              "from": 332,
-              "to": 405
+              "from": 387,
+              "to": 456
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z",
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z",
         "video": {
-          "path": "spec/board/evidence/5f973364ae78.webm",
-          "from": 386,
-          "to": 457
+          "path": "spec/board/evidence/b5b701922852.webm",
+          "from": 387,
+          "to": 456
         }
       },
       "R2": {
         "before": "spec/board/evidence/R2.before.png",
         "after": "spec/board/evidence/R2.after.png",
         "window": {
-          "from": 279,
-          "to": 644
+          "from": 550,
+          "to": 920
         },
         "beats": [
           {
@@ -404,26 +404,26 @@
             "layoutBefore": "spec/board/evidence/R2.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R2.b1.after.layout.json",
             "window": {
-              "from": 279,
-              "to": 644
+              "from": 550,
+              "to": 920
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z",
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z",
         "video": {
-          "path": "spec/board/evidence/5f973364ae78.webm",
+          "path": "spec/board/evidence/b5b701922852.webm",
           "from": 550,
-          "to": 989
+          "to": 920
         }
       },
       "R3": {
         "before": "spec/board/evidence/R3.before.png",
         "after": "spec/board/evidence/R3.after.png",
         "window": {
-          "from": 256,
-          "to": 472
+          "from": 377,
+          "to": 605
         },
         "beats": [
           {
@@ -433,21 +433,21 @@
             "layoutBefore": "spec/board/evidence/R3.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R3.b1.after.layout.json",
             "window": {
-              "from": 256,
-              "to": 472
+              "from": 377,
+              "to": 605
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R10": {
         "before": "spec/board/evidence/R10.before.png",
         "after": "spec/board/evidence/R10.after.png",
         "window": {
-          "from": 329,
-          "to": 1237
+          "from": 380,
+          "to": 502
         },
         "beats": [
           {
@@ -457,21 +457,21 @@
             "layoutBefore": "spec/board/evidence/R10.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R10.b1.after.layout.json",
             "window": {
-              "from": 329,
-              "to": 1237
+              "from": 380,
+              "to": 502
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R4": {
         "before": "spec/board/evidence/R4.before.png",
         "after": "spec/board/evidence/R4.after.png",
         "window": {
-          "from": 260,
-          "to": 316
+          "from": 310,
+          "to": 610
         },
         "beats": [
           {
@@ -481,21 +481,21 @@
             "layoutBefore": "spec/board/evidence/R4.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R4.b1.after.layout.json",
             "window": {
-              "from": 260,
-              "to": 316
+              "from": 310,
+              "to": 610
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R5": {
         "before": "spec/board/evidence/R5.before.png",
         "after": "spec/board/evidence/R5.after.png",
         "window": {
-          "from": 256,
-          "to": 387
+          "from": 243,
+          "to": 373
         },
         "beats": [
           {
@@ -505,21 +505,21 @@
             "layoutBefore": "spec/board/evidence/R5.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R5.b1.after.layout.json",
             "window": {
-              "from": 256,
-              "to": 387
+              "from": 243,
+              "to": 373
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R6": {
         "before": "spec/board/evidence/R6.before.png",
         "after": "spec/board/evidence/R6.after.png",
         "window": {
-          "from": 276,
-          "to": 293
+          "from": 251,
+          "to": 276
         },
         "beats": [
           {
@@ -529,21 +529,21 @@
             "layoutBefore": "spec/board/evidence/R6.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R6.b1.after.layout.json",
             "window": {
-              "from": 276,
-              "to": 293
+              "from": 251,
+              "to": 276
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R7": {
         "before": "spec/board/evidence/R7.before.png",
         "after": "spec/board/evidence/R7.after.png",
         "window": {
-          "from": 259,
-          "to": 275
+          "from": 252,
+          "to": 274
         },
         "beats": [
           {
@@ -553,21 +553,21 @@
             "layoutBefore": "spec/board/evidence/R7.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R7.b1.after.layout.json",
             "window": {
-              "from": 259,
-              "to": 275
+              "from": 252,
+              "to": 274
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R8": {
         "before": "spec/board/evidence/R8.before.png",
         "after": "spec/board/evidence/R8.after.png",
         "window": {
-          "from": 257,
-          "to": 321
+          "from": 386,
+          "to": 465
         },
         "beats": [
           {
@@ -577,21 +577,21 @@
             "layoutBefore": "spec/board/evidence/R8.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R8.b1.after.layout.json",
             "window": {
-              "from": 257,
-              "to": 321
+              "from": 386,
+              "to": 465
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R13": {
         "before": "spec/board/evidence/R13.before.png",
         "after": "spec/board/evidence/R13.after.png",
         "window": {
-          "from": 275,
-          "to": 5317
+          "from": 355,
+          "to": 937
         },
         "beats": [
           {
@@ -601,21 +601,21 @@
             "layoutBefore": "spec/board/evidence/R13.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R13.b1.after.layout.json",
             "window": {
-              "from": 275,
-              "to": 5317
+              "from": 355,
+              "to": 937
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R14": {
         "before": "spec/board/evidence/R14.before.png",
         "after": "spec/board/evidence/R14.after.png",
         "window": {
-          "from": 269,
-          "to": 2057
+          "from": 368,
+          "to": 2240
         },
         "beats": [
           {
@@ -625,14 +625,14 @@
             "layoutBefore": "spec/board/evidence/R14.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R14.b1.after.layout.json",
             "window": {
-              "from": 269,
-              "to": 2057
+              "from": 368,
+              "to": 2240
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z",
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z",
         "video": {
           "path": "spec/board/evidence/f1ae34958282.webm",
           "from": 255,
@@ -643,8 +643,8 @@
         "before": "spec/board/evidence/R9.before.png",
         "after": "spec/board/evidence/R9.after.png",
         "window": {
-          "from": 280,
-          "to": 360
+          "from": 285,
+          "to": 362
         },
         "beats": [
           {
@@ -654,21 +654,21 @@
             "layoutBefore": "spec/board/evidence/R9.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R9.b1.after.layout.json",
             "window": {
-              "from": 280,
-              "to": 360
+              "from": 285,
+              "to": 362
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R11": {
         "before": "spec/board/evidence/R11.before.png",
         "after": "spec/board/evidence/R11.after.png",
         "window": {
           "from": 213,
-          "to": 5785
+          "to": 233
         },
         "beats": [
           {
@@ -679,32 +679,20 @@
             "layoutAfter": "spec/board/evidence/R11.b1.after.layout.json",
             "window": {
               "from": 213,
-              "to": 408
-            },
-            "values": []
-          },
-          {
-            "n": 2,
-            "before": "spec/board/evidence/R11.b2.before.png",
-            "after": "spec/board/evidence/R11.b2.after.png",
-            "layoutBefore": "spec/board/evidence/R11.b2.before.layout.json",
-            "layoutAfter": "spec/board/evidence/R11.b2.after.layout.json",
-            "window": {
-              "from": 5675,
-              "to": 5785
+              "to": 233
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R12": {
         "before": "spec/board/evidence/R12.before.png",
         "after": "spec/board/evidence/R12.after.png",
         "window": {
-          "from": 198,
-          "to": 317
+          "from": 288,
+          "to": 416
         },
         "beats": [
           {
@@ -714,21 +702,21 @@
             "layoutBefore": "spec/board/evidence/R12.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R12.b1.after.layout.json",
             "window": {
-              "from": 198,
-              "to": 317
+              "from": 288,
+              "to": 416
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R15": {
         "before": "spec/board/evidence/R15.before.png",
         "after": "spec/board/evidence/R15.after.png",
         "window": {
-          "from": 263,
-          "to": 854
+          "from": 1149,
+          "to": 1218
         },
         "beats": [
           {
@@ -738,21 +726,21 @@
             "layoutBefore": "spec/board/evidence/R15.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R15.b1.after.layout.json",
             "window": {
-              "from": 263,
-              "to": 854
+              "from": 1149,
+              "to": 1218
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R16": {
         "before": "spec/board/evidence/R16.before.png",
         "after": "spec/board/evidence/R16.after.png",
         "window": {
-          "from": 206,
-          "to": 927
+          "from": 199,
+          "to": 1003
         },
         "beats": [
           {
@@ -762,21 +750,21 @@
             "layoutBefore": "spec/board/evidence/R16.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R16.b1.after.layout.json",
             "window": {
-              "from": 206,
-              "to": 927
+              "from": 199,
+              "to": 1003
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R17": {
         "before": "spec/board/evidence/R17.before.png",
         "after": "spec/board/evidence/R17.after.png",
         "window": {
-          "from": 191,
-          "to": 215
+          "from": 290,
+          "to": 314
         },
         "beats": [
           {
@@ -786,21 +774,21 @@
             "layoutBefore": "spec/board/evidence/R17.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R17.b1.after.layout.json",
             "window": {
-              "from": 191,
-              "to": 215
+              "from": 290,
+              "to": 314
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R18": {
         "before": "spec/board/evidence/R18.before.png",
         "after": "spec/board/evidence/R18.after.png",
         "window": {
-          "from": 362,
-          "to": 1717
+          "from": 601,
+          "to": 4280
         },
         "beats": [
           {
@@ -810,10 +798,18 @@
             "layoutBefore": "spec/board/evidence/R18.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R18.b1.after.layout.json",
             "window": {
-              "from": 362,
-              "to": 714
+              "from": 601,
+              "to": 2162
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 49.96875,
+              "y": 201.40625,
+              "w": 492.3125,
+              "h": 307.6875,
+              "vw": 1440,
+              "vh": 900
+            }
           },
           {
             "n": 2,
@@ -822,21 +818,29 @@
             "layoutBefore": "spec/board/evidence/R18.b2.before.layout.json",
             "layoutAfter": "spec/board/evidence/R18.b2.after.layout.json",
             "window": {
-              "from": 879,
-              "to": 1717
+              "from": 2285,
+              "to": 4280
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 39.375,
+              "y": 136.75,
+              "w": 1361.25,
+              "h": 696.5,
+              "vw": 1440,
+              "vh": 900
+            }
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R19": {
         "before": "spec/board/evidence/R19.before.png",
         "after": "spec/board/evidence/R19.after.png",
         "window": {
-          "from": 326,
-          "to": 1129
+          "from": 325,
+          "to": 3572
         },
         "beats": [
           {
@@ -846,10 +850,18 @@
             "layoutBefore": "spec/board/evidence/R19.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R19.b1.after.layout.json",
             "window": {
-              "from": 326,
-              "to": 718
+              "from": 325,
+              "to": 1929
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 40.375,
+              "y": 307.984375,
+              "w": 1359.25,
+              "h": 353.90625,
+              "vw": 1440,
+              "vh": 900
+            }
           },
           {
             "n": 2,
@@ -858,21 +870,29 @@
             "layoutBefore": "spec/board/evidence/R19.b2.before.layout.json",
             "layoutAfter": "spec/board/evidence/R19.b2.after.layout.json",
             "window": {
-              "from": 856,
-              "to": 1129
+              "from": 2060,
+              "to": 3572
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 552.875,
+              "y": 308.984375,
+              "w": 334.234375,
+              "h": 352.90625,
+              "vw": 1440,
+              "vh": 900
+            }
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R20": {
         "before": "spec/board/evidence/R20.before.png",
         "after": "spec/board/evidence/R20.after.png",
         "window": {
-          "from": 326,
-          "to": 1435
+          "from": 284,
+          "to": 4548
         },
         "beats": [
           {
@@ -882,10 +902,18 @@
             "layoutBefore": "spec/board/evidence/R20.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R20.b1.after.layout.json",
             "window": {
-              "from": 326,
-              "to": 991
+              "from": 284,
+              "to": 2940
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 887.109375,
+              "y": 308.984375,
+              "w": 512.515625,
+              "h": 352.90625,
+              "vw": 1440,
+              "vh": 900
+            }
           },
           {
             "n": 2,
@@ -894,21 +922,29 @@
             "layoutBefore": "spec/board/evidence/R20.b2.before.layout.json",
             "layoutAfter": "spec/board/evidence/R20.b2.after.layout.json",
             "window": {
-              "from": 1172,
-              "to": 1435
+              "from": 3065,
+              "to": 4548
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 887.109375,
+              "y": 184.53125,
+              "w": 512.515625,
+              "h": 341.453125,
+              "vw": 1440,
+              "vh": 900
+            }
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       },
       "R21": {
         "before": "spec/board/evidence/R21.before.png",
         "after": "spec/board/evidence/R21.after.png",
         "window": {
-          "from": 268,
-          "to": 1178
+          "from": 542,
+          "to": 3924
         },
         "beats": [
           {
@@ -918,10 +954,18 @@
             "layoutBefore": "spec/board/evidence/R21.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R21.b1.after.layout.json",
             "window": {
-              "from": 268,
-              "to": 669
+              "from": 542,
+              "to": 2207
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 1059.34375,
+              "y": 133.359375,
+              "w": 200.671875,
+              "h": 20,
+              "vw": 1440,
+              "vh": 900
+            }
           },
           {
             "n": 2,
@@ -930,14 +974,22 @@
             "layoutBefore": "spec/board/evidence/R21.b2.before.layout.json",
             "layoutAfter": "spec/board/evidence/R21.b2.after.layout.json",
             "window": {
-              "from": 784,
-              "to": 1178
+              "from": 2326,
+              "to": 3924
             },
-            "values": []
+            "values": [],
+            "focus": {
+              "x": 39.375,
+              "y": -192.25,
+              "w": 1361.25,
+              "h": 1354.21875,
+              "vw": 1440,
+              "vh": 900
+            }
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z"
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z"
       }
     }
   },
@@ -1296,8 +1348,8 @@
         "before": "spec/dispatch/evidence/R7.before.png",
         "after": "spec/dispatch/evidence/R7.after.png",
         "window": {
-          "from": 324,
-          "to": 826
+          "from": 389,
+          "to": 865
         },
         "beats": [
           {
@@ -1307,18 +1359,18 @@
             "layoutBefore": "spec/dispatch/evidence/R7.b1.before.layout.json",
             "layoutAfter": "spec/dispatch/evidence/R7.b1.after.layout.json",
             "window": {
-              "from": 324,
-              "to": 826
+              "from": 389,
+              "to": 865
             },
             "values": []
           }
         ],
-        "runId": "1788017937780",
-        "at": "2026-08-29T15:38:57.780Z",
+        "runId": "1788018316000",
+        "at": "2026-08-29T15:46:23.217Z",
         "video": {
-          "path": "spec/dispatch/evidence/3a1349d780f3.webm",
-          "from": 438,
-          "to": 942
+          "path": "spec/dispatch/evidence/6e054028e724.webm",
+          "from": 389,
+          "to": 865
         }
       },
       "R1": {
