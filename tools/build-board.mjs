@@ -2896,12 +2896,12 @@ export function build () {
   .lb[hidden] { display:none; }
   .lbbar { flex:none; display:flex; align-items:center; gap:var(--s3);
     padding:var(--s3) var(--s5); border-bottom:1px solid rgba(255,255,255,.14); }
-  .lbcap { color:#f4f1ea; font-size:var(--t-sm); }
-  .lbbar .btn { background:transparent; border-color:rgba(255,255,255,.35); color:#f4f1ea; }
-  .lbbar .btn:hover { border-color:#f4f1ea; }
+  .lbcap { color:var(--canvas); font-size:var(--t-sm); }
+  .lbbar .btn { background:transparent; border-color:rgba(255,255,255,.35); color:var(--canvas); }
+  .lbbar .btn:hover { border-color:var(--canvas); }
   /* Task 15: the zoom is NEAR-FULLSCREEN — the frame is drawn across the whole stage (contained,
-     never cropped or distorted), not left at its native 640px in the middle of it. The 640px
-     harvest upscales ≈2× here: soft, but the zoom exists for a glance at the asserted value. */
+     never cropped or distorted), not left at its native size in the middle of it. (Harvest was
+     640px when this shipped; Task 16 #2 raised it to 1280px, so the upscale is now mild.) */
   .lbstage { flex:1; overflow:auto; display:flex; align-items:flex-start;
     justify-content:center; padding:var(--s3); cursor:zoom-out; }
   .lbstage img { width:100%; height:100%; object-fit:contain;
