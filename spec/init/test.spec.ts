@@ -14,6 +14,10 @@ import { countHomeCards, searchRequirementText } from '../board/steps'
 // The state guard now snapshots the set of screen directories too, so a fixture row this spec
 // creates is removed after the run — a crawl that leaked rows would be the same lie as a scan that
 // leaked a fake finding.
+//
+// Tag backfill (2026-08-29): R1's round-trip and R4's greenfield assertions existed here from the
+// start but never wore a checkReq, so those requirements read Unproven on the board — the Task-7
+// tagging sweep stopped short of this file. Wrapped now; the assertions themselves are unchanged.
 
 const SPEC = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CONFIG = join(SPEC, '_config.json')
@@ -43,15 +47,17 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
   await view.locator('#initroutes').fill('/\n/cart\n/checkout')
   await view.locator('#initsave').click()
 
-  await expect.poll(() => config()?.baseUrl).toBe('http://localhost:3000')
-  expect(config()!.mode).toBe('attach')
-  expect(config()!.routes).toEqual(['/', '/cart', '/checkout'])
+  await checkReq('R1', async () => {
+    await expect.poll(() => config()?.baseUrl).toBe('http://localhost:3000')
+    expect(config()!.mode).toBe('attach')
+    expect(config()!.routes).toEqual(['/', '/cart', '/checkout'])
 
-  // read-back: a fresh load of the page shows what was saved, not empty fields
-  await page.goto('/')
-  await page.goto('/#init')
-  await expect(page.locator('#initurl')).toHaveValue('http://localhost:3000')
-  await expect(page.locator('#initroutes')).toHaveValue(/\/cart/)
+    // read-back: a fresh load of the page shows what was saved, not empty fields
+    await page.goto('/')
+    await page.goto('/#init')
+    await expect(page.locator('#initurl')).toHaveValue('http://localhost:3000')
+    await expect(page.locator('#initroutes')).toHaveValue(/\/cart/)
+  })
 })
 
 test('R1 — the setup cards are single-column blocks, not the home two-column grid', async ({ page }) => {
@@ -104,10 +110,34 @@ test('R4 — nothing found is the greenfield case: no rows, a prompt to write th
   writeFileSync(CRAWL, JSON.stringify({ crawledAt: '2026-07-27T10:00:00.000Z', routes: [] }))
   await page.goto('/#init')
   const view = page.locator('#initview')
-  await expect(view.locator('#initempty')).toBeVisible()
-  await expect(view.locator('#initempty')).toContainText(/first PRD/i)
-  // greenfield is the ZERO case of the same flow — the found table is simply empty, not a mode
-  await expect(view.locator('#initfound .frow')).toHaveCount(0)
+  await checkReq('R4', async () => {
+    await expect(view.locator('#initempty')).toBeVisible()
+    await expect(view.locator('#initempty')).toContainText(/first PRD/i)
+    // greenfield is the ZERO case of the same flow — the found table is simply empty, not a mode
+    await expect(view.locator('#initfound .frow')).toHaveCount(0)
+  })
+})
+
+test('R2 — a crawled route is a row with its screenshot and NO PRD: inventory, never fake coverage', async ({ page }) => {
+  // The real crawl (a browser + minutes) stays outside the suite — seed the inventory it would have
+  // written, exactly like the zero case above. '/storefront' has no spec/storefront/prd.md, so the
+  // row must read as honestly ungoverned inventory: the crawl.png thumb and the route, marked new.
+  writeFileSync(CRAWL, JSON.stringify({
+    crawledAt: '2026-07-27T10:00:00.000Z',
+    routes: [{ route: '/storefront', title: 'Storefront' }]
+  }))
+  await page.goto('/#init')
+  const row = page.locator('#initview #initfound .frow')
+  await checkReq('R2', async () => {
+    await expect(row).toHaveCount(1)
+    // the screenshot IS the row's evidence — the img points at the route's own crawl.png
+    await expect(row.locator('.fthumb img')).toHaveAttribute('src', 'spec/storefront/crawl.png')
+    await expect(row.locator('.frt')).toHaveText('/storefront')
+    // and NO PRD: nothing was drafted on disk, and the row honestly reads new — 'yours' is
+    // reserved for a route that already has a real PRD (R5's settled case)
+    expect(existsSync(join(SPEC, 'storefront', 'prd.md'))).toBe(false)
+    await expect(row.locator('.fst')).toHaveText('new')
+  })
 })
 
 // A voice-ready machine, faked so the toggle is enabled regardless of what is (or isn't) installed

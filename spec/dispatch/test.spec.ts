@@ -16,6 +16,12 @@ import { openDetailReader, toggleViews } from '../board/steps'
 // This starts a second Playwright process against the same server. The state guard now snapshots
 // per-process, so the two runs cannot clobber each other's saved state, and the outer run
 // restores everything at the end regardless of what a cancelled inner one left behind.
+//
+// Tag backfill (2026-08-29): R4–R8 all had real assertions here from the start that never wore a
+// checkReq, so those requirements read Unproven on the board — the Task-7 tagging sweep covered
+// R1–R3 (the beats in ./steps.ts) and stopped there. Wrapped now; the assertions are unchanged.
+// checkReq in a page-less test is fine: every HUD/evidence helper no-ops without a CURRENT_PAGE,
+// and the `proves` step — the part coverage folds — is page-free.
 
 // The run this very process IS, when the BOARD started it — the server hands each run its own
 // record directory, and the directory's name is the runId. Empty for a plain CLI run, which the
@@ -119,24 +125,28 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
   // A person's second job carries NO parent. It is not refused (409) and not queued — it is accepted
   // and cancels the run holding the slot. Only the holder is cancelled; when this spec is itself a
   // nested run, the run driving it is an ANCESTOR, never the holder, so it survives the takeover.
-  const second = await request.post('/api/run', { data: { screen: 'board' } })
-  expect(second.status(), 'a person\'s second job is accepted, not 409').toBe(200)
   let secondId = ''
-  await expect.poll(async () => {
-    const j = await request.get('/api/runs').then((r: any) => r.json())
-    secondId = j.runningId || ''
-    return secondId && secondId !== firstId ? 'held' : ''
-  }, { timeout: 30000 }).toBe('held')
+  await checkReq('R4', async () => {
+    const second = await request.post('/api/run', { data: { screen: 'board' } })
+    expect(second.status(), 'a person\'s second job is accepted, not 409').toBe(200)
+    await expect.poll(async () => {
+      const j = await request.get('/api/runs').then((r: any) => r.json())
+      secondId = j.runningId || ''
+      return secondId && secondId !== firstId ? 'held' : ''
+    }, { timeout: 30000 }).toBe('held')
+  })
 
   // R5: the run it replaced was cancelled — still recorded, marked not-ok, not silently vanished.
   // Its entry lands in the run log at its own close, a beat after the takeover — poll for it.
   let taken: any = null
-  await expect.poll(async () => {
-    const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
-    taken = runs.find((x: any) => x.runId === firstId)
-    return !!taken
-  }, { timeout: 30000 }).toBeTruthy()
-  expect(taken.ok, 'a cancelled run is not a pass').toBe(false)
+  await checkReq('R5', async () => {
+    await expect.poll(async () => {
+      const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
+      taken = runs.find((x: any) => x.runId === firstId)
+      return !!taken
+    }, { timeout: 30000 }).toBeTruthy()
+    expect(taken.ok, 'a cancelled run is not a pass').toBe(false)
+  })
 
   // THE SLOT GUARD (2026-08-21): the superseded run's close has now fired — its entry just landed —
   // and the slot must STILL be held by the run that took over. Before the guard, that close popped
@@ -148,8 +158,10 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
   expect(held.runningId, 'the takeover run still holds the slot after the superseded run\'s close').toBe(secondId)
 
   // R5: takeover is a cancel — the partial work is left on disk, so the run's log is still readable.
-  const log = await request.get('/spec/_runs/' + firstId + '/run.log')
-  expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
+  await checkReq('R5', async () => {
+    const log = await request.get('/spec/_runs/' + firstId + '/run.log')
+    expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
+  })
 
   // The takeover run holds the slot until IT ends — so end it: cancel it BY NAME (R5) rather than
   // waiting out a full board run, then wait for the board to actually be free.
@@ -177,23 +189,25 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
   // never a takeover. Takeover is reserved for a job with NO parent (a person); a mis-named nest must
   // fail loudly rather than cancel a run it might be running inside. (A person's no-parent takeover is
   // proven in the takeover spec above.)
-  const wrong = await request.post('/api/run', { data: { screen: 'board', parent: 'not-the-run' } })
-  expect(wrong.status()).toBe(409)
+  await checkReq('R4', async () => {
+    const wrong = await request.post('/api/run', { data: { screen: 'board', parent: 'not-the-run' } })
+    expect(wrong.status()).toBe(409)
 
-  // BOUNDED. Keep asking to nest inside whatever holds the slot; the server must start refusing
-  // rather than nesting forever — that is what stops a suite which runs itself from recursing.
-  // Asserted as "a refusal arrives within a few levels" rather than "the Nth is refused", because
-  // how deep this spec already sits depends on whether the board started it or the CLI did.
-  // A grep matching nothing proves the DECISION without starting heavy suites.
-  let refused = false
-  for (let level = 0; level < 4 && !refused; level++) {
-    const id = (await request.get('/api/runs').then((r: any) => r.json())).runningId
-    const res = await request.post('/api/run', {
-      data: { screen: 'board', grep: 'zzz no such test', parent: id }
-    })
-    refused = res.status() === 409
-  }
-  expect(refused, 'nesting stops instead of recursing').toBeTruthy()
+    // BOUNDED. Keep asking to nest inside whatever holds the slot; the server must start refusing
+    // rather than nesting forever — that is what stops a suite which runs itself from recursing.
+    // Asserted as "a refusal arrives within a few levels" rather than "the Nth is refused", because
+    // how deep this spec already sits depends on whether the board started it or the CLI did.
+    // A grep matching nothing proves the DECISION without starting heavy suites.
+    let refused = false
+    for (let level = 0; level < 4 && !refused; level++) {
+      const id = (await request.get('/api/runs').then((r: any) => r.json())).runningId
+      const res = await request.post('/api/run', {
+        data: { screen: 'board', grep: 'zzz no such test', parent: id }
+      })
+      refused = res.status() === 409
+    }
+    expect(refused, 'nesting stops instead of recursing').toBeTruthy()
+  })
 })
 
 test('running one screen leaves every other screen\'s E2E result standing', async ({ page, request }) => {
@@ -227,14 +241,16 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
   expect(run, 'the board run is in the log').toBeTruthy()
 
   // R6: the WHOLE log is kept — retrievable in full after the stream ended, not thrown away.
-  const logRes = await request.get('/spec/_runs/' + run.runId + '/run.log')
-  expect(logRes.status(), 'the run log was saved and is servable').toBe(200)
-  const log = await logRes.text()
-  // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
-  // failure could be read back long after the panel that showed it live is gone
-  expect(log).toContain('Home lists every screen as a card')
-  expect(log).toContain('A requirement and its proof are read together in one card that scrolls inside itself')
-  expect(log.length).toBeGreaterThan(200)
+  await checkReq('R6', async () => {
+    const logRes = await request.get('/spec/_runs/' + run.runId + '/run.log')
+    expect(logRes.status(), 'the run log was saved and is servable').toBe(200)
+    const log = await logRes.text()
+    // it is the whole log, not a one-word verdict: every one of board's cases is named in it, so a
+    // failure could be read back long after the panel that showed it live is gone
+    expect(log).toContain('Home lists every screen as a card')
+    expect(log).toContain('A requirement and its proof are read together in one card that scrolls inside itself')
+    expect(log.length).toBeGreaterThan(200)
+  })
 
   // R8: each case keeps its OWN record — a self-contained log leading with what it was and how it
   // ended — not one verdict folded over the whole file.
@@ -255,12 +271,14 @@ test('R8 — a run that matched no test is recorded as an error, never 0 of 0 pa
   expect(started.ok(), 'the run is accepted').toBeTruthy()
   await idle(request)
 
-  const data = await request.get('/api/runs').then((r: any) => r.json())
-  const run = data.runs.find((x: any) => x.grep === 'zzz-honest-no-match-marker')
-  expect(run, 'the no-match run was recorded').toBeTruthy()
-  expect(run.total, 'it ran zero cases').toBe(0)
-  expect(run.ok, 'a run that tested nothing is not a pass').toBe(false)
-  expect(run.note, 'it says WHY, not "0 of 0 passing"').toMatch(/no tests ran/i)
+  await checkReq('R8', async () => {
+    const data = await request.get('/api/runs').then((r: any) => r.json())
+    const run = data.runs.find((x: any) => x.grep === 'zzz-honest-no-match-marker')
+    expect(run, 'the no-match run was recorded').toBeTruthy()
+    expect(run.total, 'it ran zero cases').toBe(0)
+    expect(run.ok, 'a run that tested nothing is not a pass').toBe(false)
+    expect(run.note, 'it says WHY, not "0 of 0 passing"').toMatch(/no tests ran/i)
+  })
 })
 
 test('R8 — running ONE case leaves every other case\'s steps and log standing', async ({ page, request }) => {
@@ -314,24 +332,26 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
   await page.goto('/#/board')
   await toGrid(page, 'board')
   const one = page.locator('.dt[data-screen="board"]:not([hidden]) .test', { hasText: title }).first()
-  // The commit is CLEAR on the result itself, not only inside the opened log (the human, 2026-08-13):
-  // the case's meta line names the commit it last ran against, so which commit a case passed or
-  // failed in is answerable at a glance — the whole point of stamping the commit.
-  await expect(one.locator('.tmeta .tsha')).toHaveText(/[0-9a-f]{6,}/)
-  // the folded history is recorded into the case's own .tstlog (loadRuns); the ONE floating log
-  // window (board R10 — its open-in-a-window behaviour is proven on the board screen, through the
-  // Focus reader's wired Logs button) COPIES this very list, so read the history where it is folded.
-  await expect(one.locator('.tstlog .lghist > li').first()).toBeAttached()
-  // MORE THAN ONE run of this case is kept — the history, not just the newest. Not an exact count:
-  // earlier full runs of this screen covered this case too, and they legitimately count.
-  await expect(one.locator('.tstlog .logbox summary')).toContainText(/last \d+ runs/)
-  expect(await one.locator('.tstlog .lghist > li').count(),
-    'the case keeps a history, not one entry').toBeGreaterThanOrEqual(2)
-  // and it is capped, so a case cannot grow an unbounded wall of logs
-  expect(await one.locator('.tstlog .lghist > li').count()).toBeLessThanOrEqual(10)
-  // each stamped with when it ran and the commit it ran against
-  await expect(one.locator('.tstlog .lghist > li').first().locator('.lgh'))
-    .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
+  await checkReq('R8', async () => {
+    // The commit is CLEAR on the result itself, not only inside the opened log (the human, 2026-08-13):
+    // the case's meta line names the commit it last ran against, so which commit a case passed or
+    // failed in is answerable at a glance — the whole point of stamping the commit.
+    await expect(one.locator('.tmeta .tsha')).toHaveText(/[0-9a-f]{6,}/)
+    // the folded history is recorded into the case's own .tstlog (loadRuns); the ONE floating log
+    // window (board R10 — its open-in-a-window behaviour is proven on the board screen, through the
+    // Focus reader's wired Logs button) COPIES this very list, so read the history where it is folded.
+    await expect(one.locator('.tstlog .lghist > li').first()).toBeAttached()
+    // MORE THAN ONE run of this case is kept — the history, not just the newest. Not an exact count:
+    // earlier full runs of this screen covered this case too, and they legitimately count.
+    await expect(one.locator('.tstlog .logbox summary')).toContainText(/last \d+ runs/)
+    expect(await one.locator('.tstlog .lghist > li').count(),
+      'the case keeps a history, not one entry').toBeGreaterThanOrEqual(2)
+    // and it is capped, so a case cannot grow an unbounded wall of logs
+    expect(await one.locator('.tstlog .lghist > li').count()).toBeLessThanOrEqual(10)
+    // each stamped with when it ran and the commit it ran against
+    await expect(one.locator('.tstlog .lghist > li').first().locator('.lgh'))
+      .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
+  })
 })
 
 test('R8 — EVERY case that has run can expand its steps, not only the one you clicked', async ({ page, request }) => {
@@ -352,37 +372,41 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
   // the OPEN detail view only — every screen's panel is in the DOM, so an unscoped .test would also
   // pick up screens this run never touched. (The rows are read hidden — the record data, not the
   // rendering, is what this test protects; the rendering is board R10's, proven on its screen.)
-  const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')
-  const n = await cases.count()
-  expect(n, 'the screen has several cases').toBeGreaterThan(3)
-  for (let i = 0; i < n; i++) {
-    const title = await cases.nth(i).locator('.tt').textContent()
-    // the record reached THIS case: its meta line is filled by the fold, never left blank
-    await expect(cases.nth(i).locator('.tmeta'),
-      'case carries its run meta: ' + title).not.toBeEmpty()
-    // A case with story steps (flowStep) or proves-tags (checkReq) shows those beats inline WITH the
-    // run's outcome overlaid, and every one of them must — that is the fold-across-runs guarantee
-    // this test protects. A pure MECHANISM test (no checkReq, no flowStep — e.g. "hudCheck asserts
-    // the value it paints") proves no requirement and has no story, so board R10 correctly renders
-    // it with no beats. Its LOG still stands (asserted below), the record-per-case point either way.
-    if (await cases.nth(i).locator('.tststeps .beat').count()) {
-      await expect(cases.nth(i).locator('.tststeps .beat:not(.pending)').first(),
-        'case shows its beats, outcome overlaid: ' + title).toBeAttached()
+  await checkReq('R8', async () => {
+    const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')
+    const n = await cases.count()
+    expect(n, 'the screen has several cases').toBeGreaterThan(3)
+    for (let i = 0; i < n; i++) {
+      const title = await cases.nth(i).locator('.tt').textContent()
+      // the record reached THIS case: its meta line is filled by the fold, never left blank
+      await expect(cases.nth(i).locator('.tmeta'),
+        'case carries its run meta: ' + title).not.toBeEmpty()
+      // A case with story steps (flowStep) or proves-tags (checkReq) shows those beats inline WITH the
+      // run's outcome overlaid, and every one of them must — that is the fold-across-runs guarantee
+      // this test protects. A pure MECHANISM test (no checkReq, no flowStep — e.g. "hudCheck asserts
+      // the value it paints") proves no requirement and has no story, so board R10 correctly renders
+      // it with no beats. Its LOG still stands (asserted below), the record-per-case point either way.
+      if (await cases.nth(i).locator('.tststeps .beat').count()) {
+        await expect(cases.nth(i).locator('.tststeps .beat:not(.pending)').first(),
+          'case shows its beats, outcome overlaid: ' + title).toBeAttached()
+      }
+      // its log is folded per case (feeds the one full-log popup); assert the record reached this case
+      await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),
+        'case keeps its own folded log history: ' + title).toBeAttached()
+      await expect(cases.nth(i).locator('.loglink'),
+        'case can open its full log in a window: ' + title).toHaveCount(1)
     }
-    // its log is folded per case (feeds the one full-log popup); assert the record reached this case
-    await expect(cases.nth(i).locator('.tstlog .lghist > li').first(),
-      'case keeps its own folded log history: ' + title).toBeAttached()
-    await expect(cases.nth(i).locator('.loglink'),
-      'case can open its full log in a window: ' + title).toHaveCount(1)
-  }
+  })
 })
 
 test('R7 — the run panel offers no background run', async ({ page }) => {
   await page.goto(BOARD)
   // A job runs in the open or is cancelled — there is no hidden "background" mode. Not one control
   // on any E2E cell, and not one inside the panel: a run you cannot watch is the thing being removed.
-  await expect(page.locator('.runbg')).toHaveCount(0)
-  await expect(page.locator('#rpbg')).toHaveCount(0)
+  await checkReq('R7', async () => {
+    await expect(page.locator('.runbg')).toHaveCount(0)
+    await expect(page.locator('#rpbg')).toHaveCount(0)
+  })
 })
 
 test('R7 — the panel and its log stay on screen after the run ends', async ({ page, request }) => {
@@ -398,9 +422,11 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
   // reference. (The self-reload that closed it is held off under automation, so this guards the
   // observable contract: the log survives the run ending; it does not prove the human reload path.)
   await page.waitForTimeout(2500)
-  await expect(panel).toBeVisible()
-  await expect(panel.locator('#rplog')).not.toBeEmpty()
-  await expect(panel.locator('#rplog')).toContainText(/passing|passed|test/i)
+  await checkReq('R7', async () => {
+    await expect(panel).toBeVisible()
+    await expect(panel.locator('#rplog')).not.toBeEmpty()
+    await expect(panel.locator('#rplog')).toContainText(/passing|passed|test/i)
+  })
 })
 
 test('R5 — cancel stops the job, and cancelling nothing is refused not crashed', async ({ request }) => {
@@ -409,9 +435,11 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
   const started = await startRun(request, { screen: 'board' })
   expect(started.status()).toBe(200)
 
-  const cancelled = await request.post('/api/cancel')
-  expect(cancelled.status()).toBe(200)
-  expect((await cancelled.json()).cancelled).toBe('board')
+  await checkReq('R5', async () => {
+    const cancelled = await request.post('/api/cancel')
+    expect(cancelled.status()).toBe(200)
+    expect((await cancelled.json()).cancelled).toBe('board')
+  })
 
   // the process is really gone, so the guard clears and a fresh job would be accepted — proven by
   // the server reporting nothing running, not by trusting that SIGTERM landed
@@ -420,9 +448,11 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
   // Cancelling a job that is not running is a refusal, never an exception — and never a different
   // job. Named, so this holds wherever the spec runs from: a bare cancel here would stop whatever
   // holds the slot, and when the BOARD is running this spec that is this very run killing itself.
-  const nothing = await request.post('/api/cancel', { data: { runId: 'not-a-run' } })
-  expect(nothing.status()).toBe(409)
-  expect(await nothing.text()).toMatch(/nothing is running/i)
+  await checkReq('R5', async () => {
+    const nothing = await request.post('/api/cancel', { data: { runId: 'not-a-run' } })
+    expect(nothing.status()).toBe(409)
+    expect(await nothing.text()).toMatch(/nothing is running/i)
+  })
 })
 
 // ── COMPOSED FLOW: 'Run from the board cell, watch it stream, the verdict lands — then read the detail in its three views — composed' (deterministic emitter — tools/compose.mjs) ─────────────

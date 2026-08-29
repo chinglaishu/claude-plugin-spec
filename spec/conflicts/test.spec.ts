@@ -11,6 +11,10 @@ import { fileURLToPath } from 'node:url'
 //
 // _conflicts.json and _conflict-decisions.json are both restored by the state guard, exactly like
 // the approval pins — a test run must not leave a decision behind that nobody made.
+//
+// Tag backfill (2026-08-29): R2, R3 and R5's rescan-survival assertions existed here from the start
+// but never wore a checkReq, so the requirements they prove read Unproven on the board — the Task-7
+// tagging sweep stopped short of this file. Wrapped now; the assertions themselves are unchanged.
 
 const SPEC = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CONFLICTS = join(SPEC, '_conflicts.json')
@@ -45,6 +49,28 @@ const seed = (findings: unknown[]) => {
 
 const decisions = () => (existsSync(DECISIONS) ? JSON.parse(readFileSync(DECISIONS, 'utf8')) : {})
 
+test('R1 — a conflict card is one fact stated two incompatible ways', async ({ page }) => {
+  // The scanner's English-judgement is out of scope (see the header) — what IS provable is the
+  // structural claim R1 makes of every finding the tool shows: ONE fact (a single subject line),
+  // exactly TWO statements, each naming a distinct source, and the impact stated. A card missing
+  // any of those is a gap or a TODO wearing a conflict's clothes — the noise R1 exists to refuse.
+  seed([WIDTH])
+  await page.goto('/#conflicts')
+  const card = page.locator('#cfview .cf')
+  await expect(card).toHaveCount(1)
+
+  await checkReq('R1', async () => {
+    // one fact: a single subject line names the thing being contradicted
+    await expect(card.locator('header .sub')).toHaveCount(1)
+    await expect(card.locator('header .sub')).toHaveText(WIDTH.subject)
+    // two incompatible statements — exactly two sides, each naming its own distinct source
+    await expect(card.locator('.side')).toHaveCount(2)
+    await expect(card.locator('.side .src')).toHaveText([WIDTH.a.source, WIDTH.b.source])
+    // and the impact is stated — why this conflict is worth opening at all
+    await expect(card.locator('header .imp')).toHaveText(WIDTH.impact)
+  })
+})
+
 test('R2 — both positions are shown in full, each naming where it came from', async ({ page }) => {
   seed([WIDTH, ROW])
   await page.goto('/#conflicts')
@@ -52,11 +78,13 @@ test('R2 — both positions are shown in full, each naming where it came from', 
   await expect(view).toBeVisible()
 
   const card = view.locator('.cf', { hasText: WIDTH.subject })
-  await expect(card).toHaveCount(1)
-  // in FULL — not an ellipsis, not a summary. You are picking a winner between two sentences,
-  // so both sentences have to be readable without leaving the page.
-  await expect(card.locator('.side', { hasText: WIDTH.a.source })).toContainText(WIDTH.a.quote)
-  await expect(card.locator('.side', { hasText: WIDTH.b.source })).toContainText(WIDTH.b.quote)
+  await checkReq('R2', async () => {
+    await expect(card).toHaveCount(1)
+    // in FULL — not an ellipsis, not a summary. You are picking a winner between two sentences,
+    // so both sentences have to be readable without leaving the page.
+    await expect(card.locator('.side', { hasText: WIDTH.a.source })).toContainText(WIDTH.a.quote)
+    await expect(card.locator('.side', { hasText: WIDTH.b.source })).toContainText(WIDTH.b.quote)
+  })
 })
 
 test('R3 — the tool never picks: resolving is refused until you choose a side', async ({ page }) => {
@@ -64,13 +92,15 @@ test('R3 — the tool never picks: resolving is refused until you choose a side'
   await page.goto('/#conflicts')
   const card = page.locator('#cfview .cf', { hasText: WIDTH.subject })
 
-  await expect(card.locator('[data-resolve]')).toBeDisabled()
-  expect(decisions()).toEqual({})
+  await checkReq('R3', async () => {
+    await expect(card.locator('[data-resolve]')).toBeDisabled()
+    expect(decisions()).toEqual({})
 
-  await card.locator('.side', { hasText: WIDTH.b.source }).click()
-  await expect(card.locator('[data-resolve]')).toBeEnabled()
-  // picking is not deciding — nothing is written until you resolve
-  expect(decisions()).toEqual({})
+    await card.locator('.side', { hasText: WIDTH.b.source }).click()
+    await expect(card.locator('[data-resolve]')).toBeEnabled()
+    // picking is not deciding — nothing is written until you resolve
+    expect(decisions()).toEqual({})
+  })
 })
 
 test('R4 — resolving records which side lost, stays on Open, and offers the rewrite', async ({ page }) => {
@@ -129,10 +159,12 @@ test('R5 — a decision survives a rescan that reorders and swaps the sides', as
 
   await page.goto('/#conflicts')
   const view = page.locator('#cfview')
-  await expect(view.locator('.srow', { hasText: WIDTH.subject })).toHaveCount(1)
-  await expect(view.locator('.cf', { hasText: WIDTH.subject })).toHaveCount(0)
-  // and the one you never settled is still open, so a rescan is not a way to lose questions
-  await expect(view.locator('.cf', { hasText: ROW.subject })).toHaveCount(1)
+  await checkReq('R5', async () => {
+    await expect(view.locator('.srow', { hasText: WIDTH.subject })).toHaveCount(1)
+    await expect(view.locator('.cf', { hasText: WIDTH.subject })).toHaveCount(0)
+    // and the one you never settled is still open, so a rescan is not a way to lose questions
+    await expect(view.locator('.cf', { hasText: ROW.subject })).toHaveCount(1)
+  })
 
   await page.screenshot({ path: 'spec/conflicts/screen.png', fullPage: false })
 })
