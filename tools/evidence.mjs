@@ -93,6 +93,19 @@ export function beatEvidencePaths (screen, id, n) {
   }
 }
 
+// THE ASSERTED-VALUE FRAMES INSIDE A BEAT (2026-08-29, the human: "the When must be visible in the
+// proof too"). A beat's before/after pair photographs the two ENDS of an assertion body, and the
+// action itself falls between them: a box carrying what was just typed into it is empty in the
+// before frame and cleared again by the time of the after one, so the When was never in frame at
+// all. proveVisible now photographs the page at each value it rings and reads, and each of those
+// frames — with the layout skeleton the schematic's matching scene is drawn from — lands here,
+// numbered by the check that took it. k is 1-based, in the order the beat proved them.
+export function valueEvidencePaths (screen, id, n, k) {
+  const dir = `spec/${screen}/evidence`
+  const b = `${bare(id)}.b${Number(n) || 1}.v${Number(k) || 1}`
+  return { dir, frame: `${dir}/${b}.png`, layout: `${dir}/${b}.layout.json` }
+}
+
 // Task 16 #1 (the human, 2026-08-24): the screen's COMMITTED RECORDING — the primary flow's .webm,
 // persisted under the same committed evidence dir (spec/** is allowlisted and NOT gitignored; the
 // transient _runs/ home stays fully ignored). Content-hash named, so a re-run with the identical
@@ -161,7 +174,12 @@ export function resolvePrimaryVideo (harvest) {
           after: s.after || null,
           layoutBefore: s.layoutBefore || null,
           layoutAfter: s.layoutAfter || null,
-          window: s.window || null
+          window: s.window || null,
+          // the beat's asserted values in CHECK order (2026-08-29) — sorted by the check number the
+          // attachment carried, never by the order the attachments happened to arrive in
+          values: Object.keys(s.values || {}).map(Number).sort((a, b) => a - b).map(k => ({
+            k, frame: (s.values[k] || {}).frame || null, layout: (s.values[k] || {}).layout || null
+          }))
         }
       })
       // the REQUIREMENT-level pair is derived, never captured: the first beat's before, the last
@@ -189,7 +207,9 @@ export function resolvePrimaryVideo (harvest) {
 // Since 2026-08-28 the name carries the BEAT: `evidence <id>#<n> before`. The un-keyed form is
 // still read (a record from an older run, a mixed tree) and folded as beat 1, so nothing that was
 // harvested before this change reads as unharvested.
-const EVIDENCE_ATT = /^evidence ([^#\s]+)(?:#(\d+))? (before|after)$/
+// …and since 2026-08-29 a third phase shape, `v<k>`: the k-th asserted value proven inside that
+// beat (proveVisible's own frame). Numbered, always — a bare `v` is not a phase.
+const EVIDENCE_ATT = /^evidence ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
 export function parseEvidenceAttachment (name) {
   const m = EVIDENCE_ATT.exec(String(name || ''))
   return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
@@ -198,7 +218,7 @@ export function parseEvidenceAttachment (name) {
 // The LAYOUT attachment names snapLayout emits — `layout <id>#<n> before|after`, mirroring the
 // frame pair exactly (2026-08-28, the UI-mirror schematic). Same strictness: any other name is not
 // a layout and must never be folded as one.
-const LAYOUT_ATT = /^layout ([^#\s]+)(?:#(\d+))? (before|after)$/
+const LAYOUT_ATT = /^layout ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
 export function parseLayoutAttachment (name) {
   const m = LAYOUT_ATT.exec(String(name || ''))
   return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
@@ -217,6 +237,26 @@ export function focusFromLayout (layout) {
   const vw = num(layout.w); const vh = num(layout.h)
   if (!(vw > 0) || !(vh > 0)) return null
   return { x: num(r.x), y: num(r.y), w: num(r.w), h: num(r.h), vw, vh }
+}
+
+// THE BEAT'S CAMERA, over ALL of its phases (2026-08-29). A beat rings more than one thing now —
+// the value its When typed, then the value its Then produced — and a camera aimed at the last ring
+// alone would crop the earlier ones out of the row on BOTH sides, which is exactly the "the When is
+// not visible" complaint. The union of the beat's rings is still ONE rect (board R19: one camera,
+// both cells, same region), and it is honestly the region this beat's assertions pointed at. A beat
+// with a single ring unions to that ring, byte for byte what focusFromLayout returned before.
+export function focusFromLayouts (layouts) {
+  let out = null
+  for (const l of (layouts || [])) {
+    const f = focusFromLayout(l)
+    if (!f) continue
+    if (!out) { out = f; continue }
+    if (f.vw !== out.vw || f.vh !== out.vh) continue    // a different viewport is a different page
+    const x = Math.min(out.x, f.x); const y = Math.min(out.y, f.y)
+    const r = Math.max(out.x + out.w, f.x + f.w); const b = Math.max(out.y + out.h, f.y + f.h)
+    out = { x, y, w: r - x, h: b - y, vw: out.vw, vh: out.vh }
+  }
+  return out
 }
 
 // Fold one run's harvest into the results index — the same rules coverage follows: merged per
@@ -283,7 +323,12 @@ export function foldEvidence (index, entries) {
       // entry's retired clip set — so a path the new entry dropped is named for deletion
       const vals = x => [x.before, x.after, x.clip, ...Object.values(x.clipVariants || {}),
         ...(Array.isArray(x.beats) ? x.beats : []).flatMap(b =>
-          b ? [b.before, b.after, b.layoutBefore, b.layoutAfter] : [])]
+          b
+            ? [b.before, b.after, b.layoutBefore, b.layoutAfter,
+                // …and every asserted-value frame the beat carried, with its skeleton: a beat that
+                // lost a check must not leave its frames behind (2026-08-29)
+                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout] : []))]
+            : [])]
       const kept = new Set(vals(raw).filter(Boolean))
       for (const p of vals(old)) {
         if (p && !kept.has(p)) prune.push(p)

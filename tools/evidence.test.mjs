@@ -147,8 +147,43 @@ test('per-beat: the requirement-level pair is derived, and every beat keeps its 
   assert.equal(r.after, 'a2.png', 'and closes on the last beat\'s after')
   assert.deepEqual(r.window, { from: 100, to: 1200 }, 'its window spans every beat')
   assert.equal(r.beats.length, 2)
-  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', window: { from: 100, to: 400 } })
+  // `values` (2026-08-29) is part of every beat's shape now — empty where the checks photographed
+  // no asserted value, which is what a beat harvested before this change looks like.
+  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', window: { from: 100, to: 400 }, values: [] })
   assert.deepEqual(r.beats[1].window, { from: 900, to: 1200 }, 'each beat keeps its OWN span, so a per-beat row seeks its own moment')
+})
+
+// ── 2026-08-29: the asserted-value frames inside a beat, in the order they were proven. A beat's
+// proof plays before → each value → after, so the WHEN of a beat (a box carrying what was typed
+// into it) is in frame at all — it is empty before the beat and cleared again after it.
+test('per-beat: the asserted-value frames resolve in check order, each with its skeleton', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const harvest = {
+    'todo:R1': {
+      caps: {
+        _novideo: {
+          srcVideo: null,
+          order: [1],
+          beats: {
+            1: {
+              before: 'b1.png',
+              after: 'a1.png',
+              window: { from: 100, to: 4000 },
+              // deliberately out of key order — the resolver sorts by the check number, never by
+              // whatever order the attachments happened to land in
+              values: { 2: { frame: 'v2.png', layout: 'v2.json' }, 1: { frame: 'v1.png', layout: 'v1.json' } }
+            }
+          }
+        }
+      },
+      latestKey: '_novideo'
+    }
+  }
+  const r = resolvePrimaryVideo(harvest)['todo:R1']
+  assert.deepEqual(r.beats[0].values, [
+    { k: 1, frame: 'v1.png', layout: 'v1.json' },
+    { k: 2, frame: 'v2.png', layout: 'v2.json' }
+  ])
 })
 
 // ── the WINDOWS of every check, in order — a requirement proven three times has three `proves`
@@ -167,6 +202,21 @@ test('clipWindows returns one window per proves-step, in order', async () => {
 // ── the FOCUS RECT — where the ring stood when the beat's after-frame was taken, so the board can
 // zoom the media onto the component being proven. It is lifted out of the layout skeleton that
 // already recorded it; no cropped file is ever written.
+// ── 2026-08-29: a beat's camera frames the WHOLE beat. Its rings are now several — the value the
+// When typed, then the value the Then produced — and one camera aimed at the last of them would
+// crop the others clean out of the row, on both sides. The union is still ONE rect (board R19: one
+// camera, both cells), and it is the region this beat's assertions actually ringed.
+test('focusFromLayouts unions every ringed box of a beat, in the viewport they were measured in', async () => {
+  const { focusFromLayouts } = await import('./evidence.mjs')
+  const a = { w: 1440, h: 900, ring: { x: 100, y: 100, w: 200, h: 40 }, els: [] }
+  const b = { w: 1440, h: 900, ring: { x: 400, y: 300, w: 100, h: 60 }, els: [] }
+  assert.deepEqual(focusFromLayouts([a, b]), { x: 100, y: 100, w: 400, h: 260, vw: 1440, vh: 900 })
+  assert.deepEqual(focusFromLayouts([null, b]), { x: 400, y: 300, w: 100, h: 60, vw: 1440, vh: 900 },
+    'a phase that painted no ring simply adds nothing')
+  assert.equal(focusFromLayouts([]), null)
+  assert.equal(focusFromLayouts([{ w: 1440, h: 900, els: [] }]), null, 'no ring anywhere is no focus')
+})
+
 test('focusFromLayout lifts the ring + viewport out of a layout skeleton', async () => {
   const { focusFromLayout } = await import('./evidence.mjs')
   assert.deepEqual(

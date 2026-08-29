@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto'
 import { join, relative, basename } from 'node:path'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayout, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayouts, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -248,7 +248,7 @@ function harvestEvidence (harvest, ranAt) {
     // own window, so a per-beat row can show, pace and seek its own proof. Best-effort throughout.
     for (const b of (r.beats || [])) {
       const bp = beatEvidencePaths(scr, rid, b.n)
-      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, window: b.window || null }
+      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
         if (b[phase] && landFrame(b[phase], bp[phase])) row[phase] = bp[phase]
       }
@@ -257,16 +257,44 @@ function harvestEvidence (harvest, ranAt) {
         // a plain copy: JSON has nothing to re-encode
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
-      // THE FOCUS RECT: where the ring stood when this beat's after-frame was taken, read back out
-      // of the layout that already recorded it (tools/evidence.mjs focusFromLayout) — the board
-      // zooms the media onto it. No cropped file is ever written; the zoom is a view over the frame.
-      if (row.layoutAfter) {
+      // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
+      // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
+      // `proves` step started, read back out of the skeleton that recorded it (spec/_base.ts
+      // snapLayout). That offset is what lets the board anchor the frame INSIDE the beat's own window
+      // and play the loop at the run's true relative pace; without a skeleton the frame still shows,
+      // untimed, and the loop falls back to equal holds.
+      for (const v of (b.values || [])) {
+        const vp = valueEvidencePaths(scr, rid, b.n, v.k)
+        const got = { k: v.k, frame: null, layout: null, at: null }
+        if (v.frame && landFrame(v.frame, vp.frame)) got.frame = vp.frame
+        if (v.layout) {
+          try { copyFileSync(v.layout, join(process.cwd(), vp.layout)); got.layout = vp.layout } catch { /* dropped */ }
+        }
+        if (got.layout) {
+          try {
+            const at = JSON.parse(readFileSync(join(process.cwd(), got.layout), 'utf8')).at
+            if (Number.isFinite(Number(at))) got.at = Number(at)
+          } catch { /* an unreadable skeleton — the frame simply plays untimed */ }
+        }
+        if (got.frame) row.values.push(got)
+      }
+      // THE FOCUS RECT: where the ring stood when this beat was proven, read back out of the layouts
+      // that already recorded it (tools/evidence.mjs focusFromLayouts) — the board zooms the media
+      // onto it. No cropped file is ever written; the zoom is a view over the frame. It spans EVERY
+      // phase of the beat (2026-08-29), not the after-frame alone: the value the When typed and the
+      // value the Then produced are usually different elements, and a camera on the last of them
+      // crops the rest of the beat out of the row on both sides. The union is one rect, so the row
+      // still has exactly one camera (board R19).
+      const rings = [row.layoutAfter, ...row.values.map(v => v.layout)].filter(Boolean).map(p => {
+        try { return JSON.parse(readFileSync(join(process.cwd(), p), 'utf8')) } catch { return null }
+      })
+      if (rings.length) {
         try {
-          const f = focusFromLayout(JSON.parse(readFileSync(join(process.cwd(), row.layoutAfter), 'utf8')))
+          const f = focusFromLayouts(rings)
           if (f) row.focus = f
         } catch { /* no ring, or an unreadable skeleton — the beat simply carries no zoom */ }
       }
-      if (row.before || row.after || row.layoutBefore || row.layoutAfter) entry.beats.push(row)
+      if (row.before || row.after || row.layoutBefore || row.layoutAfter || row.values.length) entry.beats.push(row)
     }
     // …and the REQUIREMENT-LEVEL pair every existing reader still consumes (the cover, the Focus
     // media pane, the frame-stepper): the first beat's before and the last beat's after, at the
@@ -404,6 +432,18 @@ export default class ResultsIndexReporter {
         const n = t.beat || 1
         if (!cap.beats[n]) { cap.beats[n] = {}; cap.order.push(n) }
         const slot = cap.beats[n]
+        // an ASSERTED-VALUE phase (2026-08-29) — `v<k>`, the k-th value proveVisible rang and read
+        // inside this beat. Kept in its own numbered map so the beat's proof can play
+        // before → each value → after; first-wins per k for the same reason the pair is.
+        const vk = /^v(\d+)$/.exec(String(t.phase))
+        if (vk) {
+          const k = Number(vk[1])
+          const vslot = ((slot.values ||= {})[k] ||= {})
+          const field = tag ? 'frame' : 'layout'
+          if (!vslot[field]) vslot[field] = a.path
+          h.latestKey = key
+          continue
+        }
         // FIRST-wins per beat, never last: a chain checked more times than it has beats clamps its
         // extra checks onto the final beat (R5's "count climbs back" is its beats' third check), and
         // letting those overwrite showed a beat's row proving a DIFFERENT check than its Then text —

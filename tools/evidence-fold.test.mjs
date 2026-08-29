@@ -7,7 +7,7 @@
 // pruning, so an old index cleans itself up on its next fold.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { evidencePaths, beatEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, foldEvidence } from './evidence.mjs'
+import { evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, foldEvidence } from './evidence.mjs'
 
 test('evidencePaths derives the deterministic per-requirement home under the screen dir — frames only', () => {
   assert.deepEqual(evidencePaths('board', 'R4'), {
@@ -37,12 +37,38 @@ test('evidencePaths takes the bare id off a qualified one — the home is the re
   assert.equal(evidencePaths('asset-plan', 'asset-plan:R5').before, 'spec/asset-plan/evidence/R5.before.png')
 })
 
+// ── 2026-08-29: the ASSERTED-VALUE frames inside a beat. proveVisible photographs the page at the
+// moment it rings a value and reads it, so the beat's proof plays before → each asserted value →
+// after. Without them the WHEN of a beat is never in frame at all: a typed box is empty in the
+// before frame and cleared again in the after one (demo todo R1 — the human, 2026-08-29).
+test('valueEvidencePaths names each asserted-value frame inside its beat', () => {
+  assert.deepEqual(valueEvidencePaths('todo', 'R1', 1, 2), {
+    dir: 'spec/todo/evidence',
+    frame: 'spec/todo/evidence/R1.b1.v2.png',
+    layout: 'spec/todo/evidence/R1.b1.v2.layout.json'
+  })
+  assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 1).frame, 'spec/todo/evidence/R1.b3.v1.png',
+    'a qualified id lands in the requirement\'s own screen, like every other path here')
+})
+
 test('parseEvidenceAttachment reads the beat-keyed phase pair names checkReq attaches', () => {
   assert.deepEqual(parseEvidenceAttachment('evidence R4#1 before'), { id: 'R4', beat: 1, phase: 'before' })
   assert.deepEqual(parseEvidenceAttachment('evidence asset-plan:R5#3 after'), { id: 'asset-plan:R5', beat: 3, phase: 'after' })
   // the un-keyed form still reads (an older run, a mixed tree) — the fold files it as beat 1
   assert.deepEqual(parseEvidenceAttachment('evidence R4 before'), { id: 'R4', beat: null, phase: 'before' })
 })
+test('parseEvidenceAttachment reads an asserted-value phase, numbered inside its beat', () => {
+  assert.deepEqual(parseEvidenceAttachment('evidence R1#1 v1'), { id: 'R1', beat: 1, phase: 'v1' })
+  assert.deepEqual(parseEvidenceAttachment('evidence todo:R1#2 v13'), { id: 'todo:R1', beat: 2, phase: 'v13' })
+})
+test('parseLayoutAttachment reads an asserted-value phase too — one skeleton per frame', () => {
+  assert.deepEqual(parseLayoutAttachment('layout R1#1 v1'), { id: 'R1', beat: 1, phase: 'v1' })
+})
+test('a value phase must be numbered — a bare v is not a phase', () => {
+  assert.equal(parseEvidenceAttachment('evidence R1#1 v'), null)
+  assert.equal(parseEvidenceAttachment('evidence R1#1 v0x'), null)
+})
+
 test('parseEvidenceAttachment refuses every other attachment name', () => {
   assert.equal(parseEvidenceAttachment('screenshot'), null)
   assert.equal(parseEvidenceAttachment('evidence R4 during'), null)
@@ -241,6 +267,32 @@ test('beats: a beat the new harvest dropped has all four of its files named for 
     'spec/board/evidence/R4.b2.before.layout.json',
     'spec/board/evidence/R4.b2.before.png'
   ], 'beat 2 no longer exists — its whole set goes')
+})
+
+// ── 2026-08-29: the asserted-value frames a beat carries are files like any other — a fold that
+// drops one (the beat lost a check) must name it, or the tree grows frames nothing renders.
+const withVals = (n, k) => beat(n, {
+  values: Array.from({ length: k }, (_, i) => ({
+    frame: `spec/board/evidence/R4.b${n}.v${i + 1}.png`,
+    layout: `spec/board/evidence/R4.b${n}.v${i + 1}.layout.json`,
+    at: 400 * (i + 1)
+  }))
+})
+test('values: a fold keeps each beat\'s asserted-value frames, in order, with their offsets', () => {
+  const index = {}
+  foldEvidence(index, { 'board:R4': entry({ beats: [withVals(1, 2)] }) })
+  const vs = index.board.evidence.R4.beats[0].values
+  assert.equal(vs.length, 2)
+  assert.equal(vs[1].frame, 'spec/board/evidence/R4.b1.v2.png')
+  assert.equal(vs[0].at, 400, 'the offset into the beat\'s own window — what paces the loop')
+})
+test('values: a value frame the new harvest dropped is named for pruning', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [withVals(1, 2)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withVals(1, 1)] }) })
+  assert.deepEqual(prune.sort(), [
+    'spec/board/evidence/R4.b1.v2.layout.json',
+    'spec/board/evidence/R4.b1.v2.png'
+  ], 'the second check is gone — its frame and its skeleton go with it')
 })
 
 test('beats: an entry that never had layouts gains none from a layout-less fold', () => {

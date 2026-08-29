@@ -78,7 +78,7 @@ export const test = windowed.extend<{ page: Page, _failAggregate: void }>({
     STEP_FAILURES = []
     REQ_CHIPS = []
     PROVING = null; CLAIM = null; NOTE = ''; BEHAVIOR = null
-    BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null
+    BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null; CUR_CHECK = null
     // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
     // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
     // out like any other line, so the opening narration finishes before the bar starts moving.
@@ -314,6 +314,13 @@ let LAST_BOX: Box | null = null
 // the verdict now rides on BEHAVIOR.state. Kept only because checkReq still assigns it and the
 // per-test reset clears it; to be removed with the chip strip in the follow-up pass.
 let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
+// THE CHECK CURRENTLY RUNNING (2026-08-29) — which requirement, which beat, and the wall-clock the
+// beat's `proves` step started on. proveVisible needs it to file its asserted-value frame under the
+// right beat and to say WHEN in that beat the frame was taken (the board paces the beat's loop off
+// the step's own window, so the offset is measured from the same origin). Saved and restored around
+// each checkReq so a nested one cannot strand the outer beat's identity.
+type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number }
+let CUR_CHECK: CurCheck | null = null
 // The current beat the callout shows: the active requirement's BEAT_IDX-th When→Then, tagged with its
 // id, title and verdict. Null (callout hidden) before the first checkReq.
 function curBeat (): { id: string, title: string, when: string, then: string, state: 'active' | 'pass' | 'fail' } | null {
@@ -630,6 +637,24 @@ export async function pointAt (target: Locator, opts: { failed?: boolean } = {})
 // trimmed text must equal `expected`; pass `match` for a looser check (e.g. parse "$1,040,000" to a
 // number). Walk it across EACH item (year by year, row by row) — a summary/average is not proof of
 // the per-item values.
+// WHAT THE SCREEN IS SHOWING, from the element's own kind (2026-08-29). A form control's value is
+// not its textContent — an `<input>` carrying "Water the plants" has no text at all — so reading
+// text alone made the natural When-assertion ("the box now holds what you typed") impossible to
+// write, and the action a requirement names went unproven and unphotographed. Generic: any
+// input/textarea/select reads its value, everything else reads its rendered text. A detached or
+// unevaluable element falls back to textContent rather than throwing — proveVisible's own assert is
+// what must fail, with the value it read in the message.
+async function shownText (target: Locator): Promise<string> {
+  const el = target.first()
+  const v = await el.evaluate((n: any) => {
+    const tag = String(n.tagName || '').toUpperCase()
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return String(n.value == null ? '' : n.value)
+    return String(n.textContent == null ? '' : n.textContent)
+  }).catch(() => null)
+  if (v != null) return String(v).trim()
+  return ((await el.textContent().catch(() => '')) || '').trim()
+}
+
 export async function proveVisible (
   target: Locator,
   expected: string,
@@ -637,7 +662,7 @@ export async function proveVisible (
   opts: { match?: (shown: string) => boolean } = {}
 ): Promise<void> {
   await reveal(target, { hold: 0 })                         // centre it now, ring it in ink; the readable hold comes after we read
-  const shown = ((await target.first().textContent()) || '').trim()
+  const shown = await shownText(target)
   await hudCheck(label, expected, shown, { assert: false }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
   const ok = opts.match ? !!opts.match(shown) : shown === expected
   // A wrong value turns the ring bengara BEFORE we throw, and we hold on that red frame, so the
@@ -645,6 +670,10 @@ export async function proveVisible (
   // gained its own assert (76714c5); it must run with assert:false here or it would throw before this
   // reddening, leaving the ring ink on a failure — which is exactly what regressed.
   if (!ok) await paintFocus(target, { failed: true })
+  // …and PHOTOGRAPH it (2026-08-29). The frame is taken with the ring on the value and the claim on
+  // the bar — pass or fail — so the beat's proof plays every value it proved, in the order it proved
+  // them, instead of only the two ends of the assertion body.
+  await snapValue()
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
   if (opts.match) expect(ok, `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
   else expect(shown, `${label} — the value read off the screen`).toBe(expected)
@@ -699,7 +728,11 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
 // works in a plain CLI run — no board, no video needed. Strictly a BY-PRODUCT, never a gate: any
 // failure is swallowed and the shot itself is time-bounded, so a slow or dying page costs at most
 // the bound and never fails the test.
-async function snapEvidence (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
+// A phase is the beat's `before`, its `after`, or `v<k>` — the k-th asserted value proven inside
+// it (2026-08-29). The value frames are what put the beat's WHEN in the proof at all: a box
+// carrying what was typed into it is empty before the beat and cleared again after it.
+type Phase = 'before' | 'after' | string
+async function snapEvidence (id: string, beat: number, seq: number, phase: Phase): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   try {
@@ -738,7 +771,7 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // A by-product exactly like the frames: bounded (a walk budget in the page, a deadline outside
 // it), every failure swallowed. It measures and never touches the page, so it cannot change what
 // the assertion then reads.
-async function snapLayout (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
+async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   try {
@@ -812,7 +845,12 @@ async function snapLayout (id: string, beat: number, seq: number, phase: 'before
     }, LAST_BOX), 2500)
     if (!data || !Array.isArray(data.els) || !data.els.length) return
     const file = info.outputPath(`layout-${safeId(id)}-b${beat}-c${seq}-${phase}.json`)  // seq keys the file only — see snapEvidence
-    writeFileSync(file, JSON.stringify(data))
+    // `at` — this frame's offset in ms from the moment the beat's `proves` step started, so the
+    // board can anchor it inside the beat's own window and play the loop at the run's true relative
+    // pace. It rides the skeleton because the skeleton is already a per-phase file; it is deliberately
+    // NOT part of the drawing's layout pin (tools/viz.mjs layoutHash strips it — a timestamp that
+    // never repeats would redraw every schematic on every run).
+    writeFileSync(file, JSON.stringify(at == null ? data : { ...data, at }))
     info.attachments.push({ name: `layout ${id}#${beat} ${phase}`, path: file, contentType: 'application/json' })
   } catch { /* the drawing is a by-product too — a page that would not measure simply has none */ }
 }
@@ -823,10 +861,31 @@ async function snapLayout (id: string, beat: number, seq: number, phase: 'before
 // focus rect the board zooms the media onto — tools/evidence.mjs focusFromLayout lifts it into the
 // index), so there is one measurement and one source of truth. Photograph FIRST — the picture is
 // the evidence; the measurement rides after it.
-async function snapPhase (id: string, beat: number, seq: number, phase: 'before' | 'after'): Promise<void> {
+async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null): Promise<void> {
   await snapEvidence(id, beat, seq, phase)
-  await snapLayout(id, beat, seq, phase)
+  await snapLayout(id, beat, seq, phase, at)
 }
+
+// ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,
+// not only the Then). proveVisible calls this with the ring already painted and the claim already on
+// the bar, so the frame shows exactly what the check is reading — and the skeleton beside it gives
+// the schematic the same scene to draw, with the element's own text in it. Filed under the beat that
+// is proving, numbered by the check inside it. Silent and bounded like every other harvest: outside
+// a checkReq (a bare proveVisible in a helper) there is no beat to file under and nothing is taken.
+async function snapValue (): Promise<void> {
+  const c = CUR_CHECK
+  if (!c || !CURRENT_PAGE) return
+  c.k += 1
+  // LET THE RING LAND FIRST. The overlay's ring and callout move to a new target over a .16s CSS
+  // transition (renderOverlay), and these frames are taken moments after the paint rather than at
+  // the far end of a beat — so the first cut of this harvest photographed the ring MID-FLIGHT,
+  // hanging between the box it left and the value it was pointing at. A frame whose ring is on the
+  // wrong element is worse than no frame: it is a picture that misreads itself.
+  if (process.env.BOARD_RECORD) await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
+  await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0))
+}
+// the overlay's own transition (.16s) plus a frame — the ring is where it says it is after this
+const OVERLAY_SETTLE_MS = 220
 
 // checkReq / coverReqs — how a test PROVES a requirement (R4/R5). A test tags the requirement ids it
 // covers (qualified, e.g. `asset-plan:R5`, so a flow can prove another screen's requirement) and
@@ -867,6 +926,10 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
   // a target (renderOverlay's no-ring rule)
   await snapPhase(id, beatNo, cursor + 1, 'before')
+    // the beat is now OPEN: every value proveVisible rings inside fn files itself under it, timed
+    // from here — the same origin the reporter's window uses (the `proves` step starts next)
+    const outer = CUR_CHECK
+    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0 }
     try {
       await test.step('proves ' + id, async () => { await fn() })
       setChip(id, 'pass')
@@ -885,6 +948,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
       beat('req-done', id + ' fail')
       throw err
     } finally {
+      CUR_CHECK = outer                                // the beat closes before its after-frame
       // the AFTER frame lands pass or fail — a failed proof's pair shows the state it broke in
       await snapPhase(id, beatNo, cursor + 1, 'after')
     }
@@ -899,6 +963,8 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
   // a target (renderOverlay's no-ring rule)
   await snapPhase(id, beatNo, cursor + 1, 'before')
+  const outerTop = CUR_CHECK                           // same beat window as the nested path above
+  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0 }
   try {
     await test.step('proves ' + id, async () => { await fn() })
     setChip(id, 'pass')
@@ -917,6 +983,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700 + recordHold(0)).catch(() => {})
   } finally {
+    CUR_CHECK = outerTop
     // the AFTER frame lands pass or fail — here after the verdict paint, so a failed proof's
     // after-frame carries the red bar a renderer would want to show
     await snapPhase(id, beatNo, cursor + 1, 'after')
