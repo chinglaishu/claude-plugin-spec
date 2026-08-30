@@ -1,8 +1,8 @@
 {
   "version": "0.31.0",
   "files": {
-    "tools/spec-store.mjs": "312fbe6ece263d6ab325ba9e1184cc0d46a70ff78e584719ea706f1d8eebfdac",
-    "tools/coverage.mjs": "7cfd1577f4f7854d0460bc4a338f6e7d2817b09205d4108433954b0df504111c",
+    "tools/spec-store.mjs": "c76c3286e597820e82113075a44725c791037b76589d2cbde87c3dbc5077b767",
+    "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
     "tools/build-board.mjs": "ac2e926a47182a2ce84c7c6237aabf5c2c406bbb89faea6669e1b57cfdd8df41",
     "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
