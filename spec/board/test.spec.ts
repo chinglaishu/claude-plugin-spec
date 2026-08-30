@@ -2478,7 +2478,15 @@ test('The compose endpoint composes deterministically and refuses honestly — n
     delete e.provenHashes                       // and no pin can flip a pass to Changed
     for (const t of e.tests) for (const k of Object.keys(t.reqs || {})) if (/^board:R(1|2|13)$/.test(k)) t.reqs[k] = 'pass'
   }
-  const stale = (e: any) => { e.ranAt = 0 }    // older than every source — every pass stale by source
+  // Older than every source AND made against source that has since changed. Staleness is
+  // CONTENT-AWARE since 2026-08-30 (spec-store movedSince): the fold pins the tree's content
+  // (`srcHashes`) beside the run, and an old clock alone is no longer drift — a clean checkout
+  // restamps every mtime without changing a byte, which is exactly the CI false positive that
+  // rule cost us. So this fixture now simulates the real thing: the clock AND the fingerprints.
+  const stale = (e: any) => {
+    e.ranAt = 0
+    if (e.srcHashes) for (const k of Object.keys(e.srcHashes)) e.srcHashes[k] = 'moved-since-this-run'
+  }
   await checkReq('R13', async () => {
     let restore = patchBoardIndex(fresh)
     try {

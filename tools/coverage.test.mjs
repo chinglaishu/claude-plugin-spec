@@ -73,6 +73,10 @@ test('coverage is aggregated across screens by qualified id — a requirement li
     board: { ranAt: 100, tests: [{ title: 'home renders', ok: true, reqs: { 'board:R1': 'pass' } }] },
     'asset-plan': {
       ranAt: 200,
+      // the tree's content at that run, pinned by the fold — the other half of "is this pass still
+      // current" (spec-store's passStale): mtime says something was touched, this says whether it
+      // actually changed. It must ride out to the entry or staleness falls back to mtime alone.
+      srcHashes: { 'asset-plan': 'aaa', tenancy: 'bbb' },
       tests: [
         { title: 'edit reflects in tenancy', ok: true, reqs: { 'asset-plan:R5': 'pass', 'tenancy:R3': 'pass' } }
       ]
@@ -80,8 +84,17 @@ test('coverage is aggregated across screens by qualified id — a requirement li
   }
   const agg = aggregateCoverage(index)
   assert.deepEqual(agg['tenancy:R3'], [
-    { title: 'edit reflects in tenancy', screen: 'asset-plan', status: 'pass', ok: true, ranAt: 200 }
+    {
+      title: 'edit reflects in tenancy',
+      screen: 'asset-plan',
+      status: 'pass',
+      ok: true,
+      ranAt: 200,
+      srcHashes: { 'asset-plan': 'aaa', tenancy: 'bbb' }
+    }
   ])
+  // an entry from a fold that never recorded one carries the fact honestly: nothing pinned
+  assert.equal(agg['board:R1'][0].srcHashes, undefined)
   assert.equal(agg['board:R1'].length, 1)
   assert.equal(agg['asset-plan:R5'][0].screen, 'asset-plan')
 })

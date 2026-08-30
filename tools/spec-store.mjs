@@ -263,6 +263,12 @@ export function parseReport (path = RESULTS) {
 // a merge would keep a test that has since been deleted from the file.
 export function foldByScreen (fresh, { partial = false, evidence = null } = {}) {
   const index = existsSync(RESULTS_INDEX) ? JSON.parse(readFileSync(RESULTS_INDEX, 'utf8')) : {}
+  // The tree's CONTENT at this fold, pinned onto every entry this run writes — the second half of
+  // staleness (passStale/runStale). Board-wide, not just this screen's, because coverage is
+  // board-wide: a pass recorded on board's file can be staled by the requirement screen's own
+  // steps.ts, and only a snapshot taken WITH the run can tell that edit from a fresh checkout.
+  // Taken once per fold; each entry keeps the snapshot of its own run, beside its own ranAt.
+  const srcHashes = sourceSnapshot()
   for (const [screen, r] of Object.entries(fresh)) {
     const prev = index[screen]
     // `provenHashes` (Changed-drift, board R4's fifth word) rides the screen's index entry and is
@@ -277,8 +283,8 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
       const byTitle = new Map(prev.tests.map(t => [t.title, t]))
       for (const t of r.tests) byTitle.set(t.title, t)
       const tests = [...byTitle.values()]
-      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt, ...carried }
-    } else index[screen] = { ...r, ...carried }
+      index[screen] = { total: tests.length, failed: tests.filter(t => !t.ok).length, tests, ranAt: r.ranAt, srcHashes, ...carried }
+    } else index[screen] = { ...r, srcHashes, ...carried }
   }
   // Pin the proof text (Changed-drift): for every requirement this run's tests touched whose folded
   // status is now PASS, stamp a content hash of its wording at this moment. Compared at derive time
@@ -319,7 +325,7 @@ function stampProvenHashes (fresh, index) {
   }
   if (!touched.size) return
   // folded status is board-wide (a second screen's test can cover the same id), so derive it from
-  // the whole just-folded index — the same fold enrichReqs reads, minus its mtime staleness filter
+  // the whole just-folded index — the same fold enrichReqs reads, minus its source-staleness filter
   // (a pin stamped from a pass that later goes stale-by-source is harmless: staleness drops the
   // pass before status, so the requirement is not Passed and Changed cannot fire).
   const agg = aggregateCoverage(index)
@@ -360,13 +366,48 @@ export function readResults () {
   return parseReport()
 }
 
+// The files whose CONTENT a screen's proof stands on. steps.ts carries beat assertions since
+// Task 5 — editing one moves the proof's source like test.spec.ts.
+export const SOURCE_FILES = ['prd.md', 'draft.html', 'test.spec.ts', 'steps.ts']
+
 // Newest source file for a screen. If anything it proves has changed since the run, the result
 // describes a version of this screen that no longer exists.
-// steps.ts carries beat assertions since Task 5 — editing one moves the proof's source like test.spec.ts
-const newestSource = dir => ['prd.md', 'draft.html', 'test.spec.ts', 'steps.ts']
+const newestSource = dir => SOURCE_FILES
   .map(f => join(dir, f))
   .filter(existsSync)
   .reduce((max, f) => Math.max(max, statSync(f).mtimeMs), 0)
+
+// …and what that mtime is only a PROXY for: the sources' actual content. A clean checkout (CI, a
+// fresh clone, a restore) stamps every file with checkout time, so mtime alone called every
+// committed proof stale against a tree byte-identical to the fold that produced it — the whole
+// board read untested on GitHub Actions while nothing had changed (run 33295483970: board R4's
+// "some proven rows exist" precondition died and R12 derived a different next action). That is the
+// honesty rule misfiring, not working. The fold records this fingerprint beside the run
+// (foldByScreen → `srcHashes`), and staleness now needs BOTH: something newer than the run AND
+// content that no longer matches what the run was made against.
+export const sourceHash = dir => sha(SOURCE_FILES
+  .map(f => {
+    const p = join(dir, f)
+    return `${f}:${existsSync(p) ? sha(readFileSync(p)) : '-'}`
+  })
+  .join('\n'))
+
+// Every screen directory's fingerprint at this moment — what a fold pins onto the run. Keyed by
+// directory name, so `_modes` (a spec directory with a test file but no prd) is included exactly
+// like a screen: its test.spec.ts stales proofs the same way. A directory with none of the four
+// source files is not a screen source and is skipped.
+export function sourceSnapshot () {
+  const out = {}
+  for (const n of readdirSync(SPEC)) {
+    const dir = join(SPEC, n)
+    let st
+    try { st = statSync(dir) } catch { continue }
+    if (!st.isDirectory()) continue
+    if (!SOURCE_FILES.some(f => existsSync(join(dir, f)))) continue
+    out[n] = sourceHash(dir)
+  }
+  return out
+}
 
 // Per-requirement proof state (R4/R5). Every test's tags are aggregated across the WHOLE board — a
 // flow on another screen can prove this screen's requirement, so a requirement lists every test that
@@ -425,14 +466,38 @@ function aggFor (results) {
 // A pass counts only while CURRENT: stale if it predates a change to a source of EITHER the screen
 // whose test file produced it OR the requirement's own screen (task-5 review B-3 — a cross-screen
 // beat's assertion lives in the requirement's screen's steps.ts, e.g. dispatch:R7 proven from the
-// board's file). Pure; unit-tested in tools/stale-proof.test.mjs. Fails are never stale.
-export function passStale (e, screen, srcMs) {
-  return e.status === 'pass' && e.ranAt != null && e.ranAt < Math.max(srcMs(e.screen) || 0, srcMs(screen) || 0)
+// board's file). "Changed" is content-aware since 2026-08-30 — see movedSince: mtime is the cheap
+// gate, the fold's recorded fingerprint is the verdict, so a checkout stales nothing and a real
+// edit still stales everything it touches. Pure (both the clock and the hash are injected);
+// unit-tested in tools/stale-proof.test.mjs. Fails are never stale.
+export function passStale (e, screen, srcMs, srcHash = () => undefined) {
+  return e.status === 'pass' && e.ranAt != null &&
+    (movedSince(e, e.screen, srcMs, srcHash) || movedSince(e, screen, srcMs, srcHash))
+}
+// Has screen `s`'s source moved since this record's run? TWO gates, and both must fire:
+//   1. mtime — cheap, and the only thing that notices an edit made since the last fold (edit a
+//      prd.md and the board must read unproven immediately, with no run in between)
+//   2. the fingerprint the record pinned at run time — what tells a real edit from a checkout
+// No pin for that screen on this record (a fold written before content-aware staleness, or a
+// screen that did not exist at that fold) means there is no evidence about the content, and no
+// evidence is not evidence of sameness: keep the old, conservative mtime answer (rule 3).
+function movedSince (record, s, srcMs, srcHash) {
+  if (!((srcMs(s) || 0) > record.ranAt)) return false
+  const pinned = record.srcHashes?.[s]
+  return pinned == null || srcHash(s) !== pinned
+}
+// The whole-RUN twin of passStale — readScreen's e2e cell (`ranstale`: "passed, then you edited").
+// Same two gates against this screen's own source, so the column and the requirement rows can
+// never disagree about whether the tree moved. Pure; unit-tested beside passStale.
+export function runStale (run, screen, srcMs, srcHash = () => undefined) {
+  return !!run && run.ranAt != null && movedSince(run, screen, srcMs, srcHash)
 }
 function enrichReqs (reqs, screen, results) {
   const agg = aggFor(results)
   const srcCache = {}
   const srcMs = s => (srcCache[s] ??= newestSource(join(SPEC, s)))
+  const hashCache = {}
+  const srcHash = s => (hashCache[s] ??= sourceHash(join(SPEC, s)))
   return reqs.map(r => {
     const entries = agg[qualify(r.id, screen)] || []
     const tests = entries.map(e => ({
@@ -443,7 +508,7 @@ function enrichReqs (reqs, screen, results) {
       // that produced it (prd.md / test.spec.ts) — the proof then describes a version that has moved.
       // Editing a requirement is exactly such a change: it touches prd.md, so that screen's proofs go
       // stale by source and the requirement reads unproven until re-run — no gate needed to notice.
-      stale: passStale(e, screen, srcMs)
+      stale: passStale(e, screen, srcMs, srcHash)
     }))
     const hasCurrentPass = tests.some(t => t.status === 'pass' && !t.stale)
     // deriveReqStatus must see the SAME staleness filter hasCurrentPass does — a stale pass is
@@ -549,7 +614,10 @@ export function readScreen (name, results = null) {
   // the e2e cell green for a screen nothing ever tested (rule 3, never fake a green).
   const entry = allResults[name]
   const run = entry && Array.isArray(entry.tests) ? entry : undefined
-  const ranBeforeEdit = run && run.ranAt < newestSource(dir)
+  // "passed, then you edited" — the same two-gate rule the requirement rows use (runStale): newer
+  // than the run AND different content from what the run was made against, so a fresh checkout
+  // does not flip every screen's E2E cell to ranstale on a tree nothing has touched.
+  const ranBeforeEdit = runStale(run, name, () => newestSource(dir), () => sourceHash(dir))
   // E2E is identical in both modes once a test exists; the only thing the draft ever gated here was
   // whether the screen had STARTED, and a document-mode screen has (it is a finished screen). So a
   // missing test reads 'missing' when there is something to test against (a draft, or a built

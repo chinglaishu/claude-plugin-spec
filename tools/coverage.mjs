@@ -56,16 +56,21 @@ export function coverageFromTest ({ steps, annotations, screen }) {
   return cov
 }
 
-// Fold the whole results index into: { qualifiedId: [ {title, screen, status, ok, ranAt}, … ] } —
-// every test that covers each requirement, wherever its FILE lives. This is the many-to-many join:
-// a flow on one screen shows up under the requirement it proves on another.
+// Fold the whole results index into:
+//   { qualifiedId: [ {title, screen, status, ok, ranAt, srcHashes}, … ] }
+// — every test that covers each requirement, wherever its FILE lives. This is the many-to-many
+// join: a flow on one screen shows up under the requirement it proves on another.
+// `srcHashes` rides along beside `ranAt` because they are one fact: WHEN the run happened and WHAT
+// the tree said then. Staleness (spec-store's passStale) needs both — mtime alone calls a clean
+// checkout stale, since a checkout restamps every file without changing a byte.
 export function aggregateCoverage (index) {
   const agg = {}
   for (const [screen, entry] of Object.entries(index || {})) {
     const ranAt = entry?.ranAt
+    const srcHashes = entry?.srcHashes
     for (const t of entry?.tests || []) {
       for (const [id, status] of Object.entries(t.reqs || {})) {
-        ;(agg[id] ||= []).push({ title: t.title, screen, status, ok: !!t.ok, ranAt })
+        ;(agg[id] ||= []).push({ title: t.title, screen, status, ok: !!t.ok, ranAt, srcHashes })
       }
     }
   }

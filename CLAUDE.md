@@ -206,6 +206,19 @@ change.
   choice of 2026-08-24 supersedes it, and carryClip went with the cut. Frames are downscaled to
   1280px at the fold when ffmpeg is present (640px originally, final review M4; raised to 1280 by
   Task 16 #2, the human's 2026-08-24 sign-off — 640 was visibly soft in the wider panes).
+- **Staleness is CONTENT-aware; mtime alone calls a clean checkout stale.** A pass counts only
+  while current, but "the source moved" was measured purely by mtime — and a fresh clone stamps
+  every file with checkout time, so the GitHub Actions gate read every requirement untested on a
+  tree byte-identical to the fold that proved it (board R4 lost its "some proven rows exist"
+  precondition; R12 derived a different next action). Since 2026-08-30 the fold pins the sources'
+  CONTENT beside the run — `srcHashes` per screen in `_results-index.json`, written by
+  `foldByScreen` — and `passStale`/`runStale` (`tools/spec-store.mjs`, pure, unit-tested in
+  `tools/stale-proof.test.mjs`) demand BOTH gates: newer than the run AND a fingerprint that no
+  longer matches. Keep both. Dropping the mtime gate would miss an edit made since the last fold
+  (a PRD edit must read unproven immediately, with no run in between); dropping the hash brings the
+  false positive back. A record with no `srcHashes` (a fold from before this) keeps the old
+  mtime-only answer — no evidence about the content is not evidence of sameness (rule 3) — so a
+  fixture that simulates staleness must move the fingerprints too, not just `ranAt`.
 - **Per-requirement coverage rides on the run, and is folded, never replaced.** `checkReq` emits a
   `proves <id>` step and `coverReqs` a `covers` annotation; the reporter reads both back out
   (`tools/coverage.mjs`) into each test's `reqs`, folded into `_results-index.json` per screen. A
