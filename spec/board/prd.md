@@ -138,9 +138,10 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
 requirement at a time, as **one card read top to bottom**: the id · state · **title** lead one
-header row, then a slim bar carrying the reader's **one play speed** and a **column-order** toggle
-(*schematic first* ↔ *behavior first*), then the requirement's **storyline — a row per beat** under
-a **schematic · behavior · proof** header row. Each row carries that beat's three cells side by
+header row, then a slim bar carrying the reader's **one play speed** and its **play mode** (auto ↔
+step, R20), then the requirement's **storyline — a row per beat** under
+a **behavior · schematic · proof** header row *(the column-order toggle this bar carried was removed
+2026-08-30 with R21's rewrite — behaviour always leads)*. Each row carries that beat's three cells side by
 side: the **drawn schematic** frame (a short, looping animation of the drawing performing *that
 beat's* action, quiet grey when stale, parked as a still under reduced motion), the beat's **Given /
 When→Then words**, and that beat's **own harvested proof** — its before/after frames looping by
@@ -304,9 +305,11 @@ in the drawing's own coordinates so the region matches even when the aspects do 
 both; there is no way to move one alone, because there is only one choice to make. And the two cells
 step **together**: the proof's own loop drives the drawing, so frame *n* of the photograph and scene
 *n* of the drawing are the same moment — same region, same clock. The **words** are
-the same beat too: `tools/viz.mjs` draws the callout from the requirement's own When → Then, the
-harness burns those same words into the recording the proof frames are cut from, and the row's text
-cell reads them off the prd — one language across the row, three surfaces that must agree. The
+the same beat too — and the same **sentence**: the drawn card and the burned one ask one shared rule
+(`tools/callout-text.mjs`) which single line a scene says, so mid-beat neither can claim a Then that
+has not happened; the harness burns that line into the recording the proof frames are cut from, and
+the row's text cell reads the full beat off the prd — one language across the row, three surfaces
+that must agree *(amended 2026-08-30 with the one-sentence card, R10)*. The
 **Given row is the context row**: it is about *where* the component sits, not what it says, so both
 its cells stay whole-page and carry no beat and no callout.
 
@@ -328,11 +331,13 @@ scene is never cropped away), and the two cells now share one clock — the proo
 
 - **Given** a beat whose harvest holds its before, each value it proved, and its after
 - **When** its row renders
-- **Then** the proof cell is already looping — no mode to pick, no play to press — zoomed onto the focus by default, with the whole frame exactly one toggle away
+- **Then** the proof cell is already looping — no media mode to pick, no play to press — zoomed onto the focus by default, with the whole frame exactly one toggle away
+- **When** you switch the reader's play control from auto to step
+- **Then** every loop holds where it is, and a click on a proof cell advances that beat one scene — the drawing beside it moving with it, wrapping at the end
 - **When** the row is the Given
 - **Then** its one frame stays a still: a state, not an action
 
-A proof cell has **one mode**, so it needs no toolbar. The beat's before → each asserted value →
+A proof cell has **no media toolbar**. The beat's before → each asserted value →
 after runs the moment the
 row exists, on the reader's one speed, exactly as the drawing beside it loops that beat's own
 motion — a row plays as one thing. The old `stills · gif · video` switch over two frames was chrome
@@ -342,10 +347,19 @@ thing being proven, not a full page you have to hunt in) and the whole screensho
 back — the frame on disk is untouched either way. The **Given row** has a single frame and nothing
 to loop, so it stays the captioned still it is.
 
+The loop is the **default** and stays it. Beside the speed sits one reader-wide pair, **auto ↔
+step**: step holds every cell at once, and a click on the frames themselves is the "next" — both
+halves of a row move on the same call a timer would have made, so the lock-step survives the mode.
+The dots still jump; the mode holds the clock, it does not take the map away. Session-scoped like
+the speed and the zoom. It is a **play** mode, never a media mode: the retired `stills · gif ·
+video` toolbar does not come back with it, and while stepping, a click on a proof cell steps rather
+than opening the full-frame lightbox.
+
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
 Amended 2026-08-29 on the human's ask: the loop now carries each value the beat proved between
-its before and after, so the When is watchable, not inferred.*
+its before and after, so the When is watchable, not inferred. Amended 2026-08-30 on the human's
+ask ("enable click to go to the next small step"): the auto ↔ step play mode.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries no mode toolbar at all, is already armed (its frame counter advances on
@@ -353,30 +367,30 @@ its before and after, so the When is watchable, not inferred.*
      and back on the row's one control. Beat 2 asserts the Given row's cell is a captioned still: one
      frame, no stepper, no dots. -->
 
-## R21 — The reader reads in your order
+## R21 — The reader reads behaviour first
 
-- **Given** the reader's column-order control — *schematic first* ↔ *behavior first*
-- **When** you flip it
-- **Then** the header row and every beat row re-deal together, so no row can disagree with the header it sits under
+- **Given** a requirement's storyline
+- **When** it renders
+- **Then** every row deals the same three cells in one order — the behaviour's words, then the drawn schematic, then the harvested proof — with the header row over the cells it names
 - **When** you page on to another requirement
-- **Then** it still reads in the order you chose — held for the session, stored nowhere
+- **Then** it reads in that same order; there is no control to change it
 
-Some people read the picture first and some read the sentence first, and neither is wrong. The
-reader's bar carries one control that deals the same three columns the other way round, and it deals
-**the whole story at once**: the header row and every beat row take one class, so "schematic" can
-never end up sitting over the words. The choice is **session-scoped**, like the speed and the zoom
-beside it — a reader is rebuilt on every fold, so the order must survive the rebuild and the next
-requirement you page to; a preference that persisted across visits would silently reorder tomorrow's
-board with no cue why. Nothing about it is stored in the tree.
+The sentence you are asked to believe comes first, and the two pictures of it follow. Some read the
+picture first and some the sentence, and the toggle that offered both asked that question on every
+requirement and answered it nowhere — the human removed it (2026-08-30: *"just always be behaviour
+first"*). One order means the header can never sit over a column it does not name, because nothing
+is re-dealt: the DOM order **is** the visual order. Nothing about the order is chosen, held or
+stored — there is nothing left to remember.
 
-*Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
-reviewed in this session — canon as written, and theirs to reword or remove like any other.*
+*Drafted 2026-08-28 on the human's behalf as "reads in your order" (the column toggle); rewritten
+2026-08-30 to this fixed order on the human's direct instruction — canon as written, theirs to
+reword or remove like any other.*
 
-<!-- Proven by spec/board/test.spec.ts, "The reader reads in your order …" — beat 1 flips the control
-     and measures: the behavior cell really takes the left edge, and every header label still sits
-     over the cell it names in EVERY row (retagged here from the R13 test, where these assertions
-     were written). Beat 2 pages to another requirement and asserts the chosen order came with it,
-     with nothing written to storage. -->
+<!-- Proven by spec/board/test.spec.ts, "The reader reads behaviour first …" — beat 1 measures the
+     fixed order on every row of a multi-beat requirement (the words lead every row), header drift
+     under 2px, and asserts the retired column-order control is ABSENT (the R8 assert-the-gone
+     precedent). Beat 2 pages to another requirement and asserts the same order, with nothing
+     written to storage. -->
 
 ### 3 · Computed truth — state is derived, never stored
 
@@ -470,6 +484,30 @@ requirements. The human removed it: a decision that is always yes is ceremony, n
 state is now just proven / unproven; the "does the build match the intended design?" question moves to
 a separate, interactive wireframe check (planned), not a gate.*
 
+## R22 — The board says which screens gate CI
+
+- **Given** the CI chooser at `spec/_ci.json`
+- **When** the board is built
+- **Then** every home card whose screen is in the gate wears a CI mark, and the guide names the chooser by file
+- **When** the chooser changes, or is deleted
+- **Then** the marks follow it — an absent chooser means every screen, exactly as the gate resolves it
+
+The repo's CI gate runs a **user-chosen** set of screens, and the choice is a committed file —
+`spec/_ci.json`, resolved by the same pure `tools/ci-select.mjs` the workflow itself runs. What is
+chosen must be **visible where the choosing matters**: each home card in the gate wears a small "CI
+gate" mark, derived at build time from the chooser through that same resolver, so the mark can never
+disagree with what CI will actually run. The guide names the file, so "how do I add a test to CI?"
+has an answer on the board itself. An unreadable chooser reads **broken** out loud rather than
+silently gating nothing. Like every fact on this board, the mark is derived, never stored.
+
+*Drafted 2026-08-30 on the human's behalf, transcribing their ask ("user need to be clear that they
+can add some test for CI check, and what tests are added") — canon as written, theirs to reword or
+remove like any other.*
+
+<!-- Proven by spec/board/test.spec.ts, the CI-mark test — it reads the committed chooser
+     independently, demands the marked set differ from the full set, then seeds a one-screen chooser
+     → rebuild → the marks move; deletes the chooser → rebuild → every card wears the mark. -->
+
 ### 4 · What the board refuses to own
 
 ## R7 — specboard owns neither the wireframe nor the design
@@ -533,7 +571,7 @@ menu to ask from. Opening it from a requirement pre-picks that requirement in th
 - **When** you open the test
 - **Then** its numbered story steps show from its definition — before any run — each wearing the run's passed / failed / not-reached mark
 - **When** a step asserts a value while the run records
-- **Then** a callout burned into the recording rings the asserted element and names the requirement beside that beat's When→Then in the requirement's own words — reddened and naming the got value on a failure, the asserted value scrolled into view
+- **Then** a callout burned into the recording rings the asserted element and carries the requirement's id chip beside the ONE line that scene is proving — the When while the beat is in motion, the Then once it comes to rest — reddened and naming the got value on a failure, the asserted value scrolled into view
 - **When** you pick Logs from the ⋯ menu
 - **Then** the whole run log opens in a floating window, not a full-screen scrim
 
@@ -566,10 +604,14 @@ disagreeing screenshot source — only the one recording, read two ways: played,
 recording **narrates itself from inside the
 video**: while a run executes, the harness paints a **product-tour callout into the page under
 test** — burned into the recording and its cover, not overlaid by the board. The app dims lightly,
-a **ring lands on the exact element the check reveals**, and a card **attached to that ring** names
-the requirement (its id and title) and carries the current beat's **When → Then in the
-requirement's own words** — the same words the board's storyline shows, so the recording and the
-board read as one language. On a failing check the ring, the card and the **got value** all redden,
+a **ring lands on the exact element the check reveals**, and a card **attached to that ring** carries
+the requirement's **id chip and the ONE sentence the scene in front of you is proving** — the When
+while the action is on screen, the Then once the beat comes to rest, in the requirement's own words,
+the same words the board's storyline shows. Never the requirement title, never both lines stacked:
+the card floats over the app it is pointing at, and a paragraph there hides the very thing being
+proven *(amended 2026-08-30, the human: "as less text as possible", one shared rule feeding the
+drawn and burned cards alike — tools/callout-text.mjs)*.
+On a failing check the ring, the card and the **got value** all redden,
 so the video alone explains what was being tested and which part failed; the got value shows **only
 on a failure** (every check's full got-vs-expected is recorded as the test's step evidence instead).
 The card is placed **below the ring first, then above, then beside it**, and **never covers the
