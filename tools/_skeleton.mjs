@@ -35,6 +35,11 @@ export const FILES = [
   // a project with one copy and not the other has a drawing and a photograph that say different
   // things mid-beat.
   'tools/callout-text.mjs',
+  // the CI gate's pure resolver (2026-08-30): spec/_ci.json is the chooser, this turns it into the
+  // file list the workflow runs — and tools/spec-store.mjs now reads it too, so the board can mark
+  // which screens gate CI without keeping a second opinion. Guard-caught (spec-store imports it),
+  // and a scaffolded project needs it to choose its own gate at all.
+  'tools/ci-select.mjs',
   // the viz pass's shell (task 4 review M2, fix round 1, 2026-08-22): the CLI a scaffolded project
   // runs to derive/commit its own schematics ("redraw is instant and free"). NOT caught by the
   // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports

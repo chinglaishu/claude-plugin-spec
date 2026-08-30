@@ -15,6 +15,9 @@ import { parseBehavior } from './behavior.mjs'
 import { parseBeats } from './compose.mjs'
 import { reqHash, meaningText, isChanged } from './reqhash.mjs'
 import { vizHash, vizStale } from './viz.mjs'
+// the CI gate's PURE resolver — the same one .github/workflows/e2e.yml runs through
+// `node tools/ci-select.mjs`, so the board's CI mark and the gate can never disagree
+import { selectCiTests } from './ci-select.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 export const SPEC = join(ROOT, 'spec')
@@ -874,6 +877,34 @@ export function allScreens () {
     .filter(n => !n.startsWith('_') && statSync(join(SPEC, n)).isDirectory())
     .map(n => readScreen(n, results))
     .filter(Boolean)
+}
+
+// THE CI GATE, DERIVED — never stored (the human, 2026-08-30: "user need to be clear that they can
+// add tests for CI check, and what tests are added"). `spec/_ci.json` is the CHOOSER and
+// tools/ci-select.mjs is the pure resolver the GitHub Actions workflow itself runs; this reads the
+// same file through the SAME resolver, so a mark on the board can never disagree with the gate that
+// actually runs. An absent or unparseable file means every screen, exactly as the resolver decides
+// it — and a name in the chooser with no test.spec.ts on disk makes the resolver throw, which is a
+// broken gate: the board says so rather than drawing a comforting "all screens" (rule 3).
+export const CI_FILE = join(SPEC, '_ci.json')
+export function ciGate () {
+  const onDisk = readdirSync(SPEC)
+    .filter(n => statSync(join(SPEC, n)).isDirectory() && existsSync(join(SPEC, n, 'test.spec.ts')))
+  let config = null
+  let parsed = false
+  if (existsSync(CI_FILE)) {
+    try { config = JSON.parse(readFileSync(CI_FILE, 'utf8')); parsed = true } catch { config = null }
+  }
+  try {
+    return {
+      all: config == null,          // no chooser (absent, or it would not parse) ⇒ every screen runs
+      chosen: parsed && config != null,
+      screens: selectCiTests(config, onDisk).map(p => p.split('/')[1]),
+      error: ''
+    }
+  } catch (err) {
+    return { all: false, chosen: true, screens: [], error: String(err.message || err) }
+  }
 }
 
 export function sortedAreas (screens) {

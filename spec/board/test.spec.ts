@@ -2386,6 +2386,75 @@ test('The guide ends with the derived next action, and there is no rail', async 
   }
 })
 
+// Board R12, second half — WHAT GATES CI, ON THE BOARD (the human, 2026-08-30: "user need to be
+// clear that they can add tests for CI check, and what tests are added"). The chooser is
+// spec/_ci.json and tools/ci-select.mjs is the resolver the GitHub workflow itself runs; the board
+// reads the same file through the same resolver at BUILD time and marks the cards that gate. Nothing
+// is stored — which is the whole claim, so it is proven by SEEDING a different chooser, rebuilding,
+// and watching the marks follow (the R12 seeding precedent above; the state guard is the backstop
+// and this test puts the file back itself).
+test('The home cards say which screens gate CI, derived from spec/_ci.json', async ({ page }) => {
+  await coverReqs('R12')
+  const CI_FILE = 'spec/_ci.json'
+  const had = existsSync(CI_FILE) ? readFileSync(CI_FILE, 'utf8') : null
+  const marked = async () => page.locator('#home .card').evaluateAll(cards => cards
+    .filter(c => c.querySelector('.kchip.ci'))
+    .map(c => c.getAttribute('data-screen')).sort())
+  const all = async () => page.locator('#home .card').evaluateAll(cards =>
+    cards.map(c => c.getAttribute('data-screen')).sort())
+  try {
+    await checkReq('R12', async () => {
+      // (a) THE COMMITTED CHOOSER: the cards it names wear the mark and the ones it leaves out do
+      // not. Read the file here, independently of the board, so this is a comparison and not a
+      // restatement — and demand that the two sets actually DIFFER, or the assertion would hold
+      // just as well for a board that marked everything.
+      const chosen: string[] = JSON.parse(readFileSync(CI_FILE, 'utf8')).screens
+      await page.goto('/')
+      await page.waitForSelector('#home .card')
+      const cards = await all()
+      const want = cards.filter(n => chosen.includes(n)).sort()
+      const out = cards.filter(n => !chosen.includes(n))
+      expect(out.length, 'this project deliberately leaves a screen out of the gate — otherwise the mark proves nothing').toBeGreaterThan(0)
+      await reveal(page.locator('#home .card .kchip.ci').first())
+      expect(await marked(), 'the marked cards are exactly the screens spec/_ci.json chose').toEqual(want)
+      await hudCheck('the CI mark derives from the chooser', want.join(' '), (await marked()).join(' '))
+      // the mark says what it is, in the chip pattern the kind counts already use
+      await expect(page.locator(`#home .card[data-screen="${want[0]}"] .kchip.ci`)).toContainText('CI')
+    })
+
+    await checkReq('R12', async () => {
+      // (b) SEED A DIFFERENT CHOOSER and rebuild: the marks move with it. A stored flag could not do
+      // this — it would still be marking yesterday's screens.
+      const only = (await all()).filter(n => n !== 'board')[0]
+      writeFileSync(CI_FILE, JSON.stringify({ screens: [only] }, null, 2) + '\n')
+      build()
+      await page.goto('/')
+      await page.reload()                       // the mark is BAKED, so the page has to be re-fetched
+      await page.waitForSelector('#home .card')
+      await reveal(page.locator(`#home .card[data-screen="${only}"]`))
+      expect(await marked(), 'only the seeded screen gates now').toEqual([only])
+      await expect(page.locator('#home .card[data-screen="board"] .kchip.ci')).toHaveCount(0)
+      await hudCheck('a different chooser moves the mark', only, (await marked()).join(' '))
+
+      // (c) NO CHOOSER AT ALL is the resolver's own rule — every screen runs — so every card wears it
+      rmSync(CI_FILE, { force: true })
+      build()
+      await page.reload()
+      await page.waitForSelector('#home .card')
+      expect(await marked(), 'an absent chooser widens the gate back to every screen').toEqual(await all())
+
+      // …and the guide names the file, so a person can find the chooser without reading the workflow
+      await page.goto('/#howitworks')
+      await page.waitForSelector('#walkthrough')
+      await expect(page.locator('#howview')).toContainText('spec/_ci.json')
+    })
+  } finally {
+    if (had == null) rmSync(CI_FILE, { force: true })
+    else writeFileSync(CI_FILE, had)
+    build()
+  }
+})
+
 // Board R15 — the board hands you a PROMPT; it never writes a requirement or a test itself. The ⋯
 // menus (one on the requirement in the Focus reader, one folded into the proof header's existing
 // menu) each open the prompt window: a READY Claude prompt carrying the screen, the exact file, the

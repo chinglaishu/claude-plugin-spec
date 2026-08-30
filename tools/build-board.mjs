@@ -8,7 +8,7 @@ import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns
+  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -187,7 +187,16 @@ export const cardRows = (s, cap = 5) => {
 // and name bold, the gloss after the em-dash muted, a hair rule beneath), carried by the row's class.
 const famRow = (f, tag = 'li') =>
   `<${tag} class="fam"><span class="fnum">${esc(f.n == null ? '' : f.n + ' · ')}</span><b class="fname">${esc(f.name)}</b>${f.gloss ? `<span class="fgloss"> — ${esc(f.gloss)}</span>` : ''}</${tag}>`
-const card = (s, i, runs) => {
+// WHAT GATES CI (the human, 2026-08-30: "user need to be clear that they can add tests for CI check,
+// and what tests are added"). A screen whose whole test.spec.ts runs in the CI gate wears one small
+// chip on its home card — the same .kchip pattern the unit/flow counts already use, no new hue and
+// no new shape, because this is a fact about the screen, not a state of it. DERIVED on every build
+// from spec/_ci.json through the very resolver the workflow runs (spec-store ciGate); an absent
+// chooser means every screen, so the mark is then on every card, which is exactly what the gate does.
+const ciChip = inCi => inCi
+  ? '<span class="kchip ci" title="this screen\'s test.spec.ts runs in the CI gate — chosen in spec/_ci.json"><span class="km">CI</span> gate</span>'
+  : ''
+const card = (s, i, runs, inCi = false) => {
   const M = s.reqs.length
   const proven = s.reqs.filter(r => r.state === 'proven').length
   const done = M > 0 && proven === M
@@ -196,6 +205,7 @@ const card = (s, i, runs) => {
   const kinds = (kc.unit || kc.flow)
     ? `<span class="kchip unit"><span class="km">${kc.unit}</span> unit</span><span class="kchip flow"><span class="km">${kc.flow}</span> flow</span>`
     : '<span class="kchip none">no tests yet</span>'
+  const ci = ciChip(inCi)
   const still = latestStill(s, runs)
   // the evidence fallback is served off the same allowlisted spec/** path; hashed like screen.png
   const stillSrc = still && (still.hash ? `${still.src}?h=${still.hash}`
@@ -214,6 +224,7 @@ const card = (s, i, runs) => {
     <div class="metrics">
       <span class="chip ${done ? 'ok' : 'gone'} pcount"><span class="mark${done ? '' : ' o'}"></span>${proven} / ${M} proven</span>
       <div class="kinds">${kinds}</div>
+      ${ci}
     </div>
     <div class="cshot">${stillSrc
       ? `<span class="lrun">latest run · ${esc(still.run)}</span><img src="${esc(stillSrc)}" alt="${esc(s.title)} — latest run">`
@@ -1385,7 +1396,28 @@ const howSkillSummaries = () => HOW_FLOWS.map((f, i) =>
       <span class="ss-go">View flow →</span>
     </button>`).join('\n')
 
-const howView = ctaAction => `<section class="dt" id="howview" hidden>
+// ONE SENTENCE ABOUT THE GATE (the human, 2026-08-30). The guide is where a person learns what the
+// board IS, so it is where they should learn that CI is theirs to choose — and by which file.
+// Derived like everything else: it names which screens gate today, and says so out loud when the
+// chooser names a screen that is not there (a typo shrinks the gate, which is a false green waiting
+// to happen, so it is never smoothed over — rule 3).
+const ciNote = ci => {
+  if (ci.error) {
+    return '<p class="cinote"><b>The CI gate is yours to choose</b> — <code>spec/_ci.json</code> names the ' +
+      'screens whose whole <code>test.spec.ts</code> runs in the GitHub Actions gate, and a card wearing ' +
+      '<b>CI</b> is in it. Right now that file is <b>broken</b>: ' + esc(ci.error) + '</p>'
+  }
+  const named = ci.screens.length
+  return '<p class="cinote"><b>The CI gate is yours to choose</b> — <code>spec/_ci.json</code> names the ' +
+    'screens whose whole <code>test.spec.ts</code> runs in the GitHub Actions gate, and every home card ' +
+    'in it wears a <b>CI</b> mark. ' +
+    (ci.all
+      ? 'There is no chooser on disk right now, so <b>every screen</b> runs — deleting the file widens the gate, it never disables it.'
+      : 'Right now it names ' + named + ' screen' + (named === 1 ? '' : 's') + ': <b>' + esc(ci.screens.join(' · ')) + '</b>.') +
+    ' Edit the list as screens are added, retired, or judged too slow to gate a merge; one left out still runs with <code>npm run e2e</code>.</p>'
+}
+
+const howView = (ctaAction, ci) => `<section class="dt" id="howview" hidden>
   <div class="dth">
     <h2>How does it work</h2>
     <span class="gbn">spec-driven development, made visible</span>
@@ -1421,6 +1453,7 @@ const howView = ctaAction => `<section class="dt" id="howview" hidden>
           test <i>tags</i> it with an assertion that would fail without it. Edit a requirement and its
           proof goes stale; delete an assertion and the green honestly disappears. The board never
           stores state — it derives it, on every build.</p>
+        ${ciNote(ci)}
         <div class="legend">
           <span class="chip"><span class="mk o"></span>step / artifact</span>
           <span class="chip ok"><span class="mk"></span>proven — assertion-backed</span>
@@ -1566,6 +1599,10 @@ export function build () {
     <button class="featx" id="featx" aria-label="dismiss the feature strip" title="hide this — a client-side preference, never stored">✕</button>
   </div>` : ''
 
+  // the CI gate, read once for the whole build (never per card) — the same file, through the same
+  // resolver, that .github/workflows/e2e.yml runs
+  const ci = ciGate()
+  const inCi = new Set(ci.screens)
   const groups = areas.map(a => {
     const inArea = screens.map((s, i) => ({ s, i })).filter(x => x.s.area === a)
     return `
@@ -1575,7 +1612,7 @@ export function build () {
     <h2>${esc(a)}</h2>
     <span class="gc">${inArea.length} screen${inArea.length === 1 ? '' : 's'}</span>
   </div>
-  <div class="cards">${inArea.map(x => card(x.s, x.i, runs)).join('')}</div>
+  <div class="cards">${inArea.map(x => card(x.s, x.i, runs, inCi.has(x.s.name))).join('')}</div>
 </section>`
   }).join('')
 
@@ -1777,6 +1814,17 @@ export function build () {
   .kchip.unit .km { color:var(--ai); }
   .kchip.flow .km { color:var(--koke); }
   .kchip.none { color:var(--ink-4); }
+  /* the CI mark (2026-08-30): the same chip, no hue of its own — hue on this board names a requirement
+     STATE, and "this screen gates CI" is a fact about the screen, not a state of it. --ink-3 on
+     --paper is 6.42:1 (AA). */
+  .kchip.ci .km { color:var(--ink-3); }
+  /* its own line under the kind counts — it is not a test-kind count, and sitting inside that row
+     would read as one (and would break board R1's beat, which pins that row to unit + flow) */
+  #home .card .metrics > .kchip.ci { align-self:flex-end; }
+  /* the guide's one sentence about the gate — the intro's own voice, held to a readable measure */
+  .intro .cinote { margin-top:var(--s3); font-size:var(--t-sm); line-height:1.6; color:var(--ink-2); }
+  .intro .cinote code { font:var(--t-xs) var(--mono); background:var(--wash); border:1px solid var(--hair);
+    border-radius:var(--r-sm); padding:1px 5px; color:var(--ink-2); }
   /* the card's media column scales with the chrome (Task 14) — the cover is a recognition
      thumbnail, not proof imagery; 16:9 held (240×120 at 0.8) */
   .cshot { width:calc(300px * var(--scale)); height:calc(150px * var(--scale)); border-radius:var(--r-sm); border:1px solid var(--hair); overflow:hidden;
@@ -3781,7 +3829,7 @@ export function build () {
 <!-- How does it work — a tool view (#howitworks, no slash) describing the specboard method. The intro,
      spine, lanes and the four skill flowcharts are baked; only a project's own added skills/agents are
      fetched from /api/capabilities and shown as cards below. -->
-${howView(ctaAction)}
+${howView(ctaAction, ci)}
 
 <div class="lb" id="lb" hidden>
   <div class="lbbar"><span id="lbcap" class="lbcap"></span><span class="grow"></span>
