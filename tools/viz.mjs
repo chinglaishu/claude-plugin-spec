@@ -577,11 +577,13 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // THE RENDERER PIN. Staleness on this board is a BODY comparison — viz-derive redraws whenever the
 // committed file differs from what the kit draws today — so a renderer change already lands on the
 // next pass with no bump at all, and no committed drawing ever needs deleting. This stamp exists so
-// the reason is legible ON DISK: `mirror-3` draws the overlay at the burn-in's own PAGE GEOMETRY
+// the reason is legible ON DISK: `mirror-4` draws the asserted value at the ELEMENT'S OWN MEASURED
+// TYPE — the page's font size, alignment and text inset, where the harvest recorded them, instead of
+// a centred label sized off the ring box's height; `mirror-3` draws the overlay at the burn-in's own PAGE GEOMETRY
 // (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
-const MIRROR_KIT = 'mirror-3'
+const MIRROR_KIT = 'mirror-4'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
@@ -604,7 +606,25 @@ function normLayout (l) {
     const key = kind + '|' + Math.round(x) + '|' + Math.round(y) + '|' + Math.round(ew) + '|' + Math.round(eh)
     if (seen.has(key)) continue
     seen.add(key)
-    els.push({ x, y, w: ew, h: eh, kind, text: typeof e.text === 'string' ? e.text : '', focus: !!e.focus })
+    // THE ELEMENT'S OWN TYPE (2026-08-29), where the harvest measured it: the font size the page
+    // renders this text at, how it is aligned in its box, and the inset its text starts from. Only
+    // ever used for the text the drawing types INSIDE a box; absent (an older harvest) it stays null
+    // and the kit falls back to sizing off the box, which is all such a skeleton can honestly say.
+    const fs = num(e.fs)
+    const pl = num(e.pl); const pr = num(e.pr)
+    els.push({
+      x,
+      y,
+      w: ew,
+      h: eh,
+      kind,
+      text: typeof e.text === 'string' ? e.text : '',
+      focus: !!e.focus,
+      fs: fs > 0 ? fs : null,
+      ta: (e.ta === 'c' || e.ta === 'r' || e.ta === 'l') ? e.ta : null,
+      pl: pl > 0 ? pl : 0,
+      pr: pr > 0 ? pr : 0
+    })
   }
   const r = l.ring && typeof l.ring === 'object' ? l.ring : null
   const ring = r && num(r.x) != null && num(r.y) != null && num(r.w) > 0 && num(r.h) > 0
@@ -712,11 +732,30 @@ function valueMark (f, text, W, H, hot, region) {
   const label = fitText(text, 460, 12)
   if (!label) return { svg: '', box: null }
   const ink = hot ? 'ink' : 'ink-3'
-  const own = clamp(f.h * 0.62, 4, 16)                 // the element's own type size, as everywhere else
-  const fit = Math.min(own, (f.w - own * 0.4) / (label.length * 0.62), f.h * 0.78)
+  // WHERE THE PAGE PUTS IT (the human, 2026-08-29: "the input box of add task is in a different
+  // place"). Sizing the value off the ring box's HEIGHT is right for a text leaf — its box IS its
+  // line — and wrong for a FIELD: a 47px Add input drew its typed value mid-box at ~2.5× the type
+  // the app renders, the only text in the whole drawing not sitting where the photograph has it.
+  // Where the harvest measured the element's own type (fs / ta / the text's inset), the drawing uses
+  // it: same size, same alignment, same start, converted by the ONE scale S like every other number
+  // here. Where it did not, the old centred mark stands — an older skeleton cannot honestly say more.
+  const mfs = f.fs > 0 ? f.fs : 0
+  const own = mfs || clamp(f.h * 0.62, 4, 16)          // the element's own type size, as everywhere else
+  const pad = mfs ? { l: f.pl || 0, r: f.pr || 0 } : { l: 0, r: 0 }
+  const room = Math.max(1, f.w - pad.l - pad.r - own * 0.4)
+  // measured type is never grown to fill the box; it only ever shrinks to stay inside it
+  const fit = mfs
+    ? Math.min(mfs, room / (label.length * 0.62))
+    : Math.min(own, (f.w - own * 0.4) / (label.length * 0.62), f.h * 0.78)
   if (fit >= 4) {
+    const base = f.y + f.h / 2 + fit * 0.35
+    const align = mfs ? (f.ta || 'l') : 'c'
+    if (align === 'l') return { svg: svgText(f.x + pad.l, base, fit, ink, 'mono', say(label)), box: null }
+    if (align === 'r') {
+      return { svg: svgText(f.x + f.w - pad.r, base, fit, ink, 'mono', say(label), ' text-anchor="end"'), box: null }
+    }
     return {
-      svg: svgText(f.x + f.w / 2, f.y + f.h / 2 + fit * 0.35, fit, ink, 'mono', say(label), ' text-anchor="middle"'),
+      svg: svgText(f.x + f.w / 2, base, fit, ink, 'mono', say(label), ' text-anchor="middle"'),
       box: null
     }
   }
@@ -1053,7 +1092,12 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     if (w < 4 || h < 2.5) continue                    // below this a shape is a smudge, not a box
     // the ringed element is drawn by the focus pass below, at a size a person can actually read —
     // drawing its label here too would stack two copies of the same value on one another
-    if (e.focus) { focus.push({ x, y, w, h, text: e.text }); if (withFocus) continue }
+    // the measured type rides with the box, in DRAWING units like everything else, so valueMark can
+    // put the value where the page puts it instead of guessing from the box
+    if (e.focus) {
+      focus.push({ x, y, w, h, text: e.text, fs: e.fs ? px(e.fs) : null, ta: e.ta, pl: px(e.pl || 0), pr: px(e.pr || 0) })
+      if (withFocus) continue
+    }
     const fs = clamp(h * 0.62, 5, 16)
     const label = raw(e.text)
     const readable = fs >= 7.5 && !!label             // smaller than this, real text is mush — draw a bar
@@ -1134,7 +1178,18 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     for (const g of ghosts) {
       // the given cell aims its camera at the SAME rect the first beat rings, so the ghost obeys
       // the same framed region — a before-value cut off the cell would be no better than a cut card
-      const box = { x: px(g.a.x), y: px(g.a.y), w: px(g.a.w), h: px(g.a.h) }
+      // the ghost carries the GHOSTED ELEMENT's own type — it is that element's text being drawn,
+      // in the anchor's place, so it must read at the size and alignment the page gives it there
+      const box = {
+        x: px(g.a.x),
+        y: px(g.a.y),
+        w: px(g.a.w),
+        h: px(g.a.h),
+        fs: g.el.fs ? px(g.el.fs) : null,
+        ta: g.el.ta,
+        pl: px(g.el.pl || 0),
+        pr: px(g.el.pr || 0)
+      }
       parts.push(valueMark(box, g.el.text, W, H, false, framedRegion(camPx || box, W, H)).svg)
     }
   }

@@ -612,7 +612,7 @@ test('callout text is bounded: two lines a section, ellipsis rather than overflo
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-3"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-4"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -909,4 +909,74 @@ test('cameraView never crops the focus either — one camera, one rule', async (
   const fw = cell.w / (r * v.scale); const fh = cell.h / (r * v.scale)
   assert.ok(fw >= focus.w - 0.5 && fh >= focus.h - 0.5,
     'the whole focus fits the framed region: ' + fw + '×' + fh + ' vs ' + focus.w + '×' + focus.h)
+})
+
+// ── THE VALUE SITS WHERE THE PAGE PUTS IT (the human, 2026-08-29) ─────────────────────────────
+// "not perfectly comparable — the input box of add task is in a different place." Measured, the
+// BOXES already agree: the drawn ring and the photographed one land within 0.3% of the cell on
+// every requirement of the demo board. What did not agree was the one thing inside the box the
+// reader is being asked to compare — the ASSERTED VALUE. The kit typed it centred, at a size taken
+// from the ring box's own HEIGHT (h·0.62), which is right for a text leaf (its box IS its line) and
+// wrong for a FIELD: a 47px-tall Add input drew "Water the plants" mid-box at ~2.5× the type the
+// app renders, while every other text in the same drawing sat left-aligned at the app's own size.
+// So the harvest now measures the ringed element's own type — font-size, alignment and the text's
+// inset — and the drawing uses it. Nothing here is guessed: a skeleton that carries no measurement
+// keeps the old centred fallback, which is all an older harvest can honestly support.
+const FIELD = focus => ({
+  w: 1440,
+  h: 900,
+  ring: focus ? { x: 312, y: 126, w: 452, h: 47 } : null,
+  els: [
+    { x: 0, y: 0, w: 1440, h: 64, kind: 'container' },
+    { x: 270, y: 125, w: 740, h: 49, kind: 'container' },
+    {
+      x: 312, y: 126, w: 452, h: 47, kind: 'input', text: 'Water the plants',
+      fs: 15, ta: 'l', pl: 13, ...(focus ? { focus: true } : {})
+    }
+  ]
+})
+const S1440 = 600 / 1440
+const valueOf = (svg, n, txt) => {
+  const f = frameOf(svg, n)
+  const re = new RegExp('<text x="([-\\d.]+)" y="([-\\d.]+)" font-size="([\\d.]+)"[^>]*>' + txt + '<')
+  const m = re.exec(f)
+  return m ? { x: +m[1], y: +m[2], fs: +m[3], anchored: /text-anchor="middle"/.test(re.exec(f) ? f.slice(f.indexOf(m[0]), f.indexOf(m[0]) + m[0].length) : '') } : null
+}
+
+test('the asserted value is drawn at the PAGE\'s own type — measured size, measured alignment', () => {
+  const d = renderWireframe(FIELD(false), FIELD(true), { behavior: b('the Add box empty', 'you type "Water the plants"', 'the box carries it') })
+  const v = valueOf(d.svg, 1, 'Water the plants')
+  assert.ok(v, 'the value the assertion read is on the drawing')
+  // the app draws it at 15px, inset 13px from the field's left edge — one uniform scale converts both
+  assert.ok(Math.abs(v.fs - 15 * S1440) < 0.11, 'the app\'s own type size, not the box\'s height: ' + v.fs)
+  assert.ok(Math.abs(v.x - (312 + 13) * S1440) < 0.11, 'left-aligned where the field starts its text: ' + v.x)
+  assert.ok(!v.anchored, 'a left-aligned field is never centred')
+})
+
+test('a centred element stays centred, and an unmeasured harvest keeps the old fallback', () => {
+  const centred = JSON.parse(JSON.stringify(FIELD(true)))
+  centred.els[2].ta = 'c'
+  const dc = renderWireframe(FIELD(false), centred, {})
+  const vc = valueOf(dc.svg, 1, 'Water the plants')
+  assert.ok(vc && Math.abs(vc.x - (312 + 452 / 2) * S1440) < 0.11, 'centred means the box\'s middle: ' + (vc && vc.x))
+  assert.ok(vc.anchored, 'and it carries the middle anchor')
+  // an OLD skeleton measured no type at all — it must still draw, exactly as it did before
+  const bare = JSON.parse(JSON.stringify(FIELD(true)))
+  delete bare.els[2].fs; delete bare.els[2].ta; delete bare.els[2].pl
+  const db = renderWireframe(FIELD(false), bare, {})
+  const vb = valueOf(db.svg, 1, 'Water the plants')
+  assert.ok(vb && vb.anchored, 'no measurement, no invention: the old centred mark stands')
+})
+
+test('every measured box lands at its measured fraction of the page — the drawing IS the layout', () => {
+  const d = renderWireframe(FIELD(false), FIELD(true), {})
+  const f1 = frameOf(d.svg, 1)
+  // the ring the burn-in paints: inset 4 + half its 2px stroke around the measured box
+  const m = /<rect x="([-\d.]+)" y="([-\d.]+)" width="([\d.]+)" height="([\d.]+)" rx="[\d.]+" fill="none" stroke="var\(--ai\)" stroke-width="([\d.]+)"\/>/g
+  const rings = [...f1.matchAll(m)]
+  assert.ok(rings.length, 'the proven element is ringed')
+  const inner = rings[rings.length - 1]
+  const o = 5 * S1440
+  assert.ok(Math.abs((+inner[1] + o) / 600 - 312 / 1440) < 0.002, 'x holds its fraction of the page')
+  assert.ok(Math.abs((+inner[3] - 2 * o) / 600 - 452 / 1440) < 0.002, 'and so does the width')
 })

@@ -835,6 +835,29 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
             }
             if (text) rec.text = text
             if (focus) rec.focus = true
+            // THE ELEMENT'S OWN TYPE (2026-08-29, the human: "the input box of add task is in a
+            // different place"). The boxes already matched; what did not was the text INSIDE the
+            // ringed box — the drawing typed the asserted value centred, at a size taken from the
+            // box's height, which is right for a text leaf and wrong for a field. So measure what
+            // the page actually does with that text: its font size, its alignment, and the inset
+            // its text starts from (padding + border). Only for elements that carry text — the kit
+            // types nothing else — so this costs one getComputedStyle per drawn label, never per node.
+            if (text) {
+              try {
+                const cs = getComputedStyle(el)
+                const fs = parseFloat(cs.fontSize)
+                if (fs > 0) rec.fs = Math.round(fs * 10) / 10
+                let ta = cs.textAlign
+                const rtl = cs.direction === 'rtl'
+                if (ta === 'start') ta = rtl ? 'right' : 'left'
+                if (ta === 'end') ta = rtl ? 'left' : 'right'
+                rec.ta = ta === 'center' ? 'c' : (ta === 'right' ? 'r' : 'l')
+                const pl = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0)
+                const pr = (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)
+                if (pl > 0) rec.pl = Math.round(pl * 10) / 10
+                if (pr > 0) rec.pr = Math.round(pr * 10) / 10
+              } catch { /* an element that will not compute simply has no measured type */ }
+            }
             els.push(rec)
           }
           if (tag !== 'SVG') walk(el, depth + 1)     // an inline svg is ONE picture, not a shape tree
