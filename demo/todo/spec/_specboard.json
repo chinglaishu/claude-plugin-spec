@@ -1,5 +1,5 @@
 {
-  "version": "0.31.1",
+  "version": "0.32.0",
   "files": {
     "tools/spec-store.mjs": "619269f480280fe27ba8a0ee1c22221f4257cb4db56ac05e6b148e25a06de908",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
