@@ -5,7 +5,10 @@
       "/Users/laishuching/workspace/claude-plugin-spec/node_modules/.bin/playwright",
       "test",
       "--config=playwright.board.ts",
-      "spec/board/test.spec.ts"
+      "spec/board/test.spec.ts",
+      "spec/conflicts/test.spec.ts",
+      "spec/init/test.spec.ts",
+      "spec/_modes/test.spec.ts"
     ],
     "configFile": "/Users/laishuching/workspace/claude-plugin-spec/playwright.board.ts",
     "rootDir": "/Users/laishuching/workspace/claude-plugin-spec/spec",
@@ -70,14 +73,600 @@
     "webServer": {
       "command": "node tools/serve-board.mjs",
       "env": {
-        "BOARD_PORT": "4641"
+        "BOARD_PORT": "4646"
       },
-      "url": "http://localhost:4641",
+      "url": "http://localhost:4646",
       "reuseExistingServer": true,
       "timeout": 20000
     }
   },
   "suites": [
+    {
+      "title": "_modes/test.spec.ts",
+      "file": "_modes/test.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "unproven — a requirement with no passing test reads unproven",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 201,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:28.374Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-f59203d62be2713d4904",
+          "file": "_modes/test.spec.ts",
+          "line": 67,
+          "column": 1
+        },
+        {
+          "title": "proven — a current passing proof makes a requirement proven",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 176,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:28.692Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-09e288180395e93b8f58",
+          "file": "_modes/test.spec.ts",
+          "line": 73,
+          "column": 1
+        },
+        {
+          "title": "a proof that predates the source no longer proves — editing the PRD IS the change",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 225,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:28.875Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-3d9f4dc7c23f8e547ba7",
+          "file": "_modes/test.spec.ts",
+          "line": 79,
+          "column": 1
+        },
+        {
+          "title": "a stale-only pass does not read Passed either — status honours the same staleness filter as state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 166,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.106Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-f6cb607cb0d5182a45a4",
+          "file": "_modes/test.spec.ts",
+          "line": 92,
+          "column": 1
+        },
+        {
+          "title": "state is only ever proven or unproven — there is no reworded / accept state",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 179,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.278Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-8ce955b581faa020ad18",
+          "file": "_modes/test.spec.ts",
+          "line": 100,
+          "column": 1
+        },
+        {
+          "title": "a leftover guess: frontmatter line is inert — the screen reads exactly like any other",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 168,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.463Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-ebe424e270d9f3b5a4b5",
+          "file": "_modes/test.spec.ts",
+          "line": 115,
+          "column": 1
+        },
+        {
+          "title": "changed — a current pass whose text-pin no longer matches reads Changed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 173,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.638Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-4f215257b54548ef5554",
+          "file": "_modes/test.spec.ts",
+          "line": 140,
+          "column": 1
+        },
+        {
+          "title": "changed — a matching pin stays plainly Passed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 159,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.817Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-367271907553365d7988",
+          "file": "_modes/test.spec.ts",
+          "line": 148,
+          "column": 1
+        },
+        {
+          "title": "changed is a modifier on Passed only — a failing test keeps the requirement Failed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 172,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:29.982Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-938ddc6d45b48c28dc0c",
+          "file": "_modes/test.spec.ts",
+          "line": 157,
+          "column": 1
+        },
+        {
+          "title": "renders — the detail carries NO gate and no accept button",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 610,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:30.160Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-dfb72337309c5c5f85d4",
+          "file": "_modes/test.spec.ts",
+          "line": 204,
+          "column": 1
+        },
+        {
+          "title": "renders — a leftover guess: frontmatter line renders exactly like a normal screen",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 453,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:30.776Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-cc3198687760099975e9",
+          "file": "_modes/test.spec.ts",
+          "line": 223,
+          "column": 1
+        },
+        {
+          "title": "renders — a beats block leads the requirement, the List reads it, and the media pane derives from it",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 944,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:31.236Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-9e9149ad3f9c3baf8afb",
+          "file": "_modes/test.spec.ts",
+          "line": 238,
+          "column": 1
+        },
+        {
+          "title": "renders — Focus fits the viewport: the schematic on first sight, the beats scrolling inside the card",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 741,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:32.186Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-82dc5ffd1f2dfc7d3c03",
+          "file": "_modes/test.spec.ts",
+          "line": 353,
+          "column": 1
+        },
+        {
+          "title": "renders — the drawn schematic fills the Focus slot: loop, stills per beat, grey when the text moves",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 801,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:32.934Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-f1427e9115757ddcf2f3",
+          "file": "_modes/test.spec.ts",
+          "line": 447,
+          "column": 1
+        },
+        {
+          "title": "renders — a Changed requirement wears the indigo changed chip, never a plain Passed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 732,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:33.741Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-3351524c9d10321c6dea",
+          "file": "_modes/test.spec.ts",
+          "line": 555,
+          "column": 1
+        },
+        {
+          "title": "renders — the home banner counts a Changed requirement as drift",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 434,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:34.479Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-a08d3963c51de77e8b63",
+          "file": "_modes/test.spec.ts",
+          "line": 602,
+          "column": 1
+        },
+        {
+          "title": "renders — the home strip counts what needs a look and deep-links the first one",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 648,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:16:34.920Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "74f4141ad054871aca7f-1449401b06e91e5d753c",
+          "file": "_modes/test.spec.ts",
+          "line": 617,
+          "column": 1
+        }
+      ]
+    },
     {
       "title": "board/test.spec.ts",
       "file": "board/test.spec.ts",
@@ -105,7 +694,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 977,
+                  "duration": 904,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -113,18 +702,18 @@
                   "steps": [
                     {
                       "title": "proves R1",
-                      "duration": 86
+                      "duration": 67
                     },
                     {
                       "title": "proves R1",
-                      "duration": 149
+                      "duration": 128
                     },
                     {
                       "title": "proves R1",
                       "duration": 9
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:50.596Z",
+                  "startTime": "2026-08-30T06:16:35.607Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -224,7 +813,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 724,
+                  "duration": 693,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -232,10 +821,10 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 396
+                      "duration": 364
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:51.681Z",
+                  "startTime": "2026-08-30T06:16:36.517Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -295,7 +884,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 543,
+                  "duration": 542,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -303,10 +892,10 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 218
+                      "duration": 216
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:52.412Z",
+                  "startTime": "2026-08-30T06:16:37.216Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -366,7 +955,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1280,
+                  "duration": 1281,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -374,7 +963,7 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 921,
+                      "duration": 913,
                       "steps": [
                         {
                           "title": "note: first check — got 1 · expected 1",
@@ -387,7 +976,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:52.962Z",
+                  "startTime": "2026-08-30T06:16:37.765Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -447,7 +1036,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 362,
+                  "duration": 403,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -455,7 +1044,7 @@
                   "steps": [
                     {
                       "title": "Open the board detail — the reader is there",
-                      "duration": 203,
+                      "duration": 223,
                       "steps": [
                         {
                           "title": "note: ▸ proving R10 — A test opens to its full evidence, and can be run — watchably or in the background",
@@ -463,13 +1052,13 @@
                         },
                         {
                           "title": "proves R10",
-                          "duration": 7
+                          "duration": 5
                         }
                       ]
                     },
                     {
                       "title": "Announce a golden value on the narration bar",
-                      "duration": 8,
+                      "duration": 5,
                       "steps": [
                         {
                           "title": "note: cards on the home board — got 4 · expected 4",
@@ -479,10 +1068,10 @@
                     },
                     {
                       "title": "Confirm the baked test rows are present",
-                      "duration": 5
+                      "duration": 7
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:54.248Z",
+                  "startTime": "2026-08-30T06:16:39.053Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -542,7 +1131,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 617,
+                  "duration": 529,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -550,10 +1139,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 186
+                      "duration": 188
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:54.617Z",
+                  "startTime": "2026-08-30T06:16:39.462Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -613,7 +1202,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 396,
+                  "duration": 395,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -624,7 +1213,7 @@
                       "duration": 57
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:55.243Z",
+                  "startTime": "2026-08-30T06:16:39.998Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -684,7 +1273,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 492,
+                  "duration": 459,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -692,10 +1281,10 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 133
+                      "duration": 134
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:55.646Z",
+                  "startTime": "2026-08-30T06:16:40.399Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -755,7 +1344,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 368,
+                  "duration": 362,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -763,10 +1352,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 17
+                      "duration": 16
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:56.143Z",
+                  "startTime": "2026-08-30T06:16:40.865Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -826,7 +1415,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 372,
+                  "duration": 362,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -834,10 +1423,10 @@
                   "steps": [
                     {
                       "title": "proves R7",
-                      "duration": 14
+                      "duration": 16
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:56.518Z",
+                  "startTime": "2026-08-30T06:16:41.233Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -897,7 +1486,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 392,
+                  "duration": 416,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -905,10 +1494,10 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 63
+                      "duration": 64
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:56.896Z",
+                  "startTime": "2026-08-30T06:16:41.603Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -968,7 +1557,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5377,
+                  "duration": 6383,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -976,10 +1565,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 5020
+                      "duration": 6036
                     }
                   ],
-                  "startTime": "2026-08-30T05:39:57.295Z",
+                  "startTime": "2026-08-30T06:16:42.026Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1039,7 +1628,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1692,
+                  "duration": 1757,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1047,7 +1636,7 @@
                   "steps": [
                     {
                       "title": "proves R18",
-                      "duration": 353,
+                      "duration": 355,
                       "steps": [
                         {
                           "title": "note: the drawing is derived from the app's layout — got ui-mirror · expected ui-mirror",
@@ -1061,10 +1650,10 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 845
+                      "duration": 813
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:02.679Z",
+                  "startTime": "2026-08-30T06:16:48.416Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1144,7 +1733,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1242,
+                  "duration": 1177,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1152,7 +1741,7 @@
                   "steps": [
                     {
                       "title": "proves R19",
-                      "duration": 414,
+                      "duration": 404,
                       "steps": [
                         {
                           "title": "note: one camera, one region — got same region · expected same region",
@@ -1162,10 +1751,10 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 281
+                      "duration": 279
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:04.378Z",
+                  "startTime": "2026-08-30T06:16:50.179Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1245,7 +1834,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1446,
+                  "duration": 1499,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1253,7 +1842,7 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 678,
+                      "duration": 680,
                       "steps": [
                         {
                           "title": "note: the whole frame is one toggle away — got 0 zoomed cells · expected 0 zoomed cells",
@@ -1263,10 +1852,10 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 269
+                      "duration": 272
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:05.626Z",
+                  "startTime": "2026-08-30T06:16:51.363Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1346,7 +1935,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1274,
+                  "duration": 1237,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1354,7 +1943,7 @@
                   "steps": [
                     {
                       "title": "proves R21",
-                      "duration": 440,
+                      "duration": 405,
                       "steps": [
                         {
                           "title": "note: the header re-deals with every row — got 0px drift · expected 0px drift",
@@ -1364,10 +1953,10 @@
                     },
                     {
                       "title": "proves R21",
-                      "duration": 389
+                      "duration": 394
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:07.079Z",
+                  "startTime": "2026-08-30T06:16:52.868Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1447,7 +2036,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1418,
+                  "duration": 1454,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1455,10 +2044,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 1096
+                      "duration": 1119
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:08.358Z",
+                  "startTime": "2026-08-30T06:16:54.111Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1518,7 +2107,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2158,
+                  "duration": 2105,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1526,10 +2115,10 @@
                   "steps": [
                     {
                       "title": "proves R14",
-                      "duration": 1751
+                      "duration": 1740
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:09.783Z",
+                  "startTime": "2026-08-30T06:16:55.571Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1589,7 +2178,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 931,
+                  "duration": 841,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1597,10 +2186,10 @@
                   "steps": [
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 496
+                      "duration": 493
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:11.952Z",
+                  "startTime": "2026-08-30T06:16:57.683Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1655,7 +2244,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 186,
+                  "duration": 182,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1670,7 +2259,7 @@
                       "duration": 0
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:12.894Z",
+                  "startTime": "2026-08-30T06:16:58.532Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -1704,7 +2293,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 416,
+                  "duration": 384,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1712,10 +2301,10 @@
                   "steps": [
                     {
                       "title": "proves R9",
-                      "duration": 77
+                      "duration": 60
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:13.086Z",
+                  "startTime": "2026-08-30T06:16:58.720Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1775,7 +2364,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 969,
+                  "duration": 956,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1783,10 +2372,10 @@
                   "steps": [
                     {
                       "title": "proves R16",
-                      "duration": 721
+                      "duration": 724
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:13.509Z",
+                  "startTime": "2026-08-30T06:16:59.111Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1846,7 +2435,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 546,
+                  "duration": 474,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1854,10 +2443,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 116
+                      "duration": 120
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:14.484Z",
+                  "startTime": "2026-08-30T06:17:00.074Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1917,7 +2506,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 430,
+                  "duration": 450,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1925,10 +2514,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 201
+                      "duration": 198
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:15.036Z",
+                  "startTime": "2026-08-30T06:17:00.554Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1988,7 +2577,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5898,
+                  "duration": 5876,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1996,14 +2585,14 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 5405
+                      "duration": 5417
                     },
                     {
                       "title": "proves R11",
-                      "duration": 121
+                      "duration": 109
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:15.473Z",
+                  "startTime": "2026-08-30T06:17:01.011Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2083,7 +2672,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1611,
+                  "duration": 1609,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2091,10 +2680,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 1358
+                      "duration": 1356
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:21.382Z",
+                  "startTime": "2026-08-30T06:17:06.893Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2154,7 +2743,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 249,
+                  "duration": 263,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2162,10 +2751,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 15
+                      "duration": 12
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:23.002Z",
+                  "startTime": "2026-08-30T06:17:08.509Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2233,10 +2822,10 @@
                   "steps": [
                     {
                       "title": "proves R12",
-                      "duration": 120
+                      "duration": 115
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:23.258Z",
+                  "startTime": "2026-08-30T06:17:08.778Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2296,7 +2885,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 955,
+                  "duration": 952,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2304,10 +2893,10 @@
                   "steps": [
                     {
                       "title": "proves R15",
-                      "duration": 610
+                      "duration": 588
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:23.624Z",
+                  "startTime": "2026-08-30T06:17:09.144Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2367,7 +2956,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1281,
+                  "duration": 1248,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2375,14 +2964,14 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 726
+                      "duration": 739
                     },
                     {
                       "title": "proves R15",
-                      "duration": 71
+                      "duration": 69
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:24.586Z",
+                  "startTime": "2026-08-30T06:17:10.104Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2462,7 +3051,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 950,
+                  "duration": 1116,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2470,10 +3059,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 566
+                      "duration": 718
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:25.873Z",
+                  "startTime": "2026-08-30T06:17:11.360Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2533,7 +3122,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1187,
+                  "duration": 1191,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2541,7 +3130,7 @@
                   "steps": [
                     {
                       "title": "count the home cards — one per screen, titles and a cover",
-                      "duration": 187,
+                      "duration": 186,
                       "steps": [
                         {
                           "title": "note: ▸ proving R1 — One card per screen, not a row of cells",
@@ -2549,7 +3138,7 @@
                         },
                         {
                           "title": "proves R1",
-                          "duration": 71
+                          "duration": 66
                         }
                       ]
                     },
@@ -2563,13 +3152,13 @@
                         },
                         {
                           "title": "proves R2",
-                          "duration": 365
+                          "duration": 367
                         }
                       ]
                     },
                     {
                       "title": "a finished run refreshes the board in place — no reload",
-                      "duration": 249,
+                      "duration": 284,
                       "steps": [
                         {
                           "title": "note: ▸ proving dispatch:R7 — The panel stays open when the job ends, and the board updates behind it",
@@ -2577,12 +3166,12 @@
                         },
                         {
                           "title": "proves dispatch:R7",
-                          "duration": 146
+                          "duration": 140
                         }
                       ]
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:26.830Z",
+                  "startTime": "2026-08-30T06:17:12.483Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2658,7 +3247,7 @@
           ],
           "id": "a4d8056b74ea4749de01-52747d88d06c363c0189",
           "file": "board/test.spec.ts",
-          "line": 2545,
+          "line": 2553,
           "column": 1
         },
         {
@@ -2682,7 +3271,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1712,
+                  "duration": 1675,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2690,7 +3279,7 @@
                   "steps": [
                     {
                       "title": "proves R17",
-                      "duration": 21
+                      "duration": 18
                     },
                     {
                       "title": "proves R17",
@@ -2698,14 +3287,14 @@
                     },
                     {
                       "title": "proves R17",
-                      "duration": 706
+                      "duration": 641
                     },
                     {
                       "title": "proves R17",
-                      "duration": 408
+                      "duration": 407
                     }
                   ],
-                  "startTime": "2026-08-30T05:40:28.025Z",
+                  "startTime": "2026-08-30T06:17:13.681Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2801,7 +3390,1092 @@
           ],
           "id": "a4d8056b74ea4749de01-ea35761a75f346e0a282",
           "file": "board/test.spec.ts",
-          "line": 2589,
+          "line": 2597,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "conflicts/test.spec.ts",
+      "file": "conflicts/test.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R1 — a conflict card is one fact stated two incompatible ways",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 366,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R1",
+                      "duration": 24
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:15.371Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R1#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R1-—-a-conf-0fc79-tated-two-incompatible-ways/evidence-R1-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R1#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R1-—-a-conf-0fc79-tated-two-incompatible-ways/layout-R1-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R1#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R1-—-a-conf-0fc79-tated-two-incompatible-ways/evidence-R1-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R1#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R1-—-a-conf-0fc79-tated-two-incompatible-ways/layout-R1-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-2138cde803f1c271ba1e",
+          "file": "conflicts/test.spec.ts",
+          "line": 52,
+          "column": 1
+        },
+        {
+          "title": "R2 — both positions are shown in full, each naming where it came from",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 261,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R2",
+                      "duration": 16
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:15.742Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R2#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/evidence-R2-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R2#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/layout-R2-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R2#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/evidence-R2-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R2#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R2-—-both-p-c6bb6-h-naming-where-it-came-from/layout-R2-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-425f78683666ac73f06c",
+          "file": "conflicts/test.spec.ts",
+          "line": 74,
+          "column": 1
+        },
+        {
+          "title": "R3 — the tool never picks: resolving is refused until you choose a side",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 295,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R3",
+                      "duration": 54
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:16.010Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R3#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/evidence-R3-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R3#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/layout-R3-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R3#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/evidence-R3-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R3#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R3-—-the-to-74843-sed-until-you-choose-a-side/layout-R3-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-09a0f9270276d3903e57",
+          "file": "conflicts/test.spec.ts",
+          "line": 90,
+          "column": 1
+        },
+        {
+          "title": "R4 — resolving records which side lost, stays on Open, and offers the rewrite",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R4"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 567,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R4",
+                      "duration": 255
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:16.317Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R4"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "evidence R4#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R4-—-resolv-f592d-Open-and-offers-the-rewrite/evidence-R4-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R4#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R4-—-resolv-f592d-Open-and-offers-the-rewrite/layout-R4-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R4#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R4-—-resolv-f592d-Open-and-offers-the-rewrite/evidence-R4-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R4#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R4-—-resolv-f592d-Open-and-offers-the-rewrite/layout-R4-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-d68552c3ce1d01d81be4",
+          "file": "conflicts/test.spec.ts",
+          "line": 106,
+          "column": 1
+        },
+        {
+          "title": "R5 — a decision survives a rescan that reorders and swaps the sides",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 723,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R5",
+                      "duration": 14
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:16.890Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R5#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/evidence-R5-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R5#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/layout-R5-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R5#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/evidence-R5-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R5#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-a-deci-b51a7-eorders-and-swaps-the-sides/layout-R5-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-c32e05e1b723152908e3",
+          "file": "conflicts/test.spec.ts",
+          "line": 140,
+          "column": 1
+        },
+        {
+          "title": "R5 — undo puts a settled conflict back, and the scanner is never asked to pick",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1028,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R4",
+                      "duration": 311
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:17.619Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R4#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/evidence-R4-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R4#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/layout-R4-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R4#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/evidence-R4-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R4#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/conflicts-test-R5-—-undo-p-cc2d3-nner-is-never-asked-to-pick/layout-R4-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "03fd6eb3e4d36c99e005-bb9ae0d920953ff55b69",
+          "file": "conflicts/test.spec.ts",
+          "line": 172,
+          "column": 1
+        }
+      ]
+    },
+    {
+      "title": "init/test.spec.ts",
+      "file": "init/test.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "R1 — the form persists what cannot be guessed, and reads it back",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 600,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R1",
+                      "duration": 219
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:18.662Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R1#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/evidence-R1-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R1#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/layout-R1-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R1#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/evidence-R1-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R1#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R1-—-the-form-pe-b2555-e-guessed-and-reads-it-back/layout-R1-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-98eed5b60465800dc917",
+          "file": "init/test.spec.ts",
+          "line": 27,
+          "column": 1
+        },
+        {
+          "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 241,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:17:19.267Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-b04ed2d27deff8733eb8",
+          "file": "init/test.spec.ts",
+          "line": 63,
+          "column": 1
+        },
+        {
+          "title": "R1 — start mode saves backend and frontend, in order",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 253,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-08-30T06:17:19.515Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-a7bd6c25b291e27139ea",
+          "file": "init/test.spec.ts",
+          "line": 75,
+          "column": 1
+        },
+        {
+          "title": "R3 — a drafted PRD is canon the moment it is written: one CARD, no guess chip, nothing waiting, no gate",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R3"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 891,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R3",
+                      "duration": 529
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:19.773Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R3"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "evidence R3#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R3-—-a-drafted-P-07a18-hip-nothing-waiting-no-gate/evidence-R3-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R3#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R3-—-a-drafted-P-07a18-hip-nothing-waiting-no-gate/layout-R3-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R3#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R3-—-a-drafted-P-07a18-hip-nothing-waiting-no-gate/evidence-R3-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R3#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R3-—-a-drafted-P-07a18-hip-nothing-waiting-no-gate/layout-R3-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-5f88eb6023fc3ef974b3",
+          "file": "init/test.spec.ts",
+          "line": 95,
+          "column": 1
+        },
+        {
+          "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 321,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R4",
+                      "duration": 26
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:20.671Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R4#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/evidence-R4-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R4#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/layout-R4-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R4#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/evidence-R4-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R4#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R4-—-nothing-fou-1a88f-ompt-to-write-the-first-PRD/layout-R4-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-b41ba3b8e290735872a7",
+          "file": "init/test.spec.ts",
+          "line": 109,
+          "column": 1
+        },
+        {
+          "title": "R2 — a crawled route is a row with its screenshot and NO PRD: inventory, never fake coverage",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 259,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R2",
+                      "duration": 31
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:20.999Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R2#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R2-—-a-crawled-r-c44a7-ventory-never-fake-coverage/evidence-R2-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R2#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R2-—-a-crawled-r-c44a7-ventory-never-fake-coverage/layout-R2-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R2#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R2-—-a-crawled-r-c44a7-ventory-never-fake-coverage/evidence-R2-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R2#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R2-—-a-crawled-r-c44a7-ventory-never-fake-coverage/layout-R2-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-77044a5ab6caf4047f43",
+          "file": "init/test.spec.ts",
+          "line": 121,
+          "column": 1
+        },
+        {
+          "title": "R6 — voice-over is a saved, per-project switch, off by default",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 760,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R6",
+                      "duration": 525
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:21.264Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R6#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-voice-over--78562-oject-switch-off-by-default/evidence-R6-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R6#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-voice-over--78562-oject-switch-off-by-default/layout-R6-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R6#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-voice-over--78562-oject-switch-off-by-default/evidence-R6-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R6#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-voice-over--78562-oject-switch-off-by-default/layout-R6-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-c5ce69578323944b0049",
+          "file": "init/test.spec.ts",
+          "line": 147,
+          "column": 1
+        },
+        {
+          "title": "R6 — the switch is disabled until piper is ready, with a copyable install helper",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 412,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R6",
+                      "duration": 297
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:22.030Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "evidence R6#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-the-switch--d6fab-h-a-copyable-install-helper/evidence-R6-b1-c1-before.png"
+                    },
+                    {
+                      "name": "evidence R6#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-the-switch--d6fab-h-a-copyable-install-helper/evidence-R6-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R6#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R6-—-the-switch--d6fab-h-a-copyable-install-helper/layout-R6-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-6119f87fbe62fd990a2e",
+          "file": "init/test.spec.ts",
+          "line": 179,
+          "column": 1
+        },
+        {
+          "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R5"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 323,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "proves R5",
+                      "duration": 9
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:22.447Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R5"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "evidence R5#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/evidence-R5-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R5#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/layout-R5-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R5#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/evidence-R5-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R5#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-R5-—-rerunning-m-6b3de--leaves-a-settled-row-alone/layout-R5-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-07c5f2756c5fc84a7906",
+          "file": "init/test.spec.ts",
+          "line": 206,
+          "column": 1
+        },
+        {
+          "title": "A crawled row becomes a card — the rerun marks it, the draft lands as one card, home counts it and search finds it — composed",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 300000,
+              "annotations": [
+                {
+                  "type": "covers",
+                  "description": "R5 R3 board:R1 board:R9"
+                }
+              ],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1478,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "steps": [
+                    {
+                      "title": "the rerun marks the new route new, the settled one already on the board",
+                      "duration": 127,
+                      "steps": [
+                        {
+                          "title": "note: ▸ proving R5 — Rerunning finds new screens without touching settled ones",
+                          "duration": 0
+                        },
+                        {
+                          "title": "proves R5",
+                          "duration": 9
+                        }
+                      ]
+                    },
+                    {
+                      "title": "a drafted PRD is one ordinary card — no guess chip, nothing waiting, no gate",
+                      "duration": 875,
+                      "steps": [
+                        {
+                          "title": "note: ▸ proving R3 — A drafted PRD is a requirement immediately, not a guess awaiting acceptance",
+                          "duration": 0
+                        },
+                        {
+                          "title": "proves R3",
+                          "duration": 759
+                        }
+                      ]
+                    },
+                    {
+                      "title": "count the home cards — one per screen, titles and a cover",
+                      "duration": 158,
+                      "steps": [
+                        {
+                          "title": "note: ▸ proving board:R1 — One card per screen, not a row of cells",
+                          "duration": 0
+                        },
+                        {
+                          "title": "proves board:R1",
+                          "duration": 73
+                        }
+                      ]
+                    },
+                    {
+                      "title": "search \"canon\" — groups that miss hide themselves",
+                      "duration": 179,
+                      "steps": [
+                        {
+                          "title": "note: ▸ proving board:R9 — Search across requirement text, grouped into areas",
+                          "duration": 0
+                        },
+                        {
+                          "title": "proves board:R9",
+                          "duration": 61
+                        }
+                      ]
+                    }
+                  ],
+                  "startTime": "2026-08-30T06:17:22.776Z",
+                  "annotations": [
+                    {
+                      "type": "covers",
+                      "description": "R5 R3 board:R1 board:R9"
+                    }
+                  ],
+                  "attachments": [
+                    {
+                      "name": "evidence R5#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-R5-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R5#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-R5-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R5#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-R5-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R5#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-R5-b1-c1-after.json"
+                    },
+                    {
+                      "name": "evidence R3#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-R3-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout R3#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-R3-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence R3#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-R3-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout R3#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-R3-b1-c1-after.json"
+                    },
+                    {
+                      "name": "evidence board:R1#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-board_R1-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout board:R1#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-board_R1-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence board:R1#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-board_R1-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout board:R1#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-board_R1-b1-c1-after.json"
+                    },
+                    {
+                      "name": "evidence board:R9#1 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-board_R9-b1-c1-before.png"
+                    },
+                    {
+                      "name": "layout board:R9#1 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-board_R9-b1-c1-before.json"
+                    },
+                    {
+                      "name": "evidence board:R9#1 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/evidence-board_R9-b1-c1-after.png"
+                    },
+                    {
+                      "name": "layout board:R9#1 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/init-test-A-crawled-row-be-731bb--search-finds-it-—-composed/layout-board_R9-b1-c1-after.json"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a3d7ad62b56c3ce6940d-05677f4608433d115ef0",
+          "file": "init/test.spec.ts",
+          "line": 221,
           "column": 1
         }
       ]
@@ -2809,9 +4483,9 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-30T05:39:49.462Z",
-    "duration": 40319.657999999996,
-    "expected": 33,
+    "startTime": "2026-08-30T06:16:27.271Z",
+    "duration": 57026.672,
+    "expected": 66,
     "skipped": 0,
     "unexpected": 0,
     "flaky": 0
