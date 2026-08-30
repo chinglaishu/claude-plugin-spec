@@ -980,3 +980,30 @@ test('every measured box lands at its measured fraction of the page — the draw
   assert.ok(Math.abs((+inner[1] + o) / 600 - 312 / 1440) < 0.002, 'x holds its fraction of the page')
   assert.ok(Math.abs((+inner[3] - 2 * o) / 600 - 452 / 1440) < 0.002, 'and so does the width')
 })
+
+test('a small measured chip keeps its value INSIDE its box — the pill is the last resort, not the first', () => {
+  // R7's overdue chip: 66×23 with 10px of padding each side, its type 11.5px. Measured type must not
+  // push a value that the PAGE fits comfortably out into a pill beside the box — that is exactly the
+  // value "in a different place" this pass exists to stop. (Caught by re-auditing the demo board
+  // after the first cut of the fix: R7 alone jumped, because the room calculation was subtracting a
+  // breathing margin the page itself does not reserve.)
+  const chip = focus => ({
+    w: 1440,
+    h: 900,
+    ring: focus ? { x: 808, y: 504, w: 66, h: 23 } : null,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 64, kind: 'container' },
+      { x: 270, y: 480, w: 740, h: 70, kind: 'row' },
+      { x: 808, y: 504, w: 66, h: 23, kind: 'text', text: 'overdue', fs: 11.5, ta: 'l', pl: 10, pr: 10, ...(focus ? { focus: true } : {}) }
+    ]
+  })
+  const f1 = frameOf(renderWireframe(chip(false), chip(true), {}).svg, 1)
+  const m = /<text x="([-\d.]+)" y="[-\d.]+" font-size="([\d.]+)"[^>]*>overdue</.exec(f1)
+  assert.ok(m, 'the chip\'s value is drawn')
+  const S = 600 / 1440
+  assert.ok(+m[1] >= (808 + 10) * S - 0.2 && +m[1] <= (808 + 10) * S + 0.2,
+    'it starts where the page starts it, inside the chip: ' + m[1])
+  // the pill is a rounded plate with its own paper fill — a value that fits its box never gets one
+  assert.ok(!/rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--ai\)"/.test(f1), 'no pill: the value sits in the chip')
+  assert.ok(+m[2] >= 4, 'and it is still legible: ' + m[2])
+})

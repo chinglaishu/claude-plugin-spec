@@ -742,8 +742,11 @@ function valueMark (f, text, W, H, hot, region) {
   const mfs = f.fs > 0 ? f.fs : 0
   const own = mfs || clamp(f.h * 0.62, 4, 16)          // the element's own type size, as everywhere else
   const pad = mfs ? { l: f.pl || 0, r: f.pr || 0 } : { l: 0, r: 0 }
-  const room = Math.max(1, f.w - pad.l - pad.r - own * 0.4)
-  // measured type is never grown to fill the box; it only ever shrinks to stay inside it
+  // measured type is never grown to fill the box; it only ever shrinks to stay inside it — and the
+  // room it must stay inside is the element's own content box (its padding, nothing invented). The
+  // guessed path keeps its extra breathing margin, because a centred label sitting on the box's
+  // edges reads as an overflow; a left-aligned one starting where the page starts it does not.
+  const room = Math.max(1, f.w - pad.l - pad.r)
   const fit = mfs
     ? Math.min(mfs, room / (label.length * 0.62))
     : Math.min(own, (f.w - own * 0.4) / (label.length * 0.62), f.h * 0.78)
