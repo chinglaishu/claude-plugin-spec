@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 46406,
+        "ms": 46270,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 26948,
+        "ms": 27019,
         "error": null,
         "line": 94,
         "reqs": {
@@ -36,7 +36,10 @@
         }
       }
     ],
-    "ranAt": 1788065422618,
+    "ranAt": 1788070960029,
+    "srcHashes": {
+      "todo": "b6a4eef33508"
+    },
     "provenHashes": {
       "R1": "af0b673e71b26f86",
       "R2": "5ea4b12f3e9bd0c0",
@@ -52,8 +55,8 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 221,
-          "to": 7320
+          "from": 477,
+          "to": 7190
         },
         "beats": [
           {
@@ -63,27 +66,27 @@
             "layoutBefore": "spec/todo/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R1.b1.after.layout.json",
             "window": {
-              "from": 221,
-              "to": 7320
+              "from": 477,
+              "to": 7190
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R1.b1.v1.png",
                 "layout": "spec/todo/evidence/R1.b1.v1.layout.json",
-                "at": 2131
+                "at": 1759
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R1.b1.v2.png",
                 "layout": "spec/todo/evidence/R1.b1.v2.layout.json",
-                "at": 3896
+                "at": 3529
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R1.b1.v3.png",
                 "layout": "spec/todo/evidence/R1.b1.v3.layout.json",
-                "at": 5645
+                "at": 5259
               }
             ],
             "focus": {
@@ -96,20 +99,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 221,
-          "to": 7320
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 477,
+          "to": 7190
         }
       },
       "R2": {
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 7443,
-          "to": 10919
+          "from": 7327,
+          "to": 10789
         },
         "beats": [
           {
@@ -119,21 +122,21 @@
             "layoutBefore": "spec/todo/evidence/R2.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R2.b1.after.layout.json",
             "window": {
-              "from": 7443,
-              "to": 10919
+              "from": 7327,
+              "to": 10789
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R2.b1.v1.png",
                 "layout": "spec/todo/evidence/R2.b1.v1.layout.json",
-                "at": 286
+                "at": 291
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R2.b1.v2.png",
                 "layout": "spec/todo/evidence/R2.b1.v2.layout.json",
-                "at": 2017
+                "at": 2006
               }
             ],
             "focus": {
@@ -146,20 +149,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 7443,
-          "to": 10919
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 7327,
+          "to": 10789
         }
       },
       "R3": {
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 11060,
-          "to": 14503
+          "from": 10912,
+          "to": 14374
         },
         "beats": [
           {
@@ -169,8 +172,8 @@
             "layoutBefore": "spec/todo/evidence/R3.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R3.b1.after.layout.json",
             "window": {
-              "from": 11060,
-              "to": 14503
+              "from": 10912,
+              "to": 14374
             },
             "values": [
               {
@@ -183,7 +186,7 @@
                 "k": 2,
                 "frame": "spec/todo/evidence/R3.b1.v2.png",
                 "layout": "spec/todo/evidence/R3.b1.v2.layout.json",
-                "at": 1994
+                "at": 2002
               }
             ],
             "focus": {
@@ -196,20 +199,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 11060,
-          "to": 14503
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 10912,
+          "to": 14374
         }
       },
       "R5": {
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 14625,
-          "to": 21767
+          "from": 14510,
+          "to": 21653
         },
         "beats": [
           {
@@ -219,21 +222,21 @@
             "layoutBefore": "spec/todo/evidence/R5.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b1.after.layout.json",
             "window": {
-              "from": 14625,
-              "to": 18040
+              "from": 14510,
+              "to": 17956
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b1.v1.png",
                 "layout": "spec/todo/evidence/R5.b1.v1.layout.json",
-                "at": 241
+                "at": 242
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R5.b1.v2.png",
                 "layout": "spec/todo/evidence/R5.b1.v2.layout.json",
-                "at": 1967
+                "at": 1992
               }
             ],
             "focus": {
@@ -252,15 +255,15 @@
             "layoutBefore": "spec/todo/evidence/R5.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b2.after.layout.json",
             "window": {
-              "from": 20075,
-              "to": 21767
+              "from": 19962,
+              "to": 21653
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b2.v1.png",
                 "layout": "spec/todo/evidence/R5.b2.v1.layout.json",
-                "at": 238
+                "at": 240
               }
             ],
             "focus": {
@@ -273,20 +276,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 14625,
-          "to": 21767
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 14510,
+          "to": 21653
         }
       },
       "R4": {
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 18177,
-          "to": 23612
+          "from": 18100,
+          "to": 23537
         },
         "beats": [
           {
@@ -296,15 +299,15 @@
             "layoutBefore": "spec/todo/evidence/R4.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b1.after.layout.json",
             "window": {
-              "from": 18177,
-              "to": 19955
+              "from": 18100,
+              "to": 19868
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b1.v1.png",
                 "layout": "spec/todo/evidence/R4.b1.v1.layout.json",
-                "at": 311
+                "at": 308
               }
             ],
             "focus": {
@@ -323,15 +326,15 @@
             "layoutBefore": "spec/todo/evidence/R4.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b2.after.layout.json",
             "window": {
-              "from": 21876,
-              "to": 23612
+              "from": 21794,
+              "to": 23537
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b2.v1.png",
                 "layout": "spec/todo/evidence/R4.b2.v1.layout.json",
-                "at": 279
+                "at": 280
               }
             ],
             "focus": {
@@ -344,20 +347,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 18177,
-          "to": 23612
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 18100,
+          "to": 23537
         }
       },
       "R6": {
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 25574,
-          "to": 37123
+          "from": 25511,
+          "to": 37076
         },
         "beats": [
           {
@@ -367,8 +370,8 @@
             "layoutBefore": "spec/todo/evidence/R6.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R6.b1.after.layout.json",
             "window": {
-              "from": 25574,
-              "to": 37123
+              "from": 25511,
+              "to": 37076
             },
             "values": [],
             "focus": {
@@ -381,20 +384,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 25574,
-          "to": 37123
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 25511,
+          "to": 37076
         }
       },
       "R7": {
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 37257,
-          "to": 40702
+          "from": 37210,
+          "to": 40654
         },
         "beats": [
           {
@@ -404,21 +407,21 @@
             "layoutBefore": "spec/todo/evidence/R7.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R7.b1.after.layout.json",
             "window": {
-              "from": 37257,
-              "to": 40702
+              "from": 37210,
+              "to": 40654
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R7.b1.v1.png",
                 "layout": "spec/todo/evidence/R7.b1.v1.layout.json",
-                "at": 278
+                "at": 279
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R7.b1.v2.png",
                 "layout": "spec/todo/evidence/R7.b1.v2.layout.json",
-                "at": 1992
+                "at": 1999
               }
             ],
             "focus": {
@@ -431,20 +434,20 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 37257,
-          "to": 40702
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 37210,
+          "to": 40654
         }
       },
       "R8": {
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 40840,
-          "to": 46042
+          "from": 40791,
+          "to": 45981
         },
         "beats": [
           {
@@ -454,27 +457,27 @@
             "layoutBefore": "spec/todo/evidence/R8.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R8.b1.after.layout.json",
             "window": {
-              "from": 40840,
-              "to": 46042
+              "from": 40791,
+              "to": 45981
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R8.b1.v1.png",
                 "layout": "spec/todo/evidence/R8.b1.v1.layout.json",
-                "at": 299
+                "at": 288
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R8.b1.v2.png",
                 "layout": "spec/todo/evidence/R8.b1.v2.layout.json",
-                "at": 2010
+                "at": 2017
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R8.b1.v3.png",
                 "layout": "spec/todo/evidence/R8.b1.v3.layout.json",
-                "at": 3754
+                "at": 3751
               }
             ],
             "focus": {
@@ -487,12 +490,12 @@
             }
           }
         ],
-        "runId": "1788065347748",
-        "at": "2026-08-30T04:50:22.618Z",
+        "runId": "1788070884920",
+        "at": "2026-08-30T06:22:40.029Z",
         "video": {
-          "path": "spec/todo/evidence/88978b80d621.webm",
-          "from": 40840,
-          "to": 46042
+          "path": "spec/todo/evidence/89b5061877a8.webm",
+          "from": 40791,
+          "to": 45981
         }
       }
     }
