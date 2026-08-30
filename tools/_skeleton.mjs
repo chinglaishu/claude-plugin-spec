@@ -46,6 +46,12 @@ export const FILES = [
   // it is inlined), so it must be listed directly.
   'tools/board/stepper.js',
   'tools/serve-board.mjs',
+  // the resilient directory watch serve-board.mjs builds both of its watchers on — an unhandled
+  // FSWatcher 'error' (a watched directory deleted under Node's recursive walker, which is what
+  // Linux inotify reports and macOS fsevents never does) would otherwise kill a scaffolded
+  // project's board server outright. Guard-caught too, but it is listed for the same reason the
+  // others are: the vendored server cannot load without it.
+  'tools/watch-dir.mjs',
   // the voice-over pipeline serve-board drives when a run is voiced (init R6 / board R10): narrate.mjs
   // is the pure cue/subtitle/timing logic, narrate-run.mjs the piper+ffmpeg shell. Vendored so a
   // scaffolded project's own watchable run can actually voice — without them serve-board's voice wiring

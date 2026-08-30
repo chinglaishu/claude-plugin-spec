@@ -6,7 +6,7 @@
 // go stale. That write is the whole task-management feature.
 
 import { createServer } from 'node:http'
-import { readFileSync, writeFileSync, existsSync, statSync, watch, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
 import { execFileSync, spawn } from 'node:child_process'
 import { join, normalize, extname, resolve, dirname, basename, relative } from 'node:path'
 import { homedir } from 'node:os'
@@ -23,6 +23,10 @@ import { deriveChapters, deriveKind } from './flow.mjs'
 // pure (no fs) — the flow composer's library derivation, joint check, emitter and prompt (Task 5)
 import { deriveLibrary, composeCheck, emitFlow, composePrompt, flowLanded, validFlowName } from './compose.mjs'
 import { shipToGit, shipToBucket } from './ship-record.mjs'
+// every fs.watch in this file goes through watchDir — an unhandled FSWatcher 'error' is a THROW that
+// takes the SERVER with it, and a deleted watched directory raises exactly that on Linux (see
+// tools/watch-dir.mjs for the CI crash this comes from)
+import { watchDir } from './watch-dir.mjs'
 
 // BOARD_PORT is the one knob, so `npm run board`, the README and playwright.board.ts all agree on it.
 // PORT is honoured as a fallback (some hosts inject it — dojostack's launchd sets it). A scaffolded
@@ -1306,7 +1310,12 @@ const rebuild = () => {
   }, 120)
 }
 let watchPending = null
-watch(SPEC, { recursive: true }, (_e, name) => {
+// RECURSIVE, AND OVER A TREE THAT COMES AND GOES. A run creates and deletes screen directories under
+// spec/ (the _modes probes, the state guard's cleanup), and on Linux the recursive walker raises
+// `ENOENT … scandir` on the FSWatcher when one vanishes underneath it. watchDir handles that error,
+// closes the dead watcher and re-arms on spec/ — the watch survives a probe directory's whole
+// lifecycle instead of taking the server down with it (CI run 33294053726).
+watchDir(SPEC, { recursive: true }, (_e, name) => {
   // Files the tool writes about its own decisions. They already rebuild and notify on their own
   // path, and reacting to them here would have the server answering its own writes.
   if (!name || name.endsWith('state.json') || name.endsWith('_conflict-decisions.json') ||
@@ -1331,7 +1340,7 @@ watch(SPEC, { recursive: true }, (_e, name) => {
 // Rendering picks up tools/ changes for free via the child process. Gate logic does not — it is
 // imported — so it needs a fresh process. `npm run board` runs under `node --watch`, which restarts
 // on exactly these files, so the note only matters if you launched the server some other way.
-watch(join(ROOT, 'tools'), (_e, name) => {
+watchDir(join(ROOT, 'tools'), {}, (_e, name) => {
   if (!name || !name.endsWith('.mjs')) return
   rebuild()
   if (name === 'spec-store.mjs' || name === 'serve-board.mjs') {
