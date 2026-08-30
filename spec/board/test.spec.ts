@@ -2160,35 +2160,67 @@ test('A deep-linked skill URL shows the skill detail on cold load', async ({ pag
 
 test('The guide ends with the derived next action, and there is no rail', async ({ page }) => {
   await coverReqs('R12')
-  await checkReq('R12', async () => {
-    // the six-step home rail is gone
-    await page.goto('/')
-    await page.waitForSelector('.card')
-    await expect(page.locator('#jrail')).toHaveCount(0)
-    await expect(page.locator('#jchip')).toHaveCount(0)
-    // the walkthrough closes on a single derived next action
-    await page.goto('/#howitworks')
-    await page.waitForSelector('#walkthrough .act[data-act="4"]')
-    const cta = page.locator('.act[data-act="4"] .wcta')
-    await expect(cta).toHaveCount(1)
-    await expect(cta).not.toBeEmpty()
-    // EXACT text, not a permissive regex: the static '/kg-deep <screen>' literal this task removed
-    // would itself have satisfied a loose /kg-deep|proven|.../i check, so that alone could not tell a
-    // real derivation from the old hardcoded string left behind (rule 2 — an assertion that would
-    // still pass with the requirement deleted proves nothing). This repo's own journey is always
-    // folded (every requirement here is proven), so wCtaAction always takes its folded branch on this
-    // tree — assert that EXACT sentence; only a real journey() read produces it.
-    //
-    // FOLDED MEANS SETTLED, NOT YOUR-TURN: CLAUDE.md is absolute that indigo means one thing only —
-    // "your turn" — but this board is permanently folded (nothing left to derive), so the closing CTA
-    // must NOT wear the your-turn indigo pill (.wcta-act). Select the CTA via the stable .wcta wrapper
-    // (never renamed) so this survives either class the pill happens to carry.
-    await expect(cta.locator('.wcta-act')).toHaveCount(0)
-    await expect(cta.locator('.wcta-settled')).toHaveCount(1)
-    await expect(cta.locator('.wcta-settled')).toHaveText(
-      'Every derivable fact already holds — this project\'s requirements are proven.'
-    )
-  })
+  // RULE 4, 2026-08-30 — of the two sides, the TEST was the wrong one. The settled assertion below
+  // leaned on "this repo's own journey is always folded", but folded (tools/journey.mjs) needs
+  // EVERY step done, and the `config` step's fact is `existsSync('spec/_config.json')` — a file git
+  // does not track. It happens to sit on the machines this suite was written on, so the settled
+  // branch held here and could NEVER hold on a clean checkout: CI derived the honest earlier action
+  // ("Set up", J_ACT.config) and .wcta-settled read 0 (run 33296656854). The board was right; the
+  // test was reading undeclared local machine state. (The other two untracked leftovers are
+  // innocent: _crawl.json is not needed — the `crawl` step is satisfied by `anyPrd`, four prd.md
+  // files, and does not exist on this machine either — and _conflicts.json is not a journey input
+  // at all.) So the test now SEEDS the fact it asserts, the way the conflicts and init specs seed
+  // _conflicts.json / _crawl.json, and puts the tree back itself; spec/_state-guard.ts's TOOL_STATE
+  // already lists _config.json, so the guard is the backstop either way.
+  const CONFIG_FILE = 'spec/_config.json'
+  const hadConfig = existsSync(CONFIG_FILE)
+  if (!hadConfig) {
+    // the MINIMUM that makes journey()'s config step true — deliberately no `tagline` and no
+    // `project` block, so the header crumb R1 asserts ('specboard · dogfooding itself') keeps
+    // deriving from package.json exactly as it does with no config at all
+    writeFileSync(CONFIG_FILE, JSON.stringify({ mode: 'start', baseUrl: 'http://localhost:5173', routes: [] }, null, 2) + '\n')
+  }
+  // journey() is read at BUILD time (build-board's wCtaAction), not by the client, so the page has
+  // to be rebuilt on the seeded fact before it is navigated to.
+  build()
+  try {
+    await checkReq('R12', async () => {
+      // the six-step home rail is gone
+      await page.goto('/')
+      await page.waitForSelector('.card')
+      await expect(page.locator('#jrail')).toHaveCount(0)
+      await expect(page.locator('#jchip')).toHaveCount(0)
+      // the walkthrough closes on a single derived next action
+      await page.goto('/#howitworks')
+      await page.waitForSelector('#walkthrough .act[data-act="4"]')
+      const cta = page.locator('.act[data-act="4"] .wcta')
+      await expect(cta).toHaveCount(1)
+      await expect(cta).not.toBeEmpty()
+      // EXACT text, not a permissive regex: the static '/kg-deep <screen>' literal this task removed
+      // would itself have satisfied a loose /kg-deep|proven|.../i check, so that alone could not tell a
+      // real derivation from the old hardcoded string left behind (rule 2 — an assertion that would
+      // still pass with the requirement deleted proves nothing). With every journey fact now HELD ON
+      // PURPOSE — the seed above for `config`, the tree itself for the rest (a prd.md exists, and a
+      // requirement is proven) — wCtaAction takes its folded branch, so assert that EXACT sentence;
+      // only a real journey() read produces it. Nothing here is weakened: delete the derivation and
+      // this still fails, and it now fails on a clean checkout for a REAL reason or not at all.
+      //
+      // FOLDED MEANS SETTLED, NOT YOUR-TURN: CLAUDE.md is absolute that indigo means one thing only —
+      // "your turn" — but this board is permanently folded (nothing left to derive), so the closing CTA
+      // must NOT wear the your-turn indigo pill (.wcta-act). Select the CTA via the stable .wcta wrapper
+      // (never renamed) so this survives either class the pill happens to carry.
+      await expect(cta.locator('.wcta-act')).toHaveCount(0)
+      await expect(cta.locator('.wcta-settled')).toHaveCount(1)
+      await expect(cta.locator('.wcta-settled')).toHaveText(
+        'Every derivable fact already holds — this project\'s requirements are proven.'
+      )
+    })
+  } finally {
+    // a seeded file is this test's own litter: remove it and rebuild, so no later test in the run
+    // opens onto a board built on a fixture (the R13 precedent below). A config that was already
+    // there is the human's and is not touched at all.
+    if (!hadConfig) { rmSync(CONFIG_FILE, { force: true }); build() }
+  }
 })
 
 // Board R15 — the board hands you a PROMPT; it never writes a requirement or a test itself. The ⋯
