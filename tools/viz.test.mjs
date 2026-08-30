@@ -5,6 +5,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion } from './viz.mjs'
+// the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
+// both of them read rather than restating numbers here
+import { RING, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
 
@@ -612,7 +615,9 @@ test('callout text is bounded: two lines a section, ellipsis rather than overflo
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-4"'))
+  // mirror-5 (2026-08-30): the ring's inset and the callout's placement come from the shared
+  // tools/overlay-geometry.mjs the burn-in reads too — the pin moves because the renderer did.
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-5"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -704,6 +709,96 @@ test('the card is the burn-in\'s 300 page pixels, scaled only by the page-to-dra
   // …and the SAME width whatever the focus rect is: a wide row's card is not a wider card
   const nested = cardOf(renderWireframe(NESTED, CARD).svg)
   assert.ok(Math.abs(nested[2] - edge[2]) < 0.15, 'the card never resizes itself to its target')
+})
+
+// ── ONE GEOMETRY, NOT TWO COPIES OF IT (2026-08-30) ──────────────────────────────────────────
+// The audit that bought this: for the demo's R1 beat cells the DRAWN ring measured ~12 page px out
+// from the element box where the BURNED one is ~5 — the drawing rendered the burn-in's blurred
+// `0 0 16px` glow as a hard 8px band centred 11.5px out, and on a thin target (a row title, an
+// "added just now" stamp) that band read as a ring twice the photographed one's height. The ring's
+// inset and the callout's placement now come from tools/overlay-geometry.mjs, which is what
+// renderOverlay reads them from too, so the two can only ever agree.
+test('the drawn ring IS the burn-in\'s ring: box + the shared inset, and no hard mark past the halo', () => {
+  const S = 600 / 1440
+  const box = { x: 1150, y: 92, w: 150, h: 52 }              // nest()'s ringed counter
+  const f1 = frameOf(renderWireframe(NESTED, CARD).svg, 1)
+  const rects = [...f1.matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)"([^>]*)\/>/g)]
+    .map(m => ({ x: +m[1], y: +m[2], w: +m[3], h: +m[4], attr: m[5] }))
+  const ai = rects.filter(r => /stroke="var\(--ai\)"/.test(r.attr) && /fill="none"/.test(r.attr))
+  assert.equal(ai.length, 1, 'exactly ONE indigo ring stroke per ringed box — no second band beyond it')
+  // …and it is drawn on ringRect: the border's centreline, box ± (inset + stroke/2)
+  const want = ringRect(box)
+  for (const k of ['x', 'y', 'w', 'h']) {
+    const got = ai[0][k]
+    assert.ok(Math.abs(got - want[k] * S) < 0.11, `ring ${k}: ${got} vs box+inset ${want[k] * S}`)
+  }
+  assert.ok(Math.abs(Number(/stroke-width="([\d.]+)"/.exec(ai[0].attr)[1]) - RING.stroke * S) < 0.06,
+    'and at the burn-in\'s own 2px stroke')
+  // the last hard mark is the paper halo, exactly where the box-shadow's 3px spread ends
+  const halo = rects.filter(r => /stroke="var\(--paper\)"/.test(r.attr) && /fill="none"/.test(r.attr))[0]
+  const out = ringOuter(box)
+  const hw = Number(/stroke-width="([\d.]+)"/.exec(halo.attr)[1])
+  assert.ok(Math.abs((halo.x - hw / 2) - out.x * S) < 0.11, `halo outer edge: ${halo.x - hw / 2} vs ${out.x * S}`)
+  // nothing the overlay draws reaches past it — the band the audit measured is gone for good
+  const edge = out.x * S - 0.12
+  for (const r of ai.concat([halo])) assert.ok(r.x - hw / 2 >= edge, 'no overlay mark outside the halo')
+})
+
+// The placement rule is the SAME rule now — calloutSpot, the one renderOverlay places by — with one
+// refusal layered on that the burn-in does not need: a candidate must also lie inside the camera's
+// framed region, because that is all a beat cell shows. So the drawn card takes calloutSpot's side
+// whenever the region allows it, and otherwise falls back through calloutSpot's own order rather
+// than a parallel one. (The input that can still part them is the card's HEIGHT: the burn-in
+// measures its DOM card, the drawing estimates from its wrapped lines and says the When alone
+// mid-beat. Where the two heights change which candidate fits the VIEWPORT, only the region refusal
+// keeps the sides together — the honest cure is harvesting the burn-in's card rect, which changes
+// what a run records.)
+test('the drawn callout takes the side calloutSpot names, and falls back through its order when the cell cannot hold it', () => {
+  const S = 600 / 1440
+  const sideOf = (svg, box, n = 1) => {
+    const f = frameOf(svg, n)
+    const c = [...f.matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--line2\)"/g)]
+      .map(m => m.slice(1).map(Number)).pop()
+    const [x, y, w, h] = c
+    if (y >= (box.y + box.h) * S) return 'below'
+    if (y + h <= box.y * S) return 'above'
+    return x >= (box.x + box.w) * S ? 'right' : 'leftof'
+  }
+  const cardH = (svg, n = 1) => Number([...frameOf(svg, n).matchAll(/<rect x="[-\d.]+" y="[-\d.]+" width="[-\d.]+" height="([-\d.]+)" rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--line2\)"/g)].pop()[1])
+  for (const [name, box, layouts] of [
+    ['the counter, high on the page', { x: 1150, y: 92, w: 150, h: 52 }, NESTED],
+    ['the counter hard against the edge', { x: 1290, y: 96, w: 130, h: 46 }, [{ before: EDGE(false), after: EDGE(true) }]]
+  ]) {
+    const svg = renderWireframe(layouts, CARD).svg
+    const want = calloutSpot({ box, vw: 1440, vh: 900, cw: 300, ch: cardH(svg) / S })
+    assert.equal(sideOf(svg, box), want.side === 'left' ? 'leftof' : want.side,
+      name + ': the drawn card must sit where the burn-in put it')
+  }
+  // …and the fallback, on the demo R1 shape that bought it: a row at the very foot of a long page.
+  // calloutSpot says BELOW for a card this short, but the beat cell's framed region ends above the
+  // page's own foot, so the drawing takes the next candidate in the SAME order — ABOVE, which is
+  // where the photograph's (taller) card is too.
+  const foot = n => ({
+    w: 1440,
+    h: 900,
+    ring: n ? { x: 321, y: 764, w: 553, h: 17 } : null,
+    els: [...LAY_BEFORE.els.slice(0, 5),
+      { x: 321, y: 764, w: 553, h: 17, kind: 'text', text: 'added just now', ...(n ? { focus: true } : {}) }]
+  })
+  // the beat's camera is the UNION of its rings, so a beat that proved the Add box at the top and
+  // the new row at the foot frames nearly the whole page — and the card cannot go below the foot row
+  const top = n => ({
+    w: 1440,
+    h: 900,
+    ring: n ? { x: 312, y: 126, w: 452, h: 46 } : null,
+    els: [...LAY_BEFORE.els.slice(0, 5),
+      { x: 312, y: 126, w: 452, h: 46, kind: 'input', text: 'Water the plants', ...(n ? { focus: true } : {}) }]
+  })
+  const low = renderWireframe([{ before: foot(false), after: foot(true), values: [top(true), foot(true)] }], CARD).svg
+  const lbox = { x: 321, y: 764, w: 553, h: 17 }
+  assert.equal(calloutSpot({ box: lbox, vw: 1440, vh: 900, cw: 300, ch: cardH(low, 3) / S }).side, 'below',
+    'the burn-in rule, given this short a card, would go below')
+  assert.equal(sideOf(low, lbox, 3), 'above', 'the cell cannot hold it there, so the next candidate takes it')
 })
 
 test('the card holds its true size wherever the region allows, and shrinks ONLY when it cannot fit', () => {

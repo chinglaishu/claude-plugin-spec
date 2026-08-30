@@ -4,6 +4,13 @@ import { readFileSync, appendFileSync, writeFileSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseBehavior } from '../tools/behavior.mjs'
+// THE OVERLAY'S GEOMETRY, SHARED (2026-08-30). The ring's inset and the callout's placement are ONE
+// rule now, stated in tools/overlay-geometry.mjs and imported by both this burn-in and the drawn
+// schematic that mirrors it (tools/viz.mjs). They used to keep private copies of the same numbers
+// and drifted: an audit of the demo's R1 beat cells found the drawn ring ~12 page px out from the
+// element box where this one is ~5. This file is the REFERENCE — the module states its rules, it
+// never invents new ones, and nothing about what the burn-in paints changes.
+import { RING, CARD, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
 
 export { expect }
 
@@ -369,7 +376,13 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   // row that sets the scene. The overlay now exists only while an element is actually ringed; every
   // before/given frame is clean on BOTH sides and the loop reads as a reveal.
   if (!box) { await hideOverlay(page); return }
-  await page.evaluate(({ beat, claim, failed, box }) => {
+  // TWO EVALUATES, ONE PICTURE. The callout's placement rule needs the card's MEASURED height, and
+  // the rule itself now lives in Node (tools/overlay-geometry.mjs) so the drawing can obey the very
+  // same one. So: paint everything the placement does not depend on — the veil, the ring, the card's
+  // words — and hand back the viewport and the card's height; then place the card and its notch.
+  // A page torn down between the two leaves the card's POSITION one frame behind (it transitions in
+  // .16s regardless) and nothing claiming a wrong beat; both calls stay best-effort.
+  const paint = await page.evaluate(({ beat, claim, failed, box, ring0, ringCss, cardW }) => {
     const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
     const FAIL = failed || (beat && beat.state === 'fail')
     let el = document.getElementById('__specboard-focus')
@@ -386,32 +399,35 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       veil.style.cssText = 'position:fixed;inset:0;background:rgba(28,27,24,.12);transition:opacity .18s ease'
       const ring = document.createElement('div')
       ring.className = 'sb-ring'
-      ring.style.cssText = 'position:fixed;border-radius:6px;transition:all .16s ease;display:none'
+      ring.style.cssText = 'position:fixed;border-radius:' + ringCss.radius + 'px;transition:all .16s ease;display:none'
       const ptr = document.createElement('div')
       ptr.className = 'sb-ptr'
-      ptr.style.cssText = 'position:fixed;width:12px;height:12px;background:' + PAPER + ';display:none'
+      ptr.style.cssText = 'position:fixed;width:' + ringCss.notch + 'px;height:' + ringCss.notch + 'px;background:' + PAPER + ';display:none'
       const call = document.createElement('div')
       call.className = 'sb-call'
-      call.style.cssText = 'position:fixed;width:300px;box-sizing:border-box;background:' + PAPER + ';border:1px solid ' + HAIR +
-        ';border-radius:11px;box-shadow:0 10px 30px rgba(28,27,24,.24);padding:12px 15px;transition:all .16s ease;display:none'
+      call.style.cssText = 'position:fixed;width:' + cardW + 'px;box-sizing:border-box;background:' + PAPER + ';border:1px solid ' + HAIR +
+        ';border-radius:' + ringCss.cardRadius + 'px;box-shadow:0 10px 30px rgba(28,27,24,.24);padding:' +
+        ringCss.padY + 'px ' + ringCss.padX + 'px;transition:all .16s ease;display:none'
       el.append(veil, ring, ptr, call)
     }
     el.style.display = ''
     const ring = el.querySelector('.sb-ring') as HTMLElement
     const call = el.querySelector('.sb-call') as HTMLElement
     const ptr = el.querySelector('.sb-ptr') as HTMLElement
-    // the ring on the proven element
+    // the ring on the proven element — its rect comes from the shared geometry (ringBox), so the
+    // drawn mirror can stroke the very same rect instead of a private copy of these numbers
     if (box) {
       ring.style.display = ''
-      ring.style.left = (box.x - 4) + 'px'
-      ring.style.top = (box.y - 4) + 'px'
-      ring.style.width = (box.width + 8) + 'px'
-      ring.style.height = (box.height + 8) + 'px'
-      ring.style.border = '2px solid ' + (FAIL ? BENG : AI)
-      ring.style.boxShadow = '0 0 0 3px rgba(253,252,249,.92),0 0 16px ' + (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
+      ring.style.left = ring0.x + 'px'
+      ring.style.top = ring0.y + 'px'
+      ring.style.width = ring0.w + 'px'
+      ring.style.height = ring0.h + 'px'
+      ring.style.border = ringCss.stroke + 'px solid ' + (FAIL ? BENG : AI)
+      ring.style.boxShadow = '0 0 0 ' + ringCss.halo + 'px rgba(253,252,249,.92),0 0 ' + ringCss.glow + 'px ' +
+        (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
     } else ring.style.display = 'none'
     // the callout — the current beat in words
-    if (!beat) { call.style.display = 'none'; ptr.style.display = 'none'; return }
+    if (!beat) { call.style.display = 'none'; ptr.style.display = 'none'; return null }
     call.style.display = ''
     call.style.borderColor = FAIL ? BENG : HAIR
     call.innerHTML = ''
@@ -441,81 +457,70 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       t.append(mk('span', ' ✓', 'color:' + KOKE + ';font-weight:700'))
     }
     call.append(t)
-    // POSITION — the card must read as ATTACHED to the ring, and must never cover it (2026-08-27
-    // defect: on R3's small progress ring inside a wide row, "prefer right" put the card straight
-    // over that row's own title and its neighbours — the callout hid the very context the value is
-    // read in). So: BELOW the target first (pointer up), then ABOVE (pointer down), then beside it
-    // — each aligned to the target's centre and clamped to the viewport, and each candidate
-    // REJECTED if it overlaps the target box at all. Only when the target is so large that every
-    // placement would overlap does the card fall back to the side with the most free room, and
-    // then its pointer is hidden rather than drawn pointing at nothing.
-    const vw = window.innerWidth, vh = window.innerHeight, cw = 300, pad = 12
-    // 12px keeps the notch (a 12px square rotated 45°, so ~8.5px of it protrudes) touching the
-    // ring's outer edge, which sits 6px out from the box — attached, never floating.
-    const gap = 12
-    const ch = Math.ceil(call.getBoundingClientRect().height)
-    const clampX = (v: number) => Math.max(pad, Math.min(v, Math.max(pad, vw - cw - pad)))
-    const clampY = (v: number) => Math.max(pad, Math.min(v, Math.max(pad, vh - ch - pad)))
-    let left = pad, top = pad, side = 'none'
-    if (box) {
-      const cx = box.x + box.width / 2
-      const cands = [
-        { side: 'below', left: clampX(cx - cw / 2), top: box.y + box.height + gap },
-        { side: 'above', left: clampX(cx - cw / 2), top: box.y - gap - ch },
-        { side: 'right', left: box.x + box.width + gap, top: clampY(box.y - 6) },
-        { side: 'leftof', left: box.x - gap - cw, top: clampY(box.y - 6) }
-      ]
-      const inView = (c: { left: number, top: number }) =>
-        c.left >= pad && c.left + cw <= vw - pad && c.top >= pad && c.top + ch <= vh - pad
-      const covers = (c: { left: number, top: number }) =>
-        !(c.left + cw <= box.x || c.left >= box.x + box.width ||
-          c.top + ch <= box.y || c.top >= box.y + box.height)
-      const hit = cands.find(c => inView(c) && !covers(c))
-      if (hit) { left = hit.left; top = hit.top; side = hit.side } else {
-        // nothing fits cleanly (a target as tall as the viewport, a tiny window): take the side
-        // with the most room, clamp into view, and drop the pointer — an honest float beats a
-        // notch aimed at a box the card is sitting on.
-        const room = [
-          { side: 'below', v: vh - (box.y + box.height) - gap - pad },
-          { side: 'above', v: box.y - gap - pad },
-          { side: 'right', v: vw - (box.x + box.width) - gap - pad },
-          { side: 'leftof', v: box.x - gap - pad }
-        ].sort((a, b) => b.v - a.v)[0]
-        const c = cands.find(x => x.side === room.side)!
-        left = clampX(c.left); top = clampY(c.top); side = 'none'
-      }
-    } else { left = (vw - cw) / 2; top = pad }
+    // …and the ONE thing the placement rule cannot know without a browser: how tall the words made
+    // the card. It goes back to Node, where calloutSpot decides where the card belongs.
+    return { vw: window.innerWidth, vh: window.innerHeight, ch: Math.ceil(call.getBoundingClientRect().height) }
+  }, {
+    beat: curBeat(),
+    claim: CLAIM ? { ...CLAIM } : null,
+    failed,
+    box,
+    ring0: ringBox(box),
+    ringCss: {
+      stroke: RING.stroke, halo: RING.halo, glow: RING.glow, radius: RING.radius,
+      notch: CARD.notch, cardRadius: CARD.radius, padX: CARD.padX, padY: CARD.padY
+    },
+    cardW: CARD.width
+  }).catch(() => null)
+  // no card to place (no beat yet, or the page went away mid-paint) — the ring is already painted
+  if (!paint) return
+  // POSITION — the shared rule (tools/overlay-geometry.mjs calloutSpot), so the drawn mirror places
+  // its card by the very same candidate order: BELOW the target first, then ABOVE, then beside it,
+  // each clamped to the viewport and each refused if it would cover the target at all.
+  const spot = calloutSpot({ box, vw: paint.vw, vh: paint.vh, cw: CARD.width, ch: paint.ch })
+  await page.evaluate(({ spot, box, cw, ch, fail, half, inset }) => {
+    const BENG = '#8d4a38', HAIR = '#cdc7b8'
+    const el = document.getElementById('__specboard-focus')
+    if (!el) return
+    const call = el.querySelector('.sb-call') as HTMLElement
+    const ptr = el.querySelector('.sb-ptr') as HTMLElement
+    if (!call || !ptr) return
+    const left = spot.left, top = spot.top, side = spot.side
     call.style.left = left + 'px'
     call.style.top = top + 'px'
     // the notch, pointing back at the ring. A square rotated 45° shows the corner whose two edges
     // carry a border: top+left → the TOP corner (points up), bottom+right → down, left+bottom →
     // left, right+top → right. Every border is set explicitly so a re-render never keeps the
-    // previous placement's arrow.
-    if (box && side !== 'none') {
+    // previous placement's arrow. side 'none' means nothing fit cleanly — an honest float beats a
+    // notch aimed at a box the card is sitting on.
+    if (side !== 'none') {
       ptr.style.display = ''
-      const bc = FAIL ? BENG : HAIR
+      const bc = fail ? BENG : HAIR
       const on = '1px solid ' + bc
       ptr.style.transform = 'rotate(45deg)'
       ptr.style.borderTop = 'none'; ptr.style.borderRight = 'none'
       ptr.style.borderBottom = 'none'; ptr.style.borderLeft = 'none'
       if (side === 'below' || side === 'above') {
         // sit the notch under the target's centre, but never off the card's own edge
-        const px = Math.max(left + 16, Math.min(box.x + box.width / 2, left + cw - 16))
-        ptr.style.left = (px - 6) + 'px'
-        if (side === 'below') { ptr.style.top = (top - 6) + 'px'; ptr.style.borderTop = on; ptr.style.borderLeft = on }
-        else { ptr.style.top = (top + ch - 6) + 'px'; ptr.style.borderBottom = on; ptr.style.borderRight = on }
+        const px = Math.max(left + inset, Math.min(box.x + box.width / 2, left + cw - inset))
+        ptr.style.left = (px - half) + 'px'
+        if (side === 'below') { ptr.style.top = (top - half) + 'px'; ptr.style.borderTop = on; ptr.style.borderLeft = on }
+        else { ptr.style.top = (top + ch - half) + 'px'; ptr.style.borderBottom = on; ptr.style.borderRight = on }
       } else {
-        const py = Math.max(top + 16, Math.min(box.y + box.height / 2, top + ch - 16))
-        ptr.style.top = (py - 6) + 'px'
-        if (side === 'right') { ptr.style.left = (left - 6) + 'px'; ptr.style.borderLeft = on; ptr.style.borderBottom = on }
-        else { ptr.style.left = (left + cw - 6) + 'px'; ptr.style.borderRight = on; ptr.style.borderTop = on }
+        const py = Math.max(top + inset, Math.min(box.y + box.height / 2, top + ch - inset))
+        ptr.style.top = (py - half) + 'px'
+        if (side === 'right') { ptr.style.left = (left - half) + 'px'; ptr.style.borderLeft = on; ptr.style.borderBottom = on }
+        else { ptr.style.left = (left + cw - half) + 'px'; ptr.style.borderRight = on; ptr.style.borderTop = on }
       }
     } else ptr.style.display = 'none'
   }, {
-    beat: curBeat(),
-    claim: CLAIM ? { ...CLAIM } : null,
-    failed,
-    box
+    spot,
+    box,
+    cw: CARD.width,
+    ch: paint.ch,
+    fail: failed || (curBeat() || { state: '' }).state === 'fail',
+    half: CARD.notch / 2,
+    inset: CARD.notchInset
   }).catch(() => {})
 }
 

@@ -19,6 +19,10 @@
 // one document without collisions.
 
 import { reqHash, behaviorText, isStale } from './reqhash.mjs'
+// THE OVERLAY'S GEOMETRY, SHARED WITH THE BURN-IN (spec/_base.ts renderOverlay). The drawn overlay
+// and the photographed one must be the SAME PICTURE; keeping two copies of the same numbers is
+// exactly how they stopped being one. See tools/overlay-geometry.mjs.
+import { RING, CARD, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
 
 // ── the pin: thin wrappers over reqhash ────────────────────────────────────
 export const vizHash = behavior => reqHash(behaviorText(behavior))
@@ -577,13 +581,16 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // THE RENDERER PIN. Staleness on this board is a BODY comparison — viz-derive redraws whenever the
 // committed file differs from what the kit draws today — so a renderer change already lands on the
 // next pass with no bump at all, and no committed drawing ever needs deleting. This stamp exists so
-// the reason is legible ON DISK: `mirror-4` draws the asserted value at the ELEMENT'S OWN MEASURED
+// the reason is legible ON DISK: `mirror-5` takes the ring's inset and the callout's placement from
+// tools/overlay-geometry.mjs — the SAME module the burn-in reads them from, so the two cells of a
+// beat row can no longer drift apart the way they had (the drawn ring's hard glow band read ~12
+// page px out against the burned ring's ~5, and the band is gone); `mirror-4` draws the asserted value at the ELEMENT'S OWN MEASURED
 // TYPE — the page's font size, alignment and text inset, where the harvest recorded them, instead of
 // a centred label sized off the ring box's height; `mirror-3` draws the overlay at the burn-in's own PAGE GEOMETRY
 // (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
-const MIRROR_KIT = 'mirror-4'
+const MIRROR_KIT = 'mirror-5'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
@@ -844,11 +851,17 @@ const checkMark = (x, y, s) =>
 // width. Nothing here is sized against the drawing, the focus rect or the camera — that was the
 // mistake: a card measured against the framed region renders huge at full frame and stops matching
 // the photograph the moment the two are put side by side.
+//
+// …and since 2026-08-30 they are not copied here at all: the ring's inset and the callout's
+// placement come from tools/overlay-geometry.mjs, the ONE module the burn-in reads them from too.
+// Copies are exactly how the two drifted — an audit of the demo's R1 beat cells measured the drawn
+// ring ~12 page px out from the element box against the burned one's ~5, which on a thin target is
+// a drawn ring twice the photographed one's height.
 const OV = {
-  card: 300,          // .sb-call width
-  rad: 11,            // its border-radius
-  padX: 15,           // its padding: 12px 15px
-  padY: 12,
+  card: CARD.width,   // .sb-call width
+  rad: CARD.radius,   // its border-radius
+  padX: CARD.padX,    // its padding: 12px 15px
+  padY: CARD.padY,
   fsTag: 11,          // the tag row (the title)
   fsId: 10,           // the id chip's mono
   fsLab: 10,          // the WHEN / THEN mono labels
@@ -860,16 +873,14 @@ const OV = {
   whenGap: 3,         // When row margin-bottom
   chipPadX: 5,
   chipRad: 4,
-  notch: 12,          // the 12px square, rotated 45°
-  ringInset: 4,       // ring: left/top = box - 4, size = box + 8
-  ringStroke: 2,
-  ringRad: 6,
-  halo: 3,            // box-shadow 0 0 0 3px paper
-  glow: 8,            // 0 0 16px rgba(ai,.30), approximated as a wide pale stroke
+  notch: CARD.notch,  // the 12px square, rotated 45°
+  ringStroke: RING.stroke,
+  ringRad: RING.radius,
+  halo: RING.halo,    // box-shadow 0 0 0 3px paper
   shadowY: 6          // 0 10px 30px rgba(ink,.24), approximated as one offset plate
 }
 // the rotated square's visible triangle: half-base and tip reach are both side/√2
-const NOTCH_REACH = OV.notch / Math.SQRT2
+const NOTCH_REACH = CARD.reach
 
 // THE DIM. The burn-in's veil is `position:fixed;inset:0;background:rgba(28,27,24,.12)` — the WHOLE
 // page, the ringed element included; the ring and the card are painted over it. So the drawing
@@ -877,17 +888,26 @@ const NOTCH_REACH = OV.notch / Math.SQRT2
 // photograph shows, and side by side the brighter patch was the giveaway.)
 const dimWash = (W, H) => `<rect x="0" y="0" width="${r1(W)}" height="${r1(H)}" fill="var(--ink)" opacity="0.12"/>`
 
-// THE RING, at the burn-in's geometry: a 2px indigo stroke inset 4px around the box with a 6px
-// radius, a 3px paper halo outside it, and the pale glow beyond that. S converts each px.
+// THE RING, at the burn-in's geometry — read from the SHARED module, never re-stated here: a 2px
+// indigo stroke whose centreline sits `inset + stroke/2` out from the box (ringRect), with a 3px
+// paper halo outside it (ringOuter's edge). `f` is in DRAWING units, so the page-pixel numbers are
+// converted by S, the one ratio this drawing uses for everything.
+//
+// NO GLOW BAND (2026-08-30, rule 6 — the drawing was wrong, not the burn-in). The burn-in's second
+// shadow is `0 0 16px rgba(ai,.30)`: a BLUR with no edge, and at that alpha it is barely visible in
+// the photograph at all. The drawing rendered it as an 8px-wide flat stroke centred 11.5px out —
+// a hard band whose outer edge reached 15.5px from the box. That band IS the "~12 page px" the beat
+// cells measured against the burn-in's ~5, and on a thin target (a row title, an "added just now"
+// stamp) it doubled the ring's apparent height. A mark the photograph does not show is a mark the
+// mirror must not draw.
 function ringSVG (f, S) {
-  const o = OV.ringInset * S + (OV.ringStroke * S) / 2
-  const x = f.x - o; const y = f.y - o
-  const w = f.w + 2 * o; const h = f.h + 2 * o
+  const box = { x: f.x / S, y: f.y / S, w: f.w / S, h: f.h / S }   // back to page px to ask the module
+  const r = ringRect(box)
+  const x = r.x * S; const y = r.y * S; const w = r.w * S; const h = r.h * S
   const rect = (grow, sw, stroke, extra) =>
     `<rect x="${r1(x - grow)}" y="${r1(y - grow)}" width="${r1(w + 2 * grow)}" height="${r1(h + 2 * grow)}" ` +
     `rx="${r1(OV.ringRad * S + grow)}" fill="none" stroke="var(--${stroke})" stroke-width="${r1(sw)}"${extra}/>`
-  return rect((OV.ringStroke / 2 + OV.halo / 2 + OV.glow / 2) * S, OV.glow * S, 'ai', ' opacity="0.12"') +
-    rect((OV.ringStroke / 2 + OV.halo / 2) * S, OV.halo * S, 'paper', ' opacity="0.92"') +
+  return rect((OV.ringStroke / 2 + OV.halo / 2) * S, OV.halo * S, 'paper', ' opacity="0.92"') +
     rect(0, OV.ringStroke * S, 'ai', '')
 }
 
@@ -948,15 +968,23 @@ function measureCard (spec, S, u) {
   return { cardW, cardH, k, draw }
 }
 
-// Place it the way renderOverlay places it — below the ring, then above, then beside — with one
-// extra refusal the burn-in does not need: the candidate must also lie inside the camera's framed
-// region, because that is all the beat cell shows.
+// Place it the way renderOverlay places it — which since 2026-08-30 means ASKING the same rule
+// rather than re-implementing it: calloutSpot (tools/overlay-geometry.mjs) names the side the
+// burn-in chose for this target, and that side is tried FIRST here. The rest of the burn-in's order
+// stays as the fallback, because the drawing carries one refusal the burn-in does not need: a
+// candidate must also lie inside the camera's framed region, since that is all the beat cell shows.
+//
+// The one input that cannot match is the card's HEIGHT: the burn-in measures its own DOM card, the
+// drawing estimates from its wrapped lines (and caps each section at two). Where the two heights
+// disagree enough to change which candidate fits, the sides can still part — the honest fix for
+// that is harvesting the burn-in's card rect, which is a change to what the run records.
 function calloutSVG (spec, f, W, H, extra, region, S) {
   const reg = region || { x: 0, y: 0, w: W, h: H }
   const M = 2 * S
   const cx = f.x + f.w / 2
-  const ringOut = (OV.ringInset + OV.ringStroke + OV.halo) * S
-  const ring = { x: f.x - ringOut, y: f.y - ringOut, w: f.w + 2 * ringOut, h: f.h + 2 * ringOut }
+  const box = { x: f.x / S, y: f.y / S, w: f.w / S, h: f.h / S }   // page px, to ask the shared rule
+  const ro = ringOuter(box)
+  const ring = { x: ro.x * S, y: ro.y * S, w: ro.w * S, h: ro.h * S }
   const obst = [ring, ...(extra ? [extra] : [])]
   const place = (card, avoid) => {
     const reach = NOTCH_REACH * card.k
@@ -966,9 +994,13 @@ function calloutSVG (spec, f, W, H, extra, region, S) {
     const cands = [
       { side: 'below', x: clampX(cx - card.cardW / 2), y: ring.y + ring.h + gap },
       { side: 'above', x: clampX(cx - card.cardW / 2), y: ring.y - gap - card.cardH },
-      { side: 'right', x: ring.x + ring.w + gap, y: clampY(f.y - 6 * S) },
-      { side: 'left', x: ring.x - gap - card.cardW, y: clampY(f.y - 6 * S) }
+      { side: 'right', x: ring.x + ring.w + gap, y: clampY(f.y - CARD.sideNudge * S) },
+      { side: 'left', x: ring.x - gap - card.cardW, y: clampY(f.y - CARD.sideNudge * S) }
     ]
+    // the burn-in's own answer, first in the queue — 'leftof' is what it calls this drawing's 'left'
+    const want = calloutSpot({ box, vw: W / S, vh: H / S, cw: OV.card, ch: card.cardH / S }).side
+    const first = want === 'leftof' ? 'left' : want
+    cands.sort((a, b) => (a.side === first ? 0 : 1) - (b.side === first ? 0 : 1))
     // the notch's own reach beyond the card edge, so the arrow is never the part that gets cut
     const withNotch = c => {
       const b = { x: c.x, y: c.y, w: card.cardW, h: card.cardH }

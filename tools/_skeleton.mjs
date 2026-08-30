@@ -26,6 +26,10 @@ export const FILES = [
   // — imported by spec-store.mjs (enrichReqs attaches r.viz, the committed drawing's staleness), so
   // the vendored store cannot load without it (the same guard-caught class of miss).
   'tools/viz.mjs',
+  // the ONE overlay geometry (2026-08-30): the ring's inset and the callout's placement, imported
+  // by BOTH tools/viz.mjs (the drawing) and spec/_base.ts (the burn-in). A scaffolded project that
+  // got one and not the other would have a schematic and a photograph that no longer mirror.
+  'tools/overlay-geometry.mjs',
   // the viz pass's shell (task 4 review M2, fix round 1, 2026-08-22): the CLI a scaffolded project
   // runs to derive/commit its own schematics ("redraw is instant and free"). NOT caught by the
   // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports
