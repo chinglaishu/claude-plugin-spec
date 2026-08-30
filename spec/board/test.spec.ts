@@ -2386,15 +2386,21 @@ test('The guide ends with the derived next action, and there is no rail', async 
   }
 })
 
-// Board R12, second half — WHAT GATES CI, ON THE BOARD (the human, 2026-08-30: "user need to be
-// clear that they can add tests for CI check, and what tests are added"). The chooser is
-// spec/_ci.json and tools/ci-select.mjs is the resolver the GitHub workflow itself runs; the board
-// reads the same file through the same resolver at BUILD time and marks the cards that gate. Nothing
-// is stored — which is the whole claim, so it is proven by SEEDING a different chooser, rebuilding,
-// and watching the marks follow (the R12 seeding precedent above; the state guard is the backstop
-// and this test puts the file back itself).
+// Board R22 — WHAT GATES CI, ON THE BOARD (the human, 2026-08-30: "user need to be clear that they
+// can add some test for CI check, and what tests are added"). The chooser is spec/_ci.json and
+// tools/ci-select.mjs is the resolver the GitHub workflow itself runs; the board reads the same file
+// through the same resolver at BUILD time and marks the cards that gate. Nothing is stored — which
+// is the whole claim, so it is proven by SEEDING a different chooser, rebuilding, and watching the
+// marks follow (the R12 seeding precedent above; the state guard is the backstop and this test puts
+// the file back itself).
+//
+// RETAGGED 2026-08-30: this was written against R12 because R12 was the nearest standing sentence
+// ("derived, not stored" + the guide), and it was flagged at the time as a misuse — R12 is about the
+// guide's ONE NEXT ACTION, not about CI, so tagging it inflated R12's proof with an assertion R12
+// does not describe. The human resolved it by creating R22, which says exactly this. The tag follows
+// the meaning (rule 5: the human owns it, and they have now spoken).
 test('The home cards say which screens gate CI, derived from spec/_ci.json', async ({ page }) => {
-  await coverReqs('R12')
+  await coverReqs('R22')
   const CI_FILE = 'spec/_ci.json'
   const had = existsSync(CI_FILE) ? readFileSync(CI_FILE, 'utf8') : null
   const marked = async () => page.locator('#home .card').evaluateAll(cards => cards
@@ -2403,7 +2409,7 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
   const all = async () => page.locator('#home .card').evaluateAll(cards =>
     cards.map(c => c.getAttribute('data-screen')).sort())
   try {
-    await checkReq('R12', async () => {
+    await checkReq('R22', async () => {
       // (a) THE COMMITTED CHOOSER: the cards it names wear the mark and the ones it leaves out do
       // not. Read the file here, independently of the board, so this is a comparison and not a
       // restatement — and demand that the two sets actually DIFFER, or the assertion would hold
@@ -2422,7 +2428,7 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       await expect(page.locator(`#home .card[data-screen="${want[0]}"] .kchip.ci`)).toContainText('CI')
     })
 
-    await checkReq('R12', async () => {
+    await checkReq('R22', async () => {
       // (b) SEED A DIFFERENT CHOOSER and rebuild: the marks move with it. A stored flag could not do
       // this — it would still be marking yesterday's screens.
       const only = (await all()).filter(n => n !== 'board')[0]
