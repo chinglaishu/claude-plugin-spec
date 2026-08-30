@@ -728,8 +728,14 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // so the assertion becomes the R8 assert-the-gone shape. (What the ONE fixed order guarantees —
     // the words leading every row, the header over the cell it names — is board R21's own
     // requirement, which asserts it in full.)
-    await expect(fbar.locator('.medbar')).toHaveCount(0)
-    await expect(ov.locator('.fread')).not.toContainText('schematic first')
+    // …and the reader's OTHER control, the play mode (board R20, the human 2026-08-30): auto ↔ step,
+    // auto live. The column-order pair that stood here is gone (board R21) — scoped to the BAR,
+    // never the whole reader, because R13's own authored prose still quotes the retired control by
+    // name and the prose is the human's to reword (rule 5).
+    await expect(fbar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
+    await expect(fbar.locator('.medbar')).toHaveCount(1)
+    await expect(fbar).not.toContainText('schematic first')
+    await expect(fbar).not.toContainText('behavior first')
     // A MULTI-BEAT requirement loops EVERY beat: R4 has 3 beats → given (parked) + 3 LOOPING rows
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
@@ -1243,24 +1249,35 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // only one of them was true, and the burn-in beside it said a different one. So: every scene of
     // the drawing that carries a callout carries exactly ONE of the two labels, and none of them
     // carries the requirement's title.
-    const cards = await row.locator('.sbframe .pcbox .camsub svg').evaluate(el => {
-      const out: Array<{ when: number, then: number }> = []
-      for (const g of Array.from(el.querySelectorAll('g[class^="wf"]'))) {
-        const h = g.innerHTML
-        const when = (h.match(/>WHEN</g) || []).length
-        const then = (h.match(/>THEN</g) || []).length
-        if (when || then) out.push({ when, then })
-      }
-      return out
-    })
-    expect(cards.length, 'at least one scene of the drawing carries a callout').toBeGreaterThan(0)
-    for (const c of cards) {
-      expect(c.when + c.then, 'a scene says ONE line — never both stacked: ' + JSON.stringify(c)).toBe(1)
+    // …and the THIRD surface — the card burned into the recording the proof frames are cut from —
+    // is on the SAME beat and says the SAME one line. This is the leg that catches the drift R19
+    // exists to forbid: until 2026-08-30 the drawing said the When alone mid-beat while the burn-in
+    // already claimed the Then, and both stacked the requirement title on top of it. Recording-gated
+    // like every other assertion about the burn-in (spec/_base.ts paints nothing without one), and
+    // the else-branch keeps its own power: nothing may be injected into the page at all.
+    //
+    // (Asserted on the BURNED card rather than the drawn one on purpose: the board's own harvest
+    // records no ring — its specs read the page with reveal(), not proveVisible() — so its committed
+    // drawings carry no overlay to read a card off. The DRAWN side of the same rule is pinned where
+    // it can actually fail, in tools/viz.test.mjs, against a harvest that has one.)
+    await reveal(row.locator('.sbtext'))
+    const call19 = page.locator('#__specboard-focus .sb-call')
+    if (process.env.BOARD_RECORD) {
+      await expect(call19).toBeVisible()
+      const said = plain(await call19.innerText())
+      // this is the SECOND checkReq('R19') of the test, so the callout has advanced to R19's second
+      // beat — BEAT_CURSOR counts checkReq calls per id (spec/_base.ts), clamped to the last
+      const bs19 = prdBeats('R19')!.beats
+      const b19 = bs19[Math.min(1, bs19.length - 1)]
+      expect(said, 'the burned card names the requirement').toContain('R19')
+      expect(said, 'and carries this beat\'s own When, mid-assertion').toContain(plain(b19.when))
+      expect(said.includes(plain(b19.then)), 'and NOT the Then — one sentence, the current step').toBe(false)
+      const titleR19 = (await dt.locator('.reqpane .req[data-r="R19"] .rt').textContent() || '').trim()
+      expect(said.includes(plain(titleR19)), 'and no requirement title — the id chip is the whole tag').toBe(false)
+      await hudCheck('one sentence per scene', 'the When alone', said.includes(plain(b19.then)) ? 'both lines' : 'the When alone')
+    } else {
+      await expect(page.locator('#__specboard-focus')).toHaveCount(0)
     }
-    const titleR = (await dt.locator('.reqpane .req[data-r="' + spec.rid + '"] .rt').textContent() || '').trim()
-    const svgTxt = await row.locator('.sbframe .pcbox .camsub svg').innerHTML()
-    expect(svgTxt.includes(titleR), 'the drawn card carries no requirement title — the id chip is the tag').toBe(false)
-    await hudCheck('one sentence per scene', '1 line', String(cards[0].when + cards[0].then) + ' line')
     // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
     const given = story.locator('.sbwrap .sbrow').first()
     await expect(given).toHaveClass(/\bbgiven\b/)
@@ -1328,6 +1345,108 @@ test('The proof plays itself — already looping, zoomed, the whole frame one to
     await expect(given.locator('.sbproof .pcstrip .pcfig img')).toHaveCount(1)   // the one still
     await expect(given.locator('.sbproof .pccap')).not.toBeEmpty()               // captioned, honestly
   })
+
+})
+
+// Board R20, second half — AUTO ↔ STEP (the human, 2026-08-30: "add a display mode for the small
+// steps — now it only has auto play; enable click to go to the next small step"). The loop stays the
+// DEFAULT — that is the sentence R20 already carries, and the test above proves it still runs with
+// nothing clicked. Beside it, ONE reader-wide control holds the story still so a person can walk a
+// beat a scene at a time, both cells together. Its own test, not another beat of the one above: the
+// walk is real waiting (a held loop can only be proven by watching it not move) and it deserves its
+// own clock rather than eating that test's.
+test('The proof steps on click — auto is still the default, and step holds the story', async ({ page }) => {
+  await coverReqs('R20')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const spec = mirrorSpecimens()[0]
+  expect(spec, 'a board requirement harvested with a beat pair').toBeTruthy()
+
+  await checkReq('R20', async () => {
+    await armFocus(dt, spec.rid)
+    await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))   // hop, so the reader rebuilds
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    const bar = ov.locator('.fread > .fbar')
+    const mode = bar.locator('.medbar.pmode')
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const cell = row.locator('.sbproof')
+    const stepper = cell.locator('.pcplay .fsteps-wrap')
+    await reveal(mode)
+    await expect(mode.locator('button')).toHaveText(['auto', 'step'])
+    await expect(mode.locator('button.on')).toHaveText('auto')      // the loop is still the default
+    // the drawing's own park points — one per scene of this beat, the same list the loop steps
+    const sub = await row.locator('.sbframe').evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
+      .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
+    expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
+    const phOf = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
+    const spd = bar.locator('select.pspd')
+    await spd.selectOption('4')            // 4× bounds every hold at ~1.5s, so "did not move" is a real wait
+
+    // STEP HOLDS. Nothing clicked, three seconds at 4× — time for two hops in auto — and the counter
+    // has not moved. Real timers, because a fake clock would freeze the board's own fold timers.
+    await mode.locator('button', { hasText: 'step' }).click()
+    await expect(mode.locator('button.on')).toHaveText('step')
+    const held = await nOf()
+    await page.waitForTimeout(3000)
+    expect(await nOf(), 'in step mode the loop holds until you ask for the next scene').toBe(held)
+    await hudCheck('step mode holds the scene', 'frame ' + held, 'frame ' + (await nOf()))
+  })
+
+  await checkReq('R20', async () => {
+    const bar = ov.locator('.fread > .fbar')
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const cell = row.locator('.sbproof')
+    const stepper = cell.locator('.pcplay .fsteps-wrap')
+    const sub = await row.locator('.sbframe').evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
+      .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
+    const phOf = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
+    await reveal(cell)
+    // A CLICK ON THE PROOF CELL ADVANCES ONE SCENE — and the drawing beside it comes with it, to the
+    // park point of that very scene, because both are moved by the same show() the loop uses. (The
+    // cell itself is the affordance: the dots are the jump-map, and a per-row "next" button would
+    // multiply chrome down every row of every requirement.)
+    const from = await nOf()
+    const next = from % sub.length + 1
+    await stepper.click({ timeout: 8000 })
+    // (the click is CONSUMED by the step: every board <img> otherwise opens the shared lightbox, and
+    // a step that also threw a full-screen frame over the row would be no kind of step — proven by
+    // the assertions that follow, which cannot run under an open lightbox)
+    await expect.poll(nOf, { timeout: 6000 }).toBe(next)
+    await expect.poll(phOf, { timeout: 6000 }).toBeCloseTo(sub[next - 1], 2)
+    // …and it WRAPS: walk the whole way round and land back where the click left us
+    for (let k = 0; k < sub.length; k++) await stepper.click({ timeout: 8000 })
+    await expect.poll(nOf, { timeout: 6000 }).toBe(next)
+    // the dots still JUMP while stepping — the mode holds the clock, it does not take the map away
+    await cell.locator('.pdots .pd').first().click({ timeout: 8000 })
+    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
+    await expect.poll(phOf, { timeout: 6000 }).toBeCloseTo(sub[0], 2)
+    // and no media toolbar has crept back in with the mode — this is a PLAY mode (R20's absence)
+    await expect(cell.locator('.pcmodes')).toHaveCount(0)
+    // …nor did the shared lightbox open over the row while we stepped it
+    await expect(page.locator('#lb')).toBeHidden()
+    await hudCheck('a click steps both halves of the row', 'scene 1', 'scene ' + (await nOf()))
+
+    // READER-WIDE AND SESSION-HELD, like the speed beside it: page on and the next requirement opens
+    // held too, and nothing about it is written down…
+    await page.goto('/#/board/R4')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
+    await expect(ov.locator('.fread > .fbar .medbar.pmode button.on')).toHaveText('step')
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /mode|play|step/i.test(k))),
+      'the play mode is session-scoped — never stored').toEqual([])
+    // …and AUTO re-arms what step held
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    const back = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.sbproof .pcplay .fsteps-wrap')
+    await reveal(back)
+    await ov.locator('.fread > .fbar .medbar.pmode button', { hasText: 'auto' }).click()
+    const at2 = await back.locator('.fstepn').textContent()
+    await expect.poll(() => back.locator('.fstepn').textContent(), { timeout: 12000 }).not.toBe(at2)
+    await bar.locator('select.pspd').selectOption('1')
+  })
 })
 
 // Board R21 — THE READER READS BEHAVIOUR FIRST. Reworked 2026-08-30, rule 4 with the human's own
@@ -1383,9 +1502,14 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     // THE CONTROL IS GONE, and so is everything it needed. Not "defaults to behaviour first" — there
     // is no segmented pair in the reader, no order class on the story, and no stored preference; a
     // reader that kept the toggle and merely pre-selected one stop fails here.
-    await expect(ov.locator('.fread .medbar')).toHaveCount(0)
-    await expect(ov.locator('.fread')).not.toContainText('schematic first')
-    await expect(ov.locator('.fread')).not.toContainText('behavior first')
+    // the reader's bar carries the PLAY-MODE pair and nothing else — no second segmented control,
+    // which is what a surviving column-order toggle would be
+    await expect(ov.locator('.fread .medbar')).toHaveCount(1)
+    await expect(ov.locator('.fread .medbar')).toHaveClass(/\bpmode\b/)
+    // the CONTROL, not the word: R21's own prose still describes the toggle it used to have, and the
+    // prose is the human's to reword (rule 5). So the ban is on the reader's control bar.
+    await expect(ov.locator('.fread > .fbar')).not.toContainText('schematic first')
+    await expect(ov.locator('.fread > .fbar')).not.toContainText('behavior first')
     await expect(story()).not.toHaveClass(/\bord-bsp\b/)
     expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /ord|colorder|column/i.test(k))),
       'there is no column order to store any more').toEqual([])

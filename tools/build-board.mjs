@@ -2059,6 +2059,15 @@ export function build () {
     background:var(--paper); border-top:1px solid var(--hair); padding:var(--s1) var(--s2); }
   .sbproof .pccap { font:var(--t-micro) var(--mono); letter-spacing:.06em; color:var(--ink-3);
     padding-top:var(--s1); }
+  /* STEP MODE'S AFFORDANCE (the human, 2026-08-30): in step mode the frames themselves are the
+     "next" — a click advances this beat one scene — so the cell says so with the cursor and a
+     hairline ring on hover, and nothing else. No button per row: a row is repeated down every
+     requirement, and one control there is N controls on the page. In auto mode the class is simply
+     absent and the cell is a picture again. */
+  .sbproof .pcbox.pcnext { cursor:pointer; }
+  .sbproof .pcbox.pcnext:hover { border-color:var(--ink-3); }
+  /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other */
+  .fbar .medbar.pmode button { min-width:calc(38px * var(--scale)); }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }

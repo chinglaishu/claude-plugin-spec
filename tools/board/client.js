@@ -203,8 +203,8 @@ const B = window.__BOARD__ || {}
       if (body) { body.innerHTML = ''; body.hidden = true }
       card.classList.remove('open')
     }
-    // the torn-down cells' speed and zoom subscriptions go with them — no detached backlog
-    pruneSpd(); pruneZoom()
+    // the torn-down cells' speed, zoom and play-mode subscriptions go with them — no detached backlog
+    pruneSpd(); pruneZoom(); pruneMode()
   }
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
@@ -519,6 +519,8 @@ const B = window.__BOARD__ || {}
     // What is left rides only where there is something to pace or step.
     if (paceable) {
       const bar = document.createElement('div'); bar.className = 'fbar'
+      const ml = document.createElement('span'); ml.className = 'fbarl'; ml.textContent = 'play'
+      bar.appendChild(ml); bar.appendChild(modePicker())
       const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
       bar.appendChild(bl); bar.appendChild(spdSelect())
       read.appendChild(bar)
@@ -731,6 +733,49 @@ const B = window.__BOARD__ || {}
   // (The COLUMN-ORDER state that stood here — 'sbp' / 'bsp', with its watcher list and its .ord-bsp
   // class — is GONE with its toggle, the human 2026-08-30: "just always be behaviour first". The
   // storyline deals one order now and there is nothing left to hold for the session.)
+  //
+  // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps — now it only has auto
+  // play; enable click to go to the next small step"). 'auto' is the DEFAULT and stays the sentence
+  // board R20 carries: every beat's scenes loop the moment the row exists. 'step' HOLDS them, and a
+  // click on a proof cell advances that row's two halves by one scene, wrapping at the end — so a
+  // person can walk a beat instead of chasing it. Reader-wide and session-scoped, exactly like the
+  // speed and the zoom beside it and for the same reason: a reader is rebuilt on every fold, so the
+  // choice must survive the rebuild, but one that persisted across visits would silently freeze
+  // tomorrow's board with no cue why.
+  let PLAY_MODE = 'auto'
+  const MODE_W = []
+  function onMode (node, fn) { MODE_W.push({ node: node, fn: fn }) }
+  function pruneMode () {
+    for (let i = MODE_W.length - 1; i >= 0; i--) if (!MODE_W[i].node.isConnected) MODE_W.splice(i, 1)
+  }
+  function setMode (v) {
+    PLAY_MODE = (v === 'step') ? 'step' : 'auto'
+    pruneMode()
+    for (const w of MODE_W) w.fn(PLAY_MODE)
+  }
+  // the control: two stops, so a segmented pair rather than a dropdown — the same .medbar chrome the
+  // retired column-order pair wore (tokens only; the live stop is carried by wash + weight, never by
+  // hue). It is a PLAY mode, never a media mode: no .pcmodes and no per-cell toolbar comes back with
+  // it (board R20's standing absence).
+  function modePicker () {
+    const box = document.createElement('span'); box.className = 'medbar pmode'
+    const mk = function (val, label, title) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label
+      b.dataset.mode = val; b.title = title
+      b.addEventListener('click', function () { setMode(val) })
+      return b
+    }
+    const a = mk('auto', 'auto', 'play every beat’s scenes on a loop')
+    const b = mk('step', 'step', 'hold each scene — click a proof cell for the next one')
+    const paint = function () {
+      a.classList.toggle('on', PLAY_MODE === 'auto')
+      b.classList.toggle('on', PLAY_MODE === 'step')
+    }
+    paint()
+    onMode(box, paint)
+    box.appendChild(a); box.appendChild(b)
+    return box
+  }
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
   // screenshot: it has its own viewBox, and while the wireframe is drawn at the layout viewport's
   // aspect, nothing guarantees it. Re-expressing the rect as the same FRACTION of the drawing keeps
@@ -814,10 +859,13 @@ const B = window.__BOARD__ || {}
       lbl.textContent = (i + 1) + ' / ' + imgs.length
     }
     // a dot click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest
-    // rule that guarantees the chosen frame its read time
+    // rule that guarantees the chosen frame its read time. In STEP mode (the human, 2026-08-30)
+    // nothing is scheduled at all: the scene holds until a person asks for the next one, and a dot
+    // click is still a jump — it simply has no loop to resume into.
     const schedule = function () {
       stop()
       if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
+      if (PLAY_MODE === 'step') return                   // held: the reader is walking it by hand
       timer = setTimeout(function () {
         timer = null
         if (!el.isConnected || el.hidden) return         // torn down, or the cell shows its stills
@@ -836,7 +884,17 @@ const B = window.__BOARD__ || {}
     show(0)
     el._count = imgs.length
     el._start = schedule; el._stop = stop
+    // ONE SCENE FORWARD, wrapping — what a click in step mode asks for. It goes through show(), so
+    // the row's DRAWING is driven by the very same call the loop makes: the two halves step together
+    // whether a timer or a person moved them.
+    el._next = function () {
+      if (imgs.length < 2) return
+      show((cur + 1) % imgs.length)
+      schedule()                                        // a no-op in step mode; re-arms in auto
+    }
     onSpd(el, function () { if (!el.hidden) schedule() })
+    // switching the reader's mode arms or holds every loop at once (schedule() itself is the gate)
+    onMode(el, function () { if (!el.hidden) schedule() })
     return el
   }
 
@@ -947,6 +1005,28 @@ const B = window.__BOARD__ || {}
       cam.appendChild(sbox)
       aimCamera(sbox, focus, CAM)
       cell._stepper = step        // the row's drawing locks to this loop (buildStoryline)
+      // THE CELL IS THE "NEXT" (the human, 2026-08-30). In step mode a click anywhere on the frames
+      // advances this beat one scene — the picture you are already looking at is the affordance, so
+      // no per-row button multiplies chrome down every row of every requirement, and the dots stay
+      // what they always were: the jump-map. In auto mode the click does nothing and the cursor says
+      // so, because a click that silently re-armed the loop would read as a bug.
+      const armClick = function () {
+        const on = PLAY_MODE === 'step'
+        sbox.classList.toggle('pcnext', on)
+        sbox.title = on ? 'next scene of this beat' : ''
+      }
+      armClick()
+      onMode(sbox, armClick)
+      // …and in step mode the click is CONSUMED here: every <img> on the board otherwise opens the
+      // shared lightbox through a document-level handler, so without this a step would step AND
+      // throw a full-screen frame over the row it just moved. Stepping wins while the mode is on;
+      // in auto the handler returns untouched and the lightbox behaves exactly as it always has.
+      sbox.addEventListener('click', function (e) {
+        if (PLAY_MODE !== 'step') return
+        if (e.target && e.target.closest && e.target.closest('.pdots')) return   // a dot is a jump
+        e.stopPropagation()
+        step._next()
+      })
       step._start()
     } else {
       // ONE frame: a still, captioned, under the same camera the loop would use
@@ -1047,9 +1127,19 @@ const B = window.__BOARD__ || {}
         if (start === null) start = now
         const spd = PLAY_SPD || 1
         const elapsed = ((now - start) / 1000) * spd
+        // STEP MODE holds the FREE-RUNNING frames (the human, 2026-08-30) — a drawing whose proof
+        // cell has nothing to drive it (an old harvest, a mismatched scene count) must not keep
+        // scrubbing while every other row stands still. It parks on its beat's result, which is where
+        // a paused beat rests, and the clock restarts from now when auto comes back. The DRIVEN
+        // frames below are untouched by this: their mover is the proof cell's own step, which is
+        // exactly what a person is clicking, so skipping them here would freeze the thing the mode
+        // exists to move.
+        const held = PLAY_MODE === 'step'
+        if (held) start = null
         for (let i = 0; i < frames.length; i++) {
           const fr = frames[i]
           const s = parseFloat(fr.dataset.s); const e = parseFloat(fr.dataset.e)
+          if (held) { fr.style.setProperty('--ph', e + 's'); continue }
           const play = Math.abs(e - s)
           if (!(play > 0.01)) { fr.style.setProperty('--ph', e + 's'); continue }
           const tau = elapsed % (play + HOLD)
