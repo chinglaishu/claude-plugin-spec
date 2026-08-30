@@ -8,6 +8,7 @@ import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, la
 // the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
 // both of them read rather than restating numbers here
 import { RING, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
+import { calloutText, sceneDone } from './callout-text.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
 
@@ -555,6 +556,10 @@ const frameOf = (svg, n) => {
   return i < 0 ? '' : svg.slice(i, svg.indexOf('</g>', i))
 }
 
+// REWRITTEN 2026-08-30 (rule 4 — the human decided the card, so this test was the wrong side): a
+// callout is the id chip and ONE SENTENCE, the line the scene proves. These two frames are each
+// their beat's RESTING scene (NESTED harvests no mid-beat values), so each says its own THEN alone —
+// no title, no When stacked under it.
 test('each beat frame wears the dim, the ring and the tour callout — in THAT beat\'s own words', () => {
   const d = renderWireframe(NESTED, CARD)
   const f1 = frameOf(d.svg, 1); const f2 = frameOf(d.svg, 2)
@@ -562,12 +567,12 @@ test('each beat frame wears the dim, the ring and the tour callout — in THAT b
     assert.ok(/fill="var\(--ink\)" opacity="0\.12"/.test(f), `frame ${n} dims the page around the proof`)
     assert.ok(/stroke="var\(--ai\)"/.test(f), `frame ${n} rings the proven element in indigo`)
     assert.ok(f.includes('>R5<'), `frame ${n} carries the R-id chip`)
-    assert.ok(f.includes('>WHEN<') && f.includes('>THEN<'), `frame ${n} labels the beat like the burn-in`)
-    assert.ok(/The remaining counter/.test(f), `frame ${n} carries the requirement title`)
+    assert.ok(f.includes('>THEN<'), `frame ${n} is the beat at rest, so it says the Then`)
+    assert.ok(!f.includes('>WHEN<'), `frame ${n} never stacks the other line under it`)
+    assert.ok(!/The remaining counter/.test(f), `frame ${n} carries no requirement title — the chip is the tag`)
   }
   // each frame says ITS OWN beat, exactly as the recording's callout did at that moment
-  assert.ok(f1.includes('you add') && !f1.includes('you tick'), 'beat 1\'s When')
-  assert.ok(f2.includes('you tick') && !f2.includes('you add'), 'beat 2\'s When')
+  assert.ok(!f1.includes('you add') && !f1.includes('you tick'), 'a resting scene carries no When at all')
   // the Then wraps across the card's lines, so pin the VALUE each beat settles on instead
   assert.ok(f1.includes('3 to do') && !f1.includes('2 to do'), 'beat 1 settles on 3')
   assert.ok(f2.includes('2 to do') && !f2.includes('3 to do'), 'beat 2 settles back on 2')
@@ -615,9 +620,10 @@ test('callout text is bounded: two lines a section, ellipsis rather than overflo
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
-  // mirror-5 (2026-08-30): the ring's inset and the callout's placement come from the shared
-  // tools/overlay-geometry.mjs the burn-in reads too — the pin moves because the renderer did.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-5"'))
+  // mirror-6 (2026-08-30): the card is ONE SENTENCE — the line the scene proves, chosen by the
+  // shared tools/callout-text.mjs the burn-in asks too. mirror-5 was the shared GEOMETRY; this is
+  // the shared WORDS, and the pin moves because the renderer did.
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-6"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -905,7 +911,31 @@ test('enacted: an intermediate scene says the WHEN alone — the Then has not ha
   const mid = frameOf(d.svg, 1); const last = frameOf(d.svg, 3)
   assert.ok(mid.includes('>WHEN<'), 'the action is called out')
   assert.ok(!mid.includes('>THEN<'), 'but not its result — nothing has been proven at this moment')
-  assert.ok(last.includes('>WHEN<') && last.includes('>THEN<'), 'the beat\'s own frame carries both')
+  // …and the beat's RESTING scene says the Then alone (amended 2026-08-30, rule 4: the human made
+  // the card one sentence — "as less text as possible" — so the last frame no longer carries both)
+  assert.ok(last.includes('>THEN<'), 'the beat\'s own frame carries its Then')
+  assert.ok(!last.includes('>WHEN<'), '…and only that: one sentence, the current small step')
+  // no title anywhere on either scene — the R-id chip is the whole tag now
+  assert.ok(!mid.includes('Adding a task') && !last.includes('Adding a task'), 'no requirement title on the card')
+})
+
+// THE ONE RULE, ASKED ONCE (2026-08-30). The drawn card must not merely LOOK like a single
+// sentence — it must be the sentence tools/callout-text.mjs names for that scene, because the
+// burn-in paints that same call. A private copy here is exactly how the two drifted before.
+test('the drawn card says what the SHARED rule says, scene by scene', () => {
+  const d = renderWireframe(ENACTED, { behavior: ADD, id: 'R1', title: 'Adding a task', pass: true })
+  const scenes = [
+    { frame: 1, want: calloutText({ id: 'R1', when: ADD.beats[0].when, then: ADD.beats[0].then, done: sceneDone(0, 3) }) },
+    { frame: 3, want: calloutText({ id: 'R1', when: ADD.beats[0].when, then: ADD.beats[0].then, done: sceneDone(2, 3) }) }
+  ]
+  for (const sc of scenes) {
+    const f = frameOf(d.svg, sc.frame)
+    assert.ok(f.includes('>' + sc.want.label.toUpperCase() + '<'),
+      'frame ' + sc.frame + ' wears the label the rule chose (' + sc.want.label + ')')
+    // the sentence wraps AND the drawing xml-escapes it, so pin its opening plain words
+    const head = sc.want.text.split(/["“]/)[0].split(/\s+/).slice(0, 3).join(' ').trim()
+    assert.ok(f.includes(head), 'frame ' + sc.frame + ' opens on the rule\'s own sentence: ' + head)
+  }
 })
 
 test('enacted: a beat with no values draws exactly as it did before — one frame, one scene', () => {

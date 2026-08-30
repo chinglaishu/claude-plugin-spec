@@ -142,14 +142,21 @@ test('the callout speaks the requirement in the prd\'s own words, and marks it p
   assert.equal(s.during.callShown, true, 'the callout is on screen while the check runs')
   assert.equal(s.during.ringShown, true, 'and the proven element is ringed')
   assert.equal(s.during.veil, true, 'over a light dim of the app — receded, never hidden')
-  // the requirement, in the words the board's storyboard shows
+  // ONE SENTENCE, THE CURRENT SMALL STEP (the human, 2026-08-30: "only have to include the text for
+  // current small step (as less text as possible)"). Rule 4 — the assertions below used to demand
+  // the requirement TITLE and BOTH lines on every card; the human decided that away, so what is
+  // pinned now is the id chip plus the ONE line the scene is on. DURING the assertion body the beat
+  // is still being performed, so it says the When and nothing else.
   assert.match(s.during.text, /R1/, 'the callout names the requirement it is proving')
-  assert.match(s.during.text, /The R&M growth rate/, 'and its title')
-  assert.match(s.during.text, /When/, 'the beat is labelled')
+  assert.ok(!/The R&M growth rate/.test(s.during.text), 'no requirement title — the id chip is the tag')
+  assert.match(s.during.text, /When/, 'the beat is labelled with the half it is on')
   assert.match(s.during.text, /you read the Repair row/, 'the prd\'s own When')
-  assert.match(s.during.text, /Then/)
-  assert.match(s.during.text, /it shows 4\.00%/, 'the prd\'s own Then')
-  // the verdict rides on the card once the check has passed
+  assert.ok(!/Then/.test(s.during.text), 'and never the other line stacked under it')
+  assert.ok(!/it shows 4\.00%/.test(s.during.text), 'the Then has not happened at this moment')
+  // …and once the beat comes to REST the card turns over to its Then, with the verdict on it
+  assert.match(s.after.text, /Then/, 'the resting scene says the Then')
+  assert.match(s.after.text, /it shows 4\.00%/, 'the prd\'s own Then')
+  assert.ok(!/you read the Repair row/.test(s.after.text), 'one sentence there too')
   assert.match(s.after.text, /✓/, 'a passed requirement is marked proven on the callout')
   assert.ok(!/✕/.test(s.after.text), 'and carries no failure mark')
 })

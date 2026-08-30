@@ -11,6 +11,9 @@ import { parseBehavior } from '../tools/behavior.mjs'
 // element box where this one is ~5. This file is the REFERENCE — the module states its rules, it
 // never invents new ones, and nothing about what the burn-in paints changes.
 import { RING, CARD, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
+// …and the callout's WORDS from the module that owns them (2026-08-30), so the burned card and the
+// drawn one say the same sentence for the same scene of the same beat.
+import { calloutText, CALLOUT_TYPE } from '../tools/callout-text.mjs'
 
 export { expect }
 
@@ -310,7 +313,9 @@ let NOTE = ''
 // proven, ✕ failed. BEAT_IDX is which When→Then the callout is on (a requirement proven by several
 // checks advances through its beats — BEAT_CURSOR counts checkReq calls per id). Per-test.
 type HudBeat = { when: string, then: string }
-let BEHAVIOR: { id: string, title: string, given: string, beats: HudBeat[], state: 'active' | 'pass' | 'fail' } | null = null
+// (no `title` any more — the callout dropped the requirement title on 2026-08-30, and a field
+// nothing reads is a field that quietly goes wrong)
+let BEHAVIOR: { id: string, given: string, beats: HudBeat[], state: 'active' | 'pass' | 'fail' } | null = null
 let BEAT_IDX = 0
 let BEAT_CURSOR: Record<string, number> = {}
 // The last ringed element's box, so a state change (the verdict flipping to ✓, a nav repaint) can
@@ -328,12 +333,24 @@ let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
 // each checkReq so a nested one cannot strand the outer beat's identity.
 type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number }
 let CUR_CHECK: CurCheck | null = null
-// The current beat the callout shows: the active requirement's BEAT_IDX-th When→Then, tagged with its
-// id, title and verdict. Null (callout hidden) before the first checkReq.
-function curBeat (): { id: string, title: string, when: string, then: string, state: 'active' | 'pass' | 'fail' } | null {
+// The current beat the callout shows — as ONE SENTENCE, chosen by the shared rule (the human,
+// 2026-08-30: "only have to include the text for current small step (as less text as possible) —
+// and both the schematic and proof need to have exact same text"). While the assertion body is
+// running, the scene on screen is the When being performed, so the card says the WHEN; once the
+// verdict has landed the beat is at rest and it says the THEN. tools/callout-text.mjs owns that
+// choice and tools/viz.mjs asks it the same question for the same scene, so the drawn card and the
+// burned one can never say different things. The requirement TITLE is gone from the card entirely —
+// the id chip is the whole tag.
+function curBeat (): { id: string, label: string, text: string, state: 'active' | 'pass' | 'fail' } | null {
   if (!BEHAVIOR) return null
   const b = BEHAVIOR.beats[BEAT_IDX] || BEHAVIOR.beats[BEHAVIOR.beats.length - 1]
-  return { id: BEHAVIOR.id, title: BEHAVIOR.title, when: b ? b.when : '', then: b ? b.then : '', state: BEHAVIOR.state }
+  const c = calloutText({
+    id: BEHAVIOR.id,
+    when: b ? b.when : '',
+    then: b ? b.then : '',
+    done: BEHAVIOR.state !== 'active'
+  })
+  return { id: c.id, label: c.label, text: c.text, state: BEHAVIOR.state }
 }
 // A goto WIPES the injected overlay — and real flows navigate mid-beat (a cross-page read). Repaint
 // after every main-frame navigation so the narration is consistently on screen, not only until
@@ -382,7 +399,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   // words — and hand back the viewport and the card's height; then place the card and its notch.
   // A page torn down between the two leaves the card's POSITION one frame behind (it transitions in
   // .16s regardless) and nothing claiming a wrong beat; both calls stay best-effort.
-  const paint = await page.evaluate(({ beat, claim, failed, box, ring0, ringCss, cardW }) => {
+  const paint = await page.evaluate(({ beat, claim, failed, box, ring0, ringCss, cardW, type }) => {
     const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
     const FAIL = failed || (beat && beat.state === 'fail')
     let el = document.getElementById('__specboard-focus')
@@ -426,30 +443,35 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       ring.style.boxShadow = '0 0 0 ' + ringCss.halo + 'px rgba(253,252,249,.92),0 0 ' + ringCss.glow + 'px ' +
         (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
     } else ring.style.display = 'none'
-    // the callout — the current beat in words
+    // THE CALLOUT — the current small step, and nothing else (the human, 2026-08-30). A tiny id chip,
+    // then ONE sentence: the line this scene is proving, chosen by tools/callout-text.mjs, the same
+    // rule tools/viz.mjs draws by. The requirement TITLE and the second stacked line are gone — a
+    // paragraph floating over the app hides the very thing the ring is pointing at.
     if (!beat) { call.style.display = 'none'; ptr.style.display = 'none'; return null }
     call.style.display = ''
     call.style.borderColor = FAIL ? BENG : HAIR
     call.innerHTML = ''
     const mk = (t: string, txt: string, css: string) => { const s = document.createElement(t); if (txt) s.textContent = txt; s.style.cssText = css; return s }
-    const MONO = 'font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;'
-    // tag row: id + title
-    const tagRow = mk('div', '', 'display:flex;gap:7px;align-items:baseline;font-size:11px;color:' + INK3 + ';margin-bottom:8px')
+    const MONO = 'font:600 ' + type.lab + 'px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;'
+    // the tag row is the id chip alone
+    const tagRow = mk('div', '', 'display:flex;align-items:baseline;color:' + INK3 + ';margin-bottom:' + type.tagGap + 'px')
     tagRow.append(
-      mk('span', beat.id, 'font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;border:1px solid ' +
-        (FAIL ? 'rgba(141,74,56,.4)' : HAIR) + ';border-radius:4px;padding:1px 5px;color:' + (FAIL ? BENG : INK3)),
-      mk('span', beat.title, 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap')
+      mk('span', beat.id, 'font:600 ' + type.id + 'px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em;border:1px solid ' +
+        (FAIL ? 'rgba(141,74,56,.4)' : HAIR) + ';border-radius:4px;padding:1px 5px;color:' + (FAIL ? BENG : INK3))
     )
     call.append(tagRow)
-    // When
-    if (beat.when) {
-      const w = mk('div', '', 'font-size:12.5px;color:' + INK3 + ';margin-bottom:3px;line-height:1.35')
-      w.append(mk('span', 'When ', MONO + 'color:' + INK3), mk('span', beat.when, ''))
-      call.append(w)
+    // …and the ONE line, labelled with the half it actually is. The label's hue names which half
+    // (indigo for the Then, quiet ink for the When) but never carries it alone — the word says it.
+    // A requirement written as PROSE has no beat to say: the chip stands alone rather than the card
+    // inventing a sentence, and the verdict still rides it.
+    const isThen = beat.label === 'Then'
+    const t = mk('div', '', 'font-size:' + type.line + 'px;font-weight:600;line-height:' + type.lh + ';color:' + INK)
+    if (beat.text) {
+      t.append(mk('span', beat.label + ' ', MONO + 'color:' + (isThen ? AI : INK3) + ';margin-right:2px'),
+        mk('span', beat.text, ''))
     }
-    // Then + verdict
-    const t = mk('div', '', 'font-size:15px;font-weight:600;line-height:1.36;color:' + INK)
-    t.append(mk('span', 'Then ', MONO + 'color:' + AI + ';margin-right:2px'), mk('span', beat.then, ''))
+    // the got value is BURN-ONLY (the drawing measures none): the sentence is identical on both
+    // sides, and a failure adds what the page actually read, in bengara, after it
     if (FAIL) {
       if (claim) t.append(mk('span', ' — got ' + claim.got, 'color:' + BENG + ';font-weight:700'))
       t.append(mk('span', ' ✕', 'color:' + BENG + ';font-weight:700'))
@@ -470,7 +492,9 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       stroke: RING.stroke, halo: RING.halo, glow: RING.glow, radius: RING.radius,
       notch: CARD.notch, cardRadius: CARD.radius, padX: CARD.padX, padY: CARD.padY
     },
-    cardW: CARD.width
+    cardW: CARD.width,
+    // the ONE line's type, from the module the drawing converts it out of too
+    type: { id: CALLOUT_TYPE.id, lab: CALLOUT_TYPE.lab, line: CALLOUT_TYPE.line, lh: CALLOUT_TYPE.lh, tagGap: CALLOUT_TYPE.tagGap }
   }).catch(() => null)
   // no card to place (no beat yet, or the page went away mid-paint) — the ring is already painted
   if (!paint) return
@@ -938,7 +962,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   const cursor = BEAT_CURSOR[id] || 0
   BEAT_CURSOR[id] = cursor + 1
   BEAT_IDX = beh && beh.beats.length ? Math.min(cursor, beh.beats.length - 1) : 0
-  BEHAVIOR = { id, title, given: beh ? beh.given : '', beats: beh ? beh.beats : [], state: 'active' }
+  BEHAVIOR = { id, given: beh ? beh.given : '', beats: beh ? beh.beats : [], state: 'active' }
   // …and the SAME cursor keys the harvest (2026-08-28): this check's frames, layout skeletons and
   // window are filed under the beat it proves, so the board's per-beat rows each carry their own
   // proof. Held in a local, because a nested checkReq inside fn would move the global on us.

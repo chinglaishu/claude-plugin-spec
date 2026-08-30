@@ -30,6 +30,11 @@ export const FILES = [
   // by BOTH tools/viz.mjs (the drawing) and spec/_base.ts (the burn-in). A scaffolded project that
   // got one and not the other would have a schematic and a photograph that no longer mirror.
   'tools/overlay-geometry.mjs',
+  // …and the ONE callout TEXT rule beside it (2026-08-30): which single sentence a scene's card
+  // says. Imported by BOTH tools/viz.mjs and spec/_base.ts for the same reason the geometry is —
+  // a project with one copy and not the other has a drawing and a photograph that say different
+  // things mid-beat.
+  'tools/callout-text.mjs',
   // the viz pass's shell (task 4 review M2, fix round 1, 2026-08-22): the CLI a scaffolded project
   // runs to derive/commit its own schematics ("redraw is instant and free"). NOT caught by the
   // every-relative-import-is-vendored guard below — it's a CLI entry point, nothing vendored imports

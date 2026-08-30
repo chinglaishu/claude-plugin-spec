@@ -170,9 +170,21 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
       await expect(focusOv.locator('.sb-ring')).toBeVisible()   // the ring the callout is anchored to
       await expect(call).toBeVisible()
       await expect(call).toContainText('R10')
-      await expect(call).toContainText(await titleOf('R10'))
-      await expect(call).toContainText('When')                 // the beat's own When → Then,
-      await expect(call).toContainText('Then')                 // in the requirement's own words
+      // ONE SENTENCE, THE CURRENT SMALL STEP (the human, 2026-08-30: "only have to include the text
+      // for current small step (as less text as possible) — and both the schematic and proof need to
+      // have exact same text"). RULE 4, and the human's decision is the reason: this beat used to
+      // assert the card carried the requirement TITLE and BOTH the When and the Then. It carries
+      // neither the title nor both lines now — the card is the id chip and the line THIS scene
+      // proves, chosen by tools/callout-text.mjs, the very rule tools/viz.mjs draws the schematic's
+      // card by. We are mid-assertion here (the verdict has not landed), so the scene is the When.
+      await expect(call).toContainText('When')
+      await expect(call).not.toContainText('Then')
+      await expect(call).not.toContainText(await titleOf('R10'))
+      // …and it really is the prd's own When, not a label with nothing behind it
+      const beatsR10 = prdBeats('R10')
+      expect(beatsR10 && beatsR10.beats.length > 0, 'R10 carries a behavior block').toBe(true)
+      expect(plain(await call.innerText()), 'the card carries this beat\'s own When, in full')
+        .toContain(plain(beatsR10!.beats[0].when))
       await expect(focusOv.locator('.sb-veil')).toHaveCount(1)  // the light dim under it
     } else {
       await expect(focusOv).toHaveCount(0)                     // a plain run paints nothing into the page
@@ -1225,6 +1237,30 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     const label = plain((await row.locator('.sbframe .pcbox .camsub svg').getAttribute('aria-label')) || '')
     expect(label, 'the drawing is labelled with the very beat the words say')
       .toContain(plain('beat 1: ' + beh!.beats[0].when + ' → ' + beh!.beats[0].then))
+    // …and the drawn CALLOUT is the current small step, one sentence per scene (the human,
+    // 2026-08-30). Added here because this is the requirement that owns "the words agree across the
+    // row": a card that stacked the title, the When AND the Then said three things at a moment when
+    // only one of them was true, and the burn-in beside it said a different one. So: every scene of
+    // the drawing that carries a callout carries exactly ONE of the two labels, and none of them
+    // carries the requirement's title.
+    const cards = await row.locator('.sbframe .pcbox .camsub svg').evaluate(el => {
+      const out: Array<{ when: number, then: number }> = []
+      for (const g of Array.from(el.querySelectorAll('g[class^="wf"]'))) {
+        const h = g.innerHTML
+        const when = (h.match(/>WHEN</g) || []).length
+        const then = (h.match(/>THEN</g) || []).length
+        if (when || then) out.push({ when, then })
+      }
+      return out
+    })
+    expect(cards.length, 'at least one scene of the drawing carries a callout').toBeGreaterThan(0)
+    for (const c of cards) {
+      expect(c.when + c.then, 'a scene says ONE line — never both stacked: ' + JSON.stringify(c)).toBe(1)
+    }
+    const titleR = (await dt.locator('.reqpane .req[data-r="' + spec.rid + '"] .rt').textContent() || '').trim()
+    const svgTxt = await row.locator('.sbframe .pcbox .camsub svg').innerHTML()
+    expect(svgTxt.includes(titleR), 'the drawn card carries no requirement title — the id chip is the tag').toBe(false)
+    await hudCheck('one sentence per scene', '1 line', String(cards[0].when + cards[0].then) + ' line')
     // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
     const given = story.locator('.sbwrap .sbrow').first()
     await expect(given).toHaveClass(/\bbgiven\b/)

@@ -23,6 +23,10 @@ import { reqHash, behaviorText, isStale } from './reqhash.mjs'
 // and the photographed one must be the SAME PICTURE; keeping two copies of the same numbers is
 // exactly how they stopped being one. See tools/overlay-geometry.mjs.
 import { RING, CARD, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
+// …and the callout's WORDS from the one module that owns them (2026-08-30), for the same reason the
+// geometry moved there: two copies of the rule drifted, and the drawing and the photograph stopped
+// saying the same thing mid-beat. One sentence per scene — the current small step, nothing else.
+import { calloutText, sceneDone, CALLOUT_TYPE } from './callout-text.mjs'
 
 // ── the pin: thin wrappers over reqhash ────────────────────────────────────
 export const vizHash = behavior => reqHash(behaviorText(behavior))
@@ -581,7 +585,12 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // THE RENDERER PIN. Staleness on this board is a BODY comparison — viz-derive redraws whenever the
 // committed file differs from what the kit draws today — so a renderer change already lands on the
 // next pass with no bump at all, and no committed drawing ever needs deleting. This stamp exists so
-// the reason is legible ON DISK: `mirror-5` takes the ring's inset and the callout's placement from
+// the reason is legible ON DISK: `mirror-6` is ONE SENTENCE PER SCENE — the card carries the id chip
+// and the single line the scene proves (the When while the action is being shown, the Then on the
+// scene the beat rests on), chosen by tools/callout-text.mjs, the same rule the burn-in asks; the
+// requirement title and the stacked second line are gone (the human, 2026-08-30: "as less text as
+// possible", "both the schematic and proof need to have exact same text");
+// `mirror-5` takes the ring's inset and the callout's placement from
 // tools/overlay-geometry.mjs — the SAME module the burn-in reads them from, so the two cells of a
 // beat row can no longer drift apart the way they had (the drawn ring's hard glow band read ~12
 // page px out against the burned ring's ~5, and the band is gone); `mirror-4` draws the asserted value at the ELEMENT'S OWN MEASURED
@@ -590,7 +599,7 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
-const MIRROR_KIT = 'mirror-5'
+const MIRROR_KIT = 'mirror-6'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
@@ -862,15 +871,13 @@ const OV = {
   rad: CARD.radius,   // its border-radius
   padX: CARD.padX,    // its padding: 12px 15px
   padY: CARD.padY,
-  fsTag: 11,          // the tag row (the title)
-  fsId: 10,           // the id chip's mono
-  fsLab: 10,          // the WHEN / THEN mono labels
-  fsWhen: 12.5,
-  fsThen: 15,
-  lhWhen: 1.35,
-  lhThen: 1.36,
-  tagGap: 8,          // tagRow margin-bottom
-  whenGap: 3,         // When row margin-bottom
+  // ONE SENTENCE (2026-08-30) — the id chip, then the line this scene proves. The title row, the
+  // second sentence and the gap between them are gone; the type comes from the shared module.
+  fsId: CALLOUT_TYPE.id,      // the id chip's mono
+  fsLab: CALLOUT_TYPE.lab,    // the WHEN / THEN mono label
+  fsLine: CALLOUT_TYPE.line,  // the sentence
+  lhLine: CALLOUT_TYPE.lh,
+  tagGap: CALLOUT_TYPE.tagGap,
   chipPadX: 5,
   chipRad: 4,
   notch: CARD.notch,  // the 12px square, rotated 45°
@@ -922,45 +929,39 @@ function measureCard (spec, S, u) {
   const cardW = OV.card * k
   const padX = OV.padX * k; const padY = OV.padY * k
   const inner = cardW - 2 * padX
-  const fsId = OV.fsId * k; const fsTag = OV.fsTag * k
-  const fsWhen = OV.fsWhen * k; const fsThen = OV.fsThen * k; const fsLab = OV.fsLab * k
+  const fsId = OV.fsId * k
+  const fsLine = OV.fsLine * k; const fsLab = OV.fsLab * k
   const chipW = id.length * fsId * 0.62 + 2 * OV.chipPadX * k + 2 * k
   const chipH = fsId * 1.2 + 2 * k + 2 * k
-  const tagGap = 7 * k
-  const title = fitText(spec.title, Math.max(inner - chipW - tagGap, fsTag * 3), fsTag)
   const labW = 4 * fsLab * 0.62 + 4 * fsLab * 0.08 + fsLab * 0.6      // "WHEN" + its letter-spacing + a space
-  const whenLines = wrapText(spec.when, fsWhen, [inner - labW], 2)
-  const thenLines = wrapText(spec.then, fsThen, [inner - labW], 2)
-  const lhW = fsWhen * OV.lhWhen; const lhT = fsThen * OV.lhThen
-  const whenH = whenLines.length * lhW
-  // a mid-beat card says the WHEN alone (2026-08-29) — no Then has happened yet — so it reserves no
-  // line for one. A card that HAS a Then keeps its minimum line, exactly as before.
-  const thenH = Math.max(thenLines.length, raw(spec.then) ? 1 : 0) * lhT
-  const cardH = r1(padY + chipH + OV.tagGap * k + whenH + OV.whenGap * k + thenH + padY)
+  // ONE SENTENCE (the human, 2026-08-30): the line THIS scene proves, chosen by the shared rule the
+  // burn-in asks too. No title row, no second sentence — the card is the current small step.
+  const lines = wrapText(spec.text, fsLine, [inner - labW], CALLOUT_TYPE.maxLines)
+  const lh = fsLine * OV.lhLine
+  const bodyH = Math.max(lines.length, 1) * lh
+  const cardH = r1(padY + chipH + OV.tagGap * k + bodyH + padY)
   const draw = (x, y) => {
     const parts = []
     const tx = x + padX
     let cy = y + padY
     parts.push(`<rect x="${r1(tx)}" y="${r1(cy)}" width="${r1(chipW)}" height="${r1(chipH)}" rx="${r1(OV.chipRad * k)}" fill="none" stroke="var(--line2)" stroke-width="${r1(k)}"/>`)
     parts.push(svgText(tx + chipW / 2, cy + chipH / 2 + fsId * 0.36, fsId, 'ink-3', 'mono', say(id), ' text-anchor="middle" font-weight="600"'))
-    if (title) parts.push(svgText(tx + chipW + tagGap, cy + chipH / 2 + fsTag * 0.34, fsTag, 'ink-3', 'sans', say(title)))
     cy += chipH + OV.tagGap * k
-    whenLines.forEach((ln, i) => {
-      const base = cy + i * lhW + fsWhen * 0.95
-      if (i === 0) parts.push(svgText(tx, base, fsLab, 'ink-3', 'mono', 'WHEN', ' font-weight="600" letter-spacing="' + r2(fsLab * 0.08) + '"'))
-      parts.push(svgText(tx + labW, base, fsWhen, 'ink-3', 'sans', say(ln)))
-    })
-    cy += whenH + OV.whenGap * k
-    thenLines.forEach((ln, i) => {
-      const base = cy + i * lhT + fsThen * 0.95
-      if (i === 0) parts.push(svgText(tx, base, fsLab, 'ai', 'mono', 'THEN', ' font-weight="600" letter-spacing="' + r2(fsLab * 0.08) + '"'))
-      parts.push(svgText(tx + labW, base, fsThen, 'ink', 'sans', say(ln), ' font-weight="600"'))
-      // the verdict rides the last line, exactly where the burn-in puts it. It is the state at
-      // DERIVE time (viz-derive reads the board's own derived status), never a status stored in the
-      // drawing: the live chip beside the requirement is the authority, and the next pass redraws.
-      if (spec.pass && i === thenLines.length - 1) {
-        const endX = Math.min(tx + labW + ln.length * fsThen * 0.52 + fsThen * 0.4, x + cardW - padX - fsThen * 0.9)
-        parts.push(checkMark(endX, base - fsThen * 0.26, fsThen * 0.9))
+    const isThen = spec.label === 'Then'
+    lines.forEach((ln, i) => {
+      const base = cy + i * lh + fsLine * 0.95
+      if (i === 0) {
+        parts.push(svgText(tx, base, fsLab, isThen ? 'ai' : 'ink-3', 'mono', say(spec.label.toUpperCase()),
+          ' font-weight="600" letter-spacing="' + r2(fsLab * 0.08) + '"'))
+      }
+      parts.push(svgText(tx + labW, base, fsLine, 'ink', 'sans', say(ln), ' font-weight="600"'))
+      // the verdict rides the last line, exactly where the burn-in puts it — and only on the scene
+      // that HAS a verdict (the beat at rest). It is the state at DERIVE time (viz-derive reads the
+      // board's own derived status), never a status stored in the drawing: the live chip beside the
+      // requirement is the authority, and the next pass redraws.
+      if (spec.pass && isThen && i === lines.length - 1) {
+        const endX = Math.min(tx + labW + ln.length * fsLine * 0.52 + fsLine * 0.4, x + cardW - padX - fsLine * 0.9)
+        parts.push(checkMark(endX, base - fsLine * 0.26, fsLine * 0.9))
       }
     })
     return parts.join('')
@@ -1203,7 +1204,7 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         if (val.svg) { parts.push(val.svg); if (val.box) pills.push(val.box) }
       }
       // …and the requirement's own words, in the burn-in's card, beside the primary mark
-      if (callout && (callout.when || callout.then)) {
+      if (callout && callout.text) {
         parts.push(calloutSVG(callout, marks[0], W, H, pills[0] || null, region, S).svg)
       }
     }
@@ -1331,14 +1332,14 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   }
   // `done:false` is a scene MID-beat — the When has been performed and read, but the beat's Then
   // has not happened yet, so the card says the action alone and wears no ✓. Anything else would
-  // claim a proof one scene before it exists.
+  // claim a proof one scene before it exists. Which SENTENCE that is comes from the shared rule
+  // (tools/callout-text.mjs), the same call the burn-in makes for the same scene — so the drawing
+  // and the photograph beside it cannot say different things (the human, 2026-08-30).
   const cardFor = (i, done) => {
     const bt = behavior && behavior.beats[Math.min(i, behavior.beats.length - 1)]
     if (!bt) return null
-    return {
-      id: meta.id || '', title: meta.title || '', when: bt.when,
-      then: done ? bt.then : '', pass: done ? !!meta.pass : false
-    }
+    const c = calloutText({ id: meta.id || '', when: bt.when, then: bt.then, done })
+    return { ...c, when: bt.when, then: bt.then, pass: done ? !!meta.pass : false }
   }
   // the rect each cell's camera will be aimed at: the UNION of the beat's rings (tools/evidence.mjs
   // focusFromLayouts computes exactly this for the proof side), so every scene of a beat is inside
