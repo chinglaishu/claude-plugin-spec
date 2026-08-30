@@ -642,7 +642,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(story).toHaveCount(1)
     await expect(ov.locator('.fleft, .fschem, .storycap')).toHaveCount(0)   // the retired reader's containers
     // the HEADER ROW names the three cells — the one row that says what they ARE (2026-08-28)
-    await expect(story.locator('.sbwrap .sbhead .sbhc')).toHaveText(['schematic', 'behavior', 'proof'])
+    // (reordered 2026-08-30, rule 4 — the human removed the column-order toggle and fixed the story
+    // BEHAVIOUR FIRST, so the header names its three cells in that one order now)
+    await expect(story.locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'schematic', 'proof'])
     // one row per phase: a drawn still (.sbframe svg), its beat text (.sbtext) and that beat's own
     // proof (.sbproof) — no standalone behavior grid, no single looping whole-drawing
     const rows = story.locator('.sbwrap .sbrow')
@@ -708,11 +710,14 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(ov.locator('.fread select.pspd')).toHaveCount(1)       // …and none anywhere else in it
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
-    await expect(fbar.locator('.medbar button')).toHaveText(['schematic first', 'behavior first'])
-    // (what FLIPPING that pair does — the whole story re-dealt together, and the choice held for the
-    // session as you page on — is board R21's own requirement now, drafted 2026-08-28; its
-    // assertions were moved out of here into that test verbatim, and grew the persistence leg. R13
-    // keeps the control's EXISTENCE, which is the sentence it actually carries.)
+    // RULE 4, 2026-08-30 — the CODE was right and this line was the wrong side, because the human
+    // decided the toggle away: "remove the toggle of schematic first or behavior first, just always
+    // be behaviour first". The bar carried a segmented column-order pair here; it does not any more,
+    // so the assertion becomes the R8 assert-the-gone shape. (What the ONE fixed order guarantees —
+    // the words leading every row, the header over the cell it names — is board R21's own
+    // requirement, which asserts it in full.)
+    await expect(fbar.locator('.medbar')).toHaveCount(0)
+    await expect(ov.locator('.fread')).not.toContainText('schematic first')
     // A MULTI-BEAT requirement loops EVERY beat: R4 has 3 beats → given (parked) + 3 LOOPING rows
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
@@ -1289,23 +1294,24 @@ test('The proof plays itself — already looping, zoomed, the whole frame one to
   })
 })
 
-// Board R21 — THE READER READS IN YOUR ORDER. The column-order control deals the whole story the
-// other way round — header row and every beat row together — and the choice comes with you to the
-// next requirement. (The flip assertions were moved here from the R13 test, 2026-08-28; the
-// per-row and persistence legs are new.)
-test('The reader reads in your order — the whole story re-deals, and it holds for the session', async ({ page }) => {
+// Board R21 — THE READER READS BEHAVIOUR FIRST. Reworked 2026-08-30, rule 4 with the human's own
+// decision as the reason: "remove the toggle of schematic first or behavior first, just always be
+// behaviour first". The old test asserted the toggle RE-DEALT the story; the toggle is gone, so this
+// asserts the two things that replaced it — the ONE fixed order, measured on every row of a
+// multi-beat requirement and carried to the next requirement you page to, and the control's ABSENCE
+// (the R8 assert-the-gone precedent: no segmented pair, no order class, nothing stored).
+test('The reader reads behaviour first — one fixed order, and no control to change it', async ({ page }) => {
   await coverReqs('R21')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   const ov = dt.locator('.focusov')
   const story = () => ov.locator('.fread .fstory')
-  const medbar = () => ov.locator('.fread > .fbar .medbar')
-  // measured, never a class read: which cell actually sits at the row's left edge
-  const leadCell = () => story().locator('.sbwrap .sbrow').first().evaluate(el => {
+  // measured, never a class read: which cell actually sits at each row's left edge
+  const leadCells = () => story().locator('.sbwrap .sbrow').evaluateAll(rows => rows.map(el => {
     const cells = [].slice.call(el.children) as HTMLElement[]
     return cells.slice().sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)[0]
       .className.split(' ')[0]
-  })
+  }))
   // the worst distance between a header label and the cell it names, across EVERY row — a header that
   // ends up over the column beside the one it names shows up here as a whole column's width
   const headDrift = () => story().evaluate(el => {
@@ -1314,7 +1320,7 @@ test('The reader reads in your order — the whole story re-deals, and it holds 
     if (heads.length !== 3 || !rows.length) return 9999
     let worst = 0
     for (const r of rows) {
-      const cells = ['.sbframe', '.sbtext', '.sbproof'].map(s => r.querySelector(s) as HTMLElement)
+      const cells = ['.sbtext', '.sbframe', '.sbproof'].map(s => r.querySelector(s) as HTMLElement)
       for (let i = 0; i < 3; i++) {
         if (!cells[i]) return 9999
         worst = Math.max(worst, Math.abs(heads[i].getBoundingClientRect().left - cells[i].getBoundingClientRect().left))
@@ -1324,40 +1330,37 @@ test('The reader reads in your order — the whole story re-deals, and it holds 
   })
 
   await checkReq('R21', async () => {
-    await page.goto('/#/board/R13')
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
-    await reveal(medbar())
-    await expect(medbar().locator('button')).toHaveText(['schematic first', 'behavior first'])
-    expect(await leadCell(), 'schematic first is the default order').toBe('sbframe')
-    expect(await headDrift(), 'every header label starts over the cell it names').toBeLessThan(2)
-    await medbar().locator('button', { hasText: 'behavior first' }).click()
-    await expect(story()).toHaveClass(/\bord-bsp\b/)
-    expect(await leadCell(), 'behavior first really leads with the words').toBe('sbtext')
-    // THE WHOLE STORY RE-DEALT: the header row moved with the cells it names, in every row — not just
-    // the first. A reader that re-dealt the rows and left the header behind fails here.
-    await hudCheck('the header re-deals with every row', '0px drift', (await headDrift()) + 'px drift')
-    // the control says which order is live
-    await expect(medbar().locator('button.on')).toHaveText('behavior first')
-  })
-
-  await checkReq('R21', async () => {
-    // IT HOLDS AS YOU PAGE ON — the reader is rebuilt for the next requirement and opens in the order
-    // you chose, header and rows alike…
+    // R4 has three beats — four rows — so "every row" is a real claim, not one row twice
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
     await reveal(story())
-    await expect(story()).toHaveClass(/\bord-bsp\b/)
-    expect(await leadCell(), 'the order you chose still leads on the next requirement').toBe('sbtext')
-    expect(await headDrift(), 'and every header label came with it').toBeLessThan(2)
-    await expect(medbar().locator('button.on')).toHaveText('behavior first')
-    // …for the SESSION and no longer: nothing about the order is written down
-    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /ord|colorder|column/i.test(k))),
-      'the column order is session-scoped — never stored').toEqual([])
-    // and flipping back re-deals again, so the choice is a choice both ways
-    await medbar().locator('button', { hasText: 'schematic first' }).click()
+    const lead = await leadCells()
+    expect(lead.length, 'a multi-beat requirement lays out several rows').toBeGreaterThan(2)
+    expect(lead.every(c => c === 'sbtext'), 'the words lead EVERY row: ' + lead.join(' · ')).toBe(true)
+    // the header names them in that order, and each label really starts over its own cell
+    await expect(story().locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'schematic', 'proof'])
+    await hudCheck('the header sits over the cells it names', '0px drift', (await headDrift()) + 'px drift')
+    expect(await headDrift(), 'every header label starts over the cell it names').toBeLessThan(2)
+  })
+
+  await checkReq('R21', async () => {
+    // THE CONTROL IS GONE, and so is everything it needed. Not "defaults to behaviour first" — there
+    // is no segmented pair in the reader, no order class on the story, and no stored preference; a
+    // reader that kept the toggle and merely pre-selected one stop fails here.
+    await expect(ov.locator('.fread .medbar')).toHaveCount(0)
+    await expect(ov.locator('.fread')).not.toContainText('schematic first')
+    await expect(ov.locator('.fread')).not.toContainText('behavior first')
     await expect(story()).not.toHaveClass(/\bord-bsp\b/)
-    expect(await leadCell()).toBe('sbframe')
-    expect(await headDrift(), 'the header came back with the cells too').toBeLessThan(2)
+    expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /ord|colorder|column/i.test(k))),
+      'there is no column order to store any more').toEqual([])
+    // …and it is the same one order on the next requirement you page to — not a per-requirement taste
+    await page.goto('/#/board/R13')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
+    await reveal(story())
+    const lead = await leadCells()
+    expect(lead.every(c => c === 'sbtext'), 'the next requirement reads behaviour first too').toBe(true)
+    await expect(story().locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'schematic', 'proof'])
+    expect(await headDrift(), 'and its header came with it').toBeLessThan(2)
   })
 })
 

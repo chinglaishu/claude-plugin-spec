@@ -1968,13 +1968,11 @@ export function build () {
      difference in the thing shown. The words are the CAPTION between them and take visibly less
      (the human, 2026-08-28): the visuals are what the row is for. ONE template, named once — the
      header row and every beat row take it from here, so they cannot drift apart.
-     COLUMN ORDER (the human, 2026-08-28): .ord-bsp leads with the behavior instead, which is the
-     same three widths dealt in the order the cells then sit in. The cells move by the order
-     property, so the DOM stays schematic · behavior · proof and every rule below still names the
-     cell it means. */
-  .fstory { --sbcols:minmax(0,1.15fr) minmax(0,0.75fr) minmax(0,1.15fr); }
-  .fstory.ord-bsp { --sbcols:minmax(0,0.75fr) minmax(0,1.15fr) minmax(0,1.15fr); }
-  .fstory.ord-bsp .sbtext, .fstory.ord-bsp .sbhead .sbhc:nth-child(2) { order:-1; }
+     ONE ORDER, BEHAVIOUR FIRST (the human, 2026-08-30 — "just always be behaviour first"). The
+     schematic-first / behavior-first toggle and its .ord-bsp re-deal are GONE: the words lead, then
+     the drawing, then the photograph, and the DOM order IS that order. Nothing is shuffled by the
+     CSS order property any more, so a header can never sit over a column it does not name. */
+  .fstory { --sbcols:minmax(0,0.75fr) minmax(0,1.15fr) minmax(0,1.15fr); }
   .fstory .sbrow { display:grid; grid-template-columns:var(--sbcols);
     align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }

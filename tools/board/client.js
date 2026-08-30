@@ -203,8 +203,8 @@ const B = window.__BOARD__ || {}
       if (body) { body.innerHTML = ''; body.hidden = true }
       card.classList.remove('open')
     }
-    // the torn-down cells' speed, zoom and order subscriptions go with them — no detached backlog
-    pruneSpd(); pruneZoom(); pruneOrder()
+    // the torn-down cells' speed and zoom subscriptions go with them — no detached backlog
+    pruneSpd(); pruneZoom()
   }
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
@@ -513,16 +513,14 @@ const B = window.__BOARD__ || {}
     // rides only where there is something to pace — a control over an empty reader is chrome.
     const paceable = !!(r.schem && r.schem.svg) ||
       !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
-    {
+    // THE READER'S BAR. The column-order toggle that used to lead it is GONE (the human, 2026-08-30:
+    // "remove the toggle of schematic first or behavior first, just always be behaviour first") —
+    // the storyline now deals ONE order, behaviour · schematic · proof, and there is nothing to pick.
+    // What is left rides only where there is something to pace or step.
+    if (paceable) {
       const bar = document.createElement('div'); bar.className = 'fbar'
-      // the column order — which of the two visual columns the story leads with. Always offered:
-      // it is a reading preference, not a property of this requirement's evidence.
-      const ol = document.createElement('span'); ol.className = 'fbarl'; ol.textContent = 'columns'
-      bar.appendChild(ol); bar.appendChild(orderPicker())
-      if (paceable) {
-        const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
-        bar.appendChild(bl); bar.appendChild(spdSelect())
-      }
+      const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
+      bar.appendChild(bl); bar.appendChild(spdSelect())
       read.appendChild(bar)
     }
     // THE REQUIREMENT, WHOLE (the human, 2026-08-28): the beat rows lead, the video and the authored
@@ -682,27 +680,6 @@ const B = window.__BOARD__ || {}
     const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
     return w
   }
-  // the column-order control: two stops, so it is a segmented pair rather than a dropdown (the same
-  // .medbar the proof cells use for their two modes). Each button NAMES the order it produces.
-  function orderPicker () {
-    const box = document.createElement('span'); box.className = 'medbar'
-    const mk = function (val, label) {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = label
-      b.title = 'read the story ' + label
-      b.addEventListener('click', function () { setOrder(val) })
-      return b
-    }
-    const a = mk('sbp', 'schematic first')
-    const b = mk('bsp', 'behavior first')
-    const paint = function () {
-      a.classList.toggle('on', COLORDER === 'sbp')
-      b.classList.toggle('on', COLORDER === 'bsp')
-    }
-    paint()
-    onOrder(box, paint)
-    box.appendChild(a); box.appendChild(b)
-    return box
-  }
 
   // behParts reads the baked .behavior block (the same markup renderBehavior emits) back into the
   // Given + When/Then beats the storyline splits into rows — label innerHTML kept so the WHEN1/THEN1
@@ -751,30 +728,9 @@ const B = window.__BOARD__ || {}
     pruneZoom()
     for (const w of ZOOM_W) w.fn(v)
   }
-  // COLUMN ORDER (the human, 2026-08-28) — 'sbp' schematic · behavior · proof, or 'bsp' behavior ·
-  // schematic · proof. Session-scoped like the speed and the zoom, for the same reason: a reader is
-  // rebuilt on every fold, so the choice must survive the rebuild, but a preference that persisted
-  // across visits would silently reorder tomorrow's board with no cue why. The whole story reorders
-  // at once — the header row and every beat row take one class, so a header can never end up
-  // labelling the column beside the one it names.
-  let COLORDER = 'sbp'
-  const ORD_W = []
-  function onOrder (node, fn) { ORD_W.push({ node: node, fn: fn }) }
-  function pruneOrder () {
-    for (let i = ORD_W.length - 1; i >= 0; i--) if (!ORD_W[i].node.isConnected) ORD_W.splice(i, 1)
-  }
-  function setOrder (v) {
-    COLORDER = (v === 'bsp') ? 'bsp' : 'sbp'
-    pruneOrder()
-    for (const w of ORD_W) w.fn(COLORDER)
-  }
-  // the class a storyline wears for the current order — applied on build AND on every change, so a
-  // rebuilt reader opens in the order the reader was left in
-  function orderClass (el) {
-    const paint = function () { el.classList.toggle('ord-bsp', COLORDER === 'bsp') }
-    paint()
-    onOrder(el, paint)
-  }
+  // (The COLUMN-ORDER state that stood here — 'sbp' / 'bsp', with its watcher list and its .ord-bsp
+  // class — is GONE with its toggle, the human 2026-08-30: "just always be behaviour first". The
+  // storyline deals one order now and there is nothing left to hold for the session.)
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
   // screenshot: it has its own viewBox, and while the wireframe is drawn at the layout viewport's
   // aspect, nothing guarantees it. Re-expressing the rect as the same FRACTION of the drawing keeps
@@ -1157,9 +1113,13 @@ const B = window.__BOARD__ || {}
       const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
       return tx
     }
+    // ONE ORDER, BEHAVIOUR FIRST (the human, 2026-08-30). The words lead every row, then the drawing,
+    // then the photograph — the sentence you are being asked to believe, then the two pictures of it.
+    // The DOM order IS the visual order now: the CSS `order` shuffle the retired toggle needed is
+    // gone with it, so a header can no longer end up over a column it does not name.
     const row = function (cls, frame, text, proof) {
       const el = document.createElement('div'); el.className = 'sbrow' + (cls ? ' ' + cls : '')
-      el.appendChild(frame); el.appendChild(text); el.appendChild(proof)
+      el.appendChild(text); el.appendChild(frame); el.appendChild(proof)
       return el
     }
     // the column names, as a table header over the rows (the human, 2026-08-28) — the one row that
@@ -1168,7 +1128,7 @@ const B = window.__BOARD__ || {}
     // (a header over a single stacked column labels nothing).
     const headRow = function () {
       const el = document.createElement('div'); el.className = 'sbhead'
-      ;[['schematic', 'the drawn intent'], ['behavior', 'what the requirement says'], ['proof', 'the harvested frames']]
+      ;[['behavior', 'what the requirement says'], ['schematic', 'the drawn intent'], ['proof', 'the harvested frames']]
         .forEach(function (p) {
           const c = document.createElement('span'); c.className = 'sbhc'
           c.textContent = p[0]; c.title = p[1]
@@ -1233,7 +1193,6 @@ const B = window.__BOARD__ || {}
     wrap.appendChild(body)
     startLoops()
     onSpd(wrap, function (sp) { wrap.style.setProperty('--spd', String(sp)) })
-    orderClass(wrap)   // the header row and every beat row reorder together, off this one class
     return wrap
   }
 

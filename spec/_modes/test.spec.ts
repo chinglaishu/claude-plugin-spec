@@ -470,7 +470,9 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   // names the cells instead is the three-label header row over them.
   await expect(schem.locator('.storycap')).toHaveCount(0)
   await expect(schem).not.toContainText('the idea, not the real UI')
-  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['schematic', 'behavior', 'proof'])
+  // (reordered 2026-08-30, rule 4 — the human removed the column-order toggle and fixed the story
+  // BEHAVIOUR FIRST, board R21, so the header names its three cells in that one order now)
+  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'schematic', 'proof'])
   await expect(schem).not.toContainText('no schematic drawn yet')
   await expect(schem).toHaveAttribute('data-vizhash', vizat)
   await expect(schem).not.toContainText('≠')

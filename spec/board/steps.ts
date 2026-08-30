@@ -118,9 +118,12 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
   await expect(ov.locator('.feval')).toBeVisible()
-  // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28): every beat row lays three cells
-  // left to right on ONE line — [ the drawn schematic | the behaviour's words | that beat's own
-  // harvested proof ]. The drawing and the photograph are aimed at the SAME region by the same
+  // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28; reordered 2026-08-30): every beat row
+  // lays three cells left to right on ONE line — [ the behaviour's words | the drawn schematic |
+  // that beat's own harvested proof ]. The words LEAD, because the human removed the
+  // schematic-first / behaviour-first toggle and fixed the story behaviour first (board R21) — the
+  // sentence you are being asked to believe, then the two pictures of it. The drawing and the
+  // photograph are aimed at the SAME region by the same
   // camera, so comparing them is the point and they must be the same width; the words between them
   // are the caption and take visibly less. A reader that stacked the cells, put the proof somewhere
   // other than beside the words, or let the two visual halves drift apart in width, fails here.
@@ -137,10 +140,10 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   })
   expect(geom, 'the reader is a storyline of per-beat rows').not.toBeNull()
   const { frame, text, proof } = geom!
-  expect(!!(frame && text && proof), 'a beat row carries schematic · behavior · proof').toBe(true)
+  expect(!!(frame && text && proof), 'a beat row carries behavior · schematic · proof').toBe(true)
   expect(new Set([frame!.y, text!.y, proof!.y]).size, 'the three cells sit on ONE row, not stacked').toBe(1)
-  expect(frame!.x, 'the schematic opens the row').toBeLessThan(text!.x)
-  expect(text!.x, 'the proof closes the row, beside the words it proves').toBeLessThan(proof!.x)
+  expect(text!.x, 'the words open the row — behaviour first (R21)').toBeLessThan(frame!.x)
+  expect(frame!.x, 'the proof closes the row, beside the drawing it mirrors').toBeLessThan(proof!.x)
   expect(Math.abs(frame!.w - proof!.w) / Math.max(frame!.w, proof!.w),
     'the drawing and the proof are the same width — the row is a comparison').toBeLessThan(0.02)
   expect(text!.w, 'the words are the caption between them and take visibly less').toBeLessThan(frame!.w * 0.9)
