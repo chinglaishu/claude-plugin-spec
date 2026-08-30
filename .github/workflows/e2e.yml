@@ -1,0 +1,48 @@
+name: e2e
+
+# The gate is USER-CHOSEN, not "every screen automatically": tools/ci-select.mjs resolves
+# spec/_ci.json into the exact list of spec/<screen>/test.spec.ts files this job runs. Add or
+# remove screens there, not here. Runs on push to main (so main always shows a verified gate) and
+# on every pull_request (so branch protection can require this job's check before merge).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  e2e-gate:
+    name: e2e-gate
+    runs-on: ubuntu-latest
+    # The seeded subset (board, conflicts, init, _modes) runs well under 30 minutes locally;
+    # this gives headroom for a slower/shared CI runner without letting a hang run forever.
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      # The pure-function unit suite (coverage, ci-select, prd-render, update, …) — fast, no
+      # browser, no server.
+      - run: npm run test:tools
+
+      # The e2e gate itself. NEVER pass --reporter here: it REPLACES playwright.board.ts's
+      # configured reporters (json + list + the results-fold reporter), silently breaking the
+      # per-requirement fold. NEVER pass -g: the whole point of _ci.json is that the human chose
+      # this subset of whole spec files, not a grep-narrowed slice of it. The webServer in
+      # playwright.board.ts self-starts `node tools/serve-board.mjs` on the default BOARD_PORT
+      # (4173) on a clean checkout — no extra env is needed here.
+      - run: npx playwright test --config=playwright.board.ts $(node tools/ci-select.mjs)
+
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7

@@ -1,0 +1,14 @@
+{
+  "$comment": [
+    "The CI gate is USER-CHOSEN, not 'every screen automatically'. Each entry in `screens` is a",
+    "screen whose whole spec/<screen>/test.spec.ts runs in the GitHub Actions e2e gate (tools/ci-select.mjs",
+    "resolves this file into the exact `playwright test` file list; see .github/workflows/e2e.yml).",
+    "`dispatch` is deliberately excluded: its spec drives nested recorded runs against the board's",
+    "own job-slot machinery (a run started by a run, cancel targeting), which is slow and flaky on a",
+    "shared CI runner — not a screen the human wants gating merges. Edit this list freely as screens",
+    "are added, retired, or judged too slow/flaky for the gate; a screen left out still runs fine",
+    "locally with `npm run e2e`. If this file is absent entirely, the resolver falls back to every",
+    "screen on disk — deleting it does not disable the gate, it just widens it back to 'all'."
+  ],
+  "screens": ["board", "conflicts", "init", "_modes"]
+}
