@@ -2144,12 +2144,42 @@ export function build () {
      absent and the cell is a picture again. */
   .sbproof .pcbox.pcnext { cursor:pointer; }
   .sbproof .pcbox.pcnext:hover { border-color:var(--ink-3); }
-  /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other */
+  /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other.
+     The dedicated scene stepper that briefly sat beside it (3c93cb3) is GONE from the bar (the human,
+     2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row's own rail
+     (.scenerail below), where "next" names the beat it steps. */
   .fbar .medbar.pmode button { min-width:calc(38px * var(--scale)); }
-  /* the dedicated scene stepper beside it (the human, 2026-08-30): ‹ prev · next › in the same chrome,
-     a mark not a hue; a touch of extra letter-spacing so the chevrons read as controls, not glyphs */
-  .fbar .medbar.pstep { margin-left:calc(6px * var(--scale)); }
-  .fbar .medbar.pstep button { min-width:calc(26px * var(--scale)); font-size:calc(13px * var(--scale)); line-height:1; }
+  /* THE PER-BEAT SCENE RAIL (the human, 2026-08-30: "by each when/then, and show in more appealing
+     way ... please be user friendly and creative"). A compact labelled filmstrip in the beat row's
+     behaviour gutter: one bead per scene, the active bead lit by a filled mark + weight in the SAME
+     current-scene indigo the proof dots already use (.pd.cur) — a mark, never a hue alone (design
+     system) — a trailing › that walks, and any bead a jump. The up-next bead pulses only while the
+     rail is hovered, and only where motion is allowed. */
+  .fstory .sbtext .scenerail { display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+    margin-top:var(--s3); }
+  .scenerail .srk { font:var(--t-micro) var(--mono); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-4); margin-right:2px; }
+  .scenerail .srbeads { display:inline-flex; flex-wrap:wrap; gap:5px; align-items:center; }
+  .scenerail .srbead { display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+    border:1px solid var(--hair-2); background:var(--paper); border-radius:999px;
+    padding:2px 9px 2px 7px; color:var(--ink-3); }
+  .scenerail .srbead .srmk { width:7px; height:7px; border-radius:999px; flex:none;
+    border:1px solid var(--ink-4); background:none; }
+  .scenerail .srbead .srcap { font:var(--t-micro) var(--mono); letter-spacing:.04em; }
+  .scenerail .srbead:hover { border-color:var(--ink-3); color:var(--ink); }
+  .scenerail .srbead.seen .srmk { background:var(--ink-4); border-color:var(--ink-4); }
+  .scenerail .srbead.on { border-color:var(--ai); color:var(--ink); font-weight:500; }
+  .scenerail .srbead.on .srmk { background:var(--ai); border-color:var(--ai); }
+  .scenerail .srbead:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .scenerail .srnext { display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    min-width:calc(22px * var(--scale)); height:calc(22px * var(--scale)); padding:0 6px; margin-left:1px;
+    border:1px solid var(--hair-2); background:var(--paper); border-radius:999px;
+    color:var(--ink-3); font-size:15px; line-height:1; }
+  .scenerail .srnext:hover { border-color:var(--ink); color:var(--ink); }
+  .scenerail .srnext:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .scenerail:hover .srbead.upnext:not(.on) .srmk { animation:srpulse 1.15s ease-in-out infinite; }
+  @keyframes srpulse { 0%,100% { transform:scale(1); opacity:.55 } 50% { transform:scale(1.55); opacity:1 } }
+  @media (prefers-reduced-motion: reduce) { .scenerail .srbead .srmk { animation:none !important; } }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
@@ -2277,8 +2307,13 @@ export function build () {
      fill + offset ring, seen = ink-4 fill, upcoming = hollow ink-4 ring), and the count spells the
      position out — hue never alone. Scoped to the stepper's own classes since the per-beat split
      (2026-08-28): it plays inside a proof CELL now, not only inside a media panel. */
-  .fsteps img { display:none; width:100%; height:auto; cursor:zoom-in; }
-  .fsteps img.on { display:block; }
+  /* THE FRAMES CROSS-FADE, they don't hard-cut (the human, 2026-08-31: "make the transition smooth
+     <- also apply to proof"). The scenes are STACKED in one grid cell and the on-frame fades up over
+     the out-frame — the transition string (duration = SBStepper.cameraDur, cubic-bezier, reduced-
+     motion → none) is set inline in aimCamera beside the camera pan, so both ride one glide. */
+  .fsteps { display:grid; }
+  .fsteps img { grid-area:1 / 1; width:100%; height:auto; cursor:zoom-in; opacity:0; }
+  .fsteps img.on { opacity:1; z-index:1; }
   .fstepbar { display:flex; align-items:center; gap:var(--s3); padding:var(--s2) var(--s3);
     border-top:1px solid var(--hair); background:var(--paper); }
   .fstepbar .pdots { display:inline-flex; gap:6px; align-items:center; }

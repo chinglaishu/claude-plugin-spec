@@ -551,8 +551,10 @@ const B = window.__BOARD__ || {}
       const bar = document.createElement('div'); bar.className = 'fbar'
       const ml = document.createElement('span'); ml.className = 'fbarl'; ml.textContent = 'play'
       bar.appendChild(ml); bar.appendChild(modePicker())
-      // the dedicated walk, beside the mode it drives (the human, 2026-08-30)
-      bar.appendChild(stepPicker())
+      // the WALK is no longer up here (the human, 2026-08-30): a requirement has several When/Then, so
+      // "next small step" must name its beat — the advance moved onto each beat row's own scene rail
+      // (sceneRail, in the behaviour gutter). The bar keeps only the reader-wide PREFERENCES: the mode
+      // it walks in, and the speed it plays at.
       const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
       bar.appendChild(bl); bar.appendChild(spdSelect())
       read.appendChild(bar)
@@ -816,37 +818,32 @@ const B = window.__BOARD__ || {}
     box.appendChild(a); box.appendChild(b)
     return box
   }
-  // THE DEDICATED STEPPER (the human, 2026-08-30: "better way to go to next small step — not only
-  // click on proof, as we need to handle the case that it doesn't have proof yet, and now cannot zoom
-  // in proof"). Two affordances, ‹ prev and next ›, reader-wide beside the mode control and carried by
-  // the same pager-dot chrome as every other stepper here (tokens only, a mark not hue). They step
-  // EVERY beat row of the open reader in lock-step — both of a row's cells together, through the same
-  // show()/_drive the loop uses, wrapping at each row's own ends — so a beat with NO proof frames is
-  // still walkable (its drawing steps) and the proof cell is free to open the lightbox again. Pressing
-  // one drops the reader into step mode (else the loop would instantly overwrite the scene). The ← →
-  // keys do the same while a reader is open in step mode (buildFocusOverlay / openListRow).
-  function readerStep (root, dir) {
-    if (!root) return false
-    let moved = false
-    const rows = [].slice.call(root.querySelectorAll('.sbrow[data-rowstep]'))
-    for (const el of rows) {
-      if (el._rowStep && el.isConnected && el.offsetParent !== null) { el._rowStep(dir); moved = true }
-    }
-    return moved
+  // THE WALK IS PER BEAT ROW (the human, 2026-08-30: "the go to next small step can NOT be on top as
+  // there could be multi when/then, so the go to next small step need to be by each when/then"). The
+  // advance lives on each beat row's own scene rail now (sceneRail), never a single reader-wide cursor
+  // — a requirement with several When/Then beats made one global "next" ambiguous about WHICH beat it
+  // stepped. The ← → keys are the keyboard face of that same rail: while a reader is open in step mode
+  // they step the row the reader is ACTUALLY on — the one holding keyboard focus (a bead just clicked),
+  // else the one under the pointer, else the first steppable beat — never every row at once. Returns
+  // whether a row was found to step, so the key handlers know to swallow the arrow.
+  function stepTargetRow (root) {
+    if (!root) return null
+    const rows = [].slice.call(root.querySelectorAll('.sbrow[data-rowstep]')).filter(function (el) {
+      return el._rowStep && el.isConnected && el.offsetParent !== null
+    })
+    if (!rows.length) return null
+    const ae = document.activeElement
+    const focused = (ae && ae.closest) ? rows.filter(function (r) { return r.contains(ae) })[0] : null
+    if (focused) return focused
+    const hovered = rows.filter(function (r) { return r.matches && r.matches(':hover') })[0]
+    if (hovered) return hovered
+    return rows[0]
   }
-  function stepPicker () {
-    const box = document.createElement('span'); box.className = 'medbar pstep'
-    const mk = function (dir, label, title) {
-      const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.title = title
-      b.addEventListener('click', function () {
-        if (PLAY_MODE !== 'step') setMode('step')     // the walk holds the loop, or the scene snaps back
-        readerStep(box.closest('.fread'), dir)
-      })
-      return b
-    }
-    box.appendChild(mk(-1, '‹', 'previous scene of every beat (holds the loop)'))
-    box.appendChild(mk(1, '›', 'next scene of every beat (holds the loop)'))
-    return box
+  function readerStep (root, dir) {
+    const row = stepTargetRow(root)
+    if (!row) return false
+    row._rowStep(dir)
+    return true
   }
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
   // screenshot: it has its own viewBox, and while the wireframe is drawn at the layout viewport's
@@ -893,7 +890,15 @@ const B = window.__BOARD__ || {}
       const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, o) : null
       const css = window.SBStepper.cameraCss(view)
       const dur = (animate && !REDUCED) ? window.SBStepper.cameraDur(CAM_TWEEN, PLAY_SPD) : 0
-      const trans = dur > 0 ? ('transform ' + dur + 'ms cubic-bezier(0.4, 0, 0.2, 1)') : 'none'
+      // …and the FRAME SWAP eases with the pan (the human, 2026-08-31: "make the transition to the next
+      // small step smooth <- also apply to proof"). The proof cell's scenes are stacked frames whose
+      // opacity is toggled on scene change; riding OPACITY on the very same transition string makes the
+      // outgoing frame cross-fade into the incoming one over the SAME cubic-bezier and the SAME
+      // cameraDur the camera pans over, so both halves of a row glide identically instead of the picture
+      // hard-cutting while the crop slides. The schematic's single SVG has nothing to fade — harmless
+      // there. Reduced motion (dur 0 → 'none') snaps both, exactly as before.
+      var ease = 'cubic-bezier(0.4, 0, 0.2, 1)'
+      const trans = dur > 0 ? ('transform ' + dur + 'ms ' + ease + ', opacity ' + dur + 'ms ' + ease) : 'none'
       for (const m of box.querySelectorAll('.camsub')) { m.style.transition = trans; m.style.transform = css }
       box.classList.toggle('zoomed', !!(view && view.ok))
     }
@@ -950,6 +955,9 @@ const B = window.__BOARD__ || {}
         d.classList.toggle('seen', k < i)
       })
       lbl.textContent = (i + 1) + ' / ' + imgs.length
+      // …and the row's SCENE RAIL lights the bead of the scene now on show (the human, 2026-08-30):
+      // one slot, set by the rail, so it tracks the loop in auto and the walk in step alike.
+      if (el._onStep) el._onStep(cur)
     }
     // a dot click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest
     // rule that guarantees the chosen frame its read time. In STEP mode (the human, 2026-08-30)
@@ -992,10 +1000,109 @@ const B = window.__BOARD__ || {}
       show((cur - 1 + imgs.length) % imgs.length)
       schedule()
     }
+    // …and a JUMP to a named scene — what a rail bead asks for. Goes through show() like every other
+    // move, so the drawing and the camera come with it; schedule() re-arms in auto, no-ops in step.
+    el._goto = function (j) {
+      if (imgs.length < 2) return
+      show(((j % imgs.length) + imgs.length) % imgs.length)
+      schedule()
+    }
+    el._cur = function () { return cur }
     onSpd(el, function () { if (!el.hidden) schedule() })
     // switching the reader's mode arms or holds every loop at once (schedule() itself is the gate)
     onMode(el, function () { if (!el.hidden) schedule() })
     return el
+  }
+
+  // ── THE PER-BEAT SCENE RAIL ──────────────────────────────────────────────────────────────────
+  // (the human, 2026-08-30: "the go to next small step need to be by each when/then, and show in more
+  // appealing way for user to go to next small step — please be user friendly and creative!"). A
+  // compact labelled FILMSTRIP that lives in the beat row's own BEHAVIOUR gutter, under its When/Then
+  // sentence: one bead per scene of THIS beat, the active bead lit (a filled mark + weight, never a
+  // hue alone — design system), a trailing › that walks to the next, and any bead a jump straight to
+  // that scene. It drives BOTH cells of its row in lock-step through the row's ONE stepper (the same
+  // show()/_drive the loop uses), so "next" is unambiguous about which beat it steps — the whole point
+  // of moving it off the reader-wide bar. Reduced-motion friendly: the only motion is a CSS pulse on
+  // the up-next bead, disabled under prefers-reduced-motion.
+  //
+  // A `driver` is the row's stepper seen through one small interface, so the proof loop and a
+  // proof-less drawing's own stepper both feed the same rail:
+  //   { count, labels[], goto(j), step(dir), current(), subscribe(fn) }
+  //
+  // THE MICRO-LABEL is derived from what the scene proves, with NO new harvest (the rail is display-
+  // only): a value scene reads `when` (numbered when a beat proved several), the result reads `then`,
+  // and the honest ends read `before` / `given`. The exact ringed value is not carried to the client
+  // without a re-harvest, so `when`/`then`/`before` is the sensible fallback the human named.
+  function sceneLabelsFromShots (shots) {
+    var total = shots.filter(function (s) { return /asserted value/.test(s.cap || '') }).length
+    var vi = 0
+    return shots.map(function (s) {
+      var c = s.cap || ''
+      if (/^given/.test(c)) return 'given'
+      if (/^before/.test(c)) return 'before'
+      if (/^after/.test(c)) return 'then'
+      vi++
+      return total > 1 ? 'when ' + vi : 'when'
+    })
+  }
+  // a drawing walked with no proof beside it has no shot captions — its park points are positional,
+  // so the last is the result (`then`) and the rest are the action (`when`, numbered when several)
+  function positionalLabels (n) {
+    var out = []
+    for (var j = 0; j < n; j++) out.push(j === n - 1 ? 'then' : (n > 2 ? 'when ' + (j + 1) : 'when'))
+    return out
+  }
+  // the proof loop, seen as a driver — the rail's beads and › walk the SAME frames the loop plays
+  function proofDriver (step, labels) {
+    return {
+      count: step._count,
+      labels: labels || [],
+      goto: function (j) { step._goto(j) },
+      step: function (dir) { if (dir < 0) step._prev(); else step._next() },
+      current: function () { return step._cur() },
+      subscribe: function (fn) { step._onStep = fn }
+    }
+  }
+  function sceneRail (driver) {
+    if (!driver || !(driver.count > 1)) return null
+    const rail = document.createElement('div'); rail.className = 'scenerail'
+    rail.setAttribute('role', 'group'); rail.setAttribute('aria-label', 'walk this beat’s scenes')
+    const k = document.createElement('span'); k.className = 'srk'; k.textContent = 'scenes'
+    const beads = document.createElement('span'); beads.className = 'srbeads'
+    const btns = []
+    for (let j = 0; j < driver.count; j++) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'srbead'; b.dataset.i = String(j)
+      const lab = (driver.labels && driver.labels[j]) || ('scene ' + (j + 1))
+      b.title = 'jump to ' + lab
+      const mk = document.createElement('span'); mk.className = 'srmk'
+      const cap = document.createElement('span'); cap.className = 'srcap'; cap.textContent = lab
+      b.appendChild(mk); b.appendChild(cap)
+      ;(function (idx) {
+        // a bead is a JUMP: it lands the row on that scene and, in auto, the loop resumes from there;
+        // in step it simply holds. It does NOT force step mode — peeking never freezes the loop.
+        b.addEventListener('click', function () { driver.goto(idx) })
+      })(j)
+      beads.appendChild(b); btns.push(b)
+    }
+    const next = document.createElement('button'); next.type = 'button'; next.className = 'srnext'
+    next.textContent = '›'; next.setAttribute('aria-label', 'next scene'); next.title = 'walk to the next scene'
+    next.addEventListener('click', function () {
+      if (PLAY_MODE !== 'step') setMode('step')   // the › WALKS: hold the loop, or the next scene snaps back
+      driver.step(1)
+    })
+    rail.appendChild(k); rail.appendChild(beads); rail.appendChild(next)
+    const paint = function (cur) {
+      const up = (cur + 1) % driver.count
+      btns.forEach(function (b, j) {
+        b.classList.toggle('on', j === cur)
+        b.classList.toggle('seen', j < cur)
+        b.classList.toggle('upnext', j === up)
+        if (j === cur) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current')
+      })
+    }
+    driver.subscribe(paint)
+    paint(driver.current())
+    return rail
   }
 
   // THE ROW'S FOCUS RECT — the one both of its cells frame (the human, 2026-08-28). The GIVEN row is
@@ -1150,6 +1257,10 @@ const B = window.__BOARD__ || {}
       // registers what the control drives it with: one scene forward or back, wrapping. (The dots stay
       // the jump-map; the control and the ← → keys are the walk.)
       cell._rowStep = function (dir) { if (dir < 0) step._prev(); else step._next() }
+      // …and the per-beat RAIL drives this same loop: a jump to any scene, plus the micro-labels
+      // derived from what each scene proves (sceneLabelsFromShots) — display-only, no re-harvest.
+      cell._rowGoto = function (j) { step._goto(j) }
+      cell._sceneLabels = sceneLabelsFromShots(got.shots)
       step._start()
     } else {
       // ONE frame: a still, captioned, under the same camera the loop would use
@@ -1370,15 +1481,17 @@ const B = window.__BOARD__ || {}
     // A DRAWING WITH NO PROOF TO DRIVE IT still walks (the human, 2026-08-30: "handle the case it
     // doesn't have proof yet"). When a beat has a splittable drawing (subphases) but no proof loop, a
     // small stepper of its own moves the DRIVEN frame through its park points — auto-advancing on a
-    // timer at the reader's speed, held in step mode, and walked one park point at a time by the
-    // dedicated control. Same shape as the proof stepper's schedule so the two behave alike.
+    // timer at the reader's speed, held in step mode, and walked one park point at a time by its rail.
+    // It returns the SAME driver interface the proof loop does (count/labels/goto/step/current/
+    // subscribe), so its beat row gets an identical rail even with no photograph beside the drawing.
     const drawStepper = function (fc, parks) {
-      let idx = 0; let timer = null
+      let idx = 0; let timer = null; let onStep = null
       const dur = function () { return window.SBStepper.scaleHold(700, PLAY_SPD) }
       const go = function (j) {
         const from = idx
         idx = ((j % parks.length) + parks.length) % parks.length
         fc._drive(parks[from], parks[idx], dur())
+        if (onStep) onStep(idx)
       }
       const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
       const schedule = function () {
@@ -1393,7 +1506,14 @@ const B = window.__BOARD__ || {}
       onSpd(fc, function () { if (!fc.hidden) schedule() })
       onMode(fc, function () { if (!fc.hidden) schedule() })
       schedule()
-      return function (dir) { go(dir < 0 ? idx - 1 : idx + 1); schedule() }
+      return {
+        count: parks.length,
+        labels: positionalLabels(parks.length),
+        step: function (dir) { go(dir < 0 ? idx - 1 : idx + 1); schedule() },
+        goto: function (j) { go(j); schedule() },
+        current: function () { return idx },
+        subscribe: function (fn) { onStep = fn }
+      }
     }
     // the provenance line every schematic cell carries — one node per cell, so it stays beside the
     // drawing it describes even where a narrow reader stacks the row and the column header folds
@@ -1484,6 +1604,7 @@ const B = window.__BOARD__ || {}
             beatFocus(r, i + 1, nbeats), driveDraw)
           : noCell(noDraw)
         let rowStep = null
+        let rowDriver = null            // the row's stepper as the rail's small interface
         if (link) {
           pc._stepper._onFrame = function (j, ms) {
             const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
@@ -1495,15 +1616,24 @@ const B = window.__BOARD__ || {}
           }
           if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null, (pc._cards || [])[0] || null, false)
           rowStep = pc._rowStep          // one call steps the proof and, through _onFrame, the drawing
+          rowDriver = proofDriver(pc._stepper, pc._sceneLabels)
         } else if (drawOnly) {
-          rowStep = drawStepper(fc, grp)  // no proof to drive it — its own scenes are the walk
+          rowDriver = drawStepper(fc, grp)  // no proof to drive it — its own scenes are the walk
+          rowStep = rowDriver.step
         } else if (canPair && pc._unaim) {
           pc._unaim()                    // the drawing is on its own clock — do not pan one cell alone
           rowStep = pc._rowStep || null  // the proof still walks even when the drawing cannot pair
+          rowDriver = pc._stepper ? proofDriver(pc._stepper, pc._sceneLabels) : null
         }
         if (!rowStep) rowStep = pc._rowStep || null   // a proof-only row (no pairing) still walks
-        const rowEl = row(i === 0 ? '' : 'beatstart', fc, textCell(html), pc)
-        // the dedicated control and the ← → keys drive every steppable row of the open reader
+        if (!rowDriver && pc._stepper) rowDriver = proofDriver(pc._stepper, pc._sceneLabels)
+        // the beat's own words, then — in the same gutter, under them — its SCENE RAIL (the human,
+        // 2026-08-30): the walk lives beside the sentence it steps, not on a reader-wide bar
+        const tc = textCell(html)
+        const rail = rowDriver ? sceneRail(rowDriver) : null
+        if (rail) tc.appendChild(rail)
+        const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc)
+        // the row's own rail and the ← → keys (targeting the row the reader is on) drive the walk
         if (rowStep) { rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1' }
         body.appendChild(rowEl)
       })
