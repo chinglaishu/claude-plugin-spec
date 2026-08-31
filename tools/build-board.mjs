@@ -2058,8 +2058,16 @@ export function build () {
     color:var(--ink-3); padding:var(--s2) var(--s3); border-right:1px solid var(--hair); }
   .fstory .sbhead .sbhc:last-child { border-right:0; }
   .fstory .sbhead + .sbrow { border-top:0; }
-  .fstory .sbframe { display:flex; align-items:center; justify-content:center;
+  .fstory .sbframe { display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:var(--paper); padding:var(--s3); overflow:hidden; border-right:1px solid var(--hair); }
+  /* THE DRAWING'S PROVENANCE (the human, 2026-08-31: "let user know if the schematic is not what
+     they want") — one quiet line under the drawing saying WHAT it is: the app's own measured
+     layout, the sentence's archetype, nothing drawn yet, or a drawing whose text has moved past it.
+     Derived from the marks the viz pass stamps on the svg, never stored. Tokens only, --ink-3 on
+     --paper, and it is TEXT — the glyph is a mark, no hue carries the state. */
+  .fstory .sbprov { align-self:stretch; font:var(--t-micro) var(--mono); letter-spacing:.04em;
+    color:var(--ink-3); padding-top:var(--s2); text-align:center; }
+  .fstory .sbprov .pvm { margin-right:4px; }
   .fstory .sbrow.bgiven .sbframe { background:var(--canvas); }
   .fstory .sbframe svg { display:block; width:100%; height:auto; margin:0 auto; }
   /* the drawing's camera box fills the cell — it is the row's other half of the comparison, not an

@@ -1109,6 +1109,16 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     expect(shapes, 'the drawing carries the measured page, box for box — not a fixed archetype kit')
       .toBeGreaterThan(drawable * 0.4)
     expect(shapes, 'and it draws THIS page, not an inflated one').toBeLessThan(drawable * 3)
+    // …AND THE CELL SAYS SO (the human, 2026-08-31: "let user know if the schematic is not what they
+    // want"). A reader judging a drawing against a photograph has to know which KIND of drawing it
+    // is, in words, before they can judge the comparison. The caption is DERIVED from the marks
+    // above — the very attributes just asserted — never stored and never guessed.
+    const prov = ov.locator('.fread .fstory .sbrow').nth(1).locator('.sbframe .sbprov')
+    await expect(prov).toHaveCount(1)
+    await expect(prov).toHaveAttribute('data-prov', 'mirror')
+    await expect(prov).toContainText('measured layout')
+    await hudCheck('the cell says what the drawing is', 'mirror',
+      (await prov.getAttribute('data-prov')) || 'nothing')
   })
 
   // beat 2 — NO LAYOUT, NO PICTURE (moved here verbatim from the R13 test, 2026-08-28: the honest
@@ -1138,7 +1148,37 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
     await expect(r2story.locator('.sbrow .sbtext .sbstep').first()).toBeVisible()   // the labelled beats still show
     await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
+    // …and the cell SAYS the absence rather than leaving the reader to infer it from a blank
+    const gone = r2story.locator('.sbframe .sbprov').first()
+    await expect(gone).toHaveAttribute('data-prov', 'none')
+    await expect(gone).toContainText('nothing harvested to draw yet')
     await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
+
+    // THE THIRD ANSWER, seeded through the same pipe: a drawing that is an ARCHETYPE — true to the
+    // sentence, not to the screen. Every live specimen is a mirror, so the served board's marks are
+    // rewritten for ONE requirement and the caption must follow them. That is the proof the caption
+    // is DERIVED from what the viz pass stamped, not printed from a constant: change the mark, the
+    // words change with it.
+    const archetypify = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
+    await page.route(archetypify, async rt => {
+      const res = await rt.fetch(); const html = await res.text()
+      const scr = html.indexOf('data-screen="board"')
+      const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
+      const seg = html.slice(i, j)
+        .replace(/data-viz-archetype="ui-mirror"/g, 'data-viz-archetype="list-add"')
+        .replace(/data-viz-kind="wireframe"/g, 'data-viz-kind="archetype"')
+      await rt.fulfill({ body: html.slice(0, i) + seg + html.slice(j), contentType: 'text/html' })
+    })
+    await page.goto('/#/board/R2')
+    await page.reload()
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
+    const arch = ov.locator('.fread .fstory .sbframe .sbprov').first()
+    await reveal(arch)
+    await expect(arch).toHaveAttribute('data-prov', 'archetype')
+    await expect(arch).toContainText('the sentence, not the app')
+    await hudCheck('a drawn-from-the-sentence picture says so', 'archetype',
+      (await arch.getAttribute('data-prov')) || 'nothing')
+    await page.unroute(archetypify)
   })
 })
 
@@ -2514,6 +2554,35 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     // the picker pre-picks the requirement being read — its id names the cover line
     const rcover = (((await body.textContent()) || '').split('\n').find(l => /cover these requirements/i.test(l)) || '')
     expect(rcover).toContain(reqId)
+    await sheet.locator('[data-promptclose]').click()
+    await expect(sheet).not.toHaveClass(/\bon\b/)
+
+    // …AND THE ESCAPE FROM A WRONG PICTURE (the human, 2026-08-31: "let user know if the schematic
+    // is not what they want"). The schematic cell now captions what the drawing IS; the ⋯ menu is
+    // what a reader does about it — one more ready prompt, carrying the screen, the requirement,
+    // THE PROVENANCE THE READER WAS JUST SHOWN, and the kg-e2e way to make the mirror drawable
+    // (ring the values with proveVisible, re-harvest, redraw). It is a prompt like every other item
+    // here: the board still writes nothing.
+    await rmenu.locator('.fmenubtn').click()
+    const rSchem = rmenu.locator('.fmenupop [data-prompt="schemwrong"]')
+    await expect(rSchem).toHaveCount(1)
+    await expect(rSchem).toContainText(/schematic/i)
+    await rSchem.click()
+    await expect(sheet).toHaveClass(/\bon\b/)
+    const said = (await body.textContent()) || ''
+    expect(said, 'the prompt names the screen and the requirement').toContain('board:' + reqId)
+    expect(said, '…the files the fix actually lives in').toContain('spec/board/steps.ts')
+    const capTxt = (((await ov.locator('.fread .fstory .sbprov').first().textContent()) || '')
+      .replace(/^[^\w]+/, '').trim())
+    expect(capTxt.length, 'the reader captions the drawing’s provenance').toBeGreaterThan(10)
+    expect(said, '…what the drawing is today, in the same words the cell captions').toContain(capTxt)
+    expect(said, '…and the kg-e2e way to make a mirror drawable').toContain('proveVisible')
+    expect(said).toContain('viz-derive')
+    expect(said, 'never by hand — a drawn guess beside a photograph is the lie the board forbids')
+      .toMatch(/never hand-draw/i)
+    expect(await body.evaluate(el => el.tagName), 'still a read-only prompt, not an editor').toBe('PRE')
+    await hudCheck('the ⋯ menu answers a wrong schematic', 'a ready prompt',
+      (await sheet.getAttribute('class') || '').includes('on') ? 'a ready prompt' : 'nothing')
     await sheet.locator('[data-promptclose]').click()
     await expect(sheet).not.toHaveClass(/\bon\b/)
 

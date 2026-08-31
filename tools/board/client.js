@@ -263,6 +263,31 @@ const B = window.__BOARD__ || {}
     } else if (action === 'edittest') {
       head = 'In this specboard project, edit the test "' + (ctx.testTitle || '') + '".'
       body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n' + cover + '\n\n' + reqBlock
+    } else if (action === 'schemwrong') {
+      // THE ESCAPE FROM A WRONG PICTURE (the human, 2026-08-31: "let user know if the schematic is
+      // not what they want"). The caption on the schematic cell says what the drawing IS; this is
+      // what a reader does about it. The board never redraws on its own — a drawing is a MIRROR of
+      // what a run measured, so the fix is always upstream: ring the values the beat actually
+      // proves, then harvest. The prompt carries the provenance the reader was just shown, so the
+      // work starts from the same fact rather than from a fresh guess.
+      head = 'In this specboard project, the schematic for ' + ctx.screen + ':' + ctx.reqId +
+        ' does not match the real app.'
+      body = 'Files: ' + spec + ' and spec/' + ctx.screen + '/steps.ts\n' +
+        'Target: requirement ' + req + '\n' +
+        'The drawing today: ' + (ctx.prov || 'unknown') + '\n\n' +
+        'The schematic is DERIVED, never authored — tools/viz.mjs draws it from the layout skeleton ' +
+        'each proveVisible ringed during the last run, one scene per value the beat proved. So do ' +
+        'not edit the svg: it is regenerated. Fix what the run MEASURES.\n' +
+        '- give each beat a proveVisible on the element whose value it asserts (the When\'s own box, ' +
+        'then the Then\'s result), so the harvest rings and photographs them;\n' +
+        '- keep the beats in spec/' + ctx.screen + '/steps.ts one When → one Then, so a scene is one ' +
+        'change;\n' +
+        '- re-run the covering test with BOARD_RECORD so the frames and skeletons are re-harvested, ' +
+        'then `node tools/viz-derive.mjs ' + ctx.screen + '` to redraw from them.\n' +
+        'If the drawing is an ARCHETYPE, nothing was harvested with a ring yet — that is the whole ' +
+        'gap. If it is stale, the requirement was reworded after it was drawn: re-run, then redraw. ' +
+        'Never hand-draw a picture to match: a guessed picture beside a real photograph is the most ' +
+        'convincing lie this board can tell.'
     } else if (action === 'removetest') {
       head = 'In this specboard project, remove the test "' + (ctx.testTitle || '') + '".'
       body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n\n' +
@@ -284,7 +309,7 @@ const B = window.__BOARD__ || {}
     const pick = document.getElementById('promptpick')
     const TITLES = { reword: 'Reword this requirement', addreq: 'Add a requirement',
       removereq: 'Remove this requirement', addtest: 'Add a test', edittest: 'Edit this test',
-      removetest: 'Remove this test' }
+      removetest: 'Remove this test', schemwrong: 'The schematic doesn’t match my app' }
     document.getElementById('prompttitle').textContent = TITLES[action] || 'Prompt'
     pick.innerHTML = ''
     if (action === 'addtest' || action === 'edittest') {
@@ -501,11 +526,16 @@ const B = window.__BOARD__ || {}
       return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title, reqList: screenReqList(dt) }
     }
     const reqAddTestCtx = function () { const c = reqCtx(); c.coverIds = [r.id]; return c }
+    // …and the escape from a drawing that is not what the reader wanted (the human, 2026-08-31):
+    // the same provenance the schematic cell captions travels into the prompt, so the work starts
+    // from the fact the reader was shown rather than from a guess.
+    const schemCtx = function () { const c = reqCtx(); c.prov = schemProv(r.schem).text; return c }
     rmeta.appendChild(promptMenu('requirement authoring actions', [
       ['reword', 'Reword this requirement', reqCtx],
       ['addreq', 'Add a requirement', reqCtx],
       ['removereq', 'Remove this requirement', reqCtx],
-      ['addtest', 'Add a test to cover it', reqAddTestCtx]
+      ['addtest', 'Add a test to cover it', reqAddTestCtx],
+      ['schemwrong', 'The schematic doesn’t match my app', schemCtx]
     ]))
     read.appendChild(rmeta)
     // ONE play speed for the whole reader (the human, 2026-08-28): the schematic frames, every beat
@@ -1126,6 +1156,32 @@ const B = window.__BOARD__ || {}
   // picture. A drawing whose text moved past its pin renders quiet grey under the dated stale note.
   // The honesty caption ("the idea, not the real UI") is gone — the drawing is being redrawn to
   // mirror the real screen, so the disclaimer would now be false.
+  // THE DRAWING'S PROVENANCE (the human, 2026-08-31: "let user know if the schematic is not what
+  // they want"). A reader looking at a picture beside a photograph deserves to know which KIND of
+  // picture it is before they judge the comparison — and to be told, not to infer it from how the
+  // drawing looks. Derived, never stored: the viz pass already stamps what it drew on the svg
+  // (data-viz-archetype / data-viz-kind) and the build stamps whether the text has moved past it,
+  // so this only reads those marks back. Four answers, and no fifth is invented:
+  //   mirror     — the app's own measured layout (ui-mirror + wireframe)
+  //   archetype  — a house diagram chosen from the SHAPE of the sentence; true to the idea, not to
+  //                the screen
+  //   none       — nothing was harvested to draw from, and the cell says so instead of guessing
+  //   …and stale rides any of them: the requirement was reworded after the drawing was derived.
+  function schemProv (v) {
+    const attr = (name) => {
+      const m = new RegExp(name + '="([^"]*)"').exec((v && v.svg) || '')
+      return m ? m[1] : ''
+    }
+    if (!v || !v.svg) return { kind: 'none', mark: '◌', text: 'nothing harvested to draw yet' }
+    const mirror = attr('data-viz-kind') === 'wireframe' && attr('data-viz-archetype') === 'ui-mirror'
+    const base = mirror ? 'drawn from the app’s measured layout' : 'drawn from the sentence, not the app'
+    return {
+      kind: mirror ? 'mirror' : 'archetype',
+      mark: mirror ? '▤' : '◇',
+      stale: !!(v && v.stale),
+      text: base + ((v && v.stale) ? ' — the text moved since it was drawn' : '')
+    }
+  }
   function buildStoryline (r) {
     const wrap = document.createElement('div'); wrap.className = 'fstory'
     const v = r.schem
@@ -1242,17 +1298,30 @@ const B = window.__BOARD__ || {}
         d.t0 = (window.performance && performance.now) ? performance.now() : Date.now()
         if (!(d.ms > 0)) fr.style.setProperty('--ph', to + 's')
       }
+      fr.appendChild(provCap())        // …and the cell says what KIND of picture this is (R15/R18)
       return fr
+    }
+    // the provenance line every schematic cell carries — one node per cell, so it stays beside the
+    // drawing it describes even where a narrow reader stacks the row and the column header folds
+    const PROV = schemProv(v)
+    const provCap = function () {
+      const c = document.createElement('div'); c.className = 'sbprov'
+      c.dataset.prov = PROV.kind
+      if (PROV.stale) c.dataset.stale = '1'
+      const m = document.createElement('span'); m.className = 'pvm'; m.textContent = PROV.mark
+      c.appendChild(m); c.appendChild(document.createTextNode(PROV.text))
+      c.title = 'what this drawing is derived from'
+      return c
     }
     const wholeCell = function () {
       const cell = document.createElement('div'); cell.className = 'sbframe whole'
       const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
-      cell.appendChild(viz); return cell
+      cell.appendChild(viz); cell.appendChild(provCap()); return cell
     }
     const noCell = function (why) {
       const cell = document.createElement('div'); cell.className = 'sbframe'
       const no = document.createElement('div'); no.className = 'noschem'; no.textContent = why
-      cell.appendChild(no); return cell
+      cell.appendChild(no); cell.appendChild(provCap()); return cell
     }
     const textCell = function (stepsHtml) {
       const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
