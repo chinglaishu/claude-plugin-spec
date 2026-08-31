@@ -715,10 +715,14 @@ const B = window.__BOARD__ || {}
   // ONE option set for BOTH cells of a row (the human, 2026-08-28). The cap is not a per-cell taste:
   // a row is comparable only while the drawing and the photograph frame the SAME region, so the
   // moment the two sides take different caps they frame different regions and the comparison is
-  // gone. 2.2 is the drawing's readable limit — a wireframe magnified harder is smeared strokes —
-  // and minFrac holds the framed region to at least 45% of the page width, so a 30px checkbox still
-  // reads inside the row it sits in instead of filling the cell alone.
-  const CAM = { maxScale: 2.2, minFrac: 0.38 }
+  // gone. The numbers moved on the human's 2026-08-31 ask ("do more aggressive zoom in on the area
+  // it's focusing"): 2.2 → 3.2, with minFrac holding the framed region to at least 30% of the page
+  // width, so a 30px checkbox still reads inside the row it sits in instead of filling the cell
+  // alone, while a normal ringed control now FILLS its cell instead of floating in a third of it.
+  // The pad shrank with them (tools/board/stepper.js: 2.75 → a breathing 1.2), and the camera aims
+  // at the SCENE on show rather than at the beat's whole union — one magnification per row, one aim
+  // per scene. Mirrored in tools/viz.mjs (MAX_SCALE / PAD / framedRegion).
+  const CAM = { maxScale: 3.2, minFrac: 0.3 }
   let ZOOMED = true            // session-scoped, like the play speed; zoom is the default
   const ZOOM_W = []            // {node, fn} — cells re-aim themselves when the choice changes
   function onZoom (node, fn) { ZOOM_W.push({ node: node, fn: fn }) }
@@ -801,17 +805,25 @@ const B = window.__BOARD__ || {}
   // is .zoomed — full-frame it takes its media's own height (so nothing floats letterboxed in a
   // field of background). It is set again after, so a camera that refuses to magnify (cameraView's
   // ok:false — a target as wide as the frame) drops honestly back to the filling full-frame.
+  // THE AIM rides beside the focus (the human, 2026-08-31): the beat's focus rect still sets the
+  // ZOOM — one magnification per row, so the two cells never pump against each other — and the ring
+  // of the SCENE currently on show sets the centre. `box._aim(rect)` moves it; the box re-applies
+  // with the same options, so a scene change is a pan and never a re-zoom. With no aim the camera is
+  // exactly what it was before, centred on the focus.
   function aimCamera (box, focus, opts) {
+    let aim = null
     // apply is IDEMPOTENT — the class change resizes the box and wakes the observer that called it,
     // and the second pass computes the same classes, so the echo dies on the next frame
     const apply = function () {
       const want = !!(ZOOMED && focus)
       box.classList.toggle('zoomed', want)
-      const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, opts) : null
+      const o = aim ? Object.assign({}, opts, { aim: aim }) : opts
+      const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, o) : null
       const css = window.SBStepper.cameraCss(view)
       for (const m of box.querySelectorAll('.camsub')) m.style.transform = css
       box.classList.toggle('zoomed', !!(view && view.ok))
     }
+    box._aim = function (rect) { aim = rect || null; apply() }
     apply()
     if (window.ResizeObserver) new ResizeObserver(apply).observe(box)
     if (focus) onZoom(box, apply)
@@ -851,6 +863,10 @@ const B = window.__BOARD__ || {}
       // own hold — so the two halves of a beat row change at the same moment, in the same order,
       // instead of each running its own clock.
       if (el._onFrame) el._onFrame(i, window.SBStepper.scaleHold(holds[i], PLAY_SPD))
+      // …and the CAMERA moves with it (2026-08-31): the cell pans to the ring this scene rang, and
+      // the drawing's cell is panned to the same rect by the very same call, so a row is one camera
+      // on one region at every moment of the beat — not only at its start.
+      if (el._onScene) el._onScene(i)
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
       ;[].slice.call(dots.children).forEach(function (d, k) {
         d.classList.toggle('cur', k === i)
@@ -921,8 +937,19 @@ const B = window.__BOARD__ || {}
     // ONE focus rect for the whole row — the same one the schematic cell is aimed at, so the two
     // cells can never frame different regions of the same beat
     const rf = beatFocus(r, i, nbeats)
-    const shot = function (src, cap, anchor) {
-      return { src: src, cap: cap, anchor: (typeof anchor === 'number') ? anchor : null, focus: rf }
+    // …and the AIM the row's camera takes for THIS scene (the human, 2026-08-31): the ring that
+    // scene photographed, derived at build time from the layout skeleton beside its frame. The
+    // zoom stays the beat's; only the centre moves. A scene with no ring of its own (an old
+    // harvest, a before frame that rings nothing) simply has none, and the camera stays on the
+    // focus — the pre-2026-08-31 framing, honestly.
+    const shot = function (src, cap, anchor, aim) {
+      return {
+        src: src,
+        cap: cap,
+        anchor: (typeof anchor === 'number') ? anchor : null,
+        focus: rf,
+        aim: (aim && aim.w > 0 && aim.h > 0) ? aim : null
+      }
     }
     // THE ASSERTED VALUES BETWEEN THE ENDS (2026-08-29, the human: the When has to be visible in the
     // proof too). A beat's before/after pair photographs the two ends of the assertion body, and the
@@ -934,14 +961,23 @@ const B = window.__BOARD__ || {}
     const values = function (b) {
       return (b.values || []).filter(function (v) { return v && v.frame }).map(function (v) {
         const at = (b.window && typeof v.at === 'number') ? b.window.from + v.at : null
-        return shot(v.frame, 'the asserted value in frame', at)
+        return shot(v.frame, 'the asserted value in frame', at, v.focus)
       })
     }
+    // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
+    // have the 'when' action started — instead of just same as given, it will be redundant"). A beat
+    // that PROVED values shows them and its result: its opening state is the Given row above it, or
+    // the previous beat's result, and spending the first scene on it shows a picture already read.
+    // A beat that proved nothing between its ends keeps [before, after] — there the before IS the
+    // motion. The harvest still CAPTURES the before frame (it stays in evidence, and the drawing
+    // still draws it): this is a display rule, and the drawing drops the same scene from its own
+    // park points (tools/viz.mjs subphases), so scene j and frame j stay one moment.
     const pair = function (b, capA, capB) {
       const out = []
-      if (b.before) out.push(shot(b.before, capA, b.window ? b.window.from : null))
-      for (const v of values(b)) out.push(v)
-      if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null))
+      const vals = values(b)
+      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore))
+      for (const v of vals) out.push(v)
+      if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter))
       return out
     }
     if (per.length) {
@@ -949,7 +985,7 @@ const B = window.__BOARD__ || {}
         const b1 = at(1)
         if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
         // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
-        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null)] : []) : pair(b1, 'before', 'after')
+        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore)] : []) : pair(b1, 'before', 'after')
         return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
       }
       const b = at(i)
@@ -1005,6 +1041,19 @@ const B = window.__BOARD__ || {}
       cam.appendChild(sbox)
       aimCamera(sbox, focus, CAM)
       cell._stepper = step        // the row's drawing locks to this loop (buildStoryline)
+      // THE CAMERA FOLLOWS THE SCENE (the human, 2026-08-31). The beat's rings can be most of a page
+      // apart; one static frame that held them all could only do it by zooming back out. So the
+      // stepper hands every scene change to the camera as well as to the drawing, and the cell pans
+      // to the ring the frame on show photographed. The drawing beside it takes the SAME rect
+      // (buildStoryline, through the svg's own coordinates), so the row is still one camera.
+      cell._aims = got.shots.map(function (s) { return s.aim })
+      step._onScene = function (j) { sbox._aim((cell._aims || [])[j] || null) }
+      sbox._aim(cell._aims[0] || null)
+      // …and the row can TAKE THE PAN BACK. A drawing that cannot be linked to this loop (an older
+      // harvest, a mismatched scene count) shows a scene of its own choosing, and a proof cell that
+      // panned alone would leave the two cells framing different regions — the one thing R19
+      // forbids. Then both stay on the beat's focus: less zoom, still one camera.
+      cell._unaim = function () { cell._aims = null; sbox._aim(null) }
       // THE CELL IS THE "NEXT" (the human, 2026-08-30). In step mode a click anywhere on the frames
       // advances this beat one scene — the picture you are already looking at is the affordance, so
       // no per-row button multiplies chrome down every row of every requirement, and the dots stay
@@ -1040,6 +1089,7 @@ const B = window.__BOARD__ || {}
       fig.appendChild(cp); strip.appendChild(fig)
       cam.appendChild(strip)
       aimCamera(box, s.focus, CAM)
+      box._aim(s.aim || null)
     }
     cell.appendChild(cam)
     // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and
@@ -1173,7 +1223,12 @@ const B = window.__BOARD__ || {}
       box.appendChild(sub); fr.appendChild(box)
       // cap the drawing's magnification: same region as the proof, more context instead of more
       // pixels — an uncapped zoom onto a ~30px rect blows the wireframe's strokes into abstraction
-      aimCamera(box, focusInSvg(focus, sub.querySelector('svg')), CAM)
+      const svgEl = sub.querySelector('svg')
+      aimCamera(box, focusInSvg(focus, svgEl), CAM)
+      // …and the same PAN the proof cell makes (2026-08-31), re-expressed in the drawing's own
+      // coordinates: the two cells take one focus and one aim through one camera, so a row frames
+      // one region at every scene of the beat.
+      fr._aimScene = function (rect) { box._aim(rect ? focusInSvg(rect, svgEl) : null) }
       // the hook the proof loop drives this cell with (2026-08-29) — registered HERE, at build time,
       // for a cell that is actually linked, so the rAF is running before the first step arrives. (It
       // was registered lazily on the first drive at first, and then a story whose every row was
@@ -1266,7 +1321,12 @@ const B = window.__BOARD__ || {}
           pc._stepper._onFrame = function (j, ms) {
             const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
             fc._drive(from, grp[j], ms)
+            // the drawing's camera pans with the proof's (2026-08-31) — one aim, both cells
+            if (fc._aimScene) fc._aimScene((pc._aims || [])[j] || null)
           }
+          if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null)
+        } else if (canPair && pc._unaim) {
+          pc._unaim()          // the drawing is on its own clock — do not pan one cell alone
         }
         body.appendChild(row(i === 0 ? '' : 'beatstart', fc, textCell(html), pc))
       })

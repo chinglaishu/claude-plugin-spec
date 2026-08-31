@@ -16,6 +16,8 @@ import { stripBehaviorLead } from './behavior.mjs'
 import { deriveLibrary } from './compose.mjs'
 // pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
 import { deriveKind } from './flow.mjs'
+// pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
+import { focusFromLayout } from './evidence.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
 // query cannot read a CSS var, so build() parses the knob out of _design.css and computes each
@@ -414,11 +416,26 @@ const evAttrs = (s, r) => {
       const abs = join(ROOT, String(p))
       return existsSync(abs) ? String(p) + '?h=' + shotHash(abs) : null
     }
+    // THE SCENE'S OWN RING (the human, 2026-08-31: "do more aggressive zoom in on the area it's
+    // focusing"). The beat's focus rect sets the row's ZOOM; the ring of the scene on show sets the
+    // AIM, so a beat whose rings sit 600px apart down the page can be framed tight instead of being
+    // zoomed back out until all of them fit. It is DERIVED here, never stored: the layout skeleton
+    // beside every frame already records the ring and the viewport it was measured in, so no
+    // re-harvest is needed — an existing evidence tree gains the aim on its next build. A skeleton
+    // that rang nothing, or is missing, simply yields none and that scene stays on the focus.
+    const aim = p => {
+      if (!p) return null
+      const abs = join(ROOT, String(p))
+      if (!existsSync(abs)) return null
+      try { return focusFromLayout(JSON.parse(readFileSync(abs, 'utf8'))) } catch { return null }
+    }
     const list = e.beats.map(b => {
       const o = { n: Number(b.n) }
       for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter']) {
         const v = path(b[k]); if (v) o[k] = v
       }
+      const aB = aim(b.layoutBefore); if (aB) o.aimBefore = aB
+      const aA = aim(b.layoutAfter); if (aA) o.aimAfter = aA
       if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
         o.window = { from: b.window.from, to: b.window.to }
       }
@@ -428,14 +445,19 @@ const evAttrs = (s, r) => {
         o.focus = { x: b.focus.x, y: b.focus.y, w: b.focus.w, h: b.focus.h, vw: b.focus.vw, vh: b.focus.vh }
       }
       // the beat's ASSERTED-VALUE frames (2026-08-29), in check order: what the loop plays BETWEEN
-      // the two ends, each with its offset into the beat's own window so the pace stays true. Only
-      // the frame and the offset travel — the skeleton beside it is the schematic's source, not the
-      // reader's. A value whose frame did not land is dropped, exactly like a missing pair member.
+      // the two ends, each with its offset into the beat's own window so the pace stays true — and,
+      // since 2026-08-31, the ring it photographed, read out of the skeleton beside it so the row's
+      // camera can aim at each scene. (This said "only the frame and the offset travel — the
+      // skeleton is the schematic's source, not the reader's"; corrected in place, rule 6: the
+      // reader reads it too now, still derived at build time and never stored.) A value whose frame
+      // did not land is dropped, exactly like a missing pair member.
       const vals = (Array.isArray(b.values) ? b.values : []).map(v => {
         const src = path(v && v.frame)
         if (!src) return null
         const o2 = { frame: src }
         if (typeof v.at === 'number' && Number.isFinite(v.at)) o2.at = v.at
+        // …and this scene's own ring, so the camera aims where the assertion pointed
+        const f = aim(v && v.layout); if (f) o2.focus = f
         return o2
       }).filter(Boolean)
       if (vals.length) o.values = vals

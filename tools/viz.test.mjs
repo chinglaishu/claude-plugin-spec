@@ -633,11 +633,13 @@ test('the mirror stamps its renderer pin, so a kit change is legible on disk', (
 // to the LEFT of it: cut mid-word. renderWireframe now computes the same region and refuses any
 // placement — card OR notch — that falls outside it.
 test('framedRegion is the cell\'s own region: padded, COVER-fit, centred, clamped, capped', () => {
-  // a small target mid-page: the 2.75 pad wants far more magnification than the cap allows, so the
-  // region is the frame divided by 2.2, centred on the focus
+  // a small target mid-page: covering the cell with it wants far more magnification than the cap
+  // allows, so the region is the frame divided by the cap, centred on the focus. (Rule 4,
+  // 2026-08-31: the cap moved 2.2 → 3.2 on the human's "more aggressive zoom" — the number is the
+  // decision, not the maths.)
   const mid = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, 600, 375)
-  assert.equal(Math.round(mid.w), Math.round(600 / 2.2))
-  assert.equal(Math.round(mid.h), Math.round(375 / 2.2))
+  assert.equal(Math.round(mid.w), Math.round(600 / 3.2))
+  assert.equal(Math.round(mid.h), Math.round(375 / 3.2))
   assert.ok(Math.abs((mid.x + mid.w / 2) - 300) < 0.01, 'centred on the focus')
   // …and it never leaves the frame: a target at the right edge pans, it never shows void
   const edge = framedRegion({ x: 540, y: 20, w: 55, h: 20 }, 600, 375)
@@ -780,10 +782,15 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
     assert.equal(sideOf(svg, box), want.side === 'left' ? 'leftof' : want.side,
       name + ': the drawn card must sit where the burn-in put it')
   }
-  // …and the fallback, on the demo R1 shape that bought it: a row at the very foot of a long page.
-  // calloutSpot says BELOW for a card this short, but the beat cell's framed region ends above the
-  // page's own foot, so the drawing takes the next candidate in the SAME order — ABOVE, which is
-  // where the photograph's (taller) card is too.
+  // …and the demo R1 shape that used to force the fallback: a row near the foot of a long page,
+  // proved after a box typed at the top of it.
+  //
+  // (Rule 4, 2026-08-31 — the CODE is the right side here. This leg used to expect ABOVE: the beat's
+  // camera framed the UNION of its rings, the region's bottom edge fell above the page's own foot,
+  // and the drawing had to refuse calloutSpot's BELOW. The camera is now aimed at the SCENE, so the
+  // region is centred on this very ring and there is room under it — the drawing and the burn-in
+  // agree, which is what this test wants whenever it can be had. The refusal itself is unchanged and
+  // still proven where it still fires: a region too NARROW to hold the card, below.)
   const foot = n => ({
     w: 1440,
     h: 900,
@@ -804,7 +811,18 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
   const lbox = { x: 321, y: 764, w: 553, h: 17 }
   assert.equal(calloutSpot({ box: lbox, vw: 1440, vh: 900, cw: 300, ch: cardH(low, 3) / S }).side, 'below',
     'the burn-in rule, given this short a card, would go below')
-  assert.equal(sideOf(low, lbox, 3), 'above', 'the cell cannot hold it there, so the next candidate takes it')
+  assert.equal(sideOf(low, lbox, 3), 'below',
+    'and the scene-aimed cell can hold it there, so the drawing says the same')
+  // …and wherever it lands, it lands INSIDE the region the cell shows — the refusal's real contract
+  const H375 = Math.round(600 * (900 / 1440))
+  const reg = framedRegion(
+    { x: 312 * S, y: 126 * S, w: 562 * S, h: 655 * S }, 600, H375,
+    { aim: { x: lbox.x * S, y: lbox.y * S, w: lbox.w * S, h: lbox.h * S } })
+  const c3 = [...frameOf(low, 3).matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--line2\)"/g)]
+    .map(m => m.slice(1).map(Number)).pop()
+  assert.ok(c3[0] >= reg.x - 0.02 && c3[1] >= reg.y - 0.02 &&
+    c3[0] + c3[2] <= reg.x + reg.w + 0.02 && c3[1] + c3[3] <= reg.y + reg.h + 0.02,
+  'the whole card is inside the framed region: ' + JSON.stringify(c3) + ' in ' + JSON.stringify(reg))
 })
 
 test('the card holds its true size wherever the region allows, and shrinks ONLY when it cannot fit', () => {
@@ -895,15 +913,31 @@ test('enacted: a beat draws one frame per scene it proved — the When is IN the
   assert.ok(typed.includes('Water the plants'), 'the box carrying what was typed is drawn, with its own text')
 })
 
+// THE FIRST SCENE IS THE WHEN, NOT THE GIVEN (the human, 2026-08-31: "first screen in when/then
+// should already have the 'when' action started — instead of just same as given, it will be
+// redundant"). A beat that PROVED values opens on the first of them: the opening state it shares
+// with the Given row above (or with the previous beat's result) is dropped from the shown sequence.
+// A beat that proved none keeps [opening, result] — there the opening is the only motion it has.
+// Rule 4: the numbers below moved because the DECISION moved; the harvest still captures the
+// opening frame and the drawing still draws it, this is what the row SHOWS.
 test('enacted: the beat publishes its park points, one per scene, so the proof can drive it', () => {
   const d = renderWireframe(ENACTED, { behavior: ADD })
   const m = /data-viz-subphases="([^"]*)"/.exec(d.svg)
   assert.ok(m, 'the drawing says where each of its scenes parks')
   const groups = m[1].split('|').map(g => g.trim().split(/\s+/).map(Number))
   assert.equal(groups.length, 1, 'one group per beat')
-  assert.equal(groups[0].length, 4, 'the beat opens where it started, then each value, then its result')
-  assert.equal(groups[0][0], d.phases[0], 'it opens on the Given scene')
-  assert.equal(groups[0][3], d.phases[1], 'and closes exactly where the beat parks')
+  assert.equal(groups[0].length, 3, 'each value it proved, then its result — the opening is the Given')
+  const all = (/data-viz-phases="([^"]*)"/.exec(d.svg) || ['', ''])[1].split(/\s+/).map(Number)
+  assert.ok(groups[0][0] !== d.phases[0], 'it does NOT open on the Given scene any more')
+  assert.equal(groups[0][2], d.phases[1], 'and closes exactly where the beat parks')
+  assert.equal(all.length, 2, 'the per-beat park points are untouched — this is the scene list alone')
+})
+
+test('enacted: a beat with nothing proved between its ends still shows both of them', () => {
+  const d = renderWireframe(PAIRS, { behavior: TWO })
+  const m = /data-viz-subphases="([^"]*)"/.exec(d.svg)
+  const groups = m[1].split('|').map(g => g.trim().split(/\s+/).map(Number))
+  for (const g of groups) assert.equal(g.length, 2, 'before → after: the opening IS the motion here')
 })
 
 test('enacted: an intermediate scene says the WHEN alone — the Then has not happened yet', () => {
@@ -981,9 +1015,10 @@ test('framedRegion: a big target keeps a margin rather than surrendering to the 
   const reg = framedRegion(union, W, H)
   assert.ok(reg.w < W * 0.85, 'it still zooms: ' + JSON.stringify(reg))
   assert.ok(reg.w >= union.w * 0.99, 'and the target still fits across it: ' + JSON.stringify(reg))
-  // a SMALL target is untouched — the generous 2.75 pad is what makes a 30px chip readable in context
+  // a SMALL target is governed by the CAP — the one thing that stops a 30px chip filling the cell
+  // alone with none of the row it sits in
   const small = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, W, H)
-  assert.ok(Math.abs(small.w - W / 2.2) < 0.01, 'the cap still governs a small target: ' + JSON.stringify(small))
+  assert.ok(Math.abs(small.w - W / 3.2) < 0.01, 'the cap still governs a small target: ' + JSON.stringify(small))
 })
 
 // the SAME rule on the board's side of the mirror — tools/board/stepper.js cameraView and this
@@ -995,7 +1030,7 @@ test('cameraView agrees with framedRegion — the same region, in cell pixels', 
   const cam = globalThis.SBStepper
   const focus = { x: 312, y: 126, w: 562, h: 655, vw: 1440, vh: 900 }
   const cell = { w: 560, h: 350 }
-  const view = cam.cameraView(focus, cell, { maxScale: 2.2, minFrac: 0.38 })
+  const view = cam.cameraView(focus, cell, CAMOPTS)
   assert.ok(view.ok && view.scale > 1.2, 'the board zooms the big union too: ' + JSON.stringify(view))
   // framedRegion, in page units, must frame the same width the board's transform shows
   const reg = framedRegion(focus, 1440, 900)
@@ -1019,7 +1054,7 @@ test('framedRegion never crops the focus it frames', () => {
   assert.ok(reg.w < W, 'and it still zooms')
   // a small chip is governed by the cap, exactly as before
   const chip = framedRegion({ x: 280, y: 160, w: 40, h: 20 }, W, H)
-  assert.ok(Math.abs(chip.w - W / 2.2) < 0.01, JSON.stringify(chip))
+  assert.ok(Math.abs(chip.w - W / 3.2) < 0.01, JSON.stringify(chip))
 })
 
 test('cameraView never crops the focus either — one camera, one rule', async () => {
@@ -1027,13 +1062,75 @@ test('cameraView never crops the focus either — one camera, one rule', async (
   const cam = globalThis.SBStepper
   const focus = { x: 312, y: 126, w: 562, h: 655, vw: 1440, vh: 900 }
   const cell = { w: 570, h: 390 }
-  const v = cam.cameraView(focus, cell, { maxScale: 2.2, minFrac: 0.38 })
+  const v = cam.cameraView(focus, cell, CAMOPTS)
   assert.ok(v.ok && v.scale > 1, 'it zooms: ' + JSON.stringify(v))
   // the framed page rectangle, back out of the transform: everything of the focus must be inside it
   const r = cell.w / focus.vw
   const fw = cell.w / (r * v.scale); const fh = cell.h / (r * v.scale)
   assert.ok(fw >= focus.w - 0.5 && fh >= focus.h - 0.5,
     'the whole focus fits the framed region: ' + fw + '×' + fh + ' vs ' + focus.w + '×' + focus.h)
+})
+
+// ── AGGRESSIVE ZOOM, AND A CAMERA THAT AIMS AT THE SCENE (the human, 2026-08-31) ──────────────
+// "Do more aggressive zoom in on the area it's focusing (leave the general option to let user see
+// full screen for both schematic and proof)." Two changes, one camera:
+//   · the pad shrinks to a BREATHING MARGIN (×1.2) and the cap rises to 3.2, so the thing being
+//     proven fills the cell instead of floating in a third of it;
+//   · the beat still sets the ZOOM (one magnification per row, never a pump mid-beat), but each
+//     SCENE sets the AIM — otherwise a beat whose rings are 600px apart down the page can only be
+//     framed by zooming back out until both fit, which is the under-zoom being complained about.
+// Both halves of a row take the same two rects through the same maths, so the row stays one camera.
+const CAMOPTS = { maxScale: 3.2, minFrac: 0.3 }
+test('the camera frames the focus TIGHT: the ring plus its margin, not a third of the page', () => {
+  const S = 600 / 1440
+  const ring = { x: 312 * S, y: 126 * S, w: 452 * S, h: 46.5 * S }     // the demo R1 Add box
+  const reg = framedRegion(ring, 600, 375)
+  assert.ok(Math.abs(reg.w - ring.w * 1.12) < 0.01,
+    'the framed region is the ring plus its margin: ' + JSON.stringify(reg))
+  assert.ok(ring.w / reg.w > 0.8, 'so the ringed thing fills the cell: ' + (ring.w / reg.w))
+})
+
+test('the camera AIMS at the scene while the BEAT sets the zoom', () => {
+  const S = 600 / 1440
+  // the demo's R1: the typed Add box high on the page, the two rows it produced 600px below it
+  const union = { x: 312 * S, y: 126 * S, w: 562 * S, h: 655.25 * S }
+  const scene1 = { x: 312 * S, y: 126 * S, w: 452.27 * S, h: 46.5 * S }
+  const scene2 = { x: 321 * S, y: 739.5 * S, w: 553 * S, h: 22.5 * S }
+  const a = framedRegion(union, 600, 375, { aim: scene1 })
+  const b = framedRegion(union, 600, 375, { aim: scene2 })
+  assert.ok(Math.abs(a.w - b.w) < 0.01 && Math.abs(a.h - b.h) < 0.01,
+    'ONE magnification for the whole beat — the row never pumps: ' + a.w + ' vs ' + b.w)
+  const holds = (reg, f) => f.x >= reg.x - 0.02 && f.y >= reg.y - 0.02 &&
+    f.x + f.w <= reg.x + reg.w + 0.02 && f.y + f.h <= reg.y + reg.h + 0.02
+  assert.ok(holds(a, scene1), 'scene 1 is framed whole: ' + JSON.stringify(a))
+  assert.ok(holds(b, scene2), 'scene 2 is framed whole: ' + JSON.stringify(b))
+  assert.ok(scene1.w / a.w > 0.55,
+    'and it is framed TIGHT — well over half the cell: ' + (scene1.w / a.w))
+  // the old union-only camera had to zoom out until the whole 655px union fitted; this does not
+  assert.ok(a.w < framedRegion(union, 600, 375).w * 0.85, 'tighter than framing the whole union')
+})
+
+test('cameraView aims at the scene too — the same region, in cell pixels', async () => {
+  await import('./board/stepper.js')
+  const cam = globalThis.SBStepper
+  const focus = { x: 312, y: 126, w: 562, h: 655.25, vw: 1440, vh: 900 }
+  const aim = { x: 312, y: 126, w: 452.27, h: 46.5 }
+  const cell = { w: 560, h: 350 }                                    // the reader's 16:10 cell
+  const view = cam.cameraView(focus, cell, { ...CAMOPTS, aim })
+  assert.ok(view.ok, 'it zooms: ' + JSON.stringify(view))
+  const S = 600 / 1440
+  const reg = framedRegion(
+    { x: focus.x * S, y: focus.y * S, w: focus.w * S, h: focus.h * S }, 600, 375,
+    { aim: { x: aim.x * S, y: aim.y * S, w: aim.w * S, h: aim.h * S }, maxScale: CAMOPTS.maxScale })
+  // both sides, expressed as a FRACTION of the page they frame — that is what a row compares
+  const r = cell.w / focus.vw
+  const got = { x: -view.tx / (view.scale * cell.w), y: -view.ty / (view.scale * cell.w * focus.vh / focus.vw),
+    w: cell.w / (r * view.scale) / focus.vw, h: cell.h / (r * view.scale) / focus.vh }
+  const want = { x: reg.x / 600, y: reg.y / 375, w: reg.w / 600, h: reg.h / 375 }
+  for (const k of ['x', 'y', 'w', 'h']) {
+    assert.ok(Math.abs(got[k] - want[k]) < 0.005,
+      'the drawing and the proof frame the same region (' + k + '): ' + got[k] + ' vs ' + want[k])
+  }
 })
 
 // ── THE VALUE SITS WHERE THE PAGE PUTS IT (the human, 2026-08-29) ─────────────────────────────

@@ -692,44 +692,57 @@ const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
 
 // THE BOARD'S CAMERA, computed here (the human, 2026-08-28: the drawn callout was being CLIPPED).
 // Every beat cell zooms onto the beat's focus rect, and the schematic cell zooms this drawing by
-// the SAME math — tools/board/stepper.js: pad the focus rect by 2.75, then COVER-fit that padded
-// rect (scale = min(2.2, max(coverX, coverY)) — a wide, short target crops at the sides rather than
-// zooming out), centre on the focus and clamp inside the frame. Anything the drawing puts outside
-// that region is simply not on screen in a beat row, which is how R5's card ended up cut mid-word:
-// its counter sits at the page's right edge, so the region is the right third of the page.
+// the SAME math — tools/board/stepper.js: pad the focus rect by a breathing MARGIN, then COVER-fit
+// that padded rect (a wide, short target crops at the sides rather than zooming out), centre on the
+// scene being shown and clamp inside the frame. Anything the drawing puts outside that region is
+// simply not on screen in a beat row, which is how R5's card ended up cut mid-word: its counter sits
+// at the page's right edge, so the region is the right third of the page.
 //
 // Because BOTH cells cover-fit at the same scale, an overlay drawn at the burn-in's own page
 // geometry lands at the same apparent size as the photographed one — which is the whole point.
-// ONE AXIS OF THE PADDED RECT (2026-08-29). The generous 2.75 pad is what makes a 30px chip
-// readable in context, but a BIG target — since a beat's camera frames the union of its rings, a
-// target can be a third of the page — pads past the frame, and clamping to the frame then gave up
-// the zoom entirely: two 0.39× screenshots of a 1440px app side by side, the unreadable row the
-// human called out. So padding that would not fit falls back to a MARGIN (×1.12), which still
-// frames the target rather than the whole page. Mirrored verbatim in tools/board/stepper.js
-// cameraView — the two are one camera, and a row is a comparison only while they agree.
+//
+// TIGHT (the human, 2026-08-31: "do more aggressive zoom in on the area it's focusing"). The pad was
+// 2.75 and the cap 2.2, and between them the thing being proven read at about a third of the cell —
+// a picture of a page with the proof somewhere inside it. The pad is now a BREATHING MARGIN (×1.2)
+// and the cap 3.2, so the ringed thing fills the cell and the reader is looking at the assertion
+// rather than hunting for it. Where the pad does not fit, it falls back to MARGIN (×1.12) — the
+// same floor the no-crop rule uses, so a target too big to pad still frames itself rather than
+// surrendering to the whole page.
+//
+// AND THE AIM IS THE SCENE, NOT THE BEAT (the same ask). The beat's rings can be 600px apart down
+// the page — the demo's R1 types into a box at the top and proves two rows near the bottom — and a
+// camera that must hold every one of them at once can only do it by zooming back out. So the BEAT
+// still sets the zoom (one magnification per row: a scale that changed mid-beat would pump the two
+// cells against each other) and each SCENE sets the aim. `opts.aim` is that scene's own ring; with
+// none it defaults to the focus and this is byte-for-byte the old camera.
 const MARGIN = 1.12
+const MAX_SCALE = 3.2
+const PAD = 1.2
 function padded (size, frame, pad) {
   const want = size * pad
   return want <= frame ? want : Math.min(frame, size * MARGIN)
 }
+const usableRect = r => !!(r && r.w > 0 && r.h > 0 &&
+  Number.isFinite(r.x) && Number.isFinite(r.y) && Number.isFinite(r.w) && Number.isFinite(r.h))
 export function framedRegion (f, W, H, opts = {}) {
-  const pad = opts.pad != null ? opts.pad : 2.75
-  const maxScale = opts.maxScale != null ? opts.maxScale : 2.2
+  const pad = opts.pad != null ? opts.pad : PAD
+  const maxScale = opts.maxScale != null ? opts.maxScale : MAX_SCALE
   const whole = { x: 0, y: 0, w: W, h: H }
   if (!f || !(f.w > 0) || !(f.h > 0) || !(W > 0) || !(H > 0)) return whole
+  const aim = usableRect(opts.aim) ? opts.aim : f
   const pw = padded(f.w, W, pad); const ph = padded(f.h, H, pad)
   // COVER, not contain: the bigger of the two ratios fills the cell, cropping the padded rect's
   // long side instead of refusing to zoom at all
-  // …and NEVER past the scale at which the focus itself stops fitting (2026-08-29): covering a union
-  // taller than the cell would crop the beat's own first scene out of the row. Small targets never
-  // reach this — maxScale bites first.
-  const fit = Math.min(W / (f.w * MARGIN), H / (f.h * MARGIN))
+  // …and NEVER past the scale at which the AIM itself stops fitting (2026-08-29, aimed at the scene
+  // since 2026-08-31): covering a rect taller than the cell would crop the very scene the row is
+  // showing. Small targets never reach this — maxScale bites first.
+  const fit = Math.min(W / (aim.w * MARGIN), H / (aim.h * MARGIN))
   const scale = Math.min(maxScale, fit, Math.max(W / pw, H / ph))
   if (!(scale > 1)) return whole
   const rw = W / scale; const rh = H / scale
   return {
-    x: Math.min(Math.max(0, f.x + f.w / 2 - rw / 2), W - rw),
-    y: Math.min(Math.max(0, f.y + f.h / 2 - rh / 2), H - rh),
+    x: Math.min(Math.max(0, aim.x + aim.w / 2 - rw / 2), Math.max(0, W - rw)),
+    y: Math.min(Math.max(0, aim.y + aim.h / 2 - rh / 2), Math.max(0, H - rh)),
     w: rw,
     h: rh
   }
@@ -1186,8 +1199,9 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
       parts.push(dimWash(W, H))
       // THE CAMERA'S FRAMED REGION (2026-08-28): the beat cell shows only this much of the drawing,
       // so every mark of the overlay — the value and the card both — has to land inside it or it is
-      // simply cut off screen. Aimed at the PRIMARY mark, exactly as the board aims the cell.
-      const region = framedRegion(camPx || marks[0], W, H)
+      // simply cut off screen. The BEAT's rect sets the zoom and THIS SCENE's own ring sets the aim
+      // (2026-08-31), exactly as the board aims the cell beside it.
+      const region = framedRegion(camPx || marks[0], W, H, { aim: ringPx || marks[0] })
       const pills = []
       // …and where the capture measured NO text on the ringed element (a box whose value the
       // skeleton could not reach, an element that carries its value in an attribute), the
@@ -1372,14 +1386,24 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   sizes.reduce((at, k) => { beatEnd.push(at + k); return at + k }, 0)
   const phases = Array.from({ length: n + 1 }, (_, i) =>
     t.phases[i === 0 ? 0 : (beatEnd[Math.min(i, nb) - 1] || m)])
-  // …and EVERY park point, grouped by beat (2026-08-29): where the beat opens, then each scene it
-  // proved. The board steps this drawing in lock-step with the proof loop beside it — frame j of
+  // …and EVERY park point, grouped by beat (2026-08-29): each scene the beat proved, then its
+  // result. The board steps this drawing in lock-step with the proof loop beside it — frame j of
   // that loop and park point j here are the same moment of the same beat — so a row plays as one
   // thing. A beat the harvest never reached publishes its resting point twice: nothing to step.
+  //
+  // THE OPENING SCENE IS DROPPED where the beat proved anything (the human, 2026-08-31: "first
+  // screen in when/then should already have the 'when' action started — instead of just same as
+  // given, it will be redundant"). The state a beat opens in IS the Given row above it, or the
+  // previous beat's result; spending the row's first scene on it shows the reader a picture they
+  // have already read. A beat that proved NOTHING between its ends keeps [opening, result] — there
+  // the opening is the only motion it has. The drawing still DRAWS the opening frame, and the
+  // harvest still captures it: this is a display rule, and the proof loop beside it drops exactly
+  // the same frame (tools/board/client.js beatShots), so scene j and frame j stay one moment.
   const subphases = Array.from({ length: n }, (_, i) => {
     if (i >= nb) return [phases[i], phases[i + 1]]
     const start = beatEnd[i] - sizes[i]
-    return Array.from({ length: sizes[i] + 1 }, (_, j) => t.phases[start + j])
+    const grp = Array.from({ length: sizes[i] + 1 }, (_, j) => t.phases[start + j])
+    return sizes[i] > 1 ? grp.slice(1) : grp
   })
   const label = esc('wireframe schematic — the app’s own layout, drawn frame by frame: the given, then each beat' +
     (behavior

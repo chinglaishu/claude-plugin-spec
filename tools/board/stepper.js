@@ -56,13 +56,24 @@
   //
   // The maths, once, here — because the drawing, the stepper's frames and the stills must be framed
   // IDENTICALLY, or the row stops being a comparison and the view jumps as a cell changes mode.
-  //   · pad the rect by `pad` (≈2.75× its size) about its centre, so the component is read in
-  //     context rather than cropped to its own edges;
-  //   · clamp the padded rect inside the frame — a target near an edge pans, it never shows void;
+  //   · pad the rect by `pad` (a breathing ×1.2) about its centre, so the component is read with a
+  //     little of its surroundings rather than cropped to its own edges;
   //   · COVER the cell with that rect (max, not min) — see below;
-  //   · cap the magnification (maxScale / minFrac) and re-frame at the cap;
+  //   · cap the magnification (maxScale / minFrac, and the scale at which the AIM stops fitting);
   //   · never scale below 1 — a "zoom" that zooms out is a lie;
-  //   · hold the scaled media over the cell, so a pan can never expose blank ground.
+  //   · centre the framed region on the SCENE being shown and clamp it inside the frame — a target
+  //     near an edge pans, it never shows void.
+  //
+  // TIGHT, AND AIMED AT THE SCENE (the human, 2026-08-31: "do more aggressive zoom in on the area
+  // it's focusing"). Two changes, mirrored verbatim in tools/viz.mjs framedRegion:
+  //   · the pad drops 2.75 → 1.2 and the cap rises 2.2 → 3.2, so the ringed thing FILLS the cell
+  //     instead of reading at a third of it;
+  //   · `opts.aim` — the ring of the scene currently on show — sets the CENTRE, while the beat's
+  //     focus rect still sets the zoom. A beat's rings can be 600px apart down the page (the demo's
+  //     R1 types at the top and proves two rows near the bottom); one camera that had to hold all of
+  //     them at once could only do it by zooming back out, which is exactly the under-zoom being
+  //     complained about. One magnification per beat (no pump), one aim per scene. With no aim this
+  //     is byte-for-byte the old camera.
   //
   // COVER, NOT CONTAIN (the human, 2026-08-28 — the second miss). Fitting the padded rect INSIDE the
   // cell meant a wide, short target — a whole task row, ~800px of a 1280px page — computed a
@@ -76,7 +87,7 @@
   // frame's own aspect), with transform-origin 0 0: translate(tx, ty) scale(scale), in cell pixels.
   function cameraView (focus, cell, opts) {
     var o = opts || {}
-    var pad = o.pad != null ? o.pad : 2.75
+    var pad = o.pad != null ? o.pad : 1.2
     // TWO FLOORS ON THE ZOOM, both spending spare magnification on surroundings rather than pixels,
     // and both keeping the focus centred:
     //   maxScale — a hard cap. A DRAWING zoomed as hard as a screenshot blows its strokes into
@@ -107,32 +118,34 @@
       return want <= frame ? want : Math.min(frame, size * MARGIN)
     }
     var pw = padOne(w, vw); var ph = padOne(h, vh)
-    var px = Math.min(Math.max(0, x + w / 2 - pw / 2), vw - pw)
-    var py = Math.min(Math.max(0, y + h / 2 - ph / 2), vh - ph)
+    // THE AIM — the ring of the scene on show, in the same page units as the focus. It moves the
+    // camera; it never changes its zoom. Anything unusable falls back to the focus itself, which is
+    // the pre-2026-08-31 camera exactly.
+    var a = o.aim
+    var aok = !!(a && isFinite(+a.x) && isFinite(+a.y) && +a.w > 0 && +a.h > 0)
+    var ax = aok ? +a.x : x; var ay = aok ? +a.y : y
+    var aw = aok ? +a.w : w; var ah = aok ? +a.h : h
     // the media renders at cell width, so one source pixel is r cell pixels, and the media's own
     // rendered height at scale 1 follows the frame's aspect
     var r = cw / vw
     var mh = cw * vh / vw
-    // …and NEVER past the scale at which the FOCUS ITSELF stops fitting (2026-08-29). Cover is the
-    // right rule for a small target read in context, but a beat's camera frames the union of its
-    // rings now, and covering a union taller than the cell crops the beat's first scene straight out
-    // of the row — the demo's R1 put the typed Add box above the crop, so "the When is visible in
-    // both cells" was still false at the zoom. A small target never reaches this: maxScale bites long
-    // before it does. Mirrored in tools/viz.mjs framedRegion.
-    var cap = Math.min(maxScale, Math.min(cw / (w * MARGIN * r), ch / (h * MARGIN * r)))
-    var scale = Math.max(cw / (pw * r), ch / (ph * r))
-    if (scale > cap) {
-      // re-frame at the cap: widen the padded rect so the capped zoom still fills the cell
-      scale = cap
-      pw = Math.min(vw, cw / (r * scale)); ph = Math.min(vh, ch / (r * scale))
-      px = Math.min(Math.max(0, x + w / 2 - pw / 2), vw - pw)
-      py = Math.min(Math.max(0, y + h / 2 - ph / 2), vh - ph)
-    }
+    // …and NEVER past the scale at which the AIM ITSELF stops fitting (2026-08-29). Cover is the
+    // right rule for a small target read in context, but covering a rect taller than the cell crops
+    // the very scene the row is showing — the demo's R1 put the typed Add box above the crop, so
+    // "the When is visible in both cells" was still false at the zoom. A small target never reaches
+    // this: maxScale bites long before it does. Mirrored in tools/viz.mjs framedRegion.
+    var cap = Math.min(maxScale, Math.min(cw / (aw * MARGIN * r), ch / (ah * MARGIN * r)))
+    var scale = Math.min(cap, Math.max(cw / (pw * r), ch / (ph * r)))
     if (!(scale > 1)) return none          // nothing to magnify — show the frame whole, honestly
-    var tx = (cw - pw * r * scale) / 2 - px * r * scale
-    var ty = (ch - ph * r * scale) / 2 - py * r * scale
-    // hold the scaled media over the cell: covering crops, and a crop that slid past the frame's own
-    // edge would show blank ground beside the evidence. Centre instead on the axis that cannot cover.
+    // the framed region, in page units — then centred on the AIM and clamped inside the frame, so a
+    // scene at the page's edge pans instead of showing blank ground beside the evidence
+    var rw = cw / (r * scale); var rh = ch / (r * scale)
+    var rx = Math.min(Math.max(0, ax + aw / 2 - rw / 2), Math.max(0, vw - rw))
+    var ry = Math.min(Math.max(0, ay + ah / 2 - rh / 2), Math.max(0, vh - rh))
+    var tx = -rx * r * scale
+    var ty = -ry * r * scale
+    // hold the scaled media over the cell: an aspect the cell does not share could still leave the
+    // crop short on one axis, and blank ground beside the evidence is never the honest answer.
     var mw = cw * scale; var mhs = mh * scale
     tx = mw >= cw ? Math.min(0, Math.max(cw - mw, tx)) : (cw - mw) / 2
     ty = mhs >= ch ? Math.min(0, Math.max(ch - mhs, ty)) : (ch - mhs) / 2
