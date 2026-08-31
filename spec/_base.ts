@@ -13,7 +13,7 @@ import { parseBehavior } from '../tools/behavior.mjs'
 import { RING, CARD, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
 // …and the callout's WORDS from the module that owns them (2026-08-30), so the burned card and the
 // drawn one say the same sentence for the same scene of the same beat.
-import { calloutText, CALLOUT_TYPE } from '../tools/callout-text.mjs'
+import { calloutText, CALLOUT_TYPE, calloutLines, calloutLabelWidth } from '../tools/callout-text.mjs'
 
 export { expect }
 
@@ -399,7 +399,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   // words — and hand back the viewport and the card's height; then place the card and its notch.
   // A page torn down between the two leaves the card's POSITION one frame behind (it transitions in
   // .16s regardless) and nothing claiming a wrong beat; both calls stay best-effort.
-  const paint = await page.evaluate(({ beat, claim, failed, box, ring0, ringCss, cardW, type }) => {
+  const paint = await page.evaluate(({ beat, lines, labW, claim, failed, box, ring0, ringCss, cardW, type }) => {
     const AI = '#2f4a63', BENG = '#8d4a38', KOKE = '#4d5c37', INK = '#1c1b18', INK3 = '#5f5d56', PAPER = '#fdfcf9', HAIR = '#cdc7b8'
     const FAIL = failed || (beat && beat.state === 'fail')
     let el = document.getElementById('__specboard-focus')
@@ -464,26 +464,45 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
     // (indigo for the Then, quiet ink for the When) but never carries it alone — the word says it.
     // A requirement written as PROSE has no beat to say: the chip stands alone rather than the card
     // inventing a sentence, and the verdict still rides it.
+    //
+    // PRE-WRAPPED by the SHARED rule (tools/callout-text.mjs calloutLines, passed in as `lines`), so
+    // the burned card breaks at the EXACT same points as the drawn one — same column width, same line
+    // count, same words (the human, 2026-08-30/31: both cells show the same text, never truncated).
+    // Rendered as explicit line divs so the browser cannot re-wrap them differently: a label gutter
+    // holds WHEN/THEN and every line sits in the text column beside it (the hanging indent the drawing
+    // draws too). The card grows to as many lines as the sentence needs; calloutSpot then keeps the
+    // whole card on the page (flipping above a bottom-edge ring), so no line is ever burned off frame.
     const isThen = beat.label === 'Then'
-    const t = mk('div', '', 'font-size:' + type.line + 'px;font-weight:600;line-height:' + type.lh + ';color:' + INK)
-    if (beat.text) {
-      t.append(mk('span', beat.label + ' ', MONO + 'color:' + (isThen ? AI : INK3) + ';margin-right:2px'),
-        mk('span', beat.text, ''))
-    }
-    // the got value is BURN-ONLY (the drawing measures none): the sentence is identical on both
-    // sides, and a failure adds what the page actually read, in bengara, after it
-    if (FAIL) {
-      if (claim) t.append(mk('span', ' — got ' + claim.got, 'color:' + BENG + ';font-weight:700'))
-      t.append(mk('span', ' ✕', 'color:' + BENG + ';font-weight:700'))
-    } else if (beat.state === 'pass') {
-      t.append(mk('span', ' ✓', 'color:' + KOKE + ';font-weight:700'))
-    }
+    const t = mk('div', '', 'display:flex;align-items:baseline;font-size:' + type.line + 'px;font-weight:600;line-height:' + type.lh + ';color:' + INK)
+    // the label's own text stays mixed-case; MONO's text-transform:uppercase draws it WHEN/THEN
+    const labCell = mk('span', beat.text ? beat.label : '', MONO + 'flex:0 0 ' + labW + 'px;color:' + (isThen ? AI : INK3))
+    const col = mk('div', '', 'flex:1 1 auto;min-width:0')
+    const rows = (lines && lines.length ? lines : ['']) as string[]
+    rows.forEach((ln, i) => {
+      const row = mk('div', ln, '')
+      // the got value is BURN-ONLY (the drawing measures none): the sentence is identical on both
+      // sides, and a failure adds what the page actually read, in bengara, after the last line
+      if (i === rows.length - 1) {
+        if (FAIL) {
+          if (claim) row.append(mk('span', ' — got ' + claim.got, 'color:' + BENG + ';font-weight:700'))
+          row.append(mk('span', ' ✕', 'color:' + BENG + ';font-weight:700'))
+        } else if (beat.state === 'pass') {
+          row.append(mk('span', ' ✓', 'color:' + KOKE + ';font-weight:700'))
+        }
+      }
+      col.append(row)
+    })
+    t.append(labCell, col)
     call.append(t)
     // …and the ONE thing the placement rule cannot know without a browser: how tall the words made
     // the card. It goes back to Node, where calloutSpot decides where the card belongs.
     return { vw: window.innerWidth, vh: window.innerHeight, ch: Math.ceil(call.getBoundingClientRect().height) }
   }, {
     beat: curBeat(),
+    // the SHARED wrap (tools/callout-text.mjs) — the same lines the drawn card breaks at, computed in
+    // Node so the browser renders exactly them, and the label gutter both cards reserve
+    lines: (b => b ? calloutLines(b.text) : [])(curBeat()),
+    labW: calloutLabelWidth(),
     claim: CLAIM ? { ...CLAIM } : null,
     failed,
     box,

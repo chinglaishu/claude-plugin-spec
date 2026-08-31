@@ -28,32 +28,78 @@
 
 // THE ONE LINE'S TYPE, in page pixels, exactly as renderOverlay writes it — stated here so the
 // drawing converts these by its single ratio instead of keeping a second opinion (the mirror
-// contract tools/overlay-geometry.mjs established). `maxLines` is the wrap cap both sides honour:
-// past two lines a card stops being a callout and becomes a paragraph.
+// contract tools/overlay-geometry.mjs established).
+//
+// NO maxLines cap (removed 2026-08-31, rule 6 — the drawing was wrong, not the burn-in). The cap was
+// TWO lines with an ellipsis, but only the DRAWING honoured it: the burn-in wrapped the whole
+// sentence via CSS, so demo R2's THEN read "…its stamp flips to…" on the schematic and three full
+// lines on the proof — the two cells disagreeing on the very text they must share (the human,
+// 2026-08-30/31: "both the schematic and proof need to have exact same text"). The wrap now lives in
+// calloutLines below, ONE rule both sides consume, and a sentence takes as many lines as it needs;
+// the camera frames the union of the ring and the whole card (framedRegion / stepper), so a taller
+// card is framed, never cropped. `0.52` is the average glyph advance the whole kit estimates with.
 export const CALLOUT_TYPE = {
   id: 10,        // the id chip's mono
   lab: 10,       // the WHEN / THEN mono label
   line: 14,      // the sentence itself
   lh: 1.4,       // its line-height
   tagGap: 8,     // chip row → sentence
-  maxLines: 2
+  advance: 0.52  // average char width ÷ font size — the wrap's one estimate
 }
 
 import { CARD } from './overlay-geometry.mjs'
 
+const raw = s => String(s == null ? '' : s).trim()
+
+// THE WHEN / THEN LABEL GUTTER, in page pixels — the width the mono label ("WHEN"/"THEN") reserves
+// beside line 0, so a wrapped line 1 sits in the same text column under it (a hanging indent). One
+// measurement, so the burn-in and the drawing lay the card out the same way. It is the burn-in's own
+// arithmetic: four mono glyphs, their .08em letter-spacing, and a trailing space.
+export function calloutLabelWidth () {
+  const lab = CALLOUT_TYPE.lab
+  return 4 * lab * 0.62 + 4 * lab * 0.08 + lab * 0.6
+}
+
+// THE TEXT COLUMN'S WIDTH, in page pixels — the card's inner width (300 − 2·padX) less the label
+// gutter. Both cards wrap their sentence to THIS width, so the line breaks are identical.
+export function calloutColWidth () {
+  return CARD.width - 2 * CARD.padX - calloutLabelWidth()
+}
+
+// WRAP THE ONE SENTENCE TO ITS LINES — ONE SOURCE, BOTH SIDES OF THE COMPARISON (the human,
+// 2026-08-30/31: exact same text on the schematic and the proof, and never crop it). A greedy
+// character-count wrap at the text column's width. Character counting is SCALE-INVARIANT — the width
+// and the font size scale together, so the cap is the same number whether the burn-in asks in page
+// pixels or the drawing asks in its own units — so both sides get byte-identical lines. NO
+// truncation: a normal When/Then is never cut, and a pathological one wraps to as many lines as it
+// needs (the camera frames the union of the ring and the whole card). A single word wider than the
+// column takes its own line uncut rather than being ellipsised, so no word is ever lost.
+export function calloutLines (text, colW = calloutColWidth()) {
+  const words = String(text == null ? '' : text).replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  if (!words.length) return []
+  const cap = Math.max(4, Math.floor(colW / (CALLOUT_TYPE.line * CALLOUT_TYPE.advance)))
+  const lines = []
+  let cur = ''
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w
+    if (t.length <= cap || !cur) cur = t   // a lone over-wide word takes its own line, never cut
+    else { lines.push(cur); cur = w }
+  }
+  if (cur) lines.push(cur)
+  return lines
+}
+
 // THE CARD'S HEIGHT, in page pixels — the ONE height both cells frame their region around (the
 // human, 2026-08-30: never crop the card, and both cells frame the same box). It is the burn-in's
-// own card arithmetic: padY, the id chip, the tag gap, `lines` of sentence, padY. A caller that
-// knows the sentence's true line count passes it; the camera-region callers pass the wrap cap, so
-// the region is sized for the tallest a one-sentence card can ever be and never crops a real one.
-export function calloutBoxHeight (lines = CALLOUT_TYPE.maxLines) {
+// own card arithmetic: padY, the id chip, the tag gap, `lines` of sentence, padY. Every caller now
+// passes the sentence's TRUE line count (calloutLines above), so the region is sized for exactly the
+// card the photograph will show — no cap to guess a shorter card than the real one.
+export function calloutBoxHeight (lines = 2) {
   const t = CALLOUT_TYPE
   const chipH = t.id * 1.2 + 4
   const bodyH = Math.max(1, lines) * t.line * t.lh
   return CARD.padY + chipH + t.tagGap + bodyH + CARD.padY
 }
-
-const raw = s => String(s == null ? '' : s).trim()
 
 // WHICH SCENE IS THE RESULT. A beat's proof loop is before → each asserted value → after, and the
 // drawing parks on that same list, one point per scene (board R19/R20). Only the LAST of them is

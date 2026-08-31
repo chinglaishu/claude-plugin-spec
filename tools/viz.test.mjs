@@ -8,7 +8,7 @@ import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, la
 // the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
 // both of them read rather than restating numbers here
 import { RING, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
-import { calloutText, sceneDone } from './callout-text.mjs'
+import { calloutText, sceneDone, calloutLines } from './callout-text.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
 
@@ -586,6 +586,34 @@ test('the given frame stays clean — no dim, no ring, no callout, because nothi
   assert.ok(f0.includes('>2 to do<'), 'just the state it opens on, readable')
 })
 
+// ── THE DRAWN CARD SHOWS THE SAME FULL SENTENCE AS THE BURN (the human, 2026-08-30/31) ────────────
+// The drawing capped its callout at two lines with an ellipsis while the burn-in wrapped the whole
+// sentence — demo R2's THEN read "…its stamp flips to…" on the schematic and three full lines on the
+// proof. The wrap is now one shared rule (tools/callout-text.mjs calloutLines) that BOTH sides
+// consume, so the drawing must render exactly its lines, uncut. Red-first: the old two-line cap never
+// reaches "edited just now".
+const LONG_THEN = 'the same row reads the new text in place and its stamp flips to edited just now'
+const LONG_LAY = focus => ({
+  w: 1440, h: 900,
+  ring: focus ? { x: 321, y: 300, w: 553, h: 22 } : null,   // a wide row mid-page: the card has room below
+  els: [
+    { x: 0, y: 0, w: 1440, h: 64, kind: 'container' },
+    { x: 321, y: 300, w: 553, h: 22, kind: 'text', text: 'edited just now', ...(focus ? { focus: true } : {}) }
+  ]
+})
+test('the drawn callout renders the WHOLE sentence, wrapped by the shared rule — no two-line ellipsis', () => {
+  const meta = { behavior: b('a task row stamped added', 'you double-click its title, retype it and press Enter', LONG_THEN), id: 'R2', pass: true }
+  const d = renderWireframe([{ before: LONG_LAY(false), after: LONG_LAY(true) }], meta)
+  const f1 = frameOf(d.svg, 1)
+  const lines = calloutLines(LONG_THEN)
+  assert.ok(lines.length >= 3, 'the fixture Then really does wrap past two lines: ' + lines.length)
+  // every shared line is drawn, verbatim — the card is not truncated to two
+  for (const ln of lines) assert.ok(f1.includes('>' + ln + '<'), 'the drawn card shows line "' + ln + '"')
+  // …and the tell-tale of the old cap is gone: the last words are reached, with no ellipsis in the card
+  assert.ok(f1.includes('>edited just now<'), 'the sentence reaches its end, uncut')
+  assert.ok(!f1.includes('…'), 'no ellipsis — the drawing shows the same words the burn does')
+})
+
 test('a counter and the span inside it draw ONE value, not two stacked (the overlap defect)', () => {
   const d = renderWireframe(NESTED, CARD)
   const f1 = frameOf(d.svg, 1)
@@ -607,16 +635,22 @@ test('the ✓ is drawn (never typed) and only when the requirement reads passed 
   assert.ok(!pass.svg.includes('✓'), 'drawn as a path: a missing glyph must never tofu the one unambiguous mark')
 })
 
-test('callout text is bounded: two lines a section, ellipsis rather than overflow', () => {
+// REWRITTEN 2026-08-31 (rule 4/6 — the human removed the two-line ellipsis cap, so THIS test was the
+// outdated side). The card no longer truncates: it wraps the WHOLE sentence to as many lines as it
+// needs, by the shared calloutLines the burn-in uses too, and the camera frames the union of the
+// ring and the taller card. So a long Then grows PAST two lines, loses no word, and shows no ellipsis
+// — the drawn card says exactly what the burned one says.
+test('callout text is not truncated: the whole sentence wraps to as many lines as it needs', () => {
+  const longThen = 'it settles into a state described at equally exhausting length well past anything a small card could ever hold on two lines of type'
   const long = b('a screen',
     'you do something with a very long sentence that would run off the end of any callout card ever drawn here and keep going for a while yet',
-    'it settles into a state described at equally exhausting length, well past anything a small card could ever hold on two lines of type')
+    longThen)
   const d = renderWireframe(NESTED, { behavior: long, id: 'R1', title: 'A very long requirement title that cannot fit', pass: false })
-  const f1 = frameOf(d.svg, 1)
-  assert.ok(f1.includes('…'), 'the overrun is elided')
-  // WHEN + THEN, at most two lines each, plus the label runs and the chip/title
-  const whenish = (f1.match(/font-family="var\(--sans\)"/g) || []).length
-  assert.ok(whenish <= 14, 'the card never grows extra lines to fit its text: ' + whenish)
+  const f1 = frameOf(d.svg, 1)                              // a resting scene → the THEN
+  const lines = calloutLines(longThen)
+  assert.ok(lines.length > 2, 'a long Then grows past two lines: ' + lines.length)
+  for (const ln of lines) assert.ok(f1.includes('>' + ln + '<'), 'the whole sentence is drawn — line "' + ln + '"')
+  assert.ok(!f1.includes('…'), 'no ellipsis — the drawing shows every word, like the burn')
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {

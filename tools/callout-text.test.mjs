@@ -14,7 +14,7 @@
 // DRAWING obeys it and spec/board/test.spec.ts (board R10/R19) pins that the BURN-IN does.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { calloutText, sceneDone, CALLOUT_TYPE } from './callout-text.mjs'
+import { calloutText, sceneDone, CALLOUT_TYPE, calloutLines, calloutLabelWidth, calloutColWidth } from './callout-text.mjs'
 
 const BEAT = {
   id: 'R5',
@@ -90,5 +90,35 @@ test('the card\'s ONE line has one type, stated once for both sides', () => {
   assert.equal(typeof CALLOUT_TYPE.line, 'number')
   assert.equal(typeof CALLOUT_TYPE.lab, 'number')
   assert.equal(typeof CALLOUT_TYPE.id, 'number')
-  assert.equal(CALLOUT_TYPE.maxLines, 2)
+})
+
+// ── THE WRAP IS ONE SOURCE, SO BOTH CARDS SHOW THE SAME LINES (the human, 2026-08-30/31) ──────────
+// The drawn card once capped its sentence at TWO lines with an ellipsis while the burned one wrapped
+// the whole sentence — so demo R2's THEN read "…its stamp flips to…" on the schematic and the full
+// three lines on the proof: the two cells disagreed on the very text they are meant to share. The
+// wrap now lives here, once, and BOTH sides consume it (tools/viz.mjs measureCard/cardRegionBox and
+// spec/_base.ts renderOverlay). These pin the rule; tools/viz.test.mjs pins that the drawing obeys it.
+
+// R2's real THEN (quotes dropped so the assertion reads the words, not the escaping) — the case that
+// used to truncate. It must wrap to MORE than two lines and lose not a single word.
+const LONG_THEN = 'the same row reads the new text in place and its stamp flips to edited just now'
+
+test('calloutLines wraps the WHOLE sentence — a normal Then is never cut to two lines, never ellipsised', () => {
+  const lines = calloutLines(LONG_THEN)
+  assert.ok(lines.length >= 3, 'R2\'s Then wraps past two lines: got ' + lines.length + ' — ' + JSON.stringify(lines))
+  assert.ok(!lines.some(l => l.includes('…')), 'no ellipsis anywhere — the whole sentence is shown')
+  assert.equal(lines.join(' ').replace(/\s+/g, ' ').trim(), LONG_THEN, 'every word survives, in order')
+})
+
+test('calloutLines is pure and scale-invariant — the same words always break the same way', () => {
+  assert.deepEqual(calloutLines(LONG_THEN), calloutLines(LONG_THEN))
+  assert.deepEqual(calloutLines(''), [])
+  assert.deepEqual(calloutLines('  short  clause  '), ['short clause'])
+})
+
+test('the label gutter and text column are one shared measurement, used by both cards', () => {
+  const inner = 300 - 2 * 15   // CARD.width - 2·padX
+  assert.ok(calloutLabelWidth() > 0, 'a WHEN/THEN gutter is reserved')
+  // the column is the card inner width less that gutter, so a wrapped line sits under line 0's text
+  assert.ok(calloutColWidth() > 0 && calloutColWidth() < inner, 'the column is narrower than the card inner')
 })

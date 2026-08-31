@@ -26,7 +26,7 @@ import { RING, CARD, ringRect, ringOuter, calloutSpot, calloutRect, unionRect } 
 // …and the callout's WORDS from the one module that owns them (2026-08-30), for the same reason the
 // geometry moved there: two copies of the rule drifted, and the drawing and the photograph stopped
 // saying the same thing mid-beat. One sentence per scene — the current small step, nothing else.
-import { calloutText, sceneDone, CALLOUT_TYPE, calloutBoxHeight } from './callout-text.mjs'
+import { calloutText, sceneDone, CALLOUT_TYPE, calloutBoxHeight, calloutLines } from './callout-text.mjs'
 
 // ── the pin: thin wrappers over reqhash ────────────────────────────────────
 export const vizHash = behavior => reqHash(behaviorText(behavior))
@@ -765,10 +765,9 @@ const insideRegion = (b, reg) => b.x >= reg.x - 0.01 && b.y >= reg.y - 0.01 &&
 // and the viewport are the page-pixel geometry the harvest recorded.
 function cardRegionBox (spec, ring, vw, vh) {
   if (!spec || !raw(spec.text) || !ring || !(ring.w > 0) || !(vw > 0) || !(vh > 0)) return null
-  const inner = CARD.width - 2 * CARD.padX
-  const labW = 4 * CALLOUT_TYPE.lab * 0.62 + 4 * CALLOUT_TYPE.lab * 0.08 + CALLOUT_TYPE.lab * 0.6
-  const lines = wrapText(spec.text, CALLOUT_TYPE.line, [inner - labW, inner], Infinity)
-  const ch = calloutBoxHeight(lines.length)
+  // the SHARED wrap (tools/callout-text.mjs) — the same lines the card actually draws and the burn-in
+  // burns, so the region is sized for exactly the card the photograph shows, never a shorter guess
+  const ch = calloutBoxHeight(calloutLines(spec.text).length)
   const box = { x: ring.x, y: ring.y, w: ring.w, h: ring.h }
   return calloutRect({ box, vw, vh, cw: CARD.width, ch })
 }
@@ -828,31 +827,8 @@ function valueMark (f, text, W, H, hot, region) {
   return { svg, box: { x, y, w: pw, h: ph } }
 }
 
-// ONE text run wrapped to at most `maxLines`, each line cut to the width it has (line 0 is shorter
-// where a label sits beside it). Overflow ends in an ellipsis — the card never grows to fit its
-// text and text never runs past the card. Widths are in drawing units; 0.52·fs is the average glyph
-// advance the whole kit estimates with.
-function wrapText (text, fs, widths, maxLines) {
-  const words = raw(text).split(' ').filter(Boolean)
-  if (!words.length) return []
-  const cap = i => Math.max(4, Math.floor(widths[Math.min(i, widths.length - 1)] / (fs * 0.52)))
-  const lines = []
-  let cur = ''
-  let wi = 0
-  while (wi < words.length && lines.length < maxLines) {
-    const t = cur ? cur + ' ' + words[wi] : words[wi]
-    if (t.length <= cap(lines.length)) { cur = t; wi++; continue }
-    if (!cur) { cur = words[wi].slice(0, Math.max(1, cap(lines.length) - 1)) + '…'; wi++ }
-    lines.push(cur); cur = ''
-  }
-  if (cur && lines.length < maxLines) { cur = (wi = words.length, lines.push(cur), '') }
-  if (wi < words.length) {
-    const j = lines.length - 1
-    const c = cap(j)
-    lines[j] = lines[j].length + 1 > c ? lines[j].slice(0, Math.max(1, c - 1)) + '…' : lines[j] + '…'
-  }
-  return lines
-}
+// (the callout's line wrap now lives in tools/callout-text.mjs calloutLines — ONE rule the burn-in
+// and the drawing both consume, so the two cards break at the exact same points, 2026-08-31)
 
 // THE RINGED ELEMENT, de-duplicated (2026-08-28 fix). The capture marks every element lying inside
 // the ring, so a counter and the span inside it BOTH come back focused — and the drawing put a
@@ -964,15 +940,16 @@ function measureCard (spec, S, u) {
   const id = raw(spec.id) || 'R?'
   const cardW = OV.card * k
   const padX = OV.padX * k; const padY = OV.padY * k
-  const inner = cardW - 2 * padX
   const fsId = OV.fsId * k
   const fsLine = OV.fsLine * k; const fsLab = OV.fsLab * k
   const chipW = id.length * fsId * 0.62 + 2 * OV.chipPadX * k + 2 * k
   const chipH = fsId * 1.2 + 2 * k + 2 * k
   const labW = 4 * fsLab * 0.62 + 4 * fsLab * 0.08 + fsLab * 0.6      // "WHEN" + its letter-spacing + a space
-  // ONE SENTENCE (the human, 2026-08-30): the line THIS scene proves, chosen by the shared rule the
-  // burn-in asks too. No title row, no second sentence — the card is the current small step.
-  const lines = wrapText(spec.text, fsLine, [inner - labW], CALLOUT_TYPE.maxLines)
+  // ONE SENTENCE (the human, 2026-08-30): the line THIS scene proves, wrapped by the SHARED rule the
+  // burn-in asks too (calloutLines) — the WHOLE sentence, uncapped, so the drawn card shows exactly
+  // the lines the burned one does. Character wrap is scale-invariant, so the page-pixel lines are the
+  // drawing's lines. No title row, no second sentence — the card is the current small step.
+  const lines = calloutLines(spec.text)
   const lh = fsLine * OV.lhLine
   const bodyH = Math.max(lines.length, 1) * lh
   const cardH = r1(padY + chipH + OV.tagGap * k + bodyH + padY)

@@ -10,7 +10,8 @@
 // photograph actually shows, and the drawing is what has to agree with it.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { RING, CARD, ringBox, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
+import { RING, CARD, ringBox, ringRect, ringOuter, calloutSpot, calloutRect } from './overlay-geometry.mjs'
+import { calloutBoxHeight } from './callout-text.mjs'
 
 const BOX = { x: 312, y: 126, width: 452, height: 46 }
 const PAGE = { vw: 1440, vh: 900 }
@@ -98,6 +99,31 @@ test('the horizontal placement is clamped to the viewport, so an edge target kee
   const s = calloutSpot({ box: edge, ...PAGE, cw: CARD.width, ch: 120 })
   assert.ok(s.left + CARD.width <= PAGE.vw - CARD.margin, 'clamped in: ' + s.left)
   assert.ok(s.left >= CARD.margin)
+})
+
+// ── THE WHOLE CARD IS ALWAYS IN THE PAGE (the human, 2026-08-30: never crop the explaining text box)
+// The burned card is what the proof photograph shows; a card placed past the viewport edge is burned
+// off the frame and its last line is lost — exactly demo R2's clipped "edited just now". So for a
+// three-line card (calloutBoxHeight(3)) against a ring near each edge, the WHOLE card rect must fall
+// inside [0,vw]×[0,vh]. This is the capture-time guarantee renderOverlay leans on.
+const CH3 = calloutBoxHeight(3)
+const inPage = (r, vw, vh) => r.x >= 0 && r.y >= 0 && r.x + r.w <= vw && r.y + r.h <= vh
+test('a ring at the BOTTOM edge keeps its whole card on the page — it flips above rather than off', () => {
+  // demo R2's real geometry: a wide row near the page bottom, a three-line THEN below it would clip
+  const box = { x: 321, y: 764, width: 553, height: 17 }
+  const r = calloutRect({ box, ...PAGE, cw: CARD.width, ch: CH3 })
+  assert.ok(inPage(r, PAGE.vw, PAGE.vh), 'the card is fully on the page: ' + JSON.stringify(r))
+  assert.equal(r.side, 'above', 'below would overflow the bottom, so it sits above')
+})
+test('a ring at the TOP edge keeps its whole card on the page', () => {
+  const box = { x: 321, y: 6, width: 553, height: 17 }
+  const r = calloutRect({ box, ...PAGE, cw: CARD.width, ch: CH3 })
+  assert.ok(inPage(r, PAGE.vw, PAGE.vh), 'the card is fully on the page: ' + JSON.stringify(r))
+})
+test('a ring at the RIGHT edge keeps its whole card on the page — x is clamped in', () => {
+  const box = { x: 1360, y: 300, width: 70, height: 40 }
+  const r = calloutRect({ box, ...PAGE, cw: CARD.width, ch: CH3 })
+  assert.ok(inPage(r, PAGE.vw, PAGE.vh), 'the card is fully on the page: ' + JSON.stringify(r))
 })
 
 test('calloutSpot is pure — the same inputs always answer the same', () => {
