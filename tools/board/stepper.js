@@ -48,6 +48,19 @@
     return Math.max(40, Math.round(ms / s))
   }
 
+  // THE CAMERA'S GLIDE (the human, 2026-08-31: "make the transition to the next small step in the
+  // schematic more smooth"). A scene change eases the camera's pan + zoom over this many ms rather
+  // than snapping. It rides the reader's speed like every hold — 4× shortens the glide, 0.25×
+  // lengthens it — but is CLAMPED so the fastest speed still animates (never a snap that reads as a
+  // jump) and the slowest never drifts so long it feels stuck: [90ms, 900ms] around `base`. Pure so
+  // the board and node test the SAME arithmetic; the ease itself is a CSS cubic-bezier in client.js,
+  // which reduced-motion turns off by asking for 0.
+  function cameraDur (base, speed) {
+    var b = (typeof base === 'number' && base > 0) ? base : 420
+    var s = (typeof speed === 'number' && speed > 0) ? speed : 1
+    return Math.max(90, Math.min(900, Math.round(b / s)))
+  }
+
   // THE BEAT ROW'S CAMERA (the human, 2026-08-28). A row's two visual cells show the FOCUSED
   // component, not the whole screen: the harvest records the ringed target's box and the viewport it
   // was measured in (`focus:{x,y,w,h,vw,vh}`), and both cells frame that box like a camera — the
@@ -125,6 +138,18 @@
     var aok = !!(a && isFinite(+a.x) && isFinite(+a.y) && +a.w > 0 && +a.h > 0)
     var ax = aok ? +a.x : x; var ay = aok ? +a.y : y
     var aw = aok ? +a.w : w; var ah = aok ? +a.h : h
+    // …and the scene's CALLOUT CARD is part of what it shows (the human, 2026-08-30: never crop the
+    // explaining text box). The aim becomes the union of the ring and the card, so the region is
+    // sized to contain both and centred on the pair — a card hanging off its ring is framed with it,
+    // not clipped at the cell edge. Mirrored in tools/viz.mjs framedRegion.
+    var c = o.card
+    var cok = !!(c && isFinite(+c.x) && isFinite(+c.y) && +c.w > 0 && +c.h > 0)
+    if (cok) {
+      var ux = Math.min(ax, +c.x); var uy = Math.min(ay, +c.y)
+      aw = Math.max(ax + aw, +c.x + +c.w) - ux
+      ah = Math.max(ay + ah, +c.y + +c.h) - uy
+      ax = ux; ay = uy
+    }
     // the media renders at cell width, so one source pixel is r cell pixels, and the media's own
     // rendered height at scale 1 follows the frame's aspect
     var r = cw / vw
@@ -164,6 +189,7 @@
   globalThis.SBStepper = {
     stepperHolds: stepperHolds,
     scaleHold: scaleHold,
+    cameraDur: cameraDur,
     cameraView: cameraView,
     cameraCss: cameraCss
   }

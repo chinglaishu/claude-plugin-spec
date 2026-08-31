@@ -623,7 +623,7 @@ test('the mirror stamps its renderer pin, so a kit change is legible on disk', (
   // mirror-6 (2026-08-30): the card is ONE SENTENCE — the line the scene proves, chosen by the
   // shared tools/callout-text.mjs the burn-in asks too. mirror-5 was the shared GEOMETRY; this is
   // the shared WORDS, and the pin moves because the renderer did.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-6"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-7"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -825,24 +825,37 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
   'the whole card is inside the framed region: ' + JSON.stringify(c3) + ' in ' + JSON.stringify(reg))
 })
 
-test('the card holds its true size wherever the region allows, and shrinks ONLY when it cannot fit', () => {
+// REWRITTEN 2026-09-01 (rule 4 — the human's decision is the reason): the region no longer crops
+// the card down to the RING's own tight crop. Since the camera frames the union of the ring and its
+// CARD (the human, 2026-08-30: never crop the explaining text box), the region EXPANDS to hold the
+// full-size card wherever the frame can afford it — the old "shrink to fit the ring's region" was
+// exactly the behaviour that clipped, and is gone. The card now shrinks ONLY when the whole FRAME is
+// narrower than 300px, which is the one case the region cannot widen its way out of.
+test('the card holds its true size wherever the region allows, and shrinks ONLY when the frame itself cannot hold it', () => {
   const S = 600 / 1440
-  const H = Math.round(600 * (900 / 1440))
   const card = svg => Number(/<rect x="[-\d.]+" y="[-\d.]+" width="([-\d.]+)"[^>]*fill="var\(--paper\)" stroke="var\(--line2\)"/.exec(frameOf(svg, 1))[1])
   assert.ok(Math.abs(card(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg) - 300 * S) < 0.15,
     'the corner case still gets the full card')
-  // a viewport so narrow that the framed region cannot hold 300px: the card shrinks rather than
-  // hanging off the cell — an edge the owner takes over a clipped card
+  // a SMALL ring in a roomy page: the tight ring-only crop used to shrink the card; now the region
+  // widens to hold it, so it stays the burn-in's own 300 page pixels — never clipped, never shrunk
+  const roomy = n => ({
+    w: 1440, h: 900, ring: n ? { x: 620, y: 420, w: 60, h: 30 } : null,
+    els: [{ x: 0, y: 0, w: 1440, h: 80, kind: 'container', text: '' },
+      { x: 620, y: 420, w: 60, h: 30, kind: 'text', text: '3 to do', ...(n ? { focus: true } : {}) }]
+  })
+  const big = renderWireframe([{ before: roomy(false), after: roomy(true) }], CARD)
+  assert.ok(Math.abs(card(big.svg) - 300 * S) < 0.15,
+    'a small ring no longer forces the card to shrink — the region holds it at full size: ' + card(big.svg))
+  // a viewport NARROWER than the 300px card itself: no region can widen past the frame, so here the
+  // card shrinks rather than hanging off the cell — an edge the owner takes over a clipped card
   const narrow = n => ({
-    w: 420, h: 900, ring: n ? { x: 40, y: 300, w: 60, h: 30 } : null,
-    els: [{ x: 0, y: 0, w: 420, h: 80, kind: 'container', text: '' },
+    w: 250, h: 900, ring: n ? { x: 40, y: 300, w: 60, h: 30 } : null,
+    els: [{ x: 0, y: 0, w: 250, h: 80, kind: 'container', text: '' },
       { x: 40, y: 300, w: 60, h: 30, kind: 'text', text: '3 to do', ...(n ? { focus: true } : {}) }]
   })
   const small = renderWireframe([{ before: narrow(false), after: narrow(true) }], CARD)
-  const reg = framedRegion({ x: 40 * (600 / 420), y: 300 * (600 / 420), w: 60 * (600 / 420), h: 30 * (600 / 420) }, 600, Math.round(600 * (900 / 420)))
   const w = card(small.svg)
-  assert.ok(w <= reg.w + 0.01, `the card fits the crop it has to live in: ${w} vs ${reg.w}`)
-  assert.ok(w < 300 * (600 / 420), 'which means it shrank below the burn-in\'s own size')
+  assert.ok(w < 250 * (600 / 250), 'a frame narrower than the card shrinks it below the burn-in size: ' + w)
 })
 
 test('the value is drawn INSIDE the ringed box when it reads there — a pill only when it cannot', () => {
@@ -1131,6 +1144,49 @@ test('cameraView aims at the scene too — the same region, in cell pixels', asy
     assert.ok(Math.abs(got[k] - want[k]) < 0.005,
       'the drawing and the proof frame the same region (' + k + '): ' + got[k] + ' vs ' + want[k])
   }
+})
+
+// ── THE CAMERA FRAMES THE CARD TOO (the human, 2026-08-30: never crop the explaining text box) ──
+// The scene's region is the union of its ring and its callout card. On the current tightest camera a
+// tall card hanging below a small ring falls outside the ring-only crop and is clipped at the cell
+// edge — the very thing complained about. framedRegion and cameraView both take `opts.card` and widen
+// the region to contain it, aimed at the pair. Red-first: the ring-only region below FAILS to hold
+// the card, and the card-aware one holds it.
+test('framedRegion contains the callout card — the region is the union of the ring and its card', async () => {
+  const { calloutRect, calloutBoxHeight } = { ...await import('./overlay-geometry.mjs'), ...await import('./callout-text.mjs') }
+  const S = 600 / 1440
+  const ring = { x: 620, y: 300, w: 60, h: 30 }                      // a small ring: a tight zoom
+  const card = calloutRect({ box: ring, vw: 1440, vh: 900, cw: 300, ch: calloutBoxHeight(4) })  // a tall card below it
+  const toD = b => ({ x: b.x * S, y: b.y * S, w: b.w * S, h: b.h * S })
+  const rD = toD(ring); const cD = toD(card)
+  const inside = (b, r) => b.x >= r.x - 0.02 && b.y >= r.y - 0.02 &&
+    b.x + b.w <= r.x + r.w + 0.02 && b.y + b.h <= r.y + r.h + 0.02
+  const ringOnly = framedRegion(rD, 600, 375, { aim: rD, maxScale: 3.2 })
+  assert.ok(!inside(cD, ringOnly), 'RED-FIRST: the ring-only camera clips the card — ' + JSON.stringify(cD) + ' outside ' + JSON.stringify(ringOnly))
+  const withCard = framedRegion(rD, 600, 375, { aim: rD, card: cD, maxScale: 3.2 })
+  assert.ok(inside(cD, withCard), 'the card-aware camera frames the whole card: ' + JSON.stringify(cD) + ' in ' + JSON.stringify(withCard))
+})
+
+test('cameraView contains the callout card too — the proof cell frames the same union, in cell pixels', async () => {
+  await import('./board/stepper.js')
+  const cam = globalThis.SBStepper
+  const { calloutRect, calloutBoxHeight } = { ...await import('./overlay-geometry.mjs'), ...await import('./callout-text.mjs') }
+  const focus = { x: 620, y: 300, w: 60, h: 30, vw: 1440, vh: 900 }
+  const aim = { x: 620, y: 300, w: 60, h: 30 }
+  const card = calloutRect({ box: aim, vw: 1440, vh: 900, cw: 300, ch: calloutBoxHeight(4) })
+  const cell = { w: 560, h: 350 }
+  // the framed region a view implies, as a page-pixel rect
+  const regionOf = view => {
+    const r = cell.w / focus.vw
+    return { x: -view.tx / (view.scale * r), y: -view.ty / (view.scale * r),
+      w: cell.w / (r * view.scale), h: cell.h / (r * view.scale) }
+  }
+  const inside = (b, r) => b.x >= r.x - 0.3 && b.y >= r.y - 0.3 &&
+    b.x + b.w <= r.x + r.w + 0.3 && b.y + b.h <= r.y + r.h + 0.3
+  const ringOnly = regionOf(cam.cameraView(focus, cell, { ...CAMOPTS, aim }))
+  assert.ok(!inside(card, ringOnly), 'RED-FIRST: the ring-only proof camera clips the card')
+  const withCard = regionOf(cam.cameraView(focus, cell, { ...CAMOPTS, aim, card }))
+  assert.ok(inside(card, withCard), 'the card-aware proof camera frames the whole card')
 })
 
 // ── THE VALUE SITS WHERE THE PAGE PUTS IT (the human, 2026-08-29) ─────────────────────────────

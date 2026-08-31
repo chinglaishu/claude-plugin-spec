@@ -77,6 +77,26 @@ export function ringOuter (box) {
   return { x: b.x - o, y: b.y - o, w: b.w + 2 * o, h: b.h + 2 * o }
 }
 
+// THE UNION of two boxes — the smallest rect containing both. A scene's camera must show its ring
+// AND its callout card, so the region is aimed at, and sized to contain, the union of the two.
+export function unionRect (a, b) {
+  if (!a) return b || null
+  if (!b) return a
+  const x = Math.min(a.x, b.x)
+  const y = Math.min(a.y, b.y)
+  return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y }
+}
+
+// THE CALLOUT'S FULL RECT — where calloutSpot puts the card, at cw × ch. So both halves of a beat
+// row (the burn-in's camera and the drawing's region) can ask "does the card fall in frame?" of ONE
+// geometry (the human, 2026-08-30: never crop the explaining text box), and the camera can be
+// widened to keep it there. `ch` is the card's height in the same page units; a caller with no
+// measured height passes the shared max-line estimate so both cells frame the identical box.
+export function calloutRect ({ box, vw, vh, cw = CARD.width, ch = 0 }) {
+  const spot = calloutSpot({ box, vw, vh, cw, ch })
+  return { x: spot.left, y: spot.top, w: cw, h: ch, side: spot.side }
+}
+
 // WHERE THE CALLOUT GOES (renderOverlay's rule, stated once).
 //
 // The card must read as ATTACHED to the ring, and must never cover it (the 2026-08-27 defect: on a

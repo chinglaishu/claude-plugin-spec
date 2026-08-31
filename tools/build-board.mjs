@@ -2146,6 +2146,10 @@ export function build () {
   .sbproof .pcbox.pcnext:hover { border-color:var(--ink-3); }
   /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other */
   .fbar .medbar.pmode button { min-width:calc(38px * var(--scale)); }
+  /* the dedicated scene stepper beside it (the human, 2026-08-30): ‹ prev · next › in the same chrome,
+     a mark not a hue; a touch of extra letter-spacing so the chevrons read as controls, not glyphs */
+  .fbar .medbar.pstep { margin-left:calc(6px * var(--scale)); }
+  .fbar .medbar.pstep button { min-width:calc(26px * var(--scale)); font-size:calc(13px * var(--scale)); line-height:1; }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }

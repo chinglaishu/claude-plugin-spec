@@ -11,7 +11,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import '../tools/board/stepper.js'
 
-const { stepperHolds, scaleHold } = globalThis.SBStepper
+const { stepperHolds, scaleHold, cameraDur } = globalThis.SBStepper
 
 test('true relative timing: holds are the deltas between anchors, the last frame gets the dwell', () => {
   const r = stepperHolds([0, 500, 2000])
@@ -76,4 +76,21 @@ test('scaleHold floors at 40ms and treats a broken speed as 1×', () => {
   assert.equal(scaleHold(50, 4), 40)
   assert.equal(scaleHold(1200, 0), 1200)
   assert.equal(scaleHold(1200, undefined), 1200)
+})
+
+// THE CAMERA GLIDE (the human, 2026-08-31: "make the transition to the next small step smoother").
+// cameraDur scales the base ease-duration by the reader's speed — 4× shortens it, 0.25× lengthens
+// it — but clamps into [90, 900] so the fastest speed still animates (never a snap that reads as a
+// jump) and the slowest never drifts so long it feels stuck.
+test('cameraDur scales the glide by speed and clamps it into a readable window', () => {
+  assert.equal(cameraDur(420, 1), 420)          // 1× is the base
+  assert.equal(cameraDur(420, 0.25), 900)       // 0.25× would be 1680 → clamped to the ceiling
+  assert.equal(cameraDur(420, 4), 105)          // 4× compresses, still well above the floor
+  assert.equal(cameraDur(420, 8), 90)           // and never below the floor — always an animation
+})
+
+test('cameraDur treats a broken base or speed as sane defaults', () => {
+  assert.equal(cameraDur(420, 0), 420)          // a broken speed reads as 1×
+  assert.equal(cameraDur(undefined, 1), 420)    // no base → the default base
+  assert.equal(cameraDur(-5, 1), 420)
 })

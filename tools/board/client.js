@@ -551,6 +551,8 @@ const B = window.__BOARD__ || {}
       const bar = document.createElement('div'); bar.className = 'fbar'
       const ml = document.createElement('span'); ml.className = 'fbarl'; ml.textContent = 'play'
       bar.appendChild(ml); bar.appendChild(modePicker())
+      // the dedicated walk, beside the mode it drives (the human, 2026-08-30)
+      bar.appendChild(stepPicker())
       const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
       bar.appendChild(bl); bar.appendChild(spdSelect())
       read.appendChild(bar)
@@ -753,6 +755,10 @@ const B = window.__BOARD__ || {}
   // at the SCENE on show rather than at the beat's whole union — one magnification per row, one aim
   // per scene. Mirrored in tools/viz.mjs (MAX_SCALE / PAD / framedRegion).
   const CAM = { maxScale: 3.2, minFrac: 0.3 }
+  // the base glide the camera eases a scene change over (the human, 2026-08-31) — scaled by the
+  // reader's speed and clamped in tools/board/stepper.js cameraDur. Reduced motion turns it off.
+  const CAM_TWEEN = 420
+  const REDUCED = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   let ZOOMED = true            // session-scoped, like the play speed; zoom is the default
   const ZOOM_W = []            // {node, fn} — cells re-aim themselves when the choice changes
   function onZoom (node, fn) { ZOOM_W.push({ node: node, fn: fn }) }
@@ -800,7 +806,7 @@ const B = window.__BOARD__ || {}
       return b
     }
     const a = mk('auto', 'auto', 'play every beat’s scenes on a loop')
-    const b = mk('step', 'step', 'hold each scene — click a proof cell for the next one')
+    const b = mk('step', 'step', 'hold each scene — walk it with ‹ › or the ← → keys')
     const paint = function () {
       a.classList.toggle('on', PLAY_MODE === 'auto')
       b.classList.toggle('on', PLAY_MODE === 'step')
@@ -808,6 +814,38 @@ const B = window.__BOARD__ || {}
     paint()
     onMode(box, paint)
     box.appendChild(a); box.appendChild(b)
+    return box
+  }
+  // THE DEDICATED STEPPER (the human, 2026-08-30: "better way to go to next small step — not only
+  // click on proof, as we need to handle the case that it doesn't have proof yet, and now cannot zoom
+  // in proof"). Two affordances, ‹ prev and next ›, reader-wide beside the mode control and carried by
+  // the same pager-dot chrome as every other stepper here (tokens only, a mark not hue). They step
+  // EVERY beat row of the open reader in lock-step — both of a row's cells together, through the same
+  // show()/_drive the loop uses, wrapping at each row's own ends — so a beat with NO proof frames is
+  // still walkable (its drawing steps) and the proof cell is free to open the lightbox again. Pressing
+  // one drops the reader into step mode (else the loop would instantly overwrite the scene). The ← →
+  // keys do the same while a reader is open in step mode (buildFocusOverlay / openListRow).
+  function readerStep (root, dir) {
+    if (!root) return false
+    let moved = false
+    const rows = [].slice.call(root.querySelectorAll('.sbrow[data-rowstep]'))
+    for (const el of rows) {
+      if (el._rowStep && el.isConnected && el.offsetParent !== null) { el._rowStep(dir); moved = true }
+    }
+    return moved
+  }
+  function stepPicker () {
+    const box = document.createElement('span'); box.className = 'medbar pstep'
+    const mk = function (dir, label, title) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.title = title
+      b.addEventListener('click', function () {
+        if (PLAY_MODE !== 'step') setMode('step')     // the walk holds the loop, or the scene snaps back
+        readerStep(box.closest('.fread'), dir)
+      })
+      return b
+    }
+    box.appendChild(mk(-1, '‹', 'previous scene of every beat (holds the loop)'))
+    box.appendChild(mk(1, '›', 'next scene of every beat (holds the loop)'))
     return box
   }
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
@@ -842,21 +880,30 @@ const B = window.__BOARD__ || {}
   // exactly what it was before, centred on the focus.
   function aimCamera (box, focus, opts) {
     let aim = null
+    let card = null           // the scene's callout card box (page units) — framed WITH its ring so
+                              // it is never clipped at the cell edge (the human, 2026-08-30)
     // apply is IDEMPOTENT — the class change resizes the box and wakes the observer that called it,
-    // and the second pass computes the same classes, so the echo dies on the next frame
-    const apply = function () {
+    // and the second pass computes the same classes, so the echo dies on the next frame. `animate`
+    // asks for a smooth glide between scenes (the human, 2026-08-31): a scene change eases the pan +
+    // zoom instead of snapping; a resize or a zoom toggle re-applies without animation.
+    const apply = function (animate) {
       const want = !!(ZOOMED && focus)
       box.classList.toggle('zoomed', want)
-      const o = aim ? Object.assign({}, opts, { aim: aim }) : opts
+      const o = (aim || card) ? Object.assign({}, opts, { aim: aim || undefined, card: card || undefined }) : opts
       const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, o) : null
       const css = window.SBStepper.cameraCss(view)
-      for (const m of box.querySelectorAll('.camsub')) m.style.transform = css
+      const dur = (animate && !REDUCED) ? window.SBStepper.cameraDur(CAM_TWEEN, PLAY_SPD) : 0
+      const trans = dur > 0 ? ('transform ' + dur + 'ms cubic-bezier(0.4, 0, 0.2, 1)') : 'none'
+      for (const m of box.querySelectorAll('.camsub')) { m.style.transition = trans; m.style.transform = css }
       box.classList.toggle('zoomed', !!(view && view.ok))
     }
-    box._aim = function (rect) { aim = rect || null; apply() }
-    apply()
-    if (window.ResizeObserver) new ResizeObserver(apply).observe(box)
-    if (focus) onZoom(box, apply)
+    // a scene move carries the ring AND its card, and asks to be ANIMATED (the eased glide); the
+    // INITIAL set of a freshly built cell snaps (animate=false) so a row does not zoom-in on open —
+    // only a change from one scene to the next glides.
+    box._aim = function (rect, cardRect, animate) { aim = rect || null; card = cardRect || null; apply(animate !== false) }
+    apply(false)
+    if (window.ResizeObserver) new ResizeObserver(function () { apply(false) }).observe(box)
+    if (focus) onZoom(box, function () { apply(false) })
     return apply
   }
 
@@ -937,6 +984,13 @@ const B = window.__BOARD__ || {}
       if (imgs.length < 2) return
       show((cur + 1) % imgs.length)
       schedule()                                        // a no-op in step mode; re-arms in auto
+    }
+    // …and ONE SCENE BACK — what the dedicated stepper's ← asks for (the human, 2026-08-30). Same
+    // path, same drawing driven beside it: prev and next are the loop's own step, walked by hand.
+    el._prev = function () {
+      if (imgs.length < 2) return
+      show((cur - 1 + imgs.length) % imgs.length)
+      schedule()
     }
     onSpd(el, function () { if (!el.hidden) schedule() })
     // switching the reader's mode arms or holds every loop at once (schedule() itself is the gate)
@@ -1046,7 +1100,7 @@ const B = window.__BOARD__ || {}
   // had, and every cell answering it differently broke the row's rhythm. A beat with a single frame
   // — the Given row, or a half-harvest — has nothing to loop and stays the still it is; the
   // zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box.
-  function proofCell (r, i, nbeats) {
+  function proofCell (r, i, nbeats, cards) {
     const cell = document.createElement('div'); cell.className = 'sbproof'
     const got = beatShots(r, i, nbeats)
     if (!got.shots.length) {
@@ -1077,35 +1131,25 @@ const B = window.__BOARD__ || {}
       // to the ring the frame on show photographed. The drawing beside it takes the SAME rect
       // (buildStoryline, through the svg's own coordinates), so the row is still one camera.
       cell._aims = got.shots.map(function (s) { return s.aim })
-      step._onScene = function (j) { sbox._aim((cell._aims || [])[j] || null) }
-      sbox._aim(cell._aims[0] || null)
+      // …and every scene's CALLOUT CARD box beside its ring (the human, 2026-08-30): the camera
+      // frames the union so the burned card is never clipped. The cards ride in from the schematic
+      // (buildStoryline parses data-viz-cardspots) in the SAME scene order as the shots, so card j and
+      // shot j are one moment; a mismatched count (an older drawing) simply carries none.
+      cell._cards = (cards && cards.length === got.shots.length) ? cards : []
+      step._onScene = function (j) { sbox._aim((cell._aims || [])[j] || null, (cell._cards || [])[j] || null, true) }
+      sbox._aim(cell._aims[0] || null, (cell._cards || [])[0] || null, false)   // initial: snap, don't zoom-in
       // …and the row can TAKE THE PAN BACK. A drawing that cannot be linked to this loop (an older
       // harvest, a mismatched scene count) shows a scene of its own choosing, and a proof cell that
       // panned alone would leave the two cells framing different regions — the one thing R19
       // forbids. Then both stay on the beat's focus: less zoom, still one camera.
-      cell._unaim = function () { cell._aims = null; sbox._aim(null) }
-      // THE CELL IS THE "NEXT" (the human, 2026-08-30). In step mode a click anywhere on the frames
-      // advances this beat one scene — the picture you are already looking at is the affordance, so
-      // no per-row button multiplies chrome down every row of every requirement, and the dots stay
-      // what they always were: the jump-map. In auto mode the click does nothing and the cursor says
-      // so, because a click that silently re-armed the loop would read as a bug.
-      const armClick = function () {
-        const on = PLAY_MODE === 'step'
-        sbox.classList.toggle('pcnext', on)
-        sbox.title = on ? 'next scene of this beat' : ''
-      }
-      armClick()
-      onMode(sbox, armClick)
-      // …and in step mode the click is CONSUMED here: every <img> on the board otherwise opens the
-      // shared lightbox through a document-level handler, so without this a step would step AND
-      // throw a full-screen frame over the row it just moved. Stepping wins while the mode is on;
-      // in auto the handler returns untouched and the lightbox behaves exactly as it always has.
-      sbox.addEventListener('click', function (e) {
-        if (PLAY_MODE !== 'step') return
-        if (e.target && e.target.closest && e.target.closest('.pdots')) return   // a dot is a jump
-        e.stopPropagation()
-        step._next()
-      })
+      cell._unaim = function () { cell._aims = null; cell._cards = null; sbox._aim(null, null) }
+      // THE PROOF IS A PROOF AGAIN (the human, 2026-08-30: "now can not zoom in proof"). Stepping no
+      // longer rides a click on the frames — a dedicated reader-wide control does it (readerStep), so
+      // a click on the proof cell opens the shared lightbox in EVERY mode exactly as every other image
+      // does, and a beat whose harvest has no proof frames can still be walked by the control. The cell
+      // registers what the control drives it with: one scene forward or back, wrapping. (The dots stay
+      // the jump-map; the control and the ← → keys are the walk.)
+      cell._rowStep = function (dir) { if (dir < 0) step._prev(); else step._next() }
       step._start()
     } else {
       // ONE frame: a still, captioned, under the same camera the loop would use
@@ -1119,7 +1163,7 @@ const B = window.__BOARD__ || {}
       fig.appendChild(cp); strip.appendChild(fig)
       cam.appendChild(strip)
       aimCamera(box, s.focus, CAM)
-      box._aim(s.aim || null)
+      box._aim(s.aim || null, (cards && cards.length === 1 ? cards[0] : null) || null, false)
     }
     cell.appendChild(cam)
     // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and
@@ -1209,6 +1253,23 @@ const B = window.__BOARD__ || {}
       })
       return ok ? groups : null
     })()
+    // …and the CALLOUT CARD BOX for each of those scenes (the human, 2026-08-30: never crop the
+    // explaining text box), published on the same svg as `data-viz-cardspots` — one group per beat
+    // (`|`), one scene per group (`;`), each an "x,y,w,h" page-unit rect or an empty slot for a scene
+    // with no card. Both cells frame the union of their ring and this box, so the burned card is in
+    // view. Absent or the wrong shape, the camera stays ring-only exactly as before.
+    const cardspots = (function () {
+      const m = /data-viz-cardspots="([^"]*)"/.exec((v && v.svg) || '')
+      if (!m) return null
+      const groups = m[1].split('|').map(function (g) {
+        return g.split(';').map(function (s) {
+          const p = s.split(',').map(Number)
+          return (p.length === 4 && p.every(function (n) { return isFinite(n) }) && p[2] > 0 && p[3] > 0)
+            ? { x: p[0], y: p[1], w: p[2], h: p[3] } : null
+        })
+      })
+      return groups.length === nbeats ? groups : null
+    })()
     // per-beat LOOP (the human, 2026-08-26): each beat's frame scrubs the paused drawing across ITS
     // beat's own time-window and loops. The Given frame is a state, not an action, so it stays a
     // parked still. Under reduced motion every frame parks at its beat. ONE rAF drives every looping
@@ -1283,8 +1344,13 @@ const B = window.__BOARD__ || {}
       aimCamera(box, focusInSvg(focus, svgEl), CAM)
       // …and the same PAN the proof cell makes (2026-08-31), re-expressed in the drawing's own
       // coordinates: the two cells take one focus and one aim through one camera, so a row frames
-      // one region at every scene of the beat.
-      fr._aimScene = function (rect) { box._aim(rect ? focusInSvg(rect, svgEl) : null) }
+      // one region at every scene of the beat. The scene's CALLOUT CARD comes with it (the human,
+      // 2026-08-30) so the drawing frames the same union the proof does — the card box carries the
+      // aim's own viewport, since it was measured in the same page (data-viz-cardspots omits it).
+      fr._aimScene = function (rect, card, animate) {
+        const c = (card && rect) ? { x: card.x, y: card.y, w: card.w, h: card.h, vw: rect.vw, vh: rect.vh } : null
+        box._aim(rect ? focusInSvg(rect, svgEl) : null, c ? focusInSvg(c, svgEl) : null, animate)
+      }
       // the hook the proof loop drives this cell with (2026-08-29) — registered HERE, at build time,
       // for a cell that is actually linked, so the rAF is running before the first step arrives. (It
       // was registered lazily on the first drive at first, and then a story whose every row was
@@ -1300,6 +1366,34 @@ const B = window.__BOARD__ || {}
       }
       fr.appendChild(provCap())        // …and the cell says what KIND of picture this is (R15/R18)
       return fr
+    }
+    // A DRAWING WITH NO PROOF TO DRIVE IT still walks (the human, 2026-08-30: "handle the case it
+    // doesn't have proof yet"). When a beat has a splittable drawing (subphases) but no proof loop, a
+    // small stepper of its own moves the DRIVEN frame through its park points — auto-advancing on a
+    // timer at the reader's speed, held in step mode, and walked one park point at a time by the
+    // dedicated control. Same shape as the proof stepper's schedule so the two behave alike.
+    const drawStepper = function (fc, parks) {
+      let idx = 0; let timer = null
+      const dur = function () { return window.SBStepper.scaleHold(700, PLAY_SPD) }
+      const go = function (j) {
+        const from = idx
+        idx = ((j % parks.length) + parks.length) % parks.length
+        fc._drive(parks[from], parks[idx], dur())
+      }
+      const stop = function () { if (timer) { clearTimeout(timer); timer = null } }
+      const schedule = function () {
+        stop()
+        if (reduced || parks.length < 2 || PLAY_MODE === 'step') return
+        timer = setTimeout(function tick () {
+          timer = null
+          if (!fc.isConnected || fc.hidden) return
+          go(idx + 1); schedule()
+        }, dur())
+      }
+      onSpd(fc, function () { if (!fc.hidden) schedule() })
+      onMode(fc, function () { if (!fc.hidden) schedule() })
+      schedule()
+      return function (dir) { go(dir < 0 ? idx - 1 : idx + 1); schedule() }
     }
     // the provenance line every schematic cell carries — one node per cell, so it stays beside the
     // drawing it describes even where a narrow reader stacks the row and the column header folds
@@ -1373,7 +1467,7 @@ const B = window.__BOARD__ || {}
         proofCell(r, 0, nbeats)))
       beh.beats.forEach(function (bt, i) {
         const html = behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
-        const pc = proofCell(r, i + 1, nbeats)
+        const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i])
         // LOCK-STEP (2026-08-29, the human: same story order, comparable timing). The drawing takes
         // its scenes from the proof's own loop when the two agree on how many there are — the beat's
         // drawn park points against the beat's harvested frames. They disagree only when one side is
@@ -1382,22 +1476,36 @@ const B = window.__BOARD__ || {}
         // the photograph beside it.
         const grp = subphases && subphases[i]
         const link = !!(canPair && grp && pc._stepper && pc._stepper._count === grp.length)
+        // a splittable drawing with NO proof loop to drive it: still walkable on its own park points
+        const drawOnly = !!(canPair && grp && !link && !pc._stepper)
+        const driveDraw = link || drawOnly
         const fc = canPair
-          ? frameCell(link ? grp[0] : phases[i + 1], link ? null : [phases[i], phases[i + 1]],
-            beatFocus(r, i + 1, nbeats), link)
+          ? frameCell(driveDraw ? grp[0] : phases[i + 1], driveDraw ? null : [phases[i], phases[i + 1]],
+            beatFocus(r, i + 1, nbeats), driveDraw)
           : noCell(noDraw)
+        let rowStep = null
         if (link) {
           pc._stepper._onFrame = function (j, ms) {
             const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
             fc._drive(from, grp[j], ms)
-            // the drawing's camera pans with the proof's (2026-08-31) — one aim, both cells
-            if (fc._aimScene) fc._aimScene((pc._aims || [])[j] || null)
+            // the drawing's camera pans with the proof's (2026-08-31) — one aim AND one card box, so
+            // both cells frame the same union and neither clips the callout (the human, 2026-08-30),
+            // easing between scenes exactly as the proof cell does
+            if (fc._aimScene) fc._aimScene((pc._aims || [])[j] || null, (pc._cards || [])[j] || null, true)
           }
-          if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null)
+          if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null, (pc._cards || [])[0] || null, false)
+          rowStep = pc._rowStep          // one call steps the proof and, through _onFrame, the drawing
+        } else if (drawOnly) {
+          rowStep = drawStepper(fc, grp)  // no proof to drive it — its own scenes are the walk
         } else if (canPair && pc._unaim) {
-          pc._unaim()          // the drawing is on its own clock — do not pan one cell alone
+          pc._unaim()                    // the drawing is on its own clock — do not pan one cell alone
+          rowStep = pc._rowStep || null  // the proof still walks even when the drawing cannot pair
         }
-        body.appendChild(row(i === 0 ? '' : 'beatstart', fc, textCell(html), pc))
+        if (!rowStep) rowStep = pc._rowStep || null   // a proof-only row (no pairing) still walks
+        const rowEl = row(i === 0 ? '' : 'beatstart', fc, textCell(html), pc)
+        // the dedicated control and the ← → keys drive every steppable row of the open reader
+        if (rowStep) { rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1' }
+        body.appendChild(rowEl)
       })
     } else {
       // PROSE-ONLY: no Given/When→Then to split into beats, so the story is one row — the drawing if
@@ -1701,6 +1809,10 @@ const B = window.__BOARD__ || {}
       if (dt.hidden || !ov.isConnected || !ov.offsetParent) return
       const a = document.activeElement
       if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return
+      // in STEP mode the arrows WALK the scenes (the human, 2026-08-30); in auto they page requirements
+      if (PLAY_MODE === 'step' && readerStep(ov.querySelector('.fread'), e.key === 'ArrowLeft' ? -1 : 1)) {
+        e.preventDefault(); return
+      }
       if (e.key === 'ArrowRight' && cur < reqs.length - 1) { cur++; render(); e.preventDefault() }
       else if (e.key === 'ArrowLeft' && cur > 0) { cur--; render(); e.preventDefault() }
     }
@@ -3708,6 +3820,18 @@ const B = window.__BOARD__ || {}
     if (img.closest('#home .cshot')) return   // the home card's still opens the screen, not the zoom (Task 8)
     e.stopPropagation()
     openLb(img.src, img.alt || 'screenshot')
+  })
+
+  // …and the ← → keys walk the scenes of a LIST open row while it is in step mode (the human,
+  // 2026-08-30). The Focus overlay handles its own arrows (buildFocusOverlay's onKey, which also
+  // pages in auto); a List row has no pager, so its arrows only ever step, and only in step mode.
+  document.addEventListener('keydown', e => {
+    if (PLAY_MODE !== 'step') return
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const a = document.activeElement
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return
+    const root = document.querySelector('.dt:not([hidden]) .gridview .lst-card.open .lst-body .fread')
+    if (root && readerStep(root, e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault()
   })
 
   // expand/collapse a story step's recorded detail (board R10)

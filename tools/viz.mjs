@@ -22,11 +22,11 @@ import { reqHash, behaviorText, isStale } from './reqhash.mjs'
 // THE OVERLAY'S GEOMETRY, SHARED WITH THE BURN-IN (spec/_base.ts renderOverlay). The drawn overlay
 // and the photographed one must be the SAME PICTURE; keeping two copies of the same numbers is
 // exactly how they stopped being one. See tools/overlay-geometry.mjs.
-import { RING, CARD, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
+import { RING, CARD, ringRect, ringOuter, calloutSpot, calloutRect, unionRect } from './overlay-geometry.mjs'
 // …and the callout's WORDS from the one module that owns them (2026-08-30), for the same reason the
 // geometry moved there: two copies of the rule drifted, and the drawing and the photograph stopped
 // saying the same thing mid-beat. One sentence per scene — the current small step, nothing else.
-import { calloutText, sceneDone, CALLOUT_TYPE } from './callout-text.mjs'
+import { calloutText, sceneDone, CALLOUT_TYPE, calloutBoxHeight } from './callout-text.mjs'
 
 // ── the pin: thin wrappers over reqhash ────────────────────────────────────
 export const vizHash = behavior => reqHash(behaviorText(behavior))
@@ -599,7 +599,7 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
-const MIRROR_KIT = 'mirror-6'
+const MIRROR_KIT = 'mirror-7'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
@@ -729,7 +729,12 @@ export function framedRegion (f, W, H, opts = {}) {
   const maxScale = opts.maxScale != null ? opts.maxScale : MAX_SCALE
   const whole = { x: 0, y: 0, w: W, h: H }
   if (!f || !(f.w > 0) || !(f.h > 0) || !(W > 0) || !(H > 0)) return whole
-  const aim = usableRect(opts.aim) ? opts.aim : f
+  let aim = usableRect(opts.aim) ? opts.aim : f
+  // …and the scene's callout card is part of what it is SHOWING (the human, 2026-08-30: never crop
+  // the explaining text box). The zoom stays the beat's, but the region must CONTAIN the ring's
+  // union with its card, and be aimed at that union — so a card hanging below or above its ring is
+  // framed with it instead of clipped at the cell edge. Mirrored in tools/board/stepper.js.
+  if (usableRect(opts.card)) aim = unionRect(aim, opts.card)
   const pw = padded(f.w, W, pad); const ph = padded(f.h, H, pad)
   // COVER, not contain: the bigger of the two ratios fills the cell, cropping the padded rect's
   // long side instead of refusing to zoom at all
@@ -749,6 +754,24 @@ export function framedRegion (f, W, H, opts = {}) {
 }
 const insideRegion = (b, reg) => b.x >= reg.x - 0.01 && b.y >= reg.y - 0.01 &&
   b.x + b.w <= reg.x + reg.w + 0.01 && b.y + b.h <= reg.y + reg.h + 0.01
+
+// THE CARD BOX THE REGION MUST CONTAIN (the human, 2026-08-30: never crop the explaining text box).
+// Where the callout goes for this scene's ring (the shared calloutSpot), at the width it draws, at
+// the height the WHOLE sentence needs — UNCAPPED, because the burn-in does not truncate its card to
+// two lines the way the drawn one does, so the camera has to reserve room for every line the
+// photograph will actually show or it clips the proof. In PAGE units, so both cells frame one box:
+// the drawing passes it to framedRegion, and it is published on the svg (data-viz-cardspots) so the
+// proof cell's camera frames the identical box. `spec` is the callout (its `text`/`label`); `ring`
+// and the viewport are the page-pixel geometry the harvest recorded.
+function cardRegionBox (spec, ring, vw, vh) {
+  if (!spec || !raw(spec.text) || !ring || !(ring.w > 0) || !(vw > 0) || !(vh > 0)) return null
+  const inner = CARD.width - 2 * CARD.padX
+  const labW = 4 * CALLOUT_TYPE.lab * 0.62 + 4 * CALLOUT_TYPE.lab * 0.08 + CALLOUT_TYPE.lab * 0.6
+  const lines = wrapText(spec.text, CALLOUT_TYPE.line, [inner - labW, inner], Infinity)
+  const ch = calloutBoxHeight(lines.length)
+  const box = { x: ring.x, y: ring.y, w: ring.w, h: ring.h }
+  return calloutRect({ box, vw, vh, cw: CARD.width, ch })
+}
 
 // THE ASSERTED VALUE, in the app's own words. IN THE BOX, because that is where the app puts it:
 // the screen draws its counter's value inside the counter, so a ring box with a pill stacked under
@@ -1102,12 +1125,17 @@ function quotedIn (callout) {
 // camera at — the beat's RING, which is what the reporter stores as the focus rect
 // (tools/evidence.mjs focusFromLayout) and therefore what the crop is centred on. It is NOT always
 // the element the drawing rings: a row-wide ring around a value cell frames the row.
-function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam = null) {
+function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam = null, cardBox = null) {
   const px = v => r1(v * S)
   // what the board's cell will frame: its camera is aimed at the beat's ring, so the drawing has to
   // fit its overlay inside THAT crop, not one centred on whichever element it ends up ringing
   const camPx = cam && cam.w > 0 && cam.h > 0
     ? { x: px(cam.x), y: px(cam.y), w: px(cam.w), h: px(cam.h) }
+    : null
+  // …and this scene's callout CARD, in drawing units — the region must contain it too (the human,
+  // 2026-08-30), so a card hanging below or above its ring is framed with it instead of clipped.
+  const cardPx = cardBox && cardBox.w > 0 && cardBox.h > 0
+    ? { x: px(cardBox.x), y: px(cardBox.y), w: px(cardBox.w), h: px(cardBox.h) }
     : null
   const parts = []
   const focus = []
@@ -1201,7 +1229,7 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
       // so every mark of the overlay — the value and the card both — has to land inside it or it is
       // simply cut off screen. The BEAT's rect sets the zoom and THIS SCENE's own ring sets the aim
       // (2026-08-31), exactly as the board aims the cell beside it.
-      const region = framedRegion(camPx || marks[0], W, H, { aim: ringPx || marks[0] })
+      const region = framedRegion(camPx || marks[0], W, H, { aim: ringPx || marks[0], card: cardPx })
       const pills = []
       // …and where the capture measured NO text on the ringed element (a box whose value the
       // skeleton could not reach, an element that carries its value in an attribute), the
@@ -1371,11 +1399,17 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
     for (const v of p.values) frames.push({ L: v, ring: true, anchors: [], card: cardFor(i, false), cam })
     frames.push({ L: p.after || p.before, ring: !!p.after, anchors: [], card: cardFor(i, true), cam })
   })
+  // THE CARD BOX EACH FRAME'S REGION MUST CONTAIN (the human, 2026-08-30). Computed once, in page
+  // units, from the frame's own ring and its callout sentence — the drawing frames its region around
+  // it, AND it is published on the svg so the proof cell frames the identical box. A frame with no
+  // ring or no card (the Given, a before scene) has none: its region stays ring-only.
+  const frameCardBox = frames.map(f => (f.ring && f.card && f.L && f.L.ring)
+    ? cardRegionBox(f.card, f.L.ring, src.w, src.h) : null)
   let css = ''
   const groups = frames.map((f, i) => {
     css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('f' + i)}{${wfFade(i, t, m)}}`
-    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam)}</g>`
+    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam, frameCardBox[i])}</g>`
   }).join('')
   const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
   const body = shell + groups
@@ -1405,6 +1439,19 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
     const grp = Array.from({ length: sizes[i] + 1 }, (_, j) => t.phases[start + j])
     return sizes[i] > 1 ? grp.slice(1) : grp
   })
+  // …and the CALLOUT CARD BOX for each of those scenes (the human, 2026-08-30), grouped and dropped
+  // EXACTLY as the park points above so the proof cell can zip card[j] onto its scene j. A scene
+  // with no card (a before scene, the Given) publishes an empty slot, and the proof cell's camera
+  // then frames that scene ring-only. Each rect is "x,y,w,h" in page units; scenes join with ";",
+  // beats with "|".
+  const rectStr = b => b && b.w > 0 && b.h > 0
+    ? [r1(b.x), r1(b.y), r1(b.w), r1(b.h)].join(',') : ''
+  const cardspots = Array.from({ length: n }, (_, i) => {
+    if (i >= nb) return ['', '']
+    const start = beatEnd[i] - sizes[i]
+    const grp = Array.from({ length: sizes[i] + 1 }, (_, j) => frameCardBox[start + j] || null)
+    return (sizes[i] > 1 ? grp.slice(1) : grp).map(rectStr)
+  })
   const label = esc('wireframe schematic — the app’s own layout, drawn frame by frame: the given, then each beat' +
     (behavior
       ? '. given ' + behavior.given + '; ' +
@@ -1413,7 +1460,8 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   const svg = `<svg class="${k}" viewBox="0 0 ${LAYOUT_W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"` +
     ` data-viz-hash="${hash}" data-viz-archetype="ui-mirror" data-viz-kind="wireframe" data-viz-layout="${lhash}"` +
     ` data-viz-kit="${MIRROR_KIT}" data-viz-beats="${n}" data-viz-frames="${m + 1}" data-viz-phases="${phases.join(' ')}"` +
-    ` data-viz-subphases="${subphases.map(g => g.join(' ')).join('|')}">` +
+    ` data-viz-subphases="${subphases.map(g => g.join(' ')).join('|')}"` +
+    ` data-viz-cardspots="${cardspots.map(g => g.join(';')).join('|')}">` +
     `<style>${css}</style>${body}</svg>`
   return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash }
 }

@@ -39,6 +39,20 @@ export const CALLOUT_TYPE = {
   maxLines: 2
 }
 
+import { CARD } from './overlay-geometry.mjs'
+
+// THE CARD'S HEIGHT, in page pixels — the ONE height both cells frame their region around (the
+// human, 2026-08-30: never crop the card, and both cells frame the same box). It is the burn-in's
+// own card arithmetic: padY, the id chip, the tag gap, `lines` of sentence, padY. A caller that
+// knows the sentence's true line count passes it; the camera-region callers pass the wrap cap, so
+// the region is sized for the tallest a one-sentence card can ever be and never crops a real one.
+export function calloutBoxHeight (lines = CALLOUT_TYPE.maxLines) {
+  const t = CALLOUT_TYPE
+  const chipH = t.id * 1.2 + 4
+  const bodyH = Math.max(1, lines) * t.line * t.lh
+  return CARD.padY + chipH + t.tagGap + bodyH + CARD.padY
+}
+
 const raw = s => String(s == null ? '' : s).trim()
 
 // WHICH SCENE IS THE RESULT. A beat's proof loop is before → each asserted value → after, and the
