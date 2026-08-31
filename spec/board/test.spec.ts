@@ -1109,16 +1109,6 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     expect(shapes, 'the drawing carries the measured page, box for box — not a fixed archetype kit')
       .toBeGreaterThan(drawable * 0.4)
     expect(shapes, 'and it draws THIS page, not an inflated one').toBeLessThan(drawable * 3)
-    // …AND THE CELL SAYS SO (the human, 2026-08-31: "let user know if the schematic is not what they
-    // want"). A reader judging a drawing against a photograph has to know which KIND of drawing it
-    // is, in words, before they can judge the comparison. The caption is DERIVED from the marks
-    // above — the very attributes just asserted — never stored and never guessed.
-    const prov = ov.locator('.fread .fstory .sbrow').nth(1).locator('.sbframe .sbprov')
-    await expect(prov).toHaveCount(1)
-    await expect(prov).toHaveAttribute('data-prov', 'mirror')
-    await expect(prov).toContainText('measured layout')
-    await hudCheck('the cell says what the drawing is', 'mirror',
-      (await prov.getAttribute('data-prov')) || 'nothing')
   })
 
   // beat 2 — NO LAYOUT, NO PICTURE (moved here verbatim from the R13 test, 2026-08-28: the honest
@@ -1148,37 +1138,58 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
     await expect(r2story.locator('.sbrow .sbtext .sbstep').first()).toBeVisible()   // the labelled beats still show
     await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
-    // …and the cell SAYS the absence rather than leaving the reader to infer it from a blank
-    const gone = r2story.locator('.sbframe .sbprov').first()
-    await expect(gone).toHaveAttribute('data-prov', 'none')
-    await expect(gone).toContainText('nothing harvested to draw yet')
     await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
+  })
 
-    // THE THIRD ANSWER, seeded through the same pipe: a drawing that is an ARCHETYPE — true to the
-    // sentence, not to the screen. Every live specimen is a mirror, so the served board's marks are
-    // rewritten for ONE requirement and the caption must follow them. That is the proof the caption
-    // is DERIVED from what the viz pass stamped, not printed from a constant: change the mark, the
-    // words change with it.
-    const archetypify = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
-    await page.route(archetypify, async rt => {
-      const res = await rt.fetch(); const html = await res.text()
-      const scr = html.indexOf('data-screen="board"')
-      const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
-      const seg = html.slice(i, j)
-        .replace(/data-viz-archetype="ui-mirror"/g, 'data-viz-archetype="list-add"')
-        .replace(/data-viz-kind="wireframe"/g, 'data-viz-kind="archetype"')
-      await rt.fulfill({ body: html.slice(0, i) + seg + html.slice(j), contentType: 'text/html' })
-    })
-    await page.goto('/#/board/R2')
-    await page.reload()
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
-    const arch = ov.locator('.fread .fstory .sbframe .sbprov').first()
-    await reveal(arch)
-    await expect(arch).toHaveAttribute('data-prov', 'archetype')
-    await expect(arch).toContainText('the sentence, not the app')
-    await hudCheck('a drawn-from-the-sentence picture says so', 'archetype',
-      (await arch.getAttribute('data-prov')) || 'nothing')
-    await page.unroute(archetypify)
+  // beat 3 — THE CELL SAYS WHAT THE DRAWING IS (the human's 2026-08-30 ask, canon as R18's third
+  // beat: "let user know if the schematic is not what they want"). A reader judging a drawing
+  // against the photograph beside it has to know which KIND of picture it is — in words, told, not
+  // inferred from how it looks. Four answers, and the proof that they are DERIVED rather than
+  // printed: the served board's own marks are rewritten and the words follow them every time.
+  await checkReq('R18', async () => {
+    const R2 = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
+    // serve THE BOARD SCREEN's R2 with one edit applied to its baked card, and read the caption back
+    const capWith = async (edit: (seg: string) => string) => {
+      await page.route(R2, async rt => {
+        const res = await rt.fetch(); const html = await res.text()
+        const scr = html.indexOf('data-screen="board"')
+        const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
+        await rt.fulfill({ body: html.slice(0, i) + edit(html.slice(i, j)) + html.slice(j), contentType: 'text/html' })
+      })
+      await page.goto('/#/board/R3')                     // hop, so the reader is rebuilt from the stub
+      await page.goto('/#/board/R2')
+      await page.reload()
+      await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
+      const cap = ov.locator('.fread .fstory .sbframe .sbprov').first()
+      await reveal(cap)
+      const out = { prov: await cap.getAttribute('data-prov'), text: (await cap.textContent()) || '' }
+      await page.unroute(R2)
+      return out
+    }
+    // (a) THE MIRROR, untouched: the app's own measured layout, said in words
+    const mirror = await capWith(seg => seg)
+    expect(mirror.prov, 'a mirror says it is one').toBe('mirror')
+    expect(mirror.text).toContain('measured layout')
+    expect(mirror.text, 'and a fresh drawing claims no drift').not.toContain('the text moved')
+    // (b) NOTHING DRAWN: the absence is said, never left as a blank cell
+    const none = await capWith(seg => seg.replace(/<figure class="schematic"[\s\S]*?<\/figure>/, ''))
+    expect(none.prov).toBe('none')
+    expect(none.text).toContain('nothing harvested to draw yet')
+    // (c) AN ARCHETYPE — true to the sentence, not to the screen. Every live specimen is a mirror,
+    // so the viz pass's own marks are rewritten here: change the mark, the words change with it.
+    const arch = await capWith(seg => seg
+      .replace(/data-viz-archetype="ui-mirror"/g, 'data-viz-archetype="list-add"')
+      .replace(/data-viz-kind="wireframe"/g, 'data-viz-kind="archetype"'))
+    expect(arch.prov).toBe('archetype')
+    expect(arch.text).toContain('the sentence, not the app')
+    // (d) STALE — the drawing is still a mirror, but of words that have since moved, and the caption
+    // says THAT too rather than leaving the grey wash to carry it alone (hue never alone)
+    const stale = await capWith(seg => seg.replace('<figure class="schematic"', '<figure class="schematic" data-stale="1"'))
+    expect(stale.prov, 'it is still a mirror — of text that has moved').toBe('mirror')
+    expect(stale.text).toContain('measured layout')
+    expect(stale.text, 'and the drift is in the words, not only in the wash').toContain('the text moved since it was drawn')
+    await hudCheck('the cell says what the drawing is, four ways', 'mirror·none·archetype·mirror+moved',
+      [mirror.prov, none.prov, arch.prov, stale.prov + (stale.text.includes('the text moved') ? '+moved' : '')].join('·'))
   })
 })
 
