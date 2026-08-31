@@ -933,6 +933,16 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 // index), so there is one measurement and one source of truth. Photograph FIRST — the picture is
 // the evidence; the measurement rides after it.
 async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null): Promise<void> {
+  // LET THE CARD LAND FIRST, on the AFTER frame (2026-08-31). The beat's resting scene turns the card
+  // over to its Then, which can WRAP TO MORE LINES than the When and therefore FLIP SIDES — a bottom-
+  // edge ring's When card sits below, its taller Then card is placed above (calloutSpot). The card
+  // slides there over the overlay's .16s CSS transition, so a frame taken the instant the verdict
+  // paints catches it MID-SLIDE, hanging below where it will rest — which side-by-side disagrees with
+  // the drawn cell that shows the settled position. The same settle snapValue already gives the value
+  // frames (OVERLAY_SETTLE_MS) makes the after frame photograph the card where it comes to rest.
+  if (phase === 'after' && process.env.BOARD_RECORD && CURRENT_PAGE) {
+    await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
+  }
   await snapEvidence(id, beat, seq, phase)
   await snapLayout(id, beat, seq, phase, at)
 }
