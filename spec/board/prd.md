@@ -259,6 +259,8 @@ frames sit beside the words. The one-recording rule is untouched.*
 - **Then** it is drawn from the app's own measured layout — the page's real structure at the viewport it was measured in, with the focused element's own text where a beat ringed one
 - **When** no layout was ever harvested for it
 - **Then** it falls back to the archetype drawing, or to the labelled beats under an honest "no schematic drawn yet" — never a guessed picture
+- **When** its row renders
+- **Then** the cell says in words what the drawing is derived from — the app's measured layout, the sentence's archetype, or nothing harvested yet — and says so again when the text has moved past it *(added 2026-08-30, the human: "let user know if the schematic is not what they want"; the ⋯ menu's "the schematic doesn't match my app" prompt is the R15-pattern escape)*
 
 The drawn half of a beat row used to be an **archetype**: a house diagram chosen from the *shape* of
 the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
@@ -298,9 +300,14 @@ beat scene by scene rather than ringing only its outcome.*
 - **Then** both sides carry that beat and no other — the drawing derived from and labelled with its When → Then, the row's text cell showing the same sentence — while the Given row stays whole-page and uncaptioned on both sides
 
 A row is only worth its width if the two halves are **the same view of the same moment**. The focus
-rect the harvest recorded — the **union of the rings** this beat's assertions painted — is the row's
-one camera: the proof cell
-frames it, and the drawing beside it is framed by the identical fractional transform, re-expressed
+rect the harvest recorded — the **union of the rings** this beat's assertions painted — sets the
+row's **zoom**: one magnification for the whole beat, so the two cells can never pump against each
+other. Each **scene** sets the **aim**: the camera centres on the ring that scene photographed, in
+both cells at once — a single fixed frame holding rings hundreds of pixels apart could only fit them
+by zooming back out until neither could be read *(amended 2026-08-30, the human: "more aggressive
+zoom in on the area it's focusing"; the whole frame stays one toggle away, for both cells on the
+row's one control)*. The proof cell frames it, and the drawing beside it is framed by the identical
+fractional transform, re-expressed
 in the drawing's own coordinates so the region matches even when the aspects do not. One toggle aims
 both; there is no way to move one alone, because there is only one choice to make. And the two cells
 step **together**: the proof's own loop drives the drawing, so frame *n* of the photograph and scene
@@ -329,18 +336,21 @@ scene is never cropped away), and the two cells now share one clock — the proo
 
 ## R20 — The proof plays itself
 
-- **Given** a beat whose harvest holds its before, each value it proved, and its after
+- **Given** a beat whose harvest holds each value it proved and the state it left
 - **When** its row renders
-- **Then** the proof cell is already looping — no media mode to pick, no play to press — zoomed onto the focus by default, with the whole frame exactly one toggle away
+- **Then** the proof cell is already looping — no media mode to pick, no play to press — opening on the When in motion, not on the state the Given row already showed, framed tight on the thing being proven, with the whole frame exactly one toggle away
 - **When** you switch the reader's play control from auto to step
 - **Then** every loop holds where it is, and a click on a proof cell advances that beat one scene — the drawing beside it moving with it, wrapping at the end
 - **When** the row is the Given
 - **Then** its one frame stays a still: a state, not an action
 
-A proof cell has **no media toolbar**. The beat's before → each asserted value →
-after runs the moment the
+A proof cell has **no media toolbar**. The beat's each-asserted-value → after runs the moment the
 row exists, on the reader's one speed, exactly as the drawing beside it loops that beat's own
-motion — a row plays as one thing. The old `stills · gif · video` switch over two frames was chrome
+motion — a row plays as one thing. Its **before frame stays in the evidence but leaves the loop**:
+the state before the action is what the Given row (or the previous beat's end) already showed, and
+opening on it made every beat begin with a redundant still (the human, 2026-08-30). A beat that
+proved nothing between its ends still shows both — there the before **is** the motion. This is what
+the row shows, not what the run captured: the frames on disk are untouched. The old `stills · gif · video` switch over two frames was chrome
 asking a question nobody had, and every cell answering it differently broke the rhythm of the rows.
 The camera is a **view, never a claim**: the cell opens zoomed onto the focused component (the small
 thing being proven, not a full page you have to hunt in) and the whole screenshot is one toggle
@@ -536,7 +546,8 @@ Design chip are gone.*
 
 You are staff and the human owns meaning, so the board proposes work but never authors it. Every
 requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
-offers **reword · add a requirement · remove this requirement · add a test to cover it**; a test's
+offers **reword · add a requirement · remove this requirement · add a test to cover it · the
+schematic doesn't match my app** *(the last added 2026-08-30 with R18's provenance caption)*; a test's
 menu offers **add · edit · remove a test** (unit or flow), with a **picker for the requirements it
 should cover**. Adding a test is reachable from a requirement even when nothing yet tags it — the
 requirement that most needs a test is the one with none. Each action
