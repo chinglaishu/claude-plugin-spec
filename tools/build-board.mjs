@@ -1977,18 +1977,24 @@ export function build () {
   /* the proof BAND — what belongs to the whole requirement (the covering test, the one video), under
      the beat rows that carry each beat's own frames */
   .feval { display:flex; flex-direction:column; gap:var(--s4); min-width:0; margin-top:var(--s5); }
-  /* the reader's ONE bar (the human, 2026-08-28): the play speed that paces every animated cell —
-     the drawing, each beat's stepper, the video. No card of its own; it is chrome over the story. */
-  .fbar { flex:none; display:flex; align-items:center; justify-content:flex-end; gap:var(--s2);
-    flex-wrap:wrap; min-width:0; padding-bottom:var(--s2); }
-  .fbar .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  /* THE READER-WIDE CONTROLS, ON THE TITLE ROW (the human, 2026-09-02: "put all these on the same
+     row of the test title row, left side of the menu button"). The auto/step pair and the speed —
+     the play mode and pace every animated cell (the drawing, each beat's stepper, the video) shares —
+     ride inside .frmeta now, after the flexing title so they sit at the right, just left of the ⋯
+     menu. No bar of their own. */
+  .frmeta .frtools { flex:none; display:inline-flex; align-items:center; gap:var(--s2);
+    align-self:center; margin-left:var(--s3); }
+  .frtools .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); }
-  /* two labelled control groups on one row — the second gets air so the labels read as headings for
-     the control beside them, not as one run of words */
-  .fbar .fbarl:not(:first-child) { margin-left:var(--s4); }
-  /* .medbar's auto margin is for a media bar that pushes its modes to the far edge; in the reader
-     bar the groups are already flush right and it would tear them apart */
-  .fbar .medbar { margin-left:0; }
+  /* each label reads as a heading for the control beside it — the second gets air before it */
+  .frtools .fbarl:not(:first-child) { margin-left:var(--s3); }
+  /* .medbar's auto margin is for a media bar that pushes its modes to a far edge; inline here it
+     would tear the group apart */
+  .frtools .medbar { margin-left:0; }
+  /* the speed control is auto-only (the human, 2026-09-02): dimmed and inert in step, since a stepped
+     beat sets its own pace by hand */
+  .pspdwrap[data-off] { opacity:.4; }
+  .pspdwrap[data-off] select.pspd { cursor:not-allowed; }
   /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
      knob so the hierarchy holds at any scale (Task 14) */
   .fread .fttl { flex:1 1 auto; min-width:0; font-size:calc(19px * var(--scale)); font-weight:600;
@@ -2048,6 +2054,16 @@ export function build () {
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
+  /* THE SELECTED BEAT ROW (the human, 2026-09-02: "make clear which when/then is selected, and the
+     ← → keys only apply on that one"). Exactly one When/Then row is selected at a time — the one the
+     arrows walk. A left INK accent marks it (inset box-shadow, so a grid row takes no layout shift),
+     and its ‹ n / N › tour control reads at full strength while every other beat's dims — so it is
+     always clear which beat an arrow will move. Hue-free on purpose: indigo already names the
+     Changed status, and selection is an affordance, not a status. The Given row is never a step
+     target, so it is never selected. */
+  .fstory .sbrow[data-rowstep] .tourstep { opacity:.4; transition:opacity .15s ease; }
+  .fstory .sbrow.sel { box-shadow:inset 3px 0 0 var(--ink-2); }
+  .fstory .sbrow.sel .tourstep { opacity:1; }
   /* THE COLUMN NAMES (the human, 2026-08-28): one header row over the beats, saying what the three
      cells are. Small-caps mono in --ink-3 — the system's one label style — on the --wash a header
      wears elsewhere (--ink-3 on --wash 5.5:1, AA). It shares the rows' grid so each name sits over
@@ -2148,7 +2164,7 @@ export function build () {
      The dedicated scene stepper that briefly sat beside it (3c93cb3) is GONE from the bar (the human,
      2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row's own tour
      control (.tourstep below), where "next" names the beat it steps. */
-  .fbar .medbar.pmode button { min-width:calc(38px * var(--scale)); }
+  .frtools .medbar.pmode button { min-width:calc(38px * var(--scale)); }
   /* THE PER-BEAT GUIDED-TOUR STEPPER (the human, 2026-09-01 — a live mock). The labelled bead
      filmstrip that ec62a1d shipped (.scenerail / .srbeads) was REJECTED; in its place, a product
      tour's control in the beat row's behaviour gutter: ONE quiet line ‹ n / N › — a prev chevron,

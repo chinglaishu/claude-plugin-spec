@@ -157,8 +157,6 @@ four-column mechanism (doctrine sweep) — the cell simply changes state in plac
 - **Given** the run panel with its job ending
 - **When** the job finishes
 - **Then** the panel and its log stay on screen, and the board behind it refreshes in place — no reload, and no background chip anywhere
-- **When** you are reading a requirement scrolled part-way down the reader as the refresh lands
-- **Then** the reader keeps that reading position — an in-place refresh that snapped you back to the top would not be "in place" *(the human, 2026-09-02: "keep back to top when running test"; the refresh rebuilds the reader, and the fresh scroll region must be put back where you were)*
 
 Finishing does not close the panel or reload the page out from under it. The log and the result stay
 on screen until you dismiss them, so the output is there to read for reference. **The board behind
@@ -166,7 +164,11 @@ the panel refreshes IN PLACE** — a requirement's proven/unproven state, a test
 record all update the moment the run's rebuild lands, with no reload and no manual refresh *(the
 human, 2026-08-13 — the records already refreshed live, but the derived state was baked at build time
 and only reappeared on the reload a panel-close triggered, so the board sat stale under an open
-panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)*. There
+panel; the client now re-fetches the rebuilt board.html and syncs the derived bits in place)*. "In
+place" **keeps your reading position** too: the refresh rebuilds the open reader, so a fresh scroll
+region would start at the top — a background run once snapped the reader up on every tick. The
+offset is captured before the rebuild and restored after, so what you were reading stays under your
+eye *(the human, 2026-09-02: "keep back to top when running test")*. There
 is no "background" that hides a running job behind a chip: a job runs in the open or is cancelled.
 
 *Corrected 2026-07-28: "Run in background" was removed. It hid a live job behind a header chip on the

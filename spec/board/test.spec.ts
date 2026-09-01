@@ -703,41 +703,34 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const sub = await beatFr.evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
       .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
     expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
-    const pdots = rows.nth(1).locator('.sbproof .pdots .pd')
-    await expect(pdots).toHaveCount(sub.length)          // both halves agree on how many scenes the beat has
-    const slow = ov.locator('.fread > .fbar select.pspd')
-    await slow.selectOption('0.25')                      // holds stretch, so a driven step is observable
-    await pdots.nth(sub.length - 1).click()
+    // both halves agree on the scene count, and DRIVING the walk moves the drawing's --ph to that
+    // scene's park point — the proof step drives the drawing. The per-cell dots are gone (the human,
+    // 2026-09-02); the behaviour gutter's ‹ n / N › is the walk, and STEP is the default so the loop
+    // holds while we walk it.
+    const tour = rows.nth(1).locator('.sbtext .tourstep')
+    const tpos = tour.locator('.tspos')
+    const tposN = async () => Number(((await tpos.textContent()) || '0 / 0').split('/')[0].trim())
+    await expect(tpos).toHaveText('1 / ' + sub.length)                 // both halves agree on the scene count
+    for (let i = 0; i < sub.length && (await tposN()) < sub.length; i++) { await tour.locator('.tsnext').click(); await page.waitForTimeout(60) }
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[sub.length - 1], 2)
-    await pdots.nth(0).click()
+    await tour.locator('.tsnext').click()                              // ↺ wraps to the first scene
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[0], 2)
-    await slow.selectOption('1')
-    // ONE reader bar, ONE speed (the human, 2026-08-28 — superseding the per-pane dropdowns): the
-    // schematic frames, every beat cell's stepper and the video are views of the SAME beat, so they
-    // play at one pace. Beside it, the COLUMN-ORDER pair, each button naming the order it produces.
-    const fbar = ov.locator('.fread > .fbar')
+    // ONE reader control group, ONE speed (the human, 2026-08-28 — superseding the per-pane dropdowns;
+    // on the TITLE ROW since 2026-09-02): the schematic frames, every beat cell's stepper and the video
+    // are views of the SAME beat, so they play at one pace.
+    const fbar = ov.locator('.fread .frmeta .frtools')
     await expect(fbar).toHaveCount(1)
+    await expect(ov.locator('.fread > .fbar')).toHaveCount(0)          // no separate bar beneath the title
     const spdS = fbar.locator('select.pspd')
     await expect(spdS).toHaveCount(1)                                   // exactly one, for the whole reader
     await expect(ov.locator('.fread select.pspd')).toHaveCount(1)       // …and none anywhere else in it
     await expect(spdS).toHaveValue('1')
     await expect(spdS.locator('option')).toHaveText(['0.25×', '0.5×', '1×', '1.5×', '2×', '4×'])
-    // RULE 4, 2026-08-30 — the CODE was right and this line was the wrong side, because the human
-    // decided the toggle away: "remove the toggle of schematic first or behavior first, just always
-    // be behaviour first". The bar carried a segmented column-order pair here; it does not any more,
-    // so the assertion becomes the R8 assert-the-gone shape. (What the ONE fixed order guarantees —
-    // the words leading every row, the header over the cell it names — is board R21's own
-    // requirement, which asserts it in full.)
-    // …and the reader's OTHER control, the play mode (board R20, the human 2026-08-30): auto ↔ step,
-    // auto live. The column-order pair that stood here is gone (board R21) — scoped to the BAR,
-    // never the whole reader, because R13's own authored prose still quotes the retired control by
-    // name and the prose is the human's to reword (rule 5).
+    // the reader's play-MODE pair (board R20): auto ↔ step, STEP the default now (the human, 2026-09-02:
+    // "default as step"). The column-order pair that once stood here is gone (board R21); the walk is
+    // per beat row (the gutter ‹ n/N ›), never a reader-wide control — so the bar has ONE .medbar.
     await expect(fbar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
-    // ONE .medbar now (2026-09-01, rule 4): the reader-wide step control ‹ › that briefly sat here
-    // (3c93cb3) moved onto each beat row's own scene rail (the human, 2026-08-30 — a requirement has
-    // several When/Then, so "next" must name its beat). The bar keeps only the play-MODE pair; the
-    // speed beside it is a <select>, not a .medbar. The retired column-order pair is still gone — a
-    // re-dealt order toggle would be a second, unnamed .medbar and caught.
+    await expect(fbar.locator('.medbar.pmode button.on')).toHaveText('step')
     await expect(fbar.locator('.medbar')).toHaveCount(1)
     await expect(fbar.locator('.medbar.pstep')).toHaveCount(0)      // no advance control in the bar
     await expect(fbar).not.toContainText('‹')
@@ -825,13 +818,13 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(vidPanel.locator('video')).toHaveCount(1)
     await expect(vidPanel.locator('.fvlab')).toContainText('the full flow that proves this')
 
-    // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. It AUTO-RUNS
-    // (the human, 2026-08-28): the beat's before → after loops on the reader's shared speed, exactly
-    // as the schematic beside it loops that beat's motion, with ONE dot per frame, the mono n / N
-    // count and dot-click jump. There is NO mode switch: the loop is the only mode a proof cell has
-    // (the human, 2026-08-28 — a toolbar over two frames asked a question nobody had).
+    // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. STEP is the
+    // default (the human, 2026-09-02), so it opens HELD; AUTO turns it into the hands-free loop. It
+    // carries NO dots, NO n/N counter and NO mode toolbar — the behaviour gutter's ‹ n / N › is the
+    // one readout and walk (the human, 2026-09-02).
     const proofCells = ov.locator('.fread .fstory .sbrow .sbproof')
-    const playCell = proofCells.filter({ has: page.locator('.pcplay') }).first()
+    const playRow = ov.locator('.fread .fstory .sbrow').filter({ has: page.locator('.pcplay') }).first()
+    const playCell = playRow.locator('.sbproof')
     await expect(playCell).toHaveCount(1)          // a harvested beat plays; a row with no frames says so
     const stepper = playCell.locator('.pcplay .fsteps-wrap')
     const frameN = await stepper.locator('.fsteps img').count()
@@ -841,58 +834,41 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // (natural width — a positive, not an attribute's absence) well before the loop shows it
     await expect.poll(() => stepper.locator('.fsteps img').evaluateAll(
       (els: HTMLImageElement[]) => els.every(i => i.complete && i.naturalWidth > 0)), { timeout: 1000 }).toBe(true)
-    // EXACT dots: one per frame, and the count spelled out beside them in mono
-    await expect(stepper.locator('.pdots .pd')).toHaveCount(frameN)
-    await expect(stepper.locator('.fstepn')).toHaveText(new RegExp(`^\\d+ / ${frameN}$`))
-    // the loop is the ONLY mode: no mode toolbar in the cell at all, and it is already running
+    // NO per-cell chrome: no dots, no n/N counter, no mode toolbar — the gutter ‹ n / N › is the readout
+    await expect(stepper.locator('.pdots')).toHaveCount(0)
+    await expect(stepper.locator('.fstepn')).toHaveCount(0)
     await expect(playCell.locator('.pcmodes')).toHaveCount(0)
+    await expect(playCell.locator('.pczoom')).toHaveCount(0)
     await expect(stepper).toBeVisible()
-    // 0.25× BEFORE the dot jump, so nothing can race the auto-advance (every hold is 4× long)
-    await spdS.selectOption('0.25')
-    await stepper.locator('.pdots .pd').last().click()
-    await expect(stepper.locator('.pdots .pd').last()).toHaveClass(/\bcur\b/)
-    await expect(stepper.locator('.fstepn')).toHaveText(`${frameN} / ${frameN}`)
-    await expect(stepper.locator('.fsteps img.on')).toHaveCount(1)
-    // the CURRENT dot advances LIVE at the reader's ONE chosen pace. 4× bounds every hold at ~1.5s,
-    // so the count must move within seconds — REAL timers + polling, argued: Playwright's fake clock
-    // would also freeze the board's own SSE/fold timers this very screen is proving, and a fast real
-    // pace makes the wait bounded without touching them.
+    const gpos = playRow.locator('.sbtext .tourstep .tspos')
+    // AUTO PLAYS ITSELF: switch to auto (which enables the speed), 4× bounds every hold at ~1.5s, and
+    // the gutter position advances on its own — REAL timers + polling, argued: Playwright's fake clock
+    // would also freeze the board's own SSE/fold timers this very screen is proving.
+    await fbar.locator('.medbar.pmode button[data-mode="auto"]').click()
     await spdS.selectOption('4')
-    const stepAt = await stepper.locator('.fstepn').textContent()
-    await expect.poll(() => stepper.locator('.fstepn').textContent(), { timeout: 15000 }).not.toBe(stepAt)
+    const stepAt = await gpos.textContent()
+    await expect.poll(() => gpos.textContent(), { timeout: 15000 }).not.toBe(stepAt)
     await spdS.selectOption('1')
-    // THE SHARED CAMERA (the human, 2026-08-28): where the harvest recorded a focus box, the row's
-    // proof and the drawing beside it are aimed at the SAME region by ONE toggle, so the two halves
-    // of a row can never end up framing different things. (No focus box in the harvest ⇒ no toggle:
-    // the cells stay honestly full-frame rather than inventing a crop.)
-    const zoomRow = ov.locator('.fread .fstory .sbrow').filter({ has: page.locator('.pczoom') }).first()
-    const zoomBtn = playCell.locator('.pczoom')
-    if (await zoomRow.count()) {
-      const zoomedPair = () => zoomRow.evaluate(el => [
+    await fbar.locator('.medbar.pmode button[data-mode="step"]').click()   // back to the default
+    // THE SHARED CAMERA (the human, 2026-08-28; no toggle since 2026-09-02): where the harvest recorded
+    // a focus box, the row's proof and the drawing beside it are framed on the SAME region — both cells
+    // zoomed to the component together, never one alone. The whole frame is the LIGHTBOX, not a toggle.
+    const framedRow = ov.locator('.fread .fstory .sbrow').filter({ has: page.locator('.sbproof .pcbox.zoomed') }).first()
+    if (await framedRow.count()) {
+      const pair = await framedRow.evaluate(el => [
         !!el.querySelector('.sbproof .pcbox.zoomed'), !!el.querySelector('.sbframe .pcbox.zoomed')])
-      await expect(zoomRow.locator('.pczoom')).toContainText('full frame')   // zoom is the default
-      await zoomRow.locator('.pczoom').click()
-      expect(await zoomedPair(), 'full frame drops BOTH cells of the row together').toEqual([false, false])
-      await expect(zoomRow.locator('.pczoom')).toContainText('zoom to the component')
-      await zoomRow.locator('.pczoom').click()
-      const back = await zoomedPair()
-      expect(back[0], 'the drawing and the proof are aimed together, never one alone').toBe(back[1])
-      await expect(zoomRow.locator('.pczoom')).toContainText('full frame')
+      expect(pair[0], 'the drawing and the proof are framed together, never one alone').toBe(pair[1])
     }
-    // the frame ON SHOW is still a real frame you can open: clicking it puts THAT frame in the
-    // shared lightbox. Read at FULL FRAME, so the click lands on the whole image rather than on a
-    // camera-transformed sliver.
-    const zoomedNow = !!(await zoomBtn.count()) && ((await zoomBtn.textContent()) || '').includes('full frame')
-    if (zoomedNow) await zoomBtn.click()
+    // the frame ON SHOW is still a real frame you can open: clicking it puts THAT frame in the shared
+    // lightbox — the whole screenshot, one click away (there is no inline toggle any more)
     const shown = stepper.locator('.fsteps img.on')
     await expect(shown).toHaveCount(1)
     const stillSrc = (await shown.getAttribute('src'))!
     await shown.click()
     await expect(page.locator('#lb')).toBeVisible()
-    expect((await page.locator('#lbimg').getAttribute('src'))!, 'the zoom shows the frame that was playing')
+    expect((await page.locator('#lbimg').getAttribute('src'))!, 'the click opens the frame that was showing')
       .toContain(stillSrc.split('?')[0].split('/').pop()!)
     await page.locator('#lbclose').click()
-    if (zoomedNow) await zoomBtn.click()
 
     // FAILED → the failed mark on the band, and the failing run's own frames beneath it. The stills
     // are the NEWEST record's (D3): its own frames when the last run of this test was a recorded
@@ -950,7 +926,7 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // the mockup's pager: the hint at the right, 30px pages, the current page ringed in ink (NOT
     // inverted — Run all is the detail's one inverted element, the design system's rule; the mockup's
     // sumi fill is a listed divergence), and ← → paging one requirement at a time from the keyboard
-    await expect(dt.locator('.dtfoot .fpk')).toHaveText('← → to review one by one')
+    await expect(dt.locator('.dtfoot .fpk')).toHaveText('← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement')
     const curDot = dt.locator('.dtfoot .fdot.cur')
     expect(await curDot.evaluate(el => getComputedStyle(el).borderColor)).toBe('rgb(28, 27, 24)')
     expect(await curDot.evaluate(el => el.getBoundingClientRect().height)).toBe(30)
@@ -958,9 +934,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     expect(await curDot.evaluate(el => getComputedStyle(el).backgroundColor), 'the current page is not inverted').toBe('rgba(0, 0, 0, 0)')
     expect(await dt.locator('.btn.pri').count(), 'Run all is the detail\'s one inverted element').toBe(1)
     const secondId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
-    await page.keyboard.press('ArrowLeft')
+    // PgUp / PgDn change the requirement now (the human, 2026-09-02: ← → walk the beat instead, so
+    // the pager moved to its own dedicated keys)
+    await page.keyboard.press('PageUp')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(firstId)
-    await page.keyboard.press('ArrowRight')
+    await page.keyboard.press('PageDown')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(secondId)
 
     // LEAVING FOCUS RESTORES THE BORROWED NODE: while the reader is open it holds one test's row;
@@ -1149,55 +1127,47 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
   })
 
-  // beat 3 — THE CELL SAYS WHAT THE DRAWING IS (the human's 2026-08-30 ask, canon as R18's third
-  // beat: "let user know if the schematic is not what they want"). A reader judging a drawing
-  // against the photograph beside it has to know which KIND of picture it is — in words, told, not
-  // inferred from how it looks. Four answers, and the proof that they are DERIVED rather than
-  // printed: the served board's own marks are rewritten and the words follow them every time.
+  // beat 3 — THE MIRROR IS SELF-EVIDENT (the human, 2026-09-02: "avoid useless things"). The per-cell
+  // "drawn from the app's measured layout" provenance caption is REMOVED — no .sbprov anywhere in the
+  // reader (assert-the-gone, the R8 precedent). Staleness is said by the storyline's STALE BANNER
+  // instead, and the drawing's provenance still travels into the ⋯ "schematic doesn't match my app"
+  // prompt (the R15-pattern escape), so a reader can still act on a wrong picture.
   await checkReq('R18', async () => {
-    const R2 = (u: URL) => u.pathname === '/' || u.pathname === '/board.html'
-    // serve THE BOARD SCREEN's R2 with one edit applied to its baked card, and read the caption back
-    const capWith = async (edit: (seg: string) => string) => {
-      await page.route(R2, async rt => {
-        const res = await rt.fetch(); const html = await res.text()
-        const scr = html.indexOf('data-screen="board"')
-        const i = html.indexOf('data-r="R2"', scr); const j = html.indexOf('data-r="R3"', i)
-        await rt.fulfill({ body: html.slice(0, i) + edit(html.slice(i, j)) + html.slice(j), contentType: 'text/html' })
-      })
-      await page.goto('/#/board/R3')                     // hop, so the reader is rebuilt from the stub
-      await page.goto('/#/board/R2')
-      await page.reload()
-      await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R2')
-      const cap = ov.locator('.fread .fstory .sbframe .sbprov').first()
-      await reveal(cap)
-      const out = { prov: await cap.getAttribute('data-prov'), text: (await cap.textContent()) || '' }
-      await page.unroute(R2)
-      return out
-    }
-    // (a) THE MIRROR, untouched: the app's own measured layout, said in words
-    const mirror = await capWith(seg => seg)
-    expect(mirror.prov, 'a mirror says it is one').toBe('mirror')
-    expect(mirror.text).toContain('measured layout')
-    expect(mirror.text, 'and a fresh drawing claims no drift').not.toContain('the text moved')
-    // (b) NOTHING DRAWN: the absence is said, never left as a blank cell
-    const none = await capWith(seg => seg.replace(/<figure class="schematic"[\s\S]*?<\/figure>/, ''))
-    expect(none.prov).toBe('none')
-    expect(none.text).toContain('nothing harvested to draw yet')
-    // (c) AN ARCHETYPE — true to the sentence, not to the screen. Every live specimen is a mirror,
-    // so the viz pass's own marks are rewritten here: change the mark, the words change with it.
-    const arch = await capWith(seg => seg
-      .replace(/data-viz-archetype="ui-mirror"/g, 'data-viz-archetype="list-add"')
-      .replace(/data-viz-kind="wireframe"/g, 'data-viz-kind="archetype"'))
-    expect(arch.prov).toBe('archetype')
-    expect(arch.text).toContain('the sentence, not the app')
-    // (d) STALE — the drawing is still a mirror, but of words that have since moved, and the caption
-    // says THAT too rather than leaving the grey wash to carry it alone (hue never alone)
-    const stale = await capWith(seg => seg.replace('<figure class="schematic"', '<figure class="schematic" data-stale="1"'))
-    expect(stale.prov, 'it is still a mirror — of text that has moved').toBe('mirror')
-    expect(stale.text).toContain('measured layout')
-    expect(stale.text, 'and the drift is in the words, not only in the wash').toContain('the text moved since it was drawn')
-    await hudCheck('the cell says what the drawing is, four ways', 'mirror·none·archetype·mirror+moved',
-      [mirror.prov, none.prov, arch.prov, stale.prov + (stale.text.includes('the text moved') ? '+moved' : '')].join('·'))
+    const spec = mirrorSpecimens()[0]
+    expect(spec, 'a board requirement drawn as a mirror').toBeTruthy()
+    const hop = spec.rid === 'R2' ? 'R3' : 'R2'
+    // (a) the per-cell caption is GONE everywhere in the reader
+    await armFocus(dt, spec.rid)
+    await page.goto('/#/board/' + hop)
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await reveal(ov.locator('.fread .fstory'))
+    await expect(ov.locator('.fread .fstory .sbprov'), 'no per-cell provenance caption any more').toHaveCount(0)
+    // (b) STALE → the storyline says so with its BANNER, not a per-cell line. Force the schematic
+    // stale on the baked reqpane node (the established deterministic technique — like the forced
+    // data-status elsewhere; the client re-reads data-stale off .schematic when the reader reopens),
+    // then hop-and-back so the reader rebuilds from it.
+    await dt.locator(`.reqpane .req[data-r="${spec.rid}"] .schematic`).evaluate(el => el.setAttribute('data-stale', '1'))
+    await page.goto('/#/board/' + hop)
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await reveal(ov.locator('.fread .fstory'))
+    await expect(ov.locator('.fread .fstory.isstale'), 'the storyline marks itself stale').toHaveCount(1)
+    await expect(ov.locator('.fread .fstory .sbstale')).toBeVisible()
+    await expect(ov.locator('.fread .fstory .sbstale')).toContainText('text changed')
+    await expect(ov.locator('.fread .fstory .sbprov'), 'still no per-cell caption, stale or not').toHaveCount(0)
+    await dt.locator(`.reqpane .req[data-r="${spec.rid}"] .schematic`).evaluate(el => el.removeAttribute('data-stale'))
+    // (c) the ⋯ escape still carries the drawing's provenance into the prompt (schemProv → R15 pattern)
+    await page.goto('/#/board/' + hop)
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await ov.locator('.fread .frmeta .fmenu .fmenubtn').click()
+    await ov.locator('.fread .frmeta .fmenupop [data-prompt="schemwrong"]').click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody'), 'the provenance rides into the prompt').toContainText('measured layout')
+    await page.locator('#promptsheet [data-promptclose]').click()
+    const capCount = await ov.locator('.fread .fstory .sbprov').count()
+    await hudCheck('the mirror is self-evident — no per-cell caption', '0 captions', String(capCount) + ' captions')
   })
 })
 
@@ -1350,7 +1320,7 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
 // Board R20 — THE PROOF PLAYS ITSELF. One mode, no toolbar, already running, zoomed onto the focus
 // with the whole frame one toggle away; and the Given row, which has one frame and nothing to loop,
 // stays the captioned still it is.
-test('The proof plays itself — already looping, zoomed, the whole frame one toggle away', async ({ page }) => {
+test('The proof plays itself — step is the default, no dots/counter/toggle, the whole frame in the lightbox', async ({ page }) => {
   await coverReqs('R20')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -1366,43 +1336,67 @@ test('The proof plays itself — already looping, zoomed, the whole frame one to
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
     const cell = row.locator('.sbproof')
     await reveal(cell)
-    // NO MODE SWITCH EXISTS — not a mode that defaults to the loop: there is no toolbar in the cell
+    // NO PER-CELL CHROME (the human, 2026-09-02): no mode toolbar, no dots, no n/N counter, and no
+    // full-frame toggle inside the proof — the gutter ‹ n / N › is the one readout, the lightbox the
+    // whole frame.
     await expect(cell.locator('.pcmodes')).toHaveCount(0)
+    await expect(cell.locator('.pdots')).toHaveCount(0)
+    await expect(cell.locator('.fstepn')).toHaveCount(0)
+    await expect(cell.locator('.pczoom')).toHaveCount(0)
     const stepper = cell.locator('.pcplay .fsteps-wrap')
     await expect(stepper).toBeVisible()
     const frameN = await stepper.locator('.fsteps img').count()
     expect(frameN, 'the beat harvested a pair — a loop needs frames to play').toBeGreaterThan(1)
-    await expect(stepper.locator('.pdots .pd')).toHaveCount(frameN)
-    await expect(stepper.locator('.fstepn')).toHaveText(new RegExp(`^\\d+ / ${frameN}$`))
-    // ALREADY RUNNING: nothing has been clicked, and the count moves on its own at the reader's one
-    // speed. 4× bounds every hold at ~1.5s, so the wait is bounded — real timers, because a fake
-    // clock would freeze the board's own SSE/fold timers this very screen is proving.
-    const spd = ov.locator('.fread > .fbar select.pspd')
+    // the ONE readout + walk is the gutter tour on the row (the SELECTED beat's, since walking flips
+    // to step and selects it)
+    const tour = row.locator('.sbtext .tourstep')
+    await expect(tour).toHaveCount(1)
+
+    // STEP IS THE DEFAULT, and the controls ride the TITLE ROW (left of the ⋯ menu), not a bar of
+    // their own. The speed is AUTO-ONLY — disabled while stepping.
+    const tools = ov.locator('.fread .frmeta .frtools')
+    await expect(tools).toHaveCount(1)
+    await expect(ov.locator('.fread > .fbar')).toHaveCount(0)                 // the old separate bar is gone
+    await expect(tools.locator('.medbar.pmode button.on')).toHaveText('step')
+    const spd = tools.locator('select.pspd')
+    await expect(spd).toBeDisabled()
+
+    // WALKED BY HAND in step: the › advances the SELECTED row's two cells by exactly one scene
+    const posText = () => tour.locator('.tspos').textContent()
+    const pos0 = await posText()
+    await tour.locator('.tsnext').click()
+    await expect.poll(posText).not.toBe(pos0)
+
+    // AUTO PLAYS ITSELF: switch to auto, the speed wakes, and the position advances on its own at the
+    // reader's one speed. 4× bounds every hold at ~1.5s, so the wait is bounded — real timers, because
+    // a fake clock would freeze the board's own SSE/fold timers this very screen is proving.
+    await tools.locator('.medbar.pmode button[data-mode="auto"]').click()
+    await expect(spd).toBeEnabled()
     await spd.selectOption('4')
-    const at = await stepper.locator('.fstepn').textContent()
-    await expect.poll(() => stepper.locator('.fstepn').textContent(), { timeout: 15000 }).not.toBe(at)
-    await spd.selectOption('1')
-    // ZOOMED BY DEFAULT — and the whole frame is exactly ONE toggle away, and one toggle back
-    const zb = cell.locator('.pczoom')
-    await expect(zb).toContainText('full frame')                 // i.e. it is zoomed right now
+    const at = await posText()
+    await expect.poll(posText, { timeout: 15000 }).not.toBe(at)
+
+    // FRAMED ON THE COMPONENT (both cells), and the whole frame is the LIGHTBOX a proof click opens —
+    // there is no inline toggle to press
     await expect(row.locator('.pcbox.zoomed')).toHaveCount(2)    // the drawing and the proof together
-    await zb.click()
-    await expect(row.locator('.pcbox.zoomed')).toHaveCount(0)
-    await expect(zb).toContainText('zoom to the component')
-    await hudCheck('the whole frame is one toggle away', '0 zoomed cells',
-      (await row.locator('.pcbox.zoomed').count()) + ' zoomed cells')
-    await zb.click()
-    await expect(row.locator('.pcbox.zoomed')).toHaveCount(2)
+    await cell.locator('.pcplay .fsteps img.on').first().click()
+    await expect(page.locator('#lb')).toBeVisible()
+    await hudCheck('a proof click opens the whole frame', 'lightbox open',
+      (await page.locator('#lb').isVisible()) ? 'lightbox open' : 'lightbox closed')
+    await page.keyboard.press('Escape')
+    await expect(page.locator('#lb')).toBeHidden()
   })
 
-  // the GIVEN row is a STATE, not an action: one frame, so nothing to loop and nothing to step
+  // the GIVEN row is a STATE, not an action: one frame, so nothing to loop and nothing to step — and
+  // now UNCAPTIONED (the human, 2026-09-02: the "given" label row is gone)
   await checkReq('R20', async () => {
     const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
     await reveal(given.locator('.sbproof'))
     await expect(given.locator('.sbproof .pcplay')).toHaveCount(0)
     await expect(given.locator('.sbproof .fsteps-wrap')).toHaveCount(0)
     await expect(given.locator('.sbproof .pcstrip .pcfig img')).toHaveCount(1)   // the one still
-    await expect(given.locator('.sbproof .pccap')).not.toBeEmpty()               // captioned, honestly
+    await expect(given.locator('.sbproof .pccap')).toHaveCount(0)                // no caption — a plain still
+    await expect(given.locator('.sbproof .pdots')).toHaveCount(0)
   })
 
 })
@@ -1427,20 +1421,22 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
   const spec = mirrorSpecimens()[0]
   expect(spec, 'a board requirement harvested with a beat pair').toBeTruthy()
 
-  // THE TOP BAR HAS NO ADVANCE — only the mode toggle (and the speed <select> beside it). The walk
-  // is not here any more; it is on the rows.
+  // THE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02), and have NO advance — only the auto/step
+  // toggle and the speed <select>. The walk is on the rows. And STEP is the default now.
   await checkReq('R20', async () => {
     await armFocus(dt, spec.rid)
     await page.goto('/#/board/' + (spec.rid === 'R2' ? 'R3' : 'R2'))   // hop, so the reader rebuilds
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
-    const bar = ov.locator('.fread > .fbar')
+    const bar = ov.locator('.fread .frmeta .frtools')
     await reveal(bar)
+    await expect(ov.locator('.fread > .fbar')).toHaveCount(0)                 // no separate bar beneath the title
     await expect(bar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
-    await expect(bar.locator('.medbar.pmode button.on')).toHaveText('auto')   // the loop is still default
+    await expect(bar.locator('.medbar.pmode button.on')).toHaveText('step')   // STEP is the default now
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
     await expect(bar.locator('.tourstep')).toHaveCount(0)                     // the tour control is per-ROW, never on the bar
+    await expect(bar.locator('select.pspd')).toBeDisabled()                   // speed is auto-only
   })
 
   // THE REJECTED RAIL IS GONE (rule 4, the R8 assert-the-gone precedent): the labelled bead filmstrip
@@ -1453,17 +1449,16 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
   })
 
-  // THE PER-BEAT GUIDED TOUR steps BOTH cells of ITS row in lock-step, holds the loop, tracks the scene
-  // in `n / N`, dims prev at the start, and turns next into a Restart ↺ at the end that wraps to scene 1.
+  // THE PER-BEAT GUIDED TOUR steps BOTH cells of ITS row in lock-step, tracks the scene in the gutter
+  // ‹ n / N ›, dims prev at scene 1, and turns next into a Restart ↺ at the end that wraps to scene 1.
+  // STEP is the default now, so the reader opens HELD on scene 1 — no click into step first.
   await checkReq('R20', async () => {
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
     const tour = row.locator('.sbtext .tourstep')
     const prev = tour.locator('.tsprev')
     const nextb = tour.locator('.tsnext')
     const pos = tour.locator('.tspos')
-    const cell = row.locator('.sbproof')
-    const stepper = cell.locator('.pcplay .fsteps-wrap')
-    const mode = ov.locator('.fread > .fbar .medbar.pmode')
+    const mode = ov.locator('.fread .frmeta .frtools .medbar.pmode')
     await reveal(tour)
     // the drawing's own park points — one per scene of this beat, the same list the loop steps
     const sub = await row.locator('.sbframe').evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
@@ -1472,113 +1467,114 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const N = sub.length
     // the tour control is IN the behaviour gutter: ONE quiet line ‹ n / N › — no box, no dots, no labels
     await expect(tour).toHaveCount(1)
-    await expect(prev).toHaveCount(1)
-    await expect(nextb).toHaveCount(1)
-    await expect(pos).toHaveCount(1)
     await expect(tour.locator('.srbead')).toHaveCount(0)                      // no per-scene beads
-    await expect(pos).toHaveText(new RegExp('^\\d+ / ' + N + '$'))            // the position reads n / N
     const phOf = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
-    const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
     const posN = async () => Number(((await pos.textContent()) || '0 / 0').split('/')[0].trim())
-    const spd = ov.locator('.fread > .fbar select.pspd')
 
-    // ‹ › WALKS: a click drops the reader into STEP so the loop holds (proved from the default auto —
-    // do NOT assert the resulting scene NUMBER here: the auto loop is at an UNKNOWN scene when the
-    // click lands, so next lands wherever+1; the position walk below runs from a KNOWN start instead).
-    await expect(mode.locator('button.on'), 'the loop is the default').toHaveText('auto')
-    await nextb.click()
-    await expect(mode.locator('button.on'), 'the walk holds the loop').toHaveText('step')
-
-    // now DETERMINISTIC: the loop is held, so walk PREV back to scene 1 (prev disables there) — a known
-    // start no matter where the auto loop was when it froze. 4× only bounds the eased glide's settle.
-    await spd.selectOption('4')
-    for (let i = 0; i < N + 2 && !(await prev.isDisabled()); i++) { await prev.click(); await page.waitForTimeout(60) }
-    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
+    // STEP IS THE DEFAULT: the reader opens held on scene 1, so prev is already disabled — a known
+    // deterministic start with no click into step needed.
+    await expect(mode.locator('button.on'), 'step is the default').toHaveText('step')
     await expect(pos).toHaveText('1 / ' + N)
     await expect(prev, 'prev dims/disables at the start').toBeDisabled()
-    const before = await nOf()
+    const before = await posN()
     await prev.click({ force: true })                                         // a dimmed prev does nothing
-    await page.waitForTimeout(400)
-    expect(await nOf(), 'prev is inert at scene 1').toBe(before)
+    await page.waitForTimeout(300)
+    expect(await posN(), 'prev is inert at scene 1').toBe(before)
 
     // NEXT walks forward one scene, and BOTH cells go together (the proof loop and the drawing beside it)
     await nextb.click()
-    await expect.poll(nOf, { timeout: 6000 }).toBe(2)
+    await expect.poll(posN, { timeout: 6000 }).toBe(2)
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[1], 2)
     await expect(pos).toHaveText('2 / ' + N)                                  // the position line follows the walk
-    // …and now that it holds, the scene does NOT move on its own — 2.5s at 4×, time for several auto hops
-    const held = await nOf()
-    await page.waitForTimeout(2500)
-    expect(await nOf(), 'step holds until the tour (or a key) asks for the next scene').toBe(held)
+    // …and it HOLDS: the scene does NOT move on its own while stepping
+    const held = await posN()
+    await page.waitForTimeout(2000)
+    expect(await posN(), 'step holds until the tour (or a key) asks for the next scene').toBe(held)
 
-    // WALK TO THE LAST SCENE — next becomes a RESTART ↺ that wraps back to scene 1. From scene 2, that
-    // is N-2 more clicks; walk defensively until nOf is N so a missed eased frame cannot desync the count.
-    for (let i = 0; i < N && (await nOf()) < N; i++) { await nextb.click(); await page.waitForTimeout(60) }
-    await expect.poll(nOf, { timeout: 6000 }).toBe(N)
+    // WALK TO THE LAST SCENE — next becomes a RESTART ↺ that wraps back to scene 1. Walk defensively
+    // until posN is N so a missed eased frame cannot desync the count.
+    for (let i = 0; i < N && (await posN()) < N; i++) { await nextb.click(); await page.waitForTimeout(60) }
+    await expect.poll(posN, { timeout: 6000 }).toBe(N)
     await expect(pos).toHaveText(N + ' / ' + N)
     await expect(nextb).toHaveText('↺')                                       // the restart glyph at the end
     await expect(nextb).toHaveClass(/\brestart\b/)
     await nextb.click()                                                       // ↺ WRAPS to scene 1
-    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
+    await expect.poll(posN, { timeout: 6000 }).toBe(1)
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[0], 2)
     await expect(nextb).toHaveText('›')                                       // and back to the next chevron
     await hudCheck('the tour restarts at the end', 'scene 1', 'scene ' + (await posN()))
-    await spd.selectOption('1')
   })
 
-  // THE ← → KEYS WALK THE ROW THE READER IS ON — and a proof CLICK opens the lightbox again.
+  // THE KEYS, ON TWO AXES (the human, 2026-09-02): ← → walk the SELECTED beat ONLY, ↑ ↓ change which
+  // when/then is selected — the arrows never move every row at once. And a proof click opens the
+  // lightbox.
   await checkReq('R20', async () => {
-    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    const tour = row.locator('.sbtext .tourstep')
-    const nextb = tour.locator('.tsnext')
-    const cell = row.locator('.sbproof')
-    const stepper = cell.locator('.pcplay .fsteps-wrap')
-    const mode = ov.locator('.fread > .fbar .medbar.pmode')
-    const sub = await row.locator('.sbframe').evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
-      .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
-    const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
-    await reveal(cell)
-    await expect(mode.locator('button.on'), 'still in step mode from the walk above').toHaveText('step')
-    // ensure on scene 1, then FOCUS this row (its next chevron) so the keys target IT, not a global cursor
-    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
-    await nextb.focus()
-    // → steps forward via the KEYBOARD (a reader open in step mode; the arrows page in auto, walk in step)
-    const next = 1 % sub.length + 1
+    // a MULTI-BEAT requirement (board R4 has three When/Then), so the arrows can be shown to move ONE
+    // row and leave the others still
+    await page.goto('/#/board/' + (spec.rid === 'R4' ? 'R5' : 'R4'))
+    await page.goto('/#/board/R4')
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
+    const rows = ov.locator('.fread .fstory .sbwrap .sbrow[data-rowstep]')
+    const nRows = await rows.count()
+    expect(nRows, 'a multi-beat requirement, so the arrows can be shown to target ONE row').toBeGreaterThan(1)
+    const rowA = rows.nth(0)
+    const rowB = rows.nth(1)
+    // position of a row's tour (0 when the beat is single-scene and carries no tour — then it simply
+    // never changes, which the isolation check below still reads correctly)
+    const posOf = async (r: ReturnType<typeof rows.nth>) =>
+      Number(((await r.locator('.sbtext .tourstep .tspos').count()) ? await r.locator('.sbtext .tourstep .tspos').textContent() : '0 / 0')!
+        .split('/')[0].trim())
+    await reveal(rowA.locator('.sbproof'))
+    // the FIRST steppable beat opens SELECTED and visibly marked; no other row is
+    await expect(rowA, 'the first beat opens selected').toHaveClass(/\bsel\b/)
+    await expect(rowB).not.toHaveClass(/\bsel\b/)
+    await expect(ov.locator('.fread .sbrow.sel'), 'exactly one selected row').toHaveCount(1)
+
+    // ISOLATION: → walks the SELECTED row (rowA) only. rowB's tour position must not move.
+    const aStart = await posOf(rowA); const bStart = await posOf(rowB)
     await page.keyboard.press('ArrowRight')
-    await expect.poll(nOf, { timeout: 6000 }).toBe(next)
-    // ← steps back
-    await page.keyboard.press('ArrowLeft')
-    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
-    // no media toolbar has crept back in with the mode — this is a PLAY mode (R20's standing absence)
-    await expect(cell.locator('.pcmodes')).toHaveCount(0)
-    // …and THE DECOUPLE: a click on the proof frame is a proof again — it opens the shared lightbox,
-    // in step mode as in auto, because stepping no longer rides the picture (the human, 2026-08-30)
+    if (aStart > 0) await expect.poll(() => posOf(rowA), { timeout: 6000 }).not.toBe(aStart)
+    expect(await posOf(rowB), 'the UNSELECTED beat never moved — ← → act on the selected row only').toBe(bStart)
+
+    // ↑ ↓ move the SELECTION between beats — the dedicated "which when/then" axis
+    await page.keyboard.press('ArrowDown')
+    await expect(rowB, '↓ selects the next beat').toHaveClass(/\bsel\b/)
+    await expect(rowA).not.toHaveClass(/\bsel\b/)
+    await page.keyboard.press('ArrowUp')
+    await expect(rowA, '↑ selects the previous beat').toHaveClass(/\bsel\b/)
+
+    // no media toolbar crept back in — this is a PLAY mode (R20's standing absence)
+    await expect(rowA.locator('.sbproof .pcmodes')).toHaveCount(0)
+    // a proof click opens the shared lightbox — the whole frame, one click away
     await expect(page.locator('#lb')).toBeHidden()
-    await cell.locator('.pcplay .fsteps img.on').first().click({ timeout: 8000 })
-    await expect(page.locator('#lb'), 'the proof click zooms again, even while stepping').toBeVisible()
-    await hudCheck('a proof click opens the lightbox in step mode', 'lightbox open', 'lightbox open')
+    await rowA.locator('.sbproof .pcplay .fsteps img.on').first().click({ timeout: 8000 })
+    await expect(page.locator('#lb'), 'the proof click opens the whole frame').toBeVisible()
+    await hudCheck('a proof click opens the lightbox', 'lightbox open', 'lightbox open')
     await page.locator('#lbclose').click()
     await expect(page.locator('#lb')).toBeHidden()
   })
 
-  // READER-WIDE AND SESSION-HELD, like the speed beside it — and AUTO re-arms what step held.
+  // READER-WIDE AND SESSION-HELD: the STEP default holds across paging, is never stored, and AUTO
+  // re-arms the loop.
   await checkReq('R20', async () => {
-    const bar = ov.locator('.fread > .fbar')
-    // page to another requirement: it opens held too, and nothing about the mode is written down
+    // page to another requirement: it opens in step too, and nothing about the mode is written down
     await page.goto('/#/board/R4')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R4')
-    await expect(ov.locator('.fread > .fbar .medbar.pmode button.on')).toHaveText('step')
+    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
     expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /mode|play|step/i.test(k))),
       'the play mode is session-scoped — never stored').toEqual([])
-    // …and AUTO re-arms what step held
+    // …and AUTO re-arms the loop: the selected beat's position advances on its own once auto is chosen
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
-    const back = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.sbproof .pcplay .fsteps-wrap')
-    await reveal(back)
-    await ov.locator('.fread > .fbar .medbar.pmode button', { hasText: 'auto' }).click()
-    const at2 = await back.locator('.fstepn').textContent()
-    await expect.poll(() => back.locator('.fstepn').textContent(), { timeout: 12000 }).not.toBe(at2)
-    await bar.locator('select.pspd').selectOption('1')
+    const backRow = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const backPos = backRow.locator('.sbtext .tourstep .tspos')
+    await reveal(backRow.locator('.sbproof'))
+    const tools = ov.locator('.fread .frmeta .frtools')
+    await tools.locator('.medbar.pmode button', { hasText: 'auto' }).click()
+    await tools.locator('select.pspd').selectOption('4')
+    const at2 = await backPos.textContent()
+    await expect.poll(() => backPos.textContent(), { timeout: 12000 }).not.toBe(at2)
+    await tools.locator('select.pspd').selectOption('1')
   })
 })
 
@@ -1641,9 +1637,10 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     await expect(ov.locator('.fread .medbar.pmode')).toHaveCount(1)
     await expect(ov.locator('.fread .medbar.pstep')).toHaveCount(0)
     // the CONTROL, not the word: R21's own prose still describes the toggle it used to have, and the
-    // prose is the human's to reword (rule 5). So the ban is on the reader's control bar.
-    await expect(ov.locator('.fread > .fbar')).not.toContainText('schematic first')
-    await expect(ov.locator('.fread > .fbar')).not.toContainText('behavior first')
+    // prose is the human's to reword (rule 5). So the ban is on the reader's control group (now on the
+    // title row, board R20's 2026-09-02 move).
+    await expect(ov.locator('.fread .frmeta .frtools')).not.toContainText('schematic first')
+    await expect(ov.locator('.fread .frmeta .frtools')).not.toContainText('behavior first')
     await expect(story()).not.toHaveClass(/\bord-bsp\b/)
     expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /ord|colorder|column/i.test(k))),
       'there is no column order to store any more').toEqual([])
@@ -1976,8 +1973,11 @@ test('The proof is scannable as frames — one still per checked value, cut from
     // per reader, not one per pane — the schematic, every beat's stepper and the video are views of
     // the same beat): playbackRate follows the selection across the native 0.25×–4× range.
     expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1)
-    const spd14 = ov.locator('.fread > .fbar select.pspd')
+    const spd14 = ov.locator('.fread .frmeta .frtools select.pspd')
     await expect(spd14).toHaveCount(1)                          // exactly one speed control in the reader
+    // the speed is auto-only (the human, 2026-09-02) — switch to auto so it is live, then it rates the video
+    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="auto"]').click()
+    await expect(spd14).toBeEnabled()
     await spd14.selectOption('0.25')
     expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(0.25)
     await spd14.selectOption('4')
@@ -2106,10 +2106,8 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
     const cellP = dt.locator('.focusov .fread .fstory .sbrow .sbproof').filter({ has: page.locator('.pcplay') }).first()
-    // read the frame at FULL FRAME: the camera is a VIEW, so the whole screenshot is always one click
-    // away — and the geometry below (and the lightbox click) must measure the frame, not a crop
-    const zoomP = cellP.locator('.pczoom')
-    if (await zoomP.count() && ((await zoomP.textContent()) || '').includes('full frame')) await zoomP.click()
+    // the loop fills its cell, and a click opens the whole frame in the lightbox — there is no inline
+    // toggle any more (the human, 2026-09-02); the geometry below measures the framed loop
     const playing = cellP.locator('.pcplay .fsteps img.on')
     await expect(playing).toHaveCount(1)
     const pairGeom = await cellP.evaluate(el => {
@@ -2666,10 +2664,11 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     const said = (await body.textContent()) || ''
     expect(said, 'the prompt names the screen and the requirement').toContain('board:' + reqId)
     expect(said, '…the files the fix actually lives in').toContain('spec/board/steps.ts')
-    const capTxt = (((await ov.locator('.fread .fstory .sbprov').first().textContent()) || '')
-      .replace(/^[^\w]+/, '').trim())
-    expect(capTxt.length, 'the reader captions the drawing’s provenance').toBeGreaterThan(10)
-    expect(said, '…what the drawing is today, in the same words the cell captions').toContain(capTxt)
+    // the prompt carries the drawing's PROVENANCE — the same schemProv() text the cell used to
+    // caption. The per-cell caption is gone now (the human, 2026-09-02: "avoid useless things"), so
+    // this is the one place the provenance is said — and it must still be said, in schemProv's words.
+    await expect(ov.locator('.fread .fstory .sbprov'), 'no per-cell caption any more').toHaveCount(0)
+    expect(said, '…what the drawing is today').toMatch(/measured layout|the sentence, not the app|nothing harvested/)
     expect(said, '…and the kg-e2e way to make a mirror drawable').toContain('proveVisible')
     expect(said).toContain('viz-derive')
     expect(said, 'never by hand — a drawn guess beside a photograph is the lie the board forbids')
@@ -3136,15 +3135,16 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await page.keyboard.press('Tab')
     await expect(d1).toBeFocused()
     await expect.poll(() => d1.evaluate(bubble), { message: 'the bubble shows on keyboard focus' }).toBe(true)
-    // a dot click jumps to that requirement; ‹ › and ← → still page one at a time
+    // a dot click jumps to that requirement; ‹ › and PgUp/PgDn page one at a time (← → walk the beat
+    // now — the human, 2026-09-02)
     await d1.click()
     await expect(dt.locator('.focusov .fid')).toHaveText(firstId)
     await expect(bar.locator('.fdot.cur')).toHaveAttribute('data-r', firstId)
     await bar.locator('.fnav.next').click()
     await expect(dt.locator('.focusov .fid')).toHaveText(prd.ids[1])
-    await page.keyboard.press('ArrowLeft')
+    await page.keyboard.press('PageUp')
     await expect(dt.locator('.focusov .fid')).toHaveText(firstId)
-    await expect(bar.locator('.fpk')).toHaveText('← → to review one by one')
+    await expect(bar.locator('.fpk')).toHaveText('← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement')
     // the old top block is GONE — the pager is the only map (Focus and List alike)
     await expect(page.locator('.reqmap, .tocg, .tocit')).toHaveCount(0)
     await page.goto('/#/board/grid')

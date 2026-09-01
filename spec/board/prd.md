@@ -227,7 +227,10 @@ its **proof frames** are surfaced too — **one still per checked value**, taken
 the instant that check fired (indexed by the run's own beat log), each carrying the same
 self-narrating callout it burned in (the requirement, its When→Then, red on a failure) and the
 ring on the exact value asserted. They show **where they belong**: each beat's own before/after pair
-on that beat's **row** of the reader — looping by default, stills one click away — and a **failing**
+on that beat's **row** of the reader — **walked a scene at a time in step (the default), or looped in
+auto**, its position read in the behaviour gutter's `‹ n / N ›` and the whole frame one click away in
+the lightbox *(the human, 2026-09-02: the per-cell dots and counter are gone; the gutter stepper is
+the one readout)* — and a **failing**
 run's checked-value frames as the proof band's own filmstrip beneath the rows, in the test's evidence
 and in the reader alike; so a person verifies the asserted values by eye, in order, without pressing
 play; the
@@ -259,14 +262,17 @@ frames sit beside the words. The one-recording rule is untouched.*
 - **Then** it is drawn from the app's own measured layout — the page's real structure at the viewport it was measured in, with the focused element's own text where a beat ringed one
 - **When** no layout was ever harvested for it
 - **Then** it falls back to the archetype drawing, or to the labelled beats under an honest "no schematic drawn yet" — never a guessed picture
-- **When** its row renders
-- **Then** the cell says in words what the drawing is derived from — the app's measured layout, the sentence's archetype, or nothing harvested yet — and says so again when the text has moved past it *(added 2026-08-30, the human: "let user know if the schematic is not what they want"; the ⋯ menu's "the schematic doesn't match my app" prompt is the R15-pattern escape)*
+- **When** the requirement's text moves past the drawing
+- **Then** the storyline says so with its stale banner and renders the drawing quiet — there is no per-cell "drawn from the app's measured layout" caption *(removed 2026-09-02, the human: "avoid useless things"; the ⋯ menu's "the schematic doesn't match my app" prompt is still the R15-pattern escape, and it still carries the drawing's provenance into the prompt)*
 
 The drawn half of a beat row used to be an **archetype**: a house diagram chosen from the *shape* of
 the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
 derived from the page's own measured boxes (the layout skeleton captured beside every evidence
 frame, `spec/<screen>/evidence/<id>.b<n>.<phase>.layout.json`), one frame per scene, at the
-viewport's own aspect, carrying the ringed element's real text where a beat ringed one. A beat is
+viewport's own aspect, carrying the page's **real text and input values at their measured sizes** —
+not a skeleton of grey bars — with the ringed element's own text where a beat ringed one *(the human,
+2026-09-02: "make the schematic look like actual web as close as possible"; it stays a drawing in the
+house palette, so it never passes for the photograph beside it)*. A beat is
 drawn **scene by scene**: one frame per value it proved, in the order it proved them, then the state
 it left — so the When is in the picture, not only its result. That is what
 makes a row a **comparison** instead of an illustration: the left cell is the same screen as the
@@ -281,7 +287,11 @@ tell.
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
 Amended 2026-08-29 on the human's ask (both cells must reflect the When and the Then, with the
 actual content — "you type \"Water the plants\"" visible as typed): the drawing now enacts the
-beat scene by scene rather than ringing only its outcome.*
+beat scene by scene rather than ringing only its outcome. Amended 2026-09-02 on the human's ask:
+the mirror renders real text and input values at their measured sizes (a high-fidelity drawing, not
+a bar skeleton), and the per-cell "drawn from…" provenance caption is removed — staleness rides the
+storyline's stale banner, and the ⋯ "schematic doesn't match my app" escape still carries the
+provenance into its prompt.*
 
 <!-- Proven by spec/board/test.spec.ts, "The schematic mirrors the real UI …" — beat 1 reads a
      harvested board requirement's committed drawing off the live reader and asserts the mirror
@@ -305,11 +315,13 @@ row's **zoom**: one magnification for the whole beat, so the two cells can never
 other. Each **scene** sets the **aim**: the camera centres on the ring that scene photographed, in
 both cells at once — a single fixed frame holding rings hundreds of pixels apart could only fit them
 by zooming back out until neither could be read *(amended 2026-08-30, the human: "more aggressive
-zoom in on the area it's focusing"; the whole frame stays one toggle away, for both cells on the
-row's one control)*. The proof cell frames it, and the drawing beside it is framed by the identical
+zoom in on the area it's focusing"; the whole screenshot is one click away in the proof lightbox)*.
+The proof cell frames it, and the drawing beside it is framed by the identical
 fractional transform, re-expressed
-in the drawing's own coordinates so the region matches even when the aspects do not. One toggle aims
-both; there is no way to move one alone, because there is only one choice to make. And the two cells
+in the drawing's own coordinates so the region matches even when the aspects do not. **One camera aims
+both** — there is no inline zoom toggle any more (the human, 2026-09-02, with the full-frame button
+removed): both cells always frame the component, and the whole screenshot is the lightbox a click on
+the proof opens. And the two cells
 step **together**: the proof's own loop drives the drawing, so frame *n* of the photograph and scene
 *n* of the drawing are the same moment — same region, same clock. The **words** are
 the same beat too — and the same **sentence**: the drawn card and the burned one ask one shared rule
@@ -332,41 +344,49 @@ scene is never cropped away), and the two cells now share one clock — the proo
      fraction of the page, and shown to contain the focus rect's centre. Beat 2 asserts the words
      agree across the row — the row's text cell and the drawing's own label both carrying the beat's
      When → Then as parseBehavior reads them from prd.md — and that the Given row carries the Given
-     alone, unzoomed, with no zoom control at all. -->
+     alone, unzoomed, with no zoom control at all (the full-frame toggle is gone reader-wide; the
+     whole frame is the lightbox a proof click opens). -->
 
 ## R20 — The proof plays itself
 
 - **Given** a beat whose harvest holds each value it proved and the state it left
 - **When** its row renders
-- **Then** the proof cell is already looping — no media mode to pick, no play to press — opening on the When in motion, not on the state the Given row already showed, framed tight on the thing being proven, with the whole frame exactly one toggle away
-- **When** you switch the reader's play control from auto to step
-- **Then** every loop holds where it is, and each beat row's own guided-tour stepper `‹ n / N ›` — or the ← → keys on the focused row — walks that beat one scene, both cells moving together, the next chevron becoming a restart `↺` at the last scene that wraps to the first
+- **Then** the proof cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked in the behaviour gutter's `‹ n / N ›`, the single readout for both cells of the row
+- **When** the reader opens
+- **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
+- **When** you walk a beat — its `‹ n / N ›`, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
+- **Then** both cells of that row move together one scene, the next chevron becoming a restart `↺` at the last scene that wraps to the first — and no other beat row moves
+- **When** you switch the play control to auto
+- **Then** every cell plays itself on a loop at the reader's speed; the speed control is live **only in auto** — a stepped beat sets its pace by hand
 - **When** the row is the Given
-- **Then** its one frame stays a still: a state, not an action
+- **Then** its one frame stays a plain, uncaptioned still — a state, not an action
 
-A proof cell has **no media toolbar**. The beat's each-asserted-value → after runs the moment the
-row exists, on the reader's one speed, exactly as the drawing beside it loops that beat's own
-motion — a row plays as one thing. Its **before frame stays in the evidence but leaves the loop**:
-the state before the action is what the Given row (or the previous beat's end) already showed, and
-opening on it made every beat begin with a redundant still (the human, 2026-08-30). A beat that
-proved nothing between its ends still shows both — there the before **is** the motion. This is what
-the row shows, not what the run captured: the frames on disk are untouched. The old `stills · gif · video` switch over two frames was chrome
-asking a question nobody had, and every cell answering it differently broke the rhythm of the rows.
-The camera is a **view, never a claim**: the cell opens zoomed onto the focused component (the small
-thing being proven, not a full page you have to hunt in) and the whole screenshot is one toggle
-back — the frame on disk is untouched either way. The **Given row** has a single frame and nothing
-to loop, so it stays the captioned still it is.
+A proof cell shows the **beat happening and nothing around it** — no media toolbar, no dots, no
+`n / N` counter. The beat's each-asserted-value → after is the motion; its **before frame stays in
+the evidence but leaves the loop** — the state before the action is what the Given row (or the
+previous beat's end) already showed (the human, 2026-08-30). A beat that proved nothing between its
+ends still shows both, and there the before **is** the motion. The old `stills · gif · video` switch
+was chrome asking a question nobody had; it does not come back. The camera is a **view, never a
+claim**: the cell frames the focused component — the small thing being proven, not a page to hunt
+in — and a **click opens the full screenshot in the lightbox**, the frame on disk untouched either
+way. There is no inline zoom toggle and no per-cell chrome (the human, 2026-09-02 — "remove full
+frame button and also the dots … in proof as it already did in the step on behaviour"): the **one
+readout and walk** for a beat is the `‹ n / N ›` in the behaviour gutter beside the sentence it steps.
 
-The loop is the **default** and stays it. Beside the speed sits one reader-wide pair, **auto ↔
-step**, holding every cell at once — but the **advance is not up there**: a requirement has several
-When/Then, so a single reader-wide "next" was ambiguous about which beat it stepped (a rail of
-cryptic `when 1 · when 2` beads was tried and rejected, the human 2026-08-30). Each beat row carries
-its own **guided-tour stepper** instead — one quiet line, `‹ n / N ›`, in the behaviour gutter: the
-next chevron walks that beat (both halves moving on the same call a timer would have made, so the
-lock-step survives the mode) and turns to a restart `↺` at the last scene; the ← → keys walk the row
-the reader is on. Session-scoped like the speed and the zoom. It is a **play** mode, never a media
-mode: the retired `stills · gif · video` toolbar does not come back with it, and a click on a proof
-cell is a proof — it opens the full-frame lightbox, in step mode as in auto.
+The reader opens in **step** (the human, 2026-09-02 — "default as step"): the loop was the default
+before, but watching it run on its own is now the opt-in, and reading a beat one scene at a time is
+the resting state. The reader-wide controls ride the requirement's **title row**, left of the ⋯ menu
+(the human, 2026-09-02 — "put all these on the same row of the test title row"): the **auto ↔ step**
+pair and the **speed**, which is live **only in auto**, because a stepped beat sets its own pace. The
+**advance is per beat row**, never one reader-wide "next" (a requirement has several When/Then, so a
+single "next" was ambiguous — and a rail of cryptic `when 1 · when 2` beads was tried and rejected,
+the human 2026-08-30). Each row's `‹ n / N ›` walks that beat; the **← → keys** walk the **selected**
+row — the one you clicked, visibly marked, never every row at once (the human, 2026-09-02 — "left/
+right key only apply on that particular when/then"); **↑ ↓** select which When/Then, and **PgUp /
+PgDn** page to the previous / next requirement (the human, 2026-09-02 — "another shortcut to change
+on different test case"). Both halves of a row move on the same call a timer would have made, so the
+lock-step survives the mode. Session-scoped, stored nowhere. It is a **play** mode, never a media
+mode.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
@@ -374,13 +394,20 @@ Amended 2026-08-29 on the human's ask: the loop now carries each value the beat 
 its before and after, so the When is watchable, not inferred. Amended 2026-08-30 on the human's
 ask ("enable click to go to the next small step"): the auto ↔ step play mode. Amended again
 2026-08-30: the advance is a per-beat-row guided-tour stepper `‹ n / N ›` (the reader-wide "next"
-and the cryptic-bead rail were both rejected); a proof-cell click is the lightbox in every mode.*
+and the cryptic-bead rail were both rejected); a proof-cell click is the lightbox in every mode.
+Amended 2026-09-02 on the human's direct instruction: the reader opens in **step** not auto; the
+auto/step + speed controls move onto the title row and the speed is auto-only; the proof cell sheds
+its dots, its counter and its full-frame toggle (the gutter `‹ n / N ›` is the one readout, the
+lightbox the whole frame); and the keys gain axes — ← → walk the selected beat's scenes, ↑ ↓ select
+the beat, PgUp / PgDn page the requirement.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
-     row's proof cell carries no mode toolbar at all, is already armed (its frame counter advances on
-     its own at the reader's speed, with nothing clicked), opens zoomed, and flips to the full frame
-     and back on the row's one control. Beat 2 asserts the Given row's cell is a captioned still: one
-     frame, no stepper, no dots. -->
+     row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the gutter's
+     ‹ n / N › reads/walks it), that the reader opens in step (nothing advances on its own until auto
+     is chosen), that the auto/step + speed controls sit on the title row with the speed disabled in
+     step, and that ← → move only the SELECTED beat row while ↑ ↓ change the beat and PgUp/PgDn the
+     requirement. Beat 2 asserts the Given row's cell is a plain uncaptioned still: one frame, no
+     stepper, no dots, no caption. -->
 
 ## R21 — The reader reads behaviour first
 

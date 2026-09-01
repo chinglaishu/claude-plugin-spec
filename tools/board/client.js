@@ -547,6 +547,25 @@ const B = window.__BOARD__ || {}
     // the same provenance the schematic cell captions travels into the prompt, so the work starts
     // from the fact the reader was shown rather than from a guess.
     const schemCtx = function () { const c = reqCtx(); c.prov = schemProv(r.schem).text; return c }
+    // THE READER-WIDE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02: "put all these on the same
+    // row of the test title row, left side of the menu button"). The schematic frames, every beat
+    // cell's stepper and the video are views of the SAME beat, so one play mode and one speed pace
+    // them all — and they sit on the requirement's own line now, not on a bar of their own beneath it.
+    // They ride only where there is something to pace: a control over an empty reader is chrome.
+    // (The advance itself is NOT here — a requirement has several When/Then, so "next" must name its
+    // beat; that lives on each beat row's ‹ n / N › in the gutter, board R20.)
+    const paceable = !!(r.schem && r.schem.svg) ||
+      !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
+    if (paceable) {
+      const tools = document.createElement('span'); tools.className = 'frtools'
+      const ml = document.createElement('span'); ml.className = 'fbarl'; ml.textContent = 'play'
+      tools.appendChild(ml); tools.appendChild(modePicker())
+      const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
+      tools.appendChild(bl); tools.appendChild(spdSelect())
+      rmeta.appendChild(tools)
+    }
+    // the requirement's ⋯ authoring menu (board R15) — LAST in the row so the controls sit to its
+    // left; fresh reader chrome, no move/restore hazard
     rmeta.appendChild(promptMenu('requirement authoring actions', [
       ['reword', 'Reword this requirement', reqCtx],
       ['addreq', 'Add a requirement', reqCtx],
@@ -555,27 +574,6 @@ const B = window.__BOARD__ || {}
       ['schemwrong', 'The schematic doesn’t match my app', schemCtx]
     ]))
     read.appendChild(rmeta)
-    // ONE play speed for the whole reader (the human, 2026-08-28): the schematic frames, every beat
-    // cell's stepper and the video are views of the SAME beat, so they play at the same pace. It
-    // rides only where there is something to pace — a control over an empty reader is chrome.
-    const paceable = !!(r.schem && r.schem.svg) ||
-      !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
-    // THE READER'S BAR. The column-order toggle that used to lead it is GONE (the human, 2026-08-30:
-    // "remove the toggle of schematic first or behavior first, just always be behaviour first") —
-    // the storyline now deals ONE order, behaviour · schematic · proof, and there is nothing to pick.
-    // What is left rides only where there is something to pace or step.
-    if (paceable) {
-      const bar = document.createElement('div'); bar.className = 'fbar'
-      const ml = document.createElement('span'); ml.className = 'fbarl'; ml.textContent = 'play'
-      bar.appendChild(ml); bar.appendChild(modePicker())
-      // the WALK is no longer up here (the human, 2026-08-30): a requirement has several When/Then, so
-      // "next small step" must name its beat — the advance moved onto each beat row's own scene rail
-      // (sceneRail, in the behaviour gutter). The bar keeps only the reader-wide PREFERENCES: the mode
-      // it walks in, and the speed it plays at.
-      const bl = document.createElement('span'); bl.className = 'fbarl'; bl.textContent = 'play speed'
-      bar.appendChild(bl); bar.appendChild(spdSelect())
-      read.appendChild(bar)
-    }
     // THE REQUIREMENT, WHOLE (the human, 2026-08-28): the beat rows lead, the video and the authored
     // prose follow — no "Full requirement" toggle any more. A requirement's text is what the board is
     // FOR; hiding half of it behind a chevron made the reader guess whether there was more.
@@ -731,6 +729,17 @@ const B = window.__BOARD__ || {}
     s.addEventListener('change', function () { setSpd(parseFloat(s.value) || 1) })
     // wrapped so the CSS can draw the caret (M-6) — a <select> takes no pseudo-element
     const w = document.createElement('span'); w.className = 'pspdwrap'; w.appendChild(s)
+    // SPEED IS AUTO-ONLY (the human, 2026-09-02: "play speed only enable when it's auto mode"). A
+    // stepped beat sets its pace by hand — there is nothing for a speed to rate — so the control is
+    // disabled (and dimmed via .pspdwrap[data-off]) in step, and wakes when auto is chosen.
+    const sync = function () {
+      const off = PLAY_MODE !== 'auto'
+      s.disabled = off
+      if (off) w.setAttribute('data-off', '1'); else w.removeAttribute('data-off')
+      w.title = off ? 'play speed — available in auto' : 'play speed'
+    }
+    sync()
+    onMode(w, sync)
     return w
   }
 
@@ -793,15 +802,15 @@ const B = window.__BOARD__ || {}
   // class — is GONE with its toggle, the human 2026-08-30: "just always be behaviour first". The
   // storyline deals one order now and there is nothing left to hold for the session.)
   //
-  // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps — now it only has auto
-  // play; enable click to go to the next small step"). 'auto' is the DEFAULT and stays the sentence
-  // board R20 carries: every beat's scenes loop the moment the row exists. 'step' HOLDS them, and a
-  // click on a proof cell advances that row's two halves by one scene, wrapping at the end — so a
-  // person can walk a beat instead of chasing it. Reader-wide and session-scoped, exactly like the
-  // speed and the zoom beside it and for the same reason: a reader is rebuilt on every fold, so the
-  // choice must survive the rebuild, but one that persisted across visits would silently freeze
-  // tomorrow's board with no cue why.
-  let PLAY_MODE = 'auto'
+  // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps"). 'step' is now the
+  // DEFAULT (the human, 2026-09-02: "default as step") — every beat opens HELD on its first scene,
+  // walked by its gutter ‹ n / N › or the ← → keys on the selected row, so reading a beat a scene at
+  // a time is the resting state (board R20). 'auto' is the opt-in hands-free loop: every beat's
+  // scenes loop the moment the row exists. Reader-wide and session-scoped, exactly like the speed
+  // beside it and for the same reason: a reader is rebuilt on every fold, so the choice must survive
+  // the rebuild, but one that persisted across visits would silently freeze tomorrow's board with no
+  // cue why.
+  let PLAY_MODE = 'step'
   const MODE_W = []
   function onMode (node, fn) { MODE_W.push({ node: node, fn: fn }) }
   function pruneMode () {
@@ -843,23 +852,51 @@ const B = window.__BOARD__ || {}
   // they step the row the reader is ACTUALLY on — the one holding keyboard focus (a bead just clicked),
   // else the one under the pointer, else the first steppable beat — never every row at once. Returns
   // whether a row was found to step, so the key handlers know to swallow the arrow.
-  function stepTargetRow (root) {
-    if (!root) return null
-    const rows = [].slice.call(root.querySelectorAll('.sbrow[data-rowstep]')).filter(function (el) {
+  function beatRows (root) {
+    if (!root) return []
+    return [].slice.call(root.querySelectorAll('.sbrow[data-rowstep]')).filter(function (el) {
       return el._rowStep && el.isConnected && el.offsetParent !== null
     })
-    if (!rows.length) return null
-    const ae = document.activeElement
-    const focused = (ae && ae.closest) ? rows.filter(function (r) { return r.contains(ae) })[0] : null
-    if (focused) return focused
-    const hovered = rows.filter(function (r) { return r.matches && r.matches(':hover') })[0]
-    if (hovered) return hovered
-    return rows[0]
   }
+  function selectedRow (root) {
+    const rows = beatRows(root)
+    if (!rows.length) return null
+    return rows.filter(function (r) { return r.classList.contains('sel') })[0] || null
+  }
+  // mark one beat row selected — clearing any other in this reader — and bring it into view. Returns it.
+  function selectRow (root, row, scroll) {
+    if (!root || !row) return null
+    beatRows(root).forEach(function (r) { r.classList.toggle('sel', r === row) })
+    if (scroll && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' })
+    return row
+  }
+  // the first steppable beat is selected by default, so ← → always has a target and the reader shows
+  // which When/Then it is walking from the first paint
+  function markDefaultBeat (wrap) {
+    const rows = [].slice.call((wrap || document).querySelectorAll('.sbrow[data-rowstep]'))
+    if (rows.length && !rows.some(function (r) { return r.classList.contains('sel') })) rows[0].classList.add('sel')
+  }
+  // ← → : walk the SELECTED beat's scenes (selecting the first if none is yet), holding the loop —
+  // walking is a step action, so it flips a still-auto reader into step, exactly as the ‹ › chevrons do
   function readerStep (root, dir) {
-    const row = stepTargetRow(root)
+    const rows = beatRows(root)
+    if (!rows.length) return false
+    const row = selectedRow(root) || selectRow(root, rows[0], false)
     if (!row) return false
+    if (PLAY_MODE !== 'step') setMode('step')
     row._rowStep(dir)
+    return true
+  }
+  // ↑ ↓ : move the selection to the previous / next beat row (the human, 2026-09-02). It stops at the
+  // ends rather than wrapping, so the arrows never surprise you onto a far row.
+  function selectBeat (root, dir) {
+    const rows = beatRows(root)
+    if (!rows.length) return false
+    const curEl = selectedRow(root)
+    const at = curEl ? rows.indexOf(curEl) : -1
+    const nextIdx = at < 0 ? (dir < 0 ? rows.length - 1 : 0) : Math.min(rows.length - 1, Math.max(0, at + (dir < 0 ? -1 : 1)))
+    if (at >= 0 && nextIdx === at) return false
+    selectRow(root, rows[nextIdx], true)
     return true
   }
   // The focus rect was measured against the real page (focus.vw × focus.vh). A drawing is not a
@@ -943,13 +980,11 @@ const B = window.__BOARD__ || {}
       const img = document.createElement('img'); img.className = 'camsub'; img.src = f.src; img.alt = f.alt || ''
       stage.appendChild(img)
     })
-    const sbar = document.createElement('div'); sbar.className = 'fstepbar'
-    const dots = document.createElement('span'); dots.className = 'pdots'
-    const lbl = document.createElement('span'); lbl.className = 'fstepn'
+    // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the behaviour
+    // gutter's ‹ n / N › (sceneRail, fed by _onStep below) is the single readout and walk for the
+    // beat, so the frames stack alone here with nothing under them.
     const timing = window.SBStepper.stepperHolds(frames.map(function (f) { return f.anchor }))
     const holds = timing.holds
-    // the fallback is honest but otherwise invisible — say which pace this loop plays (I-4)
-    lbl.title = timing.timed ? 'true relative timing — from the run’s own step times' : 'equal holds — this harvest carries no usable timing'
     const imgs = [].slice.call(stage.children)
     const reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     let cur = 0
@@ -967,19 +1002,12 @@ const B = window.__BOARD__ || {}
       // on one region at every moment of the beat — not only at its start.
       if (el._onScene) el._onScene(i)
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
-      ;[].slice.call(dots.children).forEach(function (d, k) {
-        d.classList.toggle('cur', k === i)
-        d.classList.toggle('seen', k < i)
-      })
-      lbl.textContent = (i + 1) + ' / ' + imgs.length
-      // …and the row's SCENE RAIL lights the bead of the scene now on show (the human, 2026-08-30):
-      // one slot, set by the rail, so it tracks the loop in auto and the walk in step alike.
+      // the row's SCENE RAIL (the gutter ‹ n / N ›) is the readout now — it lights the position of the
+      // scene on show (the human, 2026-08-30), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
     }
-    // a dot click JUMPS: the clicked frame gets one full hold, then the loop resumes — the simplest
-    // rule that guarantees the chosen frame its read time. In STEP mode (the human, 2026-08-30)
-    // nothing is scheduled at all: the scene holds until a person asks for the next one, and a dot
-    // click is still a jump — it simply has no loop to resume into.
+    // In STEP mode (the default) nothing is scheduled: the scene holds until a person walks it with
+    // the gutter ‹ › or the ← → keys. In auto the loop advances on its own hold.
     const schedule = function () {
       stop()
       if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
@@ -991,14 +1019,7 @@ const B = window.__BOARD__ || {}
         schedule()
       }, window.SBStepper.scaleHold(holds[cur], PLAY_SPD))
     }
-    frames.forEach(function (_, j) {
-      const d = document.createElement('button'); d.type = 'button'; d.className = 'pd'
-      d.setAttribute('aria-label', 'frame ' + (j + 1) + ' of ' + frames.length)
-      d.addEventListener('click', function () { show(j); schedule() })
-      dots.appendChild(d)
-    })
-    sbar.appendChild(dots); sbar.appendChild(lbl)
-    el.appendChild(stage); el.appendChild(sbar)
+    el.appendChild(stage)
     show(0)
     el._count = imgs.length
     el._start = schedule; el._stop = stop
@@ -1206,7 +1227,6 @@ const B = window.__BOARD__ || {}
     }
     const focus = got.shots[0].focus
     const cam = document.createElement('div'); cam.className = 'pccam'
-    const bar = document.createElement('div'); bar.className = 'pcbar'
     if (got.shots.length > 1) {
       // THE LOOP — one camera box, the frames played in it, armed on build. The cell is still
       // detached here, but the reader is appended synchronously in this same task and the shortest
@@ -1242,46 +1262,35 @@ const B = window.__BOARD__ || {}
       // longer rides a click on the frames — a dedicated reader-wide control does it (readerStep), so
       // a click on the proof cell opens the shared lightbox in EVERY mode exactly as every other image
       // does, and a beat whose harvest has no proof frames can still be walked by the control. The cell
-      // registers what the control drives it with: one scene forward or back, wrapping. (The dots stay
-      // the jump-map; the control and the ← → keys are the walk.)
+      // registers what the control drives it with: one scene forward or back, wrapping. (The proof cell
+      // has no dots any more — the gutter's ‹ n / N › and the ← → keys are the walk and the readout.)
       cell._rowStep = function (dir) { if (dir < 0) step._prev(); else step._next() }
       // …and the per-beat GUIDED TOUR drives this same loop: a jump to any scene (‹ › walk, the ↺
       // restart wraps to the first) — the same show()/_drive path, so both cells step together.
       cell._rowGoto = function (j) { step._goto(j) }
       step._start()
     } else {
-      // ONE frame: a still, captioned, under the same camera the loop would use
+      // ONE frame: a plain, UNCAPTIONED still (the human, 2026-09-02 — the "given" label row is gone,
+      // like the dots and the full-frame button; the beat's words live in the behaviour cell, and the
+      // burned-in callout is inside the frame). Same camera the loop would use.
       const s = got.shots[0]
       const strip = document.createElement('div'); strip.className = 'pcstrip'
       const fig = document.createElement('figure'); fig.className = 'pcfig'
       const box = document.createElement('div'); box.className = 'pcbox'
       const im = document.createElement('img'); im.className = 'camsub'; im.src = s.src; im.alt = s.cap
       box.appendChild(im); fig.appendChild(box)
-      const cp = document.createElement('figcaption'); cp.className = 'pccap'; cp.textContent = s.cap
-      fig.appendChild(cp); strip.appendChild(fig)
+      strip.appendChild(fig)
       cam.appendChild(strip)
       aimCamera(box, s.focus, CAM)
       box._aim(s.aim || null, (cards && cards.length === 1 ? cards[0] : null) || null, false)
     }
     cell.appendChild(cam)
-    // the ZOOM toggle — the full screenshot is always one click away, so the camera is a view and
-    // never a claim about what was captured. It flips the reader's ONE zoom state, which is what
-    // aims the schematic cell too: the two halves of a row can never end up framing different
-    // regions, because there is only one choice to make.
-    if (focus) {
-      const zb = document.createElement('button'); zb.type = 'button'; zb.className = 'pczoom'
-      const label = function () {
-        zb.textContent = ZOOMED ? '⤢ full frame' : '⤡ zoom to the component'
-        zb.title = ZOOMED
-          ? 'show the whole screenshot — drawing and proof together'
-          : 'frame the focused component — drawing and proof together'
-      }
-      label()
-      zb.addEventListener('click', function () { setZoom(!ZOOMED); label() })
-      onZoom(zb, label)
-      bar.appendChild(zb)
-    }
-    if (bar.childNodes.length) cell.appendChild(bar)
+    // NO per-cell chrome (the human, 2026-09-02: "remove full frame button and also the dots in
+    // proof as it already did in the step on behaviour"). The full screenshot is the LIGHTBOX a click
+    // on the proof opens, and the ONE readout + walk for the beat is the ‹ n / N › in the behaviour
+    // gutter beside it — so the proof cell carries no zoom toggle, no dots and no counter. The camera
+    // stays a view (ZOOMED is the standing default; both cells frame the component), never a claim
+    // about what was captured — the frame on disk is untouched, one click away whole.
     return cell
   }
 
@@ -1462,8 +1471,7 @@ const B = window.__BOARD__ || {}
         d.t0 = (window.performance && performance.now) ? performance.now() : Date.now()
         if (!(d.ms > 0)) fr.style.setProperty('--ph', to + 's')
       }
-      fr.appendChild(provCap())        // …and the cell says what KIND of picture this is (R15/R18)
-      return fr
+      return fr                        // no per-cell provenance caption any more (R18, 2026-09-02)
     }
     // A DRAWING WITH NO PROOF TO DRIVE IT still walks (the human, 2026-08-30: "handle the case it
     // doesn't have proof yet"). When a beat has a splittable drawing (subphases) but no proof loop, a
@@ -1501,27 +1509,19 @@ const B = window.__BOARD__ || {}
         subscribe: function (fn) { onStep = fn }
       }
     }
-    // the provenance line every schematic cell carries — one node per cell, so it stays beside the
-    // drawing it describes even where a narrow reader stacks the row and the column header folds
-    const PROV = schemProv(v)
-    const provCap = function () {
-      const c = document.createElement('div'); c.className = 'sbprov'
-      c.dataset.prov = PROV.kind
-      if (PROV.stale) c.dataset.stale = '1'
-      const m = document.createElement('span'); m.className = 'pvm'; m.textContent = PROV.mark
-      c.appendChild(m); c.appendChild(document.createTextNode(PROV.text))
-      c.title = 'what this drawing is derived from'
-      return c
-    }
+    // The per-cell "drawn from the app's measured layout" provenance caption is REMOVED (the human,
+    // 2026-09-02: "avoid useless things"). Staleness is said by the storyline's stale banner (.sbstale
+    // above), and the drawing's provenance still travels into the ⋯ "schematic doesn't match my app"
+    // prompt via schemProv() — it is just no longer a line of chrome under every drawing. R18.
     const wholeCell = function () {
       const cell = document.createElement('div'); cell.className = 'sbframe whole'
       const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
-      cell.appendChild(viz); cell.appendChild(provCap()); return cell
+      cell.appendChild(viz); return cell
     }
     const noCell = function (why) {
       const cell = document.createElement('div'); cell.className = 'sbframe'
       const no = document.createElement('div'); no.className = 'noschem'; no.textContent = why
-      cell.appendChild(no); cell.appendChild(provCap()); return cell
+      cell.appendChild(no); return cell
     }
     const textCell = function (stepsHtml) {
       const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
@@ -1619,8 +1619,16 @@ const B = window.__BOARD__ || {}
         const rail = rowDriver ? sceneRail(rowDriver) : null
         if (rail) tc.appendChild(rail)
         const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc)
-        // the row's own tour control and the ← → keys (targeting the row the reader is on) drive the walk
-        if (rowStep) { rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1' }
+        // the row's own tour control and the ← → keys (targeting the SELECTED row) drive the walk;
+        // clicking anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then
+        // is selected"), so ← → then walk this beat and no other. Selection is additive — it never
+        // eats a chevron click or a proof-cell lightbox click bubbling up from inside.
+        if (rowStep) {
+          rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1'
+          rowEl.addEventListener('click', function () {
+            const rt = rowEl.closest('.fread'); if (rt) selectRow(rt, rowEl, false)
+          })
+        }
         body.appendChild(rowEl)
       })
     } else {
@@ -1634,6 +1642,7 @@ const B = window.__BOARD__ || {}
         proofCell(r, 0, 0)))
     }
     wrap.appendChild(body)
+    markDefaultBeat(wrap)          // the first steppable beat opens selected — ← → have a target at once
     startLoops()
     onSpd(wrap, function (sp) { wrap.style.setProperty('--spd', String(sp)) })
     return wrap
@@ -1854,7 +1863,8 @@ const B = window.__BOARD__ || {}
     // the mockup's hint (Task 8) — and the keys it names: ← → page one requirement at a time while
     // this reader is open and no field has the focus (the guide's stepper claims the same keys only
     // while #howview is the open view, so the two never both fire)
-    const hint = document.createElement('span'); hint.className = 'fpk'; hint.textContent = '← → to review one by one'
+    const hint = document.createElement('span'); hint.className = 'fpk'
+    hint.textContent = '← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement'
     pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next); pager.appendChild(hint)
     function render () {
       if (bodyRestore) { bodyRestore(); bodyRestore = null }   // reclaim the previous page's moved nodes
@@ -1920,17 +1930,25 @@ const B = window.__BOARD__ || {}
     next.addEventListener('click', function () { if (cur < reqs.length - 1) { cur++; render() } })
     // registered ONCE per reader and removed by closeFocus (ov._onKey) — fix round 1, A-4 — so a
     // loadRuns close-fold-reopen cycle never stacks listeners
+    // THE READER'S KEYS, on two axes (the human, 2026-09-02). ← → walk the SELECTED beat's scenes
+    // (readerStep flips a still-auto reader to step and moves only that row); ↑ ↓ select which
+    // When/Then; PgUp / PgDn page to the previous / next requirement — the dedicated "change test
+    // case" shortcut, so the scene arrows no longer double as the pager. Never while a field has the
+    // caret (the board has a search box).
     const onKey = function (e) {
-      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
       if (dt.hidden || !ov.isConnected || !ov.offsetParent) return
       const a = document.activeElement
       if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return
-      // in STEP mode the arrows WALK the scenes (the human, 2026-08-30); in auto they page requirements
-      if (PLAY_MODE === 'step' && readerStep(ov.querySelector('.fread'), e.key === 'ArrowLeft' ? -1 : 1)) {
-        e.preventDefault(); return
+      const fread = ov.querySelector('.fread')
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        if (readerStep(fread, e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault()
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        if (selectBeat(fread, e.key === 'ArrowUp' ? -1 : 1)) e.preventDefault()
+      } else if (e.key === 'PageDown') {
+        if (cur < reqs.length - 1) { cur++; render(); e.preventDefault() }
+      } else if (e.key === 'PageUp') {
+        if (cur > 0) { cur--; render(); e.preventDefault() }
       }
-      if (e.key === 'ArrowRight' && cur < reqs.length - 1) { cur++; render(); e.preventDefault() }
-      else if (e.key === 'ArrowLeft' && cur > 0) { cur--; render(); e.preventDefault() }
     }
     ov._onKey = onKey
     document.addEventListener('keydown', onKey)
@@ -3941,16 +3959,20 @@ const B = window.__BOARD__ || {}
     openLb(img.src, img.alt || 'screenshot')
   })
 
-  // …and the ← → keys walk the scenes of a LIST open row while it is in step mode (the human,
-  // 2026-08-30). The Focus overlay handles its own arrows (buildFocusOverlay's onKey, which also
-  // pages in auto); a List row has no pager, so its arrows only ever step, and only in step mode.
+  // …and the same reader keys drive a LIST open row (the human, 2026-08-30; 2026-09-02). The Focus
+  // overlay handles its own arrows (buildFocus's onKey, which also pages the requirement on PgUp/Dn);
+  // a List row is an accordion with no pager, so it gets the two beat axes only — ← → walk the
+  // selected beat's scenes (readerStep flips a still-auto reader to step), ↑ ↓ pick the beat.
   document.addEventListener('keydown', e => {
-    if (PLAY_MODE !== 'step') return
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     const a = document.activeElement
     if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return
     const root = document.querySelector('.dt:not([hidden]) .gridview .lst-card.open .lst-body .fread')
-    if (root && readerStep(root, e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault()
+    if (!root) return
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      if (readerStep(root, e.key === 'ArrowLeft' ? -1 : 1)) e.preventDefault()
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      if (selectBeat(root, e.key === 'ArrowUp' ? -1 : 1)) e.preventDefault()
+    }
   })
 
   // expand/collapse a story step's recorded detail (board R10)

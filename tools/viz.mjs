@@ -695,6 +695,18 @@ const fitText = (s, wpx, fs) => {
 }
 const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
   `<text x="${r1(x)}" y="${r1(y)}" font-size="${r1(fs)}" font-family="var(--${fam})" fill="var(--${fill})"${extra}>${txt}</text>`
+// A measured string drawn INSIDE its own box, in the page's own type: ONE <text>, placed by the
+// element's alignment and left/right padding inset, vertically centred, and truncated to the content
+// width — the same way valueMark lands an asserted value, for the plain (unringed) elements around
+// it. That is what turns the mirror from a grey skeleton into something that reads as the real page.
+const textIn = (bx, by, bw, bh, fs, fill, fam, s, ta = 'l', pl = 0, pr = 0, extra = '') => {
+  const room = Math.max(1, bw - pl - pr)
+  const label = say(fitText(s, room, fs))          // truncate RAW then escape (fitText → say), never the reverse
+  const base = r1(by + bh / 2 + fs * 0.34)
+  if (ta === 'c') return svgText(r1(bx + bw / 2), base, fs, fill, fam, label, ' text-anchor="middle"' + extra)
+  if (ta === 'r') return svgText(r1(bx + bw - pr), base, fs, fill, fam, label, ' text-anchor="end"' + extra)
+  return svgText(r1(bx + pl), base, fs, fill, fam, label, extra)
+}
 
 // THE BOARD'S CAMERA, computed here (the human, 2026-08-28: the drawn callout was being CLIPPED).
 // Every beat cell zooms onto the beat's focus rect, and the schematic cell zooms this drawing by
@@ -1158,29 +1170,43 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
       focus.push({ x, y, w, h, text: e.text, fs: e.fs ? px(e.fs) : null, ta: e.ta, pl: px(e.pl || 0), pr: px(e.pr || 0) })
       if (withFocus) continue
     }
-    const fs = clamp(h * 0.62, 5, 16)
+    // THE PAGE'S OWN TYPE where the harvest measured it (2026-09-02: a mirror, not a skeleton). Real
+    // text at the size, weight and alignment the app renders — the fidelity gain the human asked for.
+    // The measured font size (converted by the one scale S) is used wherever it was captured; absent
+    // it, the size still derives from the box, exactly as the old skeleton did. A placeholder bar is
+    // drawn ONLY when there is genuinely no measured text, or it is too small to read at this scale.
+    const mfs = e.fs ? px(e.fs) : null
     const label = raw(e.text)
-    const readable = fs >= 7.5 && !!label             // smaller than this, real text is mush — draw a bar
+    const pl = px(e.pl || 0); const pr = px(e.pr || 0)
+    const tfs = mfs || clamp(h * 0.62, 5, 16)
+    const readable = !!label && tfs >= 5.5            // ~5.5px internal stays legible once the pane scales up
     const mid = y + h / 2
     switch (e.kind) {
       case 'heading':
         parts.push(readable
-          ? svgText(x, mid + fs * 0.34, fs, 'ink', 'sans', say(fitText(label, w, fs)), ' font-weight="600"')
+          ? textIn(x, y, w, h, Math.min(tfs, h), 'ink', 'sans', label, e.ta, pl, pr, ' font-weight="600"')
           : bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)'))
         break
       case 'text':
         parts.push(readable
-          ? svgText(x, mid + fs * 0.32, fs, 'ink-3', 'sans', say(fitText(label, w, fs)))
+          ? textIn(x, y, w, h, Math.min(tfs, h), 'ink-3', 'sans', label, e.ta, pl, pr)
           : bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)'))
         break
       case 'input':
+        // the field — paper, the AI hairline — then its measured VALUE inside it at the type and inset
+        // the page gives it (mono, the typed-value convention valueMark uses); the placeholder bar of
+        // an empty field only when the harvest read no value there.
         parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1"/>`)
-        if (w > 16 && h > 8) parts.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
+        if (readable) {
+          parts.push(textIn(x, y, w, h, Math.min(tfs, h * 0.82), 'ink-3', 'mono', label, e.ta || 'l', pl || 4, pr || 4))
+        } else if (w > 16 && h > 8) {
+          parts.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
+        }
         break
       case 'button':
         parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r1(Math.min(h / 2, 7))}" fill="var(--wash)" stroke="var(--line2)" stroke-width="0.9"/>`)
         parts.push(readable
-          ? svgText(r1(x + w / 2), r1(mid + fs * 0.32), fs, 'ink-3', 'sans', say(fitText(label, w - 6, fs)), ' text-anchor="middle"')
+          ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), 'ink-3', 'sans', label, 'c', 3, 3)
           : bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)'))
         break
       case 'image':

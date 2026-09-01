@@ -315,10 +315,14 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     const proof = dt.locator('.focusov .fread .fstory .sbrow .sbproof')
     await expect(proof).toHaveCount(3)                                  // one per row: given + 2 beats
     await expect(proof.locator('.pcstrip .pcfig img')).toHaveCount(2)   // exactly the pair that exists
-    await expect(proof.nth(0).locator('.pccap')).toHaveText('before')
+    // the per-cell caption row is REMOVED (the human, 2026-09-02: "remove the given row on proof");
+    // the frames themselves still carry before/after in their alt, and the gap row still says it has
+    // nothing rather than borrowing a neighbour's frame
+    await expect(proof.nth(0).locator('.pccap')).toHaveCount(0)          // no caption row any more
+    await expect(proof.nth(0).locator('.pcstrip .pcfig img')).toHaveAttribute('alt', /before/i)
     await expect(proof.nth(1).locator('.pcnone')).toContainText('no per-beat evidence yet')
     await expect(proof.nth(1).locator('img')).toHaveCount(0)            // nothing invented for the gap
-    await expect(proof.nth(2).locator('.pccap')).toContainText('after')
+    await expect(proof.nth(2).locator('.pcstrip .pcfig img')).toHaveAttribute('alt', /after/i)
     // …and the band beneath the rows carries only what belongs to the WHOLE requirement: the
     // stills · gif · video toolbar and its stored preference went with the split
     const media = dt.locator('.focusov .feval .fmedia')
