@@ -340,7 +340,7 @@ scene is never cropped away), and the two cells now share one clock — the proo
 - **When** its row renders
 - **Then** the proof cell is already looping — no media mode to pick, no play to press — opening on the When in motion, not on the state the Given row already showed, framed tight on the thing being proven, with the whole frame exactly one toggle away
 - **When** you switch the reader's play control from auto to step
-- **Then** every loop holds where it is, and a click on a proof cell advances that beat one scene — the drawing beside it moving with it, wrapping at the end
+- **Then** every loop holds where it is, and each beat row's own guided-tour stepper `‹ n / N ›` — or the ← → keys on the focused row — walks that beat one scene, both cells moving together, the next chevron becoming a restart `↺` at the last scene that wraps to the first
 - **When** the row is the Given
 - **Then** its one frame stays a still: a state, not an action
 
@@ -358,18 +358,23 @@ back — the frame on disk is untouched either way. The **Given row** has a sing
 to loop, so it stays the captioned still it is.
 
 The loop is the **default** and stays it. Beside the speed sits one reader-wide pair, **auto ↔
-step**: step holds every cell at once, and a click on the frames themselves is the "next" — both
-halves of a row move on the same call a timer would have made, so the lock-step survives the mode.
-The dots still jump; the mode holds the clock, it does not take the map away. Session-scoped like
-the speed and the zoom. It is a **play** mode, never a media mode: the retired `stills · gif ·
-video` toolbar does not come back with it, and while stepping, a click on a proof cell steps rather
-than opening the full-frame lightbox.
+step**, holding every cell at once — but the **advance is not up there**: a requirement has several
+When/Then, so a single reader-wide "next" was ambiguous about which beat it stepped (a rail of
+cryptic `when 1 · when 2` beads was tried and rejected, the human 2026-08-30). Each beat row carries
+its own **guided-tour stepper** instead — one quiet line, `‹ n / N ›`, in the behaviour gutter: the
+next chevron walks that beat (both halves moving on the same call a timer would have made, so the
+lock-step survives the mode) and turns to a restart `↺` at the last scene; the ← → keys walk the row
+the reader is on. Session-scoped like the speed and the zoom. It is a **play** mode, never a media
+mode: the retired `stills · gif · video` toolbar does not come back with it, and a click on a proof
+cell is a proof — it opens the full-frame lightbox, in step mode as in auto.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
 Amended 2026-08-29 on the human's ask: the loop now carries each value the beat proved between
 its before and after, so the When is watchable, not inferred. Amended 2026-08-30 on the human's
-ask ("enable click to go to the next small step"): the auto ↔ step play mode.*
+ask ("enable click to go to the next small step"): the auto ↔ step play mode. Amended again
+2026-08-30: the advance is a per-beat-row guided-tour stepper `‹ n / N ›` (the reader-wide "next"
+and the cryptic-bead rail were both rejected); a proof-cell click is the lightbox in every mode.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries no mode toolbar at all, is already armed (its frame counter advances on
