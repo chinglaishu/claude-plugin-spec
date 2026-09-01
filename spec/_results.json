@@ -25,7 +25,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/laishuching/workspace/claude-plugin-spec/test-results",
+        "outputDir": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -106,7 +106,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1814,
+                  "duration": 2291,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -114,18 +114,18 @@
                   "steps": [
                     {
                       "title": "proves R1",
-                      "duration": 80
+                      "duration": 98
                     },
                     {
                       "title": "proves R1",
-                      "duration": 88
+                      "duration": 147
                     },
                     {
                       "title": "proves R1",
-                      "duration": 12
+                      "duration": 15
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:05.501Z",
+                  "startTime": "2026-09-01T04:59:51.106Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -136,72 +136,72 @@
                     {
                       "name": "evidence R1#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c1-before.png"
                     },
                     {
                       "name": "layout R1#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R1#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c1-after.png"
                     },
                     {
                       "name": "layout R1#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R1#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c2-before.png"
                     },
                     {
                       "name": "layout R1#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c2-before.json"
                     },
                     {
                       "name": "evidence R1#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c2-after.png"
                     },
                     {
                       "name": "layout R1#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c2-after.json"
                     },
                     {
                       "name": "evidence R1#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c3-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c3-before.png"
                     },
                     {
                       "name": "layout R1#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c3-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c3-before.json"
                     },
                     {
                       "name": "evidence R1#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c3-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/evidence-R1-b1-c3-after.png"
                     },
                     {
                       "name": "layout R1#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c3-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/layout-R1-b1-c3-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-lists-every-screen-as-a-card/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-lists-every-screen-as-a-card/video.webm"
                     }
                   ]
                 }
@@ -235,7 +235,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1135,
+                  "duration": 1339,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -243,10 +243,10 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 368
+                      "duration": 430
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:07.453Z",
+                  "startTime": "2026-09-01T04:59:53.735Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -257,32 +257,32 @@
                     {
                       "name": "evidence R2#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/evidence-R2-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/evidence-R2-b1-c1-before.png"
                     },
                     {
                       "name": "layout R2#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/layout-R2-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/layout-R2-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R2#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/evidence-R2-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/evidence-R2-b1-c1-after.png"
                     },
                     {
                       "name": "layout R2#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/layout-R2-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/layout-R2-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-a-dce78--that-scrolls-inside-itself/video.webm"
                     }
                   ]
                 }
@@ -316,7 +316,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1046,
+                  "duration": 1217,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -324,10 +324,10 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 229
+                      "duration": 250
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:08.596Z",
+                  "startTime": "2026-09-01T04:59:55.082Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -338,32 +338,32 @@
                     {
                       "name": "evidence R3#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/evidence-R3-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/evidence-R3-b1-c1-before.png"
                     },
                     {
                       "name": "layout R3#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/layout-R3-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/layout-R3-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R3#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/evidence-R3-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/evidence-R3-b1-c1-after.png"
                     },
                     {
                       "name": "layout R3#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/layout-R3-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/layout-R3-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-e-afbfc-st-leads-with-its-flow-name/video.webm"
                     }
                   ]
                 }
@@ -397,7 +397,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3303,
+                  "duration": 3435,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -405,7 +405,7 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 2484,
+                      "duration": 2531,
                       "steps": [
                         {
                           "title": "note: first check — got 1 · expected 1",
@@ -418,7 +418,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:09.650Z",
+                  "startTime": "2026-09-01T04:59:56.306Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -429,32 +429,32 @@
                     {
                       "name": "evidence R10#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-before.png"
                     },
                     {
                       "name": "layout R10#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R10#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/evidence-R10-b1-c1-after.png"
                     },
                     {
                       "name": "layout R10#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/layout-R10-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Steps-read-from-86eda-d-the-video-explains-itself/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Steps-read-from-86eda-d-the-video-explains-itself/video.webm"
                     }
                   ]
                 }
@@ -488,7 +488,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 856,
+                  "duration": 976,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -496,7 +496,7 @@
                   "steps": [
                     {
                       "title": "Open the board detail — the reader is there",
-                      "duration": 416,
+                      "duration": 449,
                       "steps": [
                         {
                           "title": "note: ▸ proving R10 — A test opens to its full evidence, and can be run — watchably or in the background",
@@ -504,13 +504,13 @@
                         },
                         {
                           "title": "proves R10",
-                          "duration": 6
+                          "duration": 17
                         }
                       ]
                     },
                     {
                       "title": "Announce a golden value on the narration bar",
-                      "duration": 8,
+                      "duration": 11,
                       "steps": [
                         {
                           "title": "note: cards on the home board — got 4 · expected 4",
@@ -520,10 +520,10 @@
                     },
                     {
                       "title": "Confirm the baked test rows are present",
-                      "duration": 6
+                      "duration": 9
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:12.960Z",
+                  "startTime": "2026-09-01T04:59:59.750Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -534,32 +534,32 @@
                     {
                       "name": "evidence R10#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/evidence-R10-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/evidence-R10-b1-c1-before.png"
                     },
                     {
                       "name": "layout R10#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/layout-R10-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/layout-R10-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R10#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/evidence-R10-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/evidence-R10-b1-c1-after.png"
                     },
                     {
                       "name": "layout R10#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/layout-R10-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/layout-R10-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Story-step-evid-728f1-rs-from-the-test-definition/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Story-step-evid-728f1-rs-from-the-test-definition/video.webm"
                     }
                   ]
                 }
@@ -593,7 +593,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 959,
+                  "duration": 1112,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -601,10 +601,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 191
+                      "duration": 206
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:13.824Z",
+                  "startTime": "2026-09-01T05:00:00.733Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -615,32 +615,32 @@
                     {
                       "name": "evidence R10#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/evidence-R10-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/evidence-R10-b1-c1-before.png"
                     },
                     {
                       "name": "layout R10#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/layout-R10-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/layout-R10-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R10#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/evidence-R10-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/evidence-R10-b1-c1-after.png"
                     },
                     {
                       "name": "layout R10#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/layout-R10-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/layout-R10-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-R10-—-the-Flow--227ed-ing-when-a-run-produced-one/video.webm"
                     }
                   ]
                 }
@@ -674,7 +674,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1014,
+                  "duration": 1074,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -682,10 +682,10 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 243
+                      "duration": 70
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:14.792Z",
+                  "startTime": "2026-09-01T05:00:01.853Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -696,32 +696,32 @@
                     {
                       "name": "evidence R4#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/evidence-R4-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/evidence-R4-b1-c1-before.png"
                     },
                     {
                       "name": "layout R4#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/layout-R4-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/layout-R4-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R4#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/evidence-R4-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/evidence-R4-b1-c1-after.png"
                     },
                     {
                       "name": "layout R4#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/layout-R4-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/layout-R4-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirement-sta-505d6-mputed-and-assertion-backed/video.webm"
                     }
                   ]
                 }
@@ -755,7 +755,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 894,
+                  "duration": 1074,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -763,10 +763,10 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 130
+                      "duration": 157
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:15.813Z",
+                  "startTime": "2026-09-01T05:00:02.934Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -777,32 +777,32 @@
                     {
                       "name": "evidence R5#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/evidence-R5-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/evidence-R5-b1-c1-before.png"
                     },
                     {
                       "name": "layout R5#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/layout-R5-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/layout-R5-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R5#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/evidence-R5-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/evidence-R5-b1-c1-after.png"
                     },
                     {
                       "name": "layout R5#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/layout-R5-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/layout-R5-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-tags-the-15f49--and-Focus-serves-that-link/video.webm"
                     }
                   ]
                 }
@@ -836,7 +836,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 867,
+                  "duration": 985,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -844,10 +844,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 20
+                      "duration": 39
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:16.714Z",
+                  "startTime": "2026-09-01T05:00:04.015Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -858,32 +858,32 @@
                     {
                       "name": "evidence R6#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/evidence-R6-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/evidence-R6-b1-c1-before.png"
                     },
                     {
                       "name": "layout R6#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/layout-R6-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/layout-R6-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R6#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/evidence-R6-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/evidence-R6-b1-c1-after.png"
                     },
                     {
                       "name": "layout R6#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/layout-R6-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/layout-R6-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-requirement-names-the-tests-that-cover-it/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-requirement-names-the-tests-that-cover-it/video.webm"
                     }
                   ]
                 }
@@ -917,7 +917,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 851,
+                  "duration": 1018,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -928,7 +928,7 @@
                       "duration": 17
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:17.588Z",
+                  "startTime": "2026-09-01T05:00:05.007Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -939,32 +939,32 @@
                     {
                       "name": "evidence R7#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/evidence-R7-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/evidence-R7-b1-c1-before.png"
                     },
                     {
                       "name": "layout R7#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/layout-R7-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/layout-R7-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R7#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/evidence-R7-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/evidence-R7-b1-c1-after.png"
                     },
                     {
                       "name": "layout R7#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/layout-R7-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/layout-R7-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-show-bbf41-eframe-or-design-affordance/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-show-bbf41-eframe-or-design-affordance/video.webm"
                     }
                   ]
                 }
@@ -998,7 +998,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 873,
+                  "duration": 1007,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1006,10 +1006,10 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 79
+                      "duration": 108
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:18.446Z",
+                  "startTime": "2026-09-01T05:00:06.035Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1020,32 +1020,32 @@
                     {
                       "name": "evidence R8#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/evidence-R8-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/evidence-R8-b1-c1-before.png"
                     },
                     {
                       "name": "layout R8#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/layout-R8-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/layout-R8-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R8#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/evidence-R8-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/evidence-R8-b1-c1-after.png"
                     },
                     {
                       "name": "layout R8#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/layout-R8-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/layout-R8-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-No-acceptance-g-9e0b9-detail-waits-to-be-accepted/video.webm"
                     }
                   ]
                 }
@@ -1079,7 +1079,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 9004,
+                  "duration": 9236,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1087,10 +1087,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 8264
+                      "duration": 8394
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:19.327Z",
+                  "startTime": "2026-09-01T05:00:07.049Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1101,32 +1101,32 @@
                     {
                       "name": "evidence R13#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-before.png"
                     },
                     {
                       "name": "layout R13#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R13#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/evidence-R13-b1-c1-after.png"
                     },
                     {
                       "name": "layout R13#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/layout-R13-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-detail-offe-94669-derives-from-status-×-beats/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-detail-offe-94669-derives-from-status-×-beats/video.webm"
                     }
                   ]
                 }
@@ -1160,7 +1160,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 13306,
+                  "duration": 13842,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1168,7 +1168,7 @@
                   "steps": [
                     {
                       "title": "proves R18",
-                      "duration": 1781,
+                      "duration": 1775,
                       "steps": [
                         {
                           "title": "note: the drawing is derived from the app's layout — got ui-mirror · expected ui-mirror",
@@ -1182,11 +1182,11 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 2229
+                      "duration": 2275
                     },
                     {
                       "title": "proves R18",
-                      "duration": 7592,
+                      "duration": 8014,
                       "steps": [
                         {
                           "title": "note: the cell says what the drawing is, four ways — got mirror·none·archetype·mirror+moved · expected mirror·none·archetype·mirror+moved",
@@ -1195,7 +1195,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:28.339Z",
+                  "startTime": "2026-09-01T05:00:16.291Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1206,72 +1206,72 @@
                     {
                       "name": "evidence R18#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b1-c1-before.png"
                     },
                     {
                       "name": "layout R18#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R18#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b1-c1-after.png"
                     },
                     {
                       "name": "layout R18#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R18#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b2-c2-before.png"
                     },
                     {
                       "name": "layout R18#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R18#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b2-c2-after.png"
                     },
                     {
                       "name": "layout R18#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b2-c2-after.json"
                     },
                     {
                       "name": "evidence R18#3 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b3-c3-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b3-c3-before.png"
                     },
                     {
                       "name": "layout R18#3 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b3-c3-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b3-c3-before.json"
                     },
                     {
                       "name": "evidence R18#3 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b3-c3-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/evidence-R18-b3-c3-after.png"
                     },
                     {
                       "name": "layout R18#3 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b3-c3-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/layout-R18-b3-c3-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-schematic-m-5bf32-yout-or-honestly-no-picture/video.webm"
                     }
                   ]
                 }
@@ -1305,7 +1305,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6426,
+                  "duration": 6553,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1313,7 +1313,7 @@
                   "steps": [
                     {
                       "title": "proves R19",
-                      "duration": 1801,
+                      "duration": 1859,
                       "steps": [
                         {
                           "title": "note: one camera, one region — got same region · expected same region",
@@ -1323,7 +1323,7 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 3431,
+                      "duration": 3410,
                       "steps": [
                         {
                           "title": "note: one sentence per scene — got the When alone · expected the When alone",
@@ -1332,7 +1332,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:41.655Z",
+                  "startTime": "2026-09-01T05:00:30.139Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1343,52 +1343,52 @@
                     {
                       "name": "evidence R19#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b1-c1-before.png"
                     },
                     {
                       "name": "layout R19#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R19#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b1-c1-after.png"
                     },
                     {
                       "name": "layout R19#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R19#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b2-c2-before.png"
                     },
                     {
                       "name": "layout R19#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R19#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/evidence-R19-b2-c2-after.png"
                     },
                     {
                       "name": "layout R19#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/layout-R19-b2-c2-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-beat-row-is-a-e89b1-gion-one-beat-in-both-cells/video.webm"
                     }
                   ]
                 }
@@ -1422,7 +1422,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 5719,
+                  "duration": 5952,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1430,7 +1430,7 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 2892,
+                      "duration": 3002,
                       "steps": [
                         {
                           "title": "note: the whole frame is one toggle away — got 0 zoomed cells · expected 0 zoomed cells",
@@ -1440,10 +1440,10 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 1680
+                      "duration": 1677
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:48.092Z",
+                  "startTime": "2026-09-01T05:00:36.700Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1454,52 +1454,52 @@
                     {
                       "name": "evidence R20#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b1-c1-before.png"
                     },
                     {
                       "name": "layout R20#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R20#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b1-c1-after.png"
                     },
                     {
                       "name": "layout R20#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R20#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b2-c2-before.png"
                     },
                     {
                       "name": "layout R20#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R20#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/evidence-R20-b2-c2-after.png"
                     },
                     {
                       "name": "layout R20#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/layout-R20-b2-c2-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-plays-64a04-whole-frame-one-toggle-away/video.webm"
                     }
                   ]
                 }
@@ -1513,7 +1513,7 @@
           "column": 1
         },
         {
-          "title": "The proof is walked by a per-beat scene rail and the keys — and a proof click zooms again",
+          "title": "The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again",
           "ok": true,
           "tags": [],
           "tests": [
@@ -1533,7 +1533,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 12829,
+                  "duration": 14308,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1541,21 +1541,31 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 1794
+                      "duration": 1841
                     },
                     {
                       "title": "proves R20",
-                      "duration": 5152,
+                      "duration": 37,
                       "steps": [
                         {
-                          "title": "note: the per-beat rail walks both halves of the row — got scene 1 · expected scene 1",
+                          "title": "note: the rejected bead rail is gone — got 0 .scenerail · expected 0 .scenerail",
                           "duration": 0
                         }
                       ]
                     },
                     {
                       "title": "proves R20",
-                      "duration": 1857,
+                      "duration": 5980,
+                      "steps": [
+                        {
+                          "title": "note: the tour restarts at the end — got scene 1 · expected scene 1",
+                          "duration": 0
+                        }
+                      ]
+                    },
+                    {
+                      "title": "proves R20",
+                      "duration": 1785,
                       "steps": [
                         {
                           "title": "note: a proof click opens the lightbox in step mode — got lightbox open · expected lightbox open",
@@ -1565,10 +1575,10 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 2187
+                      "duration": 2246
                     }
                   ],
-                  "startTime": "2026-08-31T22:03:53.818Z",
+                  "startTime": "2026-09-01T05:00:42.660Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1579,92 +1589,112 @@
                     {
                       "name": "evidence R20#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b1-c1-before.png"
                     },
                     {
                       "name": "layout R20#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R20#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b1-c1-after.png"
                     },
                     {
                       "name": "layout R20#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R20#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-before.png"
                     },
                     {
                       "name": "layout R20#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R20#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b2-c2-after.png"
                     },
                     {
                       "name": "layout R20#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b2-c2-after.json"
                     },
                     {
                       "name": "evidence R20#3 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b3-c3-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c3-before.png"
                     },
                     {
                       "name": "layout R20#3 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b3-c3-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c3-before.json"
                     },
                     {
                       "name": "evidence R20#3 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b3-c3-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c3-after.png"
                     },
                     {
                       "name": "layout R20#3 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b3-c3-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c3-after.json"
                     },
                     {
                       "name": "evidence R20#3 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b3-c4-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c4-before.png"
                     },
                     {
                       "name": "layout R20#3 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b3-c4-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c4-before.json"
                     },
                     {
                       "name": "evidence R20#3 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/evidence-R20-b3-c4-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c4-after.png"
                     },
                     {
                       "name": "layout R20#3 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/layout-R20-b3-c4-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c4-after.json"
+                    },
+                    {
+                      "name": "evidence R20#3 before",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c5-before.png"
+                    },
+                    {
+                      "name": "layout R20#3 before",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c5-before.json"
+                    },
+                    {
+                      "name": "evidence R20#3 after",
+                      "contentType": "image/png",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/evidence-R20-b3-c5-after.png"
+                    },
+                    {
+                      "name": "layout R20#3 after",
+                      "contentType": "application/json",
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/layout-R20-b3-c5-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-wa-503dc-d-a-proof-click-zooms-again/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-wa-63bff-d-a-proof-click-zooms-again/video.webm"
                     }
                   ]
                 }
@@ -1672,9 +1702,9 @@
               "status": "expected"
             }
           ],
-          "id": "a4d8056b74ea4749de01-6899ab25f4e23d693a5a",
+          "id": "a4d8056b74ea4749de01-bc8254144ebb0905d0c7",
           "file": "board/test.spec.ts",
-          "line": 1420,
+          "line": 1422,
           "column": 1
         },
         {
@@ -1698,7 +1728,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4762,
+                  "duration": 5535,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1706,20 +1736,20 @@
                   "steps": [
                     {
                       "title": "proves R21",
-                      "duration": 1772,
+                      "duration": 1779,
                       "steps": [
                         {
                           "title": "note: the header sits over the cells it names — got 0px drift · expected 0px drift",
-                          "duration": 0
+                          "duration": 1
                         }
                       ]
                     },
                     {
                       "title": "proves R21",
-                      "duration": 1798
+                      "duration": 1914
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:06.654Z",
+                  "startTime": "2026-09-01T05:00:56.973Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1730,52 +1760,52 @@
                     {
                       "name": "evidence R21#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b1-c1-before.png"
                     },
                     {
                       "name": "layout R21#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R21#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b1-c1-after.png"
                     },
                     {
                       "name": "layout R21#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R21#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-before.png"
                     },
                     {
                       "name": "layout R21#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R21#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/evidence-R21-b2-c2-after.png"
                     },
                     {
                       "name": "layout R21#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/layout-R21-b2-c2-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-reader-read-9fdb6-and-no-control-to-change-it/video.webm"
                     }
                   ]
                 }
@@ -1785,7 +1815,7 @@
           ],
           "id": "a4d8056b74ea4749de01-327d1f3bd75d43e23ff0",
           "file": "board/test.spec.ts",
-          "line": 1552,
+          "line": 1584,
           "column": 1
         },
         {
@@ -1809,7 +1839,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1954,
+                  "duration": 2330,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1817,10 +1847,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 1149
+                      "duration": 1367
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:11.422Z",
+                  "startTime": "2026-09-01T05:01:02.516Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1831,32 +1861,32 @@
                     {
                       "name": "evidence R13#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/evidence-R13-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/evidence-R13-b1-c1-before.png"
                     },
                     {
                       "name": "layout R13#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/layout-R13-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/layout-R13-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R13#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/evidence-R13-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/evidence-R13-b1-c1-after.png"
                     },
                     {
                       "name": "layout R13#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/layout-R13-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/layout-R13-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Flow-reads-like-0a0be--the-rest-reads-not-reached/video.webm"
                     }
                   ]
                 }
@@ -1866,7 +1896,7 @@
           ],
           "id": "a4d8056b74ea4749de01-7d02613b62f66ef5a3d7",
           "file": "board/test.spec.ts",
-          "line": 1630,
+          "line": 1662,
           "column": 1
         },
         {
@@ -1890,7 +1920,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2661,
+                  "duration": 2980,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1898,10 +1928,10 @@
                   "steps": [
                     {
                       "title": "proves R14",
-                      "duration": 1885
+                      "duration": 2022
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:13.383Z",
+                  "startTime": "2026-09-01T05:01:04.853Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1912,32 +1942,32 @@
                     {
                       "name": "evidence R14#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/evidence-R14-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/evidence-R14-b1-c1-before.png"
                     },
                     {
                       "name": "layout R14#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/layout-R14-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/layout-R14-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R14#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/evidence-R14-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/evidence-R14-b1-c1-after.png"
                     },
                     {
                       "name": "layout R14#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/layout-R14-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/layout-R14-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-proof-is-sc-057d0-alue-cut-from-the-recording/video.webm"
                     }
                   ]
                 }
@@ -1947,7 +1977,7 @@
           ],
           "id": "a4d8056b74ea4749de01-22a4cacdc1f59df77235",
           "file": "board/test.spec.ts",
-          "line": 1806,
+          "line": 1838,
           "column": 1
         },
         {
@@ -1971,7 +2001,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1329,
+                  "duration": 1430,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1979,10 +2009,10 @@
                   "steps": [
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 507
+                      "duration": 489
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:16.051Z",
+                  "startTime": "2026-09-01T05:01:07.839Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1993,32 +2023,32 @@
                     {
                       "name": "evidence dispatch:R7#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/evidence-dispatch_R7-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/evidence-dispatch_R7-b1-c1-before.png"
                     },
                     {
                       "name": "layout dispatch:R7#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/layout-dispatch_R7-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/layout-dispatch_R7-b1-c1-before.json"
                     },
                     {
                       "name": "evidence dispatch:R7#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/evidence-dispatch_R7-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/evidence-dispatch_R7-b1-c1-after.png"
                     },
                     {
                       "name": "layout dispatch:R7#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/layout-dispatch_R7-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/layout-dispatch_R7-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-finished-run--99861-he-panel-stays-dispatch-R7-/video.webm"
                     }
                   ]
                 }
@@ -2028,7 +2058,7 @@
           ],
           "id": "a4d8056b74ea4749de01-2068f535bfd07492d91a",
           "file": "board/test.spec.ts",
-          "line": 2132,
+          "line": 2164,
           "column": 1
         },
         {
@@ -2047,7 +2077,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 360,
+                  "duration": 429,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2062,18 +2092,18 @@
                       "duration": 0
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:17.386Z",
+                  "startTime": "2026-09-01T05:01:09.276Z",
                   "annotations": [],
                   "attachments": [
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-hudCheck-assert-ee1dc-tch-throws-a-match-does-not/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-hudCheck-assert-ee1dc-tch-throws-a-match-does-not/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-hudCheck-assert-ee1dc-tch-throws-a-match-does-not/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-hudCheck-assert-ee1dc-tch-throws-a-match-does-not/video.webm"
                     }
                   ]
                 }
@@ -2083,7 +2113,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89998ca822d3716515a6",
           "file": "board/test.spec.ts",
-          "line": 2143,
+          "line": 2175,
           "column": 1
         },
         {
@@ -2107,7 +2137,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 802,
+                  "duration": 942,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2118,7 +2148,7 @@
                       "duration": 76
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:17.752Z",
+                  "startTime": "2026-09-01T05:01:09.711Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2129,32 +2159,32 @@
                     {
                       "name": "evidence R9#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/evidence-R9-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/evidence-R9-b1-c1-before.png"
                     },
                     {
                       "name": "layout R9#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/layout-R9-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/layout-R9-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R9#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/evidence-R9-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/evidence-R9-b1-c1-after.png"
                     },
                     {
                       "name": "layout R9#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/layout-R9-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/layout-R9-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Searching-requirement-text-hides-groups-that-miss/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Searching-requirement-text-hides-groups-that-miss/video.webm"
                     }
                   ]
                 }
@@ -2164,7 +2194,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a65565fa8517263db880",
           "file": "board/test.spec.ts",
-          "line": 2151,
+          "line": 2183,
           "column": 1
         },
         {
@@ -2188,7 +2218,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1369,
+                  "duration": 1644,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2196,10 +2226,10 @@
                   "steps": [
                     {
                       "title": "proves R16",
-                      "duration": 703
+                      "duration": 887
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:18.560Z",
+                  "startTime": "2026-09-01T05:01:10.660Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2210,32 +2240,32 @@
                     {
                       "name": "evidence R16#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/evidence-R16-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/evidence-R16-b1-c1-before.png"
                     },
                     {
                       "name": "layout R16#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/layout-R16-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/layout-R16-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R16#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/evidence-R16-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/evidence-R16-b1-c1-after.png"
                     },
                     {
                       "name": "layout R16#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/layout-R16-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/layout-R16-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-leads-with-0a5a8--feature-strip-of-six-cards/video.webm"
                     }
                   ]
                 }
@@ -2245,7 +2275,7 @@
           ],
           "id": "a4d8056b74ea4749de01-5c6599a9ca01b2b7c1ce",
           "file": "board/test.spec.ts",
-          "line": 2162,
+          "line": 2194,
           "column": 1
         },
         {
@@ -2269,7 +2299,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 954,
+                  "duration": 1188,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2277,10 +2307,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 133
+                      "duration": 144
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:19.937Z",
+                  "startTime": "2026-09-01T05:01:12.312Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2291,32 +2321,32 @@
                     {
                       "name": "evidence R10#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/evidence-R10-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/evidence-R10-b1-c1-before.png"
                     },
                     {
                       "name": "layout R10#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/layout-R10-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/layout-R10-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R10#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/evidence-R10-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/evidence-R10-b1-c1-after.png"
                     },
                     {
                       "name": "layout R10#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/layout-R10-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/layout-R10-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-test-opens-to-2c0f6-d-the-log-opens-in-a-window/video.webm"
                     }
                   ]
                 }
@@ -2326,7 +2356,7 @@
           ],
           "id": "a4d8056b74ea4749de01-987e4a2f9c8286335f0d",
           "file": "board/test.spec.ts",
-          "line": 2220,
+          "line": 2252,
           "column": 1
         },
         {
@@ -2350,7 +2380,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 893,
+                  "duration": 983,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2358,10 +2388,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 231
+                      "duration": 247
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:20.897Z",
+                  "startTime": "2026-09-01T05:01:13.511Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2372,32 +2402,32 @@
                     {
                       "name": "evidence R11#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/evidence-R11-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/evidence-R11-b1-c1-before.png"
                     },
                     {
                       "name": "layout R11#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/layout-R11-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/layout-R11-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R11#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/evidence-R11-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/evidence-R11-b1-c1-after.png"
                     },
                     {
                       "name": "layout R11#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/layout-R11-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/layout-R11-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-opens-d06fa-d-staff-—-without-then-with/video.webm"
                     }
                   ]
                 }
@@ -2407,7 +2437,7 @@
           ],
           "id": "a4d8056b74ea4749de01-64c0c7988b49a148fa65",
           "file": "board/test.spec.ts",
-          "line": 2247,
+          "line": 2279,
           "column": 1
         },
         {
@@ -2431,7 +2461,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6471,
+                  "duration": 6545,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2439,14 +2469,14 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 5378
+                      "duration": 5346
                     },
                     {
                       "title": "proves R11",
-                      "duration": 124
+                      "duration": 126
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:21.801Z",
+                  "startTime": "2026-09-01T05:01:14.503Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2457,52 +2487,52 @@
                     {
                       "name": "evidence R11#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b1-c1-before.png"
                     },
                     {
                       "name": "layout R11#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R11#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b1-c1-after.png"
                     },
                     {
                       "name": "layout R11#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R11#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b2-c2-before.png"
                     },
                     {
                       "name": "layout R11#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R11#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/evidence-R11-b2-c2-after.png"
                     },
                     {
                       "name": "layout R11#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/layout-R11-b2-c2-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Acts-1-and-2-pl-e93f2--still-under-reduced-motion/video.webm"
                     }
                   ]
                 }
@@ -2512,7 +2542,7 @@
           ],
           "id": "a4d8056b74ea4749de01-86bd19acd4bf40e51cd9",
           "file": "board/test.spec.ts",
-          "line": 2334,
+          "line": 2366,
           "column": 1
         },
         {
@@ -2536,7 +2566,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2008,
+                  "duration": 2031,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2544,10 +2574,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 1333
+                      "duration": 1347
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:28.278Z",
+                  "startTime": "2026-09-01T05:01:21.054Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2558,32 +2588,32 @@
                     {
                       "name": "evidence R11#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/evidence-R11-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/evidence-R11-b1-c1-before.png"
                     },
                     {
                       "name": "layout R11#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/layout-R11-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/layout-R11-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R11#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/evidence-R11-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/evidence-R11-b1-c1-after.png"
                     },
                     {
                       "name": "layout R11#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/layout-R11-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/layout-R11-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-walkthrough-4d9e4-holds-—-never-auto-advances/video.webm"
                     }
                   ]
                 }
@@ -2593,7 +2623,7 @@
           ],
           "id": "a4d8056b74ea4749de01-584a8f6bb8a7369c1d41",
           "file": "board/test.spec.ts",
-          "line": 2380,
+          "line": 2412,
           "column": 1
         },
         {
@@ -2617,7 +2647,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 768,
+                  "duration": 866,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2625,10 +2655,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 14
+                      "duration": 16
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:30.292Z",
+                  "startTime": "2026-09-01T05:01:23.092Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2639,32 +2669,32 @@
                     {
                       "name": "evidence R11#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/evidence-R11-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/evidence-R11-b1-c1-before.png"
                     },
                     {
                       "name": "layout R11#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/layout-R11-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/layout-R11-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R11#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/evidence-R11-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/evidence-R11-b1-c1-after.png"
                     },
                     {
                       "name": "layout R11#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/layout-R11-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/layout-R11-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-A-deep-linked-s-e5c0b-e-skill-detail-on-cold-load/video.webm"
                     }
                   ]
                 }
@@ -2674,7 +2704,7 @@
           ],
           "id": "a4d8056b74ea4749de01-89c79fff911eead41b7f",
           "file": "board/test.spec.ts",
-          "line": 2405,
+          "line": 2437,
           "column": 1
         },
         {
@@ -2698,7 +2728,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 903,
+                  "duration": 916,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2706,10 +2736,10 @@
                   "steps": [
                     {
                       "title": "proves R12",
-                      "duration": 133
+                      "duration": 136
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:31.067Z",
+                  "startTime": "2026-09-01T05:01:23.964Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2720,32 +2750,32 @@
                     {
                       "name": "evidence R12#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/evidence-R12-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/evidence-R12-b1-c1-before.png"
                     },
                     {
                       "name": "layout R12#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/layout-R12-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/layout-R12-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R12#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/evidence-R12-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/evidence-R12-b1-c1-after.png"
                     },
                     {
                       "name": "layout R12#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/layout-R12-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/layout-R12-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-guide-ends--110f8-action-and-there-is-no-rail/video.webm"
                     }
                   ]
                 }
@@ -2755,7 +2785,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a5859e92b6efee0ece72",
           "file": "board/test.spec.ts",
-          "line": 2419,
+          "line": 2451,
           "column": 1
         },
         {
@@ -2779,7 +2809,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4878,
+                  "duration": 5036,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2787,7 +2817,7 @@
                   "steps": [
                     {
                       "title": "proves R22",
-                      "duration": 1746,
+                      "duration": 1758,
                       "steps": [
                         {
                           "title": "note: the CI mark derives from the chooser — got board conflicts init · expected board conflicts init",
@@ -2797,7 +2827,7 @@
                     },
                     {
                       "title": "proves R22",
-                      "duration": 2113,
+                      "duration": 2099,
                       "steps": [
                         {
                           "title": "note: a different chooser moves the mark — got conflicts · expected conflicts",
@@ -2806,7 +2836,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:31.976Z",
+                  "startTime": "2026-09-01T05:01:24.886Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2817,52 +2847,52 @@
                     {
                       "name": "evidence R22#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b1-c1-before.png"
                     },
                     {
                       "name": "layout R22#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R22#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b1-c1-after.png"
                     },
                     {
                       "name": "layout R22#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R22#2 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b2-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b2-c2-before.png"
                     },
                     {
                       "name": "layout R22#2 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b2-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b2-c2-before.json"
                     },
                     {
                       "name": "evidence R22#2 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b2-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/evidence-R22-b2-c2-after.png"
                     },
                     {
                       "name": "layout R22#2 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b2-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/layout-R22-b2-c2-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-home-cards--7bedf-I-derived-from-spec-ci-json/video.webm"
                     }
                   ]
                 }
@@ -2872,7 +2902,7 @@
           ],
           "id": "a4d8056b74ea4749de01-6e90f53a031a40447bc4",
           "file": "board/test.spec.ts",
-          "line": 2497,
+          "line": 2529,
           "column": 1
         },
         {
@@ -2896,7 +2926,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1588,
+                  "duration": 1783,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2904,7 +2934,7 @@
                   "steps": [
                     {
                       "title": "proves R15",
-                      "duration": 786,
+                      "duration": 820,
                       "steps": [
                         {
                           "title": "note: the ⋯ menu answers a wrong schematic — got a ready prompt · expected a ready prompt",
@@ -2913,7 +2943,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:36.861Z",
+                  "startTime": "2026-09-01T05:01:29.929Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2924,32 +2954,32 @@
                     {
                       "name": "evidence R15#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/evidence-R15-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/evidence-R15-b1-c1-before.png"
                     },
                     {
                       "name": "layout R15#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/layout-R15-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/layout-R15-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R15#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/evidence-R15-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/evidence-R15-b1-c1-after.png"
                     },
                     {
                       "name": "layout R15#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/layout-R15-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/layout-R15-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-⋯-menus-han-ecb83-oard-authors-nothing-itself/video.webm"
                     }
                   ]
                 }
@@ -2959,7 +2989,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b19be08d9243cbcb5133",
           "file": "board/test.spec.ts",
-          "line": 2564,
+          "line": 2596,
           "column": 1
         },
         {
@@ -2983,7 +3013,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1923,
+                  "duration": 2147,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2991,14 +3021,14 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 673
+                      "duration": 740
                     },
                     {
                       "title": "proves R15",
-                      "duration": 65
+                      "duration": 68
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:38.456Z",
+                  "startTime": "2026-09-01T05:01:31.719Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3009,52 +3039,52 @@
                     {
                       "name": "evidence R13#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R13-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R13-b1-c1-before.png"
                     },
                     {
                       "name": "layout R13#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R13-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R13-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R13#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R13-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R13-b1-c1-after.png"
                     },
                     {
                       "name": "layout R13#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R13-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R13-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R15#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R15-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R15-b1-c1-before.png"
                     },
                     {
                       "name": "layout R15#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R15-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R15-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R15#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R15-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/evidence-R15-b1-c1-after.png"
                     },
                     {
                       "name": "layout R15#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R15-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/layout-R15-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-＋-New-flow-open-45dda--a-truthful-two-path-button/video.webm"
                     }
                   ]
                 }
@@ -3064,7 +3094,7 @@
           ],
           "id": "a4d8056b74ea4749de01-a52fad2ff18ed31edbc8",
           "file": "board/test.spec.ts",
-          "line": 2734,
+          "line": 2766,
           "column": 1
         },
         {
@@ -3088,7 +3118,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1338,
+                  "duration": 1512,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3096,10 +3126,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 589
+                      "duration": 627
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:40.384Z",
+                  "startTime": "2026-09-01T05:01:33.873Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3110,32 +3140,32 @@
                     {
                       "name": "evidence R13#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/evidence-R13-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/evidence-R13-b1-c1-before.png"
                     },
                     {
                       "name": "layout R13#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/layout-R13-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/layout-R13-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R13#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/evidence-R13-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/evidence-R13-b1-c1-after.png"
                     },
                     {
                       "name": "layout R13#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/layout-R13-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/layout-R13-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-The-compose-end-947af--no-job-spawns-on-a-refusal/video.webm"
                     }
                   ]
                 }
@@ -3145,7 +3175,7 @@
           ],
           "id": "a4d8056b74ea4749de01-b8facd5ebd2db36c1faa",
           "file": "board/test.spec.ts",
-          "line": 2846,
+          "line": 2878,
           "column": 1
         },
         {
@@ -3169,7 +3199,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2112,
+                  "duration": 2143,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3177,7 +3207,7 @@
                   "steps": [
                     {
                       "title": "count the home cards — one per screen, titles and a cover",
-                      "duration": 416,
+                      "duration": 381,
                       "steps": [
                         {
                           "title": "note: ▸ proving R1 — One card per screen, not a row of cells",
@@ -3191,7 +3221,7 @@
                     },
                     {
                       "title": "open the board detail — reading and proof side by side",
-                      "duration": 724,
+                      "duration": 742,
                       "steps": [
                         {
                           "title": "note: ▸ proving R2 — A requirement and the tests that prove it are read side by side, in one card that scrolls inside itself",
@@ -3199,13 +3229,13 @@
                         },
                         {
                           "title": "proves R2",
-                          "duration": 370
+                          "duration": 399
                         }
                       ]
                     },
                     {
                       "title": "a finished run refreshes the board in place — no reload",
-                      "duration": 508,
+                      "duration": 495,
                       "steps": [
                         {
                           "title": "note: ▸ proving dispatch:R7 — The panel stays open when the job ends, and the board updates behind it",
@@ -3218,7 +3248,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:41.729Z",
+                  "startTime": "2026-09-01T05:01:35.397Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3229,72 +3259,72 @@
                     {
                       "name": "evidence R1#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R1-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R1-b1-c1-before.png"
                     },
                     {
                       "name": "layout R1#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R1-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R1-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R1#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R1-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R1-b1-c1-after.png"
                     },
                     {
                       "name": "layout R1#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R1-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R1-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R2#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R2-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R2-b1-c1-before.png"
                     },
                     {
                       "name": "layout R2#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R2-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R2-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R2#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R2-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-R2-b1-c1-after.png"
                     },
                     {
                       "name": "layout R2#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R2-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-R2-b1-c1-after.json"
                     },
                     {
                       "name": "evidence dispatch:R7#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-dispatch_R7-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-dispatch_R7-b1-c1-before.png"
                     },
                     {
                       "name": "layout dispatch:R7#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-dispatch_R7-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-dispatch_R7-b1-c1-before.json"
                     },
                     {
                       "name": "evidence dispatch:R7#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-dispatch_R7-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/evidence-dispatch_R7-b1-c1-after.png"
                     },
                     {
                       "name": "layout dispatch:R7#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-dispatch_R7-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/layout-dispatch_R7-b1-c1-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Home-the-detail-c31aa-shes-it-in-place-—-composed/video.webm"
                     }
                   ]
                 }
@@ -3304,7 +3334,7 @@
           ],
           "id": "a4d8056b74ea4749de01-52747d88d06c363c0189",
           "file": "board/test.spec.ts",
-          "line": 2947,
+          "line": 2979,
           "column": 1
         },
         {
@@ -3328,7 +3358,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3018,
+                  "duration": 3094,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3336,22 +3366,22 @@
                   "steps": [
                     {
                       "title": "proves R17",
-                      "duration": 20
+                      "duration": 23
                     },
                     {
                       "title": "proves R17",
-                      "duration": 49
+                      "duration": 55
                     },
                     {
                       "title": "proves R17",
-                      "duration": 759
+                      "duration": 803
                     },
                     {
                       "title": "proves R17",
-                      "duration": 443
+                      "duration": 453
                     }
                   ],
-                  "startTime": "2026-08-31T22:04:43.848Z",
+                  "startTime": "2026-09-01T05:01:37.550Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3362,92 +3392,92 @@
                     {
                       "name": "evidence R17#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c1-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c1-before.png"
                     },
                     {
                       "name": "layout R17#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c1-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c1-before.json"
                     },
                     {
                       "name": "evidence R17#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c1-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c1-after.png"
                     },
                     {
                       "name": "layout R17#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c1-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c1-after.json"
                     },
                     {
                       "name": "evidence R17#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c2-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c2-before.png"
                     },
                     {
                       "name": "layout R17#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c2-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c2-before.json"
                     },
                     {
                       "name": "evidence R17#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c2-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c2-after.png"
                     },
                     {
                       "name": "layout R17#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c2-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c2-after.json"
                     },
                     {
                       "name": "evidence R17#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c3-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c3-before.png"
                     },
                     {
                       "name": "layout R17#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c3-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c3-before.json"
                     },
                     {
                       "name": "evidence R17#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c3-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c3-after.png"
                     },
                     {
                       "name": "layout R17#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c3-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c3-after.json"
                     },
                     {
                       "name": "evidence R17#1 before",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c4-before.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c4-before.png"
                     },
                     {
                       "name": "layout R17#1 before",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c4-before.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c4-before.json"
                     },
                     {
                       "name": "evidence R17#1 after",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c4-after.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/evidence-R17-b1-c4-after.png"
                     },
                     {
                       "name": "layout R17#1 after",
                       "contentType": "application/json",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c4-after.json"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/layout-R17-b1-c4-after.json"
                     },
                     {
                       "name": "screenshot",
                       "contentType": "image/png",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/test-finished-1.png"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/test-finished-1.png"
                     },
                     {
                       "name": "video",
                       "contentType": "video/webm",
-                      "path": "/Users/laishuching/workspace/claude-plugin-spec/test-results/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/video.webm"
+                      "path": "/Users/laishuching/workspace/claude-plugin-spec/spec/_runs/1788238789010/board-test-Requirements-su-7da35--pager-that-is-the-jump-map/video.webm"
                     }
                   ]
                 }
@@ -3457,7 +3487,7 @@
           ],
           "id": "a4d8056b74ea4749de01-ea35761a75f346e0a282",
           "file": "board/test.spec.ts",
-          "line": 2991,
+          "line": 3023,
           "column": 1
         }
       ]
@@ -3465,8 +3495,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-31T22:03:04.401Z",
-    "duration": 102497.176,
+    "startTime": "2026-09-01T04:59:49.759Z",
+    "duration": 110949.88399999999,
     "expected": 35,
     "skipped": 0,
     "unexpected": 0,

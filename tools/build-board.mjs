@@ -2146,40 +2146,32 @@ export function build () {
   .sbproof .pcbox.pcnext:hover { border-color:var(--ink-3); }
   /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other.
      The dedicated scene stepper that briefly sat beside it (3c93cb3) is GONE from the bar (the human,
-     2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row's own rail
-     (.scenerail below), where "next" names the beat it steps. */
+     2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row's own tour
+     control (.tourstep below), where "next" names the beat it steps. */
   .fbar .medbar.pmode button { min-width:calc(38px * var(--scale)); }
-  /* THE PER-BEAT SCENE RAIL (the human, 2026-08-30: "by each when/then, and show in more appealing
-     way ... please be user friendly and creative"). A compact labelled filmstrip in the beat row's
-     behaviour gutter: one bead per scene, the active bead lit by a filled mark + weight in the SAME
-     current-scene indigo the proof dots already use (.pd.cur) — a mark, never a hue alone (design
-     system) — a trailing › that walks, and any bead a jump. The up-next bead pulses only while the
-     rail is hovered, and only where motion is allowed. */
-  .fstory .sbtext .scenerail { display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+  /* THE PER-BEAT GUIDED-TOUR STEPPER (the human, 2026-09-01 — a live mock). The labelled bead
+     filmstrip that ec62a1d shipped (.scenerail / .srbeads) was REJECTED; in its place, a product
+     tour's control in the beat row's behaviour gutter: ONE quiet line ‹ n / N › — a prev chevron,
+     the position, a next chevron. No bordered box, no dots, no per-scene labels, no keyboard hint.
+     The next chevron is faintly accented in the reader's indigo (--ai) and always carries a glyph
+     (its state is the MARK, never the hue): at the last scene it becomes a restart ↺ that wraps to
+     scene 1. The prev chevron dims (--ink-4) and disables at scene 1. Contrast: --ai 8.16:1,
+     --ink-3 5.84:1, --ink-4 4.71:1 on --canvas — all AA. */
+  .fstory .sbtext .tourstep { display:flex; align-items:center; gap:calc(8px * var(--scale));
     margin-top:var(--s3); }
-  .scenerail .srk { font:var(--t-micro) var(--mono); letter-spacing:.12em; text-transform:uppercase;
-    color:var(--ink-4); margin-right:2px; }
-  .scenerail .srbeads { display:inline-flex; flex-wrap:wrap; gap:5px; align-items:center; }
-  .scenerail .srbead { display:inline-flex; align-items:center; gap:5px; cursor:pointer;
-    border:1px solid var(--hair-2); background:var(--paper); border-radius:999px;
-    padding:2px 9px 2px 7px; color:var(--ink-3); }
-  .scenerail .srbead .srmk { width:7px; height:7px; border-radius:999px; flex:none;
-    border:1px solid var(--ink-4); background:none; }
-  .scenerail .srbead .srcap { font:var(--t-micro) var(--mono); letter-spacing:.04em; }
-  .scenerail .srbead:hover { border-color:var(--ink-3); color:var(--ink); }
-  .scenerail .srbead.seen .srmk { background:var(--ink-4); border-color:var(--ink-4); }
-  .scenerail .srbead.on { border-color:var(--ai); color:var(--ink); font-weight:500; }
-  .scenerail .srbead.on .srmk { background:var(--ai); border-color:var(--ai); }
-  .scenerail .srbead:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
-  .scenerail .srnext { display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
-    min-width:calc(22px * var(--scale)); height:calc(22px * var(--scale)); padding:0 6px; margin-left:1px;
-    border:1px solid var(--hair-2); background:var(--paper); border-radius:999px;
-    color:var(--ink-3); font-size:15px; line-height:1; }
-  .scenerail .srnext:hover { border-color:var(--ink); color:var(--ink); }
-  .scenerail .srnext:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
-  .scenerail:hover .srbead.upnext:not(.on) .srmk { animation:srpulse 1.15s ease-in-out infinite; }
-  @keyframes srpulse { 0%,100% { transform:scale(1); opacity:.55 } 50% { transform:scale(1.55); opacity:1 } }
-  @media (prefers-reduced-motion: reduce) { .scenerail .srbead .srmk { animation:none !important; } }
+  .tourstep .tsprev, .tourstep .tsnext { display:inline-flex; align-items:center; justify-content:center;
+    cursor:pointer; background:none; border:0; padding:2px 4px; margin:0; line-height:1;
+    font-size:calc(17px * var(--scale)); color:var(--ink-3); border-radius:var(--r-sm);
+    min-width:calc(18px * var(--scale)); }
+  .tourstep .tsprev:hover, .tourstep .tsnext:hover { color:var(--ink); }
+  .tourstep .tsnext { color:var(--ai); }                 /* the forward affordance, faintly accented */
+  .tourstep .tsnext:hover { color:var(--ink); }
+  .tourstep .tsnext.restart { font-size:calc(14px * var(--scale)); }   /* ↺ reads better a touch smaller */
+  .tourstep .tsprev[disabled] { color:var(--ink-4); cursor:default; opacity:.55; }
+  .tourstep .tspos { font:var(--t-micro) var(--mono); letter-spacing:.08em; color:var(--ink-4);
+    min-width:calc(34px * var(--scale)); text-align:center; }
+  .tourstep .tsprev:focus-visible, .tourstep .tsnext:focus-visible { outline:2px solid var(--ink);
+    outline-offset:2px; }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }

@@ -1410,14 +1410,16 @@ test('The proof plays itself — already looping, zoomed, the whole frame one to
 // Board R20, second half — AUTO ↔ STEP, and a PER-BEAT WALK (the human, 2026-08-30: "the go to next
 // small step can NOT be on top as there could be multi when/then, so the go to next small step need to
 // be by each when/then, and show in more appealing way ... please be user friendly and creative").
-// REWRITTEN 2026-09-01, rule 4 with the human's decision as the reason: 3c93cb3 put a reader-wide ‹ ›
-// in the top bar; the human moved the advance onto each beat row's own SCENE RAIL (a labelled
-// filmstrip in the behaviour gutter), because one global "next" was ambiguous about which When/Then it
-// stepped. So this proves the rail — its › walks BOTH cells of ITS row, a bead jumps, the ← → keys
-// walk the row the reader is on, the top bar has NO advance, and a proof click is a proof again
-// (opens the lightbox in every mode). The loop stays the DEFAULT (the first R20 test proves it runs
-// with nothing touched). Its own test — the walk is real waiting, and it deserves its own clock.
-test('The proof is walked by a per-beat scene rail and the keys — and a proof click zooms again', async ({ page }) => {
+// REWRITTEN 2026-09-01, rule 4 with the human's decision as the reason: the labelled bead FILMSTRIP
+// (ec62a1d's .scenerail / .srbeads) was REJECTED at a live mock; the human approved a GUIDED-TOUR
+// control in its place — one quiet line `‹  n / N  ›` in each beat row's behaviour gutter, a product
+// tour's stepper. No bordered box, no dots, no per-scene labels. The prev chevron dims at scene 1; the
+// next chevron is faintly accented and, at the LAST scene, becomes a restart ↺ that wraps to scene 1.
+// So this proves the tour control — its › walks BOTH cells of ITS row, prev is dim at the start, next
+// wraps to Restart at the end, the ← → keys walk the row the reader is on, the top bar has NO advance,
+// and a proof click is a proof again (opens the lightbox in every mode). The old rail is gone: no
+// .scenerail, no .srbeads. The loop stays the DEFAULT (the first R20 test proves it runs untouched).
+test('The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again', async ({ page }) => {
   await coverReqs('R20')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -1438,59 +1440,97 @@ test('The proof is walked by a per-beat scene rail and the keys — and a proof 
     await expect(bar.locator('.medbar.pmode button.on')).toHaveText('auto')   // the loop is still default
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
-    await expect(bar).not.toContainText('‹')
-    await expect(bar).not.toContainText('›')
+    await expect(bar.locator('.tourstep')).toHaveCount(0)                     // the tour control is per-ROW, never on the bar
   })
 
-  // THE PER-BEAT RAIL steps BOTH cells of ITS row in lock-step, holds the loop, and lights the scene.
+  // THE REJECTED RAIL IS GONE (rule 4, the R8 assert-the-gone precedent): the labelled bead filmstrip
+  // that ec62a1d shipped — .scenerail with its .srbeads — is nowhere in the reader.
+  await checkReq('R20', async () => {
+    await expect(ov.locator('.fread .scenerail')).toHaveCount(0)
+    await expect(ov.locator('.fread .srbeads')).toHaveCount(0)
+    await expect(ov.locator('.fread .srbead')).toHaveCount(0)
+    await expect(ov.locator('.fread .srnext')).toHaveCount(0)
+    await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
+  })
+
+  // THE PER-BEAT GUIDED TOUR steps BOTH cells of ITS row in lock-step, holds the loop, tracks the scene
+  // in `n / N`, dims prev at the start, and turns next into a Restart ↺ at the end that wraps to scene 1.
   await checkReq('R20', async () => {
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    const rail = row.locator('.sbtext .scenerail')
+    const tour = row.locator('.sbtext .tourstep')
+    const prev = tour.locator('.tsprev')
+    const nextb = tour.locator('.tsnext')
+    const pos = tour.locator('.tspos')
     const cell = row.locator('.sbproof')
     const stepper = cell.locator('.pcplay .fsteps-wrap')
     const mode = ov.locator('.fread > .fbar .medbar.pmode')
-    await reveal(rail)
+    await reveal(tour)
     // the drawing's own park points — one per scene of this beat, the same list the loop steps
     const sub = await row.locator('.sbframe').evaluate(f => String((f.querySelector('svg') || { getAttribute: () => '' })
       .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
     expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
-    // the rail is IN the behaviour gutter — one bead per scene, plus a › next affordance
-    await expect(rail).toHaveCount(1)
-    await expect(rail.locator('.srbead')).toHaveCount(sub.length)
-    await expect(rail.locator('.srnext')).toHaveCount(1)
+    const N = sub.length
+    // the tour control is IN the behaviour gutter: ONE quiet line ‹ n / N › — no box, no dots, no labels
+    await expect(tour).toHaveCount(1)
+    await expect(prev).toHaveCount(1)
+    await expect(nextb).toHaveCount(1)
+    await expect(pos).toHaveCount(1)
+    await expect(tour.locator('.srbead')).toHaveCount(0)                      // no per-scene beads
+    await expect(pos).toHaveText(new RegExp('^\\d+ / ' + N + '$'))            // the position reads n / N
     const phOf = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
     const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
+    const posN = async () => Number(((await pos.textContent()) || '0 / 0').split('/')[0].trim())
     const spd = ov.locator('.fread > .fbar select.pspd')
-    await spd.selectOption('4')            // 4× bounds every hold at ~1.5s, so "did not move" is a real wait
 
-    const from = await nOf()
-    const next = from % sub.length + 1
-    // › WALKS one scene — drops the reader into STEP so the walk holds, and BOTH cells go to that
-    // scene together (the same show()/_drive path moves the proof loop and the drawing beside it)
-    await rail.locator('.srnext').click()
+    // ‹ › WALKS: a click drops the reader into STEP so the loop holds (proved from the default auto —
+    // do NOT assert the resulting scene NUMBER here: the auto loop is at an UNKNOWN scene when the
+    // click lands, so next lands wherever+1; the position walk below runs from a KNOWN start instead).
+    await expect(mode.locator('button.on'), 'the loop is the default').toHaveText('auto')
+    await nextb.click()
     await expect(mode.locator('button.on'), 'the walk holds the loop').toHaveText('step')
-    await expect.poll(nOf, { timeout: 6000 }).toBe(next)
-    await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[next - 1], 2)
-    // the active bead lights the scene now on show — the rail is a live map, not just a control
-    await expect(rail.locator('.srbead.on')).toHaveCount(1)
-    await expect(rail.locator('.srbead').nth(next - 1)).toHaveClass(/\bon\b/)
-    // …and now that it holds, the scene does NOT move on its own — 3s at 4×, time for two auto hops
+
+    // now DETERMINISTIC: the loop is held, so walk PREV back to scene 1 (prev disables there) — a known
+    // start no matter where the auto loop was when it froze. 4× only bounds the eased glide's settle.
+    await spd.selectOption('4')
+    for (let i = 0; i < N + 2 && !(await prev.isDisabled()); i++) { await prev.click(); await page.waitForTimeout(60) }
+    await expect.poll(nOf, { timeout: 6000 }).toBe(1)
+    await expect(pos).toHaveText('1 / ' + N)
+    await expect(prev, 'prev dims/disables at the start').toBeDisabled()
+    const before = await nOf()
+    await prev.click({ force: true })                                         // a dimmed prev does nothing
+    await page.waitForTimeout(400)
+    expect(await nOf(), 'prev is inert at scene 1').toBe(before)
+
+    // NEXT walks forward one scene, and BOTH cells go together (the proof loop and the drawing beside it)
+    await nextb.click()
+    await expect.poll(nOf, { timeout: 6000 }).toBe(2)
+    await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[1], 2)
+    await expect(pos).toHaveText('2 / ' + N)                                  // the position line follows the walk
+    // …and now that it holds, the scene does NOT move on its own — 2.5s at 4×, time for several auto hops
     const held = await nOf()
-    await page.waitForTimeout(3000)
-    expect(await nOf(), 'step holds until the rail (or a key) asks for the next scene').toBe(held)
-    // a BEAD is a JUMP: click the first bead and both cells land on scene 1 together
-    await rail.locator('.srbead').first().click()
+    await page.waitForTimeout(2500)
+    expect(await nOf(), 'step holds until the tour (or a key) asks for the next scene').toBe(held)
+
+    // WALK TO THE LAST SCENE — next becomes a RESTART ↺ that wraps back to scene 1. From scene 2, that
+    // is N-2 more clicks; walk defensively until nOf is N so a missed eased frame cannot desync the count.
+    for (let i = 0; i < N && (await nOf()) < N; i++) { await nextb.click(); await page.waitForTimeout(60) }
+    await expect.poll(nOf, { timeout: 6000 }).toBe(N)
+    await expect(pos).toHaveText(N + ' / ' + N)
+    await expect(nextb).toHaveText('↺')                                       // the restart glyph at the end
+    await expect(nextb).toHaveClass(/\brestart\b/)
+    await nextb.click()                                                       // ↺ WRAPS to scene 1
     await expect.poll(nOf, { timeout: 6000 }).toBe(1)
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[0], 2)
-    await expect(rail.locator('.srbead').first()).toHaveClass(/\bon\b/)
-    await hudCheck('the per-beat rail walks both halves of the row', 'scene 1', 'scene ' + (await nOf()))
+    await expect(nextb).toHaveText('›')                                       // and back to the next chevron
+    await hudCheck('the tour restarts at the end', 'scene 1', 'scene ' + (await posN()))
     await spd.selectOption('1')
   })
 
   // THE ← → KEYS WALK THE ROW THE READER IS ON — and a proof CLICK opens the lightbox again.
   await checkReq('R20', async () => {
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    const rail = row.locator('.sbtext .scenerail')
+    const tour = row.locator('.sbtext .tourstep')
+    const nextb = tour.locator('.tsnext')
     const cell = row.locator('.sbproof')
     const stepper = cell.locator('.pcplay .fsteps-wrap')
     const mode = ov.locator('.fread > .fbar .medbar.pmode')
@@ -1499,10 +1539,9 @@ test('The proof is walked by a per-beat scene rail and the keys — and a proof 
     const nOf = async () => Number(((await stepper.locator('.fstepn').textContent()) || '0 / 0').split('/')[0].trim())
     await reveal(cell)
     await expect(mode.locator('button.on'), 'still in step mode from the walk above').toHaveText('step')
-    // land on scene 1 via a bead, then FOCUS this row (its bead) so the keys target IT, not a global cursor
-    await rail.locator('.srbead').first().click()
+    // ensure on scene 1, then FOCUS this row (its next chevron) so the keys target IT, not a global cursor
     await expect.poll(nOf, { timeout: 6000 }).toBe(1)
-    await rail.locator('.srbead').first().focus()
+    await nextb.focus()
     // → steps forward via the KEYBOARD (a reader open in step mode; the arrows page in auto, walk in step)
     const next = 1 % sub.length + 1
     await page.keyboard.press('ArrowRight')
