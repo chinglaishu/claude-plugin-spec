@@ -126,3 +126,23 @@ test('Container roll-up — composed (R1–R4, R8)', async ({ page }) => {
     await checkReq('R8', async () => { await reloadKeepsEverything(page, state) })
   })
 })
+
+// ── R9: a DELIBERATELY FAILING test — a live demonstration of how a FAILED requirement reads on the
+// board (the human, 2026-09-02: "add a failing test case to demonstrate how a fail test case shows").
+// Tsumiki hard-deletes with no undo; R9 asks for a reversible delete that keeps the To-do count. The
+// app does not do it, so this test FAILS ON PURPOSE: the first proveVisible (To do = 5 before the
+// delete) passes and harvests a green scene; the second (To do should STILL be 5) fails and harvests
+// the RED frame, the asserted value burned red beside the intended schematic. It is the one honestly
+// ungreen row on this board — do NOT "fix" it green (its whole value is that it stays red).
+test('R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING', async ({ page }) => {
+  coverReqs('R9')
+  const state = await openSeededBoard(page)
+  const left = page.locator('#left')
+  await checkReq('R9', async () => {
+    await proveVisible(left, String(state.leaves), 'To do — five open leaves before the delete')
+    await page.locator('.task[data-id="k2"] .del').click()          // delete an open childless task
+    // the INTENDED behaviour: a delete is a soft archive, so the count HOLDS. Tsumiki hard-deletes, so
+    // #left now reads 4 — this assertion fails, and that red frame is the demonstration.
+    await proveVisible(left, String(state.leaves), 'To do should still read 5 — a delete is only an archive')
+  })
+})

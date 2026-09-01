@@ -142,3 +142,24 @@ completed timestamp all come back after the page reloads — nothing lived only 
 
 <!-- Proven by reloading the real page after the edits and completions above, then reading the edited
      title, the container's rolled-up state, and a completed timestamp back off the fresh screen. -->
+
+### 5 · A deliberately failing requirement (a demonstration)
+
+## R9 — A deleted task is reversible: the count holds until you confirm
+
+- **Given** the seeded list, with "To do" reading 5
+- **When** you delete an open task
+- **Then** the delete is a soft archive — an Undo appears and "To do" still reads 5 until the undo window passes; nothing is lost on a mis-click
+
+Tsumiki deletes **immediately and permanently**: there is no Undo, and "To do" drops the moment a
+task goes. So this requirement is **intentionally UNMET** — it exists only to show, on the board, how
+a FAILING requirement reads. The schematic draws the intended behaviour (the count holding at 5),
+while the proof photographs what the app actually does — "To do" dropping to 4 — with the asserted
+value burned **red** and the requirement's chip reading **Failed**. This is the one row on this board
+that is honestly ungreen on purpose. *(added 2026-09-02 on the human's ask: "add a failing test case
+to demonstrate how a fail test case shows".)*
+
+<!-- Proven-to-FAIL, on purpose: the test deletes an open leaf and asserts (proveVisible on #left)
+     that "To do" still reads 5. The app hard-deletes, so it reads 4 — the assertion fails, and that
+     red failing frame beside the intended schematic is the whole demonstration. Do not "fix" it green:
+     its value is that it stays red. -->

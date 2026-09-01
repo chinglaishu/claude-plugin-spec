@@ -1,12 +1,12 @@
 {
   "todo": {
-    "total": 2,
-    "failed": 0,
+    "total": 3,
+    "failed": 1,
     "tests": [
       {
         "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 63042,
+        "ms": 4398,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 37081,
+        "ms": 1994,
         "error": null,
         "line": 94,
         "reqs": {
@@ -34,11 +34,21 @@
           "todo:R4": "pass",
           "todo:R8": "pass"
         }
+      },
+      {
+        "title": "R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING",
+        "ok": false,
+        "ms": 2604,
+        "error": "Error: 1 step(s) failed:\n  ✗ \"R9 — A deleted task is reversible: the count holds until you confirm\": To do should still read 5 — a delete is only an archive — the value read off the screen",
+        "line": 137,
+        "reqs": {
+          "todo:R9": "fail"
+        }
       }
     ],
-    "ranAt": 1788239467966,
+    "ranAt": 1788296296402,
     "srcHashes": {
-      "todo": "a708656c5395"
+      "todo": "817f53977e3b"
     },
     "provenHashes": {
       "R1": "b62c6514056fe72b",
@@ -55,8 +65,8 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 597,
-          "to": 9293
+          "from": 527,
+          "to": 1098
         },
         "beats": [
           {
@@ -66,53 +76,45 @@
             "layoutBefore": "spec/todo/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R1.b1.after.layout.json",
             "window": {
-              "from": 597,
-              "to": 9293
+              "from": 527,
+              "to": 1098
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R1.b1.v1.png",
                 "layout": "spec/todo/evidence/R1.b1.v1.layout.json",
-                "at": 1944
+                "at": 296
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R1.b1.v2.png",
                 "layout": "spec/todo/evidence/R1.b1.v2.layout.json",
-                "at": 4261
+                "at": 370
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R1.b1.v3.png",
                 "layout": "spec/todo/evidence/R1.b1.v3.layout.json",
-                "at": 6625
+                "at": 516
               }
-            ],
-            "focus": {
-              "x": 271,
-              "y": 125,
-              "w": 739,
-              "h": 670.25,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 597,
-          "to": 9293
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 498,
+          "to": 7226
         }
       },
       "R2": {
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 9638,
-          "to": 14344
+          "from": 1229,
+          "to": 1395
         },
         "beats": [
           {
@@ -122,47 +124,39 @@
             "layoutBefore": "spec/todo/evidence/R2.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R2.b1.after.layout.json",
             "window": {
-              "from": 9638,
-              "to": 14344
+              "from": 1229,
+              "to": 1395
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R2.b1.v1.png",
                 "layout": "spec/todo/evidence/R2.b1.v1.layout.json",
-                "at": 321
+                "at": 64
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R2.b1.v2.png",
                 "layout": "spec/todo/evidence/R2.b1.v2.layout.json",
-                "at": 2649
+                "at": 130
               }
-            ],
-            "focus": {
-              "x": 321,
-              "y": 739.5,
-              "w": 553,
-              "h": 41.75,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 9638,
-          "to": 14344
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 7542,
+          "to": 11054
         }
       },
       "R3": {
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 14664,
-          "to": 19310
+          "from": 1478,
+          "to": 1630
         },
         "beats": [
           {
@@ -172,47 +166,39 @@
             "layoutBefore": "spec/todo/evidence/R3.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R3.b1.after.layout.json",
             "window": {
-              "from": 14664,
-              "to": 19310
+              "from": 1478,
+              "to": 1630
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R3.b1.v1.png",
                 "layout": "spec/todo/evidence/R3.b1.v1.layout.json",
-                "at": 242
+                "at": 13
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R3.b1.v2.png",
                 "layout": "spec/todo/evidence/R3.b1.v2.layout.json",
-                "at": 2586
+                "at": 95
               }
-            ],
-            "focus": {
-              "x": 287,
-              "y": 216.375,
-              "w": 26,
-              "h": 26,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 14664,
-          "to": 19310
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 11398,
+          "to": 14838
         }
       },
       "R5": {
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 19631,
-          "to": 29624
+          "from": 1743,
+          "to": 2398
         },
         "beats": [
           {
@@ -222,31 +208,23 @@
             "layoutBefore": "spec/todo/evidence/R5.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b1.after.layout.json",
             "window": {
-              "from": 19631,
-              "to": 24275
+              "from": 1743,
+              "to": 1933
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b1.v1.png",
                 "layout": "spec/todo/evidence/R5.b1.v1.layout.json",
-                "at": 242
+                "at": 8
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R5.b1.v2.png",
                 "layout": "spec/todo/evidence/R5.b1.v2.layout.json",
-                "at": 2592
+                "at": 130
               }
-            ],
-            "focus": {
-              "x": 980.796875,
-              "y": 30,
-              "w": 29.203125,
-              "h": 33,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           },
           {
             "n": 2,
@@ -255,41 +233,33 @@
             "layoutBefore": "spec/todo/evidence/R5.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b2.after.layout.json",
             "window": {
-              "from": 27331,
-              "to": 29624
+              "from": 2328,
+              "to": 2398
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b2.v1.png",
                 "layout": "spec/todo/evidence/R5.b2.v1.layout.json",
-                "at": 242
+                "at": 9
               }
-            ],
-            "focus": {
-              "x": 980.796875,
-              "y": 30,
-              "w": 29.203125,
-              "h": 33,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 19631,
-          "to": 29624
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 15205,
+          "to": 22921
         }
       },
       "R4": {
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 24635,
-          "to": 32314
+          "from": 2065,
+          "to": 2614
         },
         "beats": [
           {
@@ -299,25 +269,17 @@
             "layoutBefore": "spec/todo/evidence/R4.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b1.after.layout.json",
             "window": {
-              "from": 24635,
-              "to": 27011
+              "from": 2065,
+              "to": 2218
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b1.v1.png",
                 "layout": "spec/todo/evidence/R4.b1.v1.layout.json",
-                "at": 309
+                "at": 93
               }
-            ],
-            "focus": {
-              "x": 287,
-              "y": 216.375,
-              "w": 26,
-              "h": 26,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           },
           {
             "n": 2,
@@ -326,41 +288,33 @@
             "layoutBefore": "spec/todo/evidence/R4.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b2.after.layout.json",
             "window": {
-              "from": 29982,
-              "to": 32314
+              "from": 2529,
+              "to": 2614
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b2.v1.png",
                 "layout": "spec/todo/evidence/R4.b2.v1.layout.json",
-                "at": 280
+                "at": 44
               }
-            ],
-            "focus": {
-              "x": 287,
-              "y": 216.375,
-              "w": 26,
-              "h": 26,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 24635,
-          "to": 32314
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 19023,
+          "to": 25059
         }
       },
       "R6": {
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 35279,
-          "to": 50044
+          "from": 2825,
+          "to": 3855
         },
         "beats": [
           {
@@ -370,34 +324,26 @@
             "layoutBefore": "spec/todo/evidence/R6.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R6.b1.after.layout.json",
             "window": {
-              "from": 35279,
-              "to": 50044
+              "from": 2825,
+              "to": 3855
             },
-            "values": [],
-            "focus": {
-              "x": 16,
-              "y": 235,
-              "w": 197,
-              "h": 37,
-              "vw": 1440,
-              "vh": 900
-            }
+            "values": []
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 35279,
-          "to": 50044
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 27525,
+          "to": 39237
         }
       },
       "R7": {
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 50379,
-          "to": 55035
+          "from": 3944,
+          "to": 4080
         },
         "beats": [
           {
@@ -407,47 +353,39 @@
             "layoutBefore": "spec/todo/evidence/R7.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R7.b1.after.layout.json",
             "window": {
-              "from": 50379,
-              "to": 55035
+              "from": 3944,
+              "to": 4080
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R7.b1.v1.png",
                 "layout": "spec/todo/evidence/R7.b1.v1.layout.json",
-                "at": 281
+                "at": 46
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R7.b1.v2.png",
                 "layout": "spec/todo/evidence/R7.b1.v2.layout.json",
-                "at": 2605
+                "at": 95
               }
-            ],
-            "focus": {
-              "x": 808.046875,
-              "y": 438.75,
-              "w": 65.953125,
-              "h": 88,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 50379,
-          "to": 55035
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 39591,
+          "to": 43062
         }
       },
       "R8": {
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 55412,
-          "to": 62447
+          "from": 4142,
+          "to": 4356
         },
         "beats": [
           {
@@ -457,46 +395,75 @@
             "layoutBefore": "spec/todo/evidence/R8.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R8.b1.after.layout.json",
             "window": {
-              "from": 55412,
-              "to": 62447
+              "from": 4142,
+              "to": 4356
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R8.b1.v1.png",
                 "layout": "spec/todo/evidence/R8.b1.v1.layout.json",
-                "at": 302
+                "at": 44
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R8.b1.v2.png",
                 "layout": "spec/todo/evidence/R8.b1.v2.layout.json",
-                "at": 2649
+                "at": 98
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R8.b1.v3.png",
                 "layout": "spec/todo/evidence/R8.b1.v3.layout.json",
-                "at": 4993
+                "at": 180
               }
-            ],
-            "focus": {
-              "x": 287,
-              "y": 216.375,
-              "w": 587,
-              "h": 545.625,
-              "vw": 1440,
-              "vh": 900
-            }
+            ]
           }
         ],
-        "runId": "1788239366308",
-        "at": "2026-09-01T05:11:07.966Z",
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z",
         "video": {
-          "path": "spec/todo/evidence/57f2b4223083.webm",
-          "from": 55412,
-          "to": 62447
+          "path": "spec/todo/evidence/de42af72cdd9.webm",
+          "from": 43456,
+          "to": 48675
         }
+      },
+      "R9": {
+        "before": "spec/todo/evidence/R9.before.png",
+        "after": "spec/todo/evidence/R9.after.png",
+        "window": {
+          "from": 163,
+          "to": 344
+        },
+        "beats": [
+          {
+            "n": 1,
+            "before": "spec/todo/evidence/R9.b1.before.png",
+            "after": "spec/todo/evidence/R9.b1.after.png",
+            "layoutBefore": "spec/todo/evidence/R9.b1.before.layout.json",
+            "layoutAfter": "spec/todo/evidence/R9.b1.after.layout.json",
+            "window": {
+              "from": 163,
+              "to": 344
+            },
+            "values": [
+              {
+                "k": 1,
+                "frame": "spec/todo/evidence/R9.b1.v1.png",
+                "layout": "spec/todo/evidence/R9.b1.v1.layout.json",
+                "at": 19
+              },
+              {
+                "k": 2,
+                "frame": "spec/todo/evidence/R9.b1.v2.png",
+                "layout": "spec/todo/evidence/R9.b1.v2.layout.json",
+                "at": 137
+              }
+            ]
+          }
+        ],
+        "runId": "1788296296402",
+        "at": "2026-09-01T20:58:16.402Z"
       }
     }
   }
