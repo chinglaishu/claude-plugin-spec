@@ -160,6 +160,12 @@ const KIT = [
     fits (b) {
       const L = lows(b)
       if (!(W.press.test(L[0].when) && W.clear.test(L[0].then))) return false
+      // A user APPEND that lands a row is type-and-append, not a clear: when the human types a task and
+      // presses Add, "its checkbox empty" in the Then names the NEW row's state, not something being
+      // cleared. Refuse it here so the later type-and-append rule draws the row it appends. (todo R1's
+      // reworded canon at b65b066 added "press … Add" + "checkbox empty", which made this earlier rule
+      // wrongly grab it — a press with an appended row is never a press-and-clear. rule 6, reason inline.)
+      if (W.user.test(L[0].when) && W.append.test(L[0].when) && W.appended.test(L[0].then)) return false
       if (b.beats.length === 1) return true
       return b.beats.length === 2 && (W.restore.test(L[1].then) || W.restore.test(L[1].when))
     },

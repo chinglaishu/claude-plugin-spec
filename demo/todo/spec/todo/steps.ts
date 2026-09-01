@@ -50,21 +50,36 @@ export const BEATS = [
   { fn: 'reloadKeepsEverything', proves: 'R8', name: 'reload — the rename, the ring and a completed stamp come back', needs: ['renamed'], gives: ['reloaded'] }
 ]
 
-// R1 — the typed text lands as a new row, and its stamp reads "added just now".
+// R1 — typing enables the Add button; pressing it drops a new row at the bottom, its checkbox EMPTY,
+// stamped "added just now". A WATCHABLE beat (kg-e2e "a watchable beat", the human 2026-08-30 on this
+// very beat) — three DISTINCT scenes, every named control in frame, the named state visibly different:
+//   scene 1 — the filled Add box carrying the typed text (the action's own value, proveVisible reads it)
+//   scene 2 — the Add button it names, now ENABLED (the actor of "press Add", ringed so the union
+//             camera keeps it in frame — the crop that hid it is the defect this fixes)
+//   scene 3 — the new row at the bottom: its checkbox EMPTY, sitting under the already-done "Buy a
+//             birthday gift for Mia" so unchecked reads as a CONTRAST, stamped "added just now"
+// The old beat clicked .go WITHOUT ringing it (the tight camera cropped the Add button away — "it says
+// press Add but there's no Add button"), never showed the unchecked state, and spent a third scene
+// re-proving the typed string on the new row's .ttl — the redundant scene removed here.
 export async function addTask (page: Page, state: FlowState): Promise<void> {
   await reveal(page.locator('.addrow'))
-  await page.locator('#nt').fill('Water the plants')
-  // THE WHEN, PROVEN AND PHOTOGRAPHED (2026-08-29, the human): the requirement says you TYPE "Water
-  // the plants" and press Add, and until this assertion existed that half of the beat was invisible
-  // — the box is empty in the beat's before frame and cleared again by its after one, so neither the
-  // proof nor the drawing beside it ever showed the action. proveVisible reads a control's own value
-  // now, so the typed string is asserted, ringed, held and harvested as its own scene.
+  await page.locator('#nt').pressSequentially('Water the plants')
+  // SCENE 1 — the WHEN's own value: the text now sitting in the Add box.
   await proveVisible(page.locator('#nt'), 'Water the plants', 'The task typed into the Add box')
+  // SCENE 2 — the control the When NAMES, now enabled.
+  await expect(page.locator('.go'), 'typing enabled the Add button').toBeEnabled()
+  await proveVisible(page.locator('.go'), 'Add', 'The Add button, now enabled')
   await page.locator('.go').click()
   const row = rowByTitle(page, 'Water the plants')
-  await proveVisible(row.locator('.ttl'), 'Water the plants', 'The new task, read off the list')
-  await proveVisible(row.locator('.meta'), 'added just now',
-    'Its activity stamp', { match: s => /added just now/.test(s) })
+  await expect(row.locator('.cb'), 'the new row is a leaf with its own checkbox').toHaveCount(1)
+  // the named STATE, made assertable: the new row starts UNCHECKED (its checkbox has no .on). The
+  // contrast row "Buy a birthday gift for Mia" sits done just above it, so the empty box reads as a
+  // difference the watcher can see, not a claim on faith.
+  await expect(row.locator('.cb'), 'the new row starts UNCHECKED — still to do').not.toHaveClass(/\bon\b/)
+  // SCENE 3 — the OUTCOME: ring the new row so its empty checkbox and its "added just now" stamp are
+  // both in frame (proveVisible reads the row's text for the stamp; the empty .cb sits at its left edge).
+  await proveVisible(row.locator('.trow'), 'added just now',
+    'The new row — its checkbox empty, stamped added just now', { match: s => /added just now/.test(s) })
   state.task = 'Water the plants'
   state.leaves += 1
 }
