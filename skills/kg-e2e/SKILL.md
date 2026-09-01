@@ -116,6 +116,33 @@ way. Read it before writing your first one.
    'Water the plants', 'The task typed into the box')` **before** the click that submits it — and the
    typed string is ringed, held, photographed and drawn. The value you PROVE should be the value a
    reader SEES happening, not only the one it left behind.
+
+   **A watchable beat: every named control on screen, every named state visible, no scene wasted**
+   *(2026-08-30 — the human, on the Tsumiki demo's R1)*. The row's one camera frames the **union of the
+   beat's rings**, and each `proveVisible` is a **distinct scene** in the loop, so what you ring is
+   literally what the reader can watch. Three failures make a beat unpleasant to watch — author against
+   all three:
+   - **Ring every control the When/Then NAMES, so the camera keeps it in frame.** If the When says
+     "press **Add**", ring the Add button (`await proveVisible(page.locator('.go'), 'Add', 'The Add
+     button, now enabled')`) — not only the field you typed into. An un-ringed control is outside the
+     union, so the tight camera crops it away and the recording shows an action with no visible actor —
+     "it says press Add but there is no Add button." The actor of every clause belongs in the frame.
+   - **Make the asserted STATE visibly different, not just true in the DOM.** If the Then says an
+     "**unchecked** row", ring the row's checkbox so its empty state is on screen (and prefer a frame
+     that also catches a checked row nearby, so *unchecked* reads as a contrast, not a claim). A state
+     the requirement names but the picture cannot distinguish — checked vs unchecked, enabled vs
+     disabled, selected vs not — is an assertion the watcher must take on faith, which is the whole
+     thing this board refuses.
+   - **Every scene must ADVANCE the story — no two scenes that show the same thing.** Scene count is
+     `proveVisible` count; two assertions that ring the same string in two places (the text you typed,
+     then the same text in the new row) play as two near-identical frames and read as padding. Prove
+     each *distinct* fact once — the action (filled input + live control), then the outcome (the new
+     row, its state, its stamp) — and let one camera hold the related rings together rather than
+     spending a separate scene on each. Fewer, distinct scenes beat more, repeated ones.
+
+   The finishing check, extended: with the sound off, does each scene show something the last one did
+   not, is every control the words name actually on screen, and can you SEE every state the words claim?
+   If not, the beat is authored, not yet watchable.
 6. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
    (`fontSize >= 19` because the title token happens to be 19px today) is really asserting the
    design system's *current arithmetic*, and it breaks the day the system rescales while the

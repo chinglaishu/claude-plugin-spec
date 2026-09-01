@@ -28,16 +28,20 @@ Requirement ids are stable forever — later passes append, never renumber.
 
 ## R1 — Adding a task puts it in the list
 
-- **Given** the list, the Add box empty and Add disabled
-- **When** you type "Water the plants" and press Add
-- **Then** a new unchecked row with exactly that text appears at the bottom, stamped "added just now"
+- **Given** the list, with the Add box empty and the Add button disabled
+- **When** you type "Water the plants" and press the now-enabled Add button
+- **Then** a new row appears at the bottom — its checkbox empty — carrying that exact text, stamped "added just now"
 
-Typing a task and pressing Add (or Enter) shows it as a new row at the bottom of the list, unchecked,
-carrying exactly the text that was typed. An empty input adds nothing — the Add button is disabled
-until there is text.
+Typing a task enables the Add button (empty input adds nothing — the button stays disabled until there
+is text); pressing it shows the text as a new row at the bottom of the list, its checkbox empty,
+stamped "added just now".
 
-<!-- Proven by typing a new task on the real page, then reading the new row's title off the visible
-     list and confirming its meta line reads "added just now". -->
+<!-- Proven by a WATCHABLE beat (see kg-e2e, "a watchable beat"): the When rings the filled Add box AND
+     the Add button it names; the Then rings the new row so its EMPTY checkbox is on screen beside an
+     already-checked row, with the "added just now" stamp — each scene a distinct step, the redundant
+     repeat of the typed text removed. Revised 2026-08-30 on the human's ask: the old beat clicked Add
+     without ringing it (the tight camera cropped it away), never showed the unchecked state, and spent
+     three near-identical scenes on the same string. -->
 
 ## R2 — A task can be edited in place, and the edit is stamped
 
