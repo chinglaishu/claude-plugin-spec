@@ -206,6 +206,23 @@ const B = window.__BOARD__ || {}
     // the torn-down cells' speed, zoom and play-mode subscriptions go with them — no detached backlog
     pruneSpd(); pruneZoom(); pruneMode()
   }
+  // KEEP YOUR PLACE ACROSS A REFRESH (the human, 2026-09-02: "keep back to top when running test").
+  // A run's refresh rebuilds the open reader (close-fold-reopen, and refreshAfterRun below), and the
+  // fresh .fscroll — the card's own scroll region (R2, one card that scrolls inside itself) — starts
+  // at the top. A background run fires this on every SSE tick, so the reader kept snapping up mid-read.
+  // Capture the offset off whichever reader is open (Focus overlay or the List's open row, both a
+  // .fread), and put it back on the fresh node after the reopen. dispatch:R7's beat proves it.
+  function openReaderScroller () {
+    return document.querySelector('.dt:not([hidden]) .focusov .fread > .fscroll') ||
+      document.querySelector('.dt:not([hidden]) .lst-card.open .fread > .fscroll')
+  }
+  function readerScrollTop () { const s = openReaderScroller(); return s ? s.scrollTop : null }
+  function restoreReaderScroll (top) {
+    if (top == null) return
+    const put = function () { const s = openReaderScroller(); if (s) s.scrollTop = top }
+    put()                                   // synchronous — the reopen built the node in this task
+    requestAnimationFrame(put)              // belt: late-loading frames can reflow the height after
+  }
   for (const b of document.querySelectorAll('.close'))
     b.addEventListener('click', () => { closeFocus(); closeAll(); history.pushState(null, '', location.pathname) })
 
@@ -3592,6 +3609,7 @@ const B = window.__BOARD__ || {}
     const openRow = openOv ? null : document.querySelector('.dt:not([hidden]) .lst-card.open')
     const reopen = openOv ? { kind: 'focus', dt: openOv.closest('.dt'), id: openOv._curId }
       : openRow ? { kind: 'list', dt: openRow.closest('.dt'), id: openRow.dataset.r } : null
+    const keepScroll = reopen ? readerScrollTop() : null   // don't snap the reader to the top on refresh
     if (reopen) closeFocus()
     for (const panel of document.querySelectorAll('.testpane')) {
       const dt = panel.closest('.dt')
@@ -3819,6 +3837,7 @@ const B = window.__BOARD__ || {}
       if (ovNow || rowNow) closeFocus()
       if (cur.kind === 'list') openListRow(cur.dt, cur.id)
       else if (cur.dt) setView(cur.dt, 'focus', cur.id)
+      restoreReaderScroll(keepScroll)          // back to where you were reading, not the top
     }
     // an OPEN Flow view rebuilds off the fresh fold (it reads records and moves no shared nodes,
     // so a rebuild is safe) — this is also what fills it in on a fresh deep-link, where the boot
@@ -3890,10 +3909,11 @@ const B = window.__BOARD__ || {}
   async function refreshAfterRun () {
     const dt = document.querySelector('.dt:not([hidden])'); if (!dt) return
     const ov = dt.querySelector('.focusov'); const focusId = ov ? ov._curId : null
+    const keepScroll = ov ? readerScrollTop() : null   // keep your reading position across the refresh
     if (ov) closeFocus()
     await syncDerived(dt)
     await loadRuns()
-    if (focusId != null) setView(dt, 'focus', focusId)
+    if (focusId != null) { setView(dt, 'focus', focusId); restoreReaderScroll(keepScroll) }
   }
   window.__refreshDerived = refreshAfterRun   // a seam so the board's own test can drive this deterministically
 

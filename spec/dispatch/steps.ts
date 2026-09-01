@@ -106,6 +106,18 @@ export async function verdictLandsInPlace (page: Page, state: FlowState): Promis
 export async function refreshDerivedInPlace (page: Page, state: FlowState): Promise<void> {
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   await expect(dt.locator('.focusov')).toBeVisible()
+  // "IN PLACE" KEEPS YOUR READING POSITION TOO (the human, 2026-09-02: "keep back to top when
+  // running test"). The reader scrolls on its own .fscroll (R2, one card that scrolls inside
+  // itself); a run's refresh rebuilds the reader (close-fold-reopen), and a fresh .fscroll starts at
+  // the top — so a background run yanked the reader up on every SSE tick. A refresh that scrolls you
+  // away from what you were reading is not "in place". Scroll down, remember where, and demand the
+  // rebuild puts it back.
+  const scroller = dt.locator('.focusov .fread > .fscroll')
+  const want = await scroller.evaluate((el: HTMLElement) => {
+    el.scrollTop = el.scrollHeight            // as far down as this reader goes
+    return el.scrollTop
+  })
+  expect(want, 'the board R1 reader must be tall enough to scroll for this to prove anything').toBeGreaterThan(20)
   const before = await dt.locator('.reqpane .req[data-r="R1"]').getAttribute('data-state')
   const flipped = before === 'proven' ? 'unproven' : 'proven'
   // serve a board.html where R1's derived state has flipped — exactly what a run's rebuild would change
@@ -126,6 +138,13 @@ export async function refreshDerivedInPlace (page: Page, state: FlowState): Prom
   await page.evaluate(() => { (window as any).__r7Alive = 1 })
   await page.evaluate(() => (window as any).__refreshDerived())      // the SSE run-done/change path calls this
   await expect(dt.locator('.reqpane .req[data-r="R1"]')).toHaveAttribute('data-state', flipped)  // synced in place
+  // the rebuilt reader is a FRESH .fscroll node — its scroll must be restored to where you were, not
+  // snapped to the top (the scroll-jump this beat now guards against). Poll: the reopen is async and
+  // late-loading frames can reflow the height after the sync restore.
+  await expect.poll(
+    () => dt.locator('.focusov .fread > .fscroll').evaluate((el: HTMLElement) => el.scrollTop),
+    { message: 'the reader keeps your reading position across an in-place refresh' }
+  ).toBeGreaterThan(want - 4)
   expect(await page.evaluate(() => (window as any).__r7Alive), 'no reload — the window sentinel survives').toBe(1)
   expect(await row!.evaluate(el => el.isConnected && el.getAttribute('data-state')), 'the SAME row node, updated in place').toBe(flipped)
   expect(loads, 'no load event — the open panel would survive').toBe(0)

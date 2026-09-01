@@ -157,6 +157,8 @@ four-column mechanism (doctrine sweep) — the cell simply changes state in plac
 - **Given** the run panel with its job ending
 - **When** the job finishes
 - **Then** the panel and its log stay on screen, and the board behind it refreshes in place — no reload, and no background chip anywhere
+- **When** you are reading a requirement scrolled part-way down the reader as the refresh lands
+- **Then** the reader keeps that reading position — an in-place refresh that snapped you back to the top would not be "in place" *(the human, 2026-09-02: "keep back to top when running test"; the refresh rebuilds the reader, and the fresh scroll region must be put back where you were)*
 
 Finishing does not close the panel or reload the page out from under it. The log and the result stay
 on screen until you dismiss them, so the output is there to read for reference. **The board behind
