@@ -277,7 +277,10 @@ frames sit beside the words. The one-recording rule is untouched.*
      requirement claiming a surface that no longer exists. -->
 *Reworded 2026-09-02 (the human): a failing run's checked-value frames are read on the **test's own
 evidence**; the reader's band is gone with its video. The frames, the one-recording rule and the
-red-on-failure rule are all untouched.*
+red-on-failure rule are all untouched. Confirmed by the human the same day, on the lead's
+recommendation, after seeing the re-harvested reader: the Focus reader stays free of the run
+filmstrip — a failure is read off the beat row's own red harvested frame and the ✗ on the proof
+header, and the cut frames live on the test's evidence.*
 
 ## R18 — The schematic mirrors the real UI
 
@@ -305,7 +308,11 @@ is what stales it, and the **layout's own hash**, the geometry it was drawn from
 harvest carries no layout is **not given a picture anyway**: it keeps the archetype drawing where the
 text yields one, and otherwise its rows read as labelled beats with the drawing's absence said out
 loud. A guessed picture beside a real photograph would be the most convincing lie this board could
-tell.
+tell. The same rule holds on a **failing** beat: the drawing mirrors what the app **measured** — the
+wrong value, ringed — and never the value the requirement wanted; the verdict (the red ring, the
+"got … ✕") is the photograph's alone, so the one difference between the two cells of a failed row is
+the verdict itself *(the human, 2026-09-02, keeping the lead's recommendation over drawing the
+intended value into the mirror)*.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.

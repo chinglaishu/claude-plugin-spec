@@ -153,9 +153,14 @@ completed timestamp all come back after the page reloads — nothing lived only 
 
 Tsumiki deletes **immediately and permanently**: there is no Undo, and "To do" drops the moment a
 task goes. So this requirement is **intentionally UNMET** — it exists only to show, on the board, how
-a FAILING requirement reads. The schematic draws the intended behaviour (the count holding at 5),
-while the proof photographs what the app actually does — "To do" dropping to 4 — with the asserted
-value burned **red** and the requirement's chip reading **Failed**. This is the one row on this board
+a FAILING requirement reads. The schematic **mirrors what the app measured** — "To do" reading 4
+after the delete, ringed — and the proof photographs the same moment with the verdict on it: the
+asserted value burned **red**, "got 4 ✕" on the callout, and the requirement's chip reading
+**Failed**. The drawing never shows the 5 the app did not display: a mirror that drew a value nobody
+measured would be a fabricated picture beside a real photograph, so the difference a reader sees
+between the two cells is exactly the verdict, and only the verdict *(corrected 2026-09-02, rule 6 —
+this paragraph first claimed the drawing showed the intended 5; the human kept the honest mirror on
+the lead's recommendation)*. This is the one row on this board
 that is honestly ungreen on purpose. *(added 2026-09-02 on the human's ask: "add a failing test case
 to demonstrate how a fail test case shows".)*
 
