@@ -153,12 +153,21 @@ completed timestamp all come back after the page reloads — nothing lived only 
 
 Tsumiki deletes **immediately and permanently**: there is no Undo, and "To do" drops the moment a
 task goes. So this requirement is **intentionally UNMET** — it exists only to show, on the board, how
-a FAILING requirement reads. The schematic shows **what this requirement asks for** — "To do" still
-reading 5 after the delete, on the ringed counter — and the proof photographs what the app actually
-did, with the verdict on it: the asserted value burned **red**, "got 4 ✕" on the callout, and the
-requirement's chip reading **Failed**. So the failed row is a comparison a reader can act on —
-**intent on the left, outcome on the right** — and if the 5 is wrong, it is the requirement that is
-wrong, and the human rewrites it.
+a FAILING requirement reads. The schematic shows **what this requirement asks for** — the task
+still listed after the delete, an Undo beside it, "To do" still reading 5 — drawn from the last
+state the app got right (the task ringed before the click) with the Then's expected values put on
+it; the proof photographs what the app actually did, with the verdict on it: the place the task
+stood ringed **red** with "got (missing) ✕", no Undo, the counter reading 4, and the requirement's
+chip reading **Failed**. So the failed row is a comparison a reader can act on — **intent on the
+left, outcome on the right** — and if the intent is wrong, it is the requirement that is wrong, and
+the human rewrites it.
+
+<!-- CORRECTED AGAIN 2026-09-02 (rule 6). After mirror-12 this paragraph said the schematic carried
+     the 5 on the ringed counter — and only that: the scene after the click still drew the task GONE
+     (mirroring the app) and no Undo, because the test's own scene asserted "gone" and passed. The
+     human: "the failed test case is so fucking wrong, the schematic should be correct, only the
+     proof should be wrong." The test now claims the Then's three facts (soft claims, so all three are
+     photographed) and the drawing borrows the last right state — kit mirror-13. -->
 
 <!-- REVERSED 2026-09-02 (rule 6, with the reason attached). This paragraph read: "The schematic
      MIRRORS WHAT THE APP MEASURED — 'To do' reading 4 after the delete, ringed … The drawing never
@@ -175,7 +184,7 @@ keeps the measured 4 and the ✕.* This is the one row on this board
 that is honestly ungreen on purpose. *(added 2026-09-02 on the human's ask: "add a failing test case
 to demonstrate how a fail test case shows".)*
 
-<!-- Proven-to-FAIL, on purpose: the test deletes an open leaf and asserts (proveVisible on #left)
-     that "To do" still reads 5. The app hard-deletes, so it reads 4 — the assertion fails, and that
-     red failing frame beside the intended schematic is the whole demonstration. Do not "fix" it green:
-     its value is that it stays red. -->
+<!-- Proven-to-FAIL, on purpose: the test deletes an open task and claims the Then's three facts
+     (the task still listed · an Undo on it · "To do" still 5). The app hard-deletes with no undo, so
+     all three fail — three red moments beside the intended schematic are the whole demonstration.
+     Do not "fix" it green: its value is that it stays red. -->

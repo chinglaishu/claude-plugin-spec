@@ -130,10 +130,10 @@ test('Container roll-up — composed (R1–R4, R8)', async ({ page }) => {
 // ── R9: a DELIBERATELY FAILING test — a live demonstration of how a FAILED requirement reads on the
 // board (the human, 2026-09-02: "add a failing test case to demonstrate how a fail test case shows").
 // Tsumiki hard-deletes with no undo; R9 asks for a reversible delete that keeps the To-do count. The
-// app does not do it, so this test FAILS ON PURPOSE: the first proveVisible (To do = 5 before the
-// delete) passes and harvests a green scene; the second (To do should STILL be 5) fails and harvests
-// the RED frame, the asserted value burned red beside the intended schematic. It is the one honestly
-// ungreen row on this board — do NOT "fix" it green (its whole value is that it stays red).
+// app does not do it, so this test FAILS ON PURPOSE: the scenes before the delete pass and harvest
+// green; the Then's three claims after it (still listed · an Undo · To do still 5) all fail and
+// harvest RED frames beside the schematic's intended state. It is the one honestly ungreen row on
+// this board — do NOT "fix" it green (its whole value is that it stays red).
 test('R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING', async ({ page }) => {
   coverReqs('R9')
   const state = await openSeededBoard(page)
@@ -147,11 +147,18 @@ test('R9 (demo) — a deleted task should be reversible, keeping the count — I
     // used to be — a beat whose only frames are a counter is not watchable.
     await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill', 'The open task about to be deleted — Pay the electricity bill')
     await page.locator('.task[data-id="k2"] .del').click()          // delete it (Tsumiki hard-deletes)
-    await proveVisible(row('k3').locator('.ttl'), 'Renew passport',
-      'Pay the electricity bill is gone from the list — Renew passport now stands where it was')
-    await hudCheck('Pay the electricity bill — gone from the list', 'gone', (await row('k2').count()) ? 'still listed' : 'gone')
-    // the INTENDED behaviour: a delete is a soft archive, so the count HOLDS. Tsumiki hard-deletes, so
-    // #left now reads 4 — this assertion fails, and that red frame is the demonstration.
-    await proveVisible(left, String(state.leaves), 'To do should still read 5 — a delete is only an archive')
+    // THE THEN, AS WRITTEN — every fact of it, each a SOFT claim so the beat reaches all three and
+    // fails at its end (the human, 2026-09-02: "the schematic should be correct, only the proof
+    // should be wrong"). Until then the scene after the click asserted "gone" and PASSED: the test
+    // was documenting the app instead of proving the requirement, and the drawing, mirroring that
+    // scene, showed the hard delete as if it were what R9 asks for. The three claims are the Then's
+    // three facts — the task is still listed (archived, not gone), an Undo appears on it, and "To do"
+    // still reads 5. Tsumiki fails all three: the row is gone, there is no Undo, the counter reads 4 —
+    // three red moments on the proof, while the schematic draws the intended state from the last one
+    // the app got right (the task ringed before the click), with the Undo and the 5 on it.
+    await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill',
+      'Pay the electricity bill — still listed, only archived', { soft: true })
+    await proveVisible(row('k2').locator('.undo'), 'Undo', 'An Undo appears on the archived task', { soft: true })
+    await proveVisible(left, String(state.leaves), 'To do should still read 5 — a delete is only an archive', { soft: true })
   })
 })
