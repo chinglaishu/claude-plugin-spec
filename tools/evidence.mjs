@@ -251,7 +251,9 @@ function claimOf (c) {
   if (typeof c.expected !== 'string' || typeof c.got !== 'string' || typeof c.ok !== 'boolean') return null
   const expected = oneLine(c.expected); const got = oneLine(c.got)
   if (!expected && !got) return null
-  return { expected, got, ok: c.ok }
+  // `missing` (2026-09-02): the check found nothing to read — carried through so the drawn mirror
+  // can tell a removed element from a wrong value (tools/viz.mjs intendedLayout)
+  return { expected, got, ok: c.ok, ...(c.missing === true ? { missing: true } : {}) }
 }
 export function valueMeta (layout) {
   const out = {}

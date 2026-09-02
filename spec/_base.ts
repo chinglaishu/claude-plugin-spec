@@ -305,7 +305,7 @@ const HUD = { head: '' }
 // The latest check's got vs expected — surfaced in the callout only on a FAILURE (a passing check's
 // value is already named by the Then it proves). The full text still goes to the board as a `note:`
 // step (emitNote); `ok` is kept so a caller can redden before the assertion throws.
-let CLAIM: { label: string, expected: string, got: string, ok: boolean } | null = null
+let CLAIM: { label: string, expected: string, got: string, ok: boolean, missing?: boolean } | null = null
 // One freeform line (hudNote), or the aggregate failure summary (multi-line, pre-wrapped).
 let NOTE = ''
 // The ACTIVE requirement as its Given / When → Then behaviour (parsed from the prd by reqBehavior —
@@ -331,7 +331,7 @@ let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
 // right beat and to say WHEN in that beat the frame was taken (the board paces the beat's loop off
 // the step's own window, so the offset is measured from the same origin). Saved and restored around
 // each checkReq so a nested one cannot strand the outer beat's identity.
-type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number }
+type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number, soft: string[] }   // soft: the beat's collected soft-claim failures (proveVisible `soft`)
 let CUR_CHECK: CurCheck | null = null
 // The current beat the callout shows — as ONE SENTENCE, chosen by the shared rule (the human,
 // 2026-08-30: "only have to include the text for current small step (as less text as possible) —
@@ -583,8 +583,14 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
 async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return                      // every run paints (2026-09-02) — see renderOverlay
-  const box = await target.first().boundingBox().catch(() => null)
-  if (!box) return
+  // count() first: boundingBox() on an element that is not there AUTO-WAITS for it — the whole test
+  // timeout — so a claim on a missing element hung the beat instead of reading "(missing)"
+  const present = (await target.first().count().catch(() => 0)) > 0
+  const box = present ? await target.first().boundingBox().catch(() => null) : null
+  // a FAILED check on an element that is not there (2026-09-02): the ring reddens where the value
+  // was last seen — the place the requirement says it should still be — rather than staying ink on
+  // a target that no longer exists, which photographed a failure as a pass
+  if (!box) { if (opts.failed && LAST_BOX) await renderOverlay(LAST_BOX, true); return }
   LAST_BOX = box
   await renderOverlay(box, !!opts.failed)
 }
@@ -625,9 +631,12 @@ async function emitNote (text: string): Promise<void> {
 // must paint MORE than the bar (its red ring) before the throw, and then asserts the SAME shown vs
 // expected itself. Every other caller uses the default and asserts here, so the bar always names the
 // check that broke (76714c5).
-export async function hudCheck (label: string, expected: unknown, actual: unknown, opts: { assert?: boolean } = {}): Promise<void> {
+export async function hudCheck (label: string, expected: unknown, actual: unknown, opts: { assert?: boolean, missing?: boolean } = {}): Promise<void> {
   const ok = String(expected) === String(actual)
-  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok }
+  // `missing` rides the claim (2026-09-02): the check found NOTHING to read — the element the
+  // requirement names is not on the page — which the drawn mirror treats differently from a wrong
+  // value on an element that is there (tools/viz.mjs intendedLayout).
+  CLAIM = { label: String(label), expected: String(expected), got: String(actual), ok, ...(opts.missing ? { missing: true } : {}) }
   await emitNote(String(label) + ' — got ' + String(actual) + ' · expected ' + String(expected))
   await paintHud({})
   if (opts.assert !== false) expect(String(actual), String(label)).toBe(String(expected))
@@ -710,16 +719,23 @@ async function shownText (target: Locator): Promise<string> {
   return ((await el.textContent().catch(() => '')) || '').trim()
 }
 
+// WHAT A CHECK READS OFF AN ELEMENT THAT IS NOT THERE. A requirement can name a thing the app never
+// shows (an Undo that should appear, a row that should still be listed): the check must still be
+// writable, still photograph the place, and say plainly that nothing was there — never read "" and
+// leave a reader guessing whether the element was empty or absent.
+export const MISSING = '(missing)'
+
 export async function proveVisible (
   target: Locator,
   expected: string,
   label: string,
-  opts: { match?: (shown: string) => boolean } = {}
+  opts: { match?: (shown: string) => boolean, soft?: boolean } = {}
 ): Promise<void> {
   await reveal(target, { hold: 0 })                         // centre it now, ring it in ink; the readable hold comes after we read
-  const shown = await shownText(target)
-  await hudCheck(label, expected, shown, { assert: false }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
-  const ok = opts.match ? !!opts.match(shown) : shown === expected
+  const present = (await target.first().count().catch(() => 0)) > 0
+  const shown = present ? await shownText(target) : MISSING
+  await hudCheck(label, expected, shown, { assert: false, missing: !present }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
+  const ok = present && (opts.match ? !!opts.match(shown) : shown === expected)
   // A wrong value turns the ring bengara BEFORE we throw, and we hold on that red frame, so the
   // recording shows exactly which cell failed rather than cutting away at the assertion. hudCheck
   // gained its own assert (76714c5); it must run with assert:false here or it would throw before this
@@ -730,6 +746,18 @@ export async function proveVisible (
   // them, instead of only the two ends of the assertion body.
   await snapValue()
   if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(recordHold()).catch(() => {})
+  // A SOFT CLAIM (2026-09-02, the human on the demo's R9: "the schematic should be correct, only the
+  // proof should be wrong"). A Then with several facts — the row still listed, an Undo on it, the
+  // count unchanged — must photograph EVERY one of them even when the first is wrong, or the beat's
+  // proof stops at its first red moment and the rest of the requirement is never shown. So a soft
+  // claim records its failure on the open checkReq and lets the beat run on; checkReq fails the
+  // `proves` step with the whole list once the beat has reached its end. Never a green: the step,
+  // the test and the requirement all read failed exactly as before — only the beat is complete.
+  // Outside a checkReq there is nothing to collect on, so it throws like a hard one.
+  if (!ok && opts.soft && CUR_CHECK) {
+    CUR_CHECK.soft.push(`${label}: expected "${expected}", got "${shown}"`)
+    return
+  }
   if (opts.match) expect(ok, `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
   else expect(shown, `${label} — the value read off the screen`).toBe(expected)
 }
@@ -831,7 +859,7 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // A by-product exactly like the frames: bounded (a walk budget in the page, a deadline outside
 // it), every failure swallowed. It measures and never touches the page, so it cannot change what
 // the assertion then reads.
-type Claim = { label: string, expected: string, got: string, ok: boolean }
+type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean }
 async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
@@ -1235,7 +1263,10 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
     }
     if (claim && typeof claim.ok === 'boolean') {
       const expected = one(claim.expected); const got = one(claim.got)
-      if (expected || got) extra.claim = { expected, got, ok: claim.ok }
+      // …with `missing` when the check found nothing to read (2026-09-02): the drawn mirror finds a
+      // removed element by its expected text, never by the ring's box — dropping the flag here drew
+      // the demo's Undo over the task title it was meant to sit beside
+      if (expected || got) extra.claim = { expected, got, ok: claim.ok, ...(claim.missing ? { missing: true } : {}) }
     }
     writeFileSync(file, JSON.stringify(Object.keys(extra).length ? { ...data, ...extra } : data))
     info.attachments.push({ name: `layout ${id}#${beat} ${phase}`, path: file, contentType: 'application/json' })
@@ -1299,6 +1330,17 @@ const OVERLAY_SETTLE_MS = 220
 // human-readable evidence. `coverReqs(...)` declares the full set a flow intends to reach, so a flow
 // that stops early leaves the ones it never got to honestly NOT-REACHED (not green, not red) rather
 // than silently absent. The reporter reads the steps and the annotation back out (tools/coverage.mjs).
+// the soft claims a beat collected (proveVisible `soft`), thrown as ONE failure at the beat's end —
+// inside the `proves` step, so the step, the test and the requirement all fail the same way a hard
+// claim fails them, with every wrong value named
+function failSoft (id: string): void {
+  const c = CUR_CHECK
+  if (!c || !c.soft.length) return
+  const list = c.soft.slice()
+  c.soft = []
+  // ONE line: _failAggregate keeps only the first line of a step's message, so the list rides it
+  throw new Error(`proves ${id} — ${list.length} claim${list.length === 1 ? '' : 's'} failed: ${list.join(' · ')}`)
+}
 export async function checkReq (id: string, fn: () => Promise<void> | void): Promise<void> {
   // the step NAME stays exactly `proves <id>` — tools/coverage.mjs derives requirement state from it.
   const title = reqTitle(id)
@@ -1334,9 +1376,9 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // the beat is now OPEN: every value proveVisible rings inside fn files itself under it, timed
     // from here — the same origin the reporter's window uses (the `proves` step starts next)
     const outer = CUR_CHECK
-    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0 }
+    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0, soft: [] }
     try {
-      await test.step('proves ' + id, async () => { await fn() })
+      await test.step('proves ' + id, async () => { await fn(); failSoft(id) })
       setChip(id, 'pass')
       PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
       if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'pass'
@@ -1369,9 +1411,9 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // a target (renderOverlay's no-ring rule)
   await snapPhase(id, beatNo, cursor + 1, 'before')
   const outerTop = CUR_CHECK                           // same beat window as the nested path above
-  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0 }
+  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0, soft: [] }
   try {
-    await test.step('proves ' + id, async () => { await fn() })
+    await test.step('proves ' + id, async () => { await fn(); failSoft(id) })
     setChip(id, 'pass')
     PROVING = { state: 'pass', text: '✓ ' + id + ' proven' }
     if (BEHAVIOR && BEHAVIOR.id === id) BEHAVIOR.state = 'pass'

@@ -26,3 +26,26 @@ test('it is still a CHECK — a wrong expected value throws, whatever the elemen
   }
   expect(threw, 'a wrong value must fail the check').toContain('Water the plant')
 })
+
+// A SOFT CLAIM (2026-09-02): a Then with several facts must photograph EVERY one of them even when
+// the first is wrong — the beat runs to its end and the `proves` step fails once, with the whole
+// list. The human, on the demo's R9: "the schematic should be correct, only the proof should be
+// wrong" — which needs the proof to show every fact the requirement states, not stop at the first.
+// The test is EXPECTED to fail (the aggregate surfaces the two red claims); the marker file proves
+// the third claim was still reached, and the node test reads it.
+import { writeFileSync } from 'node:fs'
+import { checkReq, MISSING } from '../../spec/_base'
+// where the node test asked for the marker (an env var — the transpiled spec's own URL is not its
+// source dir); a bare run of this config writes nothing
+const SOFT_MARK = process.env.SOFT_MARK || ''
+
+test('soft claims run every value of a beat and fail it at the end — never at the first wrong one', async ({ page }) => {
+  test.fail()
+  await page.setContent(PAGE)
+  await checkReq('R1', async () => {
+    await proveVisible(page.locator('#nt'), 'Water the plant', 'first — deliberately wrong', { soft: true })
+    await proveVisible(page.locator('#nope'), 'Undo', 'second — nothing there at all', { soft: true })
+    await proveVisible(page.locator('#ttl'), 'Water the plants', 'third — right, and still reached', { soft: true })
+    if (SOFT_MARK) writeFileSync(SOFT_MARK, 'reached the third claim; a missing element reads ' + MISSING)
+  })
+})

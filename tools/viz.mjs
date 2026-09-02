@@ -793,7 +793,7 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // → the fold), and where that claim failed the ringed value is drawn as the EXPECTED one, in the
 // same asserted ink as any measured value; the beat's after frame takes the same intent, being its
 // intended end state. The callout is untouched — "got 4 ✕" is the burn-in's, and stays the burn-in's.
-const MIRROR_KIT = 'mirror-12'
+const MIRROR_KIT = 'mirror-13'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 // a nests inside b — the ONE tolerance the whole kit uses for "this box is inside that one"
@@ -929,7 +929,9 @@ function normClaim (c) {
   const one = s => s.replace(/\s+/g, ' ').trim().slice(0, 140)
   const expected = one(c.expected); const got = one(c.got)
   if (!expected && !got) return null
-  return { expected, got, ok: c.ok }
+  // `missing` (mirror-13): the check found NOTHING to read — the element the requirement names is
+  // not on the page. A drawing treats that differently from a wrong value on a present element.
+  return { expected, got, ok: c.ok, ...(c.missing === true ? { missing: true } : {}) }
 }
 function normLayout (l) {
   if (!l || typeof l !== 'object') return null
@@ -990,6 +992,10 @@ function normLayout (l) {
       // the shapes a small inline svg is made of, or null — an <img>, an illustration, an svg the
       // harvest could not read, or anything malformed (mirror-10, normIcon above)
       icon: kind === 'image' ? normIcon(e.icon) : null,
+      // an INTENDED element (mirror-13): its text is already the requirement's expected value, put
+      // there by intendedLayout — the scene's own intent swap below must leave it alone, or a later
+      // claim's value would overwrite an earlier claim's (the Undo retyped as "5")
+      intended: e.intended === true,
       gone: op != null && op < GONE
     })
   }
@@ -1609,11 +1615,13 @@ function mirrorRead (L, S, withFocus, anchors) {
   const intent = L.claim && L.claim.ok === false && L.claim.expected ? L.claim : null
   if (intent) {
     const swap = new Set()
-    for (const m of marks) if (m.el) swap.add(m.el)
+    // …never an element intendedLayout already typed for an EARLIER claim of the same beat: each
+    // intended value stays its own (mirror-13)
+    for (const m of marks) if (m.el && !(m.el.intended && raw(m.el.text) !== intent.expected)) swap.add(m.el)
     // …and any other FOCUS leaf reading exactly what the page gave: the same value in a second place
     // (a counter and its own digit span) is the same wrong number twice. Only inside the ring —
     // an unrelated "4" elsewhere on the screen is not this beat's claim.
-    if (intent.got) for (const f of focus) if (f.el && f.leaf && raw(f.el.text) === intent.got) swap.add(f.el)
+    if (intent.got) for (const f of focus) if (f.el && f.leaf && !f.el.intended && raw(f.el.text) === intent.got) swap.add(f.el)
     for (const e of swap) { e.text = intent.expected; e.intended = true }
     for (const f of focus) if (swap.has(f.el)) { f.text = intent.expected; f.intended = true }
     for (const m of marks) if (swap.has(m.el)) { m.text = intent.expected; m.intended = true }
@@ -2135,6 +2143,93 @@ function wfFade (k, t, m) {
 // frame, rather than inventing motion nobody measured.
 //
 // The legacy 3-argument call renderWireframe(before, after, meta) is still accepted as one beat.
+// ── THE LAST STATE THE APP GOT RIGHT (mirror-13, 2026-09-02) ─────────────────────────────────
+// The human, on Tsumiki's R9 again, one kit after mirror-12: "the failed test case is so fucking
+// wrong, the schematic should be correct, only the proof should be wrong." mirror-12 swapped the
+// EXPECTED value onto the ringed element of a failed scene — but drew the REST of that scene from
+// the failed skeleton, which is a photograph of the app misbehaving: a task the requirement says is
+// only archived was drawn already gone, and the Undo it asks for was nowhere, because nothing had
+// measured one. One right number in a wrong picture is still a wrong picture.
+//
+// So a failed scene is not drawn from its own skeleton at all. It is drawn from the LAST SKELETON
+// THE APP GOT RIGHT — the beat's latest passing scene, or its before frame — with the requirement's
+// expected value put where the claim points. That state is the closest measured thing to the
+// intended one: the app was still right there, and the claim says what should have changed since.
+//   · a claim whose element is still on the page (a counter reading 4 for an expected 5) finds it in
+//     the base by the ring's own box and takes the expected text;
+//   · a claim whose element the app REMOVED (claim.missing — the check found nothing to read) finds
+//     it in the base by its expected text — the base still has it, which is the whole point;
+//   · a claim on something the app NEVER had (an Undo that should appear) becomes a new leaf beside
+//     the ring the beat last stood on, in that neighbour's own type — the one thing here the harvest
+//     did not measure, drawn because the requirement says it is there, and named in words by the
+//     callout on both sides.
+// Claims accumulate down the beat (scene k shows every intended change up to k), and the beat's
+// after frame is the base with ALL of them applied — the intended rest. Every focus in the base is
+// cleared first: the ring belongs to the claim, not to the scene that was borrowed. The derived
+// skeleton is registered as the frame's INPUT (rawOf), so mirrorGaps and `npm run proof mirror`
+// check the drawing against the very picture it was asked to draw — and the photograph beside it
+// keeps what the app did, with the verdict in red.
+function intendedLayout (baseRaw, claims) {
+  const L = structuredClone(baseRaw)
+  if (!L || !Array.isArray(L.els)) return null
+  const norm = t => raw(t).replace(/\s+/g, ' ').toLowerCase()
+  const worded = e => !!raw(e.text)
+  const inside = (t, e) => t !== e && t.x >= e.x - 0.6 && t.y >= e.y - 0.6 &&
+    t.x + t.w <= e.x + e.w + 0.6 && t.y + t.h <= e.y + e.h + 0.6
+  const overlap = (a, b) => {
+    const ox = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x))
+    const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
+    return (ox * oy) / Math.max(1, Math.max(a.w * a.h, b.w * b.h))
+  }
+  for (const e of L.els) { if (e && typeof e === 'object') delete e.focus }
+  let ring = null
+  for (const { claim, at } of claims) {
+    if (!claim || claim.ok !== false || !claim.expected) continue
+    const els = L.els.filter(e => e && typeof e === 'object')
+    const leaves = els.filter(e => worded(e) && !els.some(t => inside(t, e) && worded(t)))
+    let target = null
+    if (!claim.missing && at) {
+      let best = 0
+      for (const e of leaves) { const ov = overlap(e, at); if (ov > best) { best = ov; target = e } }
+      if (best < 0.4) target = null
+    }
+    if (!target) target = leaves.find(e => norm(e.text) === norm(claim.expected)) || null
+    if (!target && at) {
+      let like = null; let lov = 0.4
+      for (const e of leaves) { const ov = overlap(e, at); if (ov > lov) { lov = ov; like = e } }
+      const fs = like && like.fs > 0 ? like.fs : Math.max(11, Math.min(16, at.h * 0.6))
+      // after the neighbour's WORDS, not its box: a row title's box runs to the chip beside it, and a
+      // leaf placed past the box landed on that chip. The text end is estimated the way the whole kit
+      // estimates (average advance), padded by the neighbour's own left padding.
+      // …and the new leaf must not NEST in the neighbour's box, or the kit reads the neighbour as a
+      // wrapper whose leaves type its words and drops the neighbour's own (the title vanished). A text
+      // leaf's box is never outlined, so it is trimmed to its words first and the new leaf follows it.
+      const words = like ? raw(like.text).length * fs * 0.58 + (like.pl > 0 ? like.pl : 0) : at.w
+      const textLike = like && like.kind === 'text'
+      if (textLike && words < like.w) like.w = words
+      const afterX = textLike ? like.x + like.w + 8 : at.x + at.w + 8
+      target = {
+        x: afterX, y: at.y, w: Math.max(24, claim.expected.length * fs * 0.6 + 12), h: at.h,
+        kind: 'text', text: claim.expected, fs,
+        ...(like ? { fg: like.fg, ff: like.ff, fw: like.fw } : {}),
+        synthetic: true
+      }
+      L.els.push(target)
+    }
+    if (!target) continue
+    const was = raw(target.text)
+    target.text = claim.expected
+    target.focus = true
+    target.intended = true
+    // the same value in the element's own inner span (a counter's digit) moves with it
+    for (const t of els) if (inside(t, target) && worded(t) && raw(t.text) === was) t.text = claim.expected
+    ring = { x: target.x, y: target.y, w: target.w, h: target.h }
+    L.claim = { ...claim }
+  }
+  if (ring) L.ring = ring
+  return L
+}
+
 export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   const asBeats = Array.isArray(beatLayouts)
   // one canonical shape for BOTH call forms, so the layout pin is the same either way
@@ -2164,13 +2259,28 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   // the file's own object — so tools/proof-integrity.mjs, which re-checks a committed frame against
   // `gaps[i].layout`, asks the guard the same question this renderer answered. The pin (layoutHash)
   // is taken from the untouched inputs, so deriving this moves no drawing on its own.
+  //
+  // …and since mirror-13 a FAILED scene, and the after frame of a failed beat, are not that
+  // skeleton at all but the last one the app got right with the claims applied (intendedLayout
+  // above). The mirror-12 after-claim is the fallback for a beat with no right state to borrow.
   for (const p of pairs) {
-    if (!p.after || p.after.claim) continue
-    const failed = p.values.filter(v => v && v.claim && v.claim.ok === false && v.claim.expected)
-    const last = failed[failed.length - 1]
-    if (!last) continue
-    p.after.claim = last.claim
-    rawOf.set(p.after, { ...(rawOf.get(p.after) || {}), claim: last.claim })
+    let base = p.before ? rawOf.get(p.before) : null
+    const applied = []
+    p.values = p.values.map(v => {
+      const rv = rawOf.get(v)
+      const c = v.claim
+      if (!(c && c.ok === false && c.expected)) { base = rv; return v }
+      applied.push({ claim: c, at: rv && rv.ring ? { ...rv.ring } : null })
+      const truth = base ? take(intendedLayout(base, applied)) : null
+      return truth || v
+    })
+    if (!applied.length || !p.after) continue
+    const truth = base ? take(intendedLayout(base, applied)) : null
+    if (truth) { p.after = truth; continue }
+    if (p.after.claim) continue
+    const last = applied[applied.length - 1].claim
+    p.after.claim = last
+    rawOf.set(p.after, { ...(rawOf.get(p.after) || {}), claim: last })
   }
   const src = pairs[0].before || pairs[0].after
   const S = LAYOUT_W / src.w

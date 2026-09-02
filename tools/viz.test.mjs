@@ -671,7 +671,7 @@ test('the mirror stamps its renderer pin, so a kit change is legible on disk', (
   // inline svg drawn as its own shapes, and no plate under the wordless unpainted button holding
   // it. mirror-9 was the RINGED THING ITSELF, mirror-8 COLOUR AND STATE, mirror-7 the page's own
   // TYPE, mirror-6 the card as one sentence, mirror-5 the shared geometry.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-12"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-13"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -2057,4 +2057,91 @@ test('mirror-12: the real R9 harvest, claimless as it is on disk, draws exactly 
   assert.equal(rings(withClaim), rings(d.svg), 'the intent moves a value, never the overlay')
   assert.equal(dims(withClaim), dims(d.svg))
   tokensOnly(withClaim)
+})
+
+// ── MIRROR-13: A FAILED SCENE IS DRAWN FROM THE LAST STATE THE APP GOT RIGHT (2026-09-02) ────────
+// The human, on the demo's deliberately failing R9, one kit after mirror-12 put the expected value
+// on the ringed element: "the failed test case is so fucking wrong, the schematic should be correct,
+// only the proof should be wrong." The rest of a failed scene was still the app's wrong picture —
+// the task drawn already gone, no Undo anywhere. Now the scene borrows the beat's last passing
+// skeleton and puts every failed claim's expected value where it belongs: a removed element found
+// by its expected text, a wrong value by the ring's box, a never-there one drawn beside the ring.
+const PAGE13 = (count, titles, ring, focusOn, claim) => {
+  const els = [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container', text: '' },
+    { x: 1290, y: 96, w: 60, h: 40, kind: 'text', text: count, fs: 24, ...(focusOn === 'count' ? { focus: true } : {}) }
+  ]
+  titles.forEach((t, i) => {
+    const y = 200 + i * 60
+    els.push({ x: 300, y, w: 800, h: 48, kind: 'container', text: t })
+    els.push({ x: 320, y: y + 12, w: 400, h: 24, kind: 'text', text: t, fs: 16, ...(focusOn === t ? { focus: true } : {}) })
+  })
+  return { w: 1440, h: 900, ring, els, ...(claim ? { claim } : {}) }
+}
+const THREE = ['Plan the team offsite', 'Pay the electricity bill', 'Renew passport']
+const TWO13 = ['Plan the team offsite', 'Renew passport']
+const PAY_BOX = { x: 320, y: 272, w: 400, h: 24 }          // the Pay row's title — and, after the delete, the place it stood
+const COUNT_BOX = { x: 1290, y: 96, w: 60, h: 40 }
+const R9_13 = [{
+  before: PAGE13('5', THREE, null, null, null),
+  values: [
+    PAGE13('5', THREE, PAY_BOX, 'Pay the electricity bill', { expected: 'Pay the electricity bill', got: 'Pay the electricity bill', ok: true }),
+    PAGE13('4', TWO13, PAY_BOX, null, { expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true }),
+    PAGE13('4', TWO13, PAY_BOX, null, { expected: 'Undo', got: '(missing)', ok: false, missing: true }),
+    PAGE13('4', TWO13, COUNT_BOX, 'count', { expected: '5', got: '4', ok: false })
+  ],
+  after: PAGE13('4', TWO13, COUNT_BOX, 'count', null)
+}]
+const META13 = { behavior: b('the seeded list, with "To do" reading 5', 'you delete an open task', 'the delete is a soft archive — an Undo appears and "To do" still reads 5'), id: 'R9', title: 'A deleted task is reversible', pass: false }
+const has = (frame, txt) => new RegExp('>' + txt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '<').test(frame)
+
+test('mirror-13: a removed element is drawn where it was — from the last scene the app got right', () => {
+  const d = renderWireframe(R9_13, META13)
+  assert.match(d.svg, /data-viz-kit="mirror-13"/)
+  const f1 = frameOf(d.svg, 1); const f2 = frameOf(d.svg, 2)
+  assert.ok(has(f1, 'Pay the electricity bill') && has(f1, 'Renew passport'), 'the passing scene draws its own skeleton')
+  // the failed scene: the app's skeleton has two rows and a 4; the drawing shows three rows and the 5
+  assert.ok(has(f2, 'Pay the electricity bill'), 'the task the requirement says is only archived is still drawn')
+  assert.ok(has(f2, 'Plan the team offsite') && has(f2, 'Renew passport'), 'the other rows too — the whole last right state')
+  assert.ok(has(f2, '5') && !has(f2, '4'), 'the counter still reads what it read when the app was right')
+  // …and the ring is on the archived task, where the claim points
+  const S = 600 / 1440
+  const rings = [...f2.matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="[\d.]+" fill="none" stroke="var\(--ai\)" stroke-width="[\d.]+"\/>/g)]
+  assert.ok(rings.some(r => Math.abs(Number(r[2]) - (PAY_BOX.y - RING.inset - RING.stroke / 2) * S) < 0.5), 'the ring strokes the archived task\'s own box: ' + rings.map(r => r[2]).join(','))
+})
+
+test('mirror-13: a never-there element is drawn beside the ring the beat last stood on, and claims accumulate', () => {
+  const d = renderWireframe(R9_13, META13)
+  const f3 = frameOf(d.svg, 3)
+  assert.ok(has(f3, 'Undo'), 'the Undo the requirement asks for is drawn, though nothing measured one')
+  assert.ok(has(f3, 'Pay the electricity bill'), 'and the archived task from the claim before it is still there')
+  // beside the task's title, on its row
+  const undo = /<text x="([-\d.]+)" y="([-\d.]+)"[^>]*>Undo<\/text>/.exec(f3)
+  assert.ok(undo, 'the Undo is typed as text')
+  const S = 600 / 1440
+  const words = 'Pay the electricity bill'.length * 16 * 0.58        // the title's words end well before its box does
+  assert.ok(Number(undo[1]) > (PAY_BOX.x + words) * S - 1 && Number(undo[1]) < (PAY_BOX.x + PAY_BOX.w) * S, 'right after the title\'s words, inside its row: x=' + undo[1])
+  assert.ok(Math.abs(Number(undo[2]) - (PAY_BOX.y + PAY_BOX.h / 2) * S) < 12 * S + 2, 'on the same row: y=' + undo[2])
+})
+
+test('mirror-13: a wrong value on a present element takes the expected one, and the after frame is the intended rest', () => {
+  const d = renderWireframe(R9_13, META13)
+  const f4 = frameOf(d.svg, 4); const f5 = frameOf(d.svg, 5)
+  for (const [n, f] of [[4, f4], [5, f5]]) {
+    assert.ok(has(f, '5') && !has(f, '4'), `frame ${n}: the counter reads the expected 5, never the measured 4`)
+    assert.ok(has(f, 'Pay the electricity bill'), `frame ${n}: the archived task is still listed`)
+    assert.ok(has(f, 'Undo'), `frame ${n}: with its Undo`)
+  }
+  // …and the guard agrees with every frame it drew — the derived skeleton IS the frame's input
+  for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} has no mirror gap`)
+  assert.equal(d.gaps.length, 6, 'given + four scenes + the rest')
+  // the pin is still the harvest's — deriving the intent moves no drawing on its own
+  assert.equal(/data-viz-layout="([^"]*)"/.exec(d.svg)[1], layoutHash(R9_13))
+})
+
+test('mirror-13: a beat that passed is drawn from its own skeletons, untouched', () => {
+  const ok = [{ before: PAGE13('5', THREE, null, null, null), values: [PAGE13('5', THREE, PAY_BOX, 'Pay the electricity bill', { expected: 'Pay the electricity bill', got: 'Pay the electricity bill', ok: true })], after: PAGE13('4', TWO13, COUNT_BOX, 'count', null) }]
+  const d = renderWireframe(ok, META13)
+  const f2 = frameOf(d.svg, 2)
+  assert.ok(!has(f2, 'Pay the electricity bill') && has(f2, '4'), 'the after frame is what the app showed — nothing failed, nothing is borrowed')
 })

@@ -302,12 +302,21 @@ change.
   a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
   the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
   words), tighten the rule rather than silencing it. **On a FAILED assertion the drawing shows the
-  EXPECTED value** (the human, 2026-09-02: "schematic and behaviour are truth — otherwise the user should
-  disagree this truth and update it"): each value frame's skeleton carries the claim (`expected · got ·
-  ok`), the fold lifts it to `values[].claim`, and `mirrorRead` substitutes the expected value on the
-  ringed element of a failed scene (and on the beat's after frame) — so a failed row reads as intent
-  beside reality, never as two pictures of the same wrong state. The photograph keeps the measured
-  value and its red verdict.
+  INTENDED state, not the app's** (the human, 2026-09-02: "schematic and behaviour are truth — otherwise
+  the user should disagree this truth and update it"; and, one kit later, "the schematic should be
+  correct, only the proof should be wrong"): each value frame's skeleton carries the claim (`expected ·
+  got · ok`, plus `missing` when the check found nothing to read), the fold lifts it to
+  `values[].claim`, and a FAILED scene — and the after frame of a failed beat — is drawn from the LAST
+  SKELETON THE APP GOT RIGHT (the beat's latest passing scene, else its before frame) with every failed
+  claim applied (`intendedLayout`, kit mirror-13): a wrong value on a present element is found by the
+  ring's box and takes the expected text; an element the app REMOVED is found in the base by its expected
+  text (the base still has it); something the app NEVER had (an Undo that should appear) is drawn as a
+  new leaf beside the ring the beat last stood on. Claims accumulate down the beat. The derived skeleton
+  is registered as the frame's input, so the mirror guard checks the drawing against the picture it was
+  asked to draw. The photograph keeps the measured state and its red verdict — a missing element rings
+  red where it last stood, "got (missing) ✕". **A Then with several facts uses SOFT claims**
+  (`proveVisible(…, { soft: true })`): the beat reaches and photographs every fact and the `proves` step
+  fails once at its end with the whole list — never a green, never a beat cut off at its first red.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.
