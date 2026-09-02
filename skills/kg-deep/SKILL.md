@@ -87,8 +87,11 @@ whole point is a video a human can trust, so do not read a number off a grid API
 the recording shows only a summary or an average — bring the real UI showing that value on screen
 (switch Summary→Details, scroll/reveal the cell), read it OFF the visible cell, and hold, walking each
 item (year by year, row by row). `proveVisible(locator, expected, label)` from `_base` does it in one
-call. The API read is for PRECISION behind the on-screen proof, never a substitute for it. Finishing
-check: with the sound off, can you SEE every number the flow claims?
+call. The API read is for PRECISION behind the on-screen proof, never a substitute for it. And the
+ACTION itself, not only its number: a When that deletes, ticks or moves something rings that thing
+before acting and the place it changed after — never only the counter (the human, 2026-09-02; kg-e2e's
+watchable-beat rule). Finishing check: with the sound off, can you SEE every number the flow claims,
+and every action it says it took?
 
 **Author each unit beat as an exported step function** in `spec/<screen>/steps.ts` (fn · proves ·
 name · needs/gives) with its `checkReq` kept around the call — kg-e2e's beat-function convention —

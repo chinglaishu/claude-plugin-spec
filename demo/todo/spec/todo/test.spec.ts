@@ -8,7 +8,7 @@
 // run) and seeds a fixed set of tasks when its storage is empty. The flow pins the clock and clears
 // storage, so it always starts from the same board.
 
-import { test, checkReq, coverReqs, flowStep, hudNote, recordHold, proveVisible } from '../_base'
+import { test, checkReq, coverReqs, flowStep, hudNote, hudCheck, recordHold, proveVisible } from '../_base'
 import { openSeededBoard, addTask, renameInPlace, addSubTaskGrowsRing, tickOneSubTask, finishContainerRollsUp,
   containerIsNotAUnit, reopenSubTaskReopensParent, walkSmartViews, readDateChips, reloadKeepsEverything } from './steps'
 
@@ -138,9 +138,18 @@ test('R9 (demo) — a deleted task should be reversible, keeping the count — I
   coverReqs('R9')
   const state = await openSeededBoard(page)
   const left = page.locator('#left')
+  const row = (id: string) => page.locator(`.task[data-id="${id}"]`)
   await checkReq('R9', async () => {
     await proveVisible(left, String(state.leaves), 'To do — five open leaves before the delete')
-    await page.locator('.task[data-id="k2"] .del').click()          // delete an open childless task
+    // SHOW THE DELETE, NEVER ONLY SAY IT (the human, 2026-09-02: "the failed test case totally not
+    // really delete a subtask — please show it out in visual, not just text"). The When acts on a
+    // task, so the task is ringed BEFORE the action and the list is ringed AFTER it, where the row
+    // used to be — a beat whose only frames are a counter is not watchable.
+    await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill', 'The open task about to be deleted — Pay the electricity bill')
+    await page.locator('.task[data-id="k2"] .del').click()          // delete it (Tsumiki hard-deletes)
+    await proveVisible(row('k3').locator('.ttl'), 'Renew passport',
+      'Pay the electricity bill is gone from the list — Renew passport now stands where it was')
+    await hudCheck('Pay the electricity bill — gone from the list', 'gone', (await row('k2').count()) ? 'still listed' : 'gone')
     // the INTENDED behaviour: a delete is a soft archive, so the count HOLDS. Tsumiki hard-deletes, so
     // #left now reads 4 — this assertion fails, and that red frame is the demonstration.
     await proveVisible(left, String(state.leaves), 'To do should still read 5 — a delete is only an archive')

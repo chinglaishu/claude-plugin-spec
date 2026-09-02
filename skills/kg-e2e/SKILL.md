@@ -139,6 +139,16 @@ way. Read it before writing your first one.
      each *distinct* fact once — the action (filled input + live control), then the outcome (the new
      row, its state, its stamp) — and let one camera hold the related rings together rather than
      spending a separate scene on each. Fewer, distinct scenes beat more, repeated ones.
+   - **Show the action on its SUBJECT, never only in words** *(2026-09-02 — the human, on the demo's
+     deliberately failing R9: "the failed test case totally not really delete a subtask — please show
+     it out in visual, not just text; keep it in the rule")*. A When that acts on a thing — delete a
+     task, tick a box, drag a card — is proven by ringing that thing **before** the action (`await
+     proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill', 'The open task about to be
+     deleted')`) and then the place it changed **after** it (the row that now stands where it was, the
+     empty slot, the moved card), and only then the number the requirement counts. A beat whose only
+     frames ring a counter says the action happened without ever showing it — the reader has to
+     believe the words, and on a FAILED beat (where the schematic draws the intended value and the
+     photograph the measured one) the missing picture is exactly the thing they came to see.
 
    The finishing check, extended: with the sound off, does each scene show something the last one did
    not, is every control the words name actually on screen, and can you SEE every state the words claim?
