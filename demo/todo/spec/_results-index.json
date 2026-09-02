@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 48327,
+        "ms": 49539,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 29457,
+        "ms": 28848,
         "error": null,
         "line": 94,
         "reqs": {
@@ -38,7 +38,7 @@
       {
         "title": "R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING",
         "ok": false,
-        "ms": 8179,
+        "ms": 11629,
         "error": "Error: 1 step(s) failed:\n  ✗ \"R9 — A deleted task is reversible: the count holds until you confirm\": To do should still read 5 — a delete is only an archive — the value read off the screen",
         "line": 137,
         "reqs": {
@@ -46,9 +46,9 @@
         }
       }
     ],
-    "ranAt": 1788341308365,
+    "ranAt": 1788350516244,
     "srcHashes": {
-      "todo": "505861c79d2c"
+      "todo": "d30e4ef74fa2"
     },
     "provenHashes": {
       "R1": "b62c6514056fe72b",
@@ -65,8 +65,8 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 210,
-          "to": 6889
+          "from": 271,
+          "to": 7150
         },
         "beats": [
           {
@@ -76,30 +76,45 @@
             "layoutBefore": "spec/todo/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R1.b1.after.layout.json",
             "window": {
-              "from": 210,
-              "to": 6889
+              "from": 271,
+              "to": 7150
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R1.b1.v1.png",
                 "layout": "spec/todo/evidence/R1.b1.v1.layout.json",
-                "at": 1723,
-                "label": "The task typed into the Add box"
+                "at": 1742,
+                "label": "The task typed into the Add box",
+                "claim": {
+                  "expected": "Water the plants",
+                  "got": "Water the plants",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R1.b1.v2.png",
                 "layout": "spec/todo/evidence/R1.b1.v2.layout.json",
-                "at": 3431,
-                "label": "The Add button, now enabled"
+                "at": 3475,
+                "label": "The Add button, now enabled",
+                "claim": {
+                  "expected": "Add",
+                  "got": "Add",
+                  "ok": true
+                }
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R1.b1.v3.png",
                 "layout": "spec/todo/evidence/R1.b1.v3.layout.json",
-                "at": 5206,
-                "label": "The new row — its checkbox empty, stamped added just now"
+                "at": 5403,
+                "label": "The new row — its checkbox empty, stamped added just now",
+                "claim": {
+                  "expected": "added just now",
+                  "got": "Water the plantsadded just now",
+                  "ok": false
+                }
               }
             ],
             "focus": {
@@ -112,20 +127,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 210,
-          "to": 6889
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 271,
+          "to": 7150
         }
       },
       "R2": {
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 7245,
-          "to": 10740
+          "from": 7534,
+          "to": 11136
         },
         "beats": [
           {
@@ -135,23 +150,33 @@
             "layoutBefore": "spec/todo/evidence/R2.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R2.b1.after.layout.json",
             "window": {
-              "from": 7245,
-              "to": 10740
+              "from": 7534,
+              "to": 11136
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R2.b1.v1.png",
                 "layout": "spec/todo/evidence/R2.b1.v1.layout.json",
-                "at": 339,
-                "label": "The renamed task, read back off its row"
+                "at": 358,
+                "label": "The renamed task, read back off its row",
+                "claim": {
+                  "expected": "Water the office plants",
+                  "got": "Water the office plants",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R2.b1.v2.png",
                 "layout": "spec/todo/evidence/R2.b1.v2.layout.json",
-                "at": 2045,
-                "label": "The stamp flipped to edited"
+                "at": 2105,
+                "label": "The stamp flipped to edited",
+                "claim": {
+                  "expected": "edited just now",
+                  "got": "edited just now",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -164,20 +189,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 7245,
-          "to": 10740
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 7534,
+          "to": 11136
         }
       },
       "R3": {
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 11079,
-          "to": 14546
+          "from": 11542,
+          "to": 15164
         },
         "beats": [
           {
@@ -187,23 +212,33 @@
             "layoutBefore": "spec/todo/evidence/R3.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R3.b1.after.layout.json",
             "window": {
-              "from": 11079,
-              "to": 14546
+              "from": 11542,
+              "to": 15164
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R3.b1.v1.png",
                 "layout": "spec/todo/evidence/R3.b1.v1.layout.json",
-                "at": 249,
-                "label": "The container ring — one of three done"
+                "at": 283,
+                "label": "The container ring — one of three done",
+                "claim": {
+                  "expected": "1/3",
+                  "got": "1/3",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R3.b1.v2.png",
                 "layout": "spec/todo/evidence/R3.b1.v2.layout.json",
-                "at": 1983,
-                "label": "Adding a sub-task grew the ring by itself — one of four"
+                "at": 2138,
+                "label": "Adding a sub-task grew the ring by itself — one of four",
+                "claim": {
+                  "expected": "1/4",
+                  "got": "1/4",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -216,20 +251,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 11079,
-          "to": 14546
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 11542,
+          "to": 15164
         }
       },
       "R5": {
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 14894,
-          "to": 22505
+          "from": 15550,
+          "to": 23557
         },
         "beats": [
           {
@@ -239,23 +274,33 @@
             "layoutBefore": "spec/todo/evidence/R5.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b1.after.layout.json",
             "window": {
-              "from": 14894,
-              "to": 18323
+              "from": 15550,
+              "to": 19114
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b1.v1.png",
                 "layout": "spec/todo/evidence/R5.b1.v1.layout.json",
-                "at": 246,
-                "label": "To do — 7 leaves of work left"
+                "at": 274,
+                "label": "To do — 7 leaves of work left",
+                "claim": {
+                  "expected": "7",
+                  "got": "7",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R5.b1.v2.png",
                 "layout": "spec/todo/evidence/R5.b1.v2.layout.json",
-                "at": 1967,
-                "label": "One sub-task done — the count drops by exactly one"
+                "at": 2090,
+                "label": "One sub-task done — the count drops by exactly one",
+                "claim": {
+                  "expected": "6",
+                  "got": "6",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -274,16 +319,21 @@
             "layoutBefore": "spec/todo/evidence/R5.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R5.b2.after.layout.json",
             "window": {
-              "from": 20813,
-              "to": 22505
+              "from": 21779,
+              "to": 23557
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R5.b2.v1.png",
                 "layout": "spec/todo/evidence/R5.b2.v1.layout.json",
-                "at": 244,
-                "label": "The container is not a task — the count dropped by two, to 4"
+                "at": 285,
+                "label": "The container is not a task — the count dropped by two, to 4",
+                "claim": {
+                  "expected": "4",
+                  "got": "4",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -296,20 +346,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 14894,
-          "to": 22505
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 15550,
+          "to": 23557
         }
       },
       "R4": {
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 18649,
-          "to": 24601
+          "from": 19465,
+          "to": 25782
         },
         "beats": [
           {
@@ -319,16 +369,21 @@
             "layoutBefore": "spec/todo/evidence/R4.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b1.after.layout.json",
             "window": {
-              "from": 18649,
-              "to": 20453
+              "from": 19465,
+              "to": 21408
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b1.v1.png",
                 "layout": "spec/todo/evidence/R4.b1.v1.layout.json",
-                "at": 325,
-                "label": "Every sub-task done — the ring is full"
+                "at": 433,
+                "label": "Every sub-task done — the ring is full",
+                "claim": {
+                  "expected": "4/4",
+                  "got": "4/4",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -347,16 +402,21 @@
             "layoutBefore": "spec/todo/evidence/R4.b2.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R4.b2.after.layout.json",
             "window": {
-              "from": 22847,
-              "to": 24601
+              "from": 23930,
+              "to": 25782
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R4.b2.v1.png",
                 "layout": "spec/todo/evidence/R4.b2.v1.layout.json",
-                "at": 293,
-                "label": "Reopen one sub-task and the parent reopens"
+                "at": 297,
+                "label": "Reopen one sub-task and the parent reopens",
+                "claim": {
+                  "expected": "3/4",
+                  "got": "3/4",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -369,20 +429,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 18649,
-          "to": 24601
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 19465,
+          "to": 25782
         }
       },
       "R6": {
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 26964,
-          "to": 38503
+          "from": 28160,
+          "to": 39679
         },
         "beats": [
           {
@@ -392,8 +452,8 @@
             "layoutBefore": "spec/todo/evidence/R6.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R6.b1.after.layout.json",
             "window": {
-              "from": 26964,
-              "to": 38503
+              "from": 28160,
+              "to": 39679
             },
             "values": [],
             "focus": {
@@ -406,20 +466,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 26964,
-          "to": 38503
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 28160,
+          "to": 39679
         }
       },
       "R7": {
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 38862,
-          "to": 42336
+          "from": 40026,
+          "to": 43476
         },
         "beats": [
           {
@@ -429,23 +489,33 @@
             "layoutBefore": "spec/todo/evidence/R7.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R7.b1.after.layout.json",
             "window": {
-              "from": 38862,
-              "to": 42336
+              "from": 40026,
+              "to": 43476
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R7.b1.v1.png",
                 "layout": "spec/todo/evidence/R7.b1.v1.layout.json",
-                "at": 296,
-                "label": "Renew passport is past due — overdue"
+                "at": 288,
+                "label": "Renew passport is past due — overdue",
+                "claim": {
+                  "expected": "overdue",
+                  "got": "overdue",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R7.b1.v2.png",
                 "layout": "spec/todo/evidence/R7.b1.v2.layout.json",
-                "at": 2022,
-                "label": "Pay the electricity bill is due today"
+                "at": 1996,
+                "label": "Pay the electricity bill is due today",
+                "claim": {
+                  "expected": "today",
+                  "got": "today",
+                  "ok": true
+                }
               }
             ],
             "focus": {
@@ -458,20 +528,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 38862,
-          "to": 42336
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 40026,
+          "to": 43476
         }
       },
       "R8": {
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 42661,
-          "to": 47859
+          "from": 43836,
+          "to": 49056
         },
         "beats": [
           {
@@ -481,30 +551,45 @@
             "layoutBefore": "spec/todo/evidence/R8.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R8.b1.after.layout.json",
             "window": {
-              "from": 42661,
-              "to": 47859
+              "from": 43836,
+              "to": 49056
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R8.b1.v1.png",
                 "layout": "spec/todo/evidence/R8.b1.v1.layout.json",
-                "at": 286,
-                "label": "The rename survived the reload"
+                "at": 290,
+                "label": "The rename survived the reload",
+                "claim": {
+                  "expected": "Water the office plants",
+                  "got": "Water the office plants",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R8.b1.v2.png",
                 "layout": "spec/todo/evidence/R8.b1.v2.layout.json",
-                "at": 2012,
-                "label": "The container came back at 3 of 4"
+                "at": 2020,
+                "label": "The container came back at 3 of 4",
+                "claim": {
+                  "expected": "3/4",
+                  "got": "3/4",
+                  "ok": true
+                }
               },
               {
                 "k": 3,
                 "frame": "spec/todo/evidence/R8.b1.v3.png",
                 "layout": "spec/todo/evidence/R8.b1.v3.layout.json",
-                "at": 3753,
-                "label": "A completed stamp survived the reload"
+                "at": 3770,
+                "label": "A completed stamp survived the reload",
+                "claim": {
+                  "expected": "done",
+                  "got": "done 1d ago",
+                  "ok": false
+                }
               }
             ],
             "focus": {
@@ -517,20 +602,20 @@
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z",
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z",
         "video": {
-          "path": "spec/todo/evidence/71d5d4f66635.webm",
-          "from": 42661,
-          "to": 47859
+          "path": "spec/todo/evidence/b6ecd50b423b.webm",
+          "from": 43836,
+          "to": 49056
         }
       },
       "R9": {
         "before": "spec/todo/evidence/R9.before.png",
         "after": "spec/todo/evidence/R9.after.png",
         "window": {
-          "from": 177,
-          "to": 3932
+          "from": 256,
+          "to": 7389
         },
         "beats": [
           {
@@ -540,37 +625,71 @@
             "layoutBefore": "spec/todo/evidence/R9.b1.before.layout.json",
             "layoutAfter": "spec/todo/evidence/R9.b1.after.layout.json",
             "window": {
-              "from": 177,
-              "to": 3932
+              "from": 256,
+              "to": 7389
             },
             "values": [
               {
                 "k": 1,
                 "frame": "spec/todo/evidence/R9.b1.v1.png",
                 "layout": "spec/todo/evidence/R9.b1.v1.layout.json",
-                "at": 306,
-                "label": "To do — five open leaves before the delete"
+                "at": 413,
+                "label": "To do — five open leaves before the delete",
+                "claim": {
+                  "expected": "5",
+                  "got": "5",
+                  "ok": true
+                }
               },
               {
                 "k": 2,
                 "frame": "spec/todo/evidence/R9.b1.v2.png",
                 "layout": "spec/todo/evidence/R9.b1.v2.layout.json",
-                "at": 2291,
-                "label": "To do should still read 5 — a delete is only an archive"
+                "at": 2125,
+                "label": "The open task about to be deleted — Pay the electricity bill",
+                "claim": {
+                  "expected": "Pay the electricity bill",
+                  "got": "Pay the electricity bill",
+                  "ok": true
+                }
+              },
+              {
+                "k": 3,
+                "frame": "spec/todo/evidence/R9.b1.v3.png",
+                "layout": "spec/todo/evidence/R9.b1.v3.layout.json",
+                "at": 3926,
+                "label": "Pay the electricity bill is gone from the list — Renew passport now stands where it was",
+                "claim": {
+                  "expected": "Renew passport",
+                  "got": "Renew passport",
+                  "ok": true
+                }
+              },
+              {
+                "k": 4,
+                "frame": "spec/todo/evidence/R9.b1.v4.png",
+                "layout": "spec/todo/evidence/R9.b1.v4.layout.json",
+                "at": 5683,
+                "label": "To do should still read 5 — a delete is only an archive",
+                "claim": {
+                  "expected": "5",
+                  "got": "4",
+                  "ok": false
+                }
               }
             ],
             "focus": {
-              "x": 980.796875,
+              "x": 321,
               "y": 30,
-              "w": 29.203125,
-              "h": 33,
+              "w": 689,
+              "h": 494,
               "vw": 1440,
               "vh": 900
             }
           }
         ],
-        "runId": "1788341220514",
-        "at": "2026-09-02T09:28:28.365Z"
+        "runId": "1788350424277",
+        "at": "2026-09-02T12:01:56.244Z"
       }
     }
   }
