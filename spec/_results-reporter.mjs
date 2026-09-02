@@ -280,6 +280,11 @@ function harvestEvidence (harvest, ranAt) {
             const meta = valueMeta(JSON.parse(readFileSync(join(process.cwd(), got.layout), 'utf8')))
             if (typeof meta.at === 'number') got.at = meta.at
             if (meta.label) got.label = meta.label
+            // …and the CLAIM it made (the human, 2026-09-02): what the assertion asked for beside
+            // what the page gave it. The drawn mirror shows the EXPECTED value on a scene the app
+            // failed — the schematic is the intent, the photograph is what happened — so it has to
+            // survive the fold. Lifted whole or not at all (valueMeta claimOf).
+            if (meta.claim) got.claim = meta.claim
           } catch { /* an unreadable skeleton — the frame simply plays untimed and unnamed */ }
         }
         if (got.frame) row.values.push(got)

@@ -153,14 +153,25 @@ completed timestamp all come back after the page reloads — nothing lived only 
 
 Tsumiki deletes **immediately and permanently**: there is no Undo, and "To do" drops the moment a
 task goes. So this requirement is **intentionally UNMET** — it exists only to show, on the board, how
-a FAILING requirement reads. The schematic **mirrors what the app measured** — "To do" reading 4
-after the delete, ringed — and the proof photographs the same moment with the verdict on it: the
-asserted value burned **red**, "got 4 ✕" on the callout, and the requirement's chip reading
-**Failed**. The drawing never shows the 5 the app did not display: a mirror that drew a value nobody
-measured would be a fabricated picture beside a real photograph, so the difference a reader sees
-between the two cells is exactly the verdict, and only the verdict *(corrected 2026-09-02, rule 6 —
-this paragraph first claimed the drawing showed the intended 5; the human kept the honest mirror on
-the lead's recommendation)*. This is the one row on this board
+a FAILING requirement reads. The schematic shows **what this requirement asks for** — "To do" still
+reading 5 after the delete, on the ringed counter — and the proof photographs what the app actually
+did, with the verdict on it: the asserted value burned **red**, "got 4 ✕" on the callout, and the
+requirement's chip reading **Failed**. So the failed row is a comparison a reader can act on —
+**intent on the left, outcome on the right** — and if the 5 is wrong, it is the requirement that is
+wrong, and the human rewrites it.
+
+<!-- REVERSED 2026-09-02 (rule 6, with the reason attached). This paragraph read: "The schematic
+     MIRRORS WHAT THE APP MEASURED — 'To do' reading 4 after the delete, ringed … The drawing never
+     shows the 5 the app did not display … the difference a reader sees between the two cells is
+     exactly the verdict, and only the verdict", written earlier the same day when the human kept the
+     lead's keep-the-mirror-honest recommendation. The human reversed it on seeing this very row:
+     "for the failed test case, schematic should be correct (schematic and behaviour are truth —
+     otherwise user should disagree this truth and update it). But now even the schematic is wrong as
+     well, please update." The renderer moved with the rule (kit mirror-11 → mirror-12) — see board
+     R18. -->
+
+*Reversed 2026-09-02 (the human, quoted above): the drawing carries the intended 5, the photograph
+keeps the measured 4 and the ✕.* This is the one row on this board
 that is honestly ungreen on purpose. *(added 2026-09-02 on the human's ask: "add a failing test case
 to demonstrate how a fail test case shows".)*
 

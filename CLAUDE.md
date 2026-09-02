@@ -53,6 +53,13 @@ not do. Never take control away from the user (no auto-advancing after a verdict
    wrong, fix the requirement and say why inline — conforming a doc silently to the code is how a
    requirement quietly becomes false.
 7. **Fix your own defects in the turn you find them.** Do not log them as future work, do not ask.
+8. **Show it, never only say it** *(the human, 2026-09-02 — the demo's failing R9 "totally not really
+   delete a subtask; please show it out in visual, not just text; keep it in the rule")*. A When that
+   acts on a thing — delete a task, tick a box, move a card — rings that thing **before** the action
+   and the place it changed **after** it, and only then the number the requirement counts. A beat
+   whose only frames ring a counter says the action happened without ever showing it. The same rule
+   governs what you hand the human: a finding or a proposal comes with a picture (a screenshot, a
+   mock on real data, a diagram), never as prose alone.
 
 ## How a test proves a requirement
 
@@ -284,7 +291,13 @@ change.
   to `frameBody` that drops a measured element now FAILS the gate instead of shipping a skeleton. If
   a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
   the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
-  words), tighten the rule rather than silencing it.
+  words), tighten the rule rather than silencing it. **On a FAILED assertion the drawing shows the
+  EXPECTED value** (the human, 2026-09-02: "schematic and behaviour are truth — otherwise the user should
+  disagree this truth and update it"): each value frame's skeleton carries the claim (`expected · got ·
+  ok`), the fold lifts it to `values[].claim`, and `mirrorRead` substitutes the expected value on the
+  ringed element of a failed scene (and on the beat's after frame) — so a failed row reads as intent
+  beside reality, never as two pictures of the same wrong state. The photograph keeps the measured
+  value and its red verdict.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.

@@ -251,6 +251,33 @@ test('valueMeta omits what the skeleton does not carry — no field is ever inve
   assert.deepEqual(valueMeta({ w: 1440, h: 900 }), {}, 'an older harvest carries neither')
   assert.deepEqual(valueMeta(null), {})
 })
+// …and THE CLAIM the moment made (the human, 2026-09-02, on Tsumiki's failing R9: "for the failed
+// test case, schematic should be correct … but now even the schematic is wrong as well"). A value
+// frame's skeleton carries what the assertion asked for beside what the page gave it, so the drawn
+// mirror can show the INTENT on a scene the app failed while the photograph keeps the measurement.
+// Lifted whole or not at all: two strings and a boolean, or the moment simply carries no claim.
+test('valueMeta lifts the CLAIM a value frame proved — expected, got, and whether it held', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ w: 1440, h: 900, at: 420, label: 'To do reads 5', claim: { expected: '5', got: '4', ok: false } }),
+    { at: 420, label: 'To do reads 5', claim: { expected: '5', got: '4', ok: false } })
+  assert.deepEqual(valueMeta({ claim: { expected: '5', got: '5', ok: true } }).claim, { expected: '5', got: '5', ok: true },
+    'a claim that held rides too — the drawing decides what to do with it, not the fold')
+})
+test('valueMeta refuses a claim that is not one — never a half-claim, never an invented verdict', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  const no = c => assert.deepEqual(valueMeta({ claim: c }), {})
+  no({ expected: '5', got: '4' })                       // no verdict is not a passing one
+  no({ expected: '5', ok: false })                      // …and half a comparison is no comparison
+  no({ got: '4', ok: false })
+  no({ expected: 5, got: 4, ok: false })                // the page's own words, as strings
+  no({ expected: '5', got: '4', ok: 'false' })
+  no('5 vs 4')
+  no(null)
+  assert.deepEqual(valueMeta({ claim: { expected: '  5\n ', got: ' 4 ', ok: false } }).claim,
+    { expected: '5', got: '4', ok: false }, 'collapsed like every other harvested string')
+  assert.equal(valueMeta({ claim: { expected: 'x'.repeat(400), got: '4', ok: false } }).claim.expected.length, 140,
+    'and bounded — what was written by a run is read back into an attribute')
+})
 test('valueMeta refuses a label that is not a usable name — collapsed, bounded, never blank', async () => {
   const { valueMeta } = await import('./evidence.mjs')
   assert.deepEqual(valueMeta({ label: '  To do\n  reads 6  ' }), { label: 'To do reads 6' },

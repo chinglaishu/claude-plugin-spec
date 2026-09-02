@@ -237,14 +237,32 @@ export function parseLayoutAttachment (name) {
 // a run and is read back into an HTML attribute, so the reader's own gate cannot depend on the
 // writer having been careful.
 export const MOMENT_LABEL_MAX = 140
+// …and THE CLAIM the moment made (the human, 2026-09-02, on Tsumiki's deliberately failing R9: "for
+// the failed test case, schematic should be correct (schematic and behaviour are truth — otherwise
+// user should disagree this truth and update it). But now even the schematic is wrong as well").
+// What the assertion ASKED FOR travels beside what the page gave it, so the drawn mirror can show
+// the INTENT on a scene the app failed while the photograph beside it keeps the measurement and its
+// red verdict. Whole or not at all: two strings and a boolean. A half-claim is no claim — an
+// expected with no verdict would have the drawing guessing whether it held, and a guess about a
+// failure is exactly the fake green this board exists to refuse.
+const oneLine = s => String(s).replace(/\s+/g, ' ').trim().slice(0, MOMENT_LABEL_MAX)
+function claimOf (c) {
+  if (!c || typeof c !== 'object') return null
+  if (typeof c.expected !== 'string' || typeof c.got !== 'string' || typeof c.ok !== 'boolean') return null
+  const expected = oneLine(c.expected); const got = oneLine(c.got)
+  if (!expected && !got) return null
+  return { expected, got, ok: c.ok }
+}
 export function valueMeta (layout) {
   const out = {}
   const at = layout ? Number(layout.at) : NaN
   if (Number.isFinite(at)) out.at = at
   if (layout && typeof layout.label === 'string') {
-    const label = layout.label.replace(/\s+/g, ' ').trim().slice(0, MOMENT_LABEL_MAX)
+    const label = oneLine(layout.label)
     if (label) out.label = label
   }
+  const claim = claimOf(layout && layout.claim)
+  if (claim) out.claim = claim
   return out
 }
 

@@ -348,11 +348,29 @@ is what stales it, and the **layout's own hash**, the geometry it was drawn from
 harvest carries no layout is **not given a picture anyway**: it keeps the archetype drawing where the
 text yields one, and otherwise its rows read as labelled beats with the drawing's absence said out
 loud. A guessed picture beside a real photograph would be the most convincing lie this board could
-tell. The same rule holds on a **failing** beat: the drawing mirrors what the app **measured** — the
-wrong value, ringed — and never the value the requirement wanted; the verdict (the red ring, the
-"got … ✕") is the photograph's alone, so the one difference between the two cells of a failed row is
-the verdict itself *(the human, 2026-09-02, keeping the lead's recommendation over drawing the
-intended value into the mirror)*.
+tell. On a **failing** beat the drawing shows the **intended** value — what the requirement asks for,
+on the ringed element, in the same ink as any measured value — while the photograph beside it keeps
+what the app actually produced, with its red ring and its "got … ✕". The two cells are not two copies
+of one fact: **the schematic and the behaviour are the truth**, the thing a human can disagree with
+and rewrite; the proof is what happened. So a failed row reads as **intent vs. outcome**, and a
+drawing that agreed with the failure would leave nothing on the row saying what was wanted. The
+verdict stays the photograph's alone — the drawing never types a "got" *(the human, 2026-09-02, on
+Tsumiki's deliberately failing R9: "for the failed test case, schematic should be correct (schematic
+and behaviour are truth — otherwise user should disagree this truth and update it). But now even the
+schematic is wrong as well, please update")*.
+
+<!-- REVERSED 2026-09-02 (rule 6, with the reason attached). This sentence previously read: "The same
+     rule holds on a failing beat: the drawing mirrors what the app MEASURED — the wrong value,
+     ringed — and never the value the requirement wanted … so the one difference between the two
+     cells of a failed row is the verdict itself", written earlier the same day when the human kept
+     the lead's keep-the-mirror-honest recommendation. Seeing it on the demo's R9 they reversed it:
+     a drawing that agrees with a failed run states nothing, and the requirement's own intent then
+     appears nowhere on the row. Conforming the doc silently to the old renderer would have left the
+     board asserting the opposite of what it now draws. -->
+*Reversed 2026-09-02 (the human, above), replacing the mirror-the-measurement rule this paragraph
+carried for one day. The renderer moved with it (kit `mirror-11` → `mirror-12`): a value frame now
+carries the CLAIM it made — expected, got, verdict — and the beat's after frame, which asserts
+nothing of its own, takes the beat's last failed claim as its intended end state.*
 
 **The gap between the drawing and the proof cannot open again** *(the human, 2026-09-02: "make sure
 the gap between schematic and proof will not exist again")*. Twice the kit quietly stopped drawing

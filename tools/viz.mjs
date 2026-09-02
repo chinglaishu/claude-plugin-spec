@@ -781,7 +781,19 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // CHECKBOX WAS INVISIBLE — a koke square with a hairline paper ✓ on it read, at an 18px box, as a
 // solid dark square with nothing in it. The mark is drawn heavy and spans its square; and where the
 // APP draws its own tick as an svg inside the control, that icon is the only tick.
-const MIRROR_KIT = 'mirror-11'
+// `mirror-12` (2026-09-02) is THE INTENT ON A FAILED SCENE. The human, on Tsumiki's R9 — the demo's
+// deliberately failing requirement: "for the failed test case, schematic should be correct
+// (schematic and behaviour are truth — otherwise user should disagree this truth and update it).
+// But now even the schematic is wrong as well, please update." Every kit up to mirror-11 drew the
+// ringed element's MEASURED text on every scene, pass or fail, so a beat that expected 5 and read 4
+// drew a 4 beside a photograph of a 4: two pictures of the same wrong number, and nothing on the row
+// saying what the requirement asks for. The two cells are not two copies of one fact — the DRAWING
+// is the authored intent, the PHOTOGRAPH is what the app did, and the row is the comparison. So a
+// value frame now carries the CLAIM it made (spec/_base.ts snapValue → tools/evidence.mjs valueMeta
+// → the fold), and where that claim failed the ringed value is drawn as the EXPECTED one, in the
+// same asserted ink as any measured value; the beat's after frame takes the same intent, being its
+// intended end state. The callout is untouched — "got 4 ✕" is the burn-in's, and stays the burn-in's.
+const MIRROR_KIT = 'mirror-12'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 // a nests inside b — the ONE tolerance the whole kit uses for "this box is inside that one"
@@ -905,6 +917,20 @@ function iconSVG (ic, box) {
 // The layout files are HARVESTED data, not authored: every field is untrusted. Anything malformed
 // is dropped rather than drawn, and a layout with no usable box yields null — the caller then
 // falls back to the archetype kit, never to an empty frame.
+// THE CLAIM A VALUE FRAME MADE (mirror-12, 2026-09-02) — what the assertion asked for beside what
+// the page gave it, and whether it held. Untrusted like every other harvested field, and validated
+// here rather than imported from the fold: this file's contract is that nothing reaches the drawing
+// unchecked. Whole or nothing — two strings and a boolean verdict; a half-claim would leave the
+// mirror guessing whether a scene failed, and a guess about a failure is the fake green rule 3
+// refuses. The strings are bounded because a value gets TYPED into the drawing.
+function normClaim (c) {
+  if (!c || typeof c !== 'object') return null
+  if (typeof c.expected !== 'string' || typeof c.got !== 'string' || typeof c.ok !== 'boolean') return null
+  const one = s => s.replace(/\s+/g, ' ').trim().slice(0, 140)
+  const expected = one(c.expected); const got = one(c.got)
+  if (!expected && !got) return null
+  return { expected, got, ok: c.ok }
+}
 function normLayout (l) {
   if (!l || typeof l !== 'object') return null
   const num = v => (Number.isFinite(Number(v)) ? Number(v) : null)
@@ -983,7 +1009,7 @@ function normLayout (l) {
   const ring = r && num(r.x) != null && num(r.y) != null && num(r.w) > 0 && num(r.h) > 0
     ? { x: num(r.x), y: num(r.y), w: num(r.w), h: num(r.h) }
     : null
-  return { w, h, ring, els: live, hidden }
+  return { w, h, ring, els: live, hidden, claim: normClaim(l.claim) }
 }
 
 // The layout PIN — the same role reqHash plays for the text. Hashes the GEOMETRY the drawing was
@@ -1564,6 +1590,34 @@ function mirrorRead (L, S, withFocus, anchors) {
     valued.add(m.el)
     for (const t of L.els) if (nestsIn(t, m.el)) valued.add(t)
   }
+  // ── THE INTENT ON A FAILED SCENE (mirror-12, 2026-09-02) ──────────────────────────────────────
+  // The human, on Tsumiki's R9 — the demo's deliberately failing requirement: "for the failed test
+  // case, schematic should be correct (schematic and behaviour are truth — otherwise user should
+  // disagree this truth and update it). But now even the schematic is wrong as well, please update."
+  // The mirror drew the ringed element's MEASURED text on every scene, so a beat that expected 5 and
+  // read 4 drew 4 — two pictures of the same wrong number, and nothing on the row saying what the
+  // requirement asks for. They are not two copies of one fact: the DRAWING is the authored intent,
+  // the PHOTOGRAPH is what the app did, and the row is the comparison. So where this scene's claim
+  // failed, the ringed value is drawn as the EXPECTED one — in the same asserted ink as any measured
+  // value (an intent that looked like a second kind of mark would just be new chrome), with the
+  // callout untouched: the "got 4 ✕" belongs to the burn-in and stays there.
+  //
+  // Applied HERE so the guard cannot disagree with the renderer — mirrorGaps reads this same
+  // substitution and therefore owes a "5" on that element and never a "4". The substituted text is
+  // written onto the element itself (frameBody types e.text for everything it draws), which is
+  // idempotent: a second reading of the same layout replaces expected with expected.
+  const intent = L.claim && L.claim.ok === false && L.claim.expected ? L.claim : null
+  if (intent) {
+    const swap = new Set()
+    for (const m of marks) if (m.el) swap.add(m.el)
+    // …and any other FOCUS leaf reading exactly what the page gave: the same value in a second place
+    // (a counter and its own digit span) is the same wrong number twice. Only inside the ring —
+    // an unrelated "4" elsewhere on the screen is not this beat's claim.
+    if (intent.got) for (const f of focus) if (f.el && f.leaf && raw(f.el.text) === intent.got) swap.add(f.el)
+    for (const e of swap) { e.text = intent.expected; e.intended = true }
+    for (const f of focus) if (swap.has(f.el)) { f.text = intent.expected; f.intended = true }
+    for (const m of marks) if (swap.has(m.el)) { m.text = intent.expected; m.intended = true }
+  }
   return { holdsWords, holdsAny, holdsIcon, composed, ghosts, ghosted, els, ringPx, marks, valued }
 }
 
@@ -2099,6 +2153,25 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
     values: (p && Array.isArray(p.values) ? p.values : []).map(take).filter(Boolean)
   })).filter(p => p.before || p.after || p.values.length)
   if (!pairs.length) return null
+  // THE BEAT'S END STATE IS ITS INTENT TOO (mirror-12, 2026-09-02). A beat's AFTER frame asserts
+  // nothing of its own, so the harvest files no claim beside it — but it is the picture of where the
+  // beat comes to rest, and on a beat that FAILED the rest the requirement asks for is the expected
+  // one. So the intent is DERIVED here, from the beat's last failed value, rather than invented at
+  // capture time (spec/_base.ts snapPhase deliberately leaves the after phase claimless: a claim
+  // written for a frame that asserted nothing would be a fabricated measurement).
+  //
+  // It rides the REPORTED skeleton as well as the drawn one — a COPY of the harvested file, never
+  // the file's own object — so tools/proof-integrity.mjs, which re-checks a committed frame against
+  // `gaps[i].layout`, asks the guard the same question this renderer answered. The pin (layoutHash)
+  // is taken from the untouched inputs, so deriving this moves no drawing on its own.
+  for (const p of pairs) {
+    if (!p.after || p.after.claim) continue
+    const failed = p.values.filter(v => v && v.claim && v.claim.ok === false && v.claim.expected)
+    const last = failed[failed.length - 1]
+    if (!last) continue
+    p.after.claim = last.claim
+    rawOf.set(p.after, { ...(rawOf.get(p.after) || {}), claim: last.claim })
+  }
   const src = pairs[0].before || pairs[0].after
   const S = LAYOUT_W / src.w
   const H = Math.round(clamp(LAYOUT_W * (src.h / src.w), 180, 900))

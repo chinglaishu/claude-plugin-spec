@@ -295,6 +295,17 @@ test('values: the NAME of what each check proved rides the fold beside its offse
   foldEvidence(index, { 'board:R4': entry({ beats: [named] }) })
   assert.equal(index.board.evidence.R4.beats[0].values[0].label, 'To do reads 6')
 })
+test('values: the CLAIM a moment made rides the fold beside its name', () => {
+  // the human, 2026-09-02, on Tsumiki's failing R9: the drawing must show what the requirement asks
+  // for on a scene the app failed, so what the assertion EXPECTED has to survive the fold with what
+  // the page actually gave it — the mirror reads both, the photograph keeps the measurement
+  const index = {}
+  const claimed = { n: 1, before: 'spec/board/evidence/R4.b1.before.png', after: 'spec/board/evidence/R4.b1.after.png',
+    values: [{ frame: 'spec/board/evidence/R4.b1.v1.png', layout: 'spec/board/evidence/R4.b1.v1.layout.json', at: 400,
+      label: 'To do reads 5', claim: { expected: '5', got: '4', ok: false } }] }
+  foldEvidence(index, { 'board:R4': entry({ beats: [claimed] }) })
+  assert.deepEqual(index.board.evidence.R4.beats[0].values[0].claim, { expected: '5', got: '4', ok: false })
+})
 test('values: a value frame the new harvest dropped is named for pruning', () => {
   const index = { board: { evidence: { R4: entry({ beats: [withVals(1, 2)] }) } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withVals(1, 1)] }) })

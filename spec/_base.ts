@@ -831,7 +831,8 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // A by-product exactly like the frames: bounded (a walk budget in the page, a deadline outside
 // it), every failure swallowed. It measures and never touches the page, so it cannot change what
 // the assertion then reads.
-async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null): Promise<void> {
+type Claim = { label: string, expected: string, got: string, ok: boolean }
+async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   try {
@@ -1215,11 +1216,26 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
     // own label, recorded at the instant the frame was taken. It rides here for the same reason `at`
     // does (one file per phase, already beside the frame) and is stripped from the layout pin with
     // it. Bounded and collapsed so a whole sentence cannot become a segment name.
+    //
+    // `claim` — WHAT THIS MOMENT ASKED FOR, beside what it got (the human, 2026-09-02, on the demo's
+    // deliberately failing R9: "for the failed test case, schematic should be correct (schematic and
+    // behaviour are truth …). But now even the schematic is wrong as well"). The drawn mirror shows
+    // the EXPECTED value on the ringed element of a scene whose assertion failed — the drawing is the
+    // authored intent, the photograph beside it is what the app did, and the row is the comparison —
+    // so the intent has to ride out of the run with the measurement. Only a whole claim travels
+    // (two strings and the verdict), collapsed and bounded like the label; the AFTER phase carries
+    // none of its own — tools/viz.mjs derives the beat's end state from its last failed value rather
+    // than this file inventing a claim for a frame that asserted nothing.
     const extra: Record<string, unknown> = {}
     if (at != null) extra.at = at
+    const one = (s: unknown) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 140)
     if (label) {
-      const one = String(label).replace(/\s+/g, ' ').trim().slice(0, 140)
-      if (one) extra.label = one
+      const l = one(label)
+      if (l) extra.label = l
+    }
+    if (claim && typeof claim.ok === 'boolean') {
+      const expected = one(claim.expected); const got = one(claim.got)
+      if (expected || got) extra.claim = { expected, got, ok: claim.ok }
     }
     writeFileSync(file, JSON.stringify(Object.keys(extra).length ? { ...data, ...extra } : data))
     info.attachments.push({ name: `layout ${id}#${beat} ${phase}`, path: file, contentType: 'application/json' })
@@ -1232,7 +1248,7 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 // focus rect the board zooms the media onto — tools/evidence.mjs focusFromLayout lifts it into the
 // index), so there is one measurement and one source of truth. Photograph FIRST — the picture is
 // the evidence; the measurement rides after it.
-async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null): Promise<void> {
+async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   // LET THE CARD LAND FIRST, on the AFTER frame (2026-08-31). The beat's resting scene turns the card
   // over to its Then, which can WRAP TO MORE LINES than the When and therefore FLIP SIDES — a bottom-
   // edge ring's When card sits below, its taller Then card is placed above (calloutSpot). The card
@@ -1244,7 +1260,7 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
     await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
   }
   await snapEvidence(id, beat, seq, phase)
-  await snapLayout(id, beat, seq, phase, at, label)
+  await snapLayout(id, beat, seq, phase, at, label, claim)
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,
@@ -1267,7 +1283,11 @@ async function snapValue (): Promise<void> {
   // claim proveVisible/hudCheck just painted on the bar, so its label IS this moment's name — the
   // very words the row's one stepper puts under the segment. Set by the caller a line before this
   // runs; absent (a bare snapValue) simply leaves the moment unnamed and the board says so generically.
-  await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0), CLAIM ? CLAIM.label : null)
+  // …and the CLAIM ITSELF with it (the human, 2026-09-02): expected, got and the verdict, so the
+  // drawn mirror can show the INTENT on a scene the app failed instead of mirroring the wrong value
+  // back at the reader. Same source, same instant — the claim proveVisible just painted on the bar.
+  await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0),
+    CLAIM ? CLAIM.label : null, CLAIM ? { ...CLAIM } : null)
 }
 // the overlay's own transition (.16s) plus a frame — the ring is where it says it is after this
 const OVERLAY_SETTLE_MS = 220

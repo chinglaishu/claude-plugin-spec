@@ -665,11 +665,13 @@ test('callout text is not truncated: the whole sentence wraps to as many lines a
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
   // Updated 2026-09-02 (rule 4 — the RENDERER moved, so this pin was correctly broken by it):
-  // mirror-11 is THE SHAPE'S OWN COLOUR and A TICK YOU CAN SEE; mirror-10 was THE ICON — a small
+  // mirror-12 is THE INTENT ON A FAILED SCENE — the ringed value drawn as the requirement's own
+  // expected one where the app failed it, so the drawing stays the truth the human can disagree
+  // with. mirror-11 was THE SHAPE'S OWN COLOUR and A TICK YOU CAN SEE; mirror-10 was THE ICON — a small
   // inline svg drawn as its own shapes, and no plate under the wordless unpainted button holding
   // it. mirror-9 was the RINGED THING ITSELF, mirror-8 COLOUR AND STATE, mirror-7 the page's own
   // TYPE, mirror-6 the card as one sentence, mirror-5 the shared geometry.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-11"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-12"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -1970,4 +1972,82 @@ test('renderSchematic bakes the layout-stale mark beside the text-stale one', ()
   const both = renderSchematic({ viz: { ...viz, stale: true } }, true)
   assert.match(both, / data-stale="1"/)
   assert.match(both, /data-viz-layout-stale="1"/)
+})
+
+// ── mirror-12: ON A FAILED BEAT THE DRAWING SHOWS THE INTENT ────────────────────────────────────
+// The human, 2026-09-02, on Tsumiki's R9 (the demo's deliberately failing requirement): "for the
+// failed test case, schematic should be correct (schematic and behaviour are truth — otherwise user
+// should disagree this truth and update it). But now even the schematic is wrong as well, please
+// update." Until now the mirror drew the ringed element's MEASURED text on every scene, pass or
+// fail — so a beat that expected "5" and read "4" drew 4, agreeing with the photograph and leaving
+// nothing on the row that says what the requirement asks for. The two cells are not two copies of
+// one fact: the DRAWING is the authored intent, the PHOTOGRAPH is what the app did, and the row is
+// the comparison. So on a scene whose claim failed, the ringed value is drawn as the EXPECTED one —
+// in the same asserted ink as any measured value, with the callout unchanged (the "got 4 ✕" is the
+// burn-in's, and stays the burn-in's alone).
+const R9L = n => JSON.parse(readFileSync(new URL(`R9.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+const R9BEH = b('five open leaves and a delete', 'you delete one', 'To do still reads 5 — a delete is only an archive')
+const r9Beat = claim => ({
+  before: R9L('before'),
+  after: R9L('after'),
+  values: [R9L('v1'), claim ? { ...R9L('v2'), claim } : R9L('v2')]
+})
+const drawR9 = claim => renderWireframe([r9Beat(claim)], { behavior: R9BEH, id: 'R9', pass: !claim || claim.ok !== false })
+// the counter's own value, wherever the overlay typed it: the NUMBER standing at the drawn
+// counter's x — the one box this beat rings and reads (its "to do" label stands at the same x)
+const valuesAt = (frame, x) => [...String(frame).matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)]
+  .filter(m => new RegExp('x="' + x + '"').test(m[1])).map(m => m[2]).filter(t => /^\d+$/.test(t))
+const COUNTER_X = '420.9'
+const FAILED = { expected: '5', got: '4', ok: false }
+
+test('mirror-12: a failed claim draws the EXPECTED value on the ringed element, not the measured one', () => {
+  const f = frameOf(drawR9(FAILED).svg, 2)                      // the beat's second asserted value: the failing one
+  assert.deepEqual(valuesAt(f, COUNTER_X), ['5'],
+    'the drawing shows what the requirement asks for — the photograph beside it keeps the 4 it read')
+  assert.match(f, new RegExp('<text x="' + COUNTER_X + '"[^>]*fill="var\\(--ai\\)"[^>]*>5</text>'),
+    'and in the same asserted ink as any measured value — the intent is not a second kind of mark')
+  assert.ok(!/got/.test(f), 'the callout stays the sentence the burn-in chose; “got 4 ✕” is the photograph’s')
+})
+
+test('mirror-12: the beat\'s AFTER frame carries the same intent — it is the intended end state', () => {
+  const d = drawR9(FAILED)
+  assert.deepEqual(valuesAt(frameOf(d.svg, 3), COUNTER_X), ['5'],
+    'the after frame has no claim of its own, so it takes the beat\'s last failed one')
+  assert.deepEqual(valuesAt(frameOf(d.svg, 1), COUNTER_X), ['5'],
+    'the earlier value passed and is drawn exactly as it was measured')
+})
+
+test('mirror-12: a claim that PASSED changes nothing — the mirror still draws what was measured', () => {
+  const d = drawR9({ expected: '4', got: '4', ok: true })
+  assert.deepEqual(valuesAt(frameOf(d.svg, 2), COUNTER_X), ['4'])
+  assert.deepEqual(valuesAt(frameOf(d.svg, 3), COUNTER_X), ['4'])
+})
+
+test('mirror-12: the guard reads the SUBSTITUTED value as the truth — a missing 5 is the gap now', () => {
+  const d = drawR9(FAILED)
+  for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
+  // …and the gate's own path (tools/proof-integrity.mjs checkMirrors): the frame re-read against the
+  // skeleton the report says it was drawn from, which must carry the intent with it
+  for (const fr of d.gaps) {
+    assert.deepEqual(mirrorGaps(fr.layout, frameOf(d.svg, fr.frame), { focus: fr.focus, anchors: fr.anchors, h: fr.h }), [],
+      `frame ${fr.frame} re-checked from its own input`)
+  }
+  const fr = d.gaps[2]
+  const cut = frameOf(d.svg, 2).replace(new RegExp('<text x="' + COUNTER_X + '"[^>]*>5</text>'), '')
+  const gaps = mirrorGaps(fr.layout, cut, { focus: true, h: fr.h })
+  assert.equal(gaps.length, 1, gapSummary(gaps))
+  assert.match(gaps[0].what, /5/, 'the intended value is what the frame owes — never the measured 4')
+})
+
+test('mirror-12: the real R9 harvest, claimless as it is on disk, draws exactly as it did', () => {
+  const d = drawR9(null)
+  assert.equal(d.gaps.length, 4, 'the given, two asserted values, the result')
+  for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
+  assert.deepEqual(valuesAt(frameOf(d.svg, 2), COUNTER_X), ['4'], 'no claim, no intent — the measurement stands')
+  const rings = s => (s.match(/stroke="var\(--ai\)"/g) || []).length
+  const dims = s => (s.match(/opacity="0\.12"/g) || []).length
+  const withClaim = drawR9(FAILED).svg
+  assert.equal(rings(withClaim), rings(d.svg), 'the intent moves a value, never the overlay')
+  assert.equal(dims(withClaim), dims(d.svg))
+  tokensOnly(withClaim)
 })
