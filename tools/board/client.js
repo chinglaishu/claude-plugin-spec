@@ -940,6 +940,22 @@ const B = window.__BOARD__ || {}
     const apply = function (animate) {
       const want = !!(ZOOMED && focus)
       box.classList.toggle('zoomed', want)
+      // NOT LAID OUT YET — the reader is built DETACHED and may still sit in a not-yet-shown pane, so
+      // the box has no measurable size and a zoom cannot be computed. Committing a full-frame 'none'
+      // here and walking away is exactly what left STEP-mode beats un-zoomed (the human, 2026-09-02:
+      // "the whole … focus effect is gone") — in auto the loop re-aimed until the size arrived, step
+      // holds after one aim. So when a zoom is wanted but the box is unsized, retry next frame until it
+      // has a size, then apply for real. Bounded, so a discarded box can never spin forever.
+      if (want && (box.clientWidth < 1 || box.clientHeight < 1)) {
+        // schedule the retry even while DETACHED — the box is inserted moments later, and guarding on
+        // isConnected here skipped the retry at the very first (detached) apply, so it never zoomed.
+        // The 120-frame cap (~2s) bounds a box that is discarded before it is ever laid out.
+        if ((apply._tries = (apply._tries || 0) + 1) < 120 && window.requestAnimationFrame) {
+          requestAnimationFrame(function () { apply(animate) })
+        }
+        return
+      }
+      apply._tries = 0
       const o = (aim || card) ? Object.assign({}, opts, { aim: aim || undefined, card: card || undefined }) : opts
       const view = want ? window.SBStepper.cameraView(focus, { w: box.clientWidth, h: box.clientHeight }, o) : null
       const css = window.SBStepper.cameraCss(view)
@@ -960,7 +976,7 @@ const B = window.__BOARD__ || {}
     // INITIAL set of a freshly built cell snaps (animate=false) so a row does not zoom-in on open —
     // only a change from one scene to the next glides.
     box._aim = function (rect, cardRect, animate) { aim = rect || null; card = cardRect || null; apply(animate !== false) }
-    apply(false)
+    apply(false)   // self-heals via a bounded rAF retry above until the box is laid out (step-safe)
     if (window.ResizeObserver) new ResizeObserver(function () { apply(false) }).observe(box)
     if (focus) onZoom(box, function () { apply(false) })
     return apply
