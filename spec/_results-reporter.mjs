@@ -2,6 +2,7 @@ import { writeFileSync, copyFileSync, mkdirSync, existsSync, readFileSync, rmSyn
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { join, relative, basename } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
 import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayouts, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
@@ -325,6 +326,34 @@ function harvestEvidence (harvest, ranAt) {
   return out
 }
 
+// DERIVE THE SCHEMATICS AT EVERY FOLD (2026-09-02). The drawing beside a requirement is drawn from
+// the harvest's layout skeletons — so it is a BY-PRODUCT OF THIS RUN, exactly like the frames, and
+// it has to land with them. It did not: `node tools/viz-derive.mjs` was a by-hand command, so every
+// run left the committed drawings made from the PREVIOUS geometry — the demo's ring, dim wash and
+// callout had silently vanished from every schematic, and their cardspots were empty, which
+// un-frames the callout on the proof side too. Now the fold spawns the viz pass for the screens it
+// just folded.
+//
+// A child process, never an import: viz-derive is a top-level script, and the reporter must not take
+// on spec-store's module state (the same reason the server spawns build()). Bounded, and swallowed —
+// a drawing is not proof, so a derive that fails is logged and the run stands (rule 3 cuts the other
+// way here: never fake a green, and never fake a RED either).
+//
+// Pure seam, exported for tools/reporter-derive.test.mjs: `exec` is execFileSync in production.
+const VIZ_DERIVE = fileURLToPath(new URL('../tools/viz-derive.mjs', import.meta.url))
+export function deriveSchematics (screens, exec) {
+  // `_`-prefixed pseudo-screens (the auth setup file) are not rows and have no drawings
+  const list = [...new Set((screens || []).map(String).filter(s => s && !s.startsWith('_')))]
+  if (!list.length) return false
+  try {
+    exec(process.execPath, [VIZ_DERIVE, ...list], { stdio: 'inherit', timeout: 120000 })
+    return true
+  } catch (err) {
+    console.error('schematic derive failed:', (err && err.message) || err)
+    return false
+  }
+}
+
 export default class ResultsIndexReporter {
   onBegin (_config, suite) { this.suite = suite }
 
@@ -478,6 +507,10 @@ export default class ResultsIndexReporter {
       let evidence = {}
       try { evidence = harvestEvidence(evidenceHarvest, ranAt) } catch (err) { console.error('evidence harvest failed:', err) }
       try { foldByScreen(byScreen, { partial, evidence }) } catch (err) { console.error('results-index fold failed:', err) }
+      // …and the DRAWINGS from that same harvest, so the schematic beside a requirement is never a
+      // pass behind the frames beside it. Deterministic output: a re-derive whose geometry did not
+      // move rewrites nothing (viz-derive compares bodies).
+      deriveSchematics(Object.keys(byScreen), execFileSync)
 
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so

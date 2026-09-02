@@ -52,7 +52,8 @@ export const BEATS = [
   { fn: 'clickRunOnCell', proves: 'R1', name: 'click Run on the board cell — the panel opens naming the screen, running', needs: ['detail'], gives: ['run-started'], ms: 150000 },   // idleSlot's budget
   { fn: 'watchLogStream', proves: 'R2', name: 'the log streams into the panel before any verdict', needs: ['run-started'], gives: ['streaming'] },
   { fn: 'verdictLandsInPlace', proves: 'R3', name: 'the verdict lands — chip passed or failed, the cell updated, no reload', needs: ['streaming'], gives: ['verdict'], ms: 230000 },   // the nested board run (147 s measured) + the in-place poll
-  { fn: 'refreshDerivedInPlace', proves: 'R7', name: 'a finished run refreshes the board in place — no reload', needs: ['detail'], gives: ['refreshed'] }
+  { fn: 'refreshDerivedInPlace', proves: 'R7', name: 'a finished run refreshes the board in place — no reload', needs: ['detail'], gives: ['refreshed'] },
+  { fn: 'noRebuildWhileRunning', proves: 'R7', name: 'a live run rebuilds nothing — the refresh comes once, at the end', needs: ['detail'], gives: ['gated'] }
 ]
 
 // dispatch R1 — opened BY the control you clicked, and it already knows its screen: nothing is
@@ -150,4 +151,47 @@ export async function refreshDerivedInPlace (page: Page, state: FlowState): Prom
   page.off('load', onLoad)
   await page.unroute('**/board.html')
   state.refreshed = flipped
+}
+
+// dispatch R7 — "the board behind it refreshes in place" is ONE refresh, at the END. While a run is
+// LIVE the board must rebuild NOTHING (the human, 2026-09-02: "run all in background" reloaded the
+// page over and over). Every assertion the harvest writes fires a file-change event, so each burst
+// used to debounce into a rebuild — with a reader open that is a visible reload every few seconds,
+// and with none it was `location.reload()`. Driven through the SSE seam (`window.__live`), because
+// the change LISTENER is held back under automation (a self-reload aborts a Playwright navigation):
+// the seam calls the very handlers the server's events call, so this drives the real gate.
+export async function noRebuildWhileRunning (page: Page, state: FlowState): Promise<void> {
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  await expect(dt.locator('.focusov')).toBeVisible()
+  await expect(page.locator('#runpanel')).toBeHidden()      // the background case: nobody opened the panel
+  let loads = 0
+  const onLoad = () => { loads++ }
+  page.on('load', onLoad)
+  // a sentinel on the OPEN READER NODE: a refresh is close-fold-reopen, so the node it survives on
+  // cannot survive a rebuild — the honest witness that nothing was rebuilt
+  await dt.locator('.focusov').evaluate((el: any) => { el.__aliveGate = 1 })
+  // …resolved as false when the overlay is missing entirely (mid-rebuild it briefly is): "the node I
+  // marked is gone" is exactly what a rebuild means, and a throw there would read as a test error
+  const alive = () => dt.locator('.focusov').evaluate((el: any) => el.__aliveGate === 1).catch(() => false)
+  expect(await alive(), 'the sentinel is on the reader that is open now').toBe(true)
+
+  // A RUN GOES LIVE, then the harvest's writes arrive as a burst of change events
+  await page.evaluate(() => (window as any).__live.run({ state: 'started', screen: 'board' }))
+  expect(await page.evaluate(() => (window as any).__live.live()), 'the board knows a run is live').toBe(true)
+  await page.evaluate(() => { for (let i = 0; i < 8; i++) (window as any).__live.change() })
+  await page.waitForTimeout(2200)     // well past the 800ms debounce a burst used to fire
+  expect(await alive(), 'a live run rebuilds nothing — the open reader survives every change').toBe(true)
+  expect(loads, 'and the page never reloads itself mid-run').toBe(0)
+
+  // …AND THE RUN FINISHING OPENS THE GATE: the rebuild's change event lands the ONE refresh, in
+  // place (a reader is open), so the board is current the moment the run is over — never stale.
+  // (the flag is NOT re-read here: the done handler's loadRuns re-seeds it from the SERVER, and when
+  // the board is running this very spec the server honestly still has a run in flight. The observable
+  // outcome is what matters and is asserted instead — the reader is refreshed once the run is over.)
+  await page.evaluate(() => (window as any).__live.run({ state: 'done', ok: true, total: 1, failed: 0, ms: 1000 }))
+  await page.evaluate(() => (window as any).__live.change())
+  await expect.poll(alive, { timeout: 15000, message: 'the finished run refreshes the reader in place' }).toBe(false)
+  expect(loads, 'and it is a refresh, never a reload').toBe(0)
+  page.off('load', onLoad)
+  state.gated = true
 }

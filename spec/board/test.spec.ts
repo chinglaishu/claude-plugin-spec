@@ -3,7 +3,7 @@ import { test, expect, checkReq, coverReqs, hudCheck, flowStep, reveal } from '.
 // tests below were proven red-first with, lifted into exported step functions so the composer can
 // chain them — each test keeps its checkReq AROUND the call, so the proof's power is unchanged
 import { openBoardHome, countHomeCards, searchRequirementText, openDetailReader, toggleViews } from './steps'
-import { refreshDerivedInPlace } from '../dispatch/steps'
+import { refreshDerivedInPlace, noRebuildWhileRunning } from '../dispatch/steps'
 import { treeShape } from '../_fixture'
 
 // The board proves ITSELF — its ten requirements (R1–R10) are the rows on its own board, and each
@@ -250,16 +250,16 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
 
     // the complete raw record opens in the Steps WINDOW — reached the way a person reaches it now:
     // the reader's ⋯ menu carries the covering test's own wired Steps button (R13). Settle the fold,
-    // then FORCE R1 into a media-bearing status (the dogfood lag makes the live word nondeterministic
-    // mid-suite) and rebuild the reader, so the media pane's video panel holds the relocated
-    // recording — the same wired .rec node, moved in (R13 media, the frozen mockup).
+    // then FORCE R1 into a proven status (the dogfood lag makes the live word nondeterministic
+    // mid-suite) and rebuild the reader on it.
     const ov = dt.locator('.focusov')
     await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-    // Task 16 #1 (the human, 2026-08-24): the media pane's video mode plays the screen's COMMITTED
-    // recording — baked as data-ev-video from the fold, NOT the run's transient _runs .webm — seeked
-    // to THIS requirement's beat (data-ev-vwin, ms into the recording). Give R1 a committed video the
-    // way the fold bakes it, then rebuild the reader: the video panel is built (a fresh .rec.evrec,
-    // never the OLD relocated .rec.playable) and plays that committed src, its label naming the beat.
+    // NO VIDEO IN THE READER (the human, 2026-09-02: "remove the full flow video from focus mode").
+    // Rewritten from the Task 16 #1 leg that asserted the band's committed-recording player — the
+    // band is gone with buildMedia, so the honest opposite is asserted: even with the committed
+    // video BAKED ON (the fold's own data-ev-video / data-ev-vwin, forced here the established way)
+    // the reader builds no player at all. The recording is the FLOW view's subject; R10's evidence
+    // in the reader is the steps and the log, which the rest of this leg still opens and reads.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
       el.setAttribute('data-status', 'passed')
       el.setAttribute('data-ev-video', 'spec/board/evidence/committed.webm')
@@ -267,13 +267,12 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     })
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    // the ONE video for the whole requirement (2026-08-28: the per-pane stills · gif · video toolbar
-    // is gone — the per-beat frames ride their own rows now, so the band's panel IS the video)
-    const vpanel = ov.locator('.feval .fmedia .fmpanel', { has: page.locator('.frecwrap') })
-    await expect(vpanel.locator('.rec.evrec')).toBeAttached()
-    await expect(vpanel.locator('.rec video')).toHaveAttribute('src', 'spec/board/evidence/committed.webm')
-    // the committed video is seeked to this beat — the honest label names where the beat sits (from vwin)
-    await expect(vpanel.locator('.fvlab')).toContainText('this beat at 0:01')
+    await expect(ov.locator('.feval .fmedia')).toHaveCount(0)      // no band…
+    await expect(ov.locator('.feval video')).toHaveCount(0)        // …and no player, video baked or not
+    await expect(ov.locator('.feval .fvlab')).toHaveCount(0)
+    // what the reader DOES carry is the proof header — the covering test named behind its mark —
+    // and the per-beat rows; the run's raw record is one ⋯ menu away, which is the rest of this leg
+    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()
     await ov.locator('.feval .fmenubtn').click()
     await ov.locator('.feval .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
@@ -286,11 +285,10 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     expect(full).toBeFalsy()
     await sheet.locator('[data-stepsclose]').click()
 
-    // the player never CROPS the frame: the narration callout is burned into the recording, and an
-    // object-fit that fills-and-crops (cover) would slice its edges off in display. No toolbar to
-    // switch any more — the band's one video is simply there (2026-08-28).
-    const fit = await vpanel.locator('.rec video').evaluate(el => getComputedStyle(el).objectFit)
-    expect(fit).toBe('contain')
+    // (the "the player never CROPS the frame" leg — object-fit:contain on the band's video, so the
+    // burned-in callout could not be sliced off at its edges — went with the band itself, 2026-09-02:
+    // there is no player in the reader left to measure. It is NOT re-asserted on the Flow player
+    // here, because that surface belongs to R13's own test; said plainly rather than quietly dropped.)
 
     // the CALLOUT SURVIVES a navigation — a beat that walks to another page keeps its narration
     // (renderOverlay repaints on framenavigated). Recording-gated, exactly like the paint above.
@@ -774,16 +772,15 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.locator('#logsheet [data-logclose]').click()
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
 
-    // MEDIA DEFAULTS DERIVE FROM STATUS × BEATS (D2; the frozen mockup). The status is FORCED
+    // WHAT THE READER SHOWS DERIVES FROM STATUS × BEATS (D2; the frozen mockup). The status is FORCED
     // client-side onto real .req nodes — the established deterministic technique (the dogfood lag
     // makes live statuses stale mid-run) — while the baked EVIDENCE attributes (the D2 harvest's
     // frames, folded from real runs into spec/_results-index.json and baked as data-ev-*) stay real.
     const evId = await dt.locator('.reqpane .req[data-ev-after]').first().getAttribute('data-r')
     expect(evId, 'at least one requirement must carry harvested evidence').toBeTruthy()
-    // Task 16 #1: the video button exists only for a COMMITTED video — whether THIS requirement is
-    // covered by its screen's primary recording is harvest state, so the toolbar legs below force
-    // the baked video attributes on (the same deterministic technique as the forced status; the
-    // real committed artifact is pinned by the R14 test's leg (a))
+    // the COMMITTED VIDEO is forced ON here (the fold's own data-ev-video / data-ev-vwin) precisely
+    // so the no-video assertions below are not passing by absence: the reader must build no player
+    // even when the recording it used to play is right there on the row.
     await dt.locator(`.reqpane .req[data-r="${evId}"]`).evaluate(el => {
       el.setAttribute('data-ev-video', 'spec/board/evidence/stub-committed.webm')
       el.setAttribute('data-ev-vwin', '2000:4000')
@@ -797,26 +794,23 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     }
 
     // PASSED → the per-beat PROOF CELLS carry the harvest (the human, 2026-08-28: the frames moved
-    // onto the rows they belong to), and the band beneath them carries only what belongs to the
-    // WHOLE requirement — the covering test's bar and ONE video. The stills · gif · video toolbar
-    // and its stored preference went with the split: there is no pane-wide mode left to remember.
+    // onto the rows they belong to) and they are ALL of it: THE PROOF BAND IS GONE (the human,
+    // 2026-09-02, "remove the full flow video from focus mode"). Rewritten from the legs that
+    // asserted the band's bar, its one video and its label — the recording is the FLOW view's
+    // subject now, and what remains beneath the rows is the proof HEADER's words plus the moved
+    // covering test. Kept as the R8 assert-the-gone precedent so it cannot creep back.
     await force(evId!, 'passed')
     await reopen(evId!)
     const media = ov.locator('.feval .fmedia')
-    await expect(media).toHaveCount(1)
-    // the band header reads `<test name> · proves R<n> · run <id>` — the run id is the covering
-    // test's newest record's commit
-    await expect(media.locator('.fmbar .fmname')).not.toBeEmpty()
-    await expect(media.locator('.fmbar')).toContainText('proves ' + evId)
-    await expect(media.locator('.fmbar .frun')).toHaveText(/^run \S+$/)
-    await expect(media.locator('.medbar')).toHaveCount(0)            // no pane toolbar any more…
-    await expect(media.locator('.fmpanel[data-m]')).toHaveCount(0)   // …and no named panes behind it
+    await expect(media, 'no proof band under the rows').toHaveCount(0)
+    await expect(ov.locator('.feval video'), 'and no video in the reader at all').toHaveCount(0)
+    await expect(ov.locator('.feval .fmbar, .feval .fmpanel, .feval .fvlab, .feval .fvjumps')).toHaveCount(0)
     expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia')),
       'no pane-wide media preference is stored any more').toBeNull()
-    // the ONE video for the whole requirement, seeked to this requirement's moment
-    const vidPanel = media.locator('.fmpanel', { has: page.locator('.frecwrap') })
-    await expect(vidPanel.locator('video')).toHaveCount(1)
-    await expect(vidPanel.locator('.fvlab')).toContainText('the full flow that proves this')
+    // …and the proof still READS: the covering test named behind its mark, above the beat rows that
+    // carry the harvested frames — the band's removal took chrome, never the proof itself
+    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()
+    await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first()).toBeAttached()
 
     // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. STEP is the
     // default (the human, 2026-09-02), so it opens HELD; AUTO turns it into the hands-free loop. It
@@ -870,44 +864,39 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       .toContain(stillSrc.split('?')[0].split('/').pop()!)
     await page.locator('#lbclose').click()
 
-    // FAILED → the failed mark on the band, and the failing run's own frames beneath it. The stills
-    // are the NEWEST record's (D3): its own frames when the last run of this test was a recorded
-    // one, else the harvested red after-frame — the framed branch is pinned by R14 (1b) on a stub
-    // record, so here only the frameless branch asserts the exact red-frame cell.
+    // FAILED → the failure reads on the proof header's MARK, and the harvested red frames stay on the
+    // beat rows. (Rewritten 2026-09-02 with the band: this leg used to assert the band's ✗ chip and
+    // its filmstrip of the failing run's own frames. Neither exists in the reader now — the run's
+    // frames are read on the test's own row, in List/Flow. What must NOT be lost is that a failed
+    // requirement can never read green here, so that is what is asserted, positively.)
     await force(evId!, 'failed')
     await reopen(evId!)
-    await expect(media.locator('.fmbar .fpv.fail')).toContainText('✗')
-    const failStrip = media.locator('.fmpanel', { has: page.locator('.fstrip') })
-    // positive either way (review A-2): the newest record's own strip renders under the mark, or the
-    // harvested red after-frame does — exactly one of the two, never a bare absence
-    const rfCells = failStrip.locator('.fcell.rf')
-    if (await rfCells.count() > 0) {
-      await expect(rfCells.first()).toBeVisible()
-      await expect(rfCells.first().locator('img')).toHaveCount(1)
-      await expect(failStrip.locator('.fcell:not(.rf).hotbad')).toHaveCount(0)
-    } else {
-      await expect(failStrip.locator('.fcell.hotbad')).toHaveCount(1)
-      await expect(failStrip.locator('.fcell.hotbad')).toBeVisible()
-    }
+    await expect(media, 'still no band under a failure').toHaveCount(0)
+    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\bfail\b/)      // ✗ leads the proof line
+    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first(),
+      'the harvested frames still stand under a failure — the rows are the proof').toBeAttached()
 
-    // CHANGED → the last proof media under a pinned-era watermark
+    // CHANGED → the drift is said in WORDS on the proof header (the pinned-era watermark that said it
+    // over the band's media went with the band; the stalenote is the honest line and it stays)
     await force(evId!, 'changed')
     await reopen(evId!)
-    await expect(media.locator('.fmbar')).toContainText('pinned era')
-    await expect(media.locator('.wmark')).toBeVisible()
-    await expect(media.locator('.wmark')).toContainText('re-run to re-verify')
+    await expect(ov.locator('.feval .wmark')).toHaveCount(0)
+    await expect(ov.locator('.feval .stalenote')).toContainText('edited after this proof ran')
+    await expect(ov.locator('.feval .stalenote')).toContainText('re-verify')
 
-    // UNTESTED → no media at all: the band reads the honest line and offers the next move, which
-    // opens the add-test prompt with this requirement pre-picked (R15 behavior, unchanged)
+    // UNTESTED → the honest line and the next move, now in the proof HEADER where the band used to
+    // carry them; the button still opens the add-test prompt with this requirement pre-picked
+    // (R15 behavior, unchanged)
     await force(evId!, 'untested')
     await reopen(evId!)
-    await expect(media.locator('.fmpanel')).toHaveCount(0)   // no frames, no video — nothing to show
-    await expect(media.locator('.noev')).toContainText('no proof yet')
-    await media.locator('.noev button').click()
+    await expect(ov.locator('.feval .fmedia')).toHaveCount(0)   // no frames, no video — nothing to show
+    await expect(ov.locator('.feval .fphead .noev')).toContainText('no proof yet')
+    await ov.locator('.feval .fphead .noev button').click()
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
     await expect(page.locator('#promptbody')).toContainText('spec/board/test.spec.ts')
     await page.locator('#promptsheet [data-promptclose]').click()
-    await force(evId!, 'passed')   // leave the forced node in a media-bearing state for later reads
+    await force(evId!, 'passed')   // leave the forced node in a proven state for later reads
 
     // the pager IS the map (board R17, the human 2026-08-23): every requirement is a dot — the
     // window-and-ellipsis pager of Task 8 is gone, since a map that hides entries is not a map
@@ -1343,6 +1332,15 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(cell.locator('.pdots')).toHaveCount(0)
     await expect(cell.locator('.fstepn')).toHaveCount(0)
     await expect(cell.locator('.pczoom')).toHaveCount(0)
+    // …and NO SUPERSCRIPT NUMBERING anywhere in the reader (the human, 2026-09-02: the When¹/Then¹
+    // marks were "hard to read and not intuitive"). The count moved onto the row as an eyebrow, and
+    // a requirement with ONE beat has nothing to count, so it carries none — the oracle is the prd's
+    // own beat list, read independently of what the board rendered.
+    await expect(ov.locator('.fread sup.bno')).toHaveCount(0)
+    const nb = (prdBeats(spec.rid) || { beats: [] }).beats.length
+    const eyes = ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbno')
+    if (nb > 1) await expect(eyes).toHaveCount(nb)
+    else await expect(eyes).toHaveCount(0)
     const stepper = cell.locator('.pcplay .fsteps-wrap')
     await expect(stepper).toBeVisible()
     const frameN = await stepper.locator('.fsteps img').count()
@@ -1529,6 +1527,25 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(rowA, 'the first beat opens selected').toHaveClass(/\bsel\b/)
     await expect(rowB).not.toHaveClass(/\bsel\b/)
     await expect(ov.locator('.fread .sbrow.sel'), 'exactly one selected row').toHaveCount(1)
+    // VISIBLY marked, measured (the human, 2026-09-02: "make clear which when/then is selected" —
+    // one inset hairline was not enough to see). The selected row's two PICTURES read at full
+    // strength while an unselected beat's stand back, so the eye lands on the row ← → will move.
+    // Measured off computed style, never a class: a rule that stops applying is the failure here.
+    const opacOf = (r: ReturnType<typeof rows.nth>, sel: string) =>
+      r.locator(sel).evaluate(el => Number(getComputedStyle(el).opacity))
+    await expect.poll(() => opacOf(rowA, '.sbframe'),
+      { message: 'the selected beat reads at full strength' }).toBe(1)
+    await expect.poll(() => opacOf(rowB, '.sbframe'),
+      { message: 'an unselected beat stands back' }).toBeLessThan(1)
+    await expect.poll(() => opacOf(rowB, '.sbproof')).toBeLessThan(1)
+    // …and the row's own NUMBER is the other mark — a ringed 1 · 2 · 3 over each beat's words, in
+    // beat order (R4 has three When/Then), with the retired superscripts nowhere in the reader
+    await expect(ov.locator('.fread sup.bno')).toHaveCount(0)
+    const nb4 = (prdBeats('R4') || { beats: [] }).beats.length
+    expect(nb4, 'R4 is the multi-beat specimen this leg needs').toBeGreaterThan(1)
+    await expect(ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbno'))
+      .toHaveText(Array.from({ length: nb4 }, (_, k) => String(k + 1)))
+    await expect(ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbof').first()).toHaveText('of ' + nb4)
 
     // ISOLATION: → walks the SELECTED row (rowA) only. rowB's tour position must not move.
     const aStart = await posOf(rowA); const bStart = await posOf(rowB)
@@ -1873,167 +1890,101 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await page.reload()
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()   // the fold settled
-    // the proof band derives its panels from R1's status; the strip must not depend on the dogfood
-    // lag (mid-run the live status is stale-by-source), so force the strip-bearing status onto the
-    // real node — the established deterministic technique — and rebuild the reader on it. Since the
-    // human's 2026-08-28 split the RUN's own frames ride the band under a FAILURE (the per-beat
-    // harvest rides the beat rows), so `failed` is the status this strip belongs to.
+    // what the reader shows must not depend on the dogfood lag (mid-run the live status is
+    // stale-by-source), so force the status onto the real node — the established deterministic
+    // technique — and rebuild the reader on it. `failed` is the status these legs are about.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
 
-    // (1) IN THE FOCUS READER the run's frames render as the proof band's FILMSTRIP: one cell per
-    // checked value, in order, each captioned with its got-vs-expected; the failing value reads red.
+    // (1) IN THE FOCUS READER the frames are read PER BEAT, on the row they prove — the run's own cut
+    // frames are read on the TEST's evidence (leg 2 below), which is where R14 always said they also
+    // belong. REWRITTEN 2026-09-02 (rule 4, the human's decision the reason): this leg used to assert
+    // the proof BAND's filmstrip — its .rf cells, their one-row layout, their fixed sizing and its
+    // sideways scroll. The band is gone with the reader's video ("remove the full flow video from
+    // focus mode"), so those assertions are not weakened, they are about a surface that no longer
+    // exists. What R14 claims is unchanged and still asserted: one still per checked value, in
+    // order, captioned with its got-vs-expected, the failing one red — on the test's evidence
+    // (leg 2, strengthened to read the captions) — and the harvested pair on the beat's own row here.
     const ov = dt.locator('.focusov')
-    const panel = ov.locator('.feval .fmedia .fmpanel', { has: page.locator('.fstrip') })
-    const rf = panel.locator('.fcell.rf')
-    await expect(rf).toHaveCount(3)                               // the three of THIS screen's R1 — not the foreign fourth
-    // Task 15 (the human, 2026-08-24): a strip that carries run-frames is the FILMSTRIP — it keeps
-    // the horizontal scroll (fixed .rf cells, one row), marked with the class the stacked
-    // before/after pair must NOT get; without the mark the pair-stacking CSS would stack this too
-    await expect(panel.locator('.fstrip')).toHaveClass(/\bfilmstrip\b/)
-    const rowTops = await panel.locator('.fcell').evaluateAll(els => els.map(el => Math.round(el.getBoundingClientRect().top)))
-    expect(new Set(rowTops).size, 'the filmstrip lays every cell in one row').toBe(1)
-    // Task 16 #3 (the human, 2026-08-24): the GIVEN cell is a real cell — the same fixed sizing as
-    // the .rf cells, never a flex:1 sliver crushed to ~2px by them — and the strip actually scrolls
-    // sideways through ALL cells when they overflow the pane (fixed cells inside overflow-x:auto).
-    const cellWs = await panel.locator('.fcell').evaluateAll(
-      els => els.map(el => Math.round(el.getBoundingClientRect().width)))
-    expect(new Set(cellWs).size, 'the given cell has the SAME fixed sizing as the .rf cells').toBe(1)
-    expect(cellWs[0], 'and that size is a real frame width, not a collapsed sliver').toBeGreaterThan(120)
-    // …and the FAR cell is reachable however wide the reader is: the strip scrolls sideways, and
-    // scrolled to its end the last cell sits fully inside the pane (before the fix the fixed cells
-    // simply ran off the edge with no way to reach them). Stated as reachability rather than as a
-    // fixed overflow amount, because the card's width moved with the 2026-08-28 one-card reader.
-    const stripScroll = await panel.locator('.fstrip.filmstrip').evaluate(el => {
-      el.scrollLeft = 99999
-      const cells = el.querySelectorAll('.fcell')
-      const last = cells[cells.length - 1].getBoundingClientRect()
-      const box = el.getBoundingClientRect()
-      const r = { max: el.scrollWidth - el.clientWidth, at: el.scrollLeft, ox: getComputedStyle(el).overflowX,
-        lastRight: last.right, boxRight: box.right }
-      el.scrollLeft = 0
-      return r
-    })
-    expect(['auto', 'scroll'], 'the filmstrip scrolls sideways rather than crushing its cells').toContain(stripScroll.ox)
-    expect(stripScroll.at, 'and it scrolls all the way to the far cell').toBeGreaterThan(stripScroll.max - 2)
-    expect(stripScroll.lastRight, 'scrolled to the end, the far cell sits fully inside the pane')
-      .toBeLessThanOrEqual(stripScroll.boxRight + 2)
-    await expect(panel.locator('.fcell.rf', { hasText: 'foreign value' })).toHaveCount(0)
-    await expect(rf.nth(0)).toContainText('got 7 · expected 7')
-    await expect(rf.nth(2)).toContainText('got 5 · expected 4')
-    await expect(rf.nth(0)).not.toHaveClass(/\bhotbad\b/)
-    await expect(rf.nth(2)).toHaveClass(/\bhotbad\b/)            // the failed value reads red
-    await expect(rf.nth(0).locator('img')).toHaveCount(1)        // frames OF the recording, as images
-    // a still is a thumbnail; a click opens it full in the existing lightbox (verify without pixels)
-    await rf.nth(2).locator('img').click()
-    await expect(page.locator('#lb')).toBeVisible()
-    await page.locator('#lbclose').click()
-    // ONE SURFACE (the signed merge): the moved test node's own strip is folded away in the focus
-    // card — the stills view above is the only strip a reader sees; no label crowds it and the
-    // moved test's header stays folded (the proof line replaces it)
+    await expect(ov.locator('.feval .fmedia'), 'the band, and its filmstrip, are gone').toHaveCount(0)
+    await expect(ov.locator('.feval .fstrip, .feval .fcell')).toHaveCount(0)
+    // the moved test node's own strip stays folded away inside the reader (the row is read where the
+    // row lives — the pane, the Steps window); its header stays folded behind the proof line
     await expect(ov.locator('.feval .fev .pfstrip')).toBeHidden()
     await expect(ov.locator('.feval .fev .flabel')).toHaveCount(0)
     await expect(ov.locator('.feval .fev .test.infocus > .th')).toBeHidden()
-    // THE SPLIT IS HONEST (the human, 2026-08-28): the RUN's frames stay in the band; a beat row's
-    // cell plays only that beat's own HARVESTED pair. Borrowing a run frame onto a beat row would
-    // claim the harvest photographed something it never did (rule 3), so the two must not mix.
+    // THE SPLIT IS HONEST (the human, 2026-08-28): a beat row's cell plays only that beat's own
+    // HARVESTED pair. Borrowing a RUN frame onto a beat row would claim the harvest photographed
+    // something it never did (rule 3), so the two must not mix — the stub's captions are the witness.
     const beatCell = ov.locator('.fread .fstory .sbrow .sbproof').filter({ has: page.locator('.pcplay') }).first()
     await expect(beatCell).toHaveCount(1)
     await expect(beatCell.locator('.fsteps img')).toHaveCount(2)   // before → after, the harvested pair
+    await expect(beatCell.locator('.fsteps img.on')).toHaveCount(1)
     await expect(beatCell).not.toContainText('third value')        // never the run strip's captions
-    // Task 16 #1 (the human, 2026-08-24): the band's ONE video is the screen's COMMITTED recording —
-    // seeked to THIS requirement's own moment. Driven deterministically by forcing the baked
-    // attributes onto the real row (the established technique; the artifact itself is pinned by
-    // leg (a) at the end). 9000:12500 = a stub beat window inside the recording.
+    // a still is a thumbnail; a click opens the whole frame in the shared lightbox
+    await beatCell.locator('.fsteps img.on').click()
+    await expect(page.locator('#lb')).toBeVisible()
+    await page.locator('#lbclose').click()
+    // NO VIDEO IN THE READER (the human, 2026-09-02). The committed recording is forced ON the row
+    // the way the fold bakes it — so this is the honest opposite of the old "the band's ONE video"
+    // leg, not an absence that happens to hold: with the artifact right there, no player is built.
+    // (The artifact itself is still pinned as real by leg (a) at the end — it is the Flow view's.)
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
       el.setAttribute('data-ev-video', 'spec/board/evidence/stub-committed.webm')
       el.setAttribute('data-ev-vwin', '9000:12500')
     })
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    const vp = ov.locator('.feval .fmedia .fmpanel', { has: page.locator('.frecwrap') })
-    // Task 15's bug guard, restated for the 2026-08-28 sizing: the recording keeps its own RATIO
-    // under a 900px width cap (the human: real height, no letterbox bars), so "fills the pane" is no
-    // longer a fraction of an ~1700px reader. The guarded failure mode is unchanged — a 300px
-    // thumbnail cover — so pin a big absolute width AND the kept aspect (16:10 recording).
-    // (Only the width: the aspect leg would need loaded metadata, and this stub 404s by design —
-    // an unloaded video sits exactly on the 300×150 default ratio, so a ratio pin here would flake.)
-    const vW = await vp.locator('.frecwrap .rec').evaluate(el => el.getBoundingClientRect().width)
-    expect(vW, 'the proof recording renders large, never a thumbnail cover').toBeGreaterThan(600)
-    // (b) the player exists up front (the committed file IS the surface — no cover click) and it
-    // OPENS AT THIS REQUIREMENT'S MOMENT: currentTime = window.from, the default playback start
-    // position, readable before a byte of the file loads
-    await expect(vp.locator('video')).toHaveCount(1)
-    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeCloseTo(9, 1)
-    // (c) the label is honest: whose flow this is, and where the beat sits — derived from the window
-    await expect(vp.locator('.fvlab')).toContainText('the full flow that proves this')
-    await expect(vp.locator('.fvlab')).toContainText('this beat at 0:09–0:12')
-    // Task 13 — the reader's ONE dropdown drives the VIDEO too (the human, 2026-08-28: one control
-    // per reader, not one per pane — the schematic, every beat's stepper and the video are views of
-    // the same beat): playbackRate follows the selection across the native 0.25×–4× range.
-    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1)
-    const spd14 = ov.locator('.fread .frmeta .frtools select.pspd')
-    await expect(spd14).toHaveCount(1)                          // exactly one speed control in the reader
-    // the speed is auto-only (the human, 2026-09-02) — switch to auto so it is live, then it rates the video
-    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="auto"]').click()
-    await expect(spd14).toBeEnabled()
-    await spd14.selectOption('0.25')
-    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(0.25)
-    await spd14.selectOption('4')
-    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(4)
-    await spd14.selectOption('2')
-    expect(await vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
+    // …no player is built, and nothing that framed one is left behind. (Legs (b) and (c) — the
+    // player's own width, its seek to the beat's window.from, its honest "this beat at 0:09–0:12"
+    // label, and the reader speed driving its playbackRate — went with the band, 2026-09-02: they
+    // measured a surface the human removed. The speed control still exists and still paces the beat
+    // rows; that is asserted on board R20's own test, where the control lives.)
+    await expect(ov.locator('.feval video'), 'the committed video is baked on, and still not played here').toHaveCount(0)
+    await expect(ov.locator('.feval .frecwrap, .feval .fvlab, .feval .fvjumps')).toHaveCount(0)
     // session-scoped only: no speed preference lands in storage
     expect(await page.evaluate(() => Object.keys(localStorage).filter(k => /spd|speed/i.test(k)))).toEqual([])
-    // the reader rebuilt under a standing 2×: paging away and back rebuilds the pane off the baked
-    // attributes — the fresh player is re-rated AND re-seeked at build, never a silent snap back
-    await page.goto('/#/board/R2')
-    await page.goto('/#/board/R1')
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R1')
-    await expect(spd14).toHaveValue('2')
-    await expect(vp.locator('video')).toHaveCount(1)
-    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(2)
-    await expect.poll(() => vp.locator('video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeCloseTo(9, 1)
-    // back to 1× for the rest of the test
-    await spd14.selectOption('1')
-    await expect(spd14).toHaveValue('1')
 
-    // (1b) D3 (the human, 2026-08-22): the band renders the NEWEST record's frames under a FAILURE
-    // (the value that broke, burned red) instead of the strip being suppressed under a failed chip.
-    // The failed state is carried in the band itself: the bar wears the existing failed mark
-    // (✗ + bengara, hue never alone) and the failing value stays red. Forced status, same technique.
+    // (1b) UNDER A FAILURE the reader never reads green (D3's honesty, kept; its surface changed).
+    // The band carried the ✗ chip and the failing run's red frames; with the band gone the failure
+    // reads on the proof header's MARK and the harvested red frames stay on the beat rows — and the
+    // run's own cut frames are read on the test's evidence, leg (2). Forced status, same technique.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    const rfF = ov.locator('.feval .fmedia .fmpanel .fcell.rf')
-    await expect(rfF).toHaveCount(3)                              // the failing run's frames DO render
-    await expect(rfF.nth(2)).toHaveClass(/\bhotbad\b/)
-    await expect(rfF.nth(2)).toContainText('got 5 · expected 4')
-    await expect(ov.locator('.feval .fmedia .fmbar .fpv.fail')).toContainText('✗')   // the failed mark on the band
+    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\bfail\b/)
+    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.fread .fstory .sbrow .sbproof .fsteps img').first()).toBeAttached()
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.feval .fmedia .fmbar .fpv.fail')).toHaveCount(0)      // and only on a failure
-    // …and a PASSED requirement's band carries no run strip at all — the per-beat harvest on the
-    // rows is its proof, so a green run's frames never crowd the band (2026-08-28)
-    await expect(ov.locator('.feval .fmedia .fcell')).toHaveCount(0)
+    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bfail\b/)   // and only on a failure
+    // …and NO run-frame strip crowds the reader in either state: the per-beat harvest on the rows is
+    // the proof there (2026-08-28), and since 2026-09-02 there is no band left to hold one
+    await expect(ov.locator('.feval .fcell, .feval .fstrip')).toHaveCount(0)
 
-    // (2) AND THE STRIP IS THE TEST'S OWN: leave Focus — the borrowed node returns whole to the
-    // hidden source pane, frames intact (count/class reads work on hidden rows) — "in the test's
-    // evidence" survives the merge untouched
+    // (2) THE RUN'S CUT FRAMES ARE THE TEST'S OWN EVIDENCE — the one surface for them now. Leave
+    // Focus: the borrowed node returns whole to the hidden source pane, frames intact (count/class
+    // reads work on hidden rows). STRENGTHENED 2026-09-02: with the band's filmstrip gone this is
+    // where R14's "one still per checked value, its got-vs-expected, the failing one red" is
+    // asserted, so the captions are read here rather than only counted.
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     const tst = dt.locator('.testpane .test', { hasText: R1_TITLE }).first()
-    // (the TEST's strip is every frame the test cut — all four, the foreign dispatch:R1 one included;
-    // only the REQUIREMENT's stills view filters by screen)
+    // (the TEST's strip is every frame the test cut — all four, the foreign dispatch:R1 one included)
     await expect(tst.locator('.pfstrip .pframe')).toHaveCount(4)
-    await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)
+    await expect(tst.locator('.pfstrip .pframe').nth(0)).toContainText('got 7 · expected 7')
+    await expect(tst.locator('.pfstrip .pframe').nth(2)).toContainText('got 5 · expected 4')
+    await expect(tst.locator('.pfstrip .pframe').nth(0)).not.toHaveClass(/\bbad\b/)
+    await expect(tst.locator('.pfstrip .pframe').nth(2)).toHaveClass(/\bbad\b/)   // the failing value reads red
+    await expect(tst.locator('.pfstrip .pframe').nth(0).locator('img')).toHaveCount(1)  // frames OF the recording
     await expect(tst.locator('.pfstrip .pframe').nth(3).locator('.pfreq')).toHaveText('dispatch:R1')
 
-    // (2b) Task 6 review A-1: the strip shown under a failed status is the run that FAILED it. R15
-    // is covered by two tests; stub the first (DOM order) passing with green R15 frames and the
-    // second failing with a red R15 frame — the pane must render the second's frames, not an
-    // all-green strip under "✗ failed run".
+    // (2b) Task 6 review A-1: under a failed status the reader names the run that FAILED it. R15 is
+    // covered by two tests; stub the first (DOM order) passing and the second failing — the proof
+    // header must name the SECOND, never the green one. (The strip half of this leg — the failing
+    // run's own frames in the band — went with the band, 2026-09-02; the primary-picking rule it was
+    // really guarding is asserted here on the header, which is the surface that still shows it.)
     const A_TITLE = 'The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself'
     const B_TITLE = '＋ New flow opens the composer — a derived library, the joint check, a truthful two-path button'
     await page.unroute('**/api/runs')
@@ -2058,20 +2009,23 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await page.goto('/#/board/R2')
     await page.goto('/#/board/R15')
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R15')
-    const panelAB = dt.locator('.focusov .feval .fmedia .fmpanel', { has: page.locator('.fstrip') })
-    await expect(panelAB.locator('.fcell.rf')).toHaveCount(1)
-    await expect(panelAB.locator('.fcell.rf').first()).toContainText('B value — got 2 · expected 3')
-    await expect(panelAB.locator('.fcell.rf').first()).toHaveClass(/\bhotbad\b/)
-    await expect(panelAB.locator('.fcell.rf', { hasText: 'A value' })).toHaveCount(0)
-    await expect(dt.locator('.focusov .feval .fmedia .fmbar .fpv.fail')).toContainText('✗')
-    // the proof line names the test whose run failed, too — the pane and its header agree
+    await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
+    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bfail\b/)
+    // the proof line names the test whose run FAILED — never the passing one that also covers R15
     await expect(dt.locator('.focusov .feval .fptop .fpname')).toHaveText(B_TITLE)   // the covering test's name heads the proof (2026-08-25)
+    // and the failing run's own cut frame is still readable — on that test's own evidence row.
+    // dt-scoped, not pane-scoped: this row is the reader's PRIMARY, so it is borrowed out of the
+    // .testpane right now (count/class/text reads work on it wherever it sits — CLAUDE.md).
+    const bRow = dt.locator('.test', { hasText: B_TITLE }).first()
+    await expect(bRow.locator('.pfstrip .pframe')).toHaveCount(1)
+    await expect(bRow.locator('.pfstrip .pframe').first()).toContainText('B value — got 2 · expected 3')
+    await expect(bRow.locator('.pfstrip .pframe').first()).toHaveClass(/\bbad\b/)
 
-    // (3) NO VIDEO → NO STRIP, and NEWEST-RECORD-ONLY (D3): a record that cut no frames yields NO
-    // run-frame cells — the harvested pair still stands, never a faked or separately-captured strip.
-    // An OLDER record's frames must not stand in for the newest run either (that is how a green
-    // strip from a past run would sit under a newer verdict): the stub keeps the framed record
-    // behind a newer frameless one, and the strip stays empty.
+    // (3) NO VIDEO → NO STRIP: a record that cut no frames yields no run-frame cells anywhere — the
+    // harvested pair on the beat rows still stands, never a faked or separately-captured strip. The
+    // stub keeps a framed record behind a newer frameless one, so this also holds the old
+    // newest-record rule up to the light: whatever surface shows a run's frames, a green strip from
+    // a past run must never appear under a newer verdict.
     await page.unroute('**/api/runs')
     await page.route('**/api/runs', r => r.fulfill({ json: {
       watch: false, running: false,
@@ -2089,14 +2043,18 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await page.reload()
     await expect(dt.locator('.focusov')).toBeVisible()
     await expect(dt.locator('.test .tmeta').first()).not.toBeEmpty()
-    // FAILED again, so the band's strip branch is the one under test: the newest record cut no
-    // frames, so there are NO run-frame cells at all — only the harvested red after-frame stands.
+    // FAILED again — the state a strip would have been shown under: the newest record cut no frames,
+    // so nothing anywhere claims to be one, and the harvested frames on the rows carry the proof.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    const panel2 = dt.locator('.focusov .feval .fmedia .fmpanel', { has: page.locator('.fstrip') })
-    await expect(panel2.locator('.fcell')).not.toHaveCount(0)     // the harvested frame still stands
-    await expect(panel2.locator('.fcell.rf')).toHaveCount(0)      // …but no run strip — no frames, no fake
+    await expect(dt.locator('.focusov .fread .fstory .sbrow .sbproof .fsteps img').first(),
+      'the harvested frames still stand').toBeAttached()
+    await expect(dt.locator('.focusov .feval .fcell, .focusov .feval .fstrip'),
+      'no run strip — no frames, no fake').toHaveCount(0)
+    // (the TEST's own strip is a different rule on purpose and is NOT asserted empty here: it keeps
+    // the newest record that actually HAS frames, so a later video-less CLI run cannot blank the
+    // evidence a recorded run cut — tools/board/client.js, the .pfstrip fill.)
 
     // THE HARVESTED PAIR ITSELF lives on the beat rows now (the human, 2026-08-28): it is read
     // beside the words it proves, PLAYED as the beat's own loop — one camera box filling the cell,
@@ -2133,22 +2091,24 @@ test('The proof is scannable as frames — one still per checked value, cut from
       Math.round(el.getBoundingClientRect().width) - el.naturalWidth)).toBe(0)
     await page.locator('#lbclose').click()
 
-    // (d) Task 16 #1: with NO committed video NO player is built at all — never a broken player over
-    // a missing file (red-first: the old surface offered the transient _runs recording here, which a
-    // fresh clone never has). The band says so in words instead, and the beat rows stay the proof.
+    // (d) with NO committed video the reader is UNCHANGED — the beat rows are the proof either way.
+    // (Task 16 #1's leg here asserted the band said "no recording committed for this screen yet" in
+    // words; with the band gone there is no line to say it, and nothing to say it about: the reader
+    // never plays the recording now. What that leg really guarded — never a broken player over a
+    // missing file — is guarded absolutely, since no player is built at all.)
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
       el.removeAttribute('data-ev-video'); el.removeAttribute('data-ev-vwin')
     })
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.feval .fmedia video')).toHaveCount(0)
-    await expect(ov.locator('.feval .fmedia .fvlab')).toContainText('no recording committed for this screen yet')
+    await expect(ov.locator('.feval video')).toHaveCount(0)
     await expect(ov.locator('.fread .fstory .sbrow .sbproof .fsteps img').first()).toBeAttached()
 
     // (a) Task 16 #1: the committed artifact is REAL — the fold's evidence entries point `video`
     // at a content-hash-named .webm under the screen's committed evidence dir, and the file exists
     // in the tree (the same source the bake reads; red until the first recorded board run commits
-    // one, then a video-less CLI fold must KEEP it — the carry this pins).
+    // one, then a video-less CLI fold must KEEP it — the carry this pins). The reader no longer
+    // plays it (2026-09-02), but the FLOW view does, and the fold still has to commit it.
     const idx = JSON.parse(readFileSync('spec/_results-index.json', 'utf8'))
     const withVideo = Object.values((idx.board && idx.board.evidence) || {})
       .filter((e: any) => e && e.video && e.video.path) as any[]
@@ -2171,6 +2131,10 @@ test('A finished run refreshes the board in place — no reload, the panel stays
   await openDetail(page)
   // the cross-screen beat (spec/dispatch/steps.ts) — a flow composed from the board can chain it
   await checkReq('dispatch:R7', async () => { await refreshDerivedInPlace(page, { ...treeShape() }) })
+  // …and the OTHER half of "refreshes in place": ONE refresh, at the END. A live run rebuilds
+  // nothing at all (the human, 2026-09-02 — a background run reloaded the board on every burst of
+  // harvest writes); the gate opens when the run is done. Second beat, same requirement.
+  await checkReq('dispatch:R7', async () => { await noRebuildWhileRunning(page, { ...treeShape() }) })
 })
 
 // hudCheck is a CHECK, not a caption: it ASSERTS the got-vs-expected it paints on the recording's

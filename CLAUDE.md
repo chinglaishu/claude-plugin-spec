@@ -100,7 +100,9 @@ tools/build-board.mjs        renders board.html (home cards + the per-screen det
 tools/behavior.mjs           pure: parses a requirement's behavior block (Given + When→Then beats)
 tools/reqhash.mjs            pure: the shared requirement-text hash (Changed-drift, evidence, schematics)
 tools/viz.mjs                pure: behavior chain → archetype → the drawn schematic SVG (+ still phases)
-tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg (`node tools/viz-derive.mjs`)
+tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg. RUN AT EVERY FOLD
+                             by spec/_results-reporter.mjs (deriveSchematics) — a drawing is a by-product of
+                             the harvest it is drawn from; the command stays for a by-hand pass
 tools/flow.mjs               pure: a recorded test's steps → its kind (unit/flow) and chapters for the Flow player
 tools/evidence.mjs           pure: the proves-step window, ffmpeg args (frame · downscale), evidence paths, the fold
 tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (holds off the window + frame anchors) —
@@ -137,7 +139,9 @@ npm run board:build    # rebuild board.html only
 npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
 npm run staff          # the kg-staff briefing for a screen
 npm run proof          # proof-integrity check
-node tools/viz-derive.mjs [screen…]   # derive the schematics (the only way a project gets them)
+node tools/viz-derive.mjs [screen…]   # derive the schematics BY HAND (the reporter derives them at every fold —
+                                      # corrected 2026-09-02: it was NOT running anywhere, so every drawing
+                                      # was a harvest behind and its ring/callout had quietly gone)
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`

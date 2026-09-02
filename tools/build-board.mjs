@@ -317,14 +317,17 @@ export function renderBehavior (b) {
   const row = (k, label, text, cls = '') =>
     `<div class="brow b${k}${cls}"><span class="blab">${label}</span><span class="btxt">${esc(text)}</span></div>`
   const list = b.beats || [{ when: b.when, then: b.then }]
-  // Task 8 (the frozen mockup's behavior table): a MULTI-beat block numbers its When/Then labels
-  // (WHEN 1 · THEN 1 · WHEN 2 …) and marks every beat after the first `beatstart`, so the Focus
-  // table can rule a heavier line between beats. A 1-beat block emits none of it — byte-identical.
+  // Task 8 (the frozen mockup's behavior table): a MULTI-beat block marks every beat after the first
+  // `beatstart`, so the Focus table can rule a heavier line between beats. A 1-beat block emits none
+  // of it — byte-identical to the pre-beats triple.
+  // NO SUPERSCRIPT NUMBERING (the human, 2026-09-02: "hard to read and not intuitive"). The labels
+  // read `When¹ · Then¹ · When² …` before this; the number now lives where a reader actually needs it
+  // — the storyline row's own eyebrow (`2` `of 3`, tools/board/client.js buildStoryline), one per
+  // ROW rather than two per beat, at a size that can be read. The label is plain again at every count.
   const many = list.length > 1
-  const beats = list.map((bt, i) => {
-    const n = many ? `<sup class="bno">${i + 1}</sup>` : ''
-    return row('when', 'When' + n, bt.when, many && i > 0 ? ' beatstart' : '') + row('then', 'Then' + n, bt.then)
-  }).join('')
+  const beats = list.map((bt, i) =>
+    row('when', 'When', bt.when, many && i > 0 ? ' beatstart' : '') + row('then', 'Then', bt.then)
+  ).join('')
   return `<div class="behavior">${row('given', 'Given', b.given)}${beats}</div>`
 }
 
@@ -2069,8 +2072,31 @@ export function build () {
      Changed status, and selection is an affordance, not a status. The Given row is never a step
      target, so it is never selected. */
   .fstory .sbrow[data-rowstep] .tourstep { opacity:.4; transition:opacity .15s ease; }
-  .fstory .sbrow.sel { box-shadow:inset 3px 0 0 var(--ink-2); }
+  /* A LEFT INK ACCENT AND THE NEIGHBOURS STANDING BACK (the human, 2026-09-02 — the single inset
+     hairline was not enough to see). The selected row keeps full strength while every other beat
+     row's two PICTURES drop to .55, so the eye lands on the row the arrows will move without
+     anything being hidden. The dimming is a DEPTH cue, never a state, and it is deliberately on the
+     PICTURES ONLY: dimming the words too was drafted and dropped here, because --ink-3 at .7 over
+     --paper measures 3.2:1 and the label under it (--ink-4) worse — under the 4.5:1 floor the design
+     system holds every text pair to. Every text pair on a dimmed row therefore reads exactly as it
+     does on the selected one. The marks that carry the meaning are the rule and the eyebrow's ringed
+     numeral, so no hue is needed and none is used: indigo already names Changed, and selection is an
+     affordance, not a status. The Given row is never a step target, so it never dims. */
+  .fstory .sbrow[data-rowstep] .sbframe, .fstory .sbrow[data-rowstep] .sbproof { opacity:.55; transition:opacity .15s ease; }
+  .fstory .sbrow[data-rowstep] .sbtext { cursor:pointer; }
+  .fstory .sbrow.sel { background:var(--card); box-shadow:inset 3px 0 0 var(--ink); }
+  .fstory .sbrow.sel .sbframe, .fstory .sbrow.sel .sbproof { opacity:1; }
   .fstory .sbrow.sel .tourstep { opacity:1; }
+  /* the beat's own number, over its words: a ringed numeral + "of N" in the system's mono micro.
+     --ink-3 on --paper 6.42:1 (AA); on the selected row it steps up to --ink and a --line3 ring, so
+     the count is legible at a glance without a second hue. */
+  .fstory .sbeye { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
+  .fstory .sbeye .sbno { display:inline-flex; align-items:center; justify-content:center;
+    min-width:calc(18px * var(--scale)); height:calc(18px * var(--scale)); padding:0 4px;
+    border:1px solid var(--line2); border-radius:999px;
+    font:var(--t-micro) var(--mono); color:var(--ink-3); }
+  .fstory .sbeye .sbof { font:var(--t-micro) var(--mono); letter-spacing:.08em; color:var(--ink-4); }
+  .fstory .sbrow.sel .sbeye .sbno { border-color:var(--line3); color:var(--ink); }
   /* THE COLUMN NAMES (the human, 2026-08-28): one header row over the beats, saying what the three
      cells are. Small-caps mono in --ink-3 — the system's one label style — on the --wash a header
      wears elsewhere (--ink-3 on --wash 5.5:1, AA). It shares the rows' grid so each name sits over
@@ -2113,7 +2139,8 @@ export function build () {
   .fstory .sbk { flex:none; width:calc(68px * var(--scale)); font:var(--t-sm) var(--mono);
     letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
   .fstory .sbk.then { color:var(--ai); }
-  .fstory .sbk .bno { font-size:var(--t-sm); line-height:1; color:var(--ink-3); margin-left:2px; }
+  /* (.sbk .bno — the label's superscript beat number — went with the superscripts themselves,
+     2026-09-02: the count is the row's .sbeye eyebrow now.) */
   .fstory .sbv { font-size:var(--t-lg); line-height:1.6; color:var(--ink); min-width:0; }
 
   /* THE PROOF CELL — the beat's own harvested frames, framed by the CAMERA (the human, 2026-08-28).
@@ -2252,18 +2279,12 @@ export function build () {
     .fstory .sbwrap .viz svg * { animation-play-state:paused !important; }
   }
 
-  /* THE MEDIA PANE (D2, the frozen mockup): the proof's media under a stills · gif · video toolbar.
-     The default derives from status × beat count; the toolbar overrides it — a client-side
-     preference (localStorage), never stored in the tree. */
-  .fmedia { border:1px solid var(--hair); border-radius:var(--r); overflow:hidden; background:var(--card); }
-  /* Task 16 #3 (the human, 2026-08-24): the proof card's children must NOT shrink — .fmedia is a
-     flex child of .feval, and its default flex-shrink let the stacked pair (two ~39vh frames) be
-     crushed to fit while .fmedia's own overflow:hidden clipped frame 2 away with scrollTop pinned
-     at 0. Kept intrinsic, the card's existing overflow-y:auto scrolls and both frames are reachable. */
-  .feval > .fmedia, .feval > .fev { flex:none; }
-  .fmbar { display:flex; align-items:center; gap:var(--s2); font:var(--t-micro) var(--mono);
-    color:var(--ink-3); padding:6px var(--s3); border-bottom:1px solid var(--hair); background:var(--wash); }
-  .fmbar .pinned { color:var(--ai); }
+  /* THE PROOF BAND IS GONE (the human, 2026-09-02: "remove the full flow video from focus mode").
+     Its rules — .fmedia / .fmbar / .fmbody / .fmpanel / .fstrip / .fcell / .fcap / .xva / .frecwrap /
+     .evrec / .fvlab / .fvjumps / .wmark / .fpv — were deleted with buildMedia (tools/board/client.js).
+     The recording is the FLOW view's subject; the reader's proof is the per-beat rows. .fev keeps its
+     no-shrink rule below: the MOVED covering-test node is still a flex child of .feval. */
+  .feval > .fev { flex:none; }
   .medbar { display:inline-flex; margin-left:auto; border:1px solid var(--hair-2); border-radius:var(--r);
     overflow:hidden; background:var(--paper); flex:none; }
   .medbar button { border:0; background:none; font:var(--t-micro) var(--mono); color:var(--ink-3);
@@ -2286,37 +2307,6 @@ export function build () {
     border-right:1.5px solid var(--ink-4); border-bottom:1.5px solid var(--ink-4); transform:rotate(45deg);
     pointer-events:none; }
   .pspdwrap:hover::after { border-color:var(--ink); }
-  .fmbody { position:relative; }
-  .fmpanel[hidden] { display:none; }
-  /* stills: the harvested frame pair, the per-beat filmstrip — or the run's proof-frame strip (the
-     merged R14 surface): fixed-width .rf cells, the strip scrolling sideways when they overflow */
-  .fmpanel .fstrip { display:flex; gap:var(--s2); padding:var(--s3); overflow-x:auto;
-    overscroll-behavior-x:contain; }
-  .fstrip .fcell.rf { flex:0 0 300px; }
-  .fstrip .fcell { flex:1 1 0; min-width:0; border:1px solid var(--hair); border-radius:var(--r-sm);
-    overflow:hidden; background:var(--paper); }
-  /* Task 16 #3 (the human, 2026-08-24): in the FILMSTRIP every cell is fixed — the plain given
-     cell was flex:1 1 0 and the fixed .rf cells crushed it to a ~2px sliver; same sizing for all,
-     so the strip overflows honestly and overflow-x:auto scrolls through every cell */
-  .fstrip.filmstrip .fcell { flex:0 0 300px; }
-  /* Task 15 (the human, 2026-08-24): the before/after PAIR (no .rf cells — buildMedia marks the
-     run-frame strip .filmstrip) STACKS to full pane width, so each frame reads large in the tall
-     pane instead of half-width in a wide one. 39vh ≈ 46% of the Focus pane at the 900-tall daily
-     viewport — full-width frames at 1440×900 stay uncapped (351px natural < 39vh), and on shorter
-     viewports the cap letterboxes (object-fit) rather than distorts. The filmstrip keeps its row. */
-  .fstrip:not(.filmstrip) { flex-direction:column; }
-  .fstrip:not(.filmstrip) .fcell { flex:none; }
-  .fstrip:not(.filmstrip) .fcell img { max-height:39vh; object-fit:contain; }
-  .fstrip .fcell img { display:block; width:100%; height:auto; border-bottom:1px solid var(--hair); cursor:zoom-in; }
-  .fstrip .fcap { display:flex; align-items:center; gap:6px; font:var(--t-micro) var(--mono); color:var(--ink-3);
-    padding:4px 7px; background:var(--wash); }
-  .fstrip .fcell.hot { border-color:var(--koke-line); }
-  .fstrip .fcell.hotbad { border-color:var(--bengara); }
-  .fstrip .fcell.hotbad .fcap { color:var(--bengara); }
-  /* the failing check's expected-vs-actual, straight off the covering test's recorded error */
-  .fmpanel .xva { border:1px solid var(--bengara-line); background:var(--bengara-tint);
-    border-radius:var(--r-sm); margin:0 var(--s3) var(--s3); padding:var(--s2) var(--s3);
-    font:var(--t-xs)/1.7 var(--mono); color:var(--ink-2); white-space:pre-wrap; }
   /* the FRAME-STEPPER (Task 13): the harvested frames stacked, one on show, over a slim bar of
      EXACT dots + the mono n / N count. Dot states carry a non-hue mark beside the hue (current = ai
      fill + offset ring, seen = ink-4 fill, upcoming = hollow ink-4 ring), and the count spells the
@@ -2339,23 +2329,15 @@ export function build () {
   /* the author outline above would swallow the UA focus ring on the current dot (I-6) */
   .fstepbar .pd:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
   .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  .fmpanel .frecwrap { padding:var(--s3); }
-  /* the committed video's honest label (Task 16 #1): whose flow, and where this beat sits in it */
-  .fmpanel .fvlab { padding:0 var(--s3) var(--s3); font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  /* the per-beat jumps (2026-08-28): the SAME recording, aimed at the beat you are reading — never a
-     second cut file, so nothing here can drift from what the video actually shows */
-  .fmpanel .fvjumps { display:flex; flex-wrap:wrap; gap:var(--s2); padding:0 var(--s3) var(--s3); }
-  /* the pinned-era watermark on a Changed requirement — the media is the LAST proof's, honestly aged */
-  .fmbody .wmark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    background:rgba(253,252,249,.55); z-index:5; pointer-events:none; }
-  .fmbody .wmark span { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint);
-    border:1px solid var(--ai-line); border-radius:var(--r-sm); padding:4px 10px; }
-  /* the honest empty states — no media is a statement, never an error */
-  .fmedia .noev { min-height:150px; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; gap:var(--s2); text-align:center; padding:var(--s4) var(--s5);
+  /* THE HONEST EMPTY STATE — no proof is a statement, never an error. It sat in the retired band; it
+     now rides the proof HEADER (the human, 2026-09-02), so it keeps the hatched ground that says
+     "nothing here on purpose" but takes the header's own width and a smaller minimum. */
+  .feval .fphead .noev { min-height:calc(64px * var(--scale)); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:var(--s2); text-align:center;
+    padding:var(--s3) var(--s5); margin-top:var(--s2); border-radius:var(--r-sm);
     font-size:var(--t-sm); color:var(--ink-3);
     background:repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--wash) 10px, var(--wash) 11px); }
-  .fmedia .noev b { font-weight:500; color:var(--ink-2); }
+  .feval .fphead .noev b { font-weight:500; color:var(--ink-2); }
   /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
      background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
      controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
@@ -2396,25 +2378,9 @@ export function build () {
   .feval .stalenote { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line);
     border-radius:var(--r-sm); padding:6px 10px; margin-top:var(--s2); }
   .feval .stalenote b { font-weight:500; }
-  /* the strip header: <test name> · proves R4 · run <id> — the name clipped before the facts are */
-  .fmbar .fmname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:0 1 auto; }
-  .fmbar .fmfacts { flex:none; white-space:nowrap; }
-  .fpv.pass { color:var(--koke); } .fpv.fail { color:var(--bengara); } .fpv.none { color:var(--ink-4); }
   .fpnone { flex:1 1 auto; min-width:0; font:var(--t-sm) var(--mono); color:var(--ink-3); }
-  /* Task 15: the PROOF recording fills its pane (the pane is wide since 0.29.1). Scoped to
-     .frecwrap on purpose — the global .rec (the test rows' 300px cover) must not blow up. */
-  .frecwrap .rec { width:100%; max-width:none; }
-  .frecwrap .rec.playing { width:100%; }
-  /* THE FULL-FLOW VIDEO KEEPS ITS OWN RATIO (the human, 2026-08-28). The global .rec is a 16:9 cover
-     tile with an ink ground, and a 16:10 recording contained inside it wore black bars on two sides
-     while a max-height squeezed it into a strip. The evidence player is not a tile: it drops the
-     fixed aspect and the ground, takes the width it is given, and lets its height follow the file's
-     own ratio — no bars, no strip. Width-capped so a 1700px reader does not hand it the whole page.
-     Scoped to .evrec so the test rows' 300px covers are untouched. */
-  .fmpanel .frecwrap .rec.evrec { aspect-ratio:auto; max-height:none; height:auto;
-    width:min(100%, calc(900px * var(--scale))); background:none; border:0; border-radius:0; }
-  .fmpanel .frecwrap .rec.evrec video { position:static; width:100%; height:auto;
-    background:none; border:1px solid var(--hair-2); border-radius:var(--r); }
+  /* (the band's own rules — its bar's clipped name/facts, the ✗-failed .fpv chip, and the .frecwrap /
+     .evrec player sizing — went with buildMedia, 2026-09-02: there is no video in the reader to size.) */
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
      header; the steps show as a clone on the LEFT); its controls a plain row, its frames the strip. */
   .fev { min-width:0; }

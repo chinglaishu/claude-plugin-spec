@@ -587,7 +587,128 @@ function drawTypeAppend (b, t, k, kf) {
 //   · the drawing carries its layout pin (data-viz-layout) beside the text pin (data-viz-hash), so
 //     a re-harvest that moves the geometry re-derives, exactly as moved text does.
 
-const LAYOUT_W = 600                        // the drawing's internal width; the pane scales by CSS
+// ── THE DYE MAPPER (mirror-8, the human 2026-09-02: "it looks like a skeleton") ─────────────────
+// The harvest now records what the real screen is COLOURED — snapLayout's bg / fg / bd, plain
+// "r,g,b" triples. The board's rule does not bend for that: **never a raw colour in the board**. So
+// a captured colour is mapped, HERE and at derive time, to the nearest traditional dye, and the SVG
+// emits only var(--token). The rgb lives in the layout JSON, which is data — untrusted, and never
+// interpolated into board.html.
+//
+// The palette below IS spec/_design.css's :root, restated once so this module stays pure (no fs).
+// tools/dye.test.mjs reads the css and fails loudly if the two ever part — a palette edit must not
+// quietly re-hue every drawing on the board.
+export const DYES = {
+  // 墨 sumi and the ash ladder under it
+  sumi: '#1c1b18',
+  ink: '#1c1b18',
+  'ink-2': '#46443f',
+  'ink-3': '#5f5d56',
+  'ink-4': '#6e6b64',
+  // 生成り kinari — unbleached paper
+  paper: '#fdfcf9',
+  canvas: '#f4f1ea',
+  wash: '#eae6dc',
+  // the hairlines
+  hair: '#e2ddd1',
+  line2: '#cdc7b8',
+  line3: '#a8a59c',
+  // 藍 ai · 弁柄 bengara · 苔 koke · 山吹 yamabuki
+  ai: '#2f4a63',
+  'ai-tint': '#e6eaee',
+  'ai-line': '#b9c4ce',
+  bengara: '#8d4a38',
+  'bengara-tint': '#f2e8e4',
+  'bengara-line': '#d8c0b6',
+  koke: '#4d5c37',
+  'koke-tint': '#eaece1',
+  'koke-line': '#bcc4a8',
+  yamabuki: '#8a6412',
+  'yamabuki-tint': '#f6eeda',
+  'yamabuki-line': '#dfc98c'
+}
+
+// what each ROLE may say. A background may fill solid or tint; text takes the ink ladder or a
+// family solid; a border is always a hairline of its family. (--sunk / --dim-bg are aliases of
+// --wash, --card of --paper, --line of --hair: the canonical name is the one emitted.)
+const NEUTRALS = {
+  bg: ['paper', 'canvas', 'wash', 'sumi'],
+  fg: ['paper', 'ink-4', 'ink-3', 'ink-2', 'ink'],
+  bd: ['hair', 'line2', 'line3']
+}
+// the four dye families, by the hue BAND each owns. Bands, not nearest-to-reference: 苔 koke is a
+// desaturated olive and 藍 ai a slate, so "nearest reference hue" put a vivid green (145°) closer to
+// indigo than to moss by two degrees. A band says what the family MEANS — yellow-gold, green,
+// blue-through-purple, red — and is stable under any saturation.
+const FAMILIES = [
+  { name: 'yamabuki', lo: 30, hi: 70 },
+  { name: 'koke', lo: 70, hi: 170 },
+  { name: 'ai', lo: 170, hi: 290 },
+  { name: 'bengara', lo: 290, hi: 390 }      // wraps 0: 290–360 and 0–30
+]
+// Grey-ish below this much absolute chroma ((max-min)/255). Measured against this palette: --line2,
+// the warm hairline, carries 8% and every neutral rung less; a real app's pale chip (#dbeafe,
+// #fef3c7) carries 11–22%. Anything under the line has no hue a reader could name, so it lands on
+// the neutral ladder by VALUE — which is the honest answer, and the one that keeps a warm-grey UI
+// from reading as gold.
+const GREY = 0.10
+const TINT_L = 0.75      // above this a chromatic fill is a TINT, below it the solid dye
+
+// "r,g,b" (what snapLayout writes), "#rrggbb" / "#rgb", "rgb()/rgba()", or [r,g,b]. Anything else —
+// and anything fully transparent — is NO colour, and the renderer then keeps its own house default.
+function parseRGB (v) {
+  if (Array.isArray(v)) {
+    return v.length >= 3 && v.slice(0, 3).every(n => Number.isFinite(Number(n)))
+      ? v.slice(0, 3).map(n => clamp(Math.round(Number(n)), 0, 255)) : null
+  }
+  const s = String(v == null ? '' : v).trim()
+  if (!s) return null
+  let m
+  if ((m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s))) {
+    const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1]
+    return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16))
+  }
+  if ((m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+))?\s*\)$/i.exec(s))) {
+    if (m[4] != null && Number(m[4]) <= 0.02) return null
+    return [1, 2, 3].map(i => clamp(Math.round(Number(m[i])), 0, 255))
+  }
+  if ((m = /^(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})$/.exec(s))) {
+    return [1, 2, 3].map(i => clamp(Number(m[i]), 0, 255))
+  }
+  return null
+}
+// lightness (HSL's L) and hue, plus absolute chroma — the three numbers the rule below turns on
+function hcl (rgb) {
+  const [r, g, b] = rgb.map(v => v / 255)
+  const max = Math.max(r, g, b); const min = Math.min(r, g, b); const d = max - min
+  let h = 0
+  if (d > 0) {
+    h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? ((b - r) / d + 2) : ((r - g) / d + 4)
+    h *= 60
+  }
+  return { h, c: d, l: (max + min) / 2 }
+}
+const nearestByValue = (l, names) =>
+  names.reduce((best, n) => {
+    const dl = Math.abs(hcl(parseRGB(DYES[n])).l - l)
+    return dl < best.d ? { n, d: dl } : best
+  }, { n: names[0], d: Infinity }).n
+
+// dyeOf(colour, role) → the token NAME ('ai', 'ink-3', 'bengara-line'), or null when there is no
+// colour to speak of. Pure, total, and deterministic: the same capture always draws the same dye.
+export function dyeOf (colour, role) {
+  const names = NEUTRALS[role]
+  if (!names) return null
+  const rgb = parseRGB(colour)
+  if (!rgb) return null
+  const { h, c, l } = hcl(rgb)
+  if (c < GREY) return nearestByValue(l, names)
+  const hue = h < 30 ? h + 360 : h
+  const fam = (FAMILIES.find(f => hue >= f.lo && hue < f.hi) || FAMILIES[3]).name
+  if (role === 'bd') return fam + '-line'
+  if (role === 'fg') return l >= 0.85 ? 'paper' : fam
+  return l >= TINT_L ? fam + '-tint' : fam
+}
+const LAYOUT_W = 600                       // the drawing's internal width; the pane scales by CSS
 // THE RENDERER PIN. Staleness on this board is a BODY comparison — viz-derive redraws whenever the
 // committed file differs from what the kit draws today — so a renderer change already lands on the
 // next pass with no bump at all, and no committed drawing ever needs deleting. This stamp exists so
@@ -605,8 +726,13 @@ const LAYOUT_W = 600                        // the drawing's internal width; the
 // (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
-const MIRROR_KIT = 'mirror-7'
-const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image'])
+// `mirror-8` (2026-09-02) is COLOUR AND STATE: the harvest measures what the page is painted
+// (bg / fg / bd) and the small facts a grey box cannot carry (rd / fw / td / op / dis, and a `check`
+// kind that knows whether it is ticked), and the drawing maps each to its nearest dye (dyeOf above).
+// The human's word for what it replaced was "a skeleton" — the chips, the primary button, the ticked
+// box and the struck-through done row were all the same grey bar. No raw colour reaches the SVG.
+const MIRROR_KIT = 'mirror-8'
+const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 
 // The layout files are HARVESTED data, not authored: every field is untrusted. Anything malformed
@@ -634,6 +760,12 @@ function normLayout (l) {
     // and the kit falls back to sizing off the box, which is all such a skeleton can honestly say.
     const fs = num(e.fs)
     const pl = num(e.pl); const pr = num(e.pr)
+    // THE COLOUR AND THE STATE (mirror-8, 2026-09-02). Every one of these is OPTIONAL: a skeleton
+    // folded before this pass carries none of them and draws exactly as it always did. A colour is
+    // kept only if it maps to a dye (dyeOf) — the raw triple is never stored on the drawn element,
+    // so no path from here can put an app colour in the SVG.
+    const rd = num(e.rd)
+    const op = num(e.op)
     els.push({
       x,
       y,
@@ -645,7 +777,17 @@ function normLayout (l) {
       fs: fs > 0 ? fs : null,
       ta: (e.ta === 'c' || e.ta === 'r' || e.ta === 'l') ? e.ta : null,
       pl: pl > 0 ? pl : 0,
-      pr: pr > 0 ? pr : 0
+      pr: pr > 0 ? pr : 0,
+      bg: dyeOf(e.bg, 'bg'),
+      fg: dyeOf(e.fg, 'fg'),
+      bd: dyeOf(e.bd, 'bd'),
+      rd: rd > 0 ? clamp(rd, 0, 40) : 0,
+      fw: !!e.fw,
+      td: !!e.td,
+      it: !!e.it,
+      on: !!e.on,
+      dis: !!e.dis,
+      op: op > 0 && op < 1 ? clamp(op, 0.05, 0.99) : null
     })
   }
   const r = l.ring && typeof l.ring === 'object' ? l.ring : null
@@ -699,9 +841,20 @@ const svgText = (x, y, fs, fill, fam, txt, extra = '') =>
 // element's alignment and left/right padding inset, vertically centred, and truncated to the content
 // width — the same way valueMark lands an asserted value, for the plain (unringed) elements around
 // it. That is what turns the mirror from a grey skeleton into something that reads as the real page.
+//
+// NEVER CUT INSIDE ITS OWN BOX (2026-09-02, the lead's visual review of the re-harvested demo). A
+// leaf's box IS its text's measured width, so the words always fit the page — "All tasks" in a 96px
+// box at 26px bold was drawn "All t…" because fitText's 0.55em-per-character estimate is wider than
+// most type. So a label whose ESTIMATE overflows its room is SQUEEZED to the room with SVG textLength
+// (a hair narrower than the page's own letterfit, never a missing word); only a gross overflow — the
+// page itself clipping a long string — is still truncated, at the squeezed width.
+const SQUEEZE = 1.35                                  // how far the estimate may overshoot before the words are cut
 const textIn = (bx, by, bw, bh, fs, fill, fam, s, ta = 'l', pl = 0, pr = 0, extra = '') => {
   const room = Math.max(1, bw - pl - pr)
-  const label = say(fitText(s, room, fs))          // truncate RAW then escape (fitText → say), never the reverse
+  const est = raw(s).length * fs * 0.55
+  const fits = est <= room
+  const label = say(fits ? raw(s) : fitText(s, room * SQUEEZE, fs))   // truncate RAW then escape (fitText → say), never the reverse
+  if (!fits) extra += ` textLength="${r1(room)}" lengthAdjust="spacingAndGlyphs"`
   const base = r1(by + bh / 2 + fs * 0.34)
   if (ta === 'c') return svgText(r1(bx + bw / 2), base, fs, fill, fam, label, ' text-anchor="middle"' + extra)
   if (ta === 'r') return svgText(r1(bx + bw - pr), base, fs, fill, fam, label, ' text-anchor="end"' + extra)
@@ -879,9 +1032,11 @@ function pickFocus (marks, ring) {
 // The verdict mark, DRAWN rather than typed: the burn-in can lean on the browser's UI font for ✓,
 // a committed SVG cannot — the glyph is missing from plenty of the families a --sans stack lands
 // on, and a missing glyph renders as a tofu box on the one mark that must never be ambiguous.
-const checkMark = (x, y, s) =>
+// …and it takes the dye it is drawn ON (mirror-8): the verdict tick on the card stays 苔 moss, but
+// the tick inside a FILLED checkbox has to be paper, or it would be moss on moss — invisible.
+const checkMark = (x, y, s, stroke = 'ok') =>
   `<path d="M${r1(x)} ${r1(y)} l${r1(s * 0.34)} ${r1(s * 0.34)} l${r1(s * 0.66)} ${r1(-s * 0.8)}" ` +
-  `fill="none" stroke="var(--ok)" stroke-width="${r1(Math.max(0.6, s * 0.2))}" stroke-linecap="round" stroke-linejoin="round"/>`
+  `fill="none" stroke="var(--${stroke})" stroke-width="${r1(Math.max(0.6, s * 0.2))}" stroke-linecap="round" stroke-linejoin="round"/>`
 
 // ── THE BURN-IN, IN PAGE PIXELS ────────────────────────────────────────────
 // The drawn overlay and the photographed one must be the SAME PICTURE (the human, 2026-08-28 —
@@ -1158,6 +1313,14 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     }
   }
   const els = L.els.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h))
+  // A BOX THAT HOLDS WORDS IS NOT EMPTY (2026-09-02, the lead's visual review): a <button> whose
+  // label is a child leaf carries no text of its own, and the kit drew its "no measured text"
+  // placeholder bar straight across the words the leaf then typed on top. So a box is "wordless" only
+  // when NO text-bearing element nests inside it — then, and only then, a bar stands in.
+  const nestsIn = (a, b) => a !== b && a.x >= b.x - 0.6 && a.y >= b.y - 0.6 &&
+    a.x + a.w <= b.x + b.w + 0.6 && a.y + a.h <= b.y + b.h + 0.6
+  const worded = L.els.filter(e => raw(e.text))
+  const holdsWords = e => worded.some(t => nestsIn(t, e))
   for (const e of els) {
     if (ghosted.has(e)) continue
     const x = px(e.x); const y = px(e.y); const w = px(e.w); const h = px(e.h)
@@ -1168,7 +1331,9 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     // put the value where the page puts it instead of guessing from the box
     if (e.focus) {
       focus.push({ x, y, w, h, text: e.text, fs: e.fs ? px(e.fs) : null, ta: e.ta, pl: px(e.pl || 0), pr: px(e.pr || 0) })
-      if (withFocus) continue
+      // …except a CHECKBOX (mirror-8): its value IS its shape, and it has no text for the focus pass
+      // to draw, so skipping it would ring an empty square. It is drawn, then ringed.
+      if (withFocus && e.kind !== 'check') continue
     }
     // THE PAGE'S OWN TYPE where the harvest measured it (2026-09-02: a mirror, not a skeleton). Real
     // text at the size, weight and alignment the app renders — the fidelity gain the human asked for.
@@ -1179,49 +1344,111 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     const label = raw(e.text)
     const pl = px(e.pl || 0); const pr = px(e.pr || 0)
     const tfs = mfs || clamp(h * 0.62, 5, 16)
-    const readable = !!label && tfs >= 5.5            // ~5.5px internal stays legible once the pane scales up
+    // READABLE DOWN TO 4 INTERNAL UNITS (2026-09-02, rule 6 — the old 5.5 floor WAS the "skeleton"
+    // the human complained about). The drawing is 600 units wide and the pane scales it up, so 4 is
+    // the same floor valueMark has always trusted for the asserted value. At 5.5, every 13px label on
+    // a 1440px page fell back to a grey bar — which is most of a real screen's words.
+    const readable = !!label && tfs >= 4
     const mid = y + h / 2
+    // THE PAGE'S OWN PAINT (mirror-8, 2026-09-02), where the harvest measured it: the fill, the
+    // border and the text colour as their nearest DYES (normLayout already mapped them through
+    // dyeOf, so nothing raw can reach here), the box's own corner radius, its weight, its strike and
+    // its opacity. Every one is optional — absent, each falls back to the house default below, so a
+    // skeleton folded before this pass still draws exactly the grey mirror it always did.
+    const tok = (t, fallback) => (t ? `var(--${t})` : fallback)
+    const rx = e.rd ? r1(clamp(px(e.rd), 0, Math.min(w, h) / 2)) : null
+    const plate = (dFill, dStroke, dRx, sw) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx == null ? dRx : rx}" fill="${dFill}"` +
+      (dStroke ? ` stroke="${dStroke}" stroke-width="${sw}"` : '') + '/>'
+    // the rule a line-through wears, over the words themselves: fitText's own 0.55em measure and the
+    // element's own alignment, so the strike lands on the text rather than across the whole box
+    const strike = (fs, ink) => {
+      const room = Math.max(1, w - pl - pr)
+      const lw = Math.min(room, fitText(label, room, fs).length * fs * 0.55)
+      const sx = e.ta === 'c' ? x + w / 2 - lw / 2 : e.ta === 'r' ? x + w - pr - lw : x + pl
+      const sy = r1(y + h / 2)
+      return `<line x1="${r1(sx)}" y1="${sy}" x2="${r1(sx + lw)}" y2="${sy}" ` +
+        `stroke="var(--${ink})" stroke-width="${r1(Math.max(0.5, fs * 0.09))}"/>`
+    }
+    const weight = bold => ((bold ? ' font-weight="600"' : '') + (e.it ? ' font-style="italic"' : ''))
+    const piece = []
     switch (e.kind) {
-      case 'heading':
-        parts.push(readable
-          ? textIn(x, y, w, h, Math.min(tfs, h), 'ink', 'sans', label, e.ta, pl, pr, ' font-weight="600"')
-          : bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)'))
+      case 'heading': {
+        if (e.bg || e.bd) piece.push(plate(tok(e.bg, 'none'), tok(e.bd, null), 3, 0.9))
+        const ink = e.fg || 'ink'
+        const fs = Math.min(tfs, h)
+        piece.push(readable
+          ? textIn(x, y, w, h, fs, ink, 'sans', label, e.ta, pl, pr, weight(true))
+          : holdsWords(e) ? '' : bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)'))
+        if (readable && e.td) piece.push(strike(fs, ink))
         break
-      case 'text':
-        parts.push(readable
-          ? textIn(x, y, w, h, Math.min(tfs, h), 'ink-3', 'sans', label, e.ta, pl, pr)
-          : bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)'))
+      }
+      case 'text': {
+        if (e.bg || e.bd) piece.push(plate(tok(e.bg, 'none'), tok(e.bd, null), 3, 0.9))
+        const ink = e.fg || 'ink-3'
+        const fs = Math.min(tfs, h)
+        piece.push(readable
+          ? textIn(x, y, w, h, fs, ink, 'sans', label, e.ta, pl, pr, weight(e.fw))
+          : holdsWords(e) ? '' : bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)'))
+        if (readable && e.td) piece.push(strike(fs, ink))
         break
+      }
       case 'input':
         // the field — paper, the AI hairline — then its measured VALUE inside it at the type and inset
         // the page gives it (mono, the typed-value convention valueMark uses); the placeholder bar of
         // an empty field only when the harvest read no value there.
-        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--paper)" stroke="var(--ai-line)" stroke-width="1"/>`)
+        piece.push(plate(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--ai-line)'), 3, 1))
         if (readable) {
-          parts.push(textIn(x, y, w, h, Math.min(tfs, h * 0.82), 'ink-3', 'mono', label, e.ta || 'l', pl || 4, pr || 4))
-        } else if (w > 16 && h > 8) {
-          parts.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
+          piece.push(textIn(x, y, w, h, Math.min(tfs, h * 0.82), e.fg || 'ink-3', 'mono', label, e.ta || 'l', pl || 4, pr || 4, weight(e.fw)))
+        } else if (w > 16 && h > 8 && !holdsWords(e)) {
+          piece.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
         }
         break
       case 'button':
-        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r1(Math.min(h / 2, 7))}" fill="var(--wash)" stroke="var(--line2)" stroke-width="0.9"/>`)
-        parts.push(readable
-          ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), 'ink-3', 'sans', label, 'c', 3, 3)
-          : bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)'))
+        // a button the page PAINTS keeps its own paint — the flat --wash plate was the reason every
+        // primary action on the board's mirrors read as a disabled one
+        piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--line2)'), r1(Math.min(h / 2, 7)), 0.9))
+        piece.push(readable
+          ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), e.fg || 'ink-3', 'sans', label, 'c', 3, 3, weight(e.fw))
+          : holdsWords(e) ? '' : bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)'))
         break
+      case 'check': {
+        // A TICK IS A STATE, NOT A BOX (mirror-8): the old kit filed a checkbox under `input` and drew
+        // a field, so a done row and an open one were the same picture — the single most common thing
+        // a to-do screen's beats prove. Square, at the element's own radius; ticked = a moss fill with
+        // the drawn mark ON it (never --ok on --koke, which is the same dye twice).
+        const s = Math.min(w, h)
+        const cx = x + (w - s) / 2; const cy = y + (h - s) / 2
+        const crx = r1(Math.min(rx == null ? 2 : rx, s / 2))
+        const sq = (fill, stroke) =>
+          `<rect x="${r1(cx)}" y="${r1(cy)}" width="${r1(s)}" height="${r1(s)}" rx="${crx}" fill="${fill}"` +
+          (stroke ? ` stroke="${stroke}" stroke-width="1"` : '') + '/>'
+        if (e.on) {
+          piece.push(sq(tok(e.bg, 'var(--koke)'), null), checkMark(cx + s * 0.24, cy + s * 0.52, s * 0.55, 'paper'))
+        } else {
+          piece.push(sq(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--line2)')))
+        }
+        break
+      }
       case 'image':
-        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--wash)" stroke="var(--hair)" stroke-width="0.8"/>`)
+        piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--hair)'), 3, 0.8))
         break
       case 'row':
-        parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="var(--paper)" stroke="var(--line)" stroke-width="0.9"/>`)
+        piece.push(plate(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--line)'), 3, 0.9))
         break
       default:
         // a container earns a hairline only when it is a real region — and never when it is the
         // page shell itself, which the frame beneath already draws
         if (w >= 30 && h >= 18 && (w * h) < 0.8 * W * H) {
-          parts.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="4" fill="none" stroke="var(--hair)" stroke-width="0.8"/>`)
+          piece.push(plate(tok(e.bg, 'none'), tok(e.bd, 'var(--hair)'), 4, 0.8))
         }
     }
+    if (!piece.length) continue
+    // …and the element's own transparency. A disabled control is drawn at half, exactly as the page
+    // draws it — the state has to be VISIBLE in the mirror or a beat proving it has no picture.
+    const dim = e.dis ? 0.5 : null
+    const o = e.op != null ? (dim != null ? Math.min(e.op, dim) : e.op) : dim
+    parts.push(o != null ? `<g opacity="${r2(o)}">${piece.join('')}</g>` : piece.join(''))
   }
   if (withFocus) {
     // nothing matched the ring (a canvas cell, a shadow root, an element that moved): ring the
@@ -1306,18 +1533,30 @@ function wfTimeline (m) {
   const phases = [-r2(0.08 * dur), ...segs.map(g => -r2((g.e / 100) * dur - 0.1))]
   return { dur, durCss: `calc(${dur}s / var(--spd, 1))`, segs, phases, reset }
 }
-// frame k's opacity across the loop: invisible until its own transition fades it in, held until
-// the next transition fades it out, and the last frame held to the reset.
+// FRAME k'S OPACITY, WITHOUT THE DIP (the human, 2026-09-02: "the scene move is not smooth").
+//
+// It used to fade k OUT while k+1 faded IN over the same span, so at the midpoint of every
+// transition BOTH sat near 0.5: identical content blinked, and text ghosted double. Two half-
+// transparent sheets are not a crossfade, they are a dip.
+//
+// The frames are painted in order, so the honest fix is a REPLACEMENT: k holds at FULL opacity for
+// the whole of its own fade-out span while k+1 arrives on top of it, and only drops once k+1 is
+// completely opaque. That needs every frame group to open with an opaque page rect (renderWireframe
+// below) — without it, k+1 would be a transparent sheet over k rather than a replacement for it.
+//
+// Frame 0 is the bottom layer and simply never fades: everything above covers it, and at the loop's
+// reset the frames above it clear and it is already there. That also removes the one instant the
+// old timeline could not cover — the snap back — where both the last frame and the first were
+// mid-fade at once. The park points are untouched (the board pins them).
 function wfFade (k, t, m) {
-  if (k === 0) {
-    return stops([[0, 'opacity:1'], [t.segs[0].s, 'opacity:1'], [t.segs[0].m, 'opacity:0'],
-      [r1(t.reset - 0.1), 'opacity:0'], [t.reset, 'opacity:1'], [100, 'opacity:1']])
-  }
+  if (k === 0) return stops([[0, 'opacity:1'], [100, 'opacity:1']])
+  const inS = t.segs[k - 1].s; const inE = t.segs[k - 1].m
   if (k < m) {
-    return stops([[0, 'opacity:0'], [t.segs[k - 1].s, 'opacity:0'], [t.segs[k - 1].m, 'opacity:1'],
-      [t.segs[k].s, 'opacity:1'], [t.segs[k].m, 'opacity:0'], [100, 'opacity:0']])
+    const out = t.segs[k].m
+    return stops([[0, 'opacity:0'], [inS, 'opacity:0'], [inE, 'opacity:1'],
+      [out, 'opacity:1'], [r1(out + 0.1), 'opacity:0'], [100, 'opacity:0']])
   }
-  return stops([[0, 'opacity:0'], [t.segs[m - 1].s, 'opacity:0'], [t.segs[m - 1].m, 'opacity:1'],
+  return stops([[0, 'opacity:0'], [inS, 'opacity:0'], [inE, 'opacity:1'],
     [r1(t.reset - 0.1), 'opacity:1'], [t.reset, 'opacity:0'], [100, 'opacity:0']])
 }
 
@@ -1415,10 +1654,14 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   const frameCardBox = frames.map(f => (f.ring && f.card && f.L && f.L.ring)
     ? cardRegionBox(f.card, f.L.ring, src.w, src.h) : null)
   let css = ''
+  // EVERY FRAME OPENS WITH ITS OWN OPAQUE PAGE (2026-09-02). The crossfade above holds frame k at
+  // full while k+1 arrives on top of it — which only reads as a replacement if k+1 is opaque. Inset
+  // by 1 so the shell's own hairline still shows through around it.
+  const page = `<rect x="1" y="1" width="${LAYOUT_W - 2}" height="${H - 2}" rx="5.5" fill="var(--paper)"/>`
   const groups = frames.map((f, i) => {
     css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('f' + i)}{${wfFade(i, t, m)}}`
-    return `<g class="wf${i}">${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam, frameCardBox[i])}</g>`
+    return `<g class="wf${i}">${page}${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam, frameCardBox[i])}</g>`
   }).join('')
   const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
   const body = shell + groups

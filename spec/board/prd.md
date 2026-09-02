@@ -146,13 +146,17 @@ side: the **drawn schematic** frame (a short, looping animation of the drawing p
 beat's* action, quiet grey when stale, parked as a still under reduced motion), the beat's **Given /
 When→Then words**, and that beat's **own harvested proof** — its before/after frames looping by
 default, stills one click away — with the drawing and the photograph aimed at the **same region** by
-one shared **zoom camera** that every cell flips together. Below the rows sits the proof band for
-the whole requirement: a header that **names the covering test** (a small pass/fail mark, the test's
-own name, then Run + ⋯), a failing run's own red frames and its expected-vs-actual, a **pinned-era
-watermark** when the text has drifted, and **one full-width video** — the screen's committed
-recording seeked to this requirement's moment, with a **▶ beat n** jump per beat. The authored
-**prose is always shown** beneath it, never folded away. An untested requirement reads "no proof
-yet · ＋ write the failing test". **List** is one collapsed row per requirement (state · id · title ·
+one shared **zoom camera** that every cell flips together. Below the rows sits the **proof header**
+for the whole requirement, and nothing else: it **names the covering test** (a small pass/fail mark,
+the test's own name, then Run + ⋯), says the drift in words when the text has moved past its proof,
+and — where nothing green exists — reads "no proof yet · ＋ write the failing test". **There is no
+video in the reader**: the recording is the Flow view's, cut at proves-steps and scrubbed by its
+chapter rail, and a second smaller copy of it under every requirement only pushed the rows that ARE
+the proof off the screen *(the human, 2026-09-02: "remove the full flow video from focus mode" — the
+band that held it went with it, filmstrip, pinned-era watermark and all; a failing run's cut frames
+are read on the test's own evidence, and a failure still marks the proof header ✗ over the beat rows'
+harvested red frames)*. The authored
+**prose is always shown** beneath it, never folded away. **List** is one collapsed row per requirement (state · id · title ·
 beat count · test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in
 place.
 **Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
@@ -205,6 +209,13 @@ it: its schematic scrubs the paused animation across that beat's own time-window
      (CLAUDE.md rule 6), so it is corrected here with the reason attached. The Given/When→Then block
      is deliberately untouched — the toggle it describes is unchanged, and its committed schematic is
      pinned to that text. -->
+*Reworded 2026-09-02 (the human: "remove the full flow video from focus mode"): the proof BAND under
+the rows is gone — its covering-test bar, its failure filmstrip, its pinned-era watermark and its one
+full-width video. What is left beneath the beat rows is the proof HEADER's words (the covering test
+behind a pass/fail/none mark, the Changed re-verify note, the honest "no proof yet · ＋ write the
+failing test") and the moved test itself. The recording is the Flow view's subject. Presentation
+only; nothing derived changes — and nothing green is claimed anywhere it was not before.*
+
 *Reworded 2026-08-28 (the human): Focus becomes a **storyline of per-beat rows** — schematic ·
 behavior · proof, named by a header row, each beat's drawing and its own harvested frames framed on
 the same region by one shared zoom camera. The two-container left/right reader, the per-pane
@@ -230,11 +241,13 @@ ring on the exact value asserted. They show **where they belong**: each beat's o
 on that beat's **row** of the reader — **walked a scene at a time in step (the default), or looped in
 auto**, its position read in the behaviour gutter's `‹ n / N ›` and the whole frame one click away in
 the lightbox *(the human, 2026-09-02: the per-cell dots and counter are gone; the gutter stepper is
-the one readout)* — and a **failing**
-run's checked-value frames as the proof band's own filmstrip beneath the rows, in the test's evidence
-and in the reader alike; so a person verifies the asserted values by eye, in order, without pressing
-play; the
-**video is reserved for what a still can't show** — motion, a sequence, a dense flow. Because the
+the one readout)* — and a **run's own cut frames on that test's evidence**, one still per checked
+value in order, each with its got-vs-expected and the failing one red *(the human, 2026-09-02: the
+proof band that also showed a failing run's filmstrip inside the reader went with the reader's video;
+a failure still marks the proof header ✗ over the beat rows' harvested red frames, so nothing there
+can read green)*; so a person verifies the asserted values by eye, in order, without pressing play; the
+**video is reserved for what a still can't show** — motion, a sequence, a dense flow — and it plays
+in the **Flow** view, not under the requirement. Because the
 frames are frames *of* the recording, they can never disagree with it: a run with no video simply has
 no strip, never a faked or separately-captured one.
 
@@ -254,6 +267,17 @@ frames are the recording indexed, not a second capture, so the one-artifact rule
 *Reworded 2026-08-28 (the human): the frames are read **per beat, on the row they prove**, with a
 failing run's checked-value frames in the proof band beneath. No toolbar, no pane default — the
 frames sit beside the words. The one-recording rule is untouched.*
+
+<!-- Reworded 2026-09-02 (rule 6, with the reason attached): the human removed the reader's proof
+     band ("remove the full flow video from focus mode"), and the band was where this requirement's
+     failing-run filmstrip lived. Nothing about WHAT is cut changed — still one still per checked
+     value, still frames OF the one recording, still red on a failure — only where a person reads
+     them: the beat's harvested frames on its row, the run's cut frames on the test's own evidence.
+     Conforming the tests to the new reader without correcting this sentence would have left the
+     requirement claiming a surface that no longer exists. -->
+*Reworded 2026-09-02 (the human): a failing run's checked-value frames are read on the **test's own
+evidence**; the reader's band is gone with its video. The frames, the one-recording rule and the
+red-on-failure rule are all untouched.*
 
 ## R18 — The schematic mirrors the real UI
 
@@ -384,9 +408,15 @@ the human 2026-08-30). Each row's `‹ n / N ›` walks that beat; the **← →
 row — the one you clicked, visibly marked, never every row at once (the human, 2026-09-02 — "left/
 right key only apply on that particular when/then"); **↑ ↓** select which When/Then, and **PgUp /
 PgDn** page to the previous / next requirement (the human, 2026-09-02 — "another shortcut to change
-on different test case"). Both halves of a row move on the same call a timer would have made, so the
-lock-step survives the mode. Session-scoped, stored nowhere. It is a **play** mode, never a media
-mode.
+on different test case"). **Visibly marked** means the selected row wears an ink rule at its edge and
+its two pictures read at full strength while every other beat row's **stand back** — dimmed, never
+hidden, and never the WORDS (a dimmed sentence would drop under the 4.5:1 floor); and each
+beat carries its **own number as an eyebrow over its words** — a small ringed numeral and `of N`,
+once per row, on a multi-beat requirement only. The `When¹ · Then¹` **superscripts are gone** with
+it (the human, 2026-09-02: "hard to read and not intuitive") — the labels are plain `When` / `Then`
+again, and the count is read where the beat is. Both halves of a row move on the same call a timer
+would have made, so the lock-step survives the mode. Session-scoped, stored nowhere. It is a **play**
+mode, never a media mode.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
@@ -399,7 +429,9 @@ Amended 2026-09-02 on the human's direct instruction: the reader opens in **step
 auto/step + speed controls move onto the title row and the speed is auto-only; the proof cell sheds
 its dots, its counter and its full-frame toggle (the gutter `‹ n / N ›` is the one readout, the
 lightbox the whole frame); and the keys gain axes — ← → walk the selected beat's scenes, ↑ ↓ select
-the beat, PgUp / PgDn page the requirement.*
+the beat, PgUp / PgDn page the requirement. Amended again 2026-09-02, same session: selection is
+marked by the neighbours standing back and by a per-row numbering eyebrow, and the When/Then label
+superscripts are removed as unreadable.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the gutter's

@@ -43,10 +43,16 @@ test('N beats render as 1 + 2N .brow rows, in beat order', () => {
   const order = [...h.matchAll(/class="brow b(\w+)[^"]*"/g)].map(m => m[1])   // [^"]* — a row may carry a modifier (beatstart)
   assert.deepEqual(order, ['given', 'when', 'then', 'when', 'then'])
   for (const s of ['w1', 't1', 'w2', 't2']) assert.match(h, new RegExp(s))
-  // Task 8 (the frozen mockup's behavior table): a MULTI-beat block numbers its When/Then labels and
-  // marks every beat after the first `beatstart` (the heavier rule between beats); Given carries none
-  assert.deepEqual([...h.matchAll(/<sup class="bno">(\d)<\/sup>/g)].map(m => m[1]), ['1', '1', '2', '2'])
+  // Task 8 (the frozen mockup's behavior table) marked every beat after the first `beatstart` — the
+  // heavier rule between beats — and numbered the labels `When¹ · Then¹ · When² …`. The SUPERSCRIPTS
+  // ARE GONE (the human, 2026-09-02: "hard to read and not intuitive"): a label is plain `When` /
+  // `Then` at every beat count, and the reader says which beat you are on with the storyline row's
+  // own eyebrow (`.sbeye` — `2` `of 3`, a ringed numeral beside the sentence). This assertion was the
+  // superscripts' pin; it is now their absence, because a stray `¹` in the baked markup is exactly
+  // what would put them back on the page (rule 6 — the fixture moved, and here is why).
+  assert.doesNotMatch(h, /<sup/)
+  assert.match(h, /<span class="blab">When<\/span>/)
+  assert.match(h, /<span class="blab">Then<\/span>/)
   assert.equal([...h.matchAll(/beatstart/g)].length, 1)
   assert.match(h, /class="brow bwhen beatstart"/)
-  assert.doesNotMatch(h, /bgiven[^>]*>[^<]*<span class="blab">Given<sup/)
 })

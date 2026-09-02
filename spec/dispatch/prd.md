@@ -168,7 +168,13 @@ panel; the client now re-fetches the rebuilt board.html and syncs the derived bi
 place" **keeps your reading position** too: the refresh rebuilds the open reader, so a fresh scroll
 region would start at the top — a background run once snapped the reader up on every tick. The
 offset is captured before the rebuild and restored after, so what you were reading stays under your
-eye *(the human, 2026-09-02: "keep back to top when running test")*. There
+eye *(the human, 2026-09-02: "keep back to top when running test")*. And it is **one** refresh, at
+the **end**: while the job is still going the board rebuilds **nothing**. A run writes constantly —
+the harvest files a frame per assertion — so reacting to those writes rebuilt the board every second
+or so for the whole run, which is the board reloading itself forever *(the human, 2026-09-02: "run
+all in background" kept reloading the page)*. Nothing derived is settled until the fold lands at the
+run's end anyway, so the board waits for it and then refreshes once — with the panel open or closed,
+and for a run nobody clicked (watch mode) exactly the same. There
 is no "background" that hides a running job behind a chip: a job runs in the open or is cancelled.
 
 *Corrected 2026-07-28: "Run in background" was removed. It hid a live job behind a header chip on the

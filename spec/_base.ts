@@ -807,10 +807,12 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 }
 
 // THE LAYOUT SKELETON (2026-08-28, the human: the schematic must look like the real screen).
-// Beside each evidence frame, a cheap measurement of WHERE the page's boxes are — the viewport
-// size, the ring target, and up to 150 visible, meaningfully-sized elements, each with a rough
-// kind (heading / text / input / button / row / container / image), its text where it is a leaf
-// (or the ringed element itself), and `focus` on whatever the ring is actually around.
+// Beside each evidence frame, a cheap measurement of WHERE the page's boxes are and HOW THEY LOOK —
+// the viewport size, the ring target, and up to 150 visible, meaningfully-sized elements, each with
+// a rough kind (heading / text / input / button / check / row / container / image), its text where
+// it is a leaf (or the ringed element itself), `focus` on whatever the ring is actually around, and
+// (mirror-8, 2026-09-02) its own paint and state: bg / fg / bd as "r,g,b", rd, fw, td, it, op, on,
+// dis — all optional, and all documented at the call that measures them below.
 // tools/viz.mjs renderWireframe draws the requirement's schematic FROM this pair, so the picture
 // beside the requirement is the app's own layout rather than an abstract archetype nobody could
 // map onto it. Attached as `layout <id> before|after`, mirroring the frames, and folded by the
@@ -837,9 +839,23 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
       const els: any[] = []
       let visited = 0
       const clean = (s: any) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 48)
+      // "rgb(r, g, b)" / "rgba(r, g, b, a)" → "r,g,b", or '' when it is fully transparent or
+      // unreadable. The DRAWING never sees this string as a colour — tools/viz.mjs dyeOf maps it to
+      // the nearest design token at derive time — so what rides the skeleton is measurement, not paint.
+      const rgb = (v: any) => {
+        const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+))?/i.exec(String(v || ''))
+        if (!m) return ''
+        if (m[4] != null && Number(m[4]) <= 0.02) return ''
+        return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
+      }
       const kindOf = (el: any, tag: string, leaf: boolean, text: string) => {
         const role = (el.getAttribute && el.getAttribute('role')) || ''
+        const type = String((tag === 'INPUT' && el.type) || '').toLowerCase()
         if (/^H[1-6]$/.test(tag) || role === 'heading') return 'heading'
+        // A TICK IS A STATE, NOT A FIELD (2026-09-02): a checkbox filed under `input` drew a text box,
+        // so a done row and an open one were the same picture — the thing a to-do screen's beats
+        // prove most often. Its own kind, and `on` below says which way it is set.
+        if (type === 'checkbox' || type === 'radio' || role === 'checkbox' || role === 'radio' || role === 'switch') return 'check'
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return 'input'
         if (tag === 'BUTTON' || tag === 'A' || role === 'button' || role === 'link' || role === 'tab') return 'button'
         if (tag === 'IMG' || tag === 'SVG' || tag === 'CANVAS' || tag === 'VIDEO' || tag === 'PICTURE') return 'image'
@@ -888,11 +904,34 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
             // ringed box — the drawing typed the asserted value centred, at a size taken from the
             // box's height, which is right for a text leaf and wrong for a field. So measure what
             // the page actually does with that text: its font size, its alignment, and the inset
-            // its text starts from (padding + border). Only for elements that carry text — the kit
-            // types nothing else — so this costs one getComputedStyle per drawn label, never per node.
-            if (text) {
-              try {
-                const cs = getComputedStyle(el)
+            // its text starts from (padding + border).
+            //
+            // …AND ITS OWN PAINT AND STATE (mirror-8, 2026-09-02, the human: the schematic "looks
+            // like a skeleton"). Everything below was being thrown away, and with it every chip, the
+            // primary button, the ticked box and the struck-through done row — the drawing showed
+            // one grey bar for all of them. THE FIELDS, all optional (an older skeleton simply has
+            // none of them and draws exactly as it always did):
+            //
+            //   bg  "r,g,b"  background colour, when it is not transparent
+            //   fg  "r,g,b"  text colour, for an element that carries text
+            //   bd  "r,g,b"  border colour, when some border is actually drawn
+            //   rd  px       border-radius (top-left), capped at 40
+            //   fw  1        font-weight ≥ 600
+            //   td  1        text-decoration-line contains line-through
+            //   it  1        font-style italic
+            //   op  0..1     opacity, only when the page has faded it
+            //   on  1        a `check` that is ticked (checked / aria-checked)
+            //   dis 1        disabled / aria-disabled
+            //
+            // These are MEASUREMENTS, not paint: tools/viz.mjs dyeOf maps each colour to the nearest
+            // design token at derive time and the SVG emits only var(--token) — no app colour has
+            // ever reached, or may reach, the board.
+            //
+            // ONE getComputedStyle per kept element (CAP is 150), where it used to be one per
+            // text-bearing element — the same call, asked more questions.
+            try {
+              const cs = getComputedStyle(el)
+              if (text) {
                 const fs = parseFloat(cs.fontSize)
                 if (fs > 0) rec.fs = Math.round(fs * 10) / 10
                 let ta = cs.textAlign
@@ -904,8 +943,29 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
                 const pr = (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)
                 if (pl > 0) rec.pl = Math.round(pl * 10) / 10
                 if (pr > 0) rec.pr = Math.round(pr * 10) / 10
-              } catch { /* an element that will not compute simply has no measured type */ }
-            }
+                const fg = rgb(cs.color)
+                if (fg) rec.fg = fg
+                if (parseInt(cs.fontWeight, 10) >= 600) rec.fw = 1
+                if (/line-through/.test(String(cs.textDecorationLine || cs.textDecoration || ''))) rec.td = 1
+                if (String(cs.fontStyle || '') === 'italic') rec.it = 1
+              }
+              const bg = rgb(cs.backgroundColor)
+              if (bg) rec.bg = bg
+              const bw = Math.max(
+                parseFloat(cs.borderTopWidth) || 0, parseFloat(cs.borderRightWidth) || 0,
+                parseFloat(cs.borderBottomWidth) || 0, parseFloat(cs.borderLeftWidth) || 0)
+              if (bw > 0) {
+                const bd = rgb(cs.borderTopColor) || rgb(cs.borderLeftColor)
+                if (bd) rec.bd = bd
+              }
+              const rd = parseFloat(cs.borderTopLeftRadius) || 0
+              if (rd > 0) rec.rd = Math.round(Math.min(rd, 40) * 10) / 10
+              const op = parseFloat(cs.opacity)
+              if (op >= 0 && op < 1) rec.op = Math.round(op * 100) / 100
+            } catch { /* an element that will not compute simply has no measured type */ }
+            // …and the two facts the style cannot answer, straight off the element
+            if (rec.kind === 'check' && (el.checked === true || el.getAttribute('aria-checked') === 'true')) rec.on = 1
+            if (el.disabled === true || el.getAttribute('aria-disabled') === 'true') rec.dis = 1
             els.push(rec)
           }
           if (tag !== 'SVG') walk(el, depth + 1)     // an inline svg is ONE picture, not a shape tree

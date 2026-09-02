@@ -551,9 +551,19 @@ const NESTED = [
   { before: nest(3, false), after: nest(2, true) }
 ]
 const CARD = { behavior: TWO, id: 'R5', title: 'The remaining counter recounts', pass: true }
+// …balanced, since mirror-8: a measured opacity (a disabled control, a faded done row) draws its
+// element inside its own <g>, so slicing at the FIRST </g> would cut the frame off mid-page.
 const frameOf = (svg, n) => {
   const i = svg.indexOf('<g class="wf' + n + '">')
-  return i < 0 ? '' : svg.slice(i, svg.indexOf('</g>', i))
+  if (i < 0) return ''
+  const re = /<g\b|<\/g>/g
+  re.lastIndex = i
+  let depth = 0; let m
+  while ((m = re.exec(svg))) {
+    depth += m[0] === '</g>' ? -1 : 1
+    if (depth === 0) return svg.slice(i, m.index)
+  }
+  return svg.slice(i)
 }
 
 // REWRITTEN 2026-08-30 (rule 4 — the human decided the card, so this test was the wrong side): a
@@ -654,10 +664,11 @@ test('callout text is not truncated: the whole sentence wraps to as many lines a
 })
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
-  // mirror-6 (2026-08-30): the card is ONE SENTENCE — the line the scene proves, chosen by the
-  // shared tools/callout-text.mjs the burn-in asks too. mirror-5 was the shared GEOMETRY; this is
-  // the shared WORDS, and the pin moves because the renderer did.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-7"'))
+  // Updated 2026-09-02 (rule 4 — the RENDERER moved, so this pin was correctly broken by it):
+  // mirror-8 is COLOUR AND STATE — the harvest's bg/fg/bd/rd/fw/td/op/dis and the `check` kind,
+  // each mapped to its nearest dye (dyeOf). mirror-7 was the page's own TYPE, mirror-6 the card as
+  // one sentence, mirror-5 the shared geometry.
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-8"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -1318,4 +1329,168 @@ test('a small measured chip keeps its value INSIDE its box — the pill is the l
   // the pill is a rounded plate with its own paper fill — a value that fits its box never gets one
   assert.ok(!/rx="[\d.]+" fill="var\(--paper\)" stroke="var\(--ai\)"/.test(f1), 'no pill: the value sits in the chip')
   assert.ok(+m[2] >= 4, 'and it is still legible: ' + m[2])
+})
+
+// ── mirror-8 (2026-09-02): THE DRAWING IS COLOURED ──────────────────────────
+// The human's complaint: the schematic "looks like a skeleton". It was — snapLayout measured only
+// geometry and text, so the chips, the primary button, the ticked box and the struck-through done
+// row all came out as the same grey bars. The harvest now records what the page is COLOURED (bg /
+// fg / bd as plain "r,g,b", plus rd / fw / td / op / dis and a `check` kind that knows whether it is
+// ticked), and the drawing maps every one of those to the nearest DESIGN TOKEN (tools/viz.mjs
+// dyeOf, pinned in tools/dye.test.mjs). The rule that does not move: **no raw colour reaches the
+// SVG** — the captured rgb lives in the layout JSON, which is data.
+const DYED = focus => ({
+  w: 1200,
+  h: 800,
+  ring: focus ? { x: 24, y: 180, w: 20, h: 20 } : null,
+  els: [
+    { x: 0, y: 0, w: 1200, h: 72, kind: 'container', bg: '253,252,249', bd: '226,221,209' },
+    { x: 24, y: 100, w: 600, h: 44, kind: 'input', text: 'Water the plants', fs: 15, ta: 'l', pl: 12, pr: 12, bg: '255,255,255', bd: '47,111,237', rd: 8 },
+    { x: 660, y: 100, w: 96, h: 44, kind: 'button', text: 'Add', fs: 14, ta: 'c', bg: '108,92,231', fg: '255,255,255', fw: 1, rd: 22 },
+    { x: 24, y: 180, w: 20, h: 20, kind: 'check', on: 1, rd: 4, ...(focus ? { focus: true } : {}) },
+    { x: 56, y: 178, w: 300, h: 24, kind: 'text', text: 'Buy milk', fs: 14, fg: '108,117,125', td: 1, op: 0.6 },
+    { x: 900, y: 120, w: 120, h: 26, kind: 'text', text: 'overdue', fs: 12, ta: 'c', bg: '254,226,226', fg: '231,76,60', rd: 13 },
+    { x: 24, y: 240, w: 96, h: 32, kind: 'button', text: 'Clear', fs: 13, ta: 'c', bg: '234,236,225', dis: 1, rd: 6 }
+  ]
+})
+const DYEDB = b('a list with one done task', 'you add one', 'the overdue chip appears')
+
+test('mirror-8: the captured colours are drawn — as design tokens, never as the app\'s own', () => {
+  const d = renderWireframe(DYED(false), DYED(true), { behavior: DYEDB })
+  const f0 = frameOf(d.svg, 0)
+  const S = 600 / 1200
+  // the primary button: an indigo FILL (the one dye allowed to fill solid), its own radius, and its
+  // label in paper at the weight the page renders it
+  assert.match(f0, new RegExp('<rect x="' + 660 * S + '" y="' + 100 * S + '" width="' + 96 * S +
+    '" height="' + 44 * S + '" rx="' + 22 * S + '" fill="var\\(--ai\\)"'), 'the Add button is filled ai at its own radius')
+  assert.match(f0, /fill="var\(--paper\)"[^>]*font-weight="600"[^>]*>Add</, 'its label is paper, bold')
+  // the field keeps its own border colour, mapped to the indigo hairline
+  assert.match(f0, /<rect x="12" y="50" width="300" height="22" rx="4" fill="var\(--paper\)" stroke="var\(--ai-line\)"/,
+    'the input takes its measured radius and its own border dye')
+  // the ticked checkbox: a rounded square, filled moss, with the drawn mark ON it (never --ok on --koke)
+  assert.match(f0, /<rect x="12" y="90" width="10" height="10" rx="[\d.]+" fill="var\(--koke\)"/, 'a ticked box is filled')
+  assert.match(f0, /stroke="var\(--paper\)" stroke-width="[\d.]+" stroke-linecap="round"/, 'and its ✓ is drawn in paper, so it reads on the fill')
+  // the done row: struck through, at the opacity the page gives it
+  assert.match(f0, /<g opacity="0\.6">/, 'the measured opacity rides the whole element')
+  assert.match(f0, /<line [^>]*stroke="var\(--ink-4\)"/, 'and the line-through is drawn, in the text\'s own dye')
+  assert.ok(f0.includes('>Buy milk<'), 'with the text still readable')
+  // the overdue chip: a tinted plate with its own text colour
+  assert.match(f0, /rx="[\d.]+" fill="var\(--bengara-tint\)"/, 'the chip carries its tint')
+  assert.match(f0, /fill="var\(--bengara\)"[^>]*>overdue</, 'and its word the family solid')
+  // a disabled control is dimmed, exactly as the page dims it
+  assert.match(f0, /<g opacity="0\.5">[\s\S]*?>Clear</, 'the disabled button is at half')
+})
+
+test('mirror-8: not one raw colour survives into the drawing — tokens only, still', () => {
+  const d = renderWireframe(DYED(false), DYED(true), { behavior: DYEDB })
+  assert.ok(!/#[0-9a-fA-F]{3}/.test(d.svg), 'no hex')
+  assert.ok(!/rgba?\(/.test(d.svg), 'no rgb()/rgba()')
+  for (const m of d.svg.matchAll(/(?:fill|stroke)="([^"]+)"/g)) {
+    assert.ok(m[1] === 'none' || /^var\(--[a-z0-9-]+\)$/.test(m[1]), 'every paint is a token: ' + m[1])
+  }
+})
+
+test('mirror-8: an old harvest (no colour fields) still draws exactly as it did', () => {
+  // every new field is optional — a skeleton folded before this pass keeps the grey house defaults
+  const f1 = frameOf(renderWireframe(LAY_BEFORE, LAY_AFTER, { behavior: COUNT }).svg, 0)
+  assert.match(f1, /fill="var\(--wash\)" stroke="var\(--line2\)"/, 'the button keeps the default plate')
+  assert.match(f1, /fill="var\(--paper\)" stroke="var\(--ai-line\)"/, 'and the field its default hairline')
+})
+
+// ── THE CROSSFADE HAS NO DIP (the human, 2026-09-02: "the scene move is not smooth") ─────────────
+// wfFade used to fade frame k OUT while k+1 faded IN, so at the midpoint of every transition BOTH
+// were at ~0.5 and identical content dipped to a visible blink (and text ghosted double). Frames are
+// painted in order, so the fix is to keep k fully opaque until k+1 has finished arriving ON TOP of
+// it — which needs every frame group to open with an OPAQUE page rect, or k+1 would be a transparent
+// sheet over k rather than a replacement for it.
+const fadeCurves = svg => {
+  const n = Number(/data-viz-frames="(\d+)"/.exec(svg)[1])
+  const css = /<style>([\s\S]*?)<\/style>/.exec(svg)[1]
+  return Array.from({ length: n }, (_, k) => {
+    const m = new RegExp('@keyframes\\s+\\w+f' + k + '\\{((?:[\\d.]+%\\{[^}]*\\})+)\\}').exec(css)
+    assert.ok(m, 'frame ' + k + ' has a fade')
+    const stops = [...m[1].matchAll(/([\d.]+)%\{opacity:([\d.]+)\}/g)].map(s => [Number(s[1]), Number(s[2])])
+    assert.ok(stops.length, 'frame ' + k + ' fades on opacity alone')
+    return t => {
+      if (t <= stops[0][0]) return stops[0][1]
+      for (let i = 1; i < stops.length; i++) {
+        if (t <= stops[i][0]) {
+          const [p0, v0] = stops[i - 1]; const [p1, v1] = stops[i]
+          return p1 === p0 ? v1 : v0 + (v1 - v0) * ((t - p0) / (p1 - p0))
+        }
+      }
+      return stops[stops.length - 1][1]
+    }
+  })
+}
+
+test('the crossfade never dims: at every instant of the loop SOME frame is fully opaque', () => {
+  for (const [lays, meta] of [[ENACTED, { behavior: ADD }], [PAIRS, { behavior: TWO }], [NESTED, CARD]]) {
+    const svg = renderWireframe(lays, meta).svg
+    const fs = fadeCurves(svg)
+    for (let t = 0; t <= 100; t += 0.25) {
+      const top = Math.max(...fs.map(f => f(t)))
+      assert.ok(top >= 0.999, `t=${t}%: the brightest frame is only ${top} — that is the blink`)
+    }
+  }
+})
+
+test('the crossfade is a REPLACEMENT: while k+1 arrives, k is held at full', () => {
+  const svg = renderWireframe(ENACTED, { behavior: ADD }).svg
+  const fs = fadeCurves(svg)
+  for (let k = 0; k + 1 < fs.length; k++) {
+    for (let t = 0; t <= 100; t += 0.25) {
+      const inc = fs[k + 1](t)
+      const arriving = inc > 0.001 && inc < 0.999 && fs[k + 1](t + 0.05) > inc
+      if (arriving) assert.equal(fs[k](t), 1, `frame ${k} must hold while frame ${k + 1} arrives (t=${t}%)`)
+    }
+  }
+})
+
+test('every frame opens with an opaque page — an incoming frame REPLACES the one under it', () => {
+  const svg = renderWireframe(ENACTED, { behavior: ADD }).svg
+  const n = Number(/data-viz-frames="(\d+)"/.exec(svg)[1])
+  for (let k = 0; k < n; k++) {
+    const f = frameOf(svg, k)
+    assert.match(f.slice(0, 140), /^<g class="wf\d+"><rect x="1" y="1" width="\d+" height="\d+" rx="[\d.]+" fill="var\(--paper\)"\/>/,
+      'frame ' + k + ' starts with its own opaque page')
+  }
+})
+
+// ── the visual pass of 2026-09-02 (the lead's headless review of the re-harvested demo) ──────────
+// (1) "All tasks" in a 96px box at 26px bold was drawn as "All t…": fitText assumed 0.55em per
+// character, but a LEAF's box is the text's own measured width, so its words always fit — the
+// truncation was the estimate's, not the page's. A label whose estimate overflows its room is
+// SQUEEZED to the room (SVG textLength) rather than cut; only a gross overflow still truncates.
+test('a text leaf is never truncated inside its own measured box — squeezed, not cut', () => {
+  const L = { w: 1440, h: 900, ring: null, els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 270, y: 42, w: 96, h: 39, kind: 'heading', text: 'All tasks', fs: 26, ta: 'l', fw: 1 },
+    { x: 700, y: 42, w: 30, h: 20, kind: 'text', text: 'to do', fs: 11, ta: 'r' }
+  ] }
+  const out = renderWireframe([{ before: L, after: L, values: [] }], { id: 'R1' }).svg
+  assert.match(out, />All tasks</, 'the heading keeps its whole word')
+  assert.doesNotMatch(out, />All t…</)
+  assert.match(out, />to do</, 'a small right-aligned leaf keeps its words too')
+  // a genuinely overflowing label (a 10-character word in a 20px box) is still cut, never spilled
+  const L2 = { ...L, els: [L.els[0], { x: 10, y: 10, w: 20, h: 16, kind: 'text', text: 'Supercalifragilistic', fs: 12, ta: 'l' }] }
+  const out2 = renderWireframe([{ before: L2, after: L2, values: [] }], { id: 'R1' }).svg
+  assert.match(out2, /…</, 'a gross overflow is truncated')
+})
+
+// (2) the sidebar's nav buttons drew a grey placeholder BAR across the words: the <button> carries
+// no text of its own (its label is a child leaf), so the kit filed it as "no measured text" and
+// drew the bar OVER the leaf it contains. A box that holds a text-bearing element is not empty.
+test('no placeholder bar is drawn on a box whose words live in a nested leaf', () => {
+  const L = { w: 1440, h: 900, ring: null, els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 16, y: 124, w: 197, h: 37, kind: 'button', rd: 9 },
+    { x: 54, y: 132, w: 131, h: 21, kind: 'text', text: 'All tasks', fs: 14, ta: 'l', fw: 1 },
+    { x: 16, y: 300, w: 197, h: 37, kind: 'button', rd: 9 }          // a truly empty button keeps its bar
+  ] }
+  const out = renderWireframe([{ before: L, after: L, values: [] }], { id: 'R1' }).svg
+  const frame0 = out.slice(out.indexOf('<g class="wf0">'), out.indexOf('</g>'))
+  const bars = (frame0.match(/fill="var\(--line3\)"/g) || []).length
+  assert.equal(bars, 1, 'one bar for the empty button, none over the labelled one')
+  assert.match(frame0, />All tasks</)
 })

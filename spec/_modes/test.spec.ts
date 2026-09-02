@@ -235,11 +235,12 @@ test('renders — a leftover guess: frontmatter line renders exactly like a norm
 // contract, so nothing changes for every PRD that does not carry the triple. Focus must show the
 // same block because the reader clones the baked source row's .body verbatim (stripping only
 // .covers) — asserted here so a client.js change can never silently drop it.
-test('renders — a beats block leads the requirement, the List reads it, and the media pane derives from it', async ({ page }) => {
+test('renders — a beats block leads the requirement, the List reads it, and the proof rides its rows', async ({ page }) => {
   // TWO beats (D1's chain), harvested evidence on disk, and a current PASS in the injected index —
   // the full deterministic input for the frozen-mockup Focus contract (board R13, 2026-08-21):
   // behavior leads, prose collapses, the List row carries the beat count, the gap strip counts the
-  // untested R2, and the media pane defaults to the per-beat filmstrip for a passed 2-beat req.
+  // untested R2, and each beat's own harvested frame rides the row it proves (the retired media
+  // pane's per-beat filmstrip default went with the pane itself, 2026-08-28 / 2026-09-02).
   const body =
     '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
     '- **When** you press Undo\n- **Then** the two items return\n\n' +
@@ -263,12 +264,17 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(fst.locator('.sbrow .sbframe svg')).toHaveCount(3)  // a parked still paired into each row
     await expect(fst).toContainText('a list with two items')
     await expect(fst).toContainText('you press Undo')
-    // THE STORYBOARD carries the beat NUMBERS (WHEN 1 / THEN 1 / WHEN 2 …) and a heavier rule opening
-    // each beat after the first; the Given row is distinct (tinted) and carries no number
+    // THE STORYBOARD carries the beat NUMBERS and a heavier rule opening each beat after the first;
+    // the Given row is distinct (tinted) and carries no number. REWRITTEN 2026-09-02 (the human:
+    // the `When¹ · Then¹` superscripts were "hard to read and not intuitive"): the number is a
+    // per-ROW eyebrow now — a ringed numeral and "of N" over each beat's words, once per row instead
+    // of twice per beat — and no <sup> is emitted anywhere. Same claim, readable mark.
     await expect(fst.locator('.sbrow.beatstart')).toHaveCount(1)
     await expect(fst.locator('.sbrow').nth(2)).toHaveClass(/beatstart/)
-    await expect(fst.locator('.sbk .bno')).toHaveText(['1', '1', '2', '2'])
-    await expect(fst.locator('.sbrow.bgiven .sbk .bno')).toHaveCount(0)
+    await expect(fst.locator('.sbeye .sbno')).toHaveText(['1', '2'])
+    await expect(fst.locator('.sbeye .sbof').first()).toHaveText('of 2')
+    await expect(fst.locator('.sbrow.bgiven .sbeye')).toHaveCount(0)
+    await expect(fst.locator('sup')).toHaveCount(0)
     expect(await fst.locator('.sbwrap').evaluate(el => getComputedStyle(el).borderTopWidth), 'the block is bordered').toBe('1px')
     expect(await fst.locator('.sbrow.bgiven').evaluate(el => getComputedStyle(el).backgroundColor), 'the Given row is tinted').not.toBe('rgba(0, 0, 0, 0)')
     const rule1 = await fst.locator('.sbrow').nth(1).evaluate(el => parseFloat(getComputedStyle(el).borderTopWidth))
@@ -323,11 +329,12 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(proof.nth(1).locator('.pcnone')).toContainText('no per-beat evidence yet')
     await expect(proof.nth(1).locator('img')).toHaveCount(0)            // nothing invented for the gap
     await expect(proof.nth(2).locator('.pcstrip .pcfig img')).toHaveAttribute('alt', /after/i)
-    // …and the band beneath the rows carries only what belongs to the WHOLE requirement: the
-    // stills · gif · video toolbar and its stored preference went with the split
-    const media = dt.locator('.focusov .feval .fmedia')
-    await expect(media.locator('.medbar')).toHaveCount(0)
-    await expect(media.locator('.fmpanel[data-m]')).toHaveCount(0)
+    // …and there is NOTHING beneath the rows but the proof header and the moved test: the whole
+    // proof band went with the reader's video (the human, 2026-09-02), as the stills · gif · video
+    // toolbar and its stored preference went with the per-beat split before it
+    await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
+    await expect(dt.locator('.focusov .feval video')).toHaveCount(0)
+    await expect(dt.locator('.focusov .feval .medbar')).toHaveCount(0)
     expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia'))).toBeNull()
 
     // LIST view (board R13: Grid became List, a list of Focus): one collapsed row per requirement —
@@ -588,10 +595,13 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(fptop.locator('.fpname')).not.toBeEmpty()               // the covering test's name
       await expect(dt.locator('.focusov .feval')).not.toContainText('not passed yet')
       await expect(dt.locator('.focusov .feval .stalenote')).toContainText('re-verify')
-      // the MEDIA pane wears the pinned-era watermark (D2: changed = last proof media, watermarked)
-      const media = dt.locator('.focusov .feval .fmedia')
-      await expect(media.locator('.fmbar')).toContainText('pinned era')
-      await expect(media.locator('.wmark')).toHaveCount(1)
+      // the drift is said in WORDS, and only in words (2026-09-02): the media band that carried the
+      // "pinned era" bar and the watermark over it is gone with the reader's video, so the stalenote
+      // asserted just above IS the Changed cue in the reader — assert the retired pair is absent
+      // rather than quietly dropping the leg (the R8 assert-the-gone precedent)
+      await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
+      await expect(dt.locator('.focusov .feval .wmark')).toHaveCount(0)
+      await expect(dt.locator('.focusov .feval .stalenote')).toContainText('edited after this proof ran')
       // LIST: the row's state cell spells the fifth word out — never a plain Passed
       await dt.locator('.viewseg .vseg[data-view="grid"]').click()
       const row = dt.locator('.gridview .lst-card[data-r="R1"]')

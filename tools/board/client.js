@@ -548,12 +548,15 @@ const B = window.__BOARD__ || {}
     // from the fact the reader was shown rather than from a guess.
     const schemCtx = function () { const c = reqCtx(); c.prov = schemProv(r.schem).text; return c }
     // THE READER-WIDE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02: "put all these on the same
-    // row of the test title row, left side of the menu button"). The schematic frames, every beat
-    // cell's stepper and the video are views of the SAME beat, so one play mode and one speed pace
-    // them all — and they sit on the requirement's own line now, not on a bar of their own beneath it.
+    // row of the test title row, left side of the menu button"). The schematic frames and every beat
+    // cell's stepper are views of the SAME beat, so one play mode and one speed pace them both — and
+    // they sit on the requirement's own line now, not on a bar of their own beneath it.
     // They ride only where there is something to pace: a control over an empty reader is chrome.
     // (The advance itself is NOT here — a requirement has several When/Then, so "next" must name its
-    // beat; that lives on each beat row's ‹ n / N › in the gutter, board R20.)
+    // beat; that lives on each beat row's ‹ n / N › in the gutter, board R20. And the video is no
+    // longer one of the paced surfaces — the reader has none since 2026-09-02 — but a requirement
+    // whose only evidence is a committed recording still has a harvest to pace, so the video's
+    // presence is kept as a signal that a harvest happened at all, never as a thing to play.)
     const paceable = !!(r.schem && r.schem.svg) ||
       !!(primary && (r.ev.video || r.ev.before || r.ev.after || (r.ev.beats && r.ev.beats.length)))
     if (paceable) {
@@ -613,7 +616,13 @@ const B = window.__BOARD__ || {}
         const sn = document.createElement('div'); sn.className = 'stalenote'
         sn.innerHTML = '◈ the requirement was <b>edited after this proof ran</b> — re-run to re-verify'
         ph.appendChild(sn)
-      } else if (!proved && vstate !== 'fail' && r.status !== 'untested' && r.status !== 'not-reached') {
+      } else if (r.status === 'untested' || r.status === 'not-reached') {
+        // THE HONEST GAP, moved up out of the retired proof band (the human, 2026-09-02 — the band
+        // went with the video). A requirement that has a covering test but no passing assertion must
+        // still say so IN WORDS and offer the next move (rule 3); the band used to carry this line,
+        // so it moves here rather than disappearing with it.
+        ph.appendChild(noProofYet(dt, r))
+      } else if (!proved && vstate !== 'fail') {
         const sn = document.createElement('div'); sn.className = 'stalenote'
         sn.textContent = 'covered, not proven — ' + vword
         ph.appendChild(sn)
@@ -657,12 +666,16 @@ const B = window.__BOARD__ || {}
       const ph = document.createElement('div'); ph.className = 'fphead'
       ph.innerHTML = '<div class="fptop"><span class="fpm none" title="no test yet">◌</span>' +
         '<span class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</span></div>'
+      ph.appendChild(noProofYet(dt, r, true))   // …and the next move, where the band used to offer it
       evl.appendChild(ph)
     }
-    // THE MEDIA BAND (D2, reshaped 2026-08-28): the per-beat frames now ride their own rows, so what
-    // is left here is what belongs to the WHOLE requirement — the committed recording (Task 16 #1),
-    // and, on a failure, the run's own frames and its expected-vs-actual
-    evl.appendChild(buildMedia(dt, r, primary))
+    // NO PROOF BAND (the human, 2026-09-02: "remove the full flow video from focus mode"). What stood
+    // here — the covering test's bar, a failing run's filmstrip, the pinned-era watermark and one
+    // full-width video — is gone with buildMedia: the recording lives in the FLOW view, which is what
+    // it is for, and the proof a reader needs while reading a requirement is the per-beat rows above.
+    // The honest words did NOT go with it: the proof header still names the covering test behind a
+    // pass/fail/none mark, still carries the Changed re-verify note, and still says "no proof yet ·
+    // ＋ write the failing test" (noProofYet) where there is nothing green to show.
     // the moved covering test itself — its proof-frame strip stays visible here (board R14), the
     // rest of its chrome folded away; loadRuns folds it whenever it is home in the pane
     if (primary) {
@@ -1480,10 +1493,20 @@ const B = window.__BOARD__ || {}
       // driven started no rAF at all and never moved: the board's own R13 caught it.)
       const d = { el: fr, from: park, to: park, ms: 0, t0: null }
       if (drivenBy) driven.push(d)
+      // ONE CLOCK FOR THE MOVE (the human, 2026-09-02: the scene change was not smooth). This tween
+      // used to be a fraction of the PROOF's hold — min(ms × 0.55, 900) — so a 350ms floor hold moved
+      // the drawing in ~190ms while the camera beside it panned over cameraDur (420ms at 1×): two
+      // clocks on one row, and the drawing snapped ahead of the pan it is supposed to travel with.
+      // It is the CAMERA's duration now, ×2: the drawing's own crossfade (tools/viz.mjs wfFade)
+      // occupies the first half of the interval between two park points, so scrubbing --ph over twice
+      // cameraDur lands the visible fade exactly on the camera's glide. `ms` (the beat's hold) only
+      // CAPS it — in auto a short hold must not be outrun by its own move (the next scene would fire
+      // mid-travel and the drawing never settle) — and the camera's glide is the floor, so a very
+      // short hold still moves smoothly rather than snapping.
       fr._drive = function (from, to, ms) {
         d.from = from; d.to = to
-        // the move takes the first stretch of the hold, then the scene settles for the rest
-        d.ms = reduced ? 0 : Math.max(0, Math.min(ms * 0.55, 900))
+        const glide = window.SBStepper.cameraDur(CAM_TWEEN, PLAY_SPD)
+        d.ms = reduced ? 0 : Math.min(glide * 2, Math.max(glide, ms > 0 ? ms : glide * 2))
         d.t0 = (window.performance && performance.now) ? performance.now() : Date.now()
         if (!(d.ms > 0)) fr.style.setProperty('--ph', to + 's')
       }
@@ -1498,6 +1521,10 @@ const B = window.__BOARD__ || {}
     const drawStepper = function (fc, parks) {
       let idx = 0; let timer = null; let onStep = null
       const dur = function () { return window.SBStepper.scaleHold(700, PLAY_SPD) }
+      // the MOVE takes the camera's own glide now (see _drive), so the auto-advance has to wait for
+      // the move AND the hold — scheduling on the hold alone would fire the next scene while this one
+      // was still travelling, and the drawing would never settle anywhere (2026-09-02)
+      const moveMs = function () { return reduced ? 0 : window.SBStepper.cameraDur(CAM_TWEEN, PLAY_SPD) * 2 }
       const go = function (j) {
         const from = idx
         idx = ((j % parks.length) + parks.length) % parks.length
@@ -1512,7 +1539,7 @@ const B = window.__BOARD__ || {}
           timer = null
           if (!fc.isConnected || fc.hidden) return
           go(idx + 1); schedule()
-        }, dur())
+        }, moveMs() + dur())
       }
       onSpd(fc, function () { if (!fc.hidden) schedule() })
       onMode(fc, function () { if (!fc.hidden) schedule() })
@@ -1588,7 +1615,15 @@ const B = window.__BOARD__ || {}
         textCell(behStep(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
         proofCell(r, 0, nbeats)))
       beh.beats.forEach(function (bt, i) {
-        const html = behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
+        // WHICH BEAT AM I ON (the human, 2026-09-02: the `When¹ · Then¹` superscripts were "hard to
+        // read and not intuitive"). The number left the labels (tools/build-board.mjs renderBehavior)
+        // and became this EYEBROW over the row's words: a small ringed numeral and `of N`, once per
+        // ROW instead of twice per beat, at a size that can actually be read. A single-beat
+        // requirement has nothing to count, so it gets none — a "1 of 1" is noise.
+        const eyebrow = nbeats > 1
+          ? '<div class="sbeye"><span class="sbno">' + (i + 1) + '</span><span class="sbof">of ' + nbeats + '</span></div>'
+          : ''
+        const html = eyebrow + behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
         const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i])
         // LOCK-STEP (2026-08-29, the human: same story order, comparable timing). The drawing takes
         // its scenes from the proof's own loop when the two agree on how many there are — the beat's
@@ -1641,6 +1676,10 @@ const B = window.__BOARD__ || {}
         // eats a chevron click or a proof-cell lightbox click bubbling up from inside.
         if (rowStep) {
           rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1'
+          // the words are the row's own hit area, and they say so (the human, 2026-09-02: "make clear
+          // which when/then is selected") — the cursor and the title, since a per-row button would be
+          // N buttons down the page
+          tc.title = 'click to select this When/Then — ← → then walk it'
           rowEl.addEventListener('click', function () {
             const rt = rowEl.closest('.fread'); if (rt) selectRow(rt, rowEl, false)
           })
@@ -1664,182 +1703,35 @@ const B = window.__BOARD__ || {}
     return wrap
   }
 
-  // THE PROOF BAND (D2, reshaped 2026-08-28). The per-beat frames moved onto the beat rows they
-  // belong to, so what stays here is what belongs to the WHOLE requirement:
-  //   the covering test's bar (name · proves R · run id, plus the pinned / ✗ failed marks),
-  //   under a FAILURE the newest record's own frames (D3 — the failing value, burned red) and the
-  //   covering test's expected-vs-actual,
-  //   then ONE video: the screen's COMMITTED recording (Task 16 #1), seeked to this requirement's
-  //   moment, with a "play this beat" jump per beat where the harvest recorded per-beat windows.
-  //   untested / not-reached → no media at all: "no proof yet · ＋ write the failing test".
-  // The stills · gif · video toolbar went with the split — each beat cell carries its own now — and
-  // the sbFocusMedia preference went with it: there is no pane-wide mode left to remember.
-  function buildMedia (dt, r, primary) {
-    const box = document.createElement('div'); box.className = 'fmedia'
-    const st = r.status
-    if (!primary || st === 'untested' || st === 'not-reached') {
-      const bar = document.createElement('div'); bar.className = 'fmbar'
-      bar.textContent = 'proves ' + r.id
-      const no = document.createElement('div'); no.className = 'noev'
-      const b = document.createElement('b')
-      b.textContent = st === 'not-reached'
-        ? '◌ no proof yet — the flow stopped before this step' : '○ no proof yet'
-      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sm'
-      // data-prompt marks the click as a sheet-OPENING one, so the prompt sheet's outside-click
-      // closer does not shut it in the same bubble (the [data-log] pattern)
-      btn.dataset.prompt = 'addtest'
-      btn.textContent = '＋ write the failing test'
-      btn.addEventListener('click', function () { openAddTest(dt, [r.id]) })
-      no.appendChild(b); no.appendChild(btn)
-      box.appendChild(bar); box.appendChild(no)
-      return box
-    }
-    const bar = document.createElement('div'); bar.className = 'fmbar'
-    // the mockup's gbar (Task 8): `<test name> · proves R4 · run <id>` — the name clipped first
-    const ttlEl = primary.querySelector('.ttl')
-    const tname = ttlEl ? ttlEl.textContent.trim() : ''
-    const runId = testRunId(primary)
-    const nm = document.createElement('span'); nm.className = 'fmname'; nm.textContent = tname; nm.title = tname
-    bar.appendChild(nm)
-    const lab = document.createElement('span'); lab.className = 'fmfacts'
-    lab.innerHTML = (tname ? '· ' : '') + 'proves ' + eh(r.id) +
-      (runId ? ' · <span class="frun">run ' + eh(runId) + '</span>' : (r.ev.at ? ' · ' + eh(r.ev.at) : '')) +
-      (st === 'changed' ? ' · <span class="pinned">◈ pinned era</span>' : '') +
-      // D3: a failing run's media shows — so the band itself carries the failed state, with the
-      // existing failed mark (✗ + bengara, the .fpv chip the proof line already uses; hue never alone)
-      (st === 'failed' ? ' · <span class="fpv fail">✗ failed run</span>' : '')
-    bar.appendChild(lab)
-    box.appendChild(bar)
-    const body = document.createElement('div'); body.className = 'fmbody'
-    // THE RUN'S OWN FRAMES, under a failure only (D3, the human 2026-08-22; task-3b review L3):
-    // NEWEST RECORD ONLY, whatever its status — reading only hist[0] lets the failing run's own
-    // frames show, the value that broke burned red, with no fake-green path. A passing requirement
-    // needs none of this here: its beat rows already carry the harvested per-beat proof.
-    const runFrames = function () {
-      const slot = primary.querySelector('.tststeps')
-      const hist = (slot && slot._hist) || []
-      const rec = hist[0]
-      if (!rec || !rec.frames || !rec.frames.length) return []
-      return rec.frames.filter(function (fr) {
-        const q = String(fr.req || '')
-        const k = q.indexOf(':')
-        const scr = k > 0 ? q.slice(0, k) : dt.dataset.screen
-        const bare = k > 0 ? q.slice(k + 1) : q
-        return bare === r.id && scr === dt.dataset.screen && fr.img
-      })
-    }
-    const cell = function (src, cap, cls) {
-      return '<div class="fcell' + (cls ? ' ' + cls : '') + '">' +
-        '<img loading="lazy" src="' + eh(src) + '" alt="' + eh(cap) + '">' +
-        '<div class="fcap">' + eh(cap) + '</div></div>'
-    }
-    if (st === 'failed') {
-      const pf = document.createElement('div'); pf.className = 'fmpanel'
-      const cells = []
-      const rf = runFrames()
-      if (rf.length) {
-        if (r.ev.before) cells.push(cell(r.ev.before, 'given'))
-        rf.forEach(function (fr) {
-          cells.push(cell(fr.img, (fr.ok === false ? '✗ ' : '✓ ') + (fr.cap || 'checked value'),
-            (fr.ok === false ? 'hotbad' : 'hot') + ' rf'))
-        })
-      } else if (r.ev.after) {
-        // no frames on the newest record (a CLI run): the D2 red-frame default — the harvested after
-        // IS the red frame (the harvest paints the verdict before snapping)
-        cells.push(cell(r.ev.after, "✗ the failing beat's red frame", 'hotbad'))
-      }
-      if (cells.length) {
-        pf.innerHTML = '<div class="fstrip filmstrip">' + cells.join('') + '</div>'
-      }
-      const err = primary.querySelector('.terr')
-      if (err && err.textContent) {
-        const x = document.createElement('div'); x.className = 'xva'
-        x.textContent = err.textContent.slice(0, 400)
-        pf.appendChild(x)
-      }
-      if (pf.childNodes.length) body.appendChild(pf)
-    }
-    // THE VIDEO — the screen's COMMITTED recording (Task 16 #1), seeked to THIS requirement's
-    // moment. The old surface moved the run's _runs .rec in, but _runs is transient and gitignored,
-    // so a vendored/fresh-clone board had NO video at all; the committed .webm under the screen's
-    // evidence dir is a real, shipped artifact. Absent, the band says so — never a broken player.
-    let vid = null
-    if (r.ev.video) {
-      const pv = document.createElement('div'); pv.className = 'fmpanel'
-      const from = r.ev.vwin ? r.ev.vwin.from : null
-      const to = r.ev.vwin ? r.ev.vwin.to : null
-      const rw = document.createElement('div'); rw.className = 'frecwrap'
-      const shell = document.createElement('div'); shell.className = 'rec playing evrec'
-      const v = document.createElement('video')
-      v.controls = true; v.playsInline = true; v.preload = 'metadata'
-      v.src = r.ev.video
-      v.playbackRate = PLAY_SPD
-      vid = v
-      // start at this requirement's beat: pre-metadata this sets the default playback start
-      // position (readable back before the file loads — the board test drives exactly that), and
-      // the loadedmetadata belt re-aims a player whose load cleared it
-      const seek = function (ms) { try { v.currentTime = ms / 1000 } catch (e2) { /* not loadable yet */ } }
-      if (from != null) seek(from)
-      v.addEventListener('loadedmetadata', function () {
-        v.playbackRate = PLAY_SPD
-        if (from != null && Math.abs(v.currentTime - from / 1000) > 0.05) seek(from)
-      })
-      // the beat ends at the frozen `to`: pause there ONCE on the first play-through, so the band
-      // shows this requirement's moment while the whole flow stays watchable — pressing play again
-      // simply continues (no re-trap, no control taken away). A per-beat jump re-arms the same hold
-      // against ITS window, so "play this beat" stops where that beat stops.
-      let stopAt = (to != null && to > (from || 0)) ? to : null
-      let held = false
-      v.addEventListener('timeupdate', function () {
-        if (stopAt != null && !held && v.currentTime >= stopAt / 1000) { held = true; v.pause() }
-      })
-      shell.appendChild(v); rw.appendChild(shell); pv.appendChild(rw)
-      // the honest label: whose flow this is, and where THIS beat sits in it
-      const fmtT = function (ms) {
-        const s = Math.floor(ms / 1000)
-        return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0')
-      }
-      const others = Math.max(0, primary.querySelectorAll('.tststeps .beat[data-step="prove"]').length - 1)
-      const fl = document.createElement('div'); fl.className = 'fvlab'
-      fl.textContent = 'the full flow that proves this' +
-        (others ? ' + ' + others + ' other' + (others > 1 ? 's' : '') : '') +
-        (from != null ? ' · this beat at ' + fmtT(from) + (to != null && to > from ? '–' + fmtT(to) : '') : '')
-      pv.appendChild(fl)
-      // OPTIONAL POLISH: where the harvest recorded per-beat windows, a jump per beat seeks the ONE
-      // recording rather than cutting a second one — the same file, aimed at the beat you are reading.
-      const wins = (r.ev.beats || []).filter(function (b) { return b.window && typeof b.window.from === 'number' })
-      if (wins.length > 1) {
-        const jumps = document.createElement('div'); jumps.className = 'fvjumps'
-        wins.forEach(function (b) {
-          const j = document.createElement('button'); j.type = 'button'; j.className = 'btn sm'
-          j.textContent = '▶ beat ' + b.n
-          j.title = 'play beat ' + b.n + ' of this recording'
-          j.addEventListener('click', function () {
-            stopAt = (typeof b.window.to === 'number' && b.window.to > b.window.from) ? b.window.to : null
-            held = false
-            seek(b.window.from)
-            v.play().catch(function () { /* a browser that refuses autoplay leaves it seeked, honestly */ })
-          })
-          jumps.appendChild(j)
-        })
-        pv.appendChild(jumps)
-      }
-      body.appendChild(pv)
-    } else {
-      const nv = document.createElement('div'); nv.className = 'fmpanel'
-      const fl = document.createElement('div'); fl.className = 'fvlab'
-      fl.textContent = 'no recording committed for this screen yet — the beat frames above are the proof'
-      nv.appendChild(fl); body.appendChild(nv)
-    }
-    if (st === 'changed') {
-      const wm = document.createElement('div'); wm.className = 'wmark'
-      wm.innerHTML = '<span>✎ proof predates this text — re-run to re-verify</span>'
-      body.appendChild(wm)
-    }
-    box.appendChild(body)
-    // the reader's one speed rates the player across the native 0.25×–4× range
-    if (vid) onSpd(box, function (sp) { vid.playbackRate = sp })
-    return box
+  // THE PROOF BAND IS GONE (the human, 2026-09-02: "remove the full flow video from focus mode").
+  // buildMedia rendered the whole-requirement band beneath the beat rows — the covering test's bar
+  // (name · proves R · run id · pinned / ✗ marks), a failing run's own frames as a filmstrip with the
+  // expected-vs-actual beside it, the pinned-era watermark, and ONE full-width video: the screen's
+  // committed recording seeked to this requirement's moment, with a ▶ beat n jump per beat. All of it
+  // is removed. The recording is the FLOW view's subject (board R13), where it is cut at proves-steps
+  // and scrubbed by a chapter rail — a second, smaller copy of it under every requirement was the
+  // same artifact shown worse, and it pushed the rows that ARE the proof off the screen.
+  // What did NOT go with it is the honest word: the proof header still names the covering test behind
+  // a pass/fail/none mark, still carries the Changed re-verify note, and — here — still says "no proof
+  // yet" and offers the one next move where nothing green exists (rule 3). A failing requirement reads
+  // ✗ on that mark, and its beat rows carry the harvested red frames.
+  // `said` \u2014 the caller's line already carried the gap in words (the no-covering-test header), so the
+  // note is the next MOVE alone; saying "no proof yet" twice under each other is the kind of chrome
+  // this pass is removing.
+  function noProofYet (dt, r, said) {
+    const no = document.createElement('div'); no.className = 'noev'
+    const b = document.createElement('b')
+    b.textContent = r.status === 'not-reached'
+      ? '\u25CC no proof yet \u2014 the flow stopped before this step' : '\u25CB no proof yet'
+    const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sm'
+    // data-prompt marks the click as a sheet-OPENING one, so the prompt sheet's outside-click
+    // closer does not shut it in the same bubble (the [data-log] pattern)
+    btn.dataset.prompt = 'addtest'
+    btn.textContent = '\uFF0B write the failing test'
+    btn.addEventListener('click', function () { openAddTest(dt, [r.id]) })
+    if (!said) no.appendChild(b)
+    no.appendChild(btn)
+    return no
   }
 
   // A pager dot's STATE and TITLE derive from its baked requirement row (data-status, .rt) — called
@@ -3608,9 +3500,18 @@ const B = window.__BOARD__ || {}
   })
 
   const runflag = document.getElementById('runflag')
+  // IS A RUN LIVE (the human, 2026-09-02: "run all in background" reloaded the board over and over).
+  // A run WRITES CONSTANTLY — the harvest files an evidence frame per assertion — and the watcher
+  // turns each burst into a change event, so the board rebuilt itself every second or so for the
+  // whole run: with a reader open that is a visible refresh, with none it was location.reload().
+  // Nothing derived is trustworthy mid-run anyway (the fold lands at the END), so the change handler
+  // is GATED on this flag and the board takes its ONE refresh once the run is done. Seeded by every
+  // caller of setRunning — the SSE run events AND loadRuns' server-side answer — so a page opened
+  // mid-run, or a run nobody clicked (watch mode), is gated exactly the same.
+  let runLive = false
   // A run lights this chip. Watch mode starts runs nobody clicked, so the chip is also the way back
   // into a run that is streaming with the panel closed — clicking it opens the panel.
-  const setRunning = on => { runflag.hidden = !on }
+  const setRunning = on => { runflag.hidden = !on; runLive = !!on }
   runflag.style.cursor = 'pointer'
   runflag.title = 'a run is in progress — click to open its panel'
   runflag.addEventListener('click', () => { panel.hidden = false })
@@ -3732,8 +3633,9 @@ const B = window.__BOARD__ || {}
       for (const slot of panel.querySelectorAll('.pfstrip')) {
         const host = slot.closest('.test')
         const hist = rec[host && host.dataset.title] || []
-        // (the test's OWN strip keeps every recorded frame set; the requirement's media pane is the
-        // newest-record-only surface — D3, buildMedia — so the two rules differ on purpose)
+        // (the test's OWN strip keeps every recorded frame set. It is the ONLY surface for a run's
+        // cut frames since the reader's proof band went — 2026-09-02; the newest-record-only rule
+        // that stood beside it was the band's, and went with it.)
         const withFrames = hist.find(x => x.frames && x.frames.length)
         const frames = (withFrames && withFrames.frames) || []
         slot.innerHTML = frames.map(f =>
@@ -4029,71 +3931,99 @@ const B = window.__BOARD__ || {}
   // the panel reloads nothing. So the stream stays on always — a driver watching a real run is
   // exactly what R2 asks for — and only the self-navigation is held back under automation.
   const automation = navigator.webdriver || location.search.includes('nolive')
+  // A reload mid-run would kill the panel you are watching, so hold it until the run finishes —
+  // and never self-navigate under automation, which does its own reloading.
+  // DEBOUNCED: a test run, a crawl or a rapid series of edits writes MANY files in a burst, and
+  // reloading on each one makes the board flicker as though it is refreshing forever (the reported
+  // "infinite refresh"). Coalesce a burst into ONE reaction once the writes go quiet.
+  let changePending = null
+  // A finished run set this; the NEXT change (the board's rebuild landing) or a short fallback then
+  // syncs the board's derived state in place. One-shot, so a run refreshes the board exactly once.
+  let syncPending = false
+  // …and the same one-shot for a run watched with the panel CLOSED (watch mode, or a run started
+  // from another tab): the debounce alone reacted to every burst DURING the run, which is the
+  // reload loop; now nothing reacts until the run is done and this arms the single refresh.
+  let postPending = false
+  const scheduleSync = () => { if (!syncPending) return; syncPending = false; refreshAfterRun() }
+  const reactToChange = () => {
+    changePending = null
+    postPending = false          // the run's one refresh has landed; the fallback below is spent
+    // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
+    // reload there would throw away a sentence you were half way through typing, so it refreshes
+    // in place instead — the one view on the board that owns its own state.
+    if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
+    // init holds a half-filled form too — refresh the found table in place, never reload it out
+    if (!document.getElementById('initview').hidden) { loadCrawl(); return }
+    // how-it-works only ever needs its project cards refreshed — a project added a skill, say — and
+    // a full reload would drop you back on the board, so refresh in place like the other tool views
+    if (!document.getElementById('howview').hidden) { loadHow(); return }
+    // …and a screen detail with an OPEN READER refreshes in place too, so a background run's
+    // change events never yank your reading position to the top (the human, 2026-09-02)
+    reloadOrRefreshInPlace()
+  }
+  // ONE handler for every `change` the server streams — the file watcher's, and the board's own
+  // rebuild landing after a run.
+  const onLiveChange = () => {
+    // THE RUN-LIVE GATE (the human, 2026-09-02: "run all in background" reloaded the board forever).
+    // A run writes a file per assertion, so the burst never goes quiet and the debounce fired again
+    // and again — a visible rebuild every second with a reader open. Nothing derived is settled until
+    // the fold lands at the run's END anyway, so a live run rebuilds NOTHING; the done handler arms
+    // the single refresh that follows it. Watch-mode runs emit the same run events, so they are
+    // gated by the same flag.
+    if (runLive) return
+    // R7: an OPEN run panel is never RELOADED away — not while a run streams into it, and not once it
+    // has finished. But a finished run DID change the derived state, so refresh it IN PLACE (records,
+    // state chips, verdicts, the reader) without a reload; the panel and its log stay put.
+    if (!panel.hidden) { scheduleSync(); return }
+    clearTimeout(changePending)
+    changePending = setTimeout(reactToChange, 800)
+  }
+  const onLiveRun = d => {
+    if (d.state === 'started') {
+      setRunning(true)
+      // watch mode starts runs nobody clicked — show what is happening without stealing focus
+      if (panel.hidden) { rplog.textContent = ''; runDone = false }
+      document.getElementById('rptitle').textContent =
+        (d.screen === 'all' ? 'all tests' : d.screen + ' · test.spec.ts')
+    } else if (d.state === 'line') {
+      rplog.textContent += d.line + '\n'
+      rplog.scrollTop = rplog.scrollHeight
+    } else if (d.state === 'done') {
+      runDone = true
+      setRunning(false)
+      document.getElementById('rpcancel').disabled = true
+      // a scan or a rewrite changes what is waiting on you — the header count has to follow;
+      // a crawl changes what the init "what was found" table should show
+      loadConflicts()
+      if (!document.getElementById('initview').hidden) loadCrawl()
+      // A watch-mode run finishes with the panel still closed (nobody opened it). The board's own
+      // rebuild fires a change event that refreshes it, so there is nothing to reload here — and
+      // there is no longer any "background" run to announce.
+      rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
+      rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
+      rplog.textContent += '\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +
+        ' · ' + Math.round(d.ms / 100) / 10 + 's\n'
+      rplog.scrollTop = rplog.scrollHeight
+      loadRuns()
+      // the run changed the board's derived state; with the panel open (R7: never reloaded away),
+      // sync it in place. Fire on the rebuild's change event, or a short fallback if none follows.
+      if (!panel.hidden && !automation) { syncPending = true; setTimeout(scheduleSync, 800) }
+      // …and with the panel CLOSED, the same one-shot: the rebuild's own change event reacts (the
+      // gate is open now), or this fallback asks for it if the rebuild wrote nothing we heard about.
+      // Never under automation — that path can end in location.reload(), which aborts a driver's
+      // navigation (the board's own spec drives the handlers directly instead).
+      if (panel.hidden && !automation) {
+        postPending = true
+        setTimeout(function () { if (postPending && !changePending) onLiveChange() }, 1500)
+      }
+    }
+  }
+  // THE SEAM the board's own spec drives (dispatch R7): the SSE handlers themselves. The change
+  // LISTENER is held back under automation — a self-reload aborts a Playwright navigation — so a
+  // test that must prove what a change event does calls the handler, not the event.
+  window.__live = { change: onLiveChange, run: onLiveRun, live: function () { return runLive } }
   try {
     const es = new EventSource('/api/live')
-    // A reload mid-run would kill the panel you are watching, so hold it until the run finishes —
-    // and never self-navigate under automation, which does its own reloading.
-    // DEBOUNCED: a test run, a crawl or a rapid series of edits writes MANY files in a burst, and
-    // reloading on each one makes the board flicker as though it is refreshing forever (the reported
-    // "infinite refresh"). Coalesce a burst into ONE reaction once the writes go quiet.
-    let changePending = null
-    // A finished run set this; the NEXT change (the board's rebuild landing) or a short fallback then
-    // syncs the board's derived state in place. One-shot, so a run refreshes the board exactly once.
-    let syncPending = false
-    const scheduleSync = () => { if (!syncPending) return; syncPending = false; refreshAfterRun() }
-    es.addEventListener('change', () => {
-      if (automation) return
-      // R7: an OPEN run panel is never RELOADED away — not while a run streams into it, and not once it
-      // has finished. But a finished run DID change the derived state, so refresh it IN PLACE (records,
-      // state chips, verdicts, the reader) without a reload; the panel and its log stay put.
-      if (!panel.hidden) { scheduleSync(); return }
-      clearTimeout(changePending)
-      changePending = setTimeout(() => {
-        // The conflicts view keeps itself current and holds unsaved picks and a note field. A full
-        // reload there would throw away a sentence you were half way through typing, so it refreshes
-        // in place instead — the one view on the board that owns its own state.
-        if (!document.getElementById('cfview').hidden) { loadConflicts(); return }
-        // init holds a half-filled form too — refresh the found table in place, never reload it out
-        if (!document.getElementById('initview').hidden) { loadCrawl(); return }
-        // how-it-works only ever needs its project cards refreshed — a project added a skill, say — and
-        // a full reload would drop you back on the board, so refresh in place like the other tool views
-        if (!document.getElementById('howview').hidden) { loadHow(); return }
-        // …and a screen detail with an OPEN READER refreshes in place too, so a background run's
-        // change events never yank your reading position to the top (the human, 2026-09-02)
-        reloadOrRefreshInPlace()
-      }, 800)
-    })
-    es.addEventListener('run', e => {
-      const d = JSON.parse(e.data)
-      if (d.state === 'started') {
-        setRunning(true)
-        // watch mode starts runs nobody clicked — show what is happening without stealing focus
-        if (panel.hidden) { rplog.textContent = ''; runDone = false }
-        document.getElementById('rptitle').textContent =
-          (d.screen === 'all' ? 'all tests' : d.screen + ' · test.spec.ts')
-      } else if (d.state === 'line') {
-        rplog.textContent += d.line + '\n'
-        rplog.scrollTop = rplog.scrollHeight
-      } else if (d.state === 'done') {
-        runDone = true
-        setRunning(false)
-        document.getElementById('rpcancel').disabled = true
-        // a scan or a rewrite changes what is waiting on you — the header count has to follow;
-        // a crawl changes what the init "what was found" table should show
-        loadConflicts()
-        if (!document.getElementById('initview').hidden) loadCrawl()
-        // A watch-mode run finishes with the panel still closed (nobody opened it). The board's own
-        // rebuild fires a change event that refreshes it, so there is nothing to reload here — and
-        // there is no longer any "background" run to announce.
-        rpchip.className = 'chip ' + (d.ok ? 'ok' : 'bad')
-        rpchip.innerHTML = '<span class="dot"></span>' + (d.ok ? 'passed' : 'failed')
-        rplog.textContent += '\n' + (d.note || ((d.total - d.failed) + ' of ' + d.total + ' passing')) +
-          ' · ' + Math.round(d.ms / 100) / 10 + 's\n'
-        rplog.scrollTop = rplog.scrollHeight
-        loadRuns()
-        // the run changed the board's derived state; with the panel open (R7: never reloaded away),
-        // sync it in place. Fire on the rebuild's change event, or a short fallback if none follows.
-        if (!panel.hidden && !automation) { syncPending = true; setTimeout(scheduleSync, 800) }
-      }
-    })
+    es.addEventListener('change', () => { if (automation) return; onLiveChange() })
+    es.addEventListener('run', e => onLiveRun(JSON.parse(e.data)))
   } catch (e) { /* served statically — no live reload, everything else still works */ }
