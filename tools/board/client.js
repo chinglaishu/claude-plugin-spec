@@ -240,8 +240,11 @@ const B = window.__BOARD__ || {}
   // a plain string builder composing a ready Claude prompt: the screen, the exact file, the target,
   // the cover set and the kg-e2e discipline. No DOM, no fetch, no write — the human runs the prompt
   // and keeps the words theirs.
-  var PROMPT_DISCIPLINE = 'The discipline that governs this change (kg-e2e — non-negotiable):\n' +
-    '- write the failing test first, and watch it go red\n' +
+  // The tail is the FOUR lines that keep the proof honest (board R15, amended by the human
+  // 2026-09-02): the red-first line was method rather than proof — "normal user won't get the
+  // write failing test first anyway" — and the kg-e2e skill still carries it for Claude. What stays
+  // is what stops a fake green: the tag, a real assertion, the value on camera, never weakening.
+  var PROMPT_DISCIPLINE = 'For the proof to count:\n' +
     '- tag the requirement with checkReq\n' +
     '- assert something that would fail without it\n' +
     '- keep every asserted value visible in the recording\n' +
@@ -437,7 +440,11 @@ const B = window.__BOARD__ || {}
           hash: sc.getAttribute('data-vizhash') || '',
           textHash: sc.getAttribute('data-texthash') || '',
           at: sc.getAttribute('data-vizat') || '',
-          stale: sc.getAttribute('data-stale') === '1'
+          stale: sc.getAttribute('data-stale') === '1',
+          // …and the OTHER staleness (the human, 2026-09-02): the app moved, not the words. The
+          // builder derives it by hashing the harvest on disk against the pin the drawing was made
+          // with (tools/build-board.mjs layoutStaleOf), so the reader only reads the mark.
+          layoutStale: sc.getAttribute('data-viz-layout-stale') === '1'
         }
         sc.remove()
       }
@@ -567,128 +574,109 @@ const B = window.__BOARD__ || {}
       tools.appendChild(bl); tools.appendChild(spdSelect())
       rmeta.appendChild(tools)
     }
-    // the requirement's ⋯ authoring menu (board R15) — LAST in the row so the controls sit to its
-    // left; fresh reader chrome, no move/restore hazard
-    rmeta.appendChild(promptMenu('requirement authoring actions', [
-      ['reword', 'Reword this requirement', reqCtx],
-      ['addreq', 'Add a requirement', reqCtx],
-      ['removereq', 'Remove this requirement', reqCtx],
-      ['addtest', 'Add a test to cover it', reqAddTestCtx],
-      ['schemwrong', 'The schematic doesn’t match my app', schemCtx]
-    ]))
-    read.appendChild(rmeta)
-    // THE REQUIREMENT, WHOLE (the human, 2026-08-28): the beat rows lead, the video and the authored
-    // prose follow — no "Full requirement" toggle any more. A requirement's text is what the board is
-    // FOR; hiding half of it behind a chevron made the reader guess whether there was more.
-    // Task 12 (the shape on first sight), kept and generalized: the storyline lives in .fscroll, the
-    // card's INTERNAL scroll region, between the fixed header above and the pinned .ffoot below — so
-    // the card shrinks to the viewport and the first beat is on screen from the first paint. The
-    // 'clipped' class drives the footer's hairline fade — the honest cue that more sits below.
-    const scroll = document.createElement('div'); scroll.className = 'fscroll'
-    scroll.appendChild(buildStoryline(r))
-    // ── the proof band: the covering test's header, the one video, the moved test node ───────
-    const evl = document.createElement('div'); evl.className = 'feval'
-    // the proof line names the PRIMARY first (under a failed status, the test whose run failed — A-1)
+    // THE COVERING TEST RIDES THE TITLE ROW TOO (the human, 2026-09-02: a proof header at the
+    // bottom of the card "is just weird" — "make it in the test title row as well, combine with the
+    // title row's current tool button, clear and clean"). So the row reads, left to right: id · chip
+    // · TITLE · play · speed · TEST ⟨mark name Run⟩ · ⋯ — and the one ⋯ carries EVERYTHING that was
+    // split across two menus before: the test's wired Run-in-background / Logs / Steps, its add ·
+    // edit · remove, then the requirement's own reword / add / remove / schematic-wrong. Nothing is
+    // left beneath the beat rows: no proof header, no prose (see the fscroll note below).
+    // The mark tracks the requirement's DERIVED status (board R4), the same fold that names the
+    // chip, so it can never read green under a ✗ chip (rule 3): ✓ only when proven, ✗ under a failed
+    // requirement, ◌ otherwise — and the drift of a Changed requirement is said on the mark's title
+    // (the chip beside it already spells ◈ Changed in words; hue never alone).
     const ordered = primary ? [primary].concat(cov.filter(function (t) { return t !== primary })) : cov
     const flows = ordered.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
+    const proved = r.status === 'passed' || r.status === 'changed'
+    const ptop = document.createElement('div'); ptop.className = 'fptop'
+    const tl = document.createElement('span'); tl.className = 'fbarl'; tl.textContent = 'test'
+    const mk = document.createElement('span')
+    const acts = document.createElement('div'); acts.className = 'fpacts'
+    const tacts = primary && primary.querySelector('.tacts')
+    const runWatch = tacts && tacts.querySelector('.runone[data-headed]')
+    const runBg = tacts && tacts.querySelector('.runone:not([data-headed])')
+    const logBtn = primary && primary.querySelector('[data-log]')
+    const stepBtn = primary && primary.querySelector('[data-steps]')
+    ptop.appendChild(tl)
     if (cov.length) {
       const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
       const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
-      const proved = r.status === 'passed' || r.status === 'changed'
-      const ph = document.createElement('div'); ph.className = 'fphead'
-      // THE PROOF HEADER IS THE COVERING TEST'S NAME (the human, 2026-08-25): no "THE PROOF" label,
-      // no "proven by / covered by", no unit/flow badge, no "+N more cover it" — a small pass/fail/
-      // not-run MARK leads (the honesty cue that replaces the proven/covered word, so a ✗ run can
-      // never read as green — rule 3), then the test's own name, then the wired Run + ⋯. Coverage is
-      // still many-to-many by tag (R5): the full list of covering tests lives in the List view and on
-      // the baked tags; the header names the PRIMARY (under a failed status, the test that failed).
-      // the MARK tracks the requirement's DERIVED status (board R4) — the same fold that names the
-      // chip — so the header can never read green under a ✗ chip (rule 3): ✓ only when proven, ✗
-      // under a failed requirement, ◌ otherwise (untested / not-reached / covered-not-yet-run).
-      const mark = proved ? '<span class="fpm pass" title="proven">✓</span>'
-        : r.status === 'failed' ? '<span class="fpm fail" title="failed">✗</span>'
-          : '<span class="fpm none" title="' + eh(vword) + '">◌</span>'
-      const ptop = document.createElement('div'); ptop.className = 'fptop'
-      ptop.innerHTML = mark + '<span class="fpname" title="' + eh(flows[0] || '') + '">' + eh(flows[0] || '') + '</span>'
-      const acts = document.createElement('div'); acts.className = 'fpacts'
-      ptop.appendChild(acts); ph.appendChild(ptop)
-      if (r.status === 'changed') {
-        const sn = document.createElement('div'); sn.className = 'stalenote'
-        sn.innerHTML = '◈ the requirement was <b>edited after this proof ran</b> — re-run to re-verify'
-        ph.appendChild(sn)
-      } else if (r.status === 'untested' || r.status === 'not-reached') {
-        // THE HONEST GAP, moved up out of the retired proof band (the human, 2026-09-02 — the band
-        // went with the video). A requirement that has a covering test but no passing assertion must
-        // still say so IN WORDS and offer the next move (rule 3); the band used to carry this line,
-        // so it moves here rather than disappearing with it.
-        ph.appendChild(noProofYet(dt, r))
-      } else if (!proved && vstate !== 'fail') {
-        const sn = document.createElement('div'); sn.className = 'stalenote'
-        sn.textContent = 'covered, not proven — ' + vword
-        ph.appendChild(sn)
+      if (proved) {
+        mk.className = 'fpm pass'; mk.textContent = '✓'
+        mk.title = r.status === 'changed'
+          ? 'proven — but the requirement was edited after this proof ran; re-run to re-verify' : 'proven'
+      } else if (r.status === 'failed') {
+        mk.className = 'fpm fail'; mk.textContent = '✗'; mk.title = 'failed'
+      } else {
+        mk.className = 'fpm none'; mk.textContent = '◌'
+        mk.title = r.status === 'not-reached' ? 'no proof yet — the flow stopped before this step'
+          : 'no proof yet — covered, ' + vword
       }
-      evl.appendChild(ph)
-      // relocate the wired per-test controls into the proof header: Run (watchable) always visible,
-      // Run in background / Logs / Steps behind the ⋯ menu — the REAL nodes, moved and undone on leave
-      const tacts = primary.querySelector('.tacts')
-      const runWatch = tacts && tacts.querySelector('.runone[data-headed]')
-      const runBg = tacts && tacts.querySelector('.runone:not([data-headed])')
-      const logBtn = primary.querySelector('[data-log]')
-      const stepBtn = primary.querySelector('[data-steps]')
+      const nm = document.createElement('span'); nm.className = 'fpname'
+      nm.title = flows[0] || ''; nm.textContent = flows[0] || ''
+      ptop.appendChild(mk); ptop.appendChild(nm); ptop.appendChild(acts)
+      // the wired per-test Run (watchable) — the REAL node, moved and undone on leave
       if (runWatch) move(runWatch, acts, false)
-      {
-        const testCtx = function () {
-          const ttlEl = primary.querySelector('.ttl')
-          return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title,
-            testTitle: primary.getAttribute('data-title') || (ttlEl ? ttlEl.textContent.trim() : ''),
-            coverIds: [].slice.call(primary.querySelectorAll('.tags .tag')).map(function (el) { return el.getAttribute('data-r') }),
-            reqList: screenReqList(dt) }
-        }
-        const addCtx = function () { const c = testCtx(); c.coverIds = [r.id]; return c }
-        const menu = document.createElement('div'); menu.className = 'fmenu'
-        const mbtn = document.createElement('button'); mbtn.className = 'btn sm fmenubtn'
-        mbtn.setAttribute('aria-label', 'run, log and authoring actions'); mbtn.textContent = '⋯'
-        const pop = document.createElement('div'); pop.className = 'fmenupop'
-        menu.appendChild(mbtn); menu.appendChild(pop); acts.appendChild(menu)
-        ;[runBg, logBtn, stepBtn].forEach(function (b) { if (b) move(b, pop, false) })
-        if (runBg || logBtn || stepBtn) {
-          const d = document.createElement('div'); d.className = 'fmdiv'; pop.appendChild(d)
-        }
-        pop.appendChild(promptItem('addtest', 'Add a test', addCtx))
+    } else {
+      // no covering test — the honest gap in the same shape (rule 3): the ◌ mark, the words, and
+      // the one next move where Run would be
+      mk.className = 'fpm none'; mk.textContent = '◌'; mk.title = 'no test yet'
+      const nm = document.createElement('span'); nm.className = 'fpnone'; nm.textContent = 'no test yet'
+      ptop.appendChild(mk); ptop.appendChild(nm); ptop.appendChild(acts)
+      acts.appendChild(writeTestBtn(dt, r))
+    }
+    rmeta.appendChild(ptop)
+    // ONE ⋯ for the card (board R15) — LAST in the row. Three groups, two dividers: the test's
+    // wired run/log/steps (the real nodes, moved), the test's authoring, the requirement's authoring.
+    // "Add a test" is said ONCE (it was on both of the old menus).
+    {
+      const testCtx = function () {
+        const ttlEl = primary && primary.querySelector('.ttl')
+        return { screen: dt.dataset.screen, reqId: r.id, reqTitle: r.title,
+          testTitle: primary ? (primary.getAttribute('data-title') || (ttlEl ? ttlEl.textContent.trim() : '')) : '',
+          coverIds: primary ? [].slice.call(primary.querySelectorAll('.tags .tag')).map(function (el) { return el.getAttribute('data-r') }) : [r.id],
+          reqList: screenReqList(dt) }
+      }
+      const menu = promptMenu('run, log and authoring actions', [])
+      const pop = menu.querySelector('.fmenupop')
+      ;[runBg, logBtn, stepBtn].forEach(function (b) { if (b) move(b, pop, false) })
+      const div = function () { const d = document.createElement('div'); d.className = 'fmdiv'; pop.appendChild(d) }
+      if (runBg || logBtn || stepBtn) div()
+      pop.appendChild(promptItem('addtest', 'Add a test', reqAddTestCtx))
+      if (primary) {
         pop.appendChild(promptItem('edittest', 'Edit this test', testCtx))
         pop.appendChild(promptItem('removetest', 'Remove this test', testCtx))
-        mbtn.addEventListener('click', function (e) { e.stopPropagation(); menu.classList.toggle('open') })
-        pop.addEventListener('click', function () { menu.classList.remove('open') })  // any pick closes it
       }
-    } else {
-      // no covering test — the proof header carries the honest gap in the same .fptop shape, no
-      // "The proof" label (the human, 2026-08-25): the ◌ mark leads, then the ungreen line
-      const ph = document.createElement('div'); ph.className = 'fphead'
-      ph.innerHTML = '<div class="fptop"><span class="fpm none" title="no test yet">◌</span>' +
-        '<span class="fpnone">No test asserts this yet — honestly ungreen, not hidden.</span></div>'
-      ph.appendChild(noProofYet(dt, r, true))   // …and the next move, where the band used to offer it
-      evl.appendChild(ph)
+      div()
+      pop.appendChild(promptItem('reword', 'Reword this requirement', reqCtx))
+      pop.appendChild(promptItem('addreq', 'Add a requirement', reqCtx))
+      pop.appendChild(promptItem('removereq', 'Remove this requirement', reqCtx))
+      pop.appendChild(promptItem('schemwrong', 'The schematic doesn’t match my app', schemCtx))
+      rmeta.appendChild(menu)
     }
-    // NO PROOF BAND (the human, 2026-09-02: "remove the full flow video from focus mode"). What stood
-    // here — the covering test's bar, a failing run's filmstrip, the pinned-era watermark and one
-    // full-width video — is gone with buildMedia: the recording lives in the FLOW view, which is what
-    // it is for, and the proof a reader needs while reading a requirement is the per-beat rows above.
-    // The honest words did NOT go with it: the proof header still names the covering test behind a
-    // pass/fail/none mark, still carries the Changed re-verify note, and still says "no proof yet ·
-    // ＋ write the failing test" (noProofYet) where there is nothing green to show.
-    // the moved covering test itself — its proof-frame strip stays visible here (board R14), the
-    // rest of its chrome folded away; loadRuns folds it whenever it is home in the pane
+    read.appendChild(rmeta)
+    // THE STORYLINE, ALONE (the human, 2026-09-02: "remove the whole thing as well" — the authored
+    // paragraph that followed the rows; and the proof header above it moved up into the title row).
+    // The beat rows ARE the requirement in the reader: the Given / When→Then words, the drawing and
+    // the harvested proof, row by row. The prose stays where it is authored (prd.md) and on the baked
+    // source row; a paragraph restating the rows beneath them was read once and scrolled past after.
+    // Task 12 (the shape on first sight), kept: the storyline lives in .fscroll, the card's INTERNAL
+    // scroll region, between the fixed header above and the pinned .ffoot below — so the card shrinks
+    // to the viewport and the first beat is on screen from the first paint. The 'clipped' class
+    // drives the footer's hairline fade — the honest cue that more sits below.
+    const scroll = document.createElement('div'); scroll.className = 'fscroll'
+    scroll.appendChild(buildStoryline(r))
+    read.appendChild(scroll)
+    // the moved covering test itself — kept in the card, HIDDEN: its .tstlog / .tststeps slots are
+    // what the header's Logs / Steps read, and loadRuns folds it whenever it is home in the pane
+    // (close-fold-reopen, CLAUDE.md). Nothing of it shows; the title row is its face.
+    const evl = document.createElement('div'); evl.className = 'feval'; evl.hidden = true
     if (primary) {
       const ev = document.createElement('div'); ev.className = 'fev'
       evl.appendChild(ev)
       move(primary, ev, true)
     }
-    scroll.appendChild(evl)
-    const fbody = document.createElement('div')
-    fbody.className = 'fbody' + (r.behHtml ? ' fprose' : '')
-    fbody.innerHTML = r.proseHtml
-    scroll.appendChild(fbody)
-    read.appendChild(scroll)
+    read.appendChild(evl)
     const foot = document.createElement('div'); foot.className = 'ffoot'
     const syncClip = function () {
       read.classList.toggle('clipped', scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop > 1)
@@ -1358,8 +1346,9 @@ const B = window.__BOARD__ || {}
     return {
       kind: mirror ? 'mirror' : 'archetype',
       mark: mirror ? '▤' : '◇',
-      stale: !!(v && v.stale),
-      text: base + ((v && v.stale) ? ' — the text moved since it was drawn' : '')
+      stale: !!(v && (v.stale || v.layoutStale)),
+      text: base + ((v && v.stale) ? ' — the text moved since it was drawn' : '') +
+        ((v && v.layoutStale) ? ' — the app’s layout moved since it was drawn' : '')
     }
   }
   function buildStoryline (r) {
@@ -1594,14 +1583,23 @@ const B = window.__BOARD__ || {}
       return el
     }
 
-    wrap.className = 'fstory' + (v && v.stale ? ' isstale' : '')
+    const isStale = !!(v && (v.stale || v.layoutStale))
+    wrap.className = 'fstory' + (isStale ? ' isstale' : '')
     wrap.style.setProperty('--spd', String(PLAY_SPD))
     if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
     const body = document.createElement('div'); body.className = 'sbwrap'
-    if (v && v.stale) {
+    if (isStale) {
+      // ONE BANNER, TWO REASONS (the human, 2026-09-02: "make sure the gap between schematic and
+      // proof will not exist again"). A drawing stops being true two ways — the requirement is
+      // REWORDED, or the APP MOVES and the harvest beside it is newer than the picture — and both
+      // can be true at once, so each says its own line instead of one standing in for the other.
+      // Same quiet grey either way: it is a note about the drawing, never a verdict on the proof.
       const sn = document.createElement('div'); sn.className = 'sbstale'
-      sn.innerHTML = '<b>stale — text changed</b><span>the requirement was reworded after this was drawn' +
-        (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn on the next viz pass</span>'
+      const head = []; const why = []
+      if (v.stale) { head.push('text changed'); why.push('the requirement was reworded after this was drawn') }
+      if (v.layoutStale) { head.push('layout moved'); why.push('the app’s layout moved since this was drawn') }
+      sn.innerHTML = '<b>stale — ' + head.join(' · ') + '</b><span>' + why.join('; ') +
+        (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn at the next fold</span>'
       body.appendChild(sn)
     }
     body.appendChild(headRow())
@@ -1703,35 +1701,21 @@ const B = window.__BOARD__ || {}
     return wrap
   }
 
-  // THE PROOF BAND IS GONE (the human, 2026-09-02: "remove the full flow video from focus mode").
-  // buildMedia rendered the whole-requirement band beneath the beat rows — the covering test's bar
-  // (name · proves R · run id · pinned / ✗ marks), a failing run's own frames as a filmstrip with the
-  // expected-vs-actual beside it, the pinned-era watermark, and ONE full-width video: the screen's
-  // committed recording seeked to this requirement's moment, with a ▶ beat n jump per beat. All of it
-  // is removed. The recording is the FLOW view's subject (board R13), where it is cut at proves-steps
-  // and scrubbed by a chapter rail — a second, smaller copy of it under every requirement was the
-  // same artifact shown worse, and it pushed the rows that ARE the proof off the screen.
-  // What did NOT go with it is the honest word: the proof header still names the covering test behind
-  // a pass/fail/none mark, still carries the Changed re-verify note, and — here — still says "no proof
-  // yet" and offers the one next move where nothing green exists (rule 3). A failing requirement reads
-  // ✗ on that mark, and its beat rows carry the harvested red frames.
-  // `said` \u2014 the caller's line already carried the gap in words (the no-covering-test header), so the
-  // note is the next MOVE alone; saying "no proof yet" twice under each other is the kind of chrome
-  // this pass is removing.
-  function noProofYet (dt, r, said) {
-    const no = document.createElement('div'); no.className = 'noev'
-    const b = document.createElement('b')
-    b.textContent = r.status === 'not-reached'
-      ? '\u25CC no proof yet \u2014 the flow stopped before this step' : '\u25CB no proof yet'
+  // THE PROOF BAND IS GONE (the human, 2026-09-02: "remove the full flow video from focus mode"),
+  // and so is the proof HEADER that briefly replaced it under the rows (the same day: the covering
+  // test rides the TITLE ROW). buildMedia rendered the whole-requirement band beneath the beat rows —
+  // the covering test's bar, a failing run's filmstrip, the pinned-era watermark and ONE full-width
+  // video; the recording is the FLOW view's subject (board R13). What did NOT go: the honest word.
+  // The title row's mark reads ✓ / ✗ / ◌ off the derived status, and where NO test covers the
+  // requirement the row offers the one next move — this button, where Run would otherwise be.
+  function writeTestBtn (dt, r) {
     const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn sm'
     // data-prompt marks the click as a sheet-OPENING one, so the prompt sheet's outside-click
     // closer does not shut it in the same bubble (the [data-log] pattern)
     btn.dataset.prompt = 'addtest'
     btn.textContent = '\uFF0B write the failing test'
     btn.addEventListener('click', function () { openAddTest(dt, [r.id]) })
-    if (!said) no.appendChild(b)
-    no.appendChild(btn)
-    return no
+    return btn
   }
 
   // A pager dot's STATE and TITLE derive from its baked requirement row (data-status, .rt) — called
@@ -2738,10 +2722,11 @@ const B = window.__BOARD__ || {}
   const logsheet = document.getElementById('logsheet')
   const logbody = document.getElementById('logbody')
   // The Logs / Steps buttons are RELOCATED out of their .test row into the focus reader's ⋯ menu
-  // (board R13/#4), so `closest('.test')` finds nothing there — fall back to the reader's moved test
-  // node (.feval .fev .test), which still carries the .tstlog / .tststeps slots the popups read.
+  // (board R13/#4; on the TITLE ROW since 2026-09-02), so `closest('.test')` finds nothing there —
+  // fall back to the reading card's moved test node (.fread .feval .fev .test, a hidden holder),
+  // which still carries the .tstlog / .tststeps slots the popups read.
   const ownerTest = el => el.closest('.test') ||
-    (el.closest('.feval') ? el.closest('.feval').querySelector('.fev .test') : null)
+    (el.closest('.fread') ? el.closest('.fread').querySelector('.feval .fev .test') : null)
   for (const l of document.querySelectorAll('[data-log]'))
     l.addEventListener('click', e => {
       e.stopPropagation()

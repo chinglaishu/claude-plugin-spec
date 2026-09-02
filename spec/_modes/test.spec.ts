@@ -294,8 +294,10 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     // there is no control left to click, and none is needed
     await expect(dt.locator('.focusov .fread .prose-t')).toHaveCount(0)
     await expect(dt.locator('.focusov .fread > .ffoot button')).toHaveCount(0)
-    await expect(dt.locator('.fread .fbody')).toBeVisible()
-    await expect(dt.locator('.fread .fbody')).toContainText('Supporting prose under the shape.')
+    // …the prose block itself is GONE from the reader (the human, 2026-09-02: "remove the whole
+    // thing as well") — the rows are the requirement; the paragraph stays in prd.md
+    await expect(dt.locator('.fread .fbody')).toHaveCount(0)
+    await expect(dt.locator('.focusov .fread')).not.toContainText('Supporting prose under the shape.')
 
     // THE BAKED SOURCE ROW (hidden — count/text reads work there): the block renders inside R1's
     // .body, five labelled rows carrying the text
@@ -590,18 +592,19 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       // real passing test, so it reads with the ✓ (pass) mark and names the drift on its own stale
       // note, never the self-contradictory "not passed yet". (2026-08-25: the proof header is the
       // covering test's NAME behind a pass/fail mark; the "proven by / covered by" WORD is gone.)
-      const fptop = dt.locator('.focusov .feval .fptop')
+      const fptop = dt.locator('.focusov .frmeta .fptop')                   // on the TITLE ROW since 2026-09-02
       await expect(fptop.locator('.fpm')).toHaveClass(/\bpass\b/)          // ✓ — it WAS proved
       await expect(fptop.locator('.fpname')).not.toBeEmpty()               // the covering test's name
-      await expect(dt.locator('.focusov .feval')).not.toContainText('not passed yet')
-      await expect(dt.locator('.focusov .feval .stalenote')).toContainText('re-verify')
+      await expect(dt.locator('.focusov .fread')).not.toContainText('not passed yet')
+      await expect(fptop.locator('.fpm')).toHaveAttribute('title', /re-verify/)
       // the drift is said in WORDS, and only in words (2026-09-02): the media band that carried the
       // "pinned era" bar and the watermark over it is gone with the reader's video, so the stalenote
       // asserted just above IS the Changed cue in the reader — assert the retired pair is absent
       // rather than quietly dropping the leg (the R8 assert-the-gone precedent)
       await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
       await expect(dt.locator('.focusov .feval .wmark')).toHaveCount(0)
-      await expect(dt.locator('.focusov .feval .stalenote')).toContainText('edited after this proof ran')
+      await expect(fptop.locator('.fpm')).toHaveAttribute('title', /edited after this proof ran/)
+      await expect(dt.locator('.focusov .fread .stalenote')).toHaveCount(0)   // no note under the name — there is no "under"
       // LIST: the row's state cell spells the fifth word out — never a plain Passed
       await dt.locator('.viewseg .vseg[data-view="grid"]').click()
       const row = dt.locator('.gridview .lst-card[data-r="R1"]')
@@ -610,7 +613,7 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(row.locator('.lst-head .lpf.passed')).toHaveCount(0)
       // …and the open row (the Focus body itself) names the drift on its proof line
       await row.locator('.lst-head').click()
-      await expect(row.locator('.lst-body .feval .stalenote')).toContainText('re-verify')
+      await expect(row.locator('.lst-body .frmeta .fptop .fpm')).toHaveAttribute('title', /re-verify/)
     }
   } finally { restore() }
 })

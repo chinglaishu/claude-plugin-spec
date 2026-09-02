@@ -138,25 +138,31 @@ reads in Grid rows and the Focus reader, which the tests assert.*
 
 The detail header carries a toggle — **Focus / List / Flow**. **Focus** (the default) reads one
 requirement at a time, as **one card read top to bottom**: the id · state · **title** lead one
-header row, then a slim bar carrying the reader's **one play speed** and its **play mode** (auto ↔
-step, R20), then the requirement's **storyline — a row per beat** under
+header row, which also carries the reader's **one play speed** and its **play mode** (auto ↔
+step, R20) *(a slim bar of their own until 2026-09-02, when the human moved them onto the title row)*,
+then the requirement's **storyline — a row per beat** under
 a **behavior · schematic · proof** header row *(the column-order toggle this bar carried was removed
 2026-08-30 with R21's rewrite — behaviour always leads)*. Each row carries that beat's three cells side by
 side: the **drawn schematic** frame (a short, looping animation of the drawing performing *that
 beat's* action, quiet grey when stale, parked as a still under reduced motion), the beat's **Given /
 When→Then words**, and that beat's **own harvested proof** — its before/after frames looping by
 default, stills one click away — with the drawing and the photograph aimed at the **same region** by
-one shared **zoom camera** that every cell flips together. Below the rows sits the **proof header**
-for the whole requirement, and nothing else: it **names the covering test** (a small pass/fail mark,
-the test's own name, then Run + ⋯), says the drift in words when the text has moved past its proof,
-and — where nothing green exists — reads "no proof yet · ＋ write the failing test". **There is no
+one shared **zoom camera** that every cell flips together. The header row also **names the covering
+test** — a small pass/fail/none mark, the test's own name, then Run — and ends in the card's **one
+⋯**, which carries the test's actions (run in background · logs · steps · add · edit · remove a test)
+and the requirement's (reword · add · remove · the schematic doesn't match my app). Where no test
+covers the requirement that line reads "◌ no test yet · ＋ write the failing test"; a Changed
+requirement's drift is spelled by its ◈ Changed chip and named on the mark. **Nothing sits beneath
+the beat rows** — no proof header, no video, no prose *(the human, 2026-09-02: a proof header at the
+bottom of the card "is just weird", so it joined the title row and its ⋯ merged with the row's own;
+and "remove the whole thing as well" — the authored paragraph left the reader: the rows ARE the
+requirement here, and the paragraph lives in prd.md and on the baked source row)*. **There is no
 video in the reader**: the recording is the Flow view's, cut at proves-steps and scrubbed by its
 chapter rail, and a second smaller copy of it under every requirement only pushed the rows that ARE
 the proof off the screen *(the human, 2026-09-02: "remove the full flow video from focus mode" — the
 band that held it went with it, filmstrip, pinned-era watermark and all; a failing run's cut frames
-are read on the test's own evidence, and a failure still marks the proof header ✗ over the beat rows'
-harvested red frames)*. The authored
-**prose is always shown** beneath it, never folded away. **List** is one collapsed row per requirement (state · id · title ·
+are read on the test's own evidence, and a failure still marks the title row's test mark ✗ over the beat rows'
+harvested red frames)*. **List** is one collapsed row per requirement (state · id · title ·
 beat count · test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in
 place.
 **Flow** plays the authored flows: the one recording cut at proves-steps, **one chapter-thumbnail
@@ -209,6 +215,12 @@ it: its schematic scrubs the paused animation across that beat's own time-window
      (CLAUDE.md rule 6), so it is corrected here with the reason attached. The Given/When→Then block
      is deliberately untouched — the toggle it describes is unchanged, and its committed schematic is
      pinned to that text. -->
+*Reworded 2026-09-02, later the same day (the human): the proof HEADER left the bottom of the card for
+the TITLE ROW — mark · covering test's name · Run, and ONE ⋯ carrying the test's and the requirement's
+actions together — and the authored prose beneath the rows is gone from the reader ("remove the whole
+thing as well"). The play controls had joined the title row earlier that day. Presentation only;
+nothing derived changes, and nothing green is claimed anywhere it was not before.*
+
 *Reworded 2026-09-02 (the human: "remove the full flow video from focus mode"): the proof BAND under
 the rows is gone — its covering-test bar, its failure filmstrip, its pinned-era watermark and its one
 full-width video. What is left beneath the beat rows is the proof HEADER's words (the covering test
@@ -291,6 +303,8 @@ header, and the cut frames live on the test's evidence.*
 - **Then** it falls back to the archetype drawing, or to the labelled beats under an honest "no schematic drawn yet" — never a guessed picture
 - **When** the requirement's text moves past the drawing
 - **Then** the storyline says so with its stale banner and renders the drawing quiet — there is no per-cell "drawn from the app's measured layout" caption *(removed 2026-09-02, the human: "avoid useless things"; the ⋯ menu's "the schematic doesn't match my app" prompt is still the R15-pattern escape, and it still carries the drawing's provenance into the prompt)*
+- **When** the harvest's geometry moves past the drawing
+- **Then** the same stale banner says the layout moved, and the proof gate refuses the drawing until it is redrawn — a mirror that has stopped matching what the run measured is never shown as current
 
 The drawn half of a beat row used to be an **archetype**: a house diagram chosen from the *shape* of
 the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
@@ -314,6 +328,16 @@ wrong value, ringed — and never the value the requirement wanted; the verdict 
 the verdict itself *(the human, 2026-09-02, keeping the lead's recommendation over drawing the
 intended value into the mirror)*.
 
+**The gap between the drawing and the proof cannot open again** *(the human, 2026-09-02: "make sure
+the gap between schematic and proof will not exist again")*. Twice the kit quietly stopped drawing
+something the harvest had measured — the tick box, then the row's own leaves — and nothing on the
+board said so until a person looked at a beat row. So the mirror is now guarded three ways, all
+derived, none stored: every frame is checked against its OWN skeleton as it is drawn
+(`mirrorGaps`, reported by the viz pass); `npm run proof mirror` refuses a committed drawing that
+has a gap or whose layout pin has moved; and the storyline's stale banner reads BOTH reasons a
+drawing can stop being true — the words changed, or the app did. A gapped drawing is still written
+and still shown, because a gapped mirror beats no mirror — but it is never shown as current.
+
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
 Amended 2026-08-29 on the human's ask (both cells must reflect the When and the Then, with the
@@ -322,7 +346,9 @@ beat scene by scene rather than ringing only its outcome. Amended 2026-09-02 on 
 the mirror renders real text and input values at their measured sizes (a high-fidelity drawing, not
 a bar skeleton), and the per-cell "drawn from…" provenance caption is removed — staleness rides the
 storyline's stale banner, and the ⋯ "schematic doesn't match my app" escape still carries the
-provenance into its prompt.*
+provenance into its prompt. Amended 2026-09-02 on the human's standing order ("make sure the gap
+between schematic and proof will not exist again"): the fourth beat — a harvest that has moved past
+its drawing is said by the banner and refused by the proof gate.*
 
 <!-- Proven by spec/board/test.spec.ts, "The schematic mirrors the real UI …" — beat 1 reads a
      harvested board requirement's committed drawing off the live reader and asserts the mirror
@@ -624,9 +650,12 @@ should cover**. Adding a test is reachable from a requirement even when nothing 
 requirement that most needs a test is the one with none. Each action
 opens a **ready prompt for Claude** — pre-loaded with the screen, the exact file
 (`spec/<screen>/prd.md` or `spec/<screen>/test.spec.ts`), the requirement or test in question, and
-the discipline that governs the change (**write the failing test first, tag the requirement with
-`checkReq`, assert something that would fail without it, keep every asserted value visible in the
-recording, and never weaken a test to go green**) — and copies it to the clipboard. You run it, read
+the four lines that keep the proof honest (**tag the requirement with `checkReq`, assert something
+that would fail without it, keep every asserted value visible in the recording, and never weaken a
+test to go green**) — and copies it to the clipboard. *(The prompt carried a fifth line, "write the
+failing test first, and watch it go red", until the human dropped it 2026-09-02: it is method, not
+proof — "normal user won't get the write failing test first anyway" — and the kg-e2e skill still holds
+Claude to it; the four that stay are what stop a fake green.)* You run it, read
 the diff, and keep the words yours. There is no in-board editor and no silent write: the board states
 the rule and hands off the work; a person, not the board, commits the meaning.
 

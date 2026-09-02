@@ -115,7 +115,10 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     await expect(body.locator('.fread .fstory .sbrow').first()).toBeVisible()
     await expect(body.locator('.fread .prose-t')).toHaveCount(0)           // no fold control left…
     await expect(body.locator('.fread > .ffoot button')).toHaveCount(0)    // …and nothing else in the footer either
-    await expect(body.locator('.fread .fbody p, .fread .fbody ul').first()).toBeVisible()
+    // …and NO PROSE BLOCK (the human, 2026-09-02: "remove the whole thing as well" — the authored
+    // paragraph under the rows): the beat rows ARE the requirement in the reader; the prose stays in
+    // prd.md and the baked source row, never in the reading card.
+    await expect(body.locator('.fread .fbody')).toHaveCount(0)
   })
 })
 
@@ -272,9 +275,9 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(ov.locator('.feval .fvlab')).toHaveCount(0)
     // what the reader DOES carry is the proof header — the covering test named behind its mark —
     // and the per-beat rows; the run's raw record is one ⋯ menu away, which is the rest of this leg
-    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()
-    await ov.locator('.feval .fmenubtn').click()
-    await ov.locator('.feval .fmenupop [data-steps]').click()
+    await expect(ov.locator('.frmeta .fptop .fpname')).not.toBeEmpty()
+    await ov.locator('.frmeta .fmenu .fmenubtn').click()
+    await ov.locator('.frmeta .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
     await expect(sheet).toHaveClass(/on/)
     await expect(sheet).toContainText('Check the result is what we expect')   // raw check, marked
@@ -501,7 +504,7 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-head`).click()
     const body = dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-body`)
     await expect(body.locator('.fread .frmeta .fid')).toHaveText(rid!)
-    await expect(body.locator('.feval .fptop .fpname')).toContainText(flow)   // the proof header names this very test, resolved by tag
+    await expect(body.locator('.frmeta .fptop .fpname')).toContainText(flow)   // the title row names this very test, resolved by tag
   })
 })
 
@@ -675,9 +678,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // …and the AUTHORED PROSE IS ALWAYS SHOWN beneath the rows (the human, 2026-08-28): the
     // 'Full requirement' toggle is gone, so the text is readable with NO interaction at all — a
     // reader that hid half of it behind a chevron fails here, and there is no chevron to click.
-    const prose = ov.locator('.fread .fbody')
-    await expect(prose).toBeVisible()
-    await expect(prose).toContainText('The detail header carries a toggle')
+    // …and NO AUTHORED PROSE under the rows (the human, 2026-09-02: "remove the whole thing as well"):
+    // the storyline IS the requirement in the reader; the paragraph lives in prd.md and the baked
+    // source row. Asserted absent (the R8 assert-the-gone precedent) so it cannot creep back.
+    await expect(ov.locator('.fread .fbody')).toHaveCount(0)
+    await expect(ov.locator('.fread')).not.toContainText('The detail header carries a toggle')
     await expect(ov.locator('.fread .prose-t')).toHaveCount(0)             // no fold control left…
     await expect(ov.locator('.fread > .ffoot button')).toHaveCount(0)      // …and nothing else in the footer either
     // NO TOGGLE (the human, 2026-08-26): storyboard and loop COMBINED — each row loops its OWN beat,
@@ -756,18 +761,26 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // THE PROOF on the RIGHT — the header NAMES the covering test (R13/R5, reworded 2026-08-25): a
     // pass/fail/none MARK, then the test's own name, then the wired Run + ⋯. No "THE PROOF" label, no
     // "proven by", no unit/flow badge, no "+N more cover it".
-    await expect(ov.locator('.feval .fphead')).toBeVisible()
-    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()                 // the covering test's name heads the proof
-    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\b(pass|fail|none)\b/) // the honesty mark leads it
-    await expect(ov.locator('.feval .fpby')).toHaveCount(0)                           // the old PROVEN BY proof line is gone
-    await expect(ov.locator('.feval .fprun')).toHaveCount(0)          // no separate "last run" line any more
-    await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
-    await expect(ov.locator('.feval .fpacts > .runone')).toBeVisible()        // Run always shown in the header
-    await expect(ov.locator('.feval .fpacts .fmenu .fmenubtn')).toHaveCount(1) // the rest behind ⋯
-    await expect(ov.locator('.feval .fmenupop [data-steps]')).toHaveCount(1)
-    await expect(ov.locator('.feval .fmenupop [data-log]')).toHaveCount(1)
-    await ov.locator('.feval .fmenubtn').click()
-    await ov.locator('.feval .fmenupop [data-log]').click()
+    // THE PROOF LINE RIDES THE TITLE ROW (the human, 2026-09-02: the covering test at the bottom of
+    // the card "is just weird" — it joins the header, combined with the row's existing ⋯). Nothing
+    // sits beneath the beat rows now: no proof header, no prose.
+    await expect(ov.locator('.feval .fphead')).toHaveCount(0)                            // no header under the rows
+    const tline = ov.locator('.fread > .frmeta .fptop')
+    await expect(tline).toBeVisible()
+    await expect(tline.locator('.fpname')).not.toBeEmpty()                           // the covering test's name, in the title row
+    await expect(tline.locator('.fpm')).toHaveClass(/\b(pass|fail|none)\b/)          // the honesty mark leads it
+    await expect(ov.locator('.fread .fpby, .fread .fprun')).toHaveCount(0)             // the old proof lines stay gone
+    await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)              // the moved node still feeds Logs / Steps
+    await expect(tline.locator('.fpacts > .runone')).toBeVisible()                    // Run always shown, on the row
+    await expect(ov.locator('.fread .frmeta .fmenu .fmenubtn')).toHaveCount(1)        // ONE ⋯ for the whole card…
+    await expect(ov.locator('.fread .fmenubtn')).toHaveCount(1)                       // …and none anywhere else in it
+    await expect(ov.locator('.frmeta .fmenupop [data-steps]')).toHaveCount(1)
+    await expect(ov.locator('.frmeta .fmenupop [data-log]')).toHaveCount(1)
+    await expect(ov.locator('.frmeta .fmenupop [data-prompt="edittest"]')).toHaveCount(1)   // the test's actions…
+    await expect(ov.locator('.frmeta .fmenupop [data-prompt="reword"]')).toHaveCount(1)     // …and the requirement's, in the same menu
+    await expect(ov.locator('.frmeta .fmenupop [data-prompt="addtest"]')).toHaveCount(1)    // said once, not twice
+    await ov.locator('.frmeta .fmenubtn').click()
+    await ov.locator('.frmeta .fmenupop [data-log]').click()
     await expect(page.locator('#logsheet')).toHaveClass(/\bon\b/)
     await page.locator('#logsheet [data-logclose]').click()
     await expect(ov.locator('.fcols, .fopen')).toHaveCount(0)
@@ -809,7 +822,7 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       'no pane-wide media preference is stored any more').toBeNull()
     // …and the proof still READS: the covering test named behind its mark, above the beat rows that
     // carry the harvested frames — the band's removal took chrome, never the proof itself
-    await expect(ov.locator('.feval .fptop .fpname')).not.toBeEmpty()
+    await expect(ov.locator('.frmeta .fptop .fpname')).not.toBeEmpty()
     await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first()).toBeAttached()
 
     // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. STEP is the
@@ -872,8 +885,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'failed')
     await reopen(evId!)
     await expect(media, 'still no band under a failure').toHaveCount(0)
-    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\bfail\b/)      // ✗ leads the proof line
-    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)      // ✗ leads the proof line
+    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
     await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first(),
       'the harvested frames still stand under a failure — the rows are the proof').toBeAttached()
 
@@ -882,8 +895,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'changed')
     await reopen(evId!)
     await expect(ov.locator('.feval .wmark')).toHaveCount(0)
-    await expect(ov.locator('.feval .stalenote')).toContainText('edited after this proof ran')
-    await expect(ov.locator('.feval .stalenote')).toContainText('re-verify')
+    // …on the title row's mark (the note that stood under the name went with the proof header,
+    // 2026-09-02): the chip already spells ◈ Changed, and the mark names the drift on hover
+    await expect(ov.locator('.fread .stalenote')).toHaveCount(0)
+    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveAttribute('title', /edited after this proof ran/)
+    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveAttribute('title', /re-verify/)
 
     // UNTESTED → the honest line and the next move, now in the proof HEADER where the band used to
     // carry them; the button still opens the add-test prompt with this requirement pre-picked
@@ -891,8 +907,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'untested')
     await reopen(evId!)
     await expect(ov.locator('.feval .fmedia')).toHaveCount(0)   // no frames, no video — nothing to show
-    await expect(ov.locator('.feval .fphead .noev')).toContainText('no proof yet')
-    await ov.locator('.feval .fphead .noev button').click()
+    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bnone\b/)           // ◌ — covered, nothing green
+    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await ov.locator('.frmeta .fmenubtn').click()
+    await ov.locator('.frmeta .fmenupop [data-prompt="addtest"]').click()
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
     await expect(page.locator('#promptbody')).toContainText('spec/board/test.spec.ts')
     await page.locator('#promptsheet [data-promptclose]').click()
@@ -956,8 +974,8 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(open13.locator('.fread .fstory .sbrow')).toHaveCount(2)  // the storyline leads here too (given + 1 beat)
     await expect(open13.locator('.fread .fstory .sbframe .pcbox .camsub svg')).toHaveCount(2) // each row's drawn still, in place too
     await expect(open13.locator('.fread .fstory .sbhead .sbhc')).toHaveCount(3)   // …under the same three column names
-    await expect(open13.locator('.fread .fbody')).toBeVisible()          // and the prose in full, no toggle
-    await expect(open13.locator('.feval .fphead')).toBeVisible()
+    await expect(open13.locator('.fread .fbody')).toHaveCount(0)         // no prose block (2026-09-02)
+    await expect(open13.locator('.fread > .frmeta .fptop')).toBeVisible()  // the proof line, in the title row
     // the ACCORDION: opening another row closes this one — one open row at a time, ids never collide
     const card2 = list.locator('.lst-card[data-r="R2"]')
     await card2.locator('.lst-head').click()
@@ -984,12 +1002,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.goto(`/#/board/${passedId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
-    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bpass\b/)   // ✓ — proven
+    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bpass\b/)   // ✓ — proven
     await page.goto(`/#/board/${otherId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
-    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bfail\b/)   // ✗ — a failed run never reads as green
-    await expect(dt.locator('.focusov .feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)   // ✗ — a failed run never reads as green
+    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
   })
 })
 
@@ -1000,6 +1018,11 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
 // copied — a requirement proven under somebody else's tag is not proven at all (R4/R6). What is new
 // is what the split exposed: R19's camera equality, R20's already-running loop, R21's persistence.
 import { parseBehavior } from '../../tools/behavior.mjs'
+// the drawing kit and its guard (the human, 2026-09-02: "make sure the gap between schematic and
+// proof will not exist again") — the board asks the SAME functions the viz pass and `npm run proof
+// mirror` ask, so this test cannot pass on a weaker reading of the drawing than the gate makes
+import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from '../../tools/viz.mjs'
+import { harvestOf } from '../../tools/proof-integrity.mjs'
 
 // The board's own harvested SPECIMENS: a requirement whose beats were photographed WITH their layout
 // skeletons and whose mirror drawing is committed beside them, in a form that splits beat by beat
@@ -1157,6 +1180,64 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     await page.locator('#promptsheet [data-promptclose]').click()
     const capCount = await ov.locator('.fread .fstory .sbprov').count()
     await hudCheck('the mirror is self-evident — no per-cell caption', '0 captions', String(capCount) + ' captions')
+  })
+
+  // beat 4 — THE GAP CANNOT OPEN AGAIN (the human, 2026-09-02: "make sure the gap between schematic
+  // and proof will not exist again"). Twice the kit quietly stopped drawing something the harvest had
+  // measured and only the human's eye caught it. Two halves of one guard, both asserted here:
+  //   (a) the COMMITTED drawing of a real harvested requirement contains everything its own
+  //       skeletons measured — frame by frame, through mirrorGaps: the very check `npm run proof
+  //       mirror` refuses a drawing on. This would fail with any element the renderer stops drawing.
+  //   (b) when the harvest's geometry moves past the drawing, the storyline SAYS SO — the same stale
+  //       banner, naming the layout rather than the words.
+  await checkReq('R18', async () => {
+    // A drawing that CLAIMS to be current is the one this holds to zero gaps: its layout pin still
+    // equals the harvest on disk. (A drawing the harvest has moved past is half (b)'s subject, not a
+    // renderer defect — and every drawing being behind at once would mean the viz pass has stopped
+    // running at the fold, which is why that case fails here instead of quietly finding nobody.)
+    const current = mirrorSpecimens().filter(sp =>
+      (/data-viz-layout="([^"]*)"/.exec(sp.svg) || ['', ''])[1] === layoutHash(harvestOf('spec', 'board', sp.rid)))
+    expect(current.length,
+      'at least one committed board drawing is current — the fold derives the schematics it folded')
+      .toBeGreaterThan(0)
+    const spec = current[0]
+    // (a) the committed file, against the very skeletons it was drawn from. renderWireframe reports
+    // which skeleton is which frame (one authority for the ordering); mirrorGaps asks the COMMITTED
+    // drawing — not a fresh render of it — whether every measured word, plate and ring landed.
+    const lays = harvestOf('spec', 'board', spec.rid)
+    expect(lays.length, 'the specimen keeps its harvest on disk').toBeGreaterThan(0)
+    const drawn = renderWireframe(lays, {})
+    const gaps: any[] = []
+    for (const fr of drawn.gaps) {
+      const body = frameGroup(spec.svg, fr.frame)
+      expect(body, `the committed drawing carries frame ${fr.frame}`).toBeTruthy()
+      for (const g of mirrorGaps(fr.layout, body, { focus: fr.focus, anchors: fr.anchors, h: fr.h })) {
+        gaps.push({ ...g, frame: fr.frame })
+      }
+    }
+    await hudCheck('the committed mirror draws everything the harvest measured',
+      '0 gaps in ' + drawn.gaps.length + ' frames',
+      (gaps.length ? gapSummary(gaps) : '0 gaps') + ' in ' + drawn.gaps.length + ' frames')
+    expect(gaps, 'a mirror that stopped drawing what the app measured is a broken mirror').toEqual([])
+    // (b) the harvest moves past the drawing → the banner says the LAYOUT moved. Forced onto the
+    // baked figure the way this file forces every other derived mark (the builder derives the real
+    // one by hashing the harvest on disk against the drawing's pin — tools/build-board.mjs
+    // layoutStaleOf), then hop-and-back so the reader rebuilds from it.
+    const hop2 = spec.rid === 'R2' ? 'R3' : 'R2'
+    const fig = dt.locator(`.reqpane .req[data-r="${spec.rid}"] .schematic`)
+    await fig.evaluate(el => el.setAttribute('data-viz-layout-stale', '1'))
+    await page.goto('/#/board/' + hop2)
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await reveal(ov.locator('.fread .fstory'))
+    await expect(ov.locator('.fread .fstory.isstale'), 'the storyline marks itself stale').toHaveCount(1)
+    const banner = ov.locator('.fread .fstory .sbstale')
+    await expect(banner).toBeVisible()
+    await expect(banner).toContainText('layout moved')
+    await hudCheck('the banner names the layout, not the words', 'layout moved',
+      ((await banner.locator('b').textContent()) || '').replace('stale — ', ''))
+    await expect(banner).toContainText('layout moved since this was drawn')
+    await fig.evaluate(el => el.removeAttribute('data-viz-layout-stale'))
   })
 })
 
@@ -1953,13 +2034,13 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.feval .fptop .fpm')).toHaveClass(/\bfail\b/)
-    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)
+    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
     await expect(ov.locator('.fread .fstory .sbrow .sbproof .fsteps img').first()).toBeAttached()
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.feval .fptop .fpm')).not.toHaveClass(/\bfail\b/)   // and only on a failure
+    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bfail\b/)   // and only on a failure
     // …and NO run-frame strip crowds the reader in either state: the per-beat harvest on the rows is
     // the proof there (2026-08-28), and since 2026-09-02 there is no band left to hold one
     await expect(ov.locator('.feval .fcell, .feval .fstrip')).toHaveCount(0)
@@ -2010,9 +2091,9 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await page.goto('/#/board/R15')
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R15')
     await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
-    await expect(dt.locator('.focusov .feval .fptop .fpm')).toHaveClass(/\bfail\b/)
+    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)
     // the proof line names the test whose run FAILED — never the passing one that also covers R15
-    await expect(dt.locator('.focusov .feval .fptop .fpname')).toHaveText(B_TITLE)   // the covering test's name heads the proof (2026-08-25)
+    await expect(dt.locator('.focusov .frmeta .fptop .fpname')).toHaveText(B_TITLE)   // the covering test's name heads the proof (2026-08-25)
     // and the failing run's own cut frame is still readable — on that test's own evidence row.
     // dt-scoped, not pane-scoped: this row is the reader's PRIMARY, so it is borrowed out of the
     // .testpane right now (count/class/text reads work on it wherever it sits — CLAUDE.md).
@@ -2227,15 +2308,15 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
     // a test's evidence is reached through the READER now (R13): the covering test's OWN node,
     // moved in wired — its Run affordances ride along wherever the test is shown
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)
-    await expect(ov.locator('.feval .fpacts [data-run]')).not.toHaveCount(0)
+    await expect(ov.locator('.frmeta .fpacts [data-run]')).not.toHaveCount(0)
     // its steps fold rides the moved row (kept, hidden — the reading card shows the clone)
     await expect(ov.locator('.feval .fev .test.infocus .fold')).toHaveCount(1)
     // the whole log opens in a FLOATING window, not a full-viewport scrim (a scrim suppresses the
     // board's own paint) — via the ⋯ menu's wired Logs button (the real node, relocated)
     const sheet = page.locator('#logsheet')
     await expect(sheet).toBeHidden()
-    await ov.locator('.feval .fmenubtn').click()
-    await ov.locator('.feval .fmenupop [data-log]').click()
+    await ov.locator('.frmeta .fmenubtn').click()
+    await ov.locator('.frmeta .fmenupop [data-log]').click()
     await expect(sheet).toHaveClass(/on/)
     const covers = await sheet.locator('.box').evaluate(el => {
       const r = el.getBoundingClientRect()
@@ -2584,7 +2665,12 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     // pre-loaded: the exact file, the target requirement, and the discipline — verbatim phrases
     await expect(body).toContainText('spec/board/prd.md')
     await expect(body).toContainText(reqId)
-    await expect(body).toContainText('write the failing test first')
+    // the discipline is the four lines that keep the PROOF honest (the human, 2026-09-02: the
+    // red-first line is method, not proof — a normal user "won't get the write failing test first
+    // anyway", and the kg-e2e skill still carries it for Claude); it is asserted ABSENT
+    await expect(body).not.toContainText('write the failing test first')
+    await expect(body).not.toContainText('non-negotiable')
+    await expect(body).toContainText('tag the requirement with checkReq')
     await expect(body).toContainText('assert something that would fail without it')
     await expect(body).toContainText('never weaken a test to go green')
     // a Copy button rides the sheet header, wired to the shared [data-copy] handler
@@ -2645,10 +2731,12 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
 
     // THE TEST ⋯ — folded into the proof header's EXISTING menu, below Run-in-background/Logs/Steps,
     // separated by a divider: add · edit · remove a test
-    const menu = ov.locator('.feval .fpacts .fmenu')
+    // — and since 2026-09-02 that menu IS the title row's one ⋯: run/log items, then the test's
+    // add · edit · remove, then the requirement's own actions, two dividers between the three groups
+    const menu = ov.locator('.fread > .frmeta .fmenu')
     await menu.locator('.fmenubtn').click()
     const pop = menu.locator('.fmenupop')
-    await expect(pop.locator('.fmdiv')).toHaveCount(1)
+    await expect(pop.locator('.fmdiv')).toHaveCount(2)
     await expect(pop.locator('[data-prompt="addtest"]')).toContainText(/add a test/i)
     await expect(pop.locator('[data-prompt="edittest"]')).toContainText(/edit/i)
     await expect(pop.locator('[data-prompt="removetest"]')).toContainText(/remove/i)

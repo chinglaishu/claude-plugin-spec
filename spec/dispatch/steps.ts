@@ -121,6 +121,13 @@ export async function refreshDerivedInPlace (page: Page, state: FlowState): Prom
   // background run once yanked the reader up on every SSE tick. Proven on a PLAIN refresh, where the
   // content height is unchanged so the restore is exact. (The state-flip refresh in (2) deliberately
   // shrinks R1's reader — a different concern — so the scroll is proven here, not there.)
+  // The reader has been beat rows ALONE since 2026-09-02 (no prose, no proof header beneath them), so
+  // at the suite's viewport R1's two rows no longer overflow their card. The scroll-keeping is still
+  // the thing to prove, so the beat makes the card scroll the honest way — a SHORT window — and hands
+  // the viewport back once the position is proven kept. (The precondition below stays: a reader that
+  // cannot scroll proves nothing here.)
+  const vp = page.viewportSize()
+  await page.setViewportSize({ width: vp ? vp.width : 1440, height: 520 })
   const scroller = dt.locator('.focusov .fread > .fscroll')
   const want = await scroller.evaluate((el: HTMLElement) => {
     el.scrollTop = Math.min(200, el.scrollHeight - el.clientHeight)
@@ -132,6 +139,7 @@ export async function refreshDerivedInPlace (page: Page, state: FlowState): Prom
     () => dt.locator('.focusov .fread > .fscroll').evaluate((el: HTMLElement) => el.scrollTop),
     { message: 'the reader keeps your reading position across an in-place refresh' }
   ).toBeGreaterThan(want - 8)
+  if (vp) await page.setViewportSize(vp)                              // the window back, position proven
 
   // (2) THE BOARD SYNCS IN PLACE — no reload. Flip R1's derived state in a served board and prove the
   // reader picks it up without a reload.

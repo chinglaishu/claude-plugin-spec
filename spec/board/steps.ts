@@ -117,7 +117,7 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   const ov = dt.locator('.focusov')
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
-  await expect(ov.locator('.feval')).toBeVisible()
+  await expect(ov.locator('.fread > .frmeta .fptop')).toBeVisible()   // the covering test, on the title row (2026-09-02)
   // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28; reordered 2026-08-30): every beat row
   // lays three cells left to right on ONE line — [ the behaviour's words | the drawn schematic |
   // that beat's own harvested proof ]. The words LEAD, because the human removed the

@@ -8,7 +8,7 @@ import { join, resolve, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync, existsSync } from 'node:fs'
 import {
-  ROOT, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
+  ROOT, SPEC, esc, designCss, allScreens, sortedAreas, writeText, shotHash, readConfig, readRuns, ciGate
 } from './spec-store.mjs'
 import { journey } from './journey.mjs'
 import { stripBehaviorLead } from './behavior.mjs'
@@ -18,6 +18,11 @@ import { deriveLibrary } from './compose.mjs'
 import { deriveKind } from './flow.mjs'
 // pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
 import { focusFromLayout, focusFromLayouts } from './evidence.mjs'
+// the geometry pin a mirror is drawn with, and the ONE reader of the harvest a drawing is made of
+// (tools/proof-integrity.mjs harvestOf — the same reading its mirror gate makes, so the board's
+// banner and the gate can never disagree about whether a drawing is behind its harvest)
+import { layoutHash } from './viz.mjs'
+import { harvestOf } from './proof-integrity.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
 // query cannot read a CSS var, so build() parses the knob out of _design.css and computes each
@@ -340,7 +345,12 @@ export function renderBehavior (b) {
 // change anywhere the drawing is absent. Defense in depth: the file is committed content, but the
 // builder still refuses to inline anything that is not a plain <svg> (a script, a stray payload) —
 // board.html must never gain executable content this way.
-export function renderSchematic (r) {
+// `layoutStale` is the SECOND way a drawing stops being true (the human, 2026-09-02: "make sure the
+// gap between schematic and proof will not exist again"). data-stale says the requirement was
+// reworded; this says the APP MOVED — the harvest on disk no longer hashes to the geometry pin the
+// drawing was made with, so the picture is of an older screen than the frames beside it. Baked as a
+// mark, never a colour: the storyline's one stale banner reads both.
+export function renderSchematic (r, layoutStale = false) {
   const v = r && r.viz
   if (!v) return ''
   const svg = String(v.svg || '').trim()
@@ -351,9 +361,24 @@ export function renderSchematic (r) {
   if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg) ||
     /\son\w+\s*=/i.test(svg) || /\bhref\s*=\s*["']?\s*(?:javascript|data):/i.test(svg)) return ''
   const stale = v.stale ? ' data-stale="1"' : ''
+  const lstale = layoutStale ? ' data-viz-layout-stale="1"' : ''
   const at = v.at ? ` data-vizat="${esc(v.at)}"` : ''
   return `<figure class="schematic" data-phases="${esc((v.phases || []).join(' '))}"` +
-    ` data-vizhash="${esc(v.hash || '')}" data-texthash="${esc(v.textHash || '')}"${at}${stale}>${svg}</figure>`
+    ` data-vizhash="${esc(v.hash || '')}" data-texthash="${esc(v.textHash || '')}"${at}${stale}${lstale}>${svg}</figure>`
+}
+
+// HAS THE APP MOVED PAST THIS DRAWING? Derived at every build, never stored: the pin the mirror was
+// drawn with (data-viz-layout) against the layoutHash of the harvest that is on disk RIGHT NOW —
+// the same skeletons the proof cell beside it is showing. A drawing with no geometry pin (an
+// archetype, drawn from the sentence) claims nothing about the app and can never be layout-stale;
+// nor can a requirement whose harvest is gone, which is board R18's "no picture" case instead.
+function layoutStaleOf (r, screen) {
+  const v = r && r.viz
+  if (!v || !v.svg) return false
+  const pin = (String(v.svg).match(/data-viz-layout="([^"]*)"/) || [])[1] || ''
+  if (!pin) return false
+  const lays = harvestOf(SPEC, screen, r.id)
+  return lays.length ? pin !== layoutHash(lays) : false
 }
 
 // The run-all control for this screen, in the detail bar. Run (headless) is the default; per-test
@@ -497,7 +522,7 @@ const reqRow = (r, s) => {
   const fam = (s.families || []).find(f => f.ids.includes(r.id))
   return `<div class="req" data-r="${esc(r.id)}" data-state="${r.state}" data-status="${esc(r.status)}" data-beats="${beats}"${fam ? ` data-fam="${esc(fam.name)}" data-famn="${esc(fam.n == null ? '' : fam.n)}"` : ''}${evAttrs(s, r)}>
     <div class="h">${reqChip(r.status)}<span class="id">${esc(r.id)}</span><div class="rmain"><span class="rt">${esc(r.title)}</span><div class="rhint">${esc(excerpt(r.body))}</div></div><span class="chev">›</span></div>
-    <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r)}${renderBody(prose)}${covers}</div>
+    <div class="body">${renderBehavior(r.behavior)}${renderSchematic(r, layoutStaleOf(r, s.name))}${renderBody(prose)}${covers}</div>
   </div>`
 }
 const reqPane = s => `<div class="pane reqpane">
@@ -1986,7 +2011,9 @@ export function build () {
     display:flex; flex-direction:column; padding:var(--s5) var(--s5) var(--s4); }
   /* the proof BAND — what belongs to the whole requirement (the covering test, the one video), under
      the beat rows that carry each beat's own frames */
-  .feval { display:flex; flex-direction:column; gap:var(--s4); min-width:0; margin-top:var(--s5); }
+  /* the card's hidden holder for the MOVED covering-test node (its .tstlog / .tststeps feed the
+     title row's Logs / Steps) — nothing of it shows; the title row is the test's face (2026-09-02) */
+  .fread > .feval, .feval[hidden] { display:none; }
   /* THE READER-WIDE CONTROLS, ON THE TITLE ROW (the human, 2026-09-02: "put all these on the same
      row of the test title row, left side of the menu button"). The auto/step pair and the speed —
      the play mode and pace every animated cell (the drawing, each beat's stepper, the video) shares —
@@ -2011,9 +2038,8 @@ export function build () {
     line-height:1.34; letter-spacing:-.015em; margin:0; color:var(--ink); }
   /* one step up with the beats (the human, 2026-08-28): the requirement column is read, not scanned,
      and half of it sitting a step below the other half read as two different importances */
-  .fread .fbody { font-size:var(--t-lg); line-height:1.64; color:var(--ink-2); }
-  .fread .fbody p { margin:0 0 var(--s2); } .fread .fbody p:last-child { margin:0; }
-  .fread .fbody ul { margin:var(--s2) 0 0; padding-left:1.2em; }
+  /* (the .fbody prose rules went 2026-09-02 — the reader shows no prose block; the rows are the
+     requirement, the paragraph stays in prd.md and on the baked source row.) */
   .flabel { font:var(--t-xs) var(--mono); text-transform:uppercase; letter-spacing:.09em;
     color:var(--ink-4); display:block; margin-bottom:var(--s4); }
 
@@ -2270,8 +2296,7 @@ export function build () {
 
   /* the authored prose, ALWAYS shown (the human, 2026-08-28 — the "Full requirement" toggle is
      gone): a dashed rule is all that separates it from the beats above it. */
-  .fread .fbody.fprose { border-top:1px dashed var(--hair); margin-top:var(--s3);
-    padding-top:var(--s3); }
+  /* (.fbody.fprose's dashed divider went with the prose block, 2026-09-02) */
 
   /* the parked frames need no motion query — the client parks every one of them; the animated whole
      is the only thing left that moves, and a reduced-motion viewer gets it held still */
@@ -2329,30 +2354,23 @@ export function build () {
   /* the author outline above would swallow the UA focus ring on the current dot (I-6) */
   .fstepbar .pd:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
   .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  /* THE HONEST EMPTY STATE — no proof is a statement, never an error. It sat in the retired band; it
-     now rides the proof HEADER (the human, 2026-09-02), so it keeps the hatched ground that says
-     "nothing here on purpose" but takes the header's own width and a smaller minimum. */
-  .feval .fphead .noev { min-height:calc(64px * var(--scale)); display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:var(--s2); text-align:center;
-    padding:var(--s3) var(--s5); margin-top:var(--s2); border-radius:var(--r-sm);
-    font-size:var(--t-sm); color:var(--ink-3);
-    background:repeating-linear-gradient(-45deg, var(--paper), var(--paper) 10px, var(--wash) 10px, var(--wash) 11px); }
-  .feval .fphead .noev b { font-weight:500; color:var(--ink-2); }
-  /* #4: the proof label and the actions share the fphead's TOP ROW. Run is always shown; Run in
-     background / Logs / Steps fold behind a compact ⋯ menu. The buttons are the MOVED wired per-test
-     controls, restyled small here (aligned to the label height) — pills in the row, flat rows in the menu. */
-  /* THE PROOF HEADER (the human, 2026-08-25): one row — a small pass/fail/none MARK, the covering
-     test's NAME (clipped before the wired controls), then Run + ⋯ — ruled off from the media below.
-     No "THE PROOF" label, no "proven by", no unit/flow badge, no "+N more cover it". */
-  .feval .fptop { display:flex; align-items:center; gap:var(--s2); min-height:calc(22px * var(--scale));
-    padding-bottom:var(--s3); border-bottom:1px solid var(--hair); }
-  .feval .fpm { flex:none; font-size:var(--t-sm); line-height:1; }
-  .feval .fpm.pass { color:var(--koke); } .feval .fpm.fail { color:var(--bengara); } .feval .fpm.none { color:var(--ink-4); }
-  .feval .fpname { flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-size:var(--t-md); font-weight:600; color:var(--ink); }
-  .feval .fpacts { margin-left:auto; display:flex; align-items:center; gap:var(--s2); }
-  .feval .fpacts .btn, .feval .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; }
-  .feval .fpacts .runone::before { content:'\\25B6'; margin-right:6px; font-size:9px; }   /* the Run glyph */
+  /* THE COVERING TEST ON THE TITLE ROW (the human, 2026-09-02 — the proof header that sat under the
+     rows "is just weird" there): TEST · mark · name · Run, right of the play controls and left of the
+     one ⋯. The mark is the honesty cue (✓ / ✗ / ◌, never hue alone); the name clips before Run so a
+     long test title can never push the ⋯ off the row. Where no test covers the requirement, the
+     "＋ write the failing test" button stands where Run would. */
+  .frmeta .fptop { flex:0 1 auto; min-width:0; max-width:40%; display:inline-flex; align-items:center;
+    gap:var(--s2); align-self:center; margin-left:var(--s4); }
+  .frmeta .fptop .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); flex:none; }
+  .frmeta .fpm { flex:none; font-size:var(--t-sm); line-height:1; cursor:help; }
+  .frmeta .fpm.pass { color:var(--koke); } .frmeta .fpm.fail { color:var(--bengara); } .frmeta .fpm.none { color:var(--ink-4); }
+  .frmeta .fpname { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:var(--t-sm); font-weight:600; color:var(--ink); }
+  .frmeta .fpnone { flex:0 1 auto; min-width:0; white-space:nowrap; font:var(--t-sm) var(--mono); color:var(--ink-3); }
+  .frmeta .fpacts { flex:none; display:inline-flex; align-items:center; gap:var(--s2); }
+  .frmeta .fpacts .btn, .frmeta .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; white-space:nowrap; }
+  .frmeta .fpacts .runone::before { content:'\\25B6'; margin-right:6px; font-size:9px; }   /* the Run glyph */
   .fmenu { position:relative; display:inline-flex; }
   .fmenu .fmenubtn { font-size:15px; line-height:1; padding:4px 11px; border-radius:999px; }
   .fmenupop { position:absolute; right:0; top:calc(100% + 7px); min-width:186px; background:var(--paper);
@@ -2364,9 +2382,9 @@ export function build () {
   .fmenupop .btn:hover { background:var(--wash); color:var(--ink); border:0; }
   /* board R15: the divider between the run/log items and the authoring items in the proof ⋯ menu */
   .fmenupop .fmdiv { height:1px; margin:6px 4px; background:var(--hair); }
-  /* the requirement's own ⋯ (board R15) rides the reading card's header row at its far edge — the
-     title (flex:1) pushes it there; the position counter that once sat here is gone (it lives in the
-     pager — R17, the human 2026-08-25). Kept baseline-safe: align-self so the glyph sits on the row. */
+  /* the card's ONE ⋯ (board R15; test + requirement actions combined 2026-09-02) rides the header
+     row at its far edge — the title (flex:1) pushes it there; the position counter that once sat here
+     is gone (it lives in the pager — R17, the human 2026-08-25). align-self so the glyph sits on the row. */
   .frmeta .fmenu { flex:none; align-self:center; }
   /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
@@ -2374,11 +2392,8 @@ export function build () {
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   /* (the Task 8 proof LINE — .fplbl "THE PROOF" + .fpby "proven/covered by [unit|flow] <name> +N more
      cover it" — is replaced by the .fptop test-name header above; the human, 2026-08-25.) */
-  /* the Changed drift reads on its own note beneath the name row */
-  .feval .stalenote { font-size:var(--t-xs); color:var(--ai); background:var(--ai-tint); border:1px solid var(--ai-line);
-    border-radius:var(--r-sm); padding:6px 10px; margin-top:var(--s2); }
-  .feval .stalenote b { font-weight:500; }
-  .fpnone { flex:1 1 auto; min-width:0; font:var(--t-sm) var(--mono); color:var(--ink-3); }
+  /* (the .stalenote under the name went with the proof header, 2026-09-02: the drift is said on
+     the title row's mark and its ◈ Changed chip.) */
   /* (the band's own rules — its bar's clipped name/facts, the ✗-failed .fpv chip, and the .frecwrap /
      .evrec player sizing — went with buildMedia, 2026-09-02: there is no video in the reader to size.) */
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the
