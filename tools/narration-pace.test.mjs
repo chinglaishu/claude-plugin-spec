@@ -103,11 +103,13 @@ test('introMs reserves the intro line at test start — the first step waits it 
     `the first step waited out the intro (${step1.t - r.side.t0}ms >= ~1500 reserved before the test body began)`)
 })
 
-test('under BOARD_RECORD the narration is a callout overlay that never shifts the page; without it nothing is injected', () => {
+test('the narration is a callout overlay that never shifts the page — on a recorded run and on a plain one alike', () => {
   // The top BANNER (a band that pushed the body down by 142px) was retired 2026-08-28 for the
   // tour CALLOUT anchored to the ringed element (#__specboard-focus, spec/_base.ts renderOverlay).
   // The layout contract inverted with it: the page is NEVER shifted, recording or not — the
-  // overlay floats above the app — and a plain run injects nothing at all.
+  // overlay floats above the app. Since 2026-09-02 a plain run paints the SAME overlay (the human:
+  // no gap between schematic and proof, ever — a recording-gated ring let a terminal run harvest
+  // ringless frames over the board's ringed ones); only the video stays recording-only.
   const recDir = join(ROOT, '.pace-rec-out')
   const spec = (dir) =>
     `import { test, expect, checkReq, proveVisible } from ${JSON.stringify(BASE)}\n` +
@@ -147,6 +149,8 @@ test('under BOARD_RECORD the narration is a callout overlay that never shifts th
 
   const off = run(spec, {}, 'band layout')
   assert.equal(off.status, 0, `plain run should pass:\n${off.stdout}\n${off.stderr}`)
-  assert.equal(off.side.parent, null, 'no recording → nothing is injected at all')
-  assert.equal(String(off.side.bodyTransform), 'none', 'no recording → the page is never touched')
+  assert.equal(off.side.parent, 'HTML', 'no recording → the same overlay, hung off <html>')
+  assert.ok(off.side.hasRing && off.side.hasCall, 'no recording → the ring and the card still paint')
+  assert.equal(off.side.overlaps, false, 'and the card still never covers the ringed cell')
+  assert.equal(String(off.side.bodyTransform), 'none', 'no recording → the page is never shifted either')
 })

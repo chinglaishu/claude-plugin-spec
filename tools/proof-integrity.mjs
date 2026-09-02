@@ -15,6 +15,10 @@
 // mirroring tools/coverage.mjs's split between the pure derivation and its thin CLI/reporter shell.
 
 import { readFileSync, writeFileSync, existsSync, copyFileSync, unlinkSync, readdirSync } from 'node:fs'
+// the drawing kit itself: the gate never restates what a mirror should contain — it asks the module
+// that draws one (renderWireframe's per-frame report, mirrorGaps, layoutHash), so the gate and the
+// renderer can never drift apart. That drift IS the defect this gate exists to catch.
+import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from './viz.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -95,6 +99,96 @@ export function perturbNumbers (value) {
   return { value: walk(value, ''), changes }
 }
 
+// ── THE MIRROR GATE ──────────────────────────────────────────────────────────────────────────────
+// The human, 2026-09-02: "make sure the gap between schematic and proof will not exist again."
+//
+// A committed spec/<screen>/viz/<id>.svg with data-viz-kind="wireframe" is a CLAIM about the app's
+// measured layout — the same skeletons the proof cell photographs beside it. Two ways that claim
+// stops being true, both derived here from the tree, neither ever stored:
+//
+//   · a MIRROR GAP — the drawing no longer contains something the skeleton measured (a word, a
+//     plate, the ring), or it paints a box the page had faded away. That is the "schematic still
+//     looks like a skeleton" defect, caught by machine instead of by the human's eye.
+//   · a moved LAYOUT PIN — the harvest has been re-taken and the geometry moved, so the committed
+//     drawing is of an older screen. data-viz-layout carries the pin the drawing was made with.
+//
+// The frame ordering is NOT restated here: renderWireframe reports, per frame, the very skeleton it
+// drew that frame from, and the gate asks mirrorGaps the same question of the COMMITTED file's own
+// frame group. One authority, one reading.
+const layoutFile = (spec, screen, id, slot) => {
+  const p = join(spec, screen, 'evidence', `${id}.b${slot}.layout.json`)
+  if (!existsSync(p)) return null
+  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return null }
+}
+// the whole harvest for one requirement, in beat order — the same reading tools/viz-derive.mjs makes
+// when it draws: each beat's two ends and every asserted value it rang, stopping at the first gap.
+export function harvestOf (spec, screen, id, max = 12) {
+  const out = []
+  for (let n = 1; n <= max; n++) {
+    const before = layoutFile(spec, screen, id, `${n}.before`)
+    const after = layoutFile(spec, screen, id, `${n}.after`)
+    const values = []
+    for (let k = 1; k <= 12; k++) {
+      const v = layoutFile(spec, screen, id, `${n}.v${k}`)
+      if (!v) break
+      values.push(v)
+    }
+    if (!before && !after && !values.length) break
+    out.push({ before, after, values })
+  }
+  return out
+}
+export function checkMirrors (spec = 'spec') {
+  const rows = []
+  if (!existsSync(spec)) return rows
+  const screens = readdirSync(spec, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith('_')).map(d => d.name).sort()
+  for (const screen of screens) {
+    const dir = join(spec, screen, 'viz')
+    if (!existsSync(dir)) continue
+    for (const f of readdirSync(dir).filter(n => n.endsWith('.svg')).sort()) {
+      const id = f.slice(0, -4)
+      const svg = readFileSync(join(dir, f), 'utf8')
+      if (!/data-viz-kind="wireframe"/.test(svg)) continue      // an archetype claims no app layout
+      const row = { screen, id, gaps: [], pinOk: true, ok: true, why: '' }
+      rows.push(row)
+      const lays = harvestOf(spec, screen, id)
+      if (!lays.length) {
+        row.ok = false
+        row.why = 'no layout skeletons on disk — the drawing claims a harvest that is gone'
+        continue
+      }
+      const pin = (svg.match(/data-viz-layout="([^"]*)"/) || [])[1] || ''
+      row.pinOk = pin === layoutHash(lays)
+      // the renderer's own per-frame report: which skeleton is frame i, and how it was framed
+      const drawn = renderWireframe(lays, {})
+      if (!drawn) {
+        row.ok = false
+        row.why = 'the harvest no longer draws anything — nothing to mirror'
+        continue
+      }
+      for (const fr of drawn.gaps) {
+        const body = frameGroup(svg, fr.frame)
+        if (!body) {
+          row.gaps.push({ kind: 'missing-frame', what: `frame ${fr.frame}`, x: 0, y: 0, w: 0, h: 0 })
+          continue
+        }
+        for (const g of mirrorGaps(fr.layout, body, { focus: fr.focus, anchors: fr.anchors, h: fr.h })) {
+          row.gaps.push({ ...g, frame: fr.frame })
+        }
+      }
+      row.ok = row.pinOk && !row.gaps.length
+      // BOTH reasons, where both are true — a moved harvest usually drags gaps in behind it, and
+      // naming only the first would hide why the redraw is needed
+      const why = []
+      if (row.gaps.length) why.push(`the drawing is missing what the harvest measured — ${gapSummary(row.gaps)}`)
+      if (!row.pinOk) why.push('the layout pin has moved: the harvest is newer than the drawing')
+      row.why = why.join('; ')
+    }
+  }
+  return rows
+}
+
 // CLI --------------------------------------------------------------------------------------------
 // Thin, not unit-tested (mirrors tools/staff.mjs / tools/update.mjs: the pure derivation above is
 // what proof-integrity.test.mjs exercises).
@@ -145,6 +239,27 @@ function walkSteps (steps, out) {
     if (m) out.push({ id: m[1], passed: !s.error })
     if (s?.steps?.length) walkSteps(s.steps, out)
   }
+}
+
+// The mirror gate's shell (thin, like runLint above — checkMirrors is what the unit tests exercise).
+function runMirror () {
+  const rows = checkMirrors('spec')
+  let bad = false
+  for (const r of rows) {
+    if (!r.ok) bad = true
+    console.log(`${r.screen} · ${r.id} · ${r.ok ? 'ok' : 'MIRROR BROKEN'}${r.why ? ' · ' + r.why : ''}`)
+    for (const g of r.gaps.slice(0, 12)) {
+      console.log(`    frame ${g.frame} · ${g.kind} · ${g.what} · at ${g.x},${g.y} ${g.w}×${g.h} (page px)`)
+    }
+    if (r.gaps.length > 12) console.log(`    …and ${r.gaps.length - 12} more`)
+  }
+  if (!rows.length) console.log('no committed wireframe drawings — nothing to mirror yet')
+  if (bad) {
+    console.log('\nA committed schematic no longer matches the harvest it was drawn from. Re-derive it')
+    console.log('(node tools/viz-derive.mjs <screen>); if the gaps survive the redraw, the renderer has')
+    console.log('stopped drawing something the app measured — fix that, never the guard.')
+  }
+  process.exit(bad ? 1 : 0)
 }
 
 function runPerturb (screen) {
@@ -225,10 +340,12 @@ function runPerturb (screen) {
 if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   const [, , cmd, arg] = process.argv
   if (cmd === 'lint') runLint()
+  else if (cmd === 'mirror') runMirror()
   else if (cmd === 'perturb') runPerturb(arg)
   else {
     console.error('usage:')
     console.error('  node tools/proof-integrity.mjs lint')
+    console.error('  node tools/proof-integrity.mjs mirror')
     console.error('  node tools/proof-integrity.mjs perturb <screen>')
     process.exit(2)
   }

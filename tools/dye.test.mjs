@@ -69,6 +69,8 @@ test('the mapping table: hue names the family, lightness names tint vs solid', (
     ['#fee2e2', 'bg', 'bengara-tint', 'the red "overdue" chip'],
     ['#d1fae5', 'bg', 'koke-tint', 'the green "done" chip'],
     ['#6c757d', 'fg', 'ink-4', 'a muted grey caption stays on the neutral ladder, at its own value'],
+    ['174,180,194', 'fg', 'ink-4', 'a PALE grey caption is still readable ink — paper on paper is nothing (mirror-9)'],
+    ['#c9ced8', 'fg', 'ink-4', 'and so is the palest one a real app ships'],
     ['#111827', 'fg', 'ink', 'a near-black heading'],
     ['#ffffff', 'fg', 'paper', 'white text on a solid button'],
     ['#e74c3c', 'fg', 'bengara', 'a red error line keeps its family'],

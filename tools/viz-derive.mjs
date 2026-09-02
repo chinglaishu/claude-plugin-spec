@@ -28,7 +28,7 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { allScreens, SPEC } from './spec-store.mjs'
-import { deriveSchematic, renderWireframe } from './viz.mjs'
+import { deriveSchematic, renderWireframe, gapSummary } from './viz.mjs'
 
 const pick = process.argv.slice(2)
 const screens = allScreens().filter(s => !pick.length || pick.includes(s.name))
@@ -104,6 +104,15 @@ for (const s of screens) {
       console.log(`  · ${s.name}/${r.id} — no archetype fits and no layout harvested; text-only (honest)` +
         (existsSync(p) ? ' — NOTE: a committed drawing exists and now reads stale' : ''))
       continue
+    }
+    // WHAT THE DRAWING MEASURED BUT DID NOT DRAW (the human, 2026-09-02: "make sure the gap between
+    // schematic and proof will not exist again"). Derived per frame from the drawing's OWN input, and
+    // said out loud here — the drawing is still written, because a gapped mirror beats no mirror and
+    // the board's storyline says so too; `npm run proof mirror` is the gate that refuses it.
+    const gaps = (d.gaps || []).flatMap(g => g.gaps)
+    if (gaps.length) {
+      console.log(`  ! ${s.name}/${r.id} — mirror gaps: ${gaps.length} (${gapSummary(gaps)})` +
+        ` — first at ${gaps[0].x},${gaps[0].y}: ${gaps[0].what}`)
     }
     if (existsSync(p)) {
       // up to date = the file's BODY is what the kit draws for this text today (minus the date

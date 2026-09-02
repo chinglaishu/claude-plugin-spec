@@ -162,13 +162,15 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // beat `#__specboard-focus` does not exist yet, and asserting it was attached there was
     // unsatisfiable under a recording; the test only ever "passed solo" because a plain run takes
     // the else-branch. RING SOMETHING FIRST — which is what the paragraph above actually claims
-    // ("a ring on the asserted element") — then assert the card that must appear beside it. Under a
-    // plain run reveal() paints nothing (paintFocus is recording-gated), so the else-branch keeps
-    // its full power: nothing may be injected even after a reveal.
+    // ("a ring on the asserted element") — then assert the card that must appear beside it. The
+    // overlay paints on EVERY run now (the human, 2026-09-02: "make sure the gap between schematic
+    // and proof will not exist again" — a plain run used to harvest ringless frames over the board's
+    // ringed ones), so this holds with or without a recording. Rule 4: the old else-branch asserted
+    // "nothing injected without a recording"; that gate was the defect, so the branch is gone.
     await reveal(dt.locator('.focusov .fread .frmeta .fid'))
     const focusOv = page.locator('#__specboard-focus')
     const call = focusOv.locator('.sb-call')
-    if (process.env.BOARD_RECORD) {
+    {
       await expect(focusOv).toBeAttached()
       await expect(focusOv.locator('.sb-ring')).toBeVisible()   // the ring the callout is anchored to
       await expect(call).toBeVisible()
@@ -189,8 +191,6 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
       expect(plain(await call.innerText()), 'the card carries this beat\'s own When, in full')
         .toContain(plain(beatsR10!.beats[0].when))
       await expect(focusOv.locator('.sb-veil')).toHaveCount(1)  // the light dim under it
-    } else {
-      await expect(focusOv).toHaveCount(0)                     // a plain run paints nothing into the page
     }
     await hudCheck('first check', 1, 1)
     await hudCheck('second check', 2, 2)
@@ -294,14 +294,10 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // here, because that surface belongs to R13's own test; said plainly rather than quietly dropped.)
 
     // the CALLOUT SURVIVES a navigation — a beat that walks to another page keeps its narration
-    // (renderOverlay repaints on framenavigated). Recording-gated, exactly like the paint above.
+    // (renderOverlay repaints on framenavigated). On every run, like the paint above (2026-09-02).
     await page.reload()
-    if (process.env.BOARD_RECORD) {
-      await expect(call).toBeVisible()
-      await expect(call).toContainText('R10')
-    } else {
-      await expect(focusOv).toHaveCount(0)
-    }
+    await expect(call).toBeVisible()
+    await expect(call).toContainText('R10')
   })
 })
 
@@ -1351,9 +1347,10 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // …and the THIRD surface — the card burned into the recording the proof frames are cut from —
     // is on the SAME beat and says the SAME one line. This is the leg that catches the drift R19
     // exists to forbid: until 2026-08-30 the drawing said the When alone mid-beat while the burn-in
-    // already claimed the Then, and both stacked the requirement title on top of it. Recording-gated
-    // like every other assertion about the burn-in (spec/_base.ts paints nothing without one), and
-    // the else-branch keeps its own power: nothing may be injected into the page at all.
+    // already claimed the Then, and both stacked the requirement title on top of it. The burn-in
+    // paints on EVERY run since 2026-09-02 (the human: no gap between schematic and proof, ever —
+    // a plain run used to harvest ringless frames), so this holds with or without a recording and
+    // the old "nothing injected" else-branch is gone (rule 4: that gate was the defect).
     //
     // (Asserted on the BURNED card rather than the drawn one on purpose: the board's own harvest
     // records no ring — its specs read the page with reveal(), not proveVisible() — so its committed
@@ -1361,7 +1358,7 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // it can actually fail, in tools/viz.test.mjs, against a harvest that has one.)
     await reveal(row.locator('.sbtext'))
     const call19 = page.locator('#__specboard-focus .sb-call')
-    if (process.env.BOARD_RECORD) {
+    {
       await expect(call19).toBeVisible()
       const said = plain(await call19.innerText())
       // this is the SECOND checkReq('R19') of the test, so the callout has advanced to R19's second
@@ -1374,8 +1371,6 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
       const titleR19 = (await dt.locator('.reqpane .req[data-r="R19"] .rt').textContent() || '').trim()
       expect(said.includes(plain(titleR19)), 'and no requirement title — the id chip is the whole tag').toBe(false)
       await hudCheck('one sentence per scene', 'the When alone', said.includes(plain(b19.then)) ? 'both lines' : 'the When alone')
-    } else {
-      await expect(page.locator('#__specboard-focus')).toHaveCount(0)
     }
     // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
     const given = story.locator('.sbwrap .sbrow').first()

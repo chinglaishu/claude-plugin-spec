@@ -383,9 +383,16 @@ async function paintHud (s: { head?: string, failed?: boolean }): Promise<void> 
 // so it burns into the video and the live watch; gated on a board recording so a plain `npm run e2e`
 // paints nothing and stays fast. pointer-events:none so it never swallows a click. Best-effort: a
 // failed evaluate (page torn down mid-nav) is swallowed, leaving the previous frame's overlay standing.
+// PAINTED ON EVERY RUN, NOT ONLY UNDER A RECORDING (the human, 2026-09-02: "make sure the gap between
+// schematic and proof will not exist again"). The ring and the card used to be recording-gated, so a
+// plain `npm run e2e` harvested RINGLESS frames and ringless layout skeletons — and the fold wrote
+// them over the board's ringed harvest: the reader lost its zoom, its ring and its callout, and the
+// drawing beside it (drawn from the same skeleton) lost them too. That was the second root cause of
+// "the focus effect is gone". The overlay costs milliseconds and is pointer-events:none; only the
+// VIDEO and the narration holds (recordHold) stay recording-only.
 async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
   const page = CURRENT_PAGE
-  if (!page || !process.env.BOARD_RECORD) return
+  if (!page) return
   repaintOnNav(page)
   // NO RING, NO OVERLAY (the human, 2026-08-28). A callout with no ringed target used to float at a
   // fallback position — so a beat's BEFORE frame photographed a card claiming the Then before the
@@ -575,7 +582,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
 // target (no box) leaves the previous frame's overlay standing.
 async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Promise<void> {
   const page = CURRENT_PAGE
-  if (!page || !process.env.BOARD_RECORD) return
+  if (!page) return                      // every run paints (2026-09-02) — see renderOverlay
   const box = await target.first().boundingBox().catch(() => null)
   if (!box) return
   LAST_BOX = box
@@ -585,7 +592,7 @@ async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Pr
 // reveals a value to prove, never lingering on the previous step's cell.
 async function hideFocus (): Promise<void> {
   const page = CURRENT_PAGE
-  if (!page || !process.env.BOARD_RECORD) return
+  if (!page) return
   LAST_BOX = null
   await hideOverlay(page)
 }
@@ -812,7 +819,10 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // a rough kind (heading / text / input / button / check / row / container / image), its text where
 // it is a leaf (or the ringed element itself), `focus` on whatever the ring is actually around, and
 // (mirror-8, 2026-09-02) its own paint and state: bg / fg / bd as "r,g,b", rd, fw, td, it, op, on,
-// dis — all optional, and all documented at the call that measures them below.
+// dis — and (mirror-9) the type it is set in: ff (sans / mono / serif), tt ('u' for an uppercased
+// label) and ph (the text came from a field's placeholder, so the field is empty). All optional, and
+// all documented at the call that measures them below. What the page does NOT show is not measured
+// at all: an element faded to nothing, or `visibility:hidden`, is skipped with its whole subtree.
 // tools/viz.mjs renderWireframe draws the requirement's schematic FROM this pair, so the picture
 // beside the requirement is the app's own layout rather than an abstract archetype nobody could
 // map onto it. Attached as `layout <id> before|after`, mirroring the frames, and folded by the
@@ -848,7 +858,8 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
         if (m[4] != null && Number(m[4]) <= 0.02) return ''
         return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
       }
-      const kindOf = (el: any, tag: string, leaf: boolean, text: string) => {
+      const has = (el: any, n: string) => !!(el.hasAttribute && el.hasAttribute(n))
+      const kindOf = (el: any, tag: string, leaf: boolean, text: string, r: any) => {
         const role = (el.getAttribute && el.getAttribute('role')) || ''
         const type = String((tag === 'INPUT' && el.type) || '').toLowerCase()
         if (/^H[1-6]$/.test(tag) || role === 'heading') return 'heading'
@@ -856,14 +867,26 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
         // so a done row and an open one were the same picture — the thing a to-do screen's beats
         // prove most often. Its own kind, and `on` below says which way it is set.
         if (type === 'checkbox' || type === 'radio' || role === 'checkbox' || role === 'radio' || role === 'switch') return 'check'
+        // …and a CONTROL that says which way it is set is one too, however it is built (mirror-9):
+        // aria-checked / aria-pressed, or the data-* flag a hand-rolled toggle carries. Only on a real
+        // control — Tsumiki puts `data-done` on the task ROW as well, and a row is not a tick box.
+        const ctl = tag === 'BUTTON' || tag === 'INPUT' || role === 'button' || role === 'switch'
+        if (ctl && (has(el, 'aria-checked') || has(el, 'aria-pressed') || has(el, 'data-done') || has(el, 'data-checked'))) return 'check'
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return 'input'
+        // …and so is a WORDLESS SQUARE control with nothing inside it, which is what a hand-rolled
+        // tick box looks like from here (Tsumiki's is a 21×21 `<button class="cb">` whose only signal
+        // is its own paint). Drawn as its own plate at its own radius, never as a text box with a
+        // placeholder bar across it — the "missing tickbox" the human named.
+        if ((tag === 'BUTTON' || role === 'button') && !text && el.childElementCount === 0 &&
+          Math.abs(r.width - r.height) <= 3 && r.width <= 32) return 'check'
         if (tag === 'BUTTON' || tag === 'A' || role === 'button' || role === 'link' || role === 'tab') return 'button'
         if (tag === 'IMG' || tag === 'SVG' || tag === 'CANVAS' || tag === 'VIDEO' || tag === 'PICTURE') return 'image'
         if (tag === 'LI' || tag === 'TR' || role === 'row' || role === 'listitem') return 'row'
         if (leaf && text) return 'text'
         return 'container'
       }
-      const walk = (node: any, depth: number) => {
+      // `pop` is the EFFECTIVE opacity the ancestors have already applied (mirror-9, 2026-09-02).
+      const walk = (node: any, depth: number, pop: number) => {
         if (depth > MAXD) return
         const kids = node.children || []
         for (let i = 0; i < kids.length; i++) {
@@ -877,10 +900,40 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
           const r = el.getBoundingClientRect()
           if (!r || r.width < 1 || r.height < 1) continue                 // display:none, and its subtree
           if (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh) continue   // off-screen
-          if (r.width >= MIN && r.height >= MIN) {
+          // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT MEASURE (mirror-9, 2026-09-02). Opacity
+          // is inherited by PAINT, not by property: Tsumiki hides a row's edit/delete buttons with
+          // `opacity:0` until hover, so the BUTTON came back at 0 and its 16×16 icon — which has no
+          // opacity of its own — came back opaque and was drawn. Three wash squares where the
+          // photograph shows one chevron. So the walk multiplies the ancestors' opacity down, and an
+          // element the page has faded out (or hidden by `visibility`) is skipped whole: not
+          // captured, not descended into. `display:none` is already gone, on its zero rect.
+          let cs: any = null
+          try { cs = getComputedStyle(el) } catch { /* an element that will not compute is measured as it is */ }
+          let eop = pop
+          if (cs) {
+            const vis = String(cs.visibility || '')
+            if (vis === 'hidden' || vis === 'collapse') continue
+            const ov = parseFloat(cs.opacity)
+            eop = pop * (Number.isFinite(ov) ? ov : 1)
+            if (eop < 0.05) continue
+          }
+          // …but a SMALL LEAF THAT CARRIES WORDS is kept down to 6px (2026-09-02): a sidebar badge
+          // count, a tiny stamp — the mirror was missing every one of them at the 12px floor, and a
+          // reader comparing the drawing to the photograph saw a count on one side only
+          const leafWords = el.childElementCount === 0 && !!clean(el.textContent)
+          const floor = leafWords ? 6 : MIN
+          if (r.width >= floor && r.height >= floor) {
             const leaf = el.childElementCount === 0
             let text = leaf ? clean(el.textContent) : ''
-            if (tag === 'INPUT') text = clean(el.value || el.getAttribute('placeholder') || '')
+            // a field showing its PLACEHOLDER is empty, and the drawing has to say so in the quiet
+            // ink rather than in the field's own text colour — otherwise "Add a task and press
+            // Enter…" reads as something a person typed (mirror-9)
+            let ph = false
+            if (tag === 'INPUT') {
+              const v = clean(el.value)
+              text = v || clean(el.getAttribute('placeholder') || '')
+              ph = !v && !!text
+            }
             let focus = false
             if (rb) {
               const ox = Math.max(0, Math.min(r.right, rb.x + rb.w) - Math.max(r.left, rb.x))
@@ -895,9 +948,10 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
             const rec: any = {
               x: Math.round(r.left), y: Math.round(r.top),
               w: Math.round(r.width), h: Math.round(r.height),
-              kind: kindOf(el, tag, leaf, text)
+              kind: kindOf(el, tag, leaf, text, r)
             }
             if (text) rec.text = text
+            if (ph) rec.ph = 1
             if (focus) rec.focus = true
             // THE ELEMENT'S OWN TYPE (2026-08-29, the human: "the input box of add task is in a
             // different place"). The boxes already matched; what did not was the text INSIDE the
@@ -919,19 +973,25 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
             //   fw  1        font-weight ≥ 600
             //   td  1        text-decoration-line contains line-through
             //   it  1        font-style italic
-            //   op  0..1     opacity, only when the page has faded it
-            //   on  1        a `check` that is ticked (checked / aria-checked)
+            //   op  0..1     EFFECTIVE opacity (ancestors multiplied in), only when faded
+            //   on  1        a `check` that is ticked (checked / aria-checked / aria-pressed / data-*)
             //   dis 1        disabled / aria-disabled
+            //   ff  sans|mono|serif   the family the text is set in (mirror-9)
+            //   tt  'u'      text-transform:uppercase — the casing the page shows
+            //   ph  1        the text came from a field's PLACEHOLDER, so the field is empty
             //
             // These are MEASUREMENTS, not paint: tools/viz.mjs dyeOf maps each colour to the nearest
             // design token at derive time and the SVG emits only var(--token) — no app colour has
             // ever reached, or may reach, the board.
             //
-            // ONE getComputedStyle per kept element (CAP is 150), where it used to be one per
-            // text-bearing element — the same call, asked more questions.
+            // The style was already resolved ABOVE, once per VISITED on-screen element — the walk
+            // needs each element's own opacity and visibility to carry the effective value down to
+            // its children (mirror-9), so it can no longer be deferred to the ≤150 kept ones.
+            // (Corrected 2026-09-02, rule 6: this comment used to say "one per kept element".) The
+            // cost is bounded by the same BUDGET the walk already obeys, and every element that
+            // reaches it has just been measured with getBoundingClientRect anyway.
             try {
-              const cs = getComputedStyle(el)
-              if (text) {
+              if (text && cs) {
                 const fs = parseFloat(cs.fontSize)
                 if (fs > 0) rec.fs = Math.round(fs * 10) / 10
                 let ta = cs.textAlign
@@ -948,6 +1008,17 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
                 if (parseInt(cs.fontWeight, 10) >= 600) rec.fw = 1
                 if (/line-through/.test(String(cs.textDecorationLine || cs.textDecoration || ''))) rec.td = 1
                 if (String(cs.fontStyle || '') === 'italic') rec.it = 1
+                // THE FAMILY THE PAGE SETS IT IN (mirror-9). Everything typed was drawn sans except a
+                // field's value, which was always mono — and the photograph shows the app's own sans
+                // in both. `sans` unless the stack names a typewriter face; `serif` is recorded
+                // honestly and the drawing maps it to sans, the only two families the board has.
+                const fam = String(cs.fontFamily || '').toLowerCase()
+                rec.ff = /mono|courier|menlo|consolas|monaco|sf ?mono/.test(fam)
+                  ? 'mono'
+                  : (!/sans/.test(fam) && /serif|georgia|times/.test(fam)) ? 'serif' : 'sans'
+                // …and the casing it shows them in: a tracked uppercase section label is a different
+                // component from a sentence, and drawing it in title case loses that
+                if (String(cs.textTransform || '') === 'uppercase') rec.tt = 'u'
               }
               const bg = rgb(cs.backgroundColor)
               if (bg) rec.bg = bg
@@ -960,18 +1031,21 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
               }
               const rd = parseFloat(cs.borderTopLeftRadius) || 0
               if (rd > 0) rec.rd = Math.round(Math.min(rd, 40) * 10) / 10
-              const op = parseFloat(cs.opacity)
-              if (op >= 0 && op < 1) rec.op = Math.round(op * 100) / 100
             } catch { /* an element that will not compute simply has no measured type */ }
+            // the EFFECTIVE opacity, ancestors included — anything under 0.05 never got this far.
+            // Outside the try, because a page that will not compute a style still fades its subtree.
+            if (eop < 1) rec.op = Math.round(eop * 100) / 100
             // …and the two facts the style cannot answer, straight off the element
-            if (rec.kind === 'check' && (el.checked === true || el.getAttribute('aria-checked') === 'true')) rec.on = 1
+            if (rec.kind === 'check' && (el.checked === true || el.getAttribute('aria-checked') === 'true' ||
+              el.getAttribute('aria-pressed') === 'true' || el.getAttribute('data-checked') === 'true' ||
+              el.getAttribute('data-done') === 'true')) rec.on = 1   // never guessed: no signal, no tick
             if (el.disabled === true || el.getAttribute('aria-disabled') === 'true') rec.dis = 1
             els.push(rec)
           }
-          if (tag !== 'SVG') walk(el, depth + 1)     // an inline svg is ONE picture, not a shape tree
+          if (tag !== 'SVG') walk(el, depth + 1, eop)   // an inline svg is ONE picture, not a shape tree
         }
       }
-      if (document.body) walk(document.body, 0)
+      if (document.body) walk(document.body, 0, 1)
       return { w: vw, h: vh, ring: rb, els }
     }, LAST_BOX), 2500)
     if (!data || !Array.isArray(data.els) || !data.els.length) return
@@ -1000,7 +1074,7 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   // paints catches it MID-SLIDE, hanging below where it will rest — which side-by-side disagrees with
   // the drawn cell that shows the settled position. The same settle snapValue already gives the value
   // frames (OVERLAY_SETTLE_MS) makes the after frame photograph the card where it comes to rest.
-  if (phase === 'after' && process.env.BOARD_RECORD && CURRENT_PAGE) {
+  if (phase === 'after' && CURRENT_PAGE) {          // every run paints the card now, so every run lets it land
     await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
   }
   await snapEvidence(id, beat, seq, phase)
@@ -1022,7 +1096,7 @@ async function snapValue (): Promise<void> {
   // the far end of a beat — so the first cut of this harvest photographed the ring MID-FLIGHT,
   // hanging between the box it left and the value it was pointing at. A frame whose ring is on the
   // wrong element is worse than no frame: it is a picture that misreads itself.
-  if (process.env.BOARD_RECORD) await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
+  await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})   // every run paints the card (2026-09-02), so every run lets it settle
   await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0))
 }
 // the overlay's own transition (.16s) plus a frame — the ring is where it says it is after this

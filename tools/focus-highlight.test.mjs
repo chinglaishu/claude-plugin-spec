@@ -4,8 +4,10 @@
 // the asserted row, and a ring on the exact cell (indigo normally, bengara on a failed check — since
 // 33049fb the ring wears the schematic callout's own indigo so drawn and real share ONE geometry, R19) — burned
 // into the video and shown in the live watch. This test drives the REAL helpers and fails if the
-// overlay stops appearing, stops tracking the cell, stops going red on failure, or starts appearing
-// when nobody is recording. Headless; the ring geometry is identical headed or not.
+// overlay stops appearing, stops tracking the cell, stops going red on failure, or STOPS appearing
+// on a plain run — the overlay paints on every run since 2026-09-02 (the human: no gap between
+// schematic and proof, ever; a recording-gated ring let `npm run e2e` harvest ringless frames over
+// the board's ringed ones). Headless; the ring geometry is identical headed or not.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -45,10 +47,11 @@ function run (env, grep) {
       `  expect(threw, 'a wrong value must fail the check').toBe(true)\n` +
       `  await expect(page.locator('#__specboard-focus .sb-ring')).toHaveCSS('border-top-color', 'rgb(141, 74, 56)')\n` +  // bengara (#8d4a38, the token)
       `})\n` +
-      `test('no overlay when nobody is recording', async ({ page }) => {\n` +
+      `test('the overlay paints on a plain run too', async ({ page }) => {\n` +
       `  await page.goto(TABLE)\n` +
       `  await proveVisible(page.locator('#t'), '4.00%', 'R&M growth')\n` +
-      `  expect(await page.locator('#__specboard-focus').count()).toBe(0)\n` +
+      `  expect(await page.locator('#__specboard-focus').count()).toBe(1)\n` +
+      `  await expect(page.locator('#__specboard-focus .sb-ring')).toBeVisible()\n` +
       `})\n`)
     writeFileSync(join(dir, 'focus.config.ts'),
       `import { defineConfig } from '@playwright/test'\n` +
@@ -63,13 +66,14 @@ function run (env, grep) {
   }
 }
 
-test('reveal paints a focus ring that tracks the cell, reddens on failure, and stays off without a recording', () => {
+test('reveal paints a focus ring that tracks the cell, reddens on failure, and paints on a plain run too', () => {
   // A recording is on (BOARD_RECORD); BOARD_STEP_DELAY_MS=1 keeps the readable hold from slowing the test.
   const rec = run({ BOARD_RECORD: join(ROOT, '.focus-rec-out'), BOARD_STEP_DELAY_MS: '1' }, 'ring')
   rmSync(join(ROOT, '.focus-rec-out'), { recursive: true, force: true })
   assert.equal(rec.status, 0, `recorded run should paint + redden the ring:\n${rec.stdout}\n${rec.stderr}`)
 
-  // No recording → nothing to watch → no overlay.
-  const off = run({}, 'no overlay')
-  assert.equal(off.status, 0, `non-recorded run should paint no overlay:\n${off.stdout}\n${off.stderr}`)
+  // No recording → the SAME ring and card (2026-09-02): a plain run's harvest must photograph what a
+  // recorded one does, or the fold degrades the reader the next time someone runs from a terminal.
+  const off = run({}, 'plain run')
+  assert.equal(off.status, 0, `plain run should paint the overlay too:\n${off.stdout}\n${off.stderr}`)
 })

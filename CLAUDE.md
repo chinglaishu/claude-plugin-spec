@@ -209,7 +209,12 @@ change.
   keep-the-clip-across-CLI-folds decision — there is no clip left to keep; the human's stepper
   choice of 2026-08-24 supersedes it, and carryClip went with the cut. Frames are downscaled to
   1280px at the fold when ffmpeg is present (640px originally, final review M4; raised to 1280 by
-  Task 16 #2, the human's 2026-08-24 sign-off — 640 was visibly soft in the wider panes).
+  Task 16 #2, the human's 2026-08-24 sign-off — 640 was visibly soft in the wider panes). **The ring and the
+  callout paint on EVERY run, recording or not (2026-09-02)** — they were recording-gated, so a plain
+  `npm run e2e` harvested RINGLESS frames and ringless layout skeletons and the fold wrote them over
+  the board's ringed harvest: the reader lost its zoom, ring and callout, and the drawing beside it
+  (drawn from the same skeleton) lost them too — the second root cause of "the focus effect is gone".
+  Only the video and the narration holds (`recordHold`) stay recording-only.
 - **Staleness is CONTENT-aware; mtime alone calls a clean checkout stale.** A pass counts only
   while current, but "the source moved" was measured purely by mtime — and a fresh clone stamps
   every file with checkout time, so the GitHub Actions gate read every requirement untested on a
@@ -253,6 +258,21 @@ change.
   `_results-index.json`, never replaced — replacing blanks every other screen's proof. The fold
   is a Playwright reporter (`spec/_results-reporter.mjs`), because Playwright writes its report only
   *after* globalTeardown.
+- **The mirror is guarded, so the gap between the drawing and the proof cannot open again** (the
+  human, 2026-09-02). Twice the kit quietly stopped drawing something the harvest had measured — the
+  tick box, then a ringed row's own leaves — and only a person's eye on a beat row caught it. Three
+  derived guards now stand between a renderer change and a shipped skeleton: `mirrorGaps`
+  (tools/viz.mjs, pure) checks EVERY frame against the same reading of the skeleton it was drawn
+  from (`mirrorRead` — one authority; a guard that re-states the drawing's rules drifts from them),
+  and `renderWireframe` returns those reports; `tools/viz-derive.mjs` prints them and still writes
+  the drawing; `npm run proof mirror` (tools/proof-integrity.mjs `checkMirrors`) refuses a committed
+  drawing that has a gap or whose `data-viz-layout` pin no longer hashes the harvest on disk; and the
+  storyline's ONE stale banner reads both reasons a drawing goes stale — the text moved, or the app
+  did (`layoutStaleOf` in build-board bakes `data-viz-layout-stale`). So a change to `snapLayout` or
+  to `frameBody` that drops a measured element now FAILS the gate instead of shipping a skeleton. If
+  a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
+  the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
+  words), tighten the rule rather than silencing it.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.

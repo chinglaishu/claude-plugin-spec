@@ -4,7 +4,7 @@
 // honesty rule: a requirement the kit cannot draw stays text-only, never a wrong picture.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion } from './viz.mjs'
+import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion, mirrorGaps, gapSummary } from './viz.mjs'
 // the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
 // both of them read rather than restating numbers here
 import { RING, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
@@ -668,7 +668,7 @@ test('the mirror stamps its renderer pin, so a kit change is legible on disk', (
   // mirror-8 is COLOUR AND STATE — the harvest's bg/fg/bd/rd/fw/td/op/dis and the `check` kind,
   // each mapped to its nearest dye (dyeOf). mirror-7 was the page's own TYPE, mirror-6 the card as
   // one sentence, mirror-5 the shared geometry.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-8"'))
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-9"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -1493,4 +1493,241 @@ test('no placeholder bar is drawn on a box whose words live in a nested leaf', (
   const bars = (frame0.match(/fill="var\(--line3\)"/g) || []).length
   assert.equal(bars, 1, 'one bar for the empty button, none over the labelled one')
   assert.match(frame0, />All tasks</)
+})
+
+// ── mirror-9 (2026-09-02): THE RINGED THING IS DRAWN, NOT SUMMARISED ─────────────────────────────
+// The human, looking at demo/todo's R1 scene 3: "schematic still looks like skeleton … all styling,
+// component should be same (like currently even missing tickbox, and the 'just added now' is totally
+// unacceptable)". Three separate defects met in that one row, and each is pinned below:
+//   1. the ringed row's CHILDREN were not drawn at all — frameBody skipped every focus element and
+//      pickFocus then typed the row's concatenated innerText ("Water the plants added just now") as
+//      one mono line, losing the tick box, the title, the stamp and the chevron;
+//   2. the row's hover-only edit/delete buttons carry opacity 0, but their child icons carry none,
+//      so three wash squares were drawn where the photograph shows one chevron;
+//   3. a 21×21 wordless <button> (Tsumiki's tick box) got the "no measured text" placeholder bar,
+//      which reads as a dot inside a circle.
+// The fixture is the real harvest's shape (demo/todo/spec/todo/evidence/R1.b1.v3.layout.json).
+// page px → the drawing's own units, rounded the way the kit rounds (r1) — so a pin can name the
+// element it means by the box the page measured
+const r = v => Math.round(v * (600 / 1440) * 10) / 10
+//
+// THE CAPTURE SIDE HAS NO UNIT HERE, and cannot: snapLayout's measurement is a closure serialised
+// into a real browser (spec/_base.ts), so there is nothing to import. What it must produce is pinned
+// by the fixtures below (they are the shape of a real harvest) and checked BY HAND on the next run:
+//   · an `opacity:0` control and everything inside it is ABSENT from the layout JSON, not present
+//     with op:0 — grep a fresh spec/<screen>/evidence/*.layout.json for `"op":0`, there should be none;
+//   · a hand-rolled tick box (a wordless square <button> with no children) comes back kind:"check";
+//   · every text-bearing record carries ff, and a placeholder-only field carries ph:1;
+//   · an uppercased label carries tt:"u" with its text in the page's own casing.
+const ROW_ADDED = focus => {
+  const f = focus ? { focus: true } : {}
+  return {
+    w: 1440,
+    h: 900,
+    ring: focus ? { x: 271, y: 725.5, w: 738, h: 69.75 } : null,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+      { x: 270, y: 105, w: 740, h: 70, kind: 'container', bg: '255,255,255', bd: '236,238,242', rd: 14 },
+      // the ringed row: two nesting wrappers, each carrying the CONCATENATED innerText the capture
+      // takes for a focused box, then the leaves that actually hold the words
+      { x: 270, y: 725, w: 740, h: 72, kind: 'container', text: 'Water the plants added just now', fs: 15, ta: 'l', pl: 1, pr: 1, fg: '30,35,48', bg: '255,255,255', bd: '236,238,242', rd: 14, ...f },
+      { x: 271, y: 726, w: 738, h: 70, kind: 'container', text: 'Water the plants added just now', fs: 15, ta: 'l', pl: 16, pr: 16, fg: '30,35,48', ...f },
+      { x: 287, y: 750, w: 21, h: 21, kind: 'button', bg: '255,255,255', bd: '223,226,233', rd: 7, ...f },
+      { x: 321, y: 740, w: 553, h: 23, kind: 'text', text: 'Water the plants', fs: 15, ta: 'l', ff: 'sans', fg: '30,35,48', ...f },
+      { x: 321, y: 764, w: 553, h: 17, kind: 'text', text: 'added just now', fs: 11.5, ta: 'l', ff: 'sans', fg: '174,180,194', ...f },
+      // hover-only: the button is faded to nothing, its icon inherits that and carries no op of its own
+      { x: 887, y: 746, w: 28, h: 28, kind: 'button', rd: 8, op: 0, ...f },
+      { x: 893, y: 752, w: 16, h: 16, kind: 'text', text: 'delete', fs: 11, ta: 'c', ...f },
+      // …and the one control the photograph really does show
+      { x: 928, y: 748, w: 24, h: 24, kind: 'button', ...f },
+      { x: 934, y: 753, w: 12, h: 15, kind: 'image', ...f }
+    ]
+  }
+}
+const ROWB = b('a list with two tasks', 'you add another', 'the new row appears at the end')
+
+test('mirror-9: a ringed ROW draws its own children — never one concatenated line', () => {
+  const d = renderWireframe([{ before: ROW_ADDED(false), after: ROW_ADDED(true) }], { behavior: ROWB, id: 'R1' })
+  const f1 = frameOf(d.svg, 1)
+  assert.match(f1, /<text[^>]*>Water the plants</, 'the title leaf is typed on its own')
+  assert.match(f1, /<text[^>]*>added just now</, 'and so is the stamp the human called out by name')
+  assert.ok(!f1.includes('Water the plants added just now'),
+    'the row\'s concatenated innerText is never drawn as a line')
+  // the tick box is a real component again: its own plate, at its own radius and border dye
+  assert.match(f1, new RegExp('x="' + r(287) + '" y="' + r(750) + '" width="' + r(21) + '" height="' + r(21) + '"'),
+    'the tick box is drawn')
+  assert.ok(/stroke="var\(--ai\)"/.test(f1), 'the ring is still painted')
+  assert.ok(/fill="var\(--ink\)" opacity="0\.12"/.test(f1), 'and the dim wash with it')
+})
+
+test('mirror-9: an element the page has faded to nothing is not drawn, nor anything inside it', () => {
+  const d = renderWireframe([{ before: ROW_ADDED(false), after: ROW_ADDED(true) }], { behavior: ROWB, id: 'R1' })
+  for (const k of [0, 1]) {
+    const f = frameOf(d.svg, k)
+    assert.ok(!f.includes('>delete<'), `frame ${k}: a child of an opacity-0 control is not drawn either`)
+    assert.ok(!new RegExp('x="' + r(887) + '" y="' + r(746) + '"').test(f),
+      `frame ${k}: the opacity-0 control itself is not drawn`)
+  }
+  // the visible chevron beside it survives — this is a fade rule, not a "drop the icons" rule
+  assert.match(frameOf(d.svg, 0), new RegExp('x="' + r(928) + '" y="' + r(748) + '"'), 'the visible control stays')
+})
+
+test('mirror-9: a small wordless control is its plate alone — no placeholder bar', () => {
+  const L = { w: 1440, h: 900, ring: null, els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 287, y: 750, w: 21, h: 21, kind: 'button', bg: '255,255,255', bd: '223,226,233', rd: 7 },
+    { x: 400, y: 750, w: 197, h: 37, kind: 'button', rd: 9 }        // a real, roomy empty button keeps its bar
+  ] }
+  const f0 = frameOf(renderWireframe([{ before: L, after: L, values: [] }], { id: 'R1' }).svg, 0)
+  assert.equal((f0.match(/fill="var\(--line3\)"/g) || []).length, 1,
+    'the 21×21 tick box gets no bar; the 197×37 button still does')
+})
+
+test('mirror-9: text is drawn in the page\'s own family — sans unless the harvest measured mono', () => {
+  const lay = ff => ({ w: 1440, h: 900, ring: null, els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 312, y: 37, w: 452, h: 47, kind: 'input', text: 'Water the plants', fs: 15, ta: 'l', pl: 13, ...(ff ? { ff } : {}) }
+  ] })
+  const sans = frameOf(renderWireframe([{ before: lay(null), after: lay(null), values: [] }], { id: 'R1' }).svg, 0)
+  assert.match(sans, /font-family="var\(--sans\)"[^>]*>Water the plants</,
+    'an unmeasured family is the app\'s sans, not the old forced mono')
+  const mono = frameOf(renderWireframe([{ before: lay('mono'), after: lay('mono'), values: [] }], { id: 'R1' }).svg, 0)
+  assert.match(mono, /font-family="var\(--mono\)"[^>]*>Water the plants</, 'a measured mono field stays mono')
+  // the design system has --sans and --mono only: a serif page maps to sans rather than inventing a token
+  const serif = renderWireframe([{ before: lay('serif'), after: lay('serif'), values: [] }], { id: 'R1' }).svg
+  assert.ok(!/var\(--serif\)/.test(serif), 'no third family token is ever emitted')
+  assert.match(frameOf(serif, 0), /font-family="var\(--sans\)"[^>]*>Water the plants</)
+})
+
+test('mirror-9: an uppercased label is drawn uppercased, and a placeholder in the quiet ink', () => {
+  const L = { w: 1440, h: 900, ring: null, els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 325, y: 189, w: 69, h: 17, kind: 'text', text: 'Sub-tasks', fs: 11, ta: 'l', tt: 'u', fg: '174,180,194' },
+    { x: 312, y: 37, w: 452, h: 47, kind: 'input', text: 'Add a task and press Enter…', fs: 15, ta: 'l', pl: 13, ph: 1, fg: '0,0,0' }
+  ] }
+  const f0 = frameOf(renderWireframe([{ before: L, after: L, values: [] }], { id: 'R1' }).svg, 0)
+  assert.match(f0, />SUB-TASKS</, 'text-transform:uppercase is what the page shows, so it is what the mirror draws')
+  assert.ok(!f0.includes('>Sub-tasks<'), 'and the un-transformed casing is not drawn beside it')
+  assert.match(f0, /fill="var\(--ink-4\)"[^>]*>Add a task and press Enter…</,
+    'a placeholder is the field\'s empty state, never its measured text colour')
+})
+
+// ── THE MIRROR CANNOT SILENTLY DRIFT FROM THE PROOF (the human, 2026-09-02) ───────────────────────
+// "make sure the gap between schematic and proof will not exist again." Twice now a renderer change
+// quietly stopped drawing something the harvest had measured — the tick box, the row's own leaves —
+// and nothing on the board said so; it took the human's eye on a beat row. mirrorGaps is the derived
+// guard: it reads the frame that was drawn and asks, against the SAME reading of the skeleton the
+// frame drew from, whether every measured word, plate and ring actually landed. Zero gaps is the
+// contract; a gap is named, with the box to find it in, in the page's own units.
+const GUARD = focus => {
+  const f = focus ? { focus: true } : {}
+  return {
+    w: 1440,
+    h: 900,
+    ring: focus ? { x: 271, y: 725.5, w: 738, h: 69.75 } : null,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+      // a field carrying its typed value, and the button beside it
+      { x: 312, y: 37, w: 452, h: 47, kind: 'input', text: 'Water the plants', fs: 15, ta: 'l', pl: 13, bg: '255,255,255', bd: '79,70,229', rd: 12 },
+      { x: 780, y: 37, w: 96, h: 47, kind: 'button', text: 'Add', fs: 15, bg: '79,70,229', fg: '255,255,255', rd: 12 },
+      // an uppercased section label, and a tick box in each state
+      { x: 325, y: 189, w: 69, h: 17, kind: 'text', text: 'Sub-tasks', fs: 11, ta: 'l', tt: 'u', fg: '174,180,194' },
+      { x: 287, y: 640, w: 21, h: 21, kind: 'check', on: true, bg: '22,101,52', rd: 7 },
+      { x: 287, y: 690, w: 21, h: 21, kind: 'check', bg: '255,255,255', bd: '223,226,233', rd: 7 },
+      // the ringed row and the two leaves that hold its words
+      { x: 270, y: 725, w: 740, h: 72, kind: 'container', text: 'Water the plants added just now', fs: 15, ta: 'l', pl: 1, pr: 1, fg: '30,35,48', bg: '255,255,255', bd: '236,238,242', rd: 14, ...f },
+      { x: 321, y: 740, w: 553, h: 23, kind: 'text', text: 'Water the plants', fs: 15, ta: 'l', ff: 'sans', fg: '30,35,48', ...f },
+      { x: 321, y: 764, w: 553, h: 17, kind: 'text', text: 'added just now', fs: 11.5, ta: 'l', ff: 'sans', fg: '174,180,194', ...f },
+      // hover-only, faded to nothing, with a child that carries no opacity of its own
+      { x: 887, y: 746, w: 28, h: 28, kind: 'button', rd: 8, op: 0, ...f },
+      { x: 893, y: 752, w: 16, h: 16, kind: 'text', text: 'delete', fs: 11, ta: 'c', ...f },
+      // a smudge: below the kit's 4×2.5 floor, deliberately not drawn — and so never a gap
+      { x: 1200, y: 860, w: 6, h: 4, kind: 'text', text: 'x', fs: 3 }
+    ]
+  }
+}
+const GUARDB = b('a list with two tasks', 'you add another', 'the new row appears at the end')
+const guardFrame = n => frameOf(renderWireframe([{ before: GUARD(false), after: GUARD(true) }],
+  { behavior: GUARDB, id: 'R1', pass: true }).svg, n)
+
+test('mirrorGaps: a hand-made skeleton — a ringed row, a tick box, a faded control — draws with no gaps', () => {
+  assert.deepEqual(mirrorGaps(GUARD(true), guardFrame(1), { focus: true }), [],
+    'every measured word, plate and ring the kit claims to draw is in the ringed frame')
+  assert.deepEqual(mirrorGaps(GUARD(false), guardFrame(0), { focus: false, anchors: [{ x: 271, y: 725.5, w: 738, h: 69.75 }] }), [],
+    'and in the given frame, whose ghost stands in for the box it is drawn over')
+})
+
+test('mirrorGaps names a word the drawing dropped — the guard can actually fail', () => {
+  const f = guardFrame(1)
+  const cut = f.replace(/<text[^>]*>added just now<\/text>/, '')
+  const gaps = mirrorGaps(GUARD(true), cut, { focus: true })
+  assert.equal(gaps.length, 1, gapSummary(gaps))
+  assert.equal(gaps[0].kind, 'missing-text')
+  assert.match(gaps[0].what, /added just now/)
+  assert.deepEqual({ x: gaps[0].x, y: gaps[0].y, w: gaps[0].w, h: gaps[0].h }, { x: 321, y: 764, w: 553, h: 17 },
+    'the box is in PAGE units — where to find it on the real screen')
+})
+
+test('mirrorGaps names a plate the drawing dropped — the tick box the human missed by eye', () => {
+  const f = guardFrame(1)
+  const cut = f.replace(new RegExp('<rect x="' + r(287) + '" y="' + r(690) + '"[^>]*/>'), '')
+  const gaps = mirrorGaps(GUARD(true), cut, { focus: true })
+  assert.equal(gaps.length, 1, gapSummary(gaps))
+  assert.equal(gaps[0].kind, 'missing-box')
+  assert.deepEqual({ x: gaps[0].x, y: gaps[0].y }, { x: 287, y: 690 })
+})
+
+test('mirrorGaps catches a box the page faded to nothing that the frame painted anyway', () => {
+  const painted = guardFrame(1) +
+    `<rect x="${r(887)}" y="${r(746)}" width="${r(28)}" height="${r(28)}" fill="var(--wash)"/>`
+  const gaps = mirrorGaps(GUARD(true), painted, { focus: true })
+  assert.equal(gaps.length, 1, gapSummary(gaps))
+  assert.equal(gaps[0].kind, 'hidden-drawn')
+  assert.deepEqual({ x: gaps[0].x, y: gaps[0].y }, { x: 887, y: 746 })
+})
+
+test('mirrorGaps catches a ringed scene that lost its ring', () => {
+  const noring = guardFrame(1).replace(/stroke="var\(--ai\)"/g, 'stroke="var(--line2)"')
+  const gaps = mirrorGaps(GUARD(true), noring, { focus: true })
+  assert.ok(gaps.some(g => g.kind === 'ring-missing'), gapSummary(gaps))
+  assert.deepEqual({ x: gaps[0].x, y: gaps[0].y, w: gaps[0].w, h: gaps[0].h },
+    { x: 271, y: 725.5, w: 738, h: 69.8 }, 'the ring the assertion pointed at, in page units (one decimal: a locator, not a measurement)')
+})
+
+test('gapSummary counts a run of gaps by kind, for the derive line', () => {
+  assert.equal(gapSummary([]), '')
+  assert.equal(gapSummary([{ kind: 'missing-text' }, { kind: 'hidden-drawn' }, { kind: 'missing-text' }]),
+    'missing-text 2, hidden-drawn 1')
+})
+
+// THE REAL HARVEST, NOT A FIXTURE (the lead's rule: verify on real data). The demo project's own
+// committed skeletons — a 1440×900 Tsumiki page, 100+ elements, three asserted values and both ends
+// — are the shape the renderer actually meets. A gap here is a real omission in the kit, never a
+// fixture that flatters it.
+const DEMO_EV = new URL('../demo/todo/spec/todo/evidence/', import.meta.url)
+const demoLayout = n => JSON.parse(readFileSync(new URL(`R1.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+
+test('mirrorGaps: the demo\'s real harvest draws everything it measured — zero gaps, every frame', () => {
+  const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3'].map(demoLayout) }
+  const d = renderWireframe([beat], { behavior: GUARDB, id: 'R1', pass: true })
+  assert.equal(d.gaps.length, 5, 'one report per drawn frame: the given, three asserted values, the result')
+  for (const g of d.gaps) {
+    assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
+  }
+})
+
+// ── STALE BY LAYOUT, NOT ONLY BY TEXT (the human, 2026-09-02) ────────────────────────────────────
+// A drawing can stop being true two ways: the requirement is reworded (data-stale, the text pin), or
+// the APP MOVES and the harvest beside it is newer than the drawing (this). Both are baked onto the
+// same figure, both are said by the one storyline banner, and both can be true at once.
+test('renderSchematic bakes the layout-stale mark beside the text-stale one', () => {
+  const d = deriveSchematic(CLEAR)
+  const viz = { svg: d.svg, phases: d.phases, hash: vizHash(CLEAR), textHash: vizHash(CLEAR), at: '2026-09-02', stale: false }
+  assert.ok(!/data-viz-layout-stale/.test(renderSchematic({ viz })), 'a current drawing carries no layout mark')
+  const moved = renderSchematic({ viz }, true)
+  assert.match(moved, /data-viz-layout-stale="1"/, 'the harvest has moved past this drawing')
+  assert.ok(!/ data-stale="1"/.test(moved), 'and that is not the same fact as the text having moved')
+  const both = renderSchematic({ viz: { ...viz, stale: true } }, true)
+  assert.match(both, / data-stale="1"/)
+  assert.match(both, /data-viz-layout-stale="1"/)
 })

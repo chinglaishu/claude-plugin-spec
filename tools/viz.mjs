@@ -695,17 +695,24 @@ const nearestByValue = (l, names) =>
 
 // dyeOf(colour, role) → the token NAME ('ai', 'ink-3', 'bengara-line'), or null when there is no
 // colour to speak of. Pure, total, and deterministic: the same capture always draws the same dye.
+// TEXT IS DRAWN ON THE PAPER GROUND, so `paper` is a colour only a genuinely near-white text may
+// take (mirror-9, 2026-09-02, rule 7). The demo's "added just now" stamp is #aeb4c2: grey enough to
+// land on the neutral ladder, and light enough that PAPER was its nearest rung by value — paper on
+// paper, which is nothing at all, on the very element the human named as unacceptable. White text on
+// a solid button is still paper; everything below this line takes the nearest rung a reader can see.
+const NEAR_WHITE = 0.9
 export function dyeOf (colour, role) {
   const names = NEUTRALS[role]
   if (!names) return null
   const rgb = parseRGB(colour)
   if (!rgb) return null
   const { h, c, l } = hcl(rgb)
-  if (c < GREY) return nearestByValue(l, names)
+  const readable = role === 'fg' && l < NEAR_WHITE ? names.filter(n => n !== 'paper') : names
+  if (c < GREY) return nearestByValue(l, readable.length ? readable : names)
   const hue = h < 30 ? h + 360 : h
   const fam = (FAMILIES.find(f => hue >= f.lo && hue < f.hi) || FAMILIES[3]).name
   if (role === 'bd') return fam + '-line'
-  if (role === 'fg') return l >= 0.85 ? 'paper' : fam
+  if (role === 'fg') return l >= NEAR_WHITE ? 'paper' : fam
   return l >= TINT_L ? fam + '-tint' : fam
 }
 const LAYOUT_W = 600                       // the drawing's internal width; the pane scales by CSS
@@ -731,9 +738,27 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // kind that knows whether it is ticked), and the drawing maps each to its nearest dye (dyeOf above).
 // The human's word for what it replaced was "a skeleton" — the chips, the primary button, the ticked
 // box and the struck-through done row were all the same grey bar. No raw colour reaches the SVG.
-const MIRROR_KIT = 'mirror-8'
+// `mirror-9` (2026-09-02) is THE RINGED THING ITSELF. The human, on the demo's R1 scene 3: "schematic
+// still looks like skeleton … all styling, component should be same (like currently even missing
+// tickbox, and the 'just added now' is totally unacceptable)". Four faults met on that one row:
+// the kit SKIPPED every element inside the ring and typed the row's concatenated innerText as one
+// mono line (so the tick box, the title, the stamp and the chevron all vanished); the row's
+// hover-only controls are `opacity:0` but their child icons carry none, so three wash squares were
+// drawn where the photograph shows one chevron; a 21×21 wordless <button> got the "no measured text"
+// placeholder bar and read as a dot in a circle; and the stamp's own pale grey mapped to `paper`,
+// which on the paper ground is nothing at all. Now every element is drawn ringed or not, a faded
+// box takes its subtree with it, a small wordless control is its plate alone, and text is drawn in
+// the family, casing and dye the page gives it (ff / tt / ph).
+const MIRROR_KIT = 'mirror-9'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+// a nests inside b — the ONE tolerance the whole kit uses for "this box is inside that one"
+const nestsIn = (a, b) => a !== b && a.x >= b.x - 0.6 && a.y >= b.y - 0.6 &&
+  a.x + a.w <= b.x + b.w + 0.6 && a.y + a.h <= b.y + b.h + 0.6
+// WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT DRAW (mirror-9). Below this much effective
+// opacity an element is invisible on the page; the capture already skips those subtrees, and this is
+// the render side of the same rule, for a skeleton harvested before it.
+const GONE = 0.05
 
 // The layout files are HARVESTED data, not authored: every field is untrusted. Anything malformed
 // is dropped rather than drawn, and a layout with no usable box yields null — the caller then
@@ -787,14 +812,33 @@ function normLayout (l) {
       it: !!e.it,
       on: !!e.on,
       dis: !!e.dis,
-      op: op > 0 && op < 1 ? clamp(op, 0.05, 0.99) : null
+      // the FAMILY the page renders this text in (mirror-9): the design system has --sans and --mono
+      // only, so a measured serif maps to sans rather than inventing a third token. Absent — an older
+      // skeleton — it stays null and each draw site keeps its own house default.
+      ff: e.ff === 'mono' ? 'mono' : (e.ff === 'sans' || e.ff === 'serif' ? 'sans' : null),
+      tt: e.tt === 'u' ? 'u' : null,          // text-transform:uppercase — draw what the page shows
+      ph: !!e.ph,                             // the text came from the field's placeholder, not its value
+      op: op != null && op >= GONE && op < 1 ? clamp(op, GONE, 0.99) : null,
+      gone: op != null && op < GONE
     })
   }
+  // …and an element the page has faded to nothing takes its whole subtree with it (mirror-9,
+  // 2026-09-02). Tsumiki's row hides its edit/delete buttons at `opacity:0` until hover; opacity is
+  // on the BUTTON, so its 16×16 icon carried none of its own and three wash squares were drawn where
+  // the photograph shows one chevron. A box that is not on screen cannot have children that are.
+  const gone = els.filter(e => e.gone)
+  const live = els.filter(e => !e.gone && !gone.some(g => nestsIn(e, g)))
+  // …and what was dropped is REPORTED, not just forgotten (2026-09-02): mirrorGaps needs the boxes
+  // the page had faded away in order to say a frame painted one of them anyway. Derived here so
+  // there is one rule for "not on screen", never a second reading of `op` somewhere else.
+  const hidden = els.filter(e => e.gone || gone.some(g => nestsIn(e, g)))
+    .map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h, kind: e.kind, text: e.text }))
+  for (const e of live) delete e.gone
   const r = l.ring && typeof l.ring === 'object' ? l.ring : null
   const ring = r && num(r.x) != null && num(r.y) != null && num(r.w) > 0 && num(r.h) > 0
     ? { x: num(r.x), y: num(r.y), w: num(r.w), h: num(r.h) }
     : null
-  return { w, h, ring, els }
+  return { w, h, ring, els: live, hidden }
 }
 
 // The layout PIN — the same role reqHash plays for the text. Hashes the GEOMETRY the drawing was
@@ -953,7 +997,12 @@ function cardRegionBox (spec, ring, vw, vh) {
 function valueMark (f, text, W, H, hot, region) {
   const label = fitText(text, 460, 12)
   if (!label) return { svg: '', box: null }
-  const ink = hot ? 'ink' : 'ink-3'
+  // THE ELEMENT'S OWN TYPE, COLOUR INCLUDED (mirror-9): a measured value is drawn in the family and
+  // the dye the page gives it, not forced into ink and a typewriter face — the photograph beside it
+  // shows the app's own sans. A value that was never measured (the requirement's own quoted words,
+  // an older skeleton) keeps the typed-value convention, so authored and measured never look alike.
+  const ink = hot ? (f.fg || 'ink') : 'ink-3'
+  const fam = f.ff || 'mono'                           // the ghost's family is measured too; only the INK says authored vs read
   // WHERE THE PAGE PUTS IT (the human, 2026-08-29: "the input box of add task is in a different
   // place"). Sizing the value off the ring box's HEIGHT is right for a text leaf — its box IS its
   // line — and wrong for a FIELD: a 47px Add input drew its typed value mid-box at ~2.5× the type
@@ -975,12 +1024,12 @@ function valueMark (f, text, W, H, hot, region) {
   if (fit >= 4) {
     const base = f.y + f.h / 2 + fit * 0.35
     const align = mfs ? (f.ta || 'l') : 'c'
-    if (align === 'l') return { svg: svgText(f.x + pad.l, base, fit, ink, 'mono', say(label)), box: null }
+    if (align === 'l') return { svg: svgText(f.x + pad.l, base, fit, ink, fam, say(label)), box: null }
     if (align === 'r') {
-      return { svg: svgText(f.x + f.w - pad.r, base, fit, ink, 'mono', say(label), ' text-anchor="end"'), box: null }
+      return { svg: svgText(f.x + f.w - pad.r, base, fit, ink, fam, say(label), ' text-anchor="end"'), box: null }
     }
     return {
-      svg: svgText(f.x + f.w / 2, base, fit, ink, 'mono', say(label), ' text-anchor="middle"'),
+      svg: svgText(f.x + f.w / 2, base, fit, ink, fam, say(label), ' text-anchor="middle"'),
       box: null
     }
   }
@@ -994,7 +1043,7 @@ function valueMark (f, text, W, H, hot, region) {
     ? f.y - 4 - ph
     : clamp(f.y + f.h + 4, reg.y + 2, Math.max(reg.y + 2, reg.y + reg.h - ph - 2)))
   const svg = `<rect x="${x}" y="${y}" width="${pw}" height="${ph}" rx="${r1(ph / 2)}" fill="var(--paper)" stroke="var(--${hot ? 'ai' : 'line2'})" stroke-width="1"/>` +
-    svgText(r1(x + pw / 2), r1(y + ph / 2 + fs * 0.35), fs, ink, 'mono', say(label), ' text-anchor="middle"')
+    svgText(r1(x + pw / 2), r1(y + ph / 2 + fs * 0.35), fs, ink, fam, say(label), ' text-anchor="middle"')
   return { svg, box: { x, y, w: pw, h: ph } }
 }
 
@@ -1265,6 +1314,110 @@ function quotedIn (callout) {
   }
   return ''
 }
+// ── ONE READING OF A SKELETON, SHARED BY THE DRAWING AND ITS GUARD ────────────────────────────
+// (2026-09-02, the human: "make sure the gap between schematic and proof will not exist again")
+// Everything a frame decides BEFORE it draws anything — which boxes hold words, which are COMPOSED
+// of their children, which are ghosted into the frame one moment earlier, which box is ringed, and
+// which one the overlay will type — is read HERE, once. frameBody draws from this reading and
+// mirrorGaps checks the drawing against the SAME reading; a guard that re-stated these rules would
+// drift from the renderer it guards, which is the one defect this pass exists to make impossible.
+function mirrorRead (L, S, withFocus, anchors) {
+  const px = v => r1(v * S)
+  // A BOX THAT HOLDS WORDS IS NOT EMPTY (2026-09-02, the lead's visual review): a <button> whose
+  // label is a child leaf carries no text of its own, and the kit drew its "no measured text"
+  // placeholder bar straight across the words the leaf then typed on top. So a box is "wordless" only
+  // when NO text-bearing element nests inside it — then, and only then, a bar stands in.
+  const worded = L.els.filter(e => raw(e.text))
+  const holdsWords = e => worded.some(t => nestsIn(t, e))
+  const holdsAny = e => L.els.some(t => nestsIn(t, e))
+  // …and the same question decides whether a box may be SUMMARISED by one drawn value (mirror-9).
+  // The capture gives a focused element its whole innerText, so a ringed ROW comes back carrying
+  // "Water the plants added just now" — which is precisely what its two child leaves already say,
+  // each in its own place, at its own size. A box whose words are exactly what its children spell
+  // out is COMPOSED: draw the children, never the concatenation over them. A box that carries words
+  // of its own beyond them (a counter reading "3 to do" around a styled "3" span) is not, and there
+  // the single value is the honest reading — the children it covers stand down for it.
+  const norm = t => raw(t).replace(/\s+/g, ' ').toLowerCase()
+  // …measured against the LEAVES only: the capture gives every focused ancestor the same innerText,
+  // so a row, the wrapper inside it and the body inside that all say "Water the plants added just
+  // now", and counting the wrappers as words made the row look like it carried more than its
+  // children do. Only a box that holds no text-bearing box of its own is a word.
+  const composed = e => {
+    const c = worded.filter(t => nestsIn(t, e) && !holdsWords(t)).map(t => raw(t.text)).join(' ')
+    return !!c && norm(c) === norm(e.text)
+  }
+  const focus = []
+  // the before frame's ghosts: for each of the after frame's anchor boxes, THIS layout's element in
+  // the same place. Matched up front so the main pass can skip drawing their small label — the
+  // pill below says it at a size a reader can actually read.
+  //
+  // …and only for a LEAF anchor (mirror-9): where the beat rings a whole ROW, its "value" is the
+  // concatenation of everything inside it, and a ghost of that is the same unreadable line. The
+  // before frame then simply draws the layout as measured, which is the honest picture of what the
+  // page looked like one moment earlier.
+  const ghosts = []
+  for (const a of (withFocus ? [] : (anchors || []))) {
+    let best = null; let bestOv = 0
+    for (const e of L.els) {
+      const ox = Math.max(0, Math.min(e.x + e.w, a.x + a.w) - Math.max(e.x, a.x))
+      const oy = Math.max(0, Math.min(e.y + e.h, a.y + a.h) - Math.max(e.y, a.y))
+      const ov = (ox * oy) / Math.max(1, Math.max(e.w * e.h, a.w * a.h))
+      if (ov > bestOv) { bestOv = ov; best = e }
+    }
+    if (best && bestOv >= 0.4 && best.text && !composed(best) && !ghosts.some(g => g.el === best)) ghosts.push({ a, el: best })
+  }
+  const ghosted = new Set(ghosts.map(g => g.el))
+  // …and whatever nests inside one: the same twin the ringed frames drop (a counter's digit span),
+  // which otherwise leaves a stray bar sitting behind the value the ghost just drew
+  for (const e of L.els) {
+    for (const g of ghosts) {
+      if (e !== g.el && e.x >= g.el.x - 0.6 && e.y >= g.el.y - 0.6 &&
+        e.x + e.w <= g.el.x + g.el.w + 0.6 && e.y + e.h <= g.el.y + g.el.h + 0.6) ghosted.add(e)
+    }
+  }
+  const els = L.els.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h))
+  // THE RINGED MARKS, PICKED BEFORE ANYTHING IS DRAWN (mirror-9). The overlay pass used to pick them
+  // afterwards, and the main loop `continue`d past every focus element to avoid drawing the value
+  // twice — which is why a ringed ROW lost its tick box, its title, its stamp and its chevron and
+  // became one mono line. Now every element is drawn, ringed or not, and only the ONE box whose
+  // value the overlay will type (a leaf) withholds its own text.
+  const ringPx = L.ring
+    ? { x: px(L.ring.x), y: px(L.ring.y), w: px(L.ring.w), h: px(L.ring.h) }
+    : null
+  for (const e of els) {
+    if (ghosted.has(e) || !e.focus) continue
+    const x = px(e.x); const y = px(e.y); const w = px(e.w); const h = px(e.h)
+    if (w < 4 || h < 2.5) continue
+    focus.push({
+      x,
+      y,
+      w,
+      h,
+      text: e.text,
+      fs: e.fs ? px(e.fs) : null,
+      ta: e.ta,
+      pl: px(e.pl || 0),
+      pr: px(e.pr || 0),
+      ff: e.ff,
+      fg: e.fg,
+      leaf: !composed(e),
+      el: e
+    })
+  }
+  const marks = withFocus
+    ? pickFocus(focus.length ? focus : (ringPx ? [{ ...ringPx, text: '', leaf: true }] : []), ringPx)
+    : []
+  // the boxes whose text the overlay will type at a size a person can read — and, with them, the
+  // children that value already covers, so no word is ever drawn twice
+  const valued = new Set()
+  for (const m of marks) {
+    if (!m.leaf || !m.el) continue
+    valued.add(m.el)
+    for (const t of L.els) if (nestsIn(t, m.el)) valued.add(t)
+  }
+  return { holdsWords, holdsAny, composed, ghosts, ghosted, els, ringPx, marks, valued }
+}
+
 
 // ONE frame of the mirror: every captured box in house shapes, biggest first so the page chrome
 // sits behind the rows and the words sit on top. `withFocus` adds the burn-in's own overlay — the
@@ -1288,39 +1441,7 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     ? { x: px(cardBox.x), y: px(cardBox.y), w: px(cardBox.w), h: px(cardBox.h) }
     : null
   const parts = []
-  const focus = []
-  // the before frame's ghosts: for each of the after frame's anchor boxes, THIS layout's element in
-  // the same place. Matched up front so the main pass can skip drawing their small label — the
-  // pill below says it at a size a reader can actually read.
-  const ghosts = []
-  for (const a of (withFocus ? [] : (anchors || []))) {
-    let best = null; let bestOv = 0
-    for (const e of L.els) {
-      const ox = Math.max(0, Math.min(e.x + e.w, a.x + a.w) - Math.max(e.x, a.x))
-      const oy = Math.max(0, Math.min(e.y + e.h, a.y + a.h) - Math.max(e.y, a.y))
-      const ov = (ox * oy) / Math.max(1, Math.max(e.w * e.h, a.w * a.h))
-      if (ov > bestOv) { bestOv = ov; best = e }
-    }
-    if (best && bestOv >= 0.4 && best.text && !ghosts.some(g => g.el === best)) ghosts.push({ a, el: best })
-  }
-  const ghosted = new Set(ghosts.map(g => g.el))
-  // …and whatever nests inside one: the same twin the ringed frames drop (a counter's digit span),
-  // which otherwise leaves a stray bar sitting behind the value the ghost just drew
-  for (const e of L.els) {
-    for (const g of ghosts) {
-      if (e !== g.el && e.x >= g.el.x - 0.6 && e.y >= g.el.y - 0.6 &&
-        e.x + e.w <= g.el.x + g.el.w + 0.6 && e.y + e.h <= g.el.y + g.el.h + 0.6) ghosted.add(e)
-    }
-  }
-  const els = L.els.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h))
-  // A BOX THAT HOLDS WORDS IS NOT EMPTY (2026-09-02, the lead's visual review): a <button> whose
-  // label is a child leaf carries no text of its own, and the kit drew its "no measured text"
-  // placeholder bar straight across the words the leaf then typed on top. So a box is "wordless" only
-  // when NO text-bearing element nests inside it — then, and only then, a bar stands in.
-  const nestsIn = (a, b) => a !== b && a.x >= b.x - 0.6 && a.y >= b.y - 0.6 &&
-    a.x + a.w <= b.x + b.w + 0.6 && a.y + a.h <= b.y + b.h + 0.6
-  const worded = L.els.filter(e => raw(e.text))
-  const holdsWords = e => worded.some(t => nestsIn(t, e))
+  const { holdsWords, holdsAny, ghosts, ghosted, els, ringPx, marks, valued } = mirrorRead(L, S, withFocus, anchors)
   for (const e of els) {
     if (ghosted.has(e)) continue
     const x = px(e.x); const y = px(e.y); const w = px(e.w); const h = px(e.h)
@@ -1329,26 +1450,38 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     // drawing its label here too would stack two copies of the same value on one another
     // the measured type rides with the box, in DRAWING units like everything else, so valueMark can
     // put the value where the page puts it instead of guessing from the box
-    if (e.focus) {
-      focus.push({ x, y, w, h, text: e.text, fs: e.fs ? px(e.fs) : null, ta: e.ta, pl: px(e.pl || 0), pr: px(e.pr || 0) })
-      // …except a CHECKBOX (mirror-8): its value IS its shape, and it has no text for the focus pass
-      // to draw, so skipping it would ring an empty square. It is drawn, then ringed.
-      if (withFocus && e.kind !== 'check') continue
-    }
     // THE PAGE'S OWN TYPE where the harvest measured it (2026-09-02: a mirror, not a skeleton). Real
     // text at the size, weight and alignment the app renders — the fidelity gain the human asked for.
     // The measured font size (converted by the one scale S) is used wherever it was captured; absent
     // it, the size still derives from the box, exactly as the old skeleton did. A placeholder bar is
     // drawn ONLY when there is genuinely no measured text, or it is too small to read at this scale.
     const mfs = e.fs ? px(e.fs) : null
-    const label = raw(e.text)
+    // WHAT THE PAGE SHOWS (mirror-9): a label the app renders uppercase is drawn uppercase — the
+    // mirror's job is to look like the screen, and text-transform is the difference between a
+    // section header and a sentence.
+    const label = e.tt === 'u' ? raw(e.text).toUpperCase() : raw(e.text)
     const pl = px(e.pl || 0); const pr = px(e.pr || 0)
     const tfs = mfs || clamp(h * 0.62, 5, 16)
+    // …and the family the page renders it in, sans unless the harvest measured a typewriter face.
+    // (Before mirror-9 a field's value was ALWAYS mono, which is the one thing the photograph never
+    // shows.) Absent — an older skeleton — sans, which is what most of a real screen is set in.
+    const fam = e.ff || 'sans'
+    // the ONE box the overlay will type at a readable size: it withholds its own words so the two
+    // are never stacked on one another
+    const mine = !valued.has(e)
     // READABLE DOWN TO 4 INTERNAL UNITS (2026-09-02, rule 6 — the old 5.5 floor WAS the "skeleton"
     // the human complained about). The drawing is 600 units wide and the pane scales it up, so 4 is
     // the same floor valueMark has always trusted for the asserted value. At 5.5, every 13px label on
     // a 1440px page fell back to a grey bar — which is most of a real screen's words.
-    const readable = !!label && tfs >= 4
+    // …and a box never types the words its children are already typing (mirror-9): the capture hands a
+    // focused wrapper its whole innerText, and drawing that over the leaves inside it is the "totally
+    // unacceptable" line the human saw.
+    const readable = !!label && tfs >= 4 && mine && !holdsWords(e)
+    // A SMALL WORDLESS CONTROL IS ITS PLATE ALONE (mirror-9, the human: "even missing tickbox").
+    // Tsumiki's tick box is a 21×21 <button> with no text and no child; the "no measured text" bar
+    // drawn inside it read as a dot in a circle rather than the box it is. Measured in PAGE pixels,
+    // because it is a fact about the control, not about how far this drawing is scaled.
+    const barOK = mine && !holdsWords(e) && e.w >= 40 && e.h >= 14
     const mid = y + h / 2
     // THE PAGE'S OWN PAINT (mirror-8, 2026-09-02), where the harvest measured it: the fill, the
     // border and the text colour as their nearest DYES (normLayout already mapped them through
@@ -1378,8 +1511,8 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         const ink = e.fg || 'ink'
         const fs = Math.min(tfs, h)
         piece.push(readable
-          ? textIn(x, y, w, h, fs, ink, 'sans', label, e.ta, pl, pr, weight(true))
-          : holdsWords(e) ? '' : bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)'))
+          ? textIn(x, y, w, h, fs, ink, fam, label, e.ta, pl, pr, weight(true))
+          : barOK ? bar(x, r1(mid - h * 0.22), w, r1(clamp(h * 0.44, 2.5, 9)), 'var(--line2)') : '')
         if (readable && e.td) piece.push(strike(fs, ink))
         break
       }
@@ -1388,8 +1521,8 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         const ink = e.fg || 'ink-3'
         const fs = Math.min(tfs, h)
         piece.push(readable
-          ? textIn(x, y, w, h, fs, ink, 'sans', label, e.ta, pl, pr, weight(e.fw))
-          : holdsWords(e) ? '' : bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)'))
+          ? textIn(x, y, w, h, fs, ink, fam, label, e.ta, pl, pr, weight(e.fw))
+          : barOK ? bar(x, r1(mid - clamp(h * 0.3, 1.5, 3.5)), w, r1(clamp(h * 0.4, 2.5, 7)), 'var(--wash)') : '')
         if (readable && e.td) piece.push(strike(fs, ink))
         break
       }
@@ -1399,8 +1532,8 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         // an empty field only when the harvest read no value there.
         piece.push(plate(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--ai-line)'), 3, 1))
         if (readable) {
-          piece.push(textIn(x, y, w, h, Math.min(tfs, h * 0.82), e.fg || 'ink-3', 'mono', label, e.ta || 'l', pl || 4, pr || 4, weight(e.fw)))
-        } else if (w > 16 && h > 8 && !holdsWords(e)) {
+          piece.push(textIn(x, y, w, h, Math.min(tfs, h * 0.82), e.ph ? 'ink-4' : (e.fg || 'ink-3'), fam, label, e.ta || 'l', pl || 4, pr || 4, weight(e.fw)))
+        } else if (w > 16 && h > 8 && barOK) {
           piece.push(bar(r1(x + 4), r1(mid - 2), r1(Math.min(w - 8, w * 0.5)), 4, 'var(--line2)'))
         }
         break
@@ -1409,8 +1542,8 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         // primary action on the board's mirrors read as a disabled one
         piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--line2)'), r1(Math.min(h / 2, 7)), 0.9))
         piece.push(readable
-          ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), e.fg || 'ink-3', 'sans', label, 'c', 3, 3, weight(e.fw))
-          : holdsWords(e) ? '' : bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)'))
+          ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), e.fg || 'ink-3', fam, label, 'c', 3, 3, weight(e.fw))
+          : barOK ? bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)') : '')
         break
       case 'check': {
         // A TICK IS A STATE, NOT A BOX (mirror-8): the old kit filed a checkbox under `input` and drew
@@ -1425,9 +1558,12 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
           (stroke ? ` stroke="${stroke}" stroke-width="1"` : '') + '/>'
         if (e.on) {
           piece.push(sq(tok(e.bg, 'var(--koke)'), null), checkMark(cx + s * 0.24, cy + s * 0.52, s * 0.55, 'paper'))
-        } else {
+        } else if (e.bg || e.bd || !holdsAny(e)) {
           piece.push(sq(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--line2)')))
         }
+        // …and a wordless square control the page paints NOTHING on, that holds an icon (a chevron,
+        // a kebab), is that icon and nothing else (mirror-9): inventing a paper box with a border
+        // around it puts a component on the drawing the screen does not have.
         break
       }
       case 'image':
@@ -1451,12 +1587,9 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     parts.push(o != null ? `<g opacity="${r2(o)}">${piece.join('')}</g>` : piece.join(''))
   }
   if (withFocus) {
-    // nothing matched the ring (a canvas cell, a shadow root, an element that moved): ring the
-    // MEASURED box instead, so the drawing still points at what the assertion read
-    const ringPx = L.ring
-      ? { x: px(L.ring.x), y: px(L.ring.y), w: px(L.ring.w), h: px(L.ring.h) }
-      : null
-    const marks = pickFocus(focus.length ? focus : (ringPx ? [{ ...ringPx, text: '' }] : []), ringPx)
+    // `marks` was picked above, before anything was drawn. Nothing matched the ring (a canvas cell, a
+    // shadow root, an element that moved)? Then it is the MEASURED box, so the drawing still points
+    // at what the assertion read.
     if (marks.length) {
       // the veil, exactly as the burn-in paints it: the WHOLE frame, the proven element included.
       // The ring and the card go over it, which is what distinguishes the element — not a hole.
@@ -1478,7 +1611,13 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         // THE POINT of the mirror: the asserted value, in the app's own words — inside the ringed
         // box, where the page itself draws it; a pill beside it only when it cannot go there
         const measured = raw(f.text)
-        const val = valueMark(f, measured || (f === marks[0] ? spoken : ''), W, H, !!measured, region)
+        // …ONLY WHERE THE RINGED BOX IS A LEAF (mirror-9). A row, a card, a whole panel carries the
+        // concatenation of everything inside it — "Water the plants added just now" — and typing
+        // that over the children that are now drawn properly is the defect, not the fix. Its parts
+        // already say it, each in its own place.
+        const val = f.leaf
+          ? valueMark(f, measured || (f === marks[0] ? spoken : ''), W, H, !!measured, region)
+          : { svg: '', box: null }
         if (val.svg) { parts.push(val.svg); if (val.box) pills.push(val.box) }
       }
       // …and the requirement's own words, in the burn-in's card, beside the primary mark
@@ -1502,12 +1641,175 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         fs: g.el.fs ? px(g.el.fs) : null,
         ta: g.el.ta,
         pl: px(g.el.pl || 0),
-        pr: px(g.el.pr || 0)
+        pr: px(g.el.pr || 0),
+        ff: g.el.ff
       }
       parts.push(valueMark(box, g.el.text, W, H, false, framedRegion(camPx || box, W, H)).svg)
     }
   }
   return parts.join('')
+}
+
+// ── THE GUARD: WHAT THE MIRROR MEASURED, IT MUST DRAW ───────────────────────────────────────────
+// The human, 2026-09-02, after two rounds of the same defect ("schematic still looks like skeleton",
+// "totally unacceptable"): "make sure the gap between schematic and proof will not exist again."
+//
+// A renderer cannot be trusted to report its own omissions — both times the kit had quietly stopped
+// drawing something the harvest had measured (the tick box, the row's own leaves) and nothing said
+// so until a person looked at a beat row. So the drawn FRAME is read back and checked against the
+// same reading of the skeleton it was drawn from (mirrorRead — one authority, never a second copy
+// of the rules). Four gaps, each derived at derive/gate time, none ever stored:
+//
+//   · missing-text  a measured word, big enough for the kit to type, that no <text> types
+//   · missing-box   a measured plate (a field, a button, a row, a tick box, a painted box, a real
+//                   region) with no rect at its place
+//   · hidden-drawn  a box the page had faded to nothing that the frame painted anyway
+//   · ring-missing  a ringed scene with no indigo ring around what the assertion pointed at
+//
+// What the kit DELIBERATELY does not draw is not a gap, and the guard asks mirrorRead rather than
+// guessing: a shape below the 4×2.5 floor, a wrapper whose words its own leaves type, the children
+// the overlay's one value covers, a box the before frame ghosts. Boxes come back in PAGE units —
+// the harvest's own — so a gap can be found on the real screen.
+const TEXT_KINDS = new Set(['heading', 'text', 'input', 'button'])
+const NEAR = 0.6                              // the ONE tolerance: "this plate is here", in drawing units
+const attrIn = (tag, n) => {
+  const m = new RegExp('[\\s]' + n + '="([^"]*)"').exec(tag)
+  return m ? m[1] : null
+}
+const drawnTexts = svg => [...String(svg).matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)]
+  .map(m => ({ x: Number(attrIn(m[1], 'x')), y: Number(attrIn(m[1], 'y')), txt: m[2] }))
+const drawnRects = svg => [...String(svg).matchAll(/<rect\b([^>]*?)\/>/g)].map(m => ({
+  x: Number(attrIn(m[1], 'x')),
+  y: Number(attrIn(m[1], 'y')),
+  w: Number(attrIn(m[1], 'width')),
+  h: Number(attrIn(m[1], 'height')),
+  stroke: attrIn(m[1], 'stroke')
+}))
+// WHICH BOXES THE KIT PROMISES A PLATE FOR — frameBody's own switch, read as a question. A field, a
+// button, a row and an image always get one; a tick box gets its square unless the page paints
+// nothing on it and it is only holding an icon; a heading or a line of text only where the page
+// paints it; a container only where it is a real region and not the page shell itself.
+const platePromised = (e, box, W, H, holdsAny) => {
+  if (e.kind === 'input' || e.kind === 'button' || e.kind === 'row' || e.kind === 'image') return true
+  if (e.kind === 'check') return !!(e.on || e.bg || e.bd || !holdsAny(e))
+  if (e.kind === 'heading' || e.kind === 'text') return !!(e.bg || e.bd)
+  return box.w >= 30 && box.h >= 18 && (box.w * box.h) < 0.8 * W * H
+}
+export function mirrorGaps (layout, frame, opts = {}) {
+  const L = normLayout(layout)
+  const svg = String(frame == null ? '' : frame)
+  if (!L || !L.els.length) return []
+  const S = LAYOUT_W / L.w
+  const W = LAYOUT_W
+  const H = opts.h > 0 ? opts.h : Math.round(clamp(LAYOUT_W * (L.h / L.w), 180, 900))
+  // a ringed scene is one the burn-in's veil is painted on; the caller says so where it knows
+  const withFocus = opts.focus != null ? !!opts.focus : /fill="var\(--ink\)" opacity="0\.12"/.test(svg)
+  const { holdsWords, holdsAny, ghosted, els, marks, valued } = mirrorRead(L, S, withFocus, opts.anchors || null)
+  const px = v => r1(v * S)
+  const texts = drawnTexts(svg)
+  const rects = drawnRects(svg)
+  const used = new Set()
+  const gaps = []
+  const at = (kind, what, e) => gaps.push({ kind, what, x: r1(e.x), y: r1(e.y), w: r1(e.w), h: r1(e.h) })
+  const near = (a, b) => Math.abs(a - b) <= NEAR
+  const hereIs = (b, rc) => near(rc.x, b.x) && near(rc.y, b.y) && near(rc.w, b.w) && near(rc.h, b.h)
+  // the words as the kit would type them (say/fitText — the renderer's own functions, never a second
+  // normalisation): an exact match, or the squeezed-and-cut form, which is a prefix plus an ellipsis
+  const saysIt = (t, want) => t.txt === want || (t.txt.endsWith('…') && want.startsWith(t.txt.slice(0, -1)))
+  const typed = (want, box) => {
+    const i = texts.findIndex((t, k) => !used.has(k) && saysIt(t, want) &&
+      (!box || (t.x >= box.x - 1 && t.x <= box.x + box.w + 1 && t.y >= box.y - 1 && t.y <= box.y + box.h + 1)))
+    if (i < 0) return false
+    used.add(i)                                 // two rows saying the same thing need two <text>s
+    return true
+  }
+  const quote = s => '“' + raw(s).slice(0, 40) + '”'
+  // the ONE box whose value the overlay types at a readable size — its own words are drawn by
+  // valueMark, wherever that lands them (inside the ring, or a pill beside it)
+  const spoken = new Set(marks.filter(m => m.leaf && m.el).map(m => m.el))
+  // …and a value the overlay could not fit inside its box rides in a PILL beside it, so those two
+  // are asked for anywhere in the frame — but only AFTER every word that must be inside its own box
+  // has claimed its <text>. Asked first, a pill's loose search swallowed a second button's identical
+  // label two rows down and reported that button missing (caught on the demo's real harvest,
+  // 2026-09-02): the same words in two places need two nodes, and the placed one has first call.
+  const loose = []
+  for (const e of els) {
+    const box = { x: px(e.x), y: px(e.y), w: px(e.w), h: px(e.h) }
+    if (box.w < 4 || box.h < 2.5) continue       // the kit's own smudge floor: a rule, not a gap
+    const words = raw(e.text)
+    if (ghosted.has(e)) {
+      // the given frame types this box's earlier value at the ANCHOR's place and draws no plate for
+      // it — the ghost IS the element, one moment earlier. So the plate is not asked for at all, and
+      // the words are asked for at the box first, then anywhere.
+      if (words && !typed(say(fitText(words, 460, 12)), box)) loose.push({ want: say(fitText(words, 460, 12)), words, e })
+      continue
+    }
+    if (spoken.has(e)) {
+      if (words && !typed(say(fitText(words, 460, 12)), box)) loose.push({ want: say(fitText(words, 460, 12)), words, e })
+    } else if (!valued.has(e) && TEXT_KINDS.has(e.kind) && words && !holdsWords(e)) {
+      const label = e.tt === 'u' ? words.toUpperCase() : words
+      const tfs = e.fs ? px(e.fs) : clamp(box.h * 0.62, 5, 16)
+      if (tfs >= 4 && !typed(say(label), box)) at('missing-text', quote(label), e)
+    }
+    if (platePromised(e, box, W, H, holdsAny)) {
+      // the tick box is drawn as a SQUARE centred in its element, exactly as frameBody lays it out
+      const s = Math.min(box.w, box.h)
+      const want = e.kind === 'check'
+        ? { x: r1(box.x + (box.w - s) / 2), y: r1(box.y + (box.h - s) / 2), w: r1(s), h: r1(s) }
+        : box
+      if (!rects.some(rc => hereIs(want, rc))) at('missing-box', e.kind, e)
+    }
+  }
+  for (const l of loose) if (!typed(l.want, null)) at('missing-text', quote(l.words), l.e)
+  // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT DRAW — the render side's rule, checked. A box
+  // whose geometry a LIVE element also occupies is that element's plate, not this one's ghost.
+  for (const hb of (L.hidden || [])) {
+    const box = { x: px(hb.x), y: px(hb.y), w: px(hb.w), h: px(hb.h) }
+    if (box.w < 4 || box.h < 2.5) continue
+    if (els.some(e => hereIs(box, { x: px(e.x), y: px(e.y), w: px(e.w), h: px(e.h) }))) continue
+    const painted = rects.some(rc => hereIs(box, rc)) ||
+      (raw(hb.text) && texts.some(t => saysIt(t, say(raw(hb.text)))))
+    if (painted) at('hidden-drawn', hb.kind + (raw(hb.text) ? ' ' + quote(hb.text) : ''), hb)
+  }
+  // THE RING, at the burn-in's own geometry (ringRect — the shared module, so the drawn ring and the
+  // photographed one are asked for at one place). Any indigo stroke that actually covers what the
+  // assertion pointed at counts: the kit rings the picked mark, which is the ring box or a leaf of it.
+  if (withFocus && L.ring) {
+    const rr = ringRect({ x: L.ring.x, y: L.ring.y, w: L.ring.w, h: L.ring.h })
+    const want = { x: rr.x * S, y: rr.y * S, w: rr.w * S, h: rr.h * S }
+    const covers = rc => {
+      const ox = Math.max(0, Math.min(rc.x + rc.w, want.x + want.w) - Math.max(rc.x, want.x))
+      const oy = Math.max(0, Math.min(rc.y + rc.h, want.y + want.h) - Math.max(rc.y, want.y))
+      return (ox * oy) / Math.max(1, Math.min(rc.w * rc.h, want.w * want.h)) >= 0.5
+    }
+    if (!rects.some(rc => rc.stroke === 'var(--ai)' && covers(rc))) {
+      gaps.push({ kind: 'ring-missing', what: 'the ringed element', x: r1(L.ring.x), y: r1(L.ring.y), w: r1(L.ring.w), h: r1(L.ring.h) })
+    }
+  }
+  return gaps
+}
+// ONE frame group out of a drawing — `<g class="wf3">…</g>`, brace-balanced over the nested
+// `<g opacity>` a measured element draws inside (slicing at the first `</g>` cuts the frame off
+// mid-page). The board's reader never needs this; the mirror gate does, so it can ask a COMMITTED
+// file what it contains rather than trusting a fresh render of it.
+export function frameGroup (svg, n) {
+  const s = String(svg == null ? '' : svg)
+  const i = s.indexOf('<g class="wf' + n + '">')
+  if (i < 0) return ''
+  const re = /<g\b|<\/g>/g
+  re.lastIndex = i
+  let depth = 0; let m
+  while ((m = re.exec(s))) {
+    depth += m[0] === '</g>' ? -1 : 1
+    if (depth === 0) return s.slice(i, m.index)
+  }
+  return s.slice(i)
+}
+// the derive's one-line reading of a run of gaps — "missing-text 3, hidden-drawn 1"
+export const gapSummary = gaps => {
+  const by = new Map()
+  for (const g of (gaps || [])) by.set(g.kind, (by.get(g.kind) || 0) + 1)
+  return [...by].map(([k, n]) => k + ' ' + n).join(', ')
 }
 
 // The MIRROR'S timeline: one frame per scene (the Given, then one per beat) and one crossfade per
@@ -1581,12 +1883,16 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   const pairsIn = asBeats ? beatLayouts : [{ before: beatLayouts || null, after: metaOrAfter || null }]
   const meta = (asBeats ? metaOrAfter : maybeMeta) || {}
   const usable = L => (L && L.els.length ? L : null)
+  // …and which HARVESTED skeleton each normalised layout came from, so a frame can be checked against
+  // its own input (mirrorGaps below). Identity-keyed: normLayout returns a fresh object every call.
+  const rawOf = new Map()
+  const take = raw => { const n = usable(normLayout(raw)); if (n) rawOf.set(n, raw); return n }
   const pairs = (pairsIn || []).map(p => ({
-    before: usable(normLayout(p && p.before)),
-    after: usable(normLayout(p && p.after)),
+    before: take(p && p.before),
+    after: take(p && p.after),
     // …and the beat's ASSERTED VALUES, in the order it proved them (2026-08-29): each one is a
     // scene of the beat, so the drawing ENACTS the When instead of only showing what it produced.
-    values: (p && Array.isArray(p.values) ? p.values : []).map(v => usable(normLayout(v))).filter(Boolean)
+    values: (p && Array.isArray(p.values) ? p.values : []).map(take).filter(Boolean)
   })).filter(p => p.before || p.after || p.values.length)
   if (!pairs.length) return null
   const src = pairs[0].before || pairs[0].after
@@ -1658,11 +1964,28 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
   // full while k+1 arrives on top of it — which only reads as a replacement if k+1 is opaque. Inset
   // by 1 so the shell's own hairline still shows through around it.
   const page = `<rect x="1" y="1" width="${LAYOUT_W - 2}" height="${H - 2}" rx="5.5" fill="var(--paper)"/>`
-  const groups = frames.map((f, i) => {
+  const bodies = frames.map((f, i) =>
+    frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam, frameCardBox[i]))
+  const groups = bodies.map((bd, i) => {
     css += `.${k} .wf${i}{animation:${kf('f' + i)} ${t.durCss} infinite}` +
       `@keyframes ${kf('f' + i)}{${wfFade(i, t, m)}}`
-    return `<g class="wf${i}">${page}${frameBody(f.L, S, LAYOUT_W, H, f.ring, f.anchors, f.card, f.cam, frameCardBox[i])}</g>`
+    return `<g class="wf${i}">${page}${bd}</g>`
   }).join('')
+  // EVERY FRAME IS CHECKED AGAINST ITS OWN INPUT (the human, 2026-09-02: "make sure the gap between
+  // schematic and proof will not exist again"). Derived here, never stored on the drawing: the
+  // derive prints it, `npm run proof` refuses a committed drawing that has any, and neither can be
+  // satisfied by a renderer that quietly stopped drawing what the harvest measured.
+  // Each report carries the INPUTS that frame was drawn from as well as its gaps, so a gate can ask
+  // the same question of a COMMITTED file (tools/proof-integrity.mjs checkMirrors) without a second
+  // copy of the frame ordering — the one place that knows which skeleton is frame 3 is here.
+  const gaps = frames.map((f, i) => ({
+    frame: i,
+    layout: rawOf.get(f.L) || null,
+    focus: !!f.ring,
+    anchors: f.anchors,
+    h: H,
+    gaps: mirrorGaps(rawOf.get(f.L), bodies[i], { focus: f.ring, anchors: f.anchors, h: H })
+  }))
   const shell = `<rect x="0.5" y="0.5" width="${LAYOUT_W - 1}" height="${H - 1}" rx="6" fill="var(--paper)" stroke="var(--line2)" stroke-width="1"/>`
   const body = shell + groups
   // ONE PARK POINT PER BEAT — what the storyboard pairs its rows against, unchanged: the Given,
@@ -1715,5 +2038,5 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
     ` data-viz-subphases="${subphases.map(g => g.join(' ')).join('|')}"` +
     ` data-viz-cardspots="${cardspots.map(g => g.join(';')).join('|')}">` +
     `<style>${css}</style>${body}</svg>`
-  return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash }
+  return { archetype: 'ui-mirror', kind: 'wireframe', svg, phases, layoutHash: lhash, gaps }
 }
