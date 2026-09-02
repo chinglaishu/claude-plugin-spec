@@ -868,7 +868,8 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
       // own viewBox units — and tools/viz.mjs draws those lines instead of a plate.
       //
       // Bounded and untrusted like everything else on this skeleton: only an svg no bigger than
-      // ICON_MAX, at most 12 shapes, at most 900 serialised characters, at most 400 per `d`, and the
+      // ICON_MAX, at most 12 shapes, at most 1500 serialised characters (900 before each shape
+      // carried its own paint — mirror-11), at most 400 per `d`, and the
       // drawing re-validates every one of them (normIcon) before a character of it is emitted. An
       // svg with nothing capturable in it stays a plain image, which is the honest picture of "a
       // graphic is shown here". No colour travels raw — `fg` is a measurement, mapped to a dye at
@@ -922,13 +923,48 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
               if (pts && pts.length <= 400) sh = { t, points: pts }
             }
             if (sh) {
-              const fv = String(cf == null ? 'black' : cf).trim().toLowerCase()
-              const sv = String(cst == null ? 'none' : cst).trim().toLowerCase()
-              if (fv && fv !== 'none') sh.f = 1
-              if (sv && sv !== 'none') sh.s = 1
+              // THE SHAPE'S OWN PAINT (mirror-11, 2026-09-02, the lead on the re-harvested demo's
+              // R3/R6 scenes). Tsumiki's container ring is ONE svg holding a pale track circle and
+              // an indigo progress arc; the icon-level `fg` below is the svg's computed `color`, so
+              // both drew in the button's ink and the ring came out a heavy black circle. What the
+              // page actually paints each shape is only readable off the COMPUTED style — the
+              // colours here arrive through a stylesheet, not an attribute — so each shape is asked
+              // once: at most 12 shapes, so the cost is bounded like everything else on this walk.
+              //
+              //   sc  "r,g,b"  computed stroke, when it is visible
+              //   fc  "r,g,b"  computed fill, when it is visible
+              //   sw  units    computed stroke-width, only when it differs from the icon's own
+              //   op  0..1     computed opacity, only when the shape is faded
+              //
+              // No colour travels as paint: tools/viz.mjs maps every one through dyeOf at derive
+              // time, exactly like bg/fg/bd, and drops a malformed one back to the icon's dye.
+              let ccs: any = null
+              try { ccs = getComputedStyle(c) } catch { /* a shape that will not compute keeps the icon's ink */ }
+              if (ccs) {
+                const scv = rgb(ccs.stroke)
+                const fcv = rgb(ccs.fill)
+                if (scv) { sh.s = 1; sh.sc = scv }
+                if (fcv) { sh.f = 1; sh.fc = fcv }
+                const csw = parseFloat(ccs.strokeWidth)
+                if (sh.s && Number.isFinite(csw) && csw > 0 && Math.abs(csw - sw) > 0.01) sh.sw = Math.round(csw * 100) / 100
+                const cop = parseFloat(ccs.opacity)
+                if (Number.isFinite(cop) && cop < 1) sh.op = Math.round(cop * 100) / 100
+              }
+              // …and the ATTRIBUTE reading only rescues a shape the computed style could not answer
+              // for at all (a gradient or pattern paint, a style that would not compute): it draws
+              // in the icon's dye, as it did before this pass, rather than vanishing.
+              if (!sh.f && !sh.s) {
+                const fv = String(cf == null ? 'black' : cf).trim().toLowerCase()
+                const sv = String(cst == null ? 'none' : cst).trim().toLowerCase()
+                if (fv && fv !== 'none') sh.f = 1
+                if (sv && sv !== 'none') sh.s = 1
+              }
               if (sh.f || sh.s) {
                 shapes.push(sh)
-                if (JSON.stringify(shapes).length > 900) { shapes.pop(); return }
+                // the serialised budget, raised from 900 with the per-shape paint (mirror-11): four
+                // more small fields on each of at most 12 shapes, and a truncated icon is a drawing
+                // of half a picture
+                if (JSON.stringify(shapes).length > 1500) { shapes.pop(); return }
               }
             }
             if (t === 'g' || t === 'a' || t === 'svg') take(c, cf, cst)
@@ -1128,9 +1164,26 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
             // Outside the try, because a page that will not compute a style still fades its subtree.
             if (eop < 1) rec.op = Math.round(eop * 100) / 100
             // …and the two facts the style cannot answer, straight off the element
-            if (rec.kind === 'check' && (el.checked === true || el.getAttribute('aria-checked') === 'true' ||
-              el.getAttribute('aria-pressed') === 'true' || el.getAttribute('data-checked') === 'true' ||
-              el.getAttribute('data-done') === 'true')) rec.on = 1   // never guessed: no signal, no tick
+            // TICKED? Every honest signal a control can carry (2026-09-02, the lead's review: the demo's
+            // done boxes harvested as green squares with no tick — Tsumiki's tick is a CSS class `on`
+            // and an ::after pseudo-element, which the attribute reads above could not see): the
+            // native `checked`, aria-checked / aria-pressed, a data-* flag, a state CLASS the app
+            // itself names (on / checked / done / completed / selected / active), or a pseudo-element
+            // that actually draws something. Still never guessed from geometry or colour alone.
+            if (rec.kind === 'check') {
+              const cls = ' ' + String(el.className && el.className.baseVal != null ? el.className.baseVal : el.className || '') + ' '
+              const stateClass = /\s(on|checked|done|completed|complete|selected|active|is-checked|is-done)\s/i.test(cls)
+              let pseudo = false
+              try {
+                for (const ps of ['::after', '::before']) {
+                  const c = getComputedStyle(el, ps).content
+                  if (c && c !== 'none' && c !== 'normal' && c !== '""' && c !== "''") { pseudo = true; break }
+                }
+              } catch { /* a control that will not compute has no pseudo tick */ }
+              if (el.checked === true || el.getAttribute('aria-checked') === 'true' ||
+                el.getAttribute('aria-pressed') === 'true' || el.getAttribute('data-checked') === 'true' ||
+                el.getAttribute('data-done') === 'true' || stateClass || pseudo) rec.on = 1
+            }
             if (el.disabled === true || el.getAttribute('aria-disabled') === 'true') rec.dis = 1
             // …and the SHAPES a small inline svg is drawn from (mirror-10), so the mirror can draw
             // the chevron the photograph shows instead of a plate where it stands

@@ -651,6 +651,15 @@ const FAMILIES = [
 // the neutral ladder by VALUE — which is the honest answer, and the one that keeps a warm-grey UI
 // from reading as gold.
 const GREY = 0.10
+// A SLATE IS A GREY (2026-09-02, the lead's review): the blue-grey slates a design system inks its
+// quiet icons and stamps with (rgb 90,99,118; 139,147,165) carry ~0.11 chroma — just over the floor
+// — and were painted --ai, the one hue this board reserves for the ring and the Changed state, so
+// every grey chevron lit up indigo. A flat higher floor would swallow the palette's own low-chroma
+// dyes (koke is 0.145), so the second test is SATURATION against lightness: a colour whose chroma is
+// modest AND whose HSL saturation is low is a neutral; koke (S≈0.25), the -line dyes (≥0.18) and
+// every vivid button stay chromatic.
+const SLATE_C = 0.18
+const SLATE_S = 0.175     // Tailwind's slate-500 (100,116,139) sits at 0.163; koke-line, the palette's least saturated chromatic dye, at 0.193
 const TINT_L = 0.75      // above this a chromatic fill is a TINT, below it the solid dye
 
 // "r,g,b" (what snapLayout writes), "#rrggbb" / "#rgb", "rgb()/rgba()", or [r,g,b]. Anything else —
@@ -708,7 +717,8 @@ export function dyeOf (colour, role) {
   if (!rgb) return null
   const { h, c, l } = hcl(rgb)
   const readable = role === 'fg' && l < NEAR_WHITE ? names.filter(n => n !== 'paper') : names
-  if (c < GREY) return nearestByValue(l, readable.length ? readable : names)
+  const sat = c / Math.max(0.02, 1 - Math.abs(2 * l - 1))       // HSL saturation from chroma + lightness
+  if (c < GREY || (c < SLATE_C && sat < SLATE_S)) return nearestByValue(l, readable.length ? readable : names)
   const hue = h < 30 ? h + 360 : h
   const fam = (FAMILIES.find(f => hue >= f.lo && hue < f.hi) || FAMILIES[3]).name
   if (role === 'bd') return fam + '-line'
@@ -759,7 +769,19 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // box takes its subtree with it, a small wordless control is its plate alone, and text is drawn in
 // the family, casing and dye the page gives it (ff / tt / ph). (Narrowed by mirror-10, rule 6: that
 // plate now stands only where the page PAINTS the control — an unpainted one is its icon alone.)
-const MIRROR_KIT = 'mirror-10'
+// `mirror-11` (2026-09-02) is THE SHAPE'S OWN COLOUR, AND A TICK YOU CAN SEE — the lead's visual
+// review of the re-harvested demo (demo/todo, the R3 and R6 scenes), two differences still standing
+// against the photograph. First: a MULTI-COLOUR ICON DREW IN ONE DYE. Tsumiki's container ring is
+// one <svg> holding a pale track circle and an indigo progress arc; mirror-10 carried a single `fg`
+// for the whole icon — the svg's computed `color`, which here is the button's ink — so the ring came
+// out a heavy black circle where the photograph shows a light track under an indigo arc. Now the
+// harvest measures each SHAPE's own computed stroke and fill (`sc` / `fc`), its own stroke-width and
+// its own opacity, and each is drawn in its own dye; `fg` is only the fallback for a shape that
+// measured neither, so an older skeleton draws exactly as it did. Second: THE TICK ON A DONE
+// CHECKBOX WAS INVISIBLE — a koke square with a hairline paper ✓ on it read, at an 18px box, as a
+// solid dark square with nothing in it. The mark is drawn heavy and spans its square; and where the
+// APP draws its own tick as an svg inside the control, that icon is the only tick.
+const MIRROR_KIT = 'mirror-11'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 // a nests inside b — the ONE tolerance the whole kit uses for "this box is inside that one"
@@ -818,6 +840,17 @@ function normIcon (ic) {
     if (!sh.f && !sh.s) return null
     out.f = !!sh.f
     out.s = !!sh.s
+    // …AND THE SHAPE'S OWN PAINT (mirror-11). A COLOUR is not geometry: a malformed one is dropped
+    // and the shape simply falls back to the icon's dye, exactly as bg/fg/bd do elsewhere — an
+    // unreadable colour is no reason to lose a line the page draws. dyeOf is total and returns null
+    // on anything that is not plainly a colour ('#zzz', '1,2', '1,2,3,4', a url(), an object), so
+    // the raw string can never reach the SVG.
+    out.sc = typeof sh.sc === 'string' ? dyeOf(sh.sc, 'fg') : null
+    out.fc = typeof sh.fc === 'string' ? dyeOf(sh.fc, 'fg') : null
+    const ssw = num(sh.sw)
+    out.sw = ssw > 0 ? clamp(ssw, 0.01, 20) : null
+    const sop = num(sh.op)
+    out.op = sop != null && sop >= 0 && sop < 1 ? clamp(sop, 0, 1) : null
     shapes.push(out)
   }
   const sw = num(ic.sw)
@@ -837,18 +870,27 @@ const iconPlace = (ic, box) => {
 // drawing of nothing. Deliberately NOT sw / scale (a stroke of constant DRAWING units, whatever the
 // icon's size): that puts a 2-unit line on a 3-unit chevron — a blob, not a mirror.
 const ICON_HAIR = 0.9
+// …and since mirror-11 each shape wears ITS OWN dye and its own weight where the harvest measured
+// them (`sc` / `fc` / `sw` / `op`), because one icon is often two colours: a pale progress TRACK
+// under an indigo ARC is one <svg>, and drawing both in the svg's own `color` made it a black
+// circle. A shape that measured neither colour still takes the icon's `fg`, so a mirror-10 skeleton
+// draws exactly as it always did.
 function iconSVG (ic, box) {
   const p = iconPlace(ic, box)
   const ink = 'var(--' + (ic.fg || 'ink-3') + ')'
-  const sw = r2(Math.max(ic.sw, ICON_HAIR / Math.max(0.0001, Math.min(p.sx, p.sy))))
+  const hair = ICON_HAIR / Math.max(0.0001, Math.min(p.sx, p.sy))
   const body = ic.shapes.map(sh => {
-    const paint = (sh.f ? ` fill="${ink}"` : ' fill="none"') +
-      (sh.s ? ` stroke="${ink}" stroke-width="${sw}"` : '')
+    const si = sh.sc ? 'var(--' + sh.sc + ')' : ink
+    const fi = sh.fc ? 'var(--' + sh.fc + ')' : ink
+    const sw = r2(Math.max(sh.sw || ic.sw, hair))
+    const fade = sh.op != null ? ` opacity="${r2(sh.op)}"` : ''
+    const paint = (sh.f ? ` fill="${fi}"` : ' fill="none"') +
+      (sh.s ? ` stroke="${si}" stroke-width="${sw}"` : '') + fade
     if (sh.t === 'path') return `<path d="${sh.d}"${paint}/>`
     if (sh.t === 'circle') return `<circle cx="${r2(sh.cx)}" cy="${r2(sh.cy)}" r="${r2(sh.r)}"${paint}/>`
     if (sh.t === 'line') {
       return `<line x1="${r2(sh.x1)}" y1="${r2(sh.y1)}" x2="${r2(sh.x2)}" y2="${r2(sh.y2)}"` +
-        ` stroke="${ink}" stroke-width="${sw}"/>`
+        ` stroke="${si}" stroke-width="${sw}"${fade}/>`
     }
     if (sh.t === 'rect') {
       return `<rect x="${r2(sh.x)}" y="${r2(sh.y)}" width="${r2(sh.w)}" height="${r2(sh.h)}"` +
@@ -1433,6 +1475,10 @@ function mirrorRead (L, S, withFocus, anchors) {
   const worded = L.els.filter(e => raw(e.text))
   const holdsWords = e => worded.some(t => nestsIn(t, e))
   const holdsAny = e => L.els.some(t => nestsIn(t, e))
+  // …and whether the control already carries THE APP'S OWN PICTURE (mirror-11): a check box whose
+  // tick the app draws as an inline svg inside it holds a readable icon, and the house mark over it
+  // would be a second ✓ on one box. The app's own always wins — it is the thing the photograph shows.
+  const holdsIcon = e => L.els.some(t => t !== e && t.icon && nestsIn(t, e))
   // …and the same question decides whether a box may be SUMMARISED by one drawn value (mirror-9).
   // The capture gives a focused element its whole innerText, so a ringed ROW comes back carrying
   // "Water the plants added just now" — which is precisely what its two child leaves already say,
@@ -1518,7 +1564,7 @@ function mirrorRead (L, S, withFocus, anchors) {
     valued.add(m.el)
     for (const t of L.els) if (nestsIn(t, m.el)) valued.add(t)
   }
-  return { holdsWords, holdsAny, composed, ghosts, ghosted, els, ringPx, marks, valued }
+  return { holdsWords, holdsAny, holdsIcon, composed, ghosts, ghosted, els, ringPx, marks, valued }
 }
 
 
@@ -1544,7 +1590,7 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
     ? { x: px(cardBox.x), y: px(cardBox.y), w: px(cardBox.w), h: px(cardBox.h) }
     : null
   const parts = []
-  const { holdsWords, holdsAny, ghosts, ghosted, els, ringPx, marks, valued } = mirrorRead(L, S, withFocus, anchors)
+  const { holdsWords, holdsAny, holdsIcon, ghosts, ghosted, els, ringPx, marks, valued } = mirrorRead(L, S, withFocus, anchors)
   for (const e of els) {
     if (ghosted.has(e)) continue
     const x = px(e.x); const y = px(e.y); const w = px(e.w); const h = px(e.h)
@@ -1668,7 +1714,20 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
           `<rect x="${r1(cx)}" y="${r1(cy)}" width="${r1(s)}" height="${r1(s)}" rx="${crx}" fill="${fill}"` +
           (stroke ? ` stroke="${stroke}" stroke-width="1"` : '') + '/>'
         if (e.on) {
-          piece.push(sq(tok(e.bg, 'var(--koke)'), null), checkMark(cx + s * 0.24, cy + s * 0.52, s * 0.55, 'paper'))
+          piece.push(sq(tok(e.bg, 'var(--koke)'), null))
+          // A TICK YOU CAN SEE (mirror-11, the lead's review of the re-harvested demo). The verdict
+          // mark's own weight (checkMark: markSize × 0.2) put a 0.8-unit hairline on the 7.5-unit
+          // square an 18px page box draws — at the sizes the storyline shows, a solid dark square
+          // with nothing on it, where the photograph shows a clear white tick. So the tick inside a
+          // filled box is drawn in the BOX's terms: at least 1.6 drawing units, or 16% of the side,
+          // spanning 24% → 46% → 76% of it. …unless the APP draws its own tick as an svg inside the
+          // control, in which case that icon is the tick and this one would be the second.
+          if (!holdsIcon(e)) {
+            const tw = r1(Math.max(1.6, s * 0.16))
+            piece.push(`<path d="M${r1(cx + s * 0.24)} ${r1(cy + s * 0.52)}L${r1(cx + s * 0.46)} ` +
+              `${r1(cy + s * 0.72)}L${r1(cx + s * 0.76)} ${r1(cy + s * 0.3)}" fill="none" ` +
+              `stroke="var(--paper)" stroke-width="${tw}" stroke-linecap="round" stroke-linejoin="round"/>`)
+          }
         } else if (e.bg || e.bd || !holdsAny(e)) {
           piece.push(sq(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--line2)')))
         }

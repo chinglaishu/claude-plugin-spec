@@ -665,11 +665,11 @@ test('callout text is not truncated: the whole sentence wraps to as many lines a
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
   // Updated 2026-09-02 (rule 4 — the RENDERER moved, so this pin was correctly broken by it):
-  // mirror-10 is THE ICON — a small inline svg drawn as its own shapes, and no plate under the
-  // wordless unpainted button holding it. mirror-9 was the RINGED THING ITSELF, mirror-8 COLOUR AND
-  // STATE, mirror-7 the page's own TYPE, mirror-6 the card as one sentence, mirror-5 the shared
-  // geometry.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-10"'))
+  // mirror-11 is THE SHAPE'S OWN COLOUR and A TICK YOU CAN SEE; mirror-10 was THE ICON — a small
+  // inline svg drawn as its own shapes, and no plate under the wordless unpainted button holding
+  // it. mirror-9 was the RINGED THING ITSELF, mirror-8 COLOUR AND STATE, mirror-7 the page's own
+  // TYPE, mirror-6 the card as one sentence, mirror-5 the shared geometry.
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-11"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -1781,13 +1781,179 @@ test('mirror-10: mirrorGaps is zero over an icon button and a painted one — an
   assert.deepEqual({ x: gaps[0].x, y: gaps[0].y }, { x: 962, y: 742 }, 'named at the box the page measured')
 })
 
-test('mirror-10: the demo\'s real harvest is unmoved — zero gaps, the same rings and veils', () => {
-  const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3'].map(demoLayout) }
-  const d = renderWireframe([beat], { behavior: GUARDB, id: 'R1', pass: true })
-  assert.equal(d.gaps.length, 5)
+// ── mirror-11: A SHAPE'S OWN COLOUR, AND A TICK YOU CAN SEE ─────────────────────────────────────
+// The lead's visual review of the re-harvested demo (demo/todo, the R3 and R6 scenes), 2026-09-02.
+// Two differences were left against the photograph, and each is pinned below.
+//
+//   1. A MULTI-COLOUR ICON DREW IN ONE DYE. Tsumiki's container ring is a single <svg> holding a
+//      pale TRACK circle and an indigo PROGRESS arc. mirror-10 carried ONE `fg` for the whole icon —
+//      the svg's computed `color`, which here is the button's own ink — so the ring drew as a heavy
+//      black circle where the photograph shows a light track under an indigo arc. Now every SHAPE
+//      carries the stroke and fill the page actually computes for it (`sc` / `fc`), its own
+//      stroke-width, and its own opacity; the icon's `fg` is only the fallback for a shape that
+//      measured neither. Every one of those still goes through dyeOf, so the drawing can still emit
+//      nothing but var(--token).
+//   2. THE TICK ON A DONE CHECKBOX WAS INVISIBLE. A ticked box drew a koke square with a hairline
+//      paper ✓ on it; at an 18px page box the mark vanished and the control read as a solid dark
+//      square. The tick is drawn heavy (≥1.6 drawing units) and spans its square — and where the
+//      APP draws its own tick as an svg inside the control, that icon is the ONLY tick: the house
+//      one over it would be two ✓ on one box.
+const RING_ICON = {
+  vb: [0, 0, 26, 26],
+  sw: 1.5,
+  fg: '0,0,0',                                                            // the svg's own `color`: ink
+  shapes: [
+    { t: 'circle', cx: 13, cy: 13, r: 9, s: 1, sc: '223,226,233', sw: 3 },  // the track
+    { t: 'circle', cx: 13, cy: 13, r: 9, s: 1, sc: '79,70,229', sw: 3 },    // the progress arc
+    { t: 'path', d: 'M9 13l3 3 5-6', f: 1, fc: '18,160,106', op: 0.8 }      // and a filled mark on it
+  ]
+}
+const RINGLAY = icon => ({
+  w: 1440,
+  h: 900,
+  ring: null,
+  els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    { x: 287, y: 127, w: 26, h: 26, kind: 'button' },                       // the unpainted .ring button
+    { x: 287, y: 127, w: 26, h: 26, kind: 'image', icon }
+  ]
+})
+const iconBody = f => {
+  const m = /<g transform="translate\([^"]*\) scale\([^"]*\)"[^>]*>([\s\S]*?)<\/g>/.exec(f)
+  return m ? m[1] : ''
+}
+const tokensOnly = f => {
+  for (const m of f.matchAll(/(?:fill|stroke)="([^"]+)"/g)) {
+    assert.ok(m[1] === 'none' || /^var\(--[a-z0-9-]+\)$/.test(m[1]), 'every paint is a token: ' + m[1])
+  }
+}
+
+test('mirror-11: each shape draws its OWN measured stroke and fill — the icon dye is only a fallback', () => {
+  const f = iconFrame(RINGLAY(RING_ICON))
+  const body = iconBody(f)
+  assert.ok(body, 'the icon is drawn as one scaled group')
+  assert.match(body, /<circle[^>]*stroke="var\(--ink-4\)" stroke-width="3"/,
+    'the track keeps its own pale dye, at its own 3-unit stroke')
+  assert.match(body, /<circle[^>]*stroke="var\(--ai\)" stroke-width="3"/,
+    'and the progress arc the indigo the page paints it')
+  assert.match(body, /<path[^>]*fill="var\(--koke\)"/, 'a shape that measured a FILL is filled in its own dye')
+  assert.match(body, /<path[^>]*opacity="0\.8"/, 'and drawn at the opacity the page gives it')
+  assert.ok(!/var\(--ink\)/.test(body), 'nothing falls back to the svg\'s own colour while it measured its own')
+  assert.ok(!/#[0-9a-fA-F]{3}/.test(f) && !/rgba?\(/.test(f), 'no app colour reaches the drawing')
+  tokensOnly(f)
+  assert.deepEqual(mirrorGaps(RINGLAY(RING_ICON), f, { focus: false }), [], 'and the guard still reads it as drawn')
+})
+
+test('mirror-11: a malformed shape colour is dropped — that shape falls back to the icon dye', () => {
+  for (const bad of ['#zzz', '1,2', '1,2,3,4', 'url(#grad)', 'currentColor', '', 42, null, {}]) {
+    const lay = RINGLAY({
+      vb: [0, 0, 26, 26],
+      sw: 3,
+      fg: '0,0,0',
+      shapes: [
+        { t: 'circle', cx: 13, cy: 13, r: 9, s: 1, f: 1, sc: bad, fc: bad },
+        { t: 'line', x1: 2, y1: 2, x2: 24, y2: 24, s: 1, sc: '79,70,229' }   // a sound sibling, unharmed
+      ]
+    })
+    const f = iconFrame(lay)
+    const body = iconBody(f)
+    assert.match(body, /<circle[^>]*fill="var\(--ink\)" stroke="var\(--ink\)"/,
+      `${JSON.stringify(bad)} is not a colour — the shape wears the icon's own dye`)
+    assert.match(body, /<line[^>]*stroke="var\(--ai\)"/,
+      'and one bad colour does not cost the shape beside it its own')
+    tokensOnly(f)
+  }
+})
+
+test('mirror-11: a done tick is drawn heavy enough to read on the fill, and spans its square', () => {
+  const S = 600 / 1440
+  const side = 18 * S                       // the demo's own 18px tick box, in drawing units
+  const want = Math.max(1.6, side * 0.16)
+  const L = {
+    w: 1440,
+    h: 900,
+    ring: null,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+      { x: 325, y: 312, w: 18, h: 18, kind: 'check', on: 1, bg: '18,160,106', bd: '18,160,106', rd: 6 }
+    ]
+  }
+  const f = frameOf(renderWireframe([{ before: L, after: L, values: [] }], { id: 'R1' }).svg, 0)
+  const m = /<path d="M([\d.]+) ([\d.]+)L([\d.]+) ([\d.]+)L([\d.]+) ([\d.]+)"[^>]*stroke="var\(--paper\)" stroke-width="([\d.]+)"/.exec(f)
+  assert.ok(m, 'the tick is drawn on the filled box')
+  assert.ok(Number(m[7]) >= 1.6, `a stroke a reader can actually see: ${m[7]}`)
+  assert.ok(Math.abs(Number(m[7]) - want) <= 0.06, `at max(1.6, side × 0.16) = ${want}, not ${m[7]}`)
+  const x0 = 325 * S; const y0 = 312 * S
+  const at = (v, base) => (Number(v) - base) / side
+  const near = (v, base, wantF) => Math.abs(at(v, base) - wantF) <= 0.02
+  assert.ok(near(m[1], x0, 0.24) && near(m[3], x0, 0.46) && near(m[5], x0, 0.76),
+    `the mark spans the square: ${[m[1], m[3], m[5]].map(v => at(v, x0).toFixed(2))}`)
+  assert.ok(at(m[4], y0) > at(m[2], y0) && at(m[2], y0) > at(m[6], y0), 'down to the elbow, then up')
+  assert.match(f, /stroke-linecap="round"/, 'with round caps, like the app\'s own')
+})
+
+test('mirror-11: where the app draws its own tick inside the control, that is the only tick', () => {
+  const APP_TICK = { vb: [0, 0, 24, 24], sw: 3, fg: '255,255,255', shapes: [{ t: 'path', d: 'M5 12l5 5 9-10', s: 1 }] }
+  const lay = own => ({
+    w: 1440,
+    h: 900,
+    ring: null,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+      { x: 325, y: 312, w: 18, h: 18, kind: 'check', on: 1, bg: '18,160,106', bd: '18,160,106', rd: 6 },
+      ...(own ? [{ x: 328, y: 315, w: 12, h: 12, kind: 'image', icon: APP_TICK }] : [])
+    ]
+  })
+  const draw = own => frameOf(renderWireframe([{ before: lay(own), after: lay(own), values: [] }], { id: 'R1' }).svg, 0)
+  const house = draw(false); const app = draw(true)
+  const ticks = s => (s.match(/<path[^>]*stroke="var\(--paper\)"/g) || []).length
+  assert.equal(ticks(house), 1, 'with nothing inside it, the house draws the tick')
+  assert.equal(ticks(app), 1, 'and with the app\'s own tick icon inside it, still exactly one')
+  assert.match(app, /<path d="M5 12l5 5 9-10"/, 'and it is the app\'s own — the house stands down')
+  assert.ok(!/<path d="M[\d.]+ [\d.]+L/.test(app), 'the house tick is not drawn over it')
+  assert.deepEqual(mirrorGaps(lay(true), app, { focus: false }), [], 'the box and its icon are both still drawn')
+})
+
+test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rings and veils', () => {
+  // (rule 4, 2026-09-02: this pin used to count EVERY `stroke="var(--ai)"` in the whole drawing and
+  // call the total "the rings". mirror-10 made an icon draw its own lines, so a sidebar icon whose
+  // measured ink lands on indigo legitimately adds strokes carrying that token — the count went
+  // 14 → 71 on a re-harvest that had moved no ring at all. A ring is asked for by its OWN signature
+  // instead: the paper halo ringSVG paints outside every indigo ring.)
+  for (const [id, vals, rings] of [['R1', ['v1', 'v2', 'v3'], 4], ['R3', ['v1', 'v2'], 3]]) {
+    const L = n => JSON.parse(readFileSync(new URL(`${id}.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+    const beat = { before: L('before'), after: L('after'), values: vals.map(L) }
+    const d = renderWireframe([beat], { behavior: GUARDB, id, pass: true })
+    assert.equal(d.gaps.length, vals.length + 2, `${id}: a gap report per frame`)
+    for (const g of d.gaps) assert.deepEqual(g.gaps, [], `${id} frame ${g.frame} — ${gapSummary(g.gaps)}`)
+    assert.equal((d.svg.match(/<rect[^>]*stroke="var\(--paper\)"[^>]*opacity="0\.92"/g) || []).length, rings,
+      `${id}: every ring the harvest asked for`)
+    assert.equal((d.svg.match(/opacity="0\.12"/g) || []).length, rings, `${id}: and one veil per ringed scene`)
+    tokensOnly(d.svg)
+  }
+})
+
+test('mirror-11: the demo\'s own container ring, measured per shape, draws track and arc apart', () => {
+  // The real R3 harvest, with the two circles' colours filled in as the mirror-11 capture records
+  // them (the committed files are a mirror-10 harvest and carry only the icon-level `fg` — black).
+  const paint = L => ({
+    ...L,
+    els: L.els.map(e => (e.icon && e.icon.vb && e.icon.vb[2] === 26 && e.icon.shapes.length === 2
+      ? { ...e, icon: { ...e.icon, shapes: [
+          { ...e.icon.shapes[0], sc: '223,226,233', sw: 3 },
+          { ...e.icon.shapes[1], sc: '79,70,229', sw: 3 }
+        ] } }
+      : e))
+  })
+  const L = n => paint(JSON.parse(readFileSync(new URL(`R3.b1.${n}.layout.json`, DEMO_EV), 'utf8')))
+  const d = renderWireframe([{ before: L('before'), after: L('after'), values: ['v1', 'v2'].map(L) }],
+    { behavior: GUARDB, id: 'R3', pass: true })
   for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
-  assert.equal((d.svg.match(/stroke="var\(--ai\)"/g) || []).length, 14, 'every ring the harvest asked for')
-  assert.equal((d.svg.match(/opacity="0\.12"/g) || []).length, 4, 'and one veil per ringed scene')
+  assert.match(d.svg, /<circle cx="13" cy="13" r="9" fill="none" stroke="var\(--ink-4\)" stroke-width="3"/,
+    'the track is the pale neutral the page paints it')
+  assert.match(d.svg, /<circle cx="13" cy="13" r="9" fill="none" stroke="var\(--ai\)" stroke-width="3"/,
+    'and the progress arc is indigo — not the black the svg\'s own colour would have made both')
+  tokensOnly(d.svg)
 })
 
 // ── STALE BY LAYOUT, NOT ONLY BY TEXT (the human, 2026-09-02) ────────────────────────────────────
