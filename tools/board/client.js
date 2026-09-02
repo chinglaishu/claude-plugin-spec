@@ -3584,8 +3584,11 @@ const B = window.__BOARD__ || {}
   document.getElementById('rpclose').addEventListener('click', () => {
     panel.hidden = true
     // R7: the panel is dismissed only here, by hand. A finished run changed the board, so leaving
-    // the panel is the moment to show it — but nothing closes the panel on your behalf.
-    if (runDone) location.reload()
+    // the panel is the moment to show it — but IN PLACE, keeping your reading position, never a full
+    // reload that snaps the reader to the top (the human, 2026-09-02: "keep back to top … after i
+    // closed the test"). The board already refreshed in place while the panel was open (R7); this
+    // just makes closing it never undo that.
+    if (runDone) reloadOrRefreshInPlace()
   })
 
   const runflag = document.getElementById('runflag')
@@ -3934,6 +3937,17 @@ const B = window.__BOARD__ || {}
     if (focusId != null) { setView(dt, 'focus', focusId); restoreReaderScroll(keepScroll) }
   }
   window.__refreshDerived = refreshAfterRun   // a seam so the board's own test can drive this deterministically
+  // A finished run (or any on-disk change) must show WITHOUT losing your reading position (the human,
+  // 2026-09-02: "keep back to top when running test, after i closed the test"). The two callers below
+  // used location.reload(), which resets every scroll — the reader's .fscroll included — so restoring
+  // the reader scroll in place could not survive it. When a reader is open (the Focus overlay, or the
+  // List's open row), refresh IN PLACE instead (refreshAfterRun keeps its scroll, R7's own mechanism);
+  // only a bare home / collapsed detail — nothing scrolled to lose — takes the full reload that a
+  // structural change may still need.
+  function reloadOrRefreshInPlace () {
+    const reader = document.querySelector('.dt:not([hidden]) .focusov, .dt:not([hidden]) .gridview .lst-card.open')
+    if (reader) refreshAfterRun(); else location.reload()
+  }
 
   // lightbox -------------------------------------------------------------
   // Screenshots are a recording's evidence, and they render at a third of their real size.
@@ -4028,7 +4042,9 @@ const B = window.__BOARD__ || {}
         // how-it-works only ever needs its project cards refreshed — a project added a skill, say — and
         // a full reload would drop you back on the board, so refresh in place like the other tool views
         if (!document.getElementById('howview').hidden) { loadHow(); return }
-        location.reload()
+        // …and a screen detail with an OPEN READER refreshes in place too, so a background run's
+        // change events never yank your reading position to the top (the human, 2026-09-02)
+        reloadOrRefreshInPlace()
       }, 800)
     })
     es.addEventListener('run', e => {

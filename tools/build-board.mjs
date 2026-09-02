@@ -17,7 +17,7 @@ import { deriveLibrary } from './compose.mjs'
 // pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
 import { deriveKind } from './flow.mjs'
 // pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
-import { focusFromLayout } from './evidence.mjs'
+import { focusFromLayout, focusFromLayouts } from './evidence.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
 // query cannot read a CSS var, so build() parses the knob out of _design.css and computes each
@@ -423,12 +423,13 @@ const evAttrs = (s, r) => {
     // beside every frame already records the ring and the viewport it was measured in, so no
     // re-harvest is needed — an existing evidence tree gains the aim on its next build. A skeleton
     // that rang nothing, or is missing, simply yields none and that scene stays on the focus.
-    const aim = p => {
+    const readL = p => {
       if (!p) return null
       const abs = join(ROOT, String(p))
       if (!existsSync(abs)) return null
-      try { return focusFromLayout(JSON.parse(readFileSync(abs, 'utf8'))) } catch { return null }
+      try { return JSON.parse(readFileSync(abs, 'utf8')) } catch { return null }
     }
+    const aim = p => { const l = readL(p); return l ? focusFromLayout(l) : null }
     const list = e.beats.map(b => {
       const o = { n: Number(b.n) }
       for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter']) {
@@ -439,10 +440,16 @@ const evAttrs = (s, r) => {
       if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
         o.window = { from: b.window.from, to: b.window.to }
       }
-      // the ringed target's box and the viewport it was measured in — the proof cell's CAMERA
-      // (the human, 2026-08-28). All six numbers or none: a partial box would frame the wrong thing.
-      if (b.focus && ['x', 'y', 'w', 'h', 'vw', 'vh'].every(k => typeof b.focus[k] === 'number' && Number.isFinite(b.focus[k]))) {
-        o.focus = { x: b.focus.x, y: b.focus.y, w: b.focus.w, h: b.focus.h, vw: b.focus.vw, vh: b.focus.vh }
+      // THE BEAT'S CAMERA — the proof cell's zoom rect (the human, 2026-08-28). It is the UNION of
+      // the rings across the beat's scenes (before, each asserted value, after), DERIVED at build
+      // time from the layout skeletons — never read from a stored field. A re-harvest with fresh
+      // layouts must RE-derive the zoom, and reading `b.focus` off the index inherited a stale one
+      // when the layouts moved and NONE at all once the fold stopped storing it — the reader then
+      // opened every beat full-page, no ring, no callout (the human, 2026-09-02). focusFromLayouts
+      // unions the rings (board R19's "one camera"); all six numbers or none.
+      const bf = focusFromLayouts([b.layoutBefore, ...(Array.isArray(b.values) ? b.values.map(v => v && v.layout) : []), b.layoutAfter].map(readL))
+      if (bf && ['x', 'y', 'w', 'h', 'vw', 'vh'].every(k => typeof bf[k] === 'number' && Number.isFinite(bf[k]))) {
+        o.focus = { x: bf.x, y: bf.y, w: bf.w, h: bf.h, vw: bf.vw, vh: bf.vh }
       }
       // the beat's ASSERTED-VALUE frames (2026-08-29), in check order: what the loop plays BETWEEN
       // the two ends, each with its offset into the beat's own window so the pace stays true — and,
