@@ -1479,6 +1479,22 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(row.locator('.mseg')).toHaveCount(frameN)
     await expect(row.locator('.mseg').last(), 'the last moment is the beat\'s result').toHaveClass(/\bthen\b/)
     await expect(row.locator('.mseg.then .msegl'), '…and says so in words, not by hue alone').toContainText('then ·')
+    // ONE LINE PER MOMENT, ALWAYS (the human, 2026-09-02: "always max. show one line, and user can hover
+    // and it shows a proper tooltip for the full text when the text is too long") — a name that wrapped
+    // made one row's strip taller than the next; now every label is a single ellipsised line and the
+    // whole name lives in a tooltip the segment shows on hover / focus. Never the native title (a second
+    // tooltip on top of the styled one).
+    const seg0 = row.locator('.mseg').first()
+    expect(await seg0.locator('.msegl').evaluate(el => getComputedStyle(el).whiteSpace), 'a label never wraps').toBe('nowrap')
+    expect(await seg0.locator('.msegl').evaluate(el => getComputedStyle(el).textOverflow), 'a long label ellipsises').toBe('ellipsis')
+    expect(await seg0.getAttribute('title'), 'no native title beside the styled tooltip').toBeNull()
+    const tip0 = seg0.locator('.mtip')
+    await expect(tip0).toBeHidden()
+    await seg0.hover()
+    await expect(tip0, 'hovering a moment shows its full name').toBeVisible()
+    await expect(tip0).toHaveText(await seg0.locator('.msegl').evaluate(el => el.dataset.full || el.textContent))
+    await row.locator('.sbtext').hover()                                   // away — the tooltip goes
+    await expect(tip0).toBeHidden()
 
     // STEP IS THE DEFAULT, and the controls ride the TITLE ROW (left of the ⋯ menu), not a bar of
     // their own. The speed is AUTO-ONLY — disabled while stepping.

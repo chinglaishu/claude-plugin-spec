@@ -38,8 +38,10 @@ test('scaledBp computes a whole-pixel breakpoint from base × scale', () => {
 
 test('the real design system yields the shipped breakpoints', () => {
   const scale = parseScale(readFileSync(join(ROOT, 'spec', '_design.css'), 'utf8'))
-  assert.equal(scale, 0.8)
-  assert.equal(scaledBp(1080, scale), 864)
-  assert.equal(scaledBp(1000, scale), 800)
-  assert.equal(scaledBp(1100, scale), 880)
+  // 0.8 → 0.88 (the human, 2026-09-02: "slightly increase font size for overall page — a bit too
+  // small") — the one-line knob did exactly what it promised; the shipped breakpoints move with it.
+  assert.equal(scale, 0.88)
+  assert.equal(scaledBp(1080, scale), 950)
+  assert.equal(scaledBp(1000, scale), 880)
+  assert.equal(scaledBp(1100, scale), 968)
 })

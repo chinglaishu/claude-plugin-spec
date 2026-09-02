@@ -2273,7 +2273,17 @@ export function build () {
   .mstrip .mnav:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
   .mstrip .mtrack { display:flex; gap:var(--s2); flex:1 1 auto; min-width:0; align-items:flex-end; }
   .mstrip .mseg { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:var(--s1);
-    background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:center; }
+    background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:center; position:relative; }
+  /* the moment's FULL NAME on hover / focus (the human, 2026-09-02): a styled tooltip above the
+     segment — paper card, hairline, the system's shadow — never the native title. It wraps freely to
+     a readable measure; the label under it stays one ellipsised line so every strip is one height. */
+  .mstrip .mtip { display:none; position:absolute; left:50%; bottom:calc(100% + var(--s1));
+    transform:translateX(-50%); z-index:6; width:max-content; max-width:min(38ch, 60vw);
+    padding:var(--s2) var(--s3); background:var(--paper); color:var(--ink); border:1px solid var(--line2);
+    border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-sm)/1.45 var(--sans);
+    text-align:left; white-space:normal; pointer-events:none; }
+  .mstrip .mseg:hover .mtip, .mstrip .mseg:focus-visible .mtip { display:block; }
+
   /* A SEGMENT'S NAME IS READ, NOT GLANCED AT (the human, 2026-09-02 — the strip showed
      "…parent still has no ch…"). It is the assertion the run recorded, so a mid-word ellipsis
      hides the very thing that names the moment. --t-sm (one step up from --t-xs, the smallest
@@ -2281,8 +2291,7 @@ export function build () {
      claim reads while the strip keeps its height. .mtrack's align-items:flex-end keeps every bar
      level whether its name took one line or two. */
   .mstrip .msegl { font:var(--t-sm)/1.35 var(--sans); color:var(--ink-3); padding:0 var(--s1);
-    white-space:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2;
-    -webkit-box-orient:vertical; }
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; min-width:0; }
   .mstrip .msegb { height:8px; border-radius:999px; background:var(--wash);
     border:1px solid var(--hair-2); transition:background .2s ease, border-color .2s ease; }
   .mstrip .mseg.done .msegb { background:var(--hair-2); }

@@ -30,7 +30,7 @@
      visible inside each calc() so the scale itself is still legible, and changing 0.8 → 0.82 is a
      one-line edit here — never a sweep of hand-multiplied literals. Colour is untouched: contrast
      ratios do not move with size. */
-  --scale: 0.8;
+  --scale: 0.88;
 
   /* 墨 sumi — ink, and the ash scale under it.
      Measured, not eyeballed: the earlier tertiary and muted greys rendered chips and captions at

@@ -1129,10 +1129,18 @@ const B = window.__BOARD__ || {}
       // the WORD, not the hue alone: the last segment is prefixed `then ·`, so a greyscale reader
       // still knows which moment is the beat's result (design system — hue never carries a state).
       const lab = document.createElement('span'); lab.className = 'msegl'
-      lab.textContent = (isThen ? 'then · ' : '') + names[i]
+      const full = (isThen ? 'then · ' : '') + names[i]
+      lab.textContent = full
+      lab.dataset.full = full
       const bar = document.createElement('span'); bar.className = 'msegb'
-      seg.appendChild(lab); seg.appendChild(bar)
-      seg.title = (isThen ? 'then · ' : 'when · ') + names[i]   // the full name, untruncated
+      // ONE LINE, ALWAYS, with the whole name one hover away (the human, 2026-09-02: "always max. show
+      // one line, and user can hover and it show a proper tooltip for the full text when the text is
+      // too long"). A name that wrapped made one row's strip taller than the next; the label is a
+      // single ellipsised line now and the full name is a STYLED tooltip (.mtip) the segment shows on
+      // hover / keyboard focus — not the native title, which would stack a second tooltip on top.
+      const tip = document.createElement('span'); tip.className = 'mtip'; tip.setAttribute('role', 'tooltip')
+      tip.textContent = full
+      seg.appendChild(lab); seg.appendChild(bar); seg.appendChild(tip)
       seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i])
       seg.addEventListener('click', function () {
         if (PLAY_MODE !== 'step') setMode('step')   // jumping holds the loop, else it snaps on

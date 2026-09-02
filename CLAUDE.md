@@ -221,7 +221,7 @@ change.
   short cut key hint in this page, only mention in the setting page"; the keys are listed once in
   #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder — `.fttl` --t-xl/600 is
   the only head, `.sbwhen` --t-lg/600 under it, `.sbthen`/`.sbgiven` --t-md, `.sbno`/`.msegl`/`.mpos`
-  --t-sm (a segment name WRAPS to two clamped lines; it never mid-sentence ellipses) — and the words
+  --t-sm (a segment name is ONE ellipsised line — every strip is one height — with the full name in a styled hover/focus tooltip `.mtip`, never the native title; the human 2026-09-02) — and the words
   cell centres itself in a tall row while the mark column still spans it. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
