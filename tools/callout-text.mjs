@@ -38,12 +38,18 @@
 // calloutLines below, ONE rule both sides consume, and a sentence takes as many lines as it needs;
 // the camera frames the union of the ring and the whole card (framedRegion / stepper), so a taller
 // card is framed, never cropped. `0.52` is the average glyph advance the whole kit estimates with.
+//
+// SIZED UP 2026-09-02 with the card (tools/overlay-geometry.mjs CARD — the human: "increase size and
+// font size of the explaining text box … keep same size to be sync"): the sentence 14 → 17px, the
+// mono chip and label 10 → 12px, the gap under the chip 8 → 10px. The wrap (calloutLines) is
+// character-count over CARD.width, so a wider card at a larger type still breaks identically on both
+// sides — that invariant is what the size lives inside of.
 export const CALLOUT_TYPE = {
-  id: 10,        // the id chip's mono
-  lab: 10,       // the WHEN / THEN mono label
-  line: 14,      // the sentence itself
+  id: 12,        // the id chip's mono
+  lab: 12,       // the WHEN / THEN mono label
+  line: 17,      // the sentence itself
   lh: 1.4,       // its line-height
-  tagGap: 8,     // chip row → sentence
+  tagGap: 10,    // chip row → sentence
   advance: 0.52  // average char width ÷ font size — the wrap's one estimate
 }
 
@@ -60,7 +66,7 @@ export function calloutLabelWidth () {
   return 4 * lab * 0.62 + 4 * lab * 0.08 + lab * 0.6
 }
 
-// THE TEXT COLUMN'S WIDTH, in page pixels — the card's inner width (300 − 2·padX) less the label
+// THE TEXT COLUMN'S WIDTH, in page pixels — the card's inner width (CARD.width − 2·padX) less the label
 // gutter. Both cards wrap their sentence to THIS width, so the line breaks are identical.
 export function calloutColWidth () {
   return CARD.width - 2 * CARD.padX - calloutLabelWidth()

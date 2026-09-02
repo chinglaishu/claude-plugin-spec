@@ -28,21 +28,27 @@
 // is what produced the ~12px ring the audit measured, so viz.mjs draws no band for it.
 export const RING = { inset: 4, stroke: 2, radius: 6, halo: 3, glow: 16 }
 
-// THE CALLOUT, exactly as renderOverlay writes it: a 300px card, 11px radius, 12/15 padding, held
+// THE CALLOUT, exactly as renderOverlay writes it: a 360px card, 12px radius, 14/18 padding, held
 // `margin` off the viewport edge, `gap` off the target, with a 12px square rotated 45° for a notch.
 // `sideNudge` is the 6px the beside-placements lift the card by; `notchInset` keeps the notch off
 // the card's own corner. `reach` is the rotated square's visible half-base and tip reach.
+//
+// SIZED UP 2026-09-02 (the human: "increase size and font size of the explaining text box as well
+// (in both schematic and proof, keep same size to be sync)") — from a 300px card at 14px type to
+// 360px at 17px (tools/callout-text.mjs CALLOUT_TYPE). Both sides read THESE numbers, so the two
+// cards grow together by construction: the burn-in paints them as CSS, the drawing converts them by
+// its one ratio. Padding and radius step up in proportion so the card keeps its shape.
 export const CARD = {
-  width: 300,
-  radius: 11,
-  padX: 15,
-  padY: 12,
+  width: 360,
+  radius: 12,
+  padX: 18,
+  padY: 14,
   gap: 12,
   margin: 12,
   notch: 12,
   reach: 12 / Math.SQRT2,
   sideNudge: 6,
-  notchInset: 16
+  notchInset: 18
 }
 
 // a box measured by Playwright (width/height) and one recorded in a layout skeleton (w/h) are the

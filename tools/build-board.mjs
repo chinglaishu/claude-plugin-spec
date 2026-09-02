@@ -2176,7 +2176,7 @@ export function build () {
   .fstory .sbno { display:inline-flex; align-items:center; justify-content:center; flex:none;
     min-width:calc(30px * var(--scale)); height:calc(30px * var(--scale));
     border:2px solid var(--line3); border-radius:999px; background:var(--paper);
-    font:var(--t-sm) var(--mono); color:var(--ink-3); }
+    font:var(--t-md) var(--mono); color:var(--ink-3); }
   .fstory .sbno.hollow { min-width:calc(14px * var(--scale)); width:calc(14px * var(--scale));
     height:calc(14px * var(--scale)); margin-top:calc(6px * var(--scale)); }
   .fstory .sbrule { flex:1 1 auto; width:1px; background:var(--hair);
@@ -2190,7 +2190,7 @@ export function build () {
   .fstory .sbhead { display:grid; grid-template-columns:var(--sbcols);
     border-bottom:1px solid var(--hair); background:var(--wash); }
   .fstory .sbhead .sbhpair { display:grid; grid-template-columns:1fr 1fr; min-width:0; }
-  .fstory .sbhead .sbhc { font:var(--t-micro) var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  .fstory .sbhead .sbhc { font:var(--t-sm) var(--mono); letter-spacing:.12em; text-transform:uppercase;
     color:var(--ink-3); padding:var(--s2) var(--s3); border-right:1px solid var(--hair); }
   .fstory .sbhead .sbhpair .sbhc:last-child { border-right:0; }
   .fstory .sbhead + .sbrow { border-top:0; }
@@ -2241,11 +2241,18 @@ export function build () {
     padding:var(--s5); }
   .fstory .sbwords { min-width:0;  }
   .fstory .sbwords p { margin:0; max-width:36ch; }
-  .fstory .sbwhen { font-size:var(--t-lg); font-weight:600; line-height:1.5; letter-spacing:-.01em;
+  /* THE READER'S WORDS RUN ONE STEP ABOVE THE CHROME LADDER (the human, 2026-09-02: "the font size
+     within the table is still too small? (like the table first row, and the given text etc)" — after
+     the page-wide --scale had already gone 0.8 → 0.88). The Focus reader is the page's reading
+     surface, not its chrome, so its sentences take the next rung up: the When at --t-xl (the same
+     size as the requirement title, one weight lighter so the title stays the card's one 600 head),
+     the Then and the Given at --t-lg, the column names and beat numerals at --t-sm/--t-md, the
+     strip's names and readout at --t-md. Nothing else on the page moved. */
+  .fstory .sbwhen { font-size:var(--t-xl); font-weight:500; line-height:1.4; letter-spacing:-.01em;
     color:var(--ink); }
-  .fstory .sbthen { font-size:var(--t-md); line-height:1.6; color:var(--ink-2);
+  .fstory .sbthen { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2);
     margin-top:var(--s3) !important; padding-top:var(--s3); border-top:1px solid var(--hair); }
-  .fstory .sbgiven { font-size:var(--t-md); line-height:1.6; color:var(--ink-2); }
+  .fstory .sbgiven { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2); }
   /* the keyword INSIDE the sentence — quiet before the words it introduces. The Then's carries the
      reader's indigo AND the word itself, so the state is never hue alone. */
   .fstory .sbwords .lead { font-size:inherit; font-weight:500; color:var(--ink-3); }
@@ -2280,17 +2287,18 @@ export function build () {
   .mstrip .mtip { display:none; position:absolute; left:50%; bottom:calc(100% + var(--s1));
     transform:translateX(-50%); z-index:6; width:max-content; max-width:min(38ch, 60vw);
     padding:var(--s2) var(--s3); background:var(--paper); color:var(--ink); border:1px solid var(--line2);
-    border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-sm)/1.45 var(--sans);
+    border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-md)/1.45 var(--sans);
     text-align:left; white-space:normal; pointer-events:none; }
   .mstrip .mseg:hover .mtip, .mstrip .mseg:focus-visible .mtip { display:block; }
 
   /* A SEGMENT'S NAME IS READ, NOT GLANCED AT (the human, 2026-09-02 — the strip showed
-     "…parent still has no ch…"). It is the assertion the run recorded, so a mid-word ellipsis
-     hides the very thing that names the moment. --t-sm (one step up from --t-xs, the smallest
-     size in the system and wrong for a sentence) and it WRAPS — to two lines, clamped, so a long
-     claim reads while the strip keeps its height. .mtrack's align-items:flex-end keeps every bar
-     level whether its name took one line or two. */
-  .mstrip .msegl { font:var(--t-sm)/1.35 var(--sans); color:var(--ink-3); padding:0 var(--s1);
+     "…parent still has no ch…"). It is the assertion the run recorded. It is ONE line at --t-md
+     (the reader's step-up, same day: the strip's names and readout sit one rung above the chrome's
+     --t-sm, beside sentences that moved up a rung too), ellipsised at the end — never mid-word —
+     with the FULL name in the .mtip tooltip above, so every strip is one height (the human: "always
+     max. show one line … hover … a proper tooltip for the full text"). The two-line clamp this
+     comment once described is gone with that decision (corrected 2026-09-02, rule 6). */
+  .mstrip .msegl { font:var(--t-md)/1.35 var(--sans); color:var(--ink-3); padding:0 var(--s1);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; min-width:0; }
   .mstrip .msegb { height:8px; border-radius:999px; background:var(--wash);
     border:1px solid var(--hair-2); transition:background .2s ease, border-color .2s ease; }
@@ -2304,8 +2312,8 @@ export function build () {
   .mstrip .mread { display:flex; align-items:center; gap:var(--s2); flex:none; margin-left:auto; }
   /* the readout sits WITH its chip, not over it: --t-sm mono beside the --t-micro WHEN/THEN chip
      reads as one pair, where --t-md put a body-sized number next to a label two steps smaller */
-  .mstrip .mpos { font:var(--t-sm) var(--mono); color:var(--ink); letter-spacing:.04em; }
-  .mstrip .mkind { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  .mstrip .mpos { font:var(--t-md) var(--mono); color:var(--ink); letter-spacing:.04em; }
+  .mstrip .mkind { font:var(--t-xs) var(--mono); letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; }
   .mstrip .mkind.then { color:var(--ai); border-color:var(--ai-line); background:var(--ai-tint); }
 
@@ -2401,8 +2409,8 @@ export function build () {
   .fstory.isstale .sbframe svg, .fstory.isstale .viz svg { filter:grayscale(1) opacity(.45); }
   .fstory .sbstale { display:flex; flex-direction:column; gap:2px; padding:var(--s2) var(--s3);
     background:var(--bengara-tint); border-bottom:1px solid var(--hair); }
-  .fstory .sbstale b { font-size:var(--t-xs); color:var(--ink-2); font-weight:500; }
-  .fstory .sbstale span { font-size:var(--t-micro); color:var(--ink-3); }
+  .fstory .sbstale b { font-size:var(--t-sm); color:var(--ink-2); font-weight:500; }
+  .fstory .sbstale span { font-size:var(--t-xs); color:var(--ink-3); }
 
   /* the no-pair fallback: the animated whole, inside the same bordered .sbwrap. Also where a
      no-schematic requirement shows its honest placeholder line, never an empty frame. */

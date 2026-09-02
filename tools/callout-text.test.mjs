@@ -15,6 +15,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { calloutText, sceneDone, CALLOUT_TYPE, calloutLines, calloutLabelWidth, calloutColWidth } from './callout-text.mjs'
+import { CARD } from './overlay-geometry.mjs'
 
 const BEAT = {
   id: 'R5',
@@ -88,6 +89,11 @@ test('the card\'s ONE line has one type, stated once for both sides', () => {
   // the burn-in writes these px into the page; viz.mjs converts them by its one ratio. Two copies is
   // exactly how the ring drifted, so there is one.
   assert.equal(typeof CALLOUT_TYPE.line, 'number')
+  // sized up 2026-09-02 (the human: a bigger, more legible card on both sides) — pinned so a stray
+  // edit to one number cannot quietly shrink the card back on one side only
+  assert.equal(CALLOUT_TYPE.line, 17)
+  assert.equal(CALLOUT_TYPE.lab, 12)
+  assert.equal(CALLOUT_TYPE.id, 12)
   assert.equal(typeof CALLOUT_TYPE.lab, 'number')
   assert.equal(typeof CALLOUT_TYPE.id, 'number')
 })
@@ -117,7 +123,7 @@ test('calloutLines is pure and scale-invariant — the same words always break t
 })
 
 test('the label gutter and text column are one shared measurement, used by both cards', () => {
-  const inner = 300 - 2 * 15   // CARD.width - 2·padX
+  const inner = CARD.width - 2 * CARD.padX   // the card's inner width, whatever the card is sized at
   assert.ok(calloutLabelWidth() > 0, 'a WHEN/THEN gutter is reserved')
   // the column is the card inner width less that gutter, so a wrapped line sits under line 0's text
   assert.ok(calloutColWidth() > 0 && calloutColWidth() < inner, 'the column is narrower than the card inner')

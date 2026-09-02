@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion, mirrorGaps, gapSummary } from './viz.mjs'
 // the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
 // both of them read rather than restating numbers here
-import { RING, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
+import { RING, CARD as GEO, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
 import { calloutText, sceneDone, calloutLines } from './callout-text.mjs'
 import { reqHash, behaviorText } from './reqhash.mjs'
 import { renderSchematic } from './build-board.mjs'
@@ -752,16 +752,16 @@ test('the callout and its notch land INSIDE the framed region, even at the page\
 })
 
 // ── THE BURN-IN'S OWN PAGE GEOMETRY (the human, 2026-08-28). The drawn callout and the
-// photographed one must be the SAME PICTURE. So the card is renderOverlay's 300 page pixels wide,
+// photographed one must be the SAME PICTURE. So the card is renderOverlay's CARD.width page pixels wide,
 // converted by the ONE ratio the drawing already uses for every box it copies (drawingW ÷ page
 // width) — never sized against the drawing, the focus rect or the camera. Both cells cover-fit at
 // the same scale, so the two callouts then land at the same apparent size.
-test('the card is the burn-in\'s 300 page pixels, scaled only by the page-to-drawing ratio', () => {
+test('the card is the burn-in\'s CARD.width page pixels, scaled only by the page-to-drawing ratio', () => {
   const S = 600 / 1440
   const cardOf = svg => [...frameOf(svg, 1).matchAll(/<rect x="([-\d.]+)" y="([-\d.]+)" width="([-\d.]+)" height="([-\d.]+)" rx="([\d.]+)" fill="var\(--paper\)" stroke="var\(--line2\)"/g)].map(m => m.slice(1).map(Number))[0]
   const edge = cardOf(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg)
-  assert.ok(Math.abs(edge[2] - 300 * S) < 0.15, `300px card at scale S: ${edge[2]} vs ${300 * S}`)
-  assert.ok(Math.abs(edge[4] - 11 * S) < 0.15, `11px radius at scale S: ${edge[4]}`)
+  assert.ok(Math.abs(edge[2] - GEO.width * S) < 0.15, `${GEO.width}px card at scale S: ${edge[2]} vs ${GEO.width * S}`)
+  assert.ok(Math.abs(edge[4] - GEO.radius * S) < 0.15, `${GEO.radius}px radius at scale S: ${edge[4]}`)
   // …and the SAME width whatever the focus rect is: a wide row's card is not a wider card
   const nested = cardOf(renderWireframe(NESTED, CARD).svg)
   assert.ok(Math.abs(nested[2] - edge[2]) < 0.15, 'the card never resizes itself to its target')
@@ -826,7 +826,7 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
     ['the counter hard against the edge', { x: 1290, y: 96, w: 130, h: 46 }, [{ before: EDGE(false), after: EDGE(true) }]]
   ]) {
     const svg = renderWireframe(layouts, CARD).svg
-    const want = calloutSpot({ box, vw: 1440, vh: 900, cw: 300, ch: cardH(svg) / S })
+    const want = calloutSpot({ box, vw: 1440, vh: 900, cw: GEO.width, ch: cardH(svg) / S })
     assert.equal(sideOf(svg, box), want.side === 'left' ? 'leftof' : want.side,
       name + ': the drawn card must sit where the burn-in put it')
   }
@@ -857,7 +857,7 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
   })
   const low = renderWireframe([{ before: foot(false), after: foot(true), values: [top(true), foot(true)] }], CARD).svg
   const lbox = { x: 321, y: 764, w: 553, h: 17 }
-  assert.equal(calloutSpot({ box: lbox, vw: 1440, vh: 900, cw: 300, ch: cardH(low, 3) / S }).side, 'below',
+  assert.equal(calloutSpot({ box: lbox, vw: 1440, vh: 900, cw: GEO.width, ch: cardH(low, 3) / S }).side, 'below',
     'the burn-in rule, given this short a card, would go below')
   assert.equal(sideOf(low, lbox, 3), 'below',
     'and the scene-aimed cell can hold it there, so the drawing says the same')
@@ -878,11 +878,11 @@ test('the drawn callout takes the side calloutSpot names, and falls back through
 // CARD (the human, 2026-08-30: never crop the explaining text box), the region EXPANDS to hold the
 // full-size card wherever the frame can afford it — the old "shrink to fit the ring's region" was
 // exactly the behaviour that clipped, and is gone. The card now shrinks ONLY when the whole FRAME is
-// narrower than 300px, which is the one case the region cannot widen its way out of.
+// narrower than the card (CARD.width), which is the one case the region cannot widen its way out of.
 test('the card holds its true size wherever the region allows, and shrinks ONLY when the frame itself cannot hold it', () => {
   const S = 600 / 1440
   const card = svg => Number(/<rect x="[-\d.]+" y="[-\d.]+" width="([-\d.]+)"[^>]*fill="var\(--paper\)" stroke="var\(--line2\)"/.exec(frameOf(svg, 1))[1])
-  assert.ok(Math.abs(card(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg) - 300 * S) < 0.15,
+  assert.ok(Math.abs(card(renderWireframe([{ before: EDGE(false), after: EDGE(true) }], CARD).svg) - GEO.width * S) < 0.15,
     'the corner case still gets the full card')
   // a SMALL ring in a roomy page: the tight ring-only crop used to shrink the card; now the region
   // widens to hold it, so it stays the burn-in's own 300 page pixels — never clipped, never shrunk
@@ -892,9 +892,9 @@ test('the card holds its true size wherever the region allows, and shrinks ONLY 
       { x: 620, y: 420, w: 60, h: 30, kind: 'text', text: '3 to do', ...(n ? { focus: true } : {}) }]
   })
   const big = renderWireframe([{ before: roomy(false), after: roomy(true) }], CARD)
-  assert.ok(Math.abs(card(big.svg) - 300 * S) < 0.15,
+  assert.ok(Math.abs(card(big.svg) - GEO.width * S) < 0.15,
     'a small ring no longer forces the card to shrink — the region holds it at full size: ' + card(big.svg))
-  // a viewport NARROWER than the 300px card itself: no region can widen past the frame, so here the
+  // a viewport NARROWER than the CARD.width card itself: no region can widen past the frame, so here the
   // card shrinks rather than hanging off the cell — an edge the owner takes over a clipped card
   const narrow = n => ({
     w: 250, h: 900, ring: n ? { x: 40, y: 300, w: 60, h: 30 } : null,

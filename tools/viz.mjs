@@ -740,7 +740,7 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // page px out against the burned ring's ~5, and the band is gone); `mirror-4` draws the asserted value at the ELEMENT'S OWN MEASURED
 // TYPE — the page's font size, alignment and text inset, where the harvest recorded them, instead of
 // a centred label sized off the ring box's height; `mirror-3` draws the overlay at the burn-in's own PAGE GEOMETRY
-// (a 300px card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
+// (a CARD.width card, scaled only by drawingW/pageW, so the drawn and photographed callouts are the same
 // picture); `mirror-2` was the same overlay sized against the drawing, `mirror-1` the plain
 // wireframe before it.
 // `mirror-8` (2026-09-02) is COLOUR AND STATE: the harvest measures what the page is painted
@@ -1274,7 +1274,7 @@ const checkMark = (x, y, s, stroke = 'ok') =>
 const OV = {
   card: CARD.width,   // .sb-call width
   rad: CARD.radius,   // its border-radius
-  padX: CARD.padX,    // its padding: 12px 15px
+  padX: CARD.padX,    // its padding: padY padX
   padY: CARD.padY,
   // ONE SENTENCE (2026-08-30) — the id chip, then the line this scene proves. The title row, the
   // second sentence and the gap between them are gone; the type comes from the shared module.
@@ -1324,7 +1324,7 @@ function ringSVG (f, S) {
 }
 
 // THE TOUR CALLOUT, in SVG. renderOverlay's card — the same structure, the same wording, the same
-// palette, and now the same GEOMETRY: a 300px card at scale S, 11px radius, 12/15 padding, the
+// palette, and now the same GEOMETRY: a CARD.width card at scale S, its radius and padding, the
 // 11/12.5/15px type, the 10px mono labels, the 12px notch. `u` is the card's own scale: 1 at the
 // burn-in's true size, less only when the framed region cannot hold it (the owner takes a slightly
 // small card over a clipped one).

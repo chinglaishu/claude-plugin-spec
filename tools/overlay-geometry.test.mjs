@@ -43,8 +43,11 @@ test('ringOuter is the last hard mark: the paper halo\'s outer edge, box ± 9', 
   assert.equal(ringOuter(BOX).x, BOX.x - (RING.inset + RING.stroke + RING.halo))
 })
 
-test('the card is 300 page px, and its notch reaches from a 12px square rotated 45°', () => {
-  assert.equal(CARD.width, 300)
+test('the card is 360 page px (sized up 2026-09-02 from 300), and its notch reaches from a 12px square rotated 45°', () => {
+  assert.equal(CARD.width, 360)
+  assert.equal(CARD.radius, 12)
+  assert.equal(CARD.padX, 18)
+  assert.equal(CARD.padY, 14)
   assert.equal(CARD.gap, 12)
   assert.equal(CARD.margin, 12)
   assert.equal(CARD.notch, 12)

@@ -219,9 +219,10 @@ change.
   are gone, and NO keyboard hint lives in the reader at all — not per row and not in its footer
   either (corrected 2026-09-02, rule 6: the pager's `.fpk` legend went with the human's "remove the
   short cut key hint in this page, only mention in the setting page"; the keys are listed once in
-  #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder — `.fttl` --t-xl/600 is
-  the only head, `.sbwhen` --t-lg/600 under it, `.sbthen`/`.sbgiven` --t-md, `.sbno`/`.msegl`/`.mpos`
-  --t-sm (a segment name is ONE ellipsised line — every strip is one height — with the full name in a styled hover/focus tooltip `.mtip`, never the native title; the human 2026-09-02) — and the words
+  #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder, and since 2026-09-02
+  (the human: "the font size within the table is still too small") its words run one rung above the
+  chrome — `.fttl` --t-xl/600 is the only 600 head, `.sbwhen` --t-xl/500 under it, `.sbthen`/`.sbgiven`
+  --t-lg, `.sbno`/`.msegl`/`.mpos` --t-md, the column names `.sbhc` --t-sm (a segment name is ONE ellipsised line — every strip is one height — with the full name in a styled hover/focus tooltip `.mtip`, never the native title; the human 2026-09-02) — and the words
   cell centres itself in a tall row while the mark column still spans it. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
@@ -232,7 +233,10 @@ change.
   (2026-08-24) — once the stepper played the frames nothing rendered them; a legacy entry's clip
   files are pruned at its next fold. This moots **D1**, the human's 2026-08-22
   keep-the-clip-across-CLI-folds decision — there is no clip left to keep; the human's stepper
-  choice of 2026-08-24 supersedes it, and carryClip went with the cut. Frames are downscaled to
+  choice of 2026-08-24 supersedes it, and carryClip went with the cut. The ring's CALLOUT is sized in ONE place for both
+  pictures — `CARD` (tools/overlay-geometry.mjs) and `CALLOUT_TYPE` (tools/callout-text.mjs), read by
+  the burn-in AND the drawing — so "make the explaining box bigger" (the human, 2026-09-02: 300px/14px
+  → 360px/17px) is two numbers there and a re-harvest, never a per-side edit. Frames are downscaled to
   1280px at the fold when ffmpeg is present (640px originally, final review M4; raised to 1280 by
   Task 16 #2, the human's 2026-08-24 sign-off — 640 was visibly soft in the wider panes). **The ring and the
   callout paint on EVERY run, recording or not (2026-09-02)** — they were recording-gated, so a plain
