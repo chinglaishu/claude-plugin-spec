@@ -1712,7 +1712,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     expect(await inkOf(rowA), 'the selected beat\'s numeral is inked').not.toBe(await inkOf(rowB))
     // …and NO per-row keyboard hint (the human, 2026-09-02: "the hint of walk this beat… is repeating
     // on every block, again please avoid duplicated things") — the footer says it once
-    await expect(ov.locator('.fread .fstory .sbtext')).not.toContainText('walk')
+    // rule 4 (2026-09-02): asserting the WORD "walk" is absent was wrong — R20's own When says "When
+    // you walk a beat" and names "the ← → keys", so the requirement's sentence tripped it. The claim is
+    // that no ROW repeats the keyboard hint: the hint is an ELEMENT, and none exists per row.
+    await expect(ov.locator('.fread .fstory .sbrow .kbd')).toHaveCount(0)
+    await expect(ov.locator('.fread .fstory .sbrow [title*="walk this beat"]')).toHaveCount(0)
     await expect(ov.locator('.fread .fstory .kbd')).toHaveCount(0)
 
     // ISOLATION: → walks the SELECTED row (rowA) only. rowB's tour position must not move.
