@@ -1606,7 +1606,7 @@ const B = window.__BOARD__ || {}
     if (beh) {
       const noDraw = v && v.svg
         ? 'the drawing does not split beat by beat — it is whole on the Given row'
-        : 'no schematic drawn yet — the next viz pass derives one from the behavior text'
+        : 'no schematic drawn yet — the next fold derives one from the harvest (or the behavior text)'
       // the GIVEN row is the context row: whole page on BOTH sides (beatFocus returns none for it)
       const givenFrame = canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw))
       body.appendChild(row('bgiven', givenFrame,

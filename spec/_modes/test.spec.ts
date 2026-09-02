@@ -533,7 +533,9 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await expect(stale.locator('.sbrow .sbframe svg')).toHaveCount(3)   // the old drawing, greyed per row — shown, not hidden
   await expect(stale.locator('.sbstale')).toBeVisible()
   await expect(stale.locator('.sbstale')).toContainText('stale — text changed')
-  await expect(stale.locator('.sbstale')).toContainText('redrawn on the next viz pass')
+  // the drawings are derived AT THE FOLD since 0.36.0 (the reporter spawns viz-derive), so the banner
+  // promises the next fold, not a by-hand pass (rule 4: the wording moved with the mechanism)
+  await expect(stale.locator('.sbstale')).toContainText('redrawn at the next fold')
   await expect(stale).toHaveAttribute('data-vizhash', vizat)      // the derived hash still rides the slot for traceability
 })
 
