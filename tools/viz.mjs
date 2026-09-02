@@ -738,6 +738,15 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // kind that knows whether it is ticked), and the drawing maps each to its nearest dye (dyeOf above).
 // The human's word for what it replaced was "a skeleton" — the chips, the primary button, the ticked
 // box and the struck-through done row were all the same grey bar. No raw colour reaches the SVG.
+// `mirror-10` (2026-09-02) is THE ICON ITSELF. The human, on the demo's R1 scene 3: "there's a weird
+// extra circle on each row's right side in the schematic". A row's chevron is a wordless 28×28
+// <button class="caret"> holding a 24-unit stroked <svg>; the button took the wash plate at rx≈7 and
+// the svg took the image plate with a hair stroke — a filled lozenge with a square on it, where the
+// photograph shows a thin grey "›". Two rules meet it: a SMALL inline svg rides the skeleton as the
+// few shapes it is actually made of (spec/_base.ts snapLayout `icon`) and is drawn as THOSE lines in
+// its own viewBox units, with no plate behind it; and a button the page paints nothing on, that
+// carries no word of its own, is that icon and nothing else — the same stand-down the tick box
+// already had. A raster <img> is still a wash plate: there is nothing to draw but its place.
 // `mirror-9` (2026-09-02) is THE RINGED THING ITSELF. The human, on the demo's R1 scene 3: "schematic
 // still looks like skeleton … all styling, component should be same (like currently even missing
 // tickbox, and the 'just added now' is totally unacceptable)". Four faults met on that one row:
@@ -748,8 +757,9 @@ const LAYOUT_W = 600                       // the drawing's internal width; the 
 // placeholder bar and read as a dot in a circle; and the stamp's own pale grey mapped to `paper`,
 // which on the paper ground is nothing at all. Now every element is drawn ringed or not, a faded
 // box takes its subtree with it, a small wordless control is its plate alone, and text is drawn in
-// the family, casing and dye the page gives it (ff / tt / ph).
-const MIRROR_KIT = 'mirror-9'
+// the family, casing and dye the page gives it (ff / tt / ph). (Narrowed by mirror-10, rule 6: that
+// plate now stands only where the page PAINTS the control — an unpainted one is its icon alone.)
+const MIRROR_KIT = 'mirror-10'
 const KINDS = new Set(['heading', 'text', 'input', 'button', 'row', 'container', 'image', 'check'])
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 // a nests inside b — the ONE tolerance the whole kit uses for "this box is inside that one"
@@ -759,6 +769,96 @@ const nestsIn = (a, b) => a !== b && a.x >= b.x - 0.6 && a.y >= b.y - 0.6 &&
 // opacity an element is invisible on the page; the capture already skips those subtrees, and this is
 // the render side of the same rule, for a skeleton harvested before it.
 const GONE = 0.05
+
+// THE ICON, VALIDATED BEFORE A LINE OF IT IS DRAWN (mirror-10, 2026-09-02). This is the only place
+// on the board where harvested data becomes GEOMETRY the SVG emits verbatim, so it is checked
+// strictly and dropped whole on the first thing that is not plainly a shape: a path `d` outside the
+// path-data alphabet or longer than 400 characters, a number that is not finite, a points list that
+// is not an even run of finite numbers, more than 12 shapes. A dropped icon is not an error — the
+// image simply draws the wash plate it always did. The colour never travels raw: `fg` goes through
+// dyeOf like every other measured colour, so the drawing can only ever emit var(--token).
+const PATH_D = /^[MmLlHhVvCcSsQqTtAaZz0-9 ,.\-eE]+$/
+const ICON_SHAPES = 12
+function normIcon (ic) {
+  if (!ic || typeof ic !== 'object') return null
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : null)
+  const vb = (Array.isArray(ic.vb) ? ic.vb : []).map(num)
+  if (vb.length !== 4 || vb.some(n => n == null) || !(vb[2] > 0) || !(vb[3] > 0)) return null
+  const src = Array.isArray(ic.shapes) ? ic.shapes : []
+  if (!src.length || src.length > ICON_SHAPES) return null
+  const shapes = []
+  for (const sh of src) {
+    if (!sh || typeof sh !== 'object') return null
+    let out = null
+    if (sh.t === 'path') {
+      const d = String(sh.d == null ? '' : sh.d).trim()
+      if (!d || d.length > 400 || !PATH_D.test(d)) return null
+      out = { t: 'path', d }
+    } else if (sh.t === 'circle') {
+      const cx = num(sh.cx); const cy = num(sh.cy); const rr = num(sh.r)
+      if (cx == null || cy == null || !(rr > 0)) return null
+      out = { t: 'circle', cx, cy, r: rr }
+    } else if (sh.t === 'line') {
+      const x1 = num(sh.x1); const y1 = num(sh.y1); const x2 = num(sh.x2); const y2 = num(sh.y2)
+      if (x1 == null || y1 == null || x2 == null || y2 == null) return null
+      out = { t: 'line', x1, y1, x2, y2 }
+    } else if (sh.t === 'rect') {
+      const x = num(sh.x); const y = num(sh.y); const w = num(sh.w); const h = num(sh.h); const rx = num(sh.rx)
+      if (x == null || y == null || !(w > 0) || !(h > 0)) return null
+      out = { t: 'rect', x, y, w, h, rx: rx > 0 ? rx : null }
+    } else if (sh.t === 'polyline' || sh.t === 'polygon') {
+      const pts = String(sh.points == null ? '' : sh.points).trim().split(/[\s,]+/).map(Number)
+      if (!pts.length || pts.length % 2 || pts.length > 200 || pts.some(n => !Number.isFinite(n))) return null
+      const pairs = []
+      for (let i = 0; i < pts.length; i += 2) pairs.push(r2(pts[i]) + ',' + r2(pts[i + 1]))
+      out = { t: sh.t, points: pairs.join(' ') }
+    } else return null
+    // a shape the page neither fills nor strokes draws nothing at all — and a skeleton claiming one
+    // is not a skeleton this kit understands, so the whole icon stands down rather than half of it
+    if (!sh.f && !sh.s) return null
+    out.f = !!sh.f
+    out.s = !!sh.s
+    shapes.push(out)
+  }
+  const sw = num(ic.sw)
+  return { vb, sw: sw > 0 ? clamp(sw, 0.01, 20) : 1.5, shapes, fg: dyeOf(ic.fg, 'fg') }
+}
+// WHERE AN ICON'S OWN viewBox LANDS INSIDE ITS MEASURED BOX, in drawing units. ONE rule, read by the
+// renderer AND by its guard — mirrorGaps asks for the group this computes, never a second sum.
+const iconPlace = (ic, box) => {
+  const sx = box.w / ic.vb[2]
+  const sy = box.h / ic.vb[3]
+  return { sx, sy, tx: box.x - ic.vb[0] * sx, ty: box.y - ic.vb[1] * sy }
+}
+// …and the icon drawn: the page's own shapes, in the page's own units, inside one scaled group.
+// The stroke stays the page's — sw is already in viewBox units, and the group's scale carries it to
+// exactly the weight the screen shows, relative to everything else in the frame. It is only ever
+// RAISED, never lowered: an icon whose line would land under the kit's own hairline would be a
+// drawing of nothing. Deliberately NOT sw / scale (a stroke of constant DRAWING units, whatever the
+// icon's size): that puts a 2-unit line on a 3-unit chevron — a blob, not a mirror.
+const ICON_HAIR = 0.9
+function iconSVG (ic, box) {
+  const p = iconPlace(ic, box)
+  const ink = 'var(--' + (ic.fg || 'ink-3') + ')'
+  const sw = r2(Math.max(ic.sw, ICON_HAIR / Math.max(0.0001, Math.min(p.sx, p.sy))))
+  const body = ic.shapes.map(sh => {
+    const paint = (sh.f ? ` fill="${ink}"` : ' fill="none"') +
+      (sh.s ? ` stroke="${ink}" stroke-width="${sw}"` : '')
+    if (sh.t === 'path') return `<path d="${sh.d}"${paint}/>`
+    if (sh.t === 'circle') return `<circle cx="${r2(sh.cx)}" cy="${r2(sh.cy)}" r="${r2(sh.r)}"${paint}/>`
+    if (sh.t === 'line') {
+      return `<line x1="${r2(sh.x1)}" y1="${r2(sh.y1)}" x2="${r2(sh.x2)}" y2="${r2(sh.y2)}"` +
+        ` stroke="${ink}" stroke-width="${sw}"/>`
+    }
+    if (sh.t === 'rect') {
+      return `<rect x="${r2(sh.x)}" y="${r2(sh.y)}" width="${r2(sh.w)}" height="${r2(sh.h)}"` +
+        (sh.rx ? ` rx="${r2(sh.rx)}"` : '') + `${paint}/>`
+    }
+    return `<${sh.t} points="${sh.points}"${paint}/>`
+  }).join('')
+  return `<g transform="translate(${r2(p.tx)} ${r2(p.ty)}) scale(${r2(p.sx)} ${r2(p.sy)})"` +
+    ` stroke-linecap="round" stroke-linejoin="round">${body}</g>`
+}
 
 // The layout files are HARVESTED data, not authored: every field is untrusted. Anything malformed
 // is dropped rather than drawn, and a layout with no usable box yields null — the caller then
@@ -819,6 +919,9 @@ function normLayout (l) {
       tt: e.tt === 'u' ? 'u' : null,          // text-transform:uppercase — draw what the page shows
       ph: !!e.ph,                             // the text came from the field's placeholder, not its value
       op: op != null && op >= GONE && op < 1 ? clamp(op, GONE, 0.99) : null,
+      // the shapes a small inline svg is made of, or null — an <img>, an illustration, an svg the
+      // harvest could not read, or anything malformed (mirror-10, normIcon above)
+      icon: kind === 'image' ? normIcon(e.icon) : null,
       gone: op != null && op < GONE
     })
   }
@@ -1539,8 +1642,16 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         break
       case 'button':
         // a button the page PAINTS keeps its own paint — the flat --wash plate was the reason every
-        // primary action on the board's mirrors read as a disabled one
-        piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--line2)'), r1(Math.min(h / 2, 7)), 0.9))
+        // primary action on the board's mirrors read as a disabled one.
+        // …AND A BUTTON THE PAGE PAINTS NOTHING ON IS ITS ICON, NOTHING ELSE (mirror-10, the human:
+        // "a weird extra circle on each row's right side"). A row's chevron is a 28×28 <button> with
+        // background:none and no border, carrying one 24-unit svg; inventing a filled rounded plate
+        // under it puts a component on the drawing the screen does not have — exactly the stand-down
+        // the tick box already makes. A button with a word of its own, or a worded child, still gets
+        // its plate: that is a control a reader has to see the edge of.
+        if (e.bg || e.bd || label || holdsWords(e)) {
+          piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--line2)'), r1(Math.min(h / 2, 7)), 0.9))
+        }
         piece.push(readable
           ? textIn(x, y, w, h, Math.min(tfs, h * 0.72), e.fg || 'ink-3', fam, label, 'c', 3, 3, weight(e.fw))
           : barOK ? bar(r1(x + w * 0.2), r1(mid - 2), r1(w * 0.6), 4, 'var(--line3)') : '')
@@ -1567,7 +1678,14 @@ function frameBody (L, S, W, H, withFocus, anchors = null, callout = null, cam =
         break
       }
       case 'image':
-        piece.push(plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--hair)'), 3, 0.8))
+        // AN ICON IS ITS OWN LINES (mirror-10): a small inline svg whose shapes the harvest could
+        // read is drawn as those shapes, in its own viewBox units, with NO wash plate behind it —
+        // the plate plus the button's was the "extra circle" the human saw. Everything else — a
+        // raster <img>, a canvas, an illustration too big or too complex to read — keeps the plate,
+        // which is the honest picture of "something is shown here".
+        piece.push(e.icon
+          ? iconSVG(e.icon, { x, y, w, h })
+          : plate(tok(e.bg, 'var(--wash)'), tok(e.bd, 'var(--hair)'), 3, 0.8))
         break
       case 'row':
         piece.push(plate(tok(e.bg, 'var(--paper)'), tok(e.bd, 'var(--line)'), 3, 0.9))
@@ -1678,6 +1796,19 @@ const attrIn = (tag, n) => {
 }
 const drawnTexts = svg => [...String(svg).matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)]
   .map(m => ({ x: Number(attrIn(m[1], 'x')), y: Number(attrIn(m[1], 'y')), txt: m[2] }))
+// AN ICON'S OWN SHAPES ARE NOT THE FRAME'S PLATES (mirror-10). The shapes inside a scaled icon
+// group are in that icon's viewBox units, not the drawing's, so a <rect> of a 24-unit chevron box
+// must never be read as a plate standing at drawing coordinates — nor its absence as a gap. The
+// groups are lifted out first; what is left is the frame the plate/word rules are asked about.
+const ICON_G = /<g transform="translate\([^"]*\) scale\([^"]*\)"[^>]*>[\s\S]*?<\/g>/g
+const drawnIcons = svg => [...String(svg).matchAll(/<g transform="translate\((-?[\d.]+) (-?[\d.]+)\) scale\((-?[\d.]+) (-?[\d.]+)\)"[^>]*>([\s\S]*?)<\/g>/g)]
+  .map(m => ({
+    tx: Number(m[1]),
+    ty: Number(m[2]),
+    sx: Number(m[3]),
+    sy: Number(m[4]),
+    n: (m[5].match(/<(?:path|circle|line|rect|polyline|polygon)\b/g) || []).length
+  }))
 const drawnRects = svg => [...String(svg).matchAll(/<rect\b([^>]*?)\/>/g)].map(m => ({
   x: Number(attrIn(m[1], 'x')),
   y: Number(attrIn(m[1], 'y')),
@@ -1689,8 +1820,12 @@ const drawnRects = svg => [...String(svg).matchAll(/<rect\b([^>]*?)\/>/g)].map(m
 // button, a row and an image always get one; a tick box gets its square unless the page paints
 // nothing on it and it is only holding an icon; a heading or a line of text only where the page
 // paints it; a container only where it is a real region and not the page shell itself.
-const platePromised = (e, box, W, H, holdsAny) => {
-  if (e.kind === 'input' || e.kind === 'button' || e.kind === 'row' || e.kind === 'image') return true
+const platePromised = (e, box, W, H, holdsAny, holdsWords) => {
+  if (e.kind === 'input' || e.kind === 'row') return true
+  // mirror-10: an image the kit draws as an ICON promises no rect at all (it is checked separately,
+  // as its own group), and a wordless button the page paints nothing on promises nothing either
+  if (e.kind === 'image') return !e.icon
+  if (e.kind === 'button') return !!(e.bg || e.bd || raw(e.text) || holdsWords(e))
   if (e.kind === 'check') return !!(e.on || e.bg || e.bd || !holdsAny(e))
   if (e.kind === 'heading' || e.kind === 'text') return !!(e.bg || e.bd)
   return box.w >= 30 && box.h >= 18 && (box.w * box.h) < 0.8 * W * H
@@ -1706,8 +1841,10 @@ export function mirrorGaps (layout, frame, opts = {}) {
   const withFocus = opts.focus != null ? !!opts.focus : /fill="var\(--ink\)" opacity="0\.12"/.test(svg)
   const { holdsWords, holdsAny, ghosted, els, marks, valued } = mirrorRead(L, S, withFocus, opts.anchors || null)
   const px = v => r1(v * S)
-  const texts = drawnTexts(svg)
-  const rects = drawnRects(svg)
+  const plain = svg.replace(ICON_G, '')      // the frame WITHOUT its icons' own local geometry
+  const texts = drawnTexts(plain)
+  const rects = drawnRects(plain)
+  const icons = drawnIcons(svg)
   const used = new Set()
   const gaps = []
   const at = (kind, what, e) => gaps.push({ kind, what, x: r1(e.x), y: r1(e.y), w: r1(e.w), h: r1(e.h) })
@@ -1751,7 +1888,15 @@ export function mirrorGaps (layout, frame, opts = {}) {
       const tfs = e.fs ? px(e.fs) : clamp(box.h * 0.62, 5, 16)
       if (tfs >= 4 && !typed(say(label), box)) at('missing-text', quote(label), e)
     }
-    if (platePromised(e, box, W, H, holdsAny)) {
+    // AN ICON COUNTS AS DRAWN WHEN ITS OWN GROUP STANDS AT ITS BOX, carrying at least one shape
+    // (mirror-10) — asked at the place iconPlace puts it, which is the renderer's own sum.
+    if (e.kind === 'image' && e.icon) {
+      const p = iconPlace(e.icon, box)
+      const there = icons.some(g => g.n >= 1 && near(g.tx, r2(p.tx)) && near(g.ty, r2(p.ty)) &&
+        Math.abs(g.sx - r2(p.sx)) <= 0.02 && Math.abs(g.sy - r2(p.sy)) <= 0.02)
+      if (!there) at('missing-box', 'icon', e)
+    }
+    if (platePromised(e, box, W, H, holdsAny, holdsWords)) {
       // the tick box is drawn as a SQUARE centred in its element, exactly as frameBody lays it out
       const s = Math.min(box.w, box.h)
       const want = e.kind === 'check'

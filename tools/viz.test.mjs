@@ -665,10 +665,11 @@ test('callout text is not truncated: the whole sentence wraps to as many lines a
 
 test('the mirror stamps its renderer pin, so a kit change is legible on disk', () => {
   // Updated 2026-09-02 (rule 4 — the RENDERER moved, so this pin was correctly broken by it):
-  // mirror-8 is COLOUR AND STATE — the harvest's bg/fg/bd/rd/fw/td/op/dis and the `check` kind,
-  // each mapped to its nearest dye (dyeOf). mirror-7 was the page's own TYPE, mirror-6 the card as
-  // one sentence, mirror-5 the shared geometry.
-  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-9"'))
+  // mirror-10 is THE ICON — a small inline svg drawn as its own shapes, and no plate under the
+  // wordless unpainted button holding it. mirror-9 was the RINGED THING ITSELF, mirror-8 COLOUR AND
+  // STATE, mirror-7 the page's own TYPE, mirror-6 the card as one sentence, mirror-5 the shared
+  // geometry.
+  assert.ok(renderWireframe(NESTED, CARD).svg.includes('data-viz-kit="mirror-10"'))
 })
 
 // ── THE CAMERA (the human, 2026-08-28): the drawn callout was being CLIPPED. A beat cell does not
@@ -1518,7 +1519,10 @@ const r = v => Math.round(v * (600 / 1440) * 10) / 10
 //     with op:0 — grep a fresh spec/<screen>/evidence/*.layout.json for `"op":0`, there should be none;
 //   · a hand-rolled tick box (a wordless square <button> with no children) comes back kind:"check";
 //   · every text-bearing record carries ff, and a placeholder-only field carries ph:1;
-//   · an uppercased label carries tt:"u" with its text in the page's own casing.
+//   · an uppercased label carries tt:"u" with its text in the page's own casing;
+//   · a small inline <svg> comes back with an `icon` — {vb, sw, shapes:[{t:'path', d, s:1}, …]} —
+//     and the wordless <button> holding it carries no bg and no bd (mirror-10). Grep a fresh
+//     evidence/*.layout.json for `"icon"`; a row's chevron must be one of them.
 const ROW_ADDED = focus => {
   const f = focus ? { focus: true } : {}
   return {
@@ -1568,8 +1572,13 @@ test('mirror-9: an element the page has faded to nothing is not drawn, nor anyth
     assert.ok(!new RegExp('x="' + r(887) + '" y="' + r(746) + '"').test(f),
       `frame ${k}: the opacity-0 control itself is not drawn`)
   }
-  // the visible chevron beside it survives — this is a fade rule, not a "drop the icons" rule
-  assert.match(frameOf(d.svg, 0), new RegExp('x="' + r(928) + '" y="' + r(748) + '"'), 'the visible control stays')
+  // the visible chevron beside it survives — this is a fade rule, not a "drop the icons" rule.
+  // Asked at the ICON's box since mirror-10 (rule 4 — the assertion was correctly broken by a good
+  // change): a wordless button the page paints nothing on no longer invents a plate of its own, so
+  // what proves the control is still drawn is the picture inside it, which is all the screen shows.
+  assert.match(frameOf(d.svg, 0), new RegExp('x="' + r(934) + '" y="' + r(753) + '"'), 'the visible control stays')
+  assert.ok(!new RegExp('x="' + r(928) + '" y="' + r(748) + '"').test(frameOf(d.svg, 0)),
+    'and it is the icon alone — no plate the page does not paint')
 })
 
 test('mirror-9: a small wordless control is its plate alone — no placeholder bar', () => {
@@ -1714,6 +1723,71 @@ test('mirrorGaps: the demo\'s real harvest draws everything it measured — zero
   for (const g of d.gaps) {
     assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
   }
+})
+
+// ── mirror-10: AN ICON IS ITS OWN LINES, NOT A PLATE ────────────────────────────────────────────
+// The human, 2026-09-02, on the demo's R1 scene 3: "there's a weird extra circle on each row's
+// right side in the schematic". The row's chevron is a wordless 28×28 <button class="caret">
+// holding a 24-unit stroked <svg>. The button got the wash plate at rx≈7 and the svg got the image
+// plate with a hair stroke — a filled lozenge with a square on it, where the photograph shows a
+// thin grey "›". So a small inline svg now rides the skeleton as the few shapes it is made of, and
+// the drawing draws THOSE; a button the page paints nothing on is its icon and nothing else.
+const CHEV = { vb: [0, 0, 24, 24], sw: 2, fg: '174,180,194', shapes: [{ t: 'path', d: 'M9 6l6 6-6 6', s: 1 }] }
+const ICONLAY = icon => ({
+  w: 1440,
+  h: 900,
+  ring: null,
+  els: [
+    { x: 0, y: 0, w: 1440, h: 900, kind: 'container' },
+    // the row's chevron: no text, no worded child, no paint of its own
+    { x: 960, y: 740, w: 28, h: 28, kind: 'button' },
+    { x: 962, y: 742, w: 24, h: 24, kind: 'image', icon: icon === undefined ? CHEV : icon },
+    // …and a button the page DOES paint, which keeps its plate exactly as before
+    { x: 780, y: 37, w: 96, h: 47, kind: 'button', text: 'Add', fs: 15, bg: '79,70,229', fg: '255,255,255', rd: 12 }
+  ]
+})
+const iconFrame = lay => frameOf(renderWireframe([{ before: lay, after: lay }], { id: 'R1' }).svg, 0)
+
+test('mirror-10: the chevron is drawn as its own path, and the plateless button draws nothing', () => {
+  const f = iconFrame(ICONLAY())
+  assert.match(f, /<g transform="translate\([-\d.]+ [-\d.]+\) scale\([-\d.]+ [-\d.]+\)"[^>]*><path d="M9 6l6 6-6 6"/,
+    'the icon rides in at its own viewBox scale, drawn as the line the page draws')
+  assert.ok(!/<rect x="400" y="308.3"/.test(f), 'the wordless unpainted button has no plate of its own')
+  assert.ok(!/<rect x="400.8" y="309.2"/.test(f), 'and the icon has no wash square behind it')
+  assert.ok(!/#[0-9a-fA-F]{3}/.test(f) && !/rgb\(/.test(f), 'no app colour reaches the icon')
+  assert.match(f, /<path d="M9 6l6 6-6 6"[^>]* stroke="var\(--[a-z0-9-]+\)"/, 'the ink is a dye token')
+})
+
+test('mirror-10: a painted button keeps its plate — the stand-down is only for an unpainted one', () => {
+  const f = iconFrame(ICONLAY())
+  assert.match(f, /<rect x="325" y="15.4" width="40" height="19.6"/, 'the Add button is painted, so it is drawn')
+})
+
+test('mirror-10: a hostile path is dropped whole — the image falls back to the plate it always had', () => {
+  const f = iconFrame(ICONLAY({ ...CHEV, shapes: [{ t: 'path', d: 'M0 0 <script>', s: 1 }] }))
+  assert.ok(!/<script/i.test(f), 'harvested data is never markup')
+  assert.ok(!/<g transform="translate/.test(f), 'and nothing of the icon reaches the drawing')
+  assert.match(f, /<rect x="400.8" y="309.2" width="10" height="10" rx="3" fill="var\(--wash\)"/,
+    'the image is drawn exactly as it was before this pass')
+})
+
+test('mirror-10: mirrorGaps is zero over an icon button and a painted one — and still catches a dropped icon', () => {
+  assert.deepEqual(mirrorGaps(ICONLAY(), iconFrame(ICONLAY()), { focus: false }), [],
+    'a plateless icon button is not a missing box; the icon counts as drawn at its own place')
+  const cut = iconFrame(ICONLAY()).replace(/<g transform="translate[\s\S]*?<\/g>/, '')
+  const gaps = mirrorGaps(ICONLAY(), cut, { focus: false })
+  assert.equal(gaps.length, 1, gapSummary(gaps))
+  assert.equal(gaps[0].kind, 'missing-box')
+  assert.deepEqual({ x: gaps[0].x, y: gaps[0].y }, { x: 962, y: 742 }, 'named at the box the page measured')
+})
+
+test('mirror-10: the demo\'s real harvest is unmoved — zero gaps, the same rings and veils', () => {
+  const beat = { before: demoLayout('before'), after: demoLayout('after'), values: ['v1', 'v2', 'v3'].map(demoLayout) }
+  const d = renderWireframe([beat], { behavior: GUARDB, id: 'R1', pass: true })
+  assert.equal(d.gaps.length, 5)
+  for (const g of d.gaps) assert.deepEqual(g.gaps, [], `frame ${g.frame} — ${gapSummary(g.gaps)}`)
+  assert.equal((d.svg.match(/stroke="var\(--ai\)"/g) || []).length, 14, 'every ring the harvest asked for')
+  assert.equal((d.svg.match(/opacity="0\.12"/g) || []).length, 4, 'and one veil per ringed scene')
 })
 
 // ── STALE BY LAYOUT, NOT ONLY BY TEXT (the human, 2026-09-02) ────────────────────────────────────

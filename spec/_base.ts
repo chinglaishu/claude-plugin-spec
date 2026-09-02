@@ -859,6 +859,98 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
         return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
       }
       const has = (el: any, n: string) => !!(el.hasAttribute && el.hasAttribute(n))
+      // THE ICON A WORDLESS CONTROL IS MADE OF (mirror-10, 2026-09-02, the human on the demo's R1
+      // scene 3: "there's a weird extra circle on each row's right side in the schematic"). A row's
+      // chevron is a 28×28 <button class="caret"> holding a 24-unit stroked <svg>; the button took
+      // the drawing's button plate and the svg took its image plate, so the thin grey "›" in the
+      // photograph came out a filled lozenge with a square on it. The fix is on both ends: here the
+      // few SHAPES a small inline svg is actually made of are measured — its own path data, in its
+      // own viewBox units — and tools/viz.mjs draws those lines instead of a plate.
+      //
+      // Bounded and untrusted like everything else on this skeleton: only an svg no bigger than
+      // ICON_MAX, at most 12 shapes, at most 900 serialised characters, at most 400 per `d`, and the
+      // drawing re-validates every one of them (normIcon) before a character of it is emitted. An
+      // svg with nothing capturable in it stays a plain image, which is the honest picture of "a
+      // graphic is shown here". No colour travels raw — `fg` is a measurement, mapped to a dye at
+      // derive time exactly like bg/fg/bd above.
+      const ICON_MAX = 64          // page px: above this an inline svg is an illustration, not an icon
+      const ICON_SKIP = ['defs', 'clippath', 'mask', 'symbol', 'style', 'title', 'desc', 'metadata', 'filter', 'pattern']
+      const numAt = (v: any) => {
+        const n = Number(v)
+        return Number.isFinite(n) ? Math.round(n * 100) / 100 : null
+      }
+      const iconOf = (svg: any, r: any, cs: any) => {
+        let vb: any = [0, 0, Math.round(r.width), Math.round(r.height)]
+        const vbA = String(svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(numAt)
+        if (vbA.length === 4 && vbA.every((n: any) => n != null) && (vbA[2] as number) > 0 && (vbA[3] as number) > 0) vb = vbA
+        const swA = Number(svg.getAttribute('stroke-width'))
+        const sw = Number.isFinite(swA) && swA > 0 ? Math.round(swA * 100) / 100 : 1.5
+        const shapes: any[] = []
+        // fill/stroke are INHERITED down the svg's own tree, so each shape is asked with what its
+        // ancestors set — a `fill="none" stroke="currentColor"` root is what makes a feather-style
+        // icon a line drawing rather than a solid one. Nothing set anywhere is SVG's own default:
+        // filled, unstroked.
+        const take = (node: any, pf: any, ps: any) => {
+          const kids = node.children || []
+          for (let i = 0; i < kids.length; i++) {
+            if (shapes.length >= 12) return
+            const c = kids[i]
+            const t = String(c.tagName || '').toLowerCase()
+            if (ICON_SKIP.indexOf(t) >= 0) continue
+            const cf = c.getAttribute('fill') || pf
+            const cst = c.getAttribute('stroke') || ps
+            let sh: any = null
+            if (t === 'path') {
+              const d = String(c.getAttribute('d') || '').trim()
+              if (d && d.length <= 400) sh = { t: 'path', d }
+            } else if (t === 'circle') {
+              const cx = numAt(c.getAttribute('cx')); const cy = numAt(c.getAttribute('cy')); const rr = numAt(c.getAttribute('r'))
+              if (cx != null && cy != null && rr != null && rr > 0) sh = { t: 'circle', cx, cy, r: rr }
+            } else if (t === 'line') {
+              const x1 = numAt(c.getAttribute('x1')); const y1 = numAt(c.getAttribute('y1'))
+              const x2 = numAt(c.getAttribute('x2')); const y2 = numAt(c.getAttribute('y2'))
+              if (x1 != null && y1 != null && x2 != null && y2 != null) sh = { t: 'line', x1, y1, x2, y2 }
+            } else if (t === 'rect') {
+              const rx0 = numAt(c.getAttribute('x')); const ry0 = numAt(c.getAttribute('y'))
+              const rw = numAt(c.getAttribute('width')); const rh = numAt(c.getAttribute('height'))
+              const rr = numAt(c.getAttribute('rx'))
+              if (rx0 != null && ry0 != null && rw != null && rw > 0 && rh != null && rh > 0) {
+                sh = rr != null && rr > 0 ? { t: 'rect', x: rx0, y: ry0, w: rw, h: rh, rx: rr } : { t: 'rect', x: rx0, y: ry0, w: rw, h: rh }
+              }
+            } else if (t === 'polyline' || t === 'polygon') {
+              const pts = String(c.getAttribute('points') || '').trim()
+              if (pts && pts.length <= 400) sh = { t, points: pts }
+            }
+            if (sh) {
+              const fv = String(cf == null ? 'black' : cf).trim().toLowerCase()
+              const sv = String(cst == null ? 'none' : cst).trim().toLowerCase()
+              if (fv && fv !== 'none') sh.f = 1
+              if (sv && sv !== 'none') sh.s = 1
+              if (sh.f || sh.s) {
+                shapes.push(sh)
+                if (JSON.stringify(shapes).length > 900) { shapes.pop(); return }
+              }
+            }
+            if (t === 'g' || t === 'a' || t === 'svg') take(c, cf, cst)
+          }
+        }
+        take(svg, svg.getAttribute('fill'), svg.getAttribute('stroke'))
+        if (!shapes.length) return null
+        // the icon's INK: currentColor, which is this element's own computed colour — unless the svg
+        // names a literal colour in its own fill/stroke, in which case that is what a reader sees.
+        let fg = cs ? rgb(cs.color) : ''
+        const lit = (n: string) => {
+          const a = String(svg.getAttribute(n) || '').trim().toLowerCase()
+          return !!a && a !== 'none' && a !== 'currentcolor' && a !== 'inherit' && a.slice(0, 4) !== 'url('
+        }
+        if (cs) {
+          if (lit('stroke')) fg = rgb(cs.stroke) || fg
+          else if (lit('fill')) fg = rgb(cs.fill) || fg
+        }
+        const icon: any = { vb, sw, shapes }
+        if (fg) icon.fg = fg
+        return icon
+      }
       const kindOf = (el: any, tag: string, leaf: boolean, text: string, r: any) => {
         const role = (el.getAttribute && el.getAttribute('role')) || ''
         const type = String((tag === 'INPUT' && el.type) || '').toLowerCase()
@@ -1040,6 +1132,14 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
               el.getAttribute('aria-pressed') === 'true' || el.getAttribute('data-checked') === 'true' ||
               el.getAttribute('data-done') === 'true')) rec.on = 1   // never guessed: no signal, no tick
             if (el.disabled === true || el.getAttribute('aria-disabled') === 'true') rec.dis = 1
+            // …and the SHAPES a small inline svg is drawn from (mirror-10), so the mirror can draw
+            // the chevron the photograph shows instead of a plate where it stands
+            if (tag === 'SVG' && r.width <= ICON_MAX && r.height <= ICON_MAX) {
+              try {
+                const icon = iconOf(el, r, cs)
+                if (icon) rec.icon = icon
+              } catch { /* an svg that will not read is simply a plain image, as it always was */ }
+            }
             els.push(rec)
           }
           if (tag !== 'SVG') walk(el, depth + 1, eop)   // an inline svg is ONE picture, not a shape tree
