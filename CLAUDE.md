@@ -197,7 +197,19 @@ change.
   beat instead of cropping its earlier scenes away. The drawing draws the same scenes from the same
   skeletons and publishes their park points as `data-viz-subphases`, and the row's proof loop
   **steps the drawing** (`_onFrame` → `frameCell._drive`, marked `data-driven`), so both halves of a
-  row are always on the same moment of the same beat. `buildMedia` now renders only
+  row are always on the same moment of the same beat. **ONE STEPPER PER ROW, over the two pictures
+  (2026-09-02, the human: "schematic and proof should share same stepper (as their steps must be
+  same???)").** A beat is one ordered list of MOMENTS — every value it proved, then its result — and
+  the two cells are renderings of that one list, so a row has exactly one `.mstrip` (`momentStrip`),
+  spanning `.pics`, one `.mseg` per moment NAMED by the assertion the run recorded (`snapValue` puts
+  the CLAIM's label on the value's layout skeleton → `valueMeta` at the fold → `values[].label` in
+  `data-ev-beats`), the last segment the beat's Then. The `‹ n / N ›` that sat in the words' gutter
+  (`sceneRail`/`.tourstep`, 2026-09-01) is GONE with the two clocks it read from — and a drawing whose
+  park points do not match the harvest's moment count no longer free-runs: it PARKS and the storyline's
+  stale banner says "behind the harvest". A row with no proof loop at all still walks (or scrubs) its
+  drawing — nothing is beside it to disagree with. The words are sentence-first (`.sbmark` numeral +
+  `.sbwhen`/`.sbthen`/`.sbgiven` with the keyword as the sentence's `.lead`); `.sbstep`/`.sbk`/`.sbeye`
+  are gone, and the keyboard hint is said ONCE in the reader's footer, never per row. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
   pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the

@@ -286,6 +286,15 @@ test('values: a fold keeps each beat\'s asserted-value frames, in order, with th
   assert.equal(vs[1].frame, 'spec/board/evidence/R4.b1.v2.png')
   assert.equal(vs[0].at, 400, 'the offset into the beat\'s own window — what paces the loop')
 })
+test('values: the NAME of what each check proved rides the fold beside its offset', () => {
+  // the human, 2026-09-02: the row has ONE stepper and each segment is named by the assertion the
+  // run recorded — so the label has to survive the fold, or the strip can only say "when 1" again
+  const index = {}
+  const named = { n: 1, before: 'spec/board/evidence/R4.b1.before.png', after: 'spec/board/evidence/R4.b1.after.png',
+    values: [{ frame: 'spec/board/evidence/R4.b1.v1.png', layout: 'spec/board/evidence/R4.b1.v1.layout.json', at: 400, label: 'To do reads 6' }] }
+  foldEvidence(index, { 'board:R4': entry({ beats: [named] }) })
+  assert.equal(index.board.evidence.R4.beats[0].values[0].label, 'To do reads 6')
+})
 test('values: a value frame the new harvest dropped is named for pruning', () => {
   const index = { board: { evidence: { R4: entry({ beats: [withVals(1, 2)] }) } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withVals(1, 1)] }) })

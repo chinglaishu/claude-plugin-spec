@@ -230,3 +230,33 @@ test('focusFromLayout is null when no ring was painted, or the skeleton is unusa
   assert.equal(focusFromLayout({ ring: { x: 1, y: 1, w: 10, h: 10 } }), null, 'no viewport, no zoom')
   assert.equal(focusFromLayout(null), null)
 })
+
+// ── THE MOMENT'S NAME (the human, 2026-09-02: "schematic and proof should share same stepper — as
+// their steps must be same") ────────────────────────────────────────────────────────────────────
+// A beat is ONE ordered list of MOMENTS: every value the test proved, in the order it proved them,
+// then the beat's result. The drawing and the photograph are two renderings of that one list, so
+// the row's one stepper names each moment by the assertion the run recorded — never "when 1".
+// The name rides the value frame's own layout skeleton (spec/_base.ts snapValue passes the current
+// CLAIM's label into snapLayout), beside the `at` offset that already rode there; this is the pure
+// lift the reporter's fold makes out of that skeleton.
+test('valueMeta lifts a value frame\'s offset AND the name of what was checked', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ w: 1440, h: 900, at: 420, label: 'To do reads 6' }),
+    { at: 420, label: 'To do reads 6' })
+})
+test('valueMeta omits what the skeleton does not carry — no field is ever invented', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ w: 1440, h: 900, at: 0 }), { at: 0 }, 'an offset of 0 is an offset')
+  assert.deepEqual(valueMeta({ label: 'the count' }), { label: 'the count' })
+  assert.deepEqual(valueMeta({ w: 1440, h: 900 }), {}, 'an older harvest carries neither')
+  assert.deepEqual(valueMeta(null), {})
+})
+test('valueMeta refuses a label that is not a usable name — collapsed, bounded, never blank', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ label: '  To do\n  reads 6  ' }), { label: 'To do reads 6' },
+    'whitespace is collapsed — a name is one line')
+  assert.deepEqual(valueMeta({ label: '   ' }), {}, 'a blank name is no name')
+  assert.deepEqual(valueMeta({ label: 42 }), {}, 'only a string is a name')
+  assert.equal(valueMeta({ label: 'x'.repeat(400) }).label.length, 140, 'bounded — a segment is a label, not a paragraph')
+  assert.deepEqual(valueMeta({ at: 'soon' }), {}, 'an unusable offset is no offset')
+})

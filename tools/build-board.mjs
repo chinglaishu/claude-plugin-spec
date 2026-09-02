@@ -491,6 +491,10 @@ const evAttrs = (s, r) => {
         if (!src) return null
         const o2 = { frame: src }
         if (typeof v.at === 'number' && Number.isFinite(v.at)) o2.at = v.at
+        // …and the MOMENT'S NAME (the human, 2026-09-02): what this check proved, in the run's own
+        // words, so the row's one stepper names its segment instead of numbering it. Bounded again
+        // here — what rides is text a run wrote, and it is about to become an HTML attribute.
+        if (typeof v.label === 'string' && v.label.trim()) o2.label = v.label.replace(/\s+/g, ' ').trim().slice(0, 140)
         // …and this scene's own ring, so the camera aims where the assertion pointed
         const f = aim(v && v.layout); if (f) o2.focus = f
         return o2
@@ -1979,8 +1983,16 @@ export function build () {
   /* ONE header row (the human, 2026-08-25): id · chip · TITLE · ⋯ — the title shares the line and
      grows (flex:1), so the reading card leads compactly and the ⋯ rides the far edge without a
      margin-left hack. baseline-aligned so the mono id, the chip and the title's first line sit on one
-     line; a long title wraps under the row and the tags stay on its first line. */
-  .fread .frmeta { display:flex; align-items:baseline; gap:var(--s3); margin-bottom:var(--s4); }
+     line; a long title wraps under the row and the tags stay on its first line.
+     SPACED IN CLUSTERS (the human, 2026-09-02: "add better spacing to the test title row"). The row
+     is not a list of eight controls, it is three things: WHAT the requirement is (id · chip · title),
+     HOW to play it (play · play speed) and WHAT to do about it (▶ Run · ⋯). This --s3 is the rhythm
+     INSIDE a cluster; each cluster after the title opens with a margin that tops that rhythm up to a
+     full --s6 of air (see .frtools / .fptop), so the eye reads three groups instead of one crowd.
+     nowrap above the breakpoint: the title (flex:1 1 auto, min-width:0) takes every bit of slack and
+     gives it back first, so nothing else on the row is ever crushed or pushed off it. */
+  .fread .frmeta { display:flex; flex-wrap:nowrap; align-items:baseline; gap:var(--s3);
+    margin-bottom:var(--s4); }
   .frmeta .fid { font:var(--t-md) var(--mono); color:var(--ink-3); flex:none; }
   .frmeta .fchip { flex:none; }
   .fchip { font-size:var(--t-sm); border-radius:999px; padding:2px 10px; border:1px solid; }
@@ -2018,13 +2030,19 @@ export function build () {
      row of the test title row, left side of the menu button"). The auto/step pair and the speed —
      the play mode and pace every animated cell (the drawing, each beat's stepper, the video) shares —
      ride inside .frmeta now, after the flexing title so they sit at the right, just left of the ⋯
-     menu. No bar of their own. */
+     menu. No bar of their own.
+     The gap that OPENS the play cluster is a full --s6 (the human, 2026-09-02: "add better spacing
+     to the test title row") — written as the row's own --s3 rhythm topped up, so the two numbers can
+     never drift apart when the rhythm changes. Inside the cluster the gap is --s2: a label sits
+     against the control it names, which is what makes them read as pairs rather than four items. */
   .frmeta .frtools { flex:none; display:inline-flex; align-items:center; gap:var(--s2);
-    align-self:center; margin-left:var(--s3); }
+    align-self:center; margin-left:calc(var(--s6) - var(--s3)); }
   .frtools .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
     color:var(--ink-3); }
-  /* each label reads as a heading for the control beside it — the second gets air before it */
-  .frtools .fbarl:not(:first-child) { margin-left:var(--s3); }
+  /* each label reads as a heading for the control beside it — so the SECOND pair opens with a full
+     --s5 (the cluster's own --s2 topped up), enough air to break PLAY from PLAY SPEED and not so much
+     that they stop reading as one group of controls */
+  .frtools .fbarl:not(:first-child) { margin-left:calc(var(--s5) - var(--s2)); }
   /* .medbar's auto margin is for a media bar that pushes its modes to a far edge; inline here it
      would tear the group apart */
   .frtools .medbar { margin-left:0; }
@@ -2077,27 +2095,34 @@ export function build () {
   .fstory .sbwrap { border:1px solid var(--hair); border-radius:var(--r-md); overflow:hidden; }
   /* the drawing and the proof are the same width — the two cells of a row frame the SAME region
      under the same camera, and comparing them is the point, so a difference in width would read as a
-     difference in the thing shown. The words are the CAPTION between them and take visibly less
+     difference in the thing shown. The words are the CAPTION beside them and take visibly less
      (the human, 2026-08-28): the visuals are what the row is for. ONE template, named once — the
      header row and every beat row take it from here, so they cannot drift apart.
+     TWO COLUMNS, NOT THREE (the human, 2026-09-02: "schematic and proof should share same stepper").
+     The row is [ words | right ], and the right half carries the row's ONE stepper strip over BOTH
+     pictures, which .pics then splits into the same two columns the header names. The three cells a
+     reader sees are unchanged; what changed is that the pictures are now one thing with one control
+     instead of two players with a control hidden in the words' gutter.
      ONE ORDER, BEHAVIOUR FIRST (the human, 2026-08-30 — "just always be behaviour first"). The
      schematic-first / behavior-first toggle and its .ord-bsp re-deal are GONE: the words lead, then
      the drawing, then the photograph, and the DOM order IS that order. Nothing is shuffled by the
      CSS order property any more, so a header can never sit over a column it does not name. */
-  .fstory { --sbcols:minmax(0,0.75fr) minmax(0,1.15fr) minmax(0,1.15fr); }
+  .fstory { --sbcols:minmax(0,0.75fr) minmax(0,2.3fr); }
   .fstory .sbrow { display:grid; grid-template-columns:var(--sbcols);
     align-items:stretch; border-top:1px solid var(--hair); }
   .fstory .sbrow:first-child { border-top:0; }
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
+  .fstory .sbright { display:flex; flex-direction:column; min-width:0; }
+  .fstory .pics { display:grid; grid-template-columns:1fr 1fr; min-width:0; flex:1 1 auto; }
   /* THE SELECTED BEAT ROW (the human, 2026-09-02: "make clear which when/then is selected, and the
      ← → keys only apply on that one"). Exactly one When/Then row is selected at a time — the one the
      arrows walk. A left INK accent marks it (inset box-shadow, so a grid row takes no layout shift),
-     and its ‹ n / N › tour control reads at full strength while every other beat's dims — so it is
+     and its moment strip reads at full strength while every other beat's stands back — so it is
      always clear which beat an arrow will move. Hue-free on purpose: indigo already names the
      Changed status, and selection is an affordance, not a status. The Given row is never a step
      target, so it is never selected. */
-  .fstory .sbrow[data-rowstep] .tourstep { opacity:.4; transition:opacity .15s ease; }
+  .fstory .sbrow[data-rowstep] .mstrip { opacity:.75; transition:opacity .15s ease; }
   /* A LEFT INK ACCENT AND THE NEIGHBOURS STANDING BACK (the human, 2026-09-02 — the single inset
      hairline was not enough to see). The selected row keeps full strength while every other beat
      row's two PICTURES drop to .55, so the eye lands on the row the arrows will move without
@@ -2105,33 +2130,41 @@ export function build () {
      PICTURES ONLY: dimming the words too was drafted and dropped here, because --ink-3 at .7 over
      --paper measures 3.2:1 and the label under it (--ink-4) worse — under the 4.5:1 floor the design
      system holds every text pair to. Every text pair on a dimmed row therefore reads exactly as it
-     does on the selected one. The marks that carry the meaning are the rule and the eyebrow's ringed
-     numeral, so no hue is needed and none is used: indigo already names Changed, and selection is an
-     affordance, not a status. The Given row is never a step target, so it never dims. */
+     does on the selected one. The marks that carry the meaning are the rule and the mark column's
+     ringed numeral, so no hue is needed and none is used: indigo already names Changed, and
+     selection is an affordance, not a status. The Given row is never a step target, so it never dims. */
   .fstory .sbrow[data-rowstep] .sbframe, .fstory .sbrow[data-rowstep] .sbproof { opacity:.55; transition:opacity .15s ease; }
   .fstory .sbrow[data-rowstep] .sbtext { cursor:pointer; }
   .fstory .sbrow.sel { background:var(--card); box-shadow:inset 3px 0 0 var(--ink); }
   .fstory .sbrow.sel .sbframe, .fstory .sbrow.sel .sbproof { opacity:1; }
-  .fstory .sbrow.sel .tourstep { opacity:1; }
-  /* the beat's own number, over its words: a ringed numeral + "of N" in the system's mono micro.
-     --ink-3 on --paper 6.42:1 (AA); on the selected row it steps up to --ink and a --line3 ring, so
-     the count is legible at a glance without a second hue. */
-  .fstory .sbeye { display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s3); }
-  .fstory .sbeye .sbno { display:inline-flex; align-items:center; justify-content:center;
-    min-width:calc(18px * var(--scale)); height:calc(18px * var(--scale)); padding:0 4px;
-    border:1px solid var(--line2); border-radius:999px;
-    font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  .fstory .sbeye .sbof { font:var(--t-micro) var(--mono); letter-spacing:.08em; color:var(--ink-4); }
-  .fstory .sbrow.sel .sbeye .sbno { border-color:var(--line3); color:var(--ink); }
+  .fstory .sbrow.sel .mstrip { opacity:1; }
+  /* THE MARK COLUMN (the human, 2026-09-02: "revise the layout/design of the given/when/then again —
+     even more easy to read"). The beat's number is a ringed numeral beside its words, with a hairline
+     running from under it to the row's foot, so several When/Then read as one numbered sequence down
+     the page. The Given row's mark is a small hollow ring — a context row has no step number to give.
+     --ink-3 on --paper 6.42:1 (AA); on the selected row the numeral steps up to --ink inside an --ink
+     ring, which is the other half of the selection cue (no hue involved). */
+  .fstory .sbmark { display:flex; flex-direction:column; align-items:center; height:100%; }
+  .fstory .sbno { display:inline-flex; align-items:center; justify-content:center; flex:none;
+    min-width:calc(30px * var(--scale)); height:calc(30px * var(--scale));
+    border:2px solid var(--line3); border-radius:999px; background:var(--paper);
+    font:var(--t-md) var(--mono); color:var(--ink-3); }
+  .fstory .sbno.hollow { min-width:calc(14px * var(--scale)); width:calc(14px * var(--scale));
+    height:calc(14px * var(--scale)); margin-top:calc(6px * var(--scale)); }
+  .fstory .sbrule { flex:1 1 auto; width:1px; background:var(--hair);
+    margin-top:var(--s2); min-height:calc(24px * var(--scale)); }
+  .fstory .sbrow.sel .sbno { border-color:var(--ink); color:var(--ink); }
   /* THE COLUMN NAMES (the human, 2026-08-28): one header row over the beats, saying what the three
      cells are. Small-caps mono in --ink-3 — the system's one label style — on the --wash a header
-     wears elsewhere (--ink-3 on --wash 5.5:1, AA). It shares the rows' grid so each name sits over
-     its own column, and it rules off from the first row rather than the row ruling off from it. */
+     wears elsewhere (--ink-3 on --wash 5.5:1, AA). It shares the rows' grid — the two picture names
+     nested in .sbhpair exactly as .pics nests the pictures — so each name sits over its own column,
+     and it rules off from the first row rather than the row ruling off from it. */
   .fstory .sbhead { display:grid; grid-template-columns:var(--sbcols);
     border-bottom:1px solid var(--hair); background:var(--wash); }
+  .fstory .sbhead .sbhpair { display:grid; grid-template-columns:1fr 1fr; min-width:0; }
   .fstory .sbhead .sbhc { font:var(--t-micro) var(--mono); letter-spacing:.12em; text-transform:uppercase;
     color:var(--ink-3); padding:var(--s2) var(--s3); border-right:1px solid var(--hair); }
-  .fstory .sbhead .sbhc:last-child { border-right:0; }
+  .fstory .sbhead .sbhpair .sbhc:last-child { border-right:0; }
   .fstory .sbhead + .sbrow { border-top:0; }
   .fstory .sbframe { display:flex; flex-direction:column; align-items:center; justify-content:center;
     background:var(--paper); padding:var(--s3); overflow:hidden; border-right:1px solid var(--hair); }
@@ -2155,19 +2188,70 @@ export function build () {
      var, keeping |delay|/duration (the frame shown) identical at every speed */
   .fstory .sbframe svg * { animation-play-state:paused !important;
     animation-delay:calc(var(--ph, 0s) / var(--spd, 1)) !important; }
-  /* THE READING (the human, 2026-08-28: the beat text was too small to read comfortably) — the
-     sentence steps up to --t-lg and its label to --t-sm, both a full step above where they sat, and
-     the label column widens to hold WHEN 1 at the larger size. Scale tokens only. */
-  .fstory .sbtext { display:flex; flex-direction:column; justify-content:center;
-    padding:var(--s4); min-width:0; border-right:1px solid var(--hair); }
-  .fstory .sbstep { display:flex; gap:var(--s3); align-items:baseline; }
-  .fstory .sbstep + .sbstep { margin-top:var(--s3); }
-  .fstory .sbk { flex:none; width:calc(68px * var(--scale)); font:var(--t-sm) var(--mono);
-    letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); }
-  .fstory .sbk.then { color:var(--ai); }
-  /* (.sbk .bno — the label's superscript beat number — went with the superscripts themselves,
-     2026-09-02: the count is the row's .sbeye eyebrow now.) */
-  .fstory .sbv { font-size:var(--t-lg); line-height:1.6; color:var(--ink); min-width:0; }
+  /* THE WORDS, SENTENCE-FIRST (the human, 2026-09-02: "revise the layout/design of the given/when/
+     then again — even more easy to read"). The label COLUMN is gone and so is the tinted Then panel:
+     "When" / "Then" / "Given" are the first word OF the sentence, quiet beside it, and the sentence
+     is the size it deserves — the When at --t-xl/600, its Then a step down in --ink-2 under a
+     hairline. The cell is [ mark | words ]; the mark column's rule ties a beat's number to its
+     sentences. Nothing here repeats the keyboard hint — the reader's footer says it once (the human,
+     the same day: "the hint of walk this beat… is repeating on every block").
+     Measured: --ink on --paper 15.9:1 (the When) and on --card the same; --ink-2 on --paper 8.9:1
+     (the Then / the Given); --ink-3 on --paper 6.42:1 (the lead word); --ai on --paper 8.16:1
+     (the Then's lead) — all AA and above. */
+  .fstory .sbtext { display:grid; grid-template-columns:calc(34px * var(--scale)) minmax(0,1fr);
+    gap:0 var(--s3); align-items:start; min-width:0; border-right:1px solid var(--hair);
+    padding:var(--s5) var(--s5) var(--s5) var(--s4); }
+  .fstory .sbwords { min-width:0; padding-top:3px; }
+  .fstory .sbwords p { margin:0; max-width:34ch; }
+  .fstory .sbwhen { font-size:var(--t-xl); font-weight:600; line-height:1.5; letter-spacing:-.012em;
+    color:var(--ink); }
+  .fstory .sbthen { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2);
+    margin-top:var(--s3) !important; padding-top:var(--s3); border-top:1px solid var(--hair); }
+  .fstory .sbgiven { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2); }
+  /* the keyword INSIDE the sentence — quiet before the words it introduces. The Then's carries the
+     reader's indigo AND the word itself, so the state is never hue alone. */
+  .fstory .sbwords .lead { font-weight:500; color:var(--ink-3); }
+  .fstory .sbwords .lead.then { color:var(--ai); font-weight:600; }
+  .fstory .sbwords .sbv { min-width:0; }
+
+  /* THE ROW'S ONE STEPPER (the human, 2026-09-02: "schematic and proof should share same stepper (as
+     their steps must be same???)"). A beat is one ordered list of MOMENTS — each value the test
+     proved, then the beat's result — and the drawing and the photograph are two renderings of it, so
+     ONE strip sits across both pictures and steps them together. Its segments are NAMED by the
+     assertion the run recorded, the last prefixed "then ·" (the word, not the hue alone), the current
+     one ink, the walked ones filled. Round ‹ › flank it and a plain "n / N" reads at the right.
+     Measured: --ink-3 on --paper 6.42:1 (a segment's name), --ink 15.9:1 (the current one and the
+     readout), --ai 8.16:1 (the Then's name and its chip). */
+  .fstory .mstrip { display:flex; align-items:center; gap:var(--s3);
+    padding:var(--s3) var(--s4); border-bottom:1px solid var(--hair); background:var(--paper); }
+  .fstory .sbrow.bgiven .mstrip { background:var(--canvas); }
+  .mstrip .mnav { display:inline-flex; align-items:center; justify-content:center; flex:none;
+    width:calc(32px * var(--scale)); height:calc(32px * var(--scale));
+    border:1px solid var(--hair-2); border-radius:999px; background:var(--paper);
+    color:var(--ink); font-size:calc(17px * var(--scale)); line-height:1; cursor:pointer; padding:0; }
+  .mstrip .mnav:hover { border-color:var(--ink-3); }
+  .mstrip .mnav[disabled] { color:var(--ink-4); opacity:.4; cursor:default; }
+  .mstrip .mnav.restart { font-size:var(--t-lg); }        /* ↺ reads better a touch smaller */
+  .mstrip .mnav:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .mstrip .mtrack { display:flex; gap:var(--s2); flex:1 1 auto; min-width:0; align-items:flex-end; }
+  .mstrip .mseg { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:5px;
+    background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:center; }
+  .mstrip .msegl { font:var(--t-xs) var(--sans); color:var(--ink-3); padding:0 4px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mstrip .msegb { height:8px; border-radius:999px; background:var(--wash);
+    border:1px solid var(--hair-2); transition:background .2s ease, border-color .2s ease; }
+  .mstrip .mseg.done .msegb { background:var(--hair-2); }
+  .mstrip .mseg.cur .msegb { background:var(--ink); border-color:var(--ink); }
+  .mstrip .mseg.cur .msegl { color:var(--ink); font-weight:600; }
+  .mstrip .mseg.then .msegl { color:var(--ai); }
+  .mstrip .mseg.then .msegb { border-color:var(--ai-line); }
+  .mstrip .mseg.then.cur .msegb { background:var(--ai); border-color:var(--ai); }
+  .mstrip .mseg:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:var(--r-sm); }
+  .mstrip .mread { display:flex; align-items:center; gap:var(--s2); flex:none; margin-left:auto; }
+  .mstrip .mpos { font:var(--t-md) var(--mono); color:var(--ink); letter-spacing:.04em; }
+  .mstrip .mkind { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; }
+  .mstrip .mkind.then { color:var(--ai); border-color:var(--ai-line); background:var(--ai-tint); }
 
   /* THE PROOF CELL — the beat's own harvested frames, framed by the CAMERA (the human, 2026-08-28).
      .pcbox is the camera, and the SAME box wraps the drawing in the schematic cell beside it: every
@@ -2222,32 +2306,11 @@ export function build () {
   .sbproof .pcbox.pcnext:hover { border-color:var(--ink-3); }
   /* the reader bar's play-mode pair — the .medbar chrome, named so a test can tell it from any other.
      The dedicated scene stepper that briefly sat beside it (3c93cb3) is GONE from the bar (the human,
-     2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row's own tour
-     control (.tourstep below), where "next" names the beat it steps. */
+     2026-08-30): a requirement has several When/Then, so the walk moved onto each beat row — and, on
+     2026-09-02, onto that row's ONE moment strip over its two pictures (.mstrip above), where "next"
+     names both the beat it steps and the moment it steps to. The gutter tour that stood here in
+     between (.tourstep, 2026-09-01) is gone with the two clocks it read from. */
   .frtools .medbar.pmode button { min-width:calc(38px * var(--scale)); }
-  /* THE PER-BEAT GUIDED-TOUR STEPPER (the human, 2026-09-01 — a live mock). The labelled bead
-     filmstrip that ec62a1d shipped (.scenerail / .srbeads) was REJECTED; in its place, a product
-     tour's control in the beat row's behaviour gutter: ONE quiet line ‹ n / N › — a prev chevron,
-     the position, a next chevron. No bordered box, no dots, no per-scene labels, no keyboard hint.
-     The next chevron is faintly accented in the reader's indigo (--ai) and always carries a glyph
-     (its state is the MARK, never the hue): at the last scene it becomes a restart ↺ that wraps to
-     scene 1. The prev chevron dims (--ink-4) and disables at scene 1. Contrast: --ai 8.16:1,
-     --ink-3 5.84:1, --ink-4 4.71:1 on --canvas — all AA. */
-  .fstory .sbtext .tourstep { display:flex; align-items:center; gap:calc(8px * var(--scale));
-    margin-top:var(--s3); }
-  .tourstep .tsprev, .tourstep .tsnext { display:inline-flex; align-items:center; justify-content:center;
-    cursor:pointer; background:none; border:0; padding:2px 4px; margin:0; line-height:1;
-    font-size:calc(17px * var(--scale)); color:var(--ink-3); border-radius:var(--r-sm);
-    min-width:calc(18px * var(--scale)); }
-  .tourstep .tsprev:hover, .tourstep .tsnext:hover { color:var(--ink); }
-  .tourstep .tsnext { color:var(--ai); }                 /* the forward affordance, faintly accented */
-  .tourstep .tsnext:hover { color:var(--ink); }
-  .tourstep .tsnext.restart { font-size:calc(14px * var(--scale)); }   /* ↺ reads better a touch smaller */
-  .tourstep .tsprev[disabled] { color:var(--ink-4); cursor:default; opacity:.55; }
-  .tourstep .tspos { font:var(--t-micro) var(--mono); letter-spacing:.08em; color:var(--ink-4);
-    min-width:calc(34px * var(--scale)); text-align:center; }
-  .tourstep .tsprev:focus-visible, .tourstep .tsnext:focus-visible { outline:2px solid var(--ink);
-    outline-offset:2px; }
   /* the cell's one control, under the media: zoom ↔ full frame. The loop/stills mode toolbar is GONE
      (the human, 2026-08-28) — the loop is the only mode a proof cell has. */
   .sbproof .pcbar { display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
@@ -2269,7 +2332,10 @@ export function build () {
      Breakpoint from the design system's --scale, computed at emit (a media query cannot read it). */
   @media (max-width:${bp(1180)}px) {
     .fstory .sbrow { grid-template-columns:1fr; }
+    .fstory .pics { grid-template-columns:1fr; }
     .fstory .sbframe, .fstory .sbtext { border-right:0; border-bottom:1px solid var(--hair); }
+    /* the strip stays over the pictures it steps — it is the row's one control either way */
+    .fstory .mstrip { flex-wrap:wrap; }
     /* a column header over one stacked column labels nothing — it goes, the rows keep their rule */
     .fstory .sbhead { display:none; }
     .fstory .sbhead + .sbrow { border-top:0; }
@@ -2354,19 +2420,20 @@ export function build () {
   /* the author outline above would swallow the UA focus ring on the current dot (I-6) */
   .fstepbar .pd:focus-visible { outline:2px solid var(--ink); outline-offset:3px; }
   .fstepbar .fstepn { margin-left:auto; font:var(--t-micro) var(--mono); color:var(--ink-3); }
-  /* THE COVERING TEST ON THE TITLE ROW (the human, 2026-09-02 — the proof header that sat under the
-     rows "is just weird" there): TEST · mark · name · Run, right of the play controls and left of the
-     one ⋯. The mark is the honesty cue (✓ / ✗ / ◌, never hue alone); the name clips before Run so a
-     long test title can never push the ⋯ off the row. Where no test covers the requirement, the
-     "＋ write the failing test" button stands where Run would. */
-  .frmeta .fptop { flex:0 1 auto; min-width:0; max-width:40%; display:inline-flex; align-items:center;
-    gap:var(--s2); align-self:center; margin-left:var(--s4); }
-  .frmeta .fptop .fbarl { font:var(--t-micro) var(--mono); letter-spacing:.08em; text-transform:uppercase;
-    color:var(--ink-3); flex:none; }
-  .frmeta .fpm { flex:none; font-size:var(--t-sm); line-height:1; cursor:help; }
-  .frmeta .fpm.pass { color:var(--koke); } .frmeta .fpm.fail { color:var(--bengara); } .frmeta .fpm.none { color:var(--ink-4); }
-  .frmeta .fpname { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    font-size:var(--t-sm); font-weight:600; color:var(--ink); }
+  /* THE COVERING TEST'S ACTIONS ON THE TITLE ROW (the human, 2026-09-02 — the proof header that sat
+     under the rows "is just weird" there): ▶ Run, right of the play controls and left of the one ⋯.
+     Its first shape carried the test's FACE too — a TEST eyebrow, a ✓/✗/◌ mark and the test's own
+     name — and the same human asked for that off the row the same day ("can we remove the test
+     ✓ Tsumiki — the full flow (R1–R8)"): the requirement chip already says the state in words, so
+     the mark repeated it and a long flow title crowded the line. The .fbarl / .fpm / .fpname rules
+     went with them (rule 6 — the reason, in place); .fpnone stays, because "◌ no test yet" is
+     CONTENT, not chrome. Where no test covers the requirement, that reads with the
+     "＋ write the failing test" button standing where Run would.
+     flex:none, so the cluster keeps its size and the title gives up the slack instead; the gap that
+     opens it is the same full --s6 the play cluster gets, and the row's own --s3 then falls between
+     Run and the ⋯ — the two nearest-related things on the row, so they read as one pair. */
+  .frmeta .fptop { flex:none; display:inline-flex; align-items:center;
+    gap:var(--s2); align-self:center; margin-left:calc(var(--s6) - var(--s3)); }
   .frmeta .fpnone { flex:0 1 auto; min-width:0; white-space:nowrap; font:var(--t-sm) var(--mono); color:var(--ink-3); }
   .frmeta .fpacts { flex:none; display:inline-flex; align-items:center; gap:var(--s2); }
   .frmeta .fpacts .btn, .frmeta .fpacts .btn.sm { font-size:12px; padding:5px 13px; border-radius:999px; white-space:nowrap; }
@@ -2386,14 +2453,29 @@ export function build () {
      row at its far edge — the title (flex:1) pushes it there; the position counter that once sat here
      is gone (it lives in the pager — R17, the human 2026-08-25). align-self so the glyph sits on the row. */
   .frmeta .fmenu { flex:none; align-self:center; }
+  /* A NARROW READER DROPS THE CONTROLS TO THEIR OWN LINE rather than crushing the title (the human,
+     2026-09-02, with the spacing pass). Above the breakpoint the row never wraps and the title alone
+     gives up slack; below it, wrapping is allowed and the title is floored at 55% of the row, which
+     is what forces the control clusters down together — the first of them (.frtools) then starts the
+     second line flush under the title, and .fptop and the ⋯ follow it with the cluster air they carry
+     everywhere else. row-gap --s2: the two lines are one header, not two. Emitted AFTER every rule it
+     overrides (same specificity, so source order decides). Breakpoint from the design system's
+     --scale, computed at emit — a media query cannot read a CSS var. */
+  @media (max-width:${bp(1100)}px) {
+    .fread .frmeta { flex-wrap:wrap; row-gap:var(--s2); }
+    .fread .frmeta .fttl { min-width:55%; }
+    .fread .frmeta .frtools { margin-left:0; }
+  }
   /* the moved evidence card must NOT wear the source row's hover wash — the reader card has no hover */
   .feval .fev .test.infocus:hover { background:transparent; }
 
   /* RIGHT — the evidence: proof line, controls, the screenshot strip (larger here), the recording */
   /* (the Task 8 proof LINE — .fplbl "THE PROOF" + .fpby "proven/covered by [unit|flow] <name> +N more
-     cover it" — is replaced by the .fptop test-name header above; the human, 2026-08-25.) */
-  /* (the .stalenote under the name went with the proof header, 2026-09-02: the drift is said on
-     the title row's mark and its ◈ Changed chip.) */
+     cover it" — was replaced by the .fptop test-name header above on 2026-08-25; that header's own
+     name and mark then went the same way on 2026-09-02, the human — .fptop is the test's ACTIONS
+     now, and no surface in the reader names the covering test as standing chrome.) */
+  /* (the .stalenote under the name went with the proof header, 2026-09-02: the drift is said on the
+     title row's ◈ Changed chip — corrected the same day when the mark it also named went.) */
   /* (the band's own rules — its bar's clipped name/facts, the ✗-failed .fpv chip, and the .frecwrap /
      .evrec player sizing — went with buildMedia, 2026-09-02: there is no video in the reader to size.) */
   /* the moved test node, flattened inside .feval: header/steps/log hidden (the proof line is the

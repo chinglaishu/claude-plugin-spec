@@ -5,7 +5,7 @@ import { join, relative, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayouts, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -273,9 +273,14 @@ function harvestEvidence (harvest, ranAt) {
         }
         if (got.layout) {
           try {
-            const at = JSON.parse(readFileSync(join(process.cwd(), got.layout), 'utf8')).at
-            if (Number.isFinite(Number(at))) got.at = Number(at)
-          } catch { /* an unreadable skeleton — the frame simply plays untimed */ }
+            // …and the NAME of the moment beside its offset (the human, 2026-09-02): the assertion's
+            // own label, so the row's ONE stepper can say what each segment IS instead of "when 1".
+            // Lifted by the pure valueMeta (tools/evidence.mjs) — a skeleton that carries neither
+            // yields neither, and the board falls back to a generic name and equal holds.
+            const meta = valueMeta(JSON.parse(readFileSync(join(process.cwd(), got.layout), 'utf8')))
+            if (typeof meta.at === 'number') got.at = meta.at
+            if (meta.label) got.label = meta.label
+          } catch { /* an unreadable skeleton — the frame simply plays untimed and unnamed */ }
         }
         if (got.frame) row.values.push(got)
       }

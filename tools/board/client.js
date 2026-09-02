@@ -560,7 +560,7 @@ const B = window.__BOARD__ || {}
     // they sit on the requirement's own line now, not on a bar of their own beneath it.
     // They ride only where there is something to pace: a control over an empty reader is chrome.
     // (The advance itself is NOT here — a requirement has several When/Then, so "next" must name its
-    // beat; that lives on each beat row's ‹ n / N › in the gutter, board R20. And the video is no
+    // beat; that lives on each beat row's own moment strip, board R20. And the video is no
     // longer one of the paced surfaces — the reader has none since 2026-09-02 — but a requirement
     // whose only evidence is a committed recording still has a harvest to pace, so the video's
     // presence is kept as a signal that a harvest happened at all, never as a thing to play.)
@@ -574,55 +574,40 @@ const B = window.__BOARD__ || {}
       tools.appendChild(bl); tools.appendChild(spdSelect())
       rmeta.appendChild(tools)
     }
-    // THE COVERING TEST RIDES THE TITLE ROW TOO (the human, 2026-09-02: a proof header at the
-    // bottom of the card "is just weird" — "make it in the test title row as well, combine with the
-    // title row's current tool button, clear and clean"). So the row reads, left to right: id · chip
-    // · TITLE · play · speed · TEST ⟨mark name Run⟩ · ⋯ — and the one ⋯ carries EVERYTHING that was
-    // split across two menus before: the test's wired Run-in-background / Logs / Steps, its add ·
-    // edit · remove, then the requirement's own reword / add / remove / schematic-wrong. Nothing is
-    // left beneath the beat rows: no proof header, no prose (see the fscroll note below).
-    // The mark tracks the requirement's DERIVED status (board R4), the same fold that names the
-    // chip, so it can never read green under a ✗ chip (rule 3): ✓ only when proven, ✗ under a failed
-    // requirement, ◌ otherwise — and the drift of a Changed requirement is said on the mark's title
-    // (the chip beside it already spells ◈ Changed in words; hue never alone).
-    const ordered = primary ? [primary].concat(cov.filter(function (t) { return t !== primary })) : cov
-    const flows = ordered.map(function (t) { const e = t.querySelector('.ttl'); return e ? e.textContent.trim() : '' }).filter(Boolean)
-    const proved = r.status === 'passed' || r.status === 'changed'
+    // THE COVERING TEST'S ACTIONS RIDE THE TITLE ROW TOO (the human, 2026-09-02: a proof header at
+    // the bottom of the card "is just weird" — "make it in the test title row as well, combine with
+    // the title row's current tool button, clear and clean"). Its FIRST shape carried the test's FACE
+    // as well — a TEST eyebrow, a ✓/✗/◌ mark tracking the requirement's derived status, and the
+    // test's own name — and the same human asked for that face back off the row later the same day:
+    // "can we remove the test ✓ Tsumiki — the full flow (R1–R8)". BOTH words are kept here on purpose
+    // (rule 6): the earlier one is why this group exists at all, the later one is why it is now only
+    // the ACTIONS. The chip two elements to the left already spells the requirement's state in words,
+    // so a second mark beside a test title was the same fact said twice and a long flow title crowded
+    // the line it was said on.
+    // So the row reads, left to right: id · chip · TITLE · play · speed · ▶ Run · ⋯ — and the one ⋯
+    // carries EVERYTHING that was split across two menus before: the test's wired Run-in-background /
+    // Logs / Steps, its add · edit · remove, then the requirement's own reword / add / remove /
+    // schematic-wrong. The test's NAME still travels with every one of those (the Edit/Remove prompts
+    // name it, the Logs and Steps windows are its own) — it is read where it is acted on, not as
+    // standing chrome. Nothing is left beneath the beat rows: no proof header, no prose (see the
+    // fscroll note below).
     const ptop = document.createElement('div'); ptop.className = 'fptop'
-    const tl = document.createElement('span'); tl.className = 'fbarl'; tl.textContent = 'test'
-    const mk = document.createElement('span')
     const acts = document.createElement('div'); acts.className = 'fpacts'
     const tacts = primary && primary.querySelector('.tacts')
     const runWatch = tacts && tacts.querySelector('.runone[data-headed]')
     const runBg = tacts && tacts.querySelector('.runone:not([data-headed])')
     const logBtn = primary && primary.querySelector('[data-log]')
     const stepBtn = primary && primary.querySelector('[data-steps]')
-    ptop.appendChild(tl)
     if (cov.length) {
-      const vstate = primary.classList.contains('f') ? 'fail' : primary.classList.contains('p') ? 'pass' : 'none'
-      const vword = vstate === 'fail' ? 'failed' : vstate === 'pass' ? 'passed' : 'not run yet'
-      if (proved) {
-        mk.className = 'fpm pass'; mk.textContent = '✓'
-        mk.title = r.status === 'changed'
-          ? 'proven — but the requirement was edited after this proof ran; re-run to re-verify' : 'proven'
-      } else if (r.status === 'failed') {
-        mk.className = 'fpm fail'; mk.textContent = '✗'; mk.title = 'failed'
-      } else {
-        mk.className = 'fpm none'; mk.textContent = '◌'
-        mk.title = r.status === 'not-reached' ? 'no proof yet — the flow stopped before this step'
-          : 'no proof yet — covered, ' + vword
-      }
-      const nm = document.createElement('span'); nm.className = 'fpname'
-      nm.title = flows[0] || ''; nm.textContent = flows[0] || ''
-      ptop.appendChild(mk); ptop.appendChild(nm); ptop.appendChild(acts)
+      ptop.appendChild(acts)
       // the wired per-test Run (watchable) — the REAL node, moved and undone on leave
       if (runWatch) move(runWatch, acts, false)
     } else {
-      // no covering test — the honest gap in the same shape (rule 3): the ◌ mark, the words, and
-      // the one next move where Run would be
-      mk.className = 'fpm none'; mk.textContent = '◌'; mk.title = 'no test yet'
-      const nm = document.createElement('span'); nm.className = 'fpnone'; nm.textContent = 'no test yet'
-      ptop.appendChild(mk); ptop.appendChild(nm); ptop.appendChild(acts)
+      // no covering test — the honest gap stays SAID (rule 3), because it is content and not the
+      // chrome that went: the ◌ and the words, then the one next move where Run would be. The mark
+      // rides the words as one string, so the row carries no .fpm to contradict the chip.
+      const nm = document.createElement('span'); nm.className = 'fpnone'; nm.textContent = '◌ no test yet'
+      ptop.appendChild(nm); ptop.appendChild(acts)
       acts.appendChild(writeTestBtn(dt, r))
     }
     rmeta.appendChild(ptop)
@@ -759,10 +744,30 @@ const B = window.__BOARD__ || {}
     })
     return out
   }
-  // one Given / When / Then line: the tracked label, then the sentence
-  function behStep (labHtml, txtHtml, isThen) {
-    return '<div class="sbstep"><span class="sbk' + (isThen ? ' then' : '') + '">' + labHtml +
-      '</span><span class="sbv">' + txtHtml + '</span></div>'
+  // the plain words of a baked fragment — what a NAME needs (a segment label, an alt): the source's
+  // own escaping is undone by the parser, and nothing of the markup survives into the text
+  function textOf (html) {
+    const t = document.createElement('div'); t.innerHTML = html || ''
+    return String(t.textContent || '').replace(/\s+/g, ' ').trim()
+  }
+  // ONE SENTENCE, KEYWORD-LED (the human, 2026-09-02: "revise the layout/design of the given/when/
+  // then again — even more easy to read"). The label COLUMN is gone, and so is the tinted Then panel
+  // that briefly replaced it: `When` / `Then` / `Given` are the first WORD of the sentence they name,
+  // quiet beside it, and the sentence itself is the size it deserves. The label html still comes
+  // from the baked .behavior row (behParts), so the words are the source's, never retyped here.
+  function sentence (cls, labHtml, txtHtml, isThen) {
+    return '<p class="' + cls + '"><span class="lead' + (isThen ? ' then' : '') + '">' + labHtml +
+      '</span> <span class="sbv">' + txtHtml + '</span></p>'
+  }
+  // …and the MARK COLUMN beside them: the beat's ringed numeral (the Given row's is a small hollow
+  // ring — a context row has no step number), with a hairline running from under it to the row's
+  // foot, so a multi-beat requirement reads as a numbered sequence down the page. The numeral is
+  // also the SELECTION cue's other half (the row's ink rule is the first): it steps up to --ink on
+  // the selected row, no hue involved.
+  function markCol (n) {
+    return '<div class="sbmark">' +
+      (n ? '<span class="sbno">' + n + '</span>' : '<span class="sbno hollow" aria-hidden="true"></span>') +
+      '<span class="sbrule" aria-hidden="true"></span></div>'
   }
   // ── THE CAMERA ───────────────────────────────────────────────────────────────────────────────
   // A proof cell frames the FOCUSED component, not the whole screen (the human, 2026-08-28): the
@@ -805,7 +810,7 @@ const B = window.__BOARD__ || {}
   //
   // PLAY MODE (the human, 2026-08-30: "add a display mode for the small steps"). 'step' is now the
   // DEFAULT (the human, 2026-09-02: "default as step") — every beat opens HELD on its first scene,
-  // walked by its gutter ‹ n / N › or the ← → keys on the selected row, so reading a beat a scene at
+  // walked by its moment strip or the ← → keys on the selected row, so reading a beat a moment at
   // a time is the resting state (board R20). 'auto' is the opt-in hands-free loop: every beat's
   // scenes loop the moment the row exists. Reader-wide and session-scoped, exactly like the speed
   // beside it and for the same reason: a reader is rebuilt on every fold, so the choice must survive
@@ -847,9 +852,9 @@ const B = window.__BOARD__ || {}
   }
   // THE WALK IS PER BEAT ROW (the human, 2026-08-30: "the go to next small step can NOT be on top as
   // there could be multi when/then, so the go to next small step need to be by each when/then"). The
-  // advance lives on each beat row's own scene rail now (sceneRail), never a single reader-wide cursor
-  // — a requirement with several When/Then beats made one global "next" ambiguous about WHICH beat it
-  // stepped. The ← → keys are the keyboard face of that same rail: while a reader is open in step mode
+  // advance lives on each beat row's own moment strip now (momentStrip), never a single reader-wide
+  // cursor — a requirement with several When/Then beats made one global "next" ambiguous about WHICH
+  // beat it stepped. The ← → keys are the keyboard face of that same strip: while a reader is open in step mode
   // they step the row the reader is ACTUALLY on — the one holding keyboard focus (a bead just clicked),
   // else the one under the pointer, else the first steppable beat — never every row at once. Returns
   // whether a row was found to step, so the key handlers know to swallow the arrow.
@@ -997,9 +1002,9 @@ const B = window.__BOARD__ || {}
       const img = document.createElement('img'); img.className = 'camsub'; img.src = f.src; img.alt = f.alt || ''
       stage.appendChild(img)
     })
-    // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the behaviour
-    // gutter's ‹ n / N › (sceneRail, fed by _onStep below) is the single readout and walk for the
-    // beat, so the frames stack alone here with nothing under them.
+    // NO dots and NO n/N counter in the proof cell any more (the human, 2026-09-02): the row's ONE
+    // moment strip over the pictures (momentStrip, fed by _onStep below) is the single readout and
+    // walk for the beat, so the frames stack alone here with nothing under them.
     const timing = window.SBStepper.stepperHolds(frames.map(function (f) { return f.anchor }))
     const holds = timing.holds
     const imgs = [].slice.call(stage.children)
@@ -1019,12 +1024,12 @@ const B = window.__BOARD__ || {}
       // on one region at every moment of the beat — not only at its start.
       if (el._onScene) el._onScene(i)
       imgs.forEach(function (im, k) { im.classList.toggle('on', k === i) })
-      // the row's SCENE RAIL (the gutter ‹ n / N ›) is the readout now — it lights the position of the
-      // scene on show (the human, 2026-08-30), tracking the loop in auto and the walk in step alike.
+      // the row's MOMENT STRIP is the readout now — it lights the segment of the moment on show
+      // (the human, 2026-09-02), tracking the loop in auto and the walk in step alike.
       if (el._onStep) el._onStep(cur)
     }
     // In STEP mode (the default) nothing is scheduled: the scene holds until a person walks it with
-    // the gutter ‹ › or the ← → keys. In auto the loop advances on its own hold.
+    // the strip's ‹ › or the ← → keys. In auto the loop advances on its own hold.
     const schedule = function () {
       stop()
       if (reduced || imgs.length < 2) return             // pauses like the schematic's loop
@@ -1069,21 +1074,28 @@ const B = window.__BOARD__ || {}
     return el
   }
 
-  // ── THE PER-BEAT GUIDED-TOUR STEPPER ─────────────────────────────────────────────────────────
-  // (the human, 2026-09-01 — a live mock). The labelled bead FILMSTRIP that ec62a1d shipped
-  // (.scenerail / .srbeads, "when 1 · when 2 · then") was REJECTED; in its place, per beat row, in
-  // the behaviour gutter under the When/Then, a product-tour control: ONE quiet line `‹  n / N  ›` —
-  // a prev chevron, the position, a next chevron. No bordered box, no dots, no per-scene labels, no
-  // keyboard-hint text. The next chevron is faintly accented (--ai); at the LAST scene it becomes a
-  // restart ↺ that wraps to scene 1. The prev chevron is dimmed/disabled at scene 1. It drives BOTH
-  // cells of its row in lock-step through the row's ONE stepper (the same show()/_drive the loop
-  // uses), so "next" is unambiguous about which beat it steps.
+  // ── THE BEAT'S ONE STEPPER, OVER ITS PICTURES ────────────────────────────────────────────────
+  // (the human, 2026-09-02: "schematic and proof should share same stepper (as their steps must be
+  // same???), please think about the product and really fix the problem.")
+  //
+  // THE PRODUCT MODEL. A beat has ONE ordered list of MOMENTS: every value the test proved, in the
+  // order it proved them, then the beat's result — the Then. The drawing and the photograph are two
+  // RENDERINGS of that one list, never two things to be kept in sync, so the row has ONE stepper
+  // and both pictures always show the same index. It sits ACROSS the two pictures, because that is
+  // what it steps; the `‹ n / N ›` that used to hide in the behaviour gutter (2026-09-01) is gone
+  // with the two-clocks it read from — "not obvious and hard to read", the human, the same day.
+  //
+  // Each segment is NAMED by the assertion the run recorded (values[].label, harvested by
+  // spec/_base.ts snapValue off the CLAIM the check painted) — never "when 1". The last segment is
+  // the beat's Then, marked with the word `then` as well as the indigo (hue never carries a state
+  // alone). A click on a segment jumps to that moment; ‹ › walk it; at the end › becomes a restart
+  // ↺. The keys are unchanged: ← → walk the SELECTED row, ↑ ↓ pick the row.
   //
   // A `driver` is the row's stepper seen through one small interface, so the proof loop and a
   // proof-less drawing's own stepper both feed the same control:
   //   { count, goto(j), step(dir), current(), subscribe(fn) }
   //
-  // the proof loop, seen as a driver — the tour's ‹ › walk the SAME frames the loop plays
+  // the proof loop, seen as a driver — the strip's ‹ › walk the SAME frames the loop plays
   function proofDriver (step) {
     return {
       count: step._count,
@@ -1093,44 +1105,80 @@ const B = window.__BOARD__ || {}
       subscribe: function (fn) { step._onStep = fn }
     }
   }
-  function sceneRail (driver) {
+  // ONE STEPPER FOR THE ROW, over its two pictures. `moments` names each index — the assertion the
+  // run recorded (values[].label), the last one the beat's Then. A name it does not have falls back
+  // to a generic one rather than being invented: the strip says what the harvest knows.
+  function momentStrip (driver, moments) {
     if (!driver || !(driver.count > 1)) return null
     const N = driver.count
-    const tour = document.createElement('div'); tour.className = 'tourstep'
-    tour.setAttribute('role', 'group'); tour.setAttribute('aria-label', 'walk this beat’s scenes')
-    const prev = document.createElement('button'); prev.type = 'button'; prev.className = 'tsprev'
-    prev.textContent = '‹'; prev.setAttribute('aria-label', 'previous scene'); prev.title = 'previous scene'
-    const pos = document.createElement('span'); pos.className = 'tspos'
-    const next = document.createElement('button'); next.type = 'button'; next.className = 'tsnext'
-    next.textContent = '›'; next.setAttribute('aria-label', 'next scene'); next.title = 'walk to the next scene'
-    // prev WALKS BACK one scene, holding the loop; it is inert (and dimmed) at scene 1
+    const names = []
+    for (let i = 0; i < N; i++) {
+      const raw = (moments && moments[i]) ? String(moments[i]) : ''
+      names.push(raw.replace(/\s+/g, ' ').trim() || ('what the test checked, ' + (i + 1)))
+    }
+    const strip = document.createElement('div'); strip.className = 'mstrip'
+    strip.setAttribute('role', 'group'); strip.setAttribute('aria-label', 'walk this beat’s moments')
+    const prev = document.createElement('button'); prev.type = 'button'; prev.className = 'mnav mprev'
+    prev.textContent = '‹'; prev.setAttribute('aria-label', 'previous moment'); prev.title = 'previous moment'
+    const track = document.createElement('div'); track.className = 'mtrack'
+    const segs = []
+    for (let i = 0; i < N; i++) {
+      const isThen = i === N - 1
+      const seg = document.createElement('button'); seg.type = 'button'
+      seg.className = 'mseg' + (isThen ? ' then' : '')
+      // the WORD, not the hue alone: the last segment is prefixed `then ·`, so a greyscale reader
+      // still knows which moment is the beat's result (design system — hue never carries a state).
+      const lab = document.createElement('span'); lab.className = 'msegl'
+      lab.textContent = (isThen ? 'then · ' : '') + names[i]
+      const bar = document.createElement('span'); bar.className = 'msegb'
+      seg.appendChild(lab); seg.appendChild(bar)
+      seg.title = (isThen ? 'then · ' : 'when · ') + names[i]   // the full name, untruncated
+      seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i])
+      seg.addEventListener('click', function () {
+        if (PLAY_MODE !== 'step') setMode('step')   // jumping holds the loop, else it snaps on
+        driver.goto(i)
+      })
+      track.appendChild(seg); segs.push(seg)
+    }
+    const next = document.createElement('button'); next.type = 'button'; next.className = 'mnav mnext'
+    next.textContent = '›'; next.setAttribute('aria-label', 'next moment'); next.title = 'walk to the next moment'
+    const read = document.createElement('div'); read.className = 'mread'
+    const pos = document.createElement('span'); pos.className = 'mpos'
+    const chip = document.createElement('span'); chip.className = 'chip mkind'
+    read.appendChild(pos); read.appendChild(chip)
+    // prev WALKS BACK one moment, holding the loop; it is inert (and dimmed) at the first
     prev.addEventListener('click', function () {
       if (driver.current() <= 0) return
-      if (PLAY_MODE !== 'step') setMode('step')   // walking holds the loop, else the next scene snaps back
+      if (PLAY_MODE !== 'step') setMode('step')
       driver.step(-1)
     })
-    // next WALKS FORWARD one scene; at the last scene it is a RESTART that wraps to scene 1
+    // next WALKS FORWARD one moment; at the last it is a RESTART that wraps to the first
     next.addEventListener('click', function () {
       if (PLAY_MODE !== 'step') setMode('step')
       if (driver.current() >= N - 1) driver.goto(0)   // ↺ wraps to the start
       else driver.step(1)
     })
-    tour.appendChild(prev); tour.appendChild(pos); tour.appendChild(next)
+    strip.appendChild(prev); strip.appendChild(track); strip.appendChild(next); strip.appendChild(read)
     const paint = function (cur) {
+      for (let i = 0; i < segs.length; i++) {
+        segs[i].classList.toggle('cur', i === cur)
+        segs[i].classList.toggle('done', i < cur)
+        if (i === cur) segs[i].setAttribute('aria-current', 'step'); else segs[i].removeAttribute('aria-current')
+      }
       pos.textContent = (cur + 1) + ' / ' + N
-      const atStart = cur <= 0
       const atEnd = cur >= N - 1
-      prev.disabled = atStart               // dim/disable at the start — the tour has a beginning
-      next.textContent = atEnd ? '↺' : '›'  // the restart glyph at the end, the next chevron otherwise
+      chip.textContent = atEnd ? 'then' : 'when'      // the word, beside the indigo — never the hue alone
+      chip.classList.toggle('then', atEnd)
+      prev.disabled = cur <= 0                        // dim/disable at the start — the walk has a beginning
+      next.textContent = atEnd ? '↺' : '›'
       next.classList.toggle('restart', atEnd)
-      next.setAttribute('aria-label', atEnd ? 'restart from the first scene' : 'next scene')
-      next.title = atEnd ? 'restart — back to the first scene' : 'walk to the next scene'
+      next.setAttribute('aria-label', atEnd ? 'restart from the first moment' : 'next moment')
+      next.title = atEnd ? 'restart — back to the first moment' : 'walk to the next moment'
     }
     driver.subscribe(paint)
     paint(driver.current())
-    return tour
+    return strip
   }
-
   // THE ROW'S FOCUS RECT — the one both of its cells frame (the human, 2026-08-28). The GIVEN row is
   // the CONTEXT row: it shows the whole page on both sides, because the point of it is where the
   // component sits, not what it says. Every beat row takes its beat's own recorded box. A prose-only
@@ -1148,7 +1196,7 @@ const B = window.__BOARD__ || {}
   // story on the Given row, its after closes it on the LAST beat row, and every row in between says
   // the gap out loud. Nothing is ever borrowed from a neighbouring beat to fill a cell (rule 3).
   // i: 0 = the Given row, 1..nbeats = beat i.
-  function beatShots (r, i, nbeats) {
+  function beatShots (r, i, nbeats, thenTxt) {
     const per = (r.ev.beats || [])
     const at = function (n) { return per.filter(function (b) { return Number(b.n) === n })[0] || null }
     // ONE focus rect for the whole row — the same one the schematic cell is aimed at, so the two
@@ -1162,7 +1210,7 @@ const B = window.__BOARD__ || {}
     const shot = function (src, cap, anchor, aim) {
       return {
         src: src,
-        cap: cap,
+        cap: cap,                    // the moment's NAME — the strip's segment label AND the img alt
         anchor: (typeof anchor === 'number') ? anchor : null,
         focus: rf,
         aim: (aim && aim.w > 0 && aim.h > 0) ? aim : null
@@ -1175,10 +1223,17 @@ const B = window.__BOARD__ || {}
     // each frame carries `at`, its offset from the start of the beat's own window, so the loop plays
     // them at the run's true relative pace. A frame with no offset simply has no anchor, and the
     // stepper falls back to equal holds for the whole loop rather than inventing one.
+    // Each value frame is NAMED by the assertion that took it (the human, 2026-09-02): the run
+    // recorded the claim's own label beside the frame (spec/_base.ts snapValue → the fold →
+    // data-ev-beats), and that name is what the row's one stepper writes under its segment and what
+    // the frame's alt text says. A harvest from before this carries no label, and the segment falls
+    // back to a generic name rather than to an invented one.
     const values = function (b) {
-      return (b.values || []).filter(function (v) { return v && v.frame }).map(function (v) {
+      return (b.values || []).filter(function (v) { return v && v.frame }).map(function (v, k) {
         const at = (b.window && typeof v.at === 'number') ? b.window.from + v.at : null
-        return shot(v.frame, 'the asserted value in frame', at, v.focus)
+        const name = (typeof v.label === 'string' && v.label.trim())
+          ? v.label.replace(/\s+/g, ' ').trim() : ('what the test checked, ' + (k + 1))
+        return shot(v.frame, name, at, v.focus)
       })
     }
     // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
@@ -1197,17 +1252,20 @@ const B = window.__BOARD__ || {}
       if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter))
       return out
     }
+    // the LAST moment of a beat is its result, so it is named by the beat's own Then — "after — <Then>"
+    // reads as the sentence the picture is proving rather than as a phase name nobody asked about.
+    const after1 = thenTxt ? ('after — ' + thenTxt) : 'after'
     if (per.length) {
       if (i === 0) {
         const b1 = at(1)
         if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
         // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
-        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore)] : []) : pair(b1, 'before', 'after')
+        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore)] : []) : pair(b1, 'before', after1)
         return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
       }
       const b = at(i)
       if (!b) return { shots: [], why: 'no per-beat evidence yet — the next run harvests it' }
-      const out = pair(b, 'before', 'after')
+      const out = pair(b, 'before', after1)
       return out.length ? { shots: out } : { shots: [], why: 'no per-beat evidence yet — the next run harvests it' }
     }
     // the fallback: the requirement-level pair, at the two ends of the story it actually covers
@@ -1215,12 +1273,12 @@ const B = window.__BOARD__ || {}
       const out = []
       if (r.ev.before) out.push(shot(r.ev.before, 'before', r.ev.window ? r.ev.window.from : null))
       // no beat rows to close the story on — a prose-only requirement's one row carries both ends
-      if (!nbeats && r.ev.after) out.push(shot(r.ev.after, 'after — the asserted value in frame', r.ev.window ? r.ev.window.to : null))
+      if (!nbeats && r.ev.after) out.push(shot(r.ev.after, after1, r.ev.window ? r.ev.window.to : null))
       return out.length ? { shots: out } : { shots: [], why: 'no evidence harvested yet' }
     }
     if (i === nbeats) {
       return r.ev.after
-        ? { shots: [shot(r.ev.after, 'after — the asserted value in frame', r.ev.window ? r.ev.window.to : null)] }
+        ? { shots: [shot(r.ev.after, after1, r.ev.window ? r.ev.window.to : null)] }
         : { shots: [], why: 'no evidence harvested yet' }
     }
     return { shots: [], why: 'no per-beat evidence yet — this harvest only spans the whole requirement' }
@@ -1233,9 +1291,11 @@ const B = window.__BOARD__ || {}
   // had, and every cell answering it differently broke the row's rhythm. A beat with a single frame
   // — the Given row, or a half-harvest — has nothing to loop and stays the still it is; the
   // zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box.
-  function proofCell (r, i, nbeats, cards) {
+  function proofCell (r, i, nbeats, cards, thenTxt) {
     const cell = document.createElement('div'); cell.className = 'sbproof'
-    const got = beatShots(r, i, nbeats)
+    const got = beatShots(r, i, nbeats, thenTxt)
+    // the row's MOMENTS, in order — what the strip names its segments after (buildStoryline reads it)
+    cell._moments = got.shots.map(function (s) { return s.cap })
     if (!got.shots.length) {
       const no = document.createElement('div'); no.className = 'pcnone'
       no.textContent = '◌ ' + (got.why || 'no evidence yet')
@@ -1280,9 +1340,9 @@ const B = window.__BOARD__ || {}
       // a click on the proof cell opens the shared lightbox in EVERY mode exactly as every other image
       // does, and a beat whose harvest has no proof frames can still be walked by the control. The cell
       // registers what the control drives it with: one scene forward or back, wrapping. (The proof cell
-      // has no dots any more — the gutter's ‹ n / N › and the ← → keys are the walk and the readout.)
+      // has no dots any more — the row's moment strip and the ← → keys are the walk and the readout.)
       cell._rowStep = function (dir) { if (dir < 0) step._prev(); else step._next() }
-      // …and the per-beat GUIDED TOUR drives this same loop: a jump to any scene (‹ › walk, the ↺
+      // …and the row's MOMENT STRIP drives this same loop: a jump to any moment (‹ › walk, the ↺
       // restart wraps to the first) — the same show()/_drive path, so both cells step together.
       cell._rowGoto = function (j) { step._goto(j) }
       step._start()
@@ -1304,8 +1364,8 @@ const B = window.__BOARD__ || {}
     cell.appendChild(cam)
     // NO per-cell chrome (the human, 2026-09-02: "remove full frame button and also the dots in
     // proof as it already did in the step on behaviour"). The full screenshot is the LIGHTBOX a click
-    // on the proof opens, and the ONE readout + walk for the beat is the ‹ n / N › in the behaviour
-    // gutter beside it — so the proof cell carries no zoom toggle, no dots and no counter. The camera
+    // on the proof opens, and the ONE readout + walk for the beat is the moment strip above the two
+    // pictures — so the proof cell carries no zoom toggle, no dots and no counter. The camera
     // stays a view (ZOOMED is the standing default; both cells frame the component), never a claim
     // about what was captured — the frame on disk is untouched, one click away whole.
     return cell
@@ -1555,31 +1615,47 @@ const B = window.__BOARD__ || {}
       const no = document.createElement('div'); no.className = 'noschem'; no.textContent = why
       cell.appendChild(no); return cell
     }
-    const textCell = function (stepsHtml) {
-      const tx = document.createElement('div'); tx.className = 'sbtext'; tx.innerHTML = stepsHtml
+    const textCell = function (mark, wordsHtml) {
+      const tx = document.createElement('div'); tx.className = 'sbtext'
+      tx.innerHTML = mark + '<div class="sbwords">' + wordsHtml + '</div>'
       return tx
     }
     // ONE ORDER, BEHAVIOUR FIRST (the human, 2026-08-30). The words lead every row, then the drawing,
     // then the photograph — the sentence you are being asked to believe, then the two pictures of it.
     // The DOM order IS the visual order now: the CSS `order` shuffle the retired toggle needed is
     // gone with it, so a header can no longer end up over a column it does not name.
-    const row = function (cls, frame, text, proof) {
+    //
+    // THE TWO PICTURES ARE ONE THING (the human, 2026-09-02: "schematic and proof should share same
+    // stepper"). They live together in `.pics` under the row's ONE `.mstrip`, because the strip
+    // steps BOTH — a control that sat in the words' gutter (the 2026-09-01 `‹ n / N ›`) read as if
+    // it belonged to the sentence and left the pictures looking like two independent players.
+    // The row's grid is therefore [ words | right ], and `.pics` re-splits the right half into the
+    // same two columns the header names, so each header label still starts over its own cell.
+    const row = function (cls, frame, text, proof, strip) {
       const el = document.createElement('div'); el.className = 'sbrow' + (cls ? ' ' + cls : '')
-      el.appendChild(text); el.appendChild(frame); el.appendChild(proof)
+      const right = document.createElement('div'); right.className = 'sbright'
+      const pics = document.createElement('div'); pics.className = 'pics'
+      pics.appendChild(frame); pics.appendChild(proof)
+      if (strip) right.appendChild(strip)
+      right.appendChild(pics)
+      el.appendChild(text); el.appendChild(right)
       return el
     }
     // the column names, as a table header over the rows (the human, 2026-08-28) — the one row that
     // says what the three cells ARE. Small-caps mono like every other label in the system; it shares
-    // the rows' grid so each name sits over its own column, and it folds away when the row stacks
-    // (a header over a single stacked column labels nothing).
+    // the rows' grid (the two picture names nested in .sbhpair, exactly as .pics nests them) so each
+    // name sits over its own column, and it folds away when the row stacks (a header over a single
+    // stacked column labels nothing).
     const headRow = function () {
       const el = document.createElement('div'); el.className = 'sbhead'
+      const pair = document.createElement('div'); pair.className = 'sbhpair'
       ;[['behavior', 'what the requirement says'], ['schematic', 'the drawn intent'], ['proof', 'the harvested frames']]
-        .forEach(function (p) {
+        .forEach(function (p, i) {
           const c = document.createElement('span'); c.className = 'sbhc'
           c.textContent = p[0]; c.title = p[1]
-          el.appendChild(c)
+          ;(i === 0 ? el : pair).appendChild(c)
         })
+      el.appendChild(pair)
       return el
     }
 
@@ -1588,20 +1664,11 @@ const B = window.__BOARD__ || {}
     wrap.style.setProperty('--spd', String(PLAY_SPD))
     if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
     const body = document.createElement('div'); body.className = 'sbwrap'
-    if (isStale) {
-      // ONE BANNER, TWO REASONS (the human, 2026-09-02: "make sure the gap between schematic and
-      // proof will not exist again"). A drawing stops being true two ways — the requirement is
-      // REWORDED, or the APP MOVES and the harvest beside it is newer than the picture — and both
-      // can be true at once, so each says its own line instead of one standing in for the other.
-      // Same quiet grey either way: it is a note about the drawing, never a verdict on the proof.
-      const sn = document.createElement('div'); sn.className = 'sbstale'
-      const head = []; const why = []
-      if (v.stale) { head.push('text changed'); why.push('the requirement was reworded after this was drawn') }
-      if (v.layoutStale) { head.push('layout moved'); why.push('the app’s layout moved since this was drawn') }
-      sn.innerHTML = '<b>stale — ' + head.join(' · ') + '</b><span>' + why.join('; ') +
-        (v.at ? ' (' + eh(v.at) + ')' : '') + ' — redrawn at the next fold</span>'
-      body.appendChild(sn)
-    }
+    // …set by a beat row whose drawing publishes a DIFFERENT number of scenes than the harvest beside
+    // it recorded: the picture is a fold behind, and the banner below says so out loud rather than
+    // letting the row show a scene the photograph never had (rule 3). Known only once the rows are
+    // built, so the banner is written after them and inserted at the top.
+    let drawnBehind = false
     body.appendChild(headRow())
     if (beh) {
       const noDraw = v && v.svg
@@ -1610,36 +1677,43 @@ const B = window.__BOARD__ || {}
       // the GIVEN row is the context row: whole page on BOTH sides (beatFocus returns none for it)
       const givenFrame = canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw))
       body.appendChild(row('bgiven', givenFrame,
-        textCell(behStep(beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
-        proofCell(r, 0, nbeats)))
+        textCell(markCol(0), sentence('sbgiven', beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
+        proofCell(r, 0, nbeats), null))
       beh.beats.forEach(function (bt, i) {
-        // WHICH BEAT AM I ON (the human, 2026-09-02: the `When¹ · Then¹` superscripts were "hard to
-        // read and not intuitive"). The number left the labels (tools/build-board.mjs renderBehavior)
-        // and became this EYEBROW over the row's words: a small ringed numeral and `of N`, once per
-        // ROW instead of twice per beat, at a size that can actually be read. A single-beat
-        // requirement has nothing to count, so it gets none — a "1 of 1" is noise.
-        const eyebrow = nbeats > 1
-          ? '<div class="sbeye"><span class="sbno">' + (i + 1) + '</span><span class="sbof">of ' + nbeats + '</span></div>'
-          : ''
-        const html = eyebrow + behStep(bt.when.lab, bt.when.txt, false) + (bt.then ? behStep(bt.then.lab, bt.then.txt, true) : '')
-        const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i])
+        // the row's WORDS: its numeral in the mark column, then the two sentences (the human,
+        // 2026-09-02). No per-row keyboard hint — the reader's footer says it once ("the hint of
+        // walk this beat… is repeating on every block, again please avoid duplicated things").
+        const html = sentence('sbwhen', bt.when.lab, bt.when.txt, false) +
+          (bt.then ? sentence('sbthen', bt.then.lab, bt.then.txt, true) : '')
+        // the beat's Then, as PLAIN TEXT — the name of the row's last moment (its result), used by
+        // the strip's final segment and by the closing frame's alt
+        const thenTxt = bt.then ? textOf(bt.then.txt) : ''
+        const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i], thenTxt)
         // LOCK-STEP (2026-08-29, the human: same story order, comparable timing). The drawing takes
         // its scenes from the proof's own loop when the two agree on how many there are — the beat's
-        // drawn park points against the beat's harvested frames. They disagree only when one side is
-        // older than the other (a drawing not yet redrawn under a fresh harvest, or the reverse), and
-        // then the drawing free-runs its own scrub rather than showing a scene that is not the one in
-        // the photograph beside it.
+        // drawn park points against the beat's harvested frames.
         const grp = subphases && subphases[i]
         const link = !!(canPair && grp && pc._stepper && pc._stepper._count === grp.length)
-        // a splittable drawing with NO proof loop to drive it: still walkable on its own park points
+        // a splittable drawing with NO proof loop to drive it: still walkable on its own park points —
+        // that is the row's ONE stepper, not a second one (nothing is beside it to disagree with)
         const drawOnly = !!(canPair && grp && !link && !pc._stepper)
         const driveDraw = link || drawOnly
+        // ONE CLOCK (the human, 2026-09-02: "schematic and proof should share same stepper (as their
+        // steps must be same???)"). A drawing that CANNOT take its scenes from the proof beside it no
+        // longer free-runs its own scrub: it PARKS on the beat's result and lets the proof step
+        // alone. Two clocks on one row is exactly the defect this pass exists to remove — a picture
+        // that keeps moving while the photograph beside it holds is a second, unasked-for answer to
+        // "which moment am I looking at". A row with no proof loop at all keeps the free-running
+        // scrub: there is nothing beside it to be out of step WITH, and a dead still would be worse.
+        const behind = !!(canPair && grp && pc._stepper && pc._stepper._count !== grp.length)
+        const freeRun = !!(canPair && !driveDraw && !pc._stepper)
         const fc = canPair
-          ? frameCell(driveDraw ? grp[0] : phases[i + 1], driveDraw ? null : [phases[i], phases[i + 1]],
+          ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
             beatFocus(r, i + 1, nbeats), driveDraw)
           : noCell(noDraw)
+        if (behind) drawnBehind = true          // …and the banner says so, rather than the row lying quietly
         let rowStep = null
-        let rowDriver = null            // the row's stepper as the rail's small interface
+        let rowDriver = null            // the row's stepper as the strip's small interface
         if (link) {
           pc._stepper._onFrame = function (j, ms) {
             const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
@@ -1656,28 +1730,33 @@ const B = window.__BOARD__ || {}
           rowDriver = drawStepper(fc, grp)  // no proof to drive it — its own scenes are the walk
           rowStep = rowDriver.step
         } else if (canPair && pc._unaim) {
-          pc._unaim()                    // the drawing is on its own clock — do not pan one cell alone
+          pc._unaim()                    // the drawing is parked — do not pan one cell alone
           rowStep = pc._rowStep || null  // the proof still walks even when the drawing cannot pair
           rowDriver = pc._stepper ? proofDriver(pc._stepper) : null
         }
         if (!rowStep) rowStep = pc._rowStep || null   // a proof-only row (no pairing) still walks
         if (!rowDriver && pc._stepper) rowDriver = proofDriver(pc._stepper)
-        // the beat's own words, then — in the same gutter, under them — its GUIDED-TOUR stepper (the
-        // human, 2026-09-01): the ‹ n / N › walk lives beside the sentence it steps, not on a bar
-        const tc = textCell(html)
-        const rail = rowDriver ? sceneRail(rowDriver) : null
-        if (rail) tc.appendChild(rail)
-        const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc)
-        // the row's own tour control and the ← → keys (targeting the SELECTED row) drive the walk;
-        // clicking anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then
-        // is selected"), so ← → then walk this beat and no other. Selection is additive — it never
-        // eats a chevron click or a proof-cell lightbox click bubbling up from inside.
+        // THE ROW'S ONE STEPPER, over the two pictures it steps (the human, 2026-09-02). Its segments
+        // are the beat's MOMENTS: each value the test proved, named by the assertion the run recorded,
+        // then the beat's result. A drawing-only row names its scenes generically — there was no
+        // assertion to name them after, and inventing one would be a caption over nothing.
+        const moments = (pc._moments && pc._moments.length ? pc._moments.slice() : [])
+        if (rowDriver) {
+          for (let m = moments.length; m < rowDriver.count; m++) moments.push('scene ' + (m + 1))
+          if (thenTxt && rowDriver.count > 0) moments[rowDriver.count - 1] = thenTxt
+        }
+        const tc = textCell(markCol(i + 1), html)
+        const strip = rowDriver ? momentStrip(rowDriver, moments) : null
+        const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc, strip)
+        // the row's own strip and the ← → keys (targeting the SELECTED row) drive the walk; clicking
+        // anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then is
+        // selected"), so ← → then walk this beat and no other. Selection is additive — it never eats
+        // a segment click or a proof-cell lightbox click bubbling up from inside.
         if (rowStep) {
           rowEl._rowStep = rowStep; rowEl.dataset.rowstep = '1'
-          // the words are the row's own hit area, and they say so (the human, 2026-09-02: "make clear
-          // which when/then is selected") — the cursor and the title, since a per-row button would be
-          // N buttons down the page
-          tc.title = 'click to select this When/Then — ← → then walk it'
+          // the words are the row's own hit area, and the cursor says so (a per-row button would be N
+          // buttons down the page). No repeated hint text — the footer carries the keys once.
+          tc.title = 'click to select this When/Then'
           rowEl.addEventListener('click', function () {
             const rt = rowEl.closest('.fread'); if (rt) selectRow(rt, rowEl, false)
           })
@@ -1691,8 +1770,26 @@ const B = window.__BOARD__ || {}
       const cellText = 'This requirement is written as prose — the full text reads below.'
       body.appendChild(row('bgiven',
         (v && v.svg) ? wholeCell() : noCell('no schematic drawn yet — a schematic derives from a behavior shape'),
-        textCell('<div class="sbstep"><span class="sbv">' + cellText + '</span></div>'),
-        proofCell(r, 0, 0)))
+        textCell(markCol(0), '<p class="sbgiven"><span class="sbv">' + cellText + '</span></p>'),
+        proofCell(r, 0, 0), null))
+    }
+    // ONE BANNER, THREE REASONS (the human, 2026-09-02: "make sure the gap between schematic and
+    // proof will not exist again"). A drawing stops being true three ways — the requirement is
+    // REWORDED, the APP MOVES and the harvest beside it is newer than the picture, or the drawing
+    // splits its beat into a different number of scenes than the harvest recorded — and more than one
+    // can be true at once, so each says its own line instead of one standing in for the other. Same
+    // quiet grey either way: it is a note about the drawing, never a verdict on the proof. (The
+    // scene-count line is new with the one-stepper pass: that row's drawing is PARKED, not stepping,
+    // and a reader deserves to be told why rather than to wonder at a still picture.)
+    if (isStale || drawnBehind) {
+      const sn = document.createElement('div'); sn.className = 'sbstale'
+      const head = []; const why = []
+      if (v && v.stale) { head.push('text changed'); why.push('the requirement was reworded after this was drawn') }
+      if (v && v.layoutStale) { head.push('layout moved'); why.push('the app’s layout moved since this was drawn') }
+      if (drawnBehind) { head.push('behind the harvest'); why.push('the drawing splits a beat into different scenes than the harvest recorded, so it is parked instead of stepped') }
+      sn.innerHTML = '<b>stale — ' + head.join(' · ') + '</b><span>' + why.join('; ') +
+        ((v && v.at) ? ' (' + eh(v.at) + ')' : '') + ' — redrawn at the next fold</span>'
+      body.insertBefore(sn, body.firstChild)
     }
     wrap.appendChild(body)
     markDefaultBeat(wrap)          // the first steppable beat opens selected — ← → have a target at once

@@ -117,36 +117,64 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   const ov = dt.locator('.focusov')
   await expect(ov.locator('.fpage')).toHaveCount(1)
   await expect(ov.locator('.fread')).toBeVisible()
-  await expect(ov.locator('.fread > .frmeta .fptop')).toBeVisible()   // the covering test, on the title row (2026-09-02)
-  // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28; reordered 2026-08-30): every beat row
-  // lays three cells left to right on ONE line — [ the behaviour's words | the drawn schematic |
-  // that beat's own harvested proof ]. The words LEAD, because the human removed the
-  // schematic-first / behaviour-first toggle and fixed the story behaviour first (board R21) — the
-  // sentence you are being asked to believe, then the two pictures of it. The drawing and the
-  // photograph are aimed at the SAME region by the same
-  // camera, so comparing them is the point and they must be the same width; the words between them
-  // are the caption and take visibly less. A reader that stacked the cells, put the proof somewhere
-  // other than beside the words, or let the two visual halves drift apart in width, fails here.
+  await expect(ov.locator('.fread > .frmeta .fptop')).toBeVisible()   // the covering test's ACTIONS, on the title row
+  await expect(ov.locator('.fread > .frmeta .fptop .fpacts > .runone')).toBeVisible()   // …its wired Run (2026-09-02)
+  // THE ROW IS WHERE THE TWO ENDS MEET (the human, 2026-08-28; reordered 2026-08-30; regrouped
+  // 2026-09-02): every beat row lays three cells left to right on ONE line — [ the behaviour's words
+  // | the drawn schematic | that beat's own harvested proof ]. The words LEAD, because the human
+  // removed the schematic-first / behaviour-first toggle and fixed the story behaviour first (board
+  // R21) — the sentence you are being asked to believe, then the two pictures of it. The drawing and
+  // the photograph are aimed at the SAME region by the same camera, so comparing them is the point
+  // and they must be the same width; the words beside them are the caption and take visibly less.
+  //
+  // The two pictures are now GROUPED under the row's one stepper (the human, 2026-09-02: "schematic
+  // and proof should share same stepper (as their steps must be same???)"), so the row's own grid is
+  // [ words | right ] and `.pics` re-splits the right half — the measurement is therefore taken on
+  // the cells wherever they are nested, and it adds the claim that made the regrouping necessary:
+  // the STRIP spans exactly the two pictures it steps. A reader that stacked the cells, put the proof
+  // somewhere other than beside the drawing, let the two visual halves drift apart in width, or gave
+  // the pictures a control that does not cover both, fails here.
   const geom = await ov.evaluate(el => {
     const row = el.querySelector('.fstory .sbwrap .sbrow')
     if (!row) return null
     const box = (s: string) => {
-      const n = row.querySelector(':scope > ' + s) as HTMLElement | null
+      const n = row.querySelector(s) as HTMLElement | null
       if (!n) return null
       const r = n.getBoundingClientRect()
       return { x: r.left, w: r.width, y: Math.round(r.top) }
     }
-    return { frame: box('.sbframe'), text: box('.sbtext'), proof: box('.sbproof') }
+    // …and, on the first row that actually steps, the strip over its two pictures
+    const srow = el.querySelector('.fstory .sbwrap .sbrow[data-rowstep]')
+    const sbox = (s: string) => {
+      const n = srow && srow.querySelector(s) as HTMLElement | null
+      if (!n) return null
+      const r = n.getBoundingClientRect()
+      return { x: r.left, w: r.width, y: Math.round(r.top) }
+    }
+    return {
+      frame: box('.sbframe'), text: box('.sbtext'), proof: box('.sbproof'),
+      strip: sbox('.mstrip'), sframe: sbox('.sbframe'), sproof: sbox('.sbproof')
+    }
   })
   expect(geom, 'the reader is a storyline of per-beat rows').not.toBeNull()
   const { frame, text, proof } = geom!
   expect(!!(frame && text && proof), 'a beat row carries behavior · schematic · proof').toBe(true)
-  expect(new Set([frame!.y, text!.y, proof!.y]).size, 'the three cells sit on ONE row, not stacked').toBe(1)
+  expect(new Set([frame!.y, proof!.y]).size, 'the two pictures sit on ONE line, not stacked').toBe(1)
   expect(text!.x, 'the words open the row — behaviour first (R21)').toBeLessThan(frame!.x)
   expect(frame!.x, 'the proof closes the row, beside the drawing it mirrors').toBeLessThan(proof!.x)
   expect(Math.abs(frame!.w - proof!.w) / Math.max(frame!.w, proof!.w),
     'the drawing and the proof are the same width — the row is a comparison').toBeLessThan(0.02)
-  expect(text!.w, 'the words are the caption between them and take visibly less').toBeLessThan(frame!.w * 0.9)
+  expect(text!.w, 'the words are the caption beside them and take visibly less').toBeLessThan(frame!.w * 0.9)
+  // ONE STEPPER, OVER BOTH PICTURES (the human, 2026-09-02). A beat that steps carries exactly one
+  // strip, and it spans the drawing AND the photograph — a control that covered only one of them, or
+  // sat in the words' gutter as the retired ‹ n / N › did, is what made the row read as two players.
+  const { strip, sframe, sproof } = geom!
+  if (strip) {
+    expect(Math.abs(strip.x - sframe!.x), 'the strip starts over the drawing it steps').toBeLessThan(2)
+    expect(Math.abs((strip.x + strip.w) - (sproof!.x + sproof!.w)),
+      'and ends over the photograph it steps — one control for both').toBeLessThan(2)
+    expect(strip.y, 'the strip sits above the pictures, not inside one of them').toBeLessThan(sframe!.y)
+  }
   // …and the card's STORY REGION scrolls INTERNALLY (Task 12, kept): between the pinned header and
   // the pinned footer, so the first beat is on screen from the first paint. Proven with a region
   // that REALLY overflows (final review m8: a scrollTop === 0 check holds trivially while the

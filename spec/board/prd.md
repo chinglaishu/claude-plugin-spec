@@ -143,16 +143,25 @@ step, R20) *(a slim bar of their own until 2026-09-02, when the human moved them
 then the requirement's **storyline — a row per beat** under
 a **behavior · schematic · proof** header row *(the column-order toggle this bar carried was removed
 2026-08-30 with R21's rewrite — behaviour always leads)*. Each row carries that beat's three cells side by
-side: the **drawn schematic** frame (a short, looping animation of the drawing performing *that
-beat's* action, quiet grey when stale, parked as a still under reduced motion), the beat's **Given /
-When→Then words**, and that beat's **own harvested proof** — its before/after frames looping by
-default, stills one click away — with the drawing and the photograph aimed at the **same region** by
-one shared **zoom camera** that every cell flips together. The header row also **names the covering
-test** — a small pass/fail/none mark, the test's own name, then Run — and ends in the card's **one
-⋯**, which carries the test's actions (run in background · logs · steps · add · edit · remove a test)
-and the requirement's (reword · add · remove · the schematic doesn't match my app). Where no test
-covers the requirement that line reads "◌ no test yet · ＋ write the failing test"; a Changed
-requirement's drift is spelled by its ◈ Changed chip and named on the mark. **Nothing sits beneath
+side: the beat's **Given / When→Then words**, the **drawn schematic** frame (a short animation of the
+drawing performing *that beat's* action, quiet grey when stale, parked as a still under reduced
+motion), and that beat's **own harvested proof** — with the drawing and the photograph aimed at the
+**same region** by one shared **zoom camera** that every cell flips together, and **stepped by ONE
+strip that spans them both**, one named segment per moment the beat proved *(the human, 2026-09-02:
+"schematic and proof should share same stepper (as their steps must be same???)" — the walk was a
+`‹ n / N ›` in the words' gutter until then, which read as two players with a control belonging to
+neither)*. The header row also carries the covering
+test's **actions** — the wired **▶ Run** — and ends in the card's **one ⋯**, which carries the test's
+actions (run in background · logs · steps · add · edit · remove a test) and the requirement's (reword
+· add · remove · the schematic doesn't match my app). The test's **name is not on the row**: it is
+read where it is acted on — the ⋯'s edit/remove prompts, the Logs and the Steps windows. *(This
+sentence read "**names the covering test** — a small pass/fail/none mark, the test's own name, then
+Run" for a few hours on 2026-09-02, when the proof header first joined this row; the human asked for
+that group off again the same day — "can we remove the test ✓ Tsumiki — the full flow (R1–R8)" —
+because the requirement's own chip two elements to the left already says the state in words, so the
+mark said it twice and a long flow title crowded the line. Both asks are recorded, rule 6.)* Where no
+test covers the requirement that line reads "◌ no test yet · ＋ write the failing test"; a Changed
+requirement's drift is spelled by its ◈ Changed chip. **Nothing sits beneath
 the beat rows** — no proof header, no video, no prose *(the human, 2026-09-02: a proof header at the
 bottom of the card "is just weird", so it joined the title row and its ⋯ merged with the row's own;
 and "remove the whole thing as well" — the authored paragraph left the reader: the rows ARE the
@@ -161,7 +170,7 @@ video in the reader**: the recording is the Flow view's, cut at proves-steps and
 chapter rail, and a second smaller copy of it under every requirement only pushed the rows that ARE
 the proof off the screen *(the human, 2026-09-02: "remove the full flow video from focus mode" — the
 band that held it went with it, filmstrip, pinned-era watermark and all; a failing run's cut frames
-are read on the test's own evidence, and a failure still marks the title row's test mark ✗ over the beat rows'
+are read on the test's own evidence, and a failure still reads on the title row's ✗ Failed chip over the beat rows'
 harvested red frames)*. **List** is one collapsed row per requirement (state · id · title ·
 beat count · test kind) with a gap-summary strip above; **an open row is the Focus body itself**, in
 place.
@@ -221,12 +230,28 @@ actions together — and the authored prose beneath the rows is gone from the re
 thing as well"). The play controls had joined the title row earlier that day. Presentation only;
 nothing derived changes, and nothing green is claimed anywhere it was not before.*
 
+*Reworded 2026-09-02, later still (the human, twice on the same row): "can we remove the test ✓
+Tsumiki — the full flow (R1–R8)" and "add better spacing to the test title row". The TEST eyebrow,
+the ✓/✗/◌ mark and the covering test's own name are OFF the row — the requirement's chip already
+says the state in words, so the mark said it twice, and a long flow title crowded the line it was
+said on. The test's wired **▶ Run** and the one ⋯ stay, and the test's name is read where it is acted
+on (the ⋯'s edit/remove prompts, the Logs and Steps windows). The row is then spaced as three
+CLUSTERS — what the requirement is (id · chip · title), how to play it (play · play speed), what to
+do about it (Run · ⋯) — with a full --s6 of air opening each cluster after the title, --s2 between a
+label and the control it names, and --s3 between Run and the ⋯; on a narrow reader the clusters wrap
+onto their own line rather than crushing the title. Presentation only; nothing derived changes, and
+the ◈ Changed chip is now the reader's only word for drift (it always spelled it; the mark that also
+named it on hover went with the group).*
+
 *Reworded 2026-09-02 (the human: "remove the full flow video from focus mode"): the proof BAND under
 the rows is gone — its covering-test bar, its failure filmstrip, its pinned-era watermark and its one
 full-width video. What is left beneath the beat rows is the proof HEADER's words (the covering test
 behind a pass/fail/none mark, the Changed re-verify note, the honest "no proof yet · ＋ write the
 failing test") and the moved test itself. The recording is the Flow view's subject. Presentation
-only; nothing derived changes — and nothing green is claimed anywhere it was not before.*
+only; nothing derived changes — and nothing green is claimed anywhere it was not before.
+*(Superseded within the day, twice: that header moved up to the TITLE ROW, and then its mark and
+the test's name came off it. Nothing is left beneath the beat rows now but the hidden moved test —
+see the two notes above and the one below. Corrected in place, rule 6, 2026-09-02.)*
 
 *Reworded 2026-08-28 (the human): Focus becomes a **storyline of per-beat rows** — schematic ·
 behavior · proof, named by a header row, each beat's drawing and its own harvested frames framed on
@@ -251,9 +276,10 @@ the instant that check fired (indexed by the run's own beat log), each carrying 
 self-narrating callout it burned in (the requirement, its When→Then, red on a failure) and the
 ring on the exact value asserted. They show **where they belong**: each beat's own before/after pair
 on that beat's **row** of the reader — **walked a scene at a time in step (the default), or looped in
-auto**, its position read in the behaviour gutter's `‹ n / N ›` and the whole frame one click away in
-the lightbox *(the human, 2026-09-02: the per-cell dots and counter are gone; the gutter stepper is
-the one readout)* — and a **run's own cut frames on that test's evidence**, one still per checked
+auto**, its position read on the row's ONE stepper strip over the two pictures and the whole frame one
+click away in the lightbox *(the human, 2026-09-02: the per-cell dots and counter are gone, and later
+the same day the gutter's `‹ n / N ›` went with them — "schematic and proof should share same stepper
+(as their steps must be same???)", so one strip across both pictures is the single readout)* — and a **run's own cut frames on that test's evidence**, one still per checked
 value in order, each with its got-vs-expected and the failing one red *(the human, 2026-09-02: the
 proof band that also showed a failing run's filmstrip inside the reader went with the reader's video;
 a failure still marks the proof header ✗ over the beat rows' harvested red frames, so nothing there
@@ -408,11 +434,11 @@ scene is never cropped away), and the two cells now share one clock — the proo
 
 - **Given** a beat whose harvest holds each value it proved and the state it left
 - **When** its row renders
-- **Then** the proof cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked in the behaviour gutter's `‹ n / N ›`, the single readout for both cells of the row
+- **Then** the proof cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
 - **When** the reader opens
 - **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
-- **When** you walk a beat — its `‹ n / N ›`, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
-- **Then** both cells of that row move together one scene, the next chevron becoming a restart `↺` at the last scene that wraps to the first — and no other beat row moves
+- **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
+- **Then** both pictures of that row move together to that one moment, the strip painting the segment they are on, the next chevron becoming a restart `↺` at the last moment that wraps to the first — and no other beat row moves
 - **When** you switch the play control to auto
 - **Then** every cell plays itself on a loop at the reader's speed; the speed control is live **only in auto** — a stepped beat sets its pace by hand
 - **When** the row is the Given
@@ -428,7 +454,18 @@ claim**: the cell frames the focused component — the small thing being proven,
 in — and a **click opens the full screenshot in the lightbox**, the frame on disk untouched either
 way. There is no inline zoom toggle and no per-cell chrome (the human, 2026-09-02 — "remove full
 frame button and also the dots … in proof as it already did in the step on behaviour"): the **one
-readout and walk** for a beat is the `‹ n / N ›` in the behaviour gutter beside the sentence it steps.
+readout and walk** for a beat is the **stepper strip over its two pictures**.
+
+A beat is **one ordered list of moments** — every value the test proved, in the order it proved them,
+then the beat's result — and the drawing and the photograph are two **renderings of that one list**
+(the human, 2026-09-02: "schematic and proof should share same stepper (as their steps must be
+same???), please think about the product and really fix the problem"). So the row has **one stepper**,
+sitting across both pictures because that is what it steps, and each segment is **named by the
+assertion the run recorded** — never `when 1`; the last segment is the beat's **Then**, marked with
+the word as well as the hue. A harvest that named nothing falls back to a generic name rather than
+inventing one, and a **drawing that splits the beat into a different number of moments than the
+harvest holds is parked, not stepped**, with the storyline's stale banner saying so: two clocks on one
+row is the defect this replaced.
 
 The reader opens in **step** (the human, 2026-09-02 — "default as step"): the loop was the default
 before, but watching it run on its own is now the opt-in, and reading a beat one scene at a time is
@@ -437,17 +474,19 @@ the resting state. The reader-wide controls ride the requirement's **title row**
 pair and the **speed**, which is live **only in auto**, because a stepped beat sets its own pace. The
 **advance is per beat row**, never one reader-wide "next" (a requirement has several When/Then, so a
 single "next" was ambiguous — and a rail of cryptic `when 1 · when 2` beads was tried and rejected,
-the human 2026-08-30). Each row's `‹ n / N ›` walks that beat; the **← → keys** walk the **selected**
+the human 2026-08-30). Each row's **stepper strip** walks that beat; the **← → keys** walk the **selected**
 row — the one you clicked, visibly marked, never every row at once (the human, 2026-09-02 — "left/
 right key only apply on that particular when/then"); **↑ ↓** select which When/Then, and **PgUp /
 PgDn** page to the previous / next requirement (the human, 2026-09-02 — "another shortcut to change
 on different test case"). **Visibly marked** means the selected row wears an ink rule at its edge and
 its two pictures read at full strength while every other beat row's **stand back** — dimmed, never
 hidden, and never the WORDS (a dimmed sentence would drop under the 4.5:1 floor); and each
-beat carries its **own number as an eyebrow over its words** — a small ringed numeral and `of N`,
-once per row, on a multi-beat requirement only. The `When¹ · Then¹` **superscripts are gone** with
-it (the human, 2026-09-02: "hard to read and not intuitive") — the labels are plain `When` / `Then`
-again, and the count is read where the beat is. Both halves of a row move on the same call a timer
+beat carries its **own number in a mark column beside its words** — a ringed numeral with a hairline
+running down the row, the context row's mark a small hollow ring with no number. The `When¹ · Then¹`
+**superscripts are gone** with it (the human, 2026-09-02: "hard to read and not intuitive"), and so
+is the label column: `When` / `Then` / `Given` are the **first word of the sentence they name** (the
+human, the same day: "even more easy to read"), and the keyboard hint is said **once in the reader's
+footer**, never repeated on every row ("the hint of walk this beat… is repeating on every block"). Both halves of a row move on the same call a timer
 would have made, so the lock-step survives the mode. Session-scoped, stored nowhere. It is a **play**
 mode, never a media mode.
 
@@ -464,11 +503,18 @@ its dots, its counter and its full-frame toggle (the gutter `‹ n / N ›` is t
 lightbox the whole frame); and the keys gain axes — ← → walk the selected beat's scenes, ↑ ↓ select
 the beat, PgUp / PgDn page the requirement. Amended again 2026-09-02, same session: selection is
 marked by the neighbours standing back and by a per-row numbering eyebrow, and the When/Then label
-superscripts are removed as unreadable.*
+superscripts are removed as unreadable. Amended again 2026-09-02 on the human's direct instruction —
+"schematic and proof should share same stepper (as their steps must be same???), please think about
+the product and really fix the problem": the gutter `‹ n / N ›` is replaced by ONE stepper strip over
+the two pictures whose segments are the beat's moments, each named by the assertion the run recorded;
+a drawing that cannot match the harvest's moments is parked instead of free-running; and the words go
+sentence-first — the eyebrow and the label column give way to a mark column and keyword-led
+sentences, with the keyboard hint said once in the footer.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
-     row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the gutter's
-     ‹ n / N › reads/walks it), that the reader opens in step (nothing advances on its own until auto
+     row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the row's one
+     stepper strip reads/walks it, one named segment per harvested moment), that the reader opens in
+     step (nothing advances on its own until auto
      is chosen), that the auto/step + speed controls sit on the title row with the speed disabled in
      step, and that ← → move only the SELECTED beat row while ↑ ↓ change the beat and PgUp/PgDn the
      requirement. Beat 2 asserts the Given row's cell is a plain uncaptioned still: one frame, no
@@ -736,8 +782,10 @@ be **Run** (a real browser opens and drives the app in front of you — the watc
 background** (headless — nothing to watch, it just goes). *(Renamed from Run / Watch — the human,
 2026-08-13: "Run" is now the watchable one, and the headless one says what it is. "Run all" in the
 detail header stays a background run — running the whole suite watchably is rarely what you want.)*
-Both stay wherever a test is shown; in the **Focus** reader (R13), Run is always shown in the proof
-header and Run in background folds into a **⋯ menu** with Logs and Steps.
+Both stay wherever a test is shown; in the **Focus** reader (R13), Run is always shown on the
+requirement's **title row** and Run in background folds into that row's **⋯ menu** with Logs and
+Steps. *(Was "in the proof header" — that header moved onto the title row and then lost everything
+but its actions; corrected in place 2026-09-02, rule 6.)*
 
 The self-narrating callout can also be **spoken aloud**. When voice-over is on (a Setup switch, init
 R6 — **off by default, saved per project**) and the running screen has a **narration pack**

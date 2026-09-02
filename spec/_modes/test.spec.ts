@@ -266,14 +266,20 @@ test('renders — a beats block leads the requirement, the List reads it, and th
     await expect(fst).toContainText('you press Undo')
     // THE STORYBOARD carries the beat NUMBERS and a heavier rule opening each beat after the first;
     // the Given row is distinct (tinted) and carries no number. REWRITTEN 2026-09-02 (the human:
-    // the `When¹ · Then¹` superscripts were "hard to read and not intuitive"): the number is a
-    // per-ROW eyebrow now — a ringed numeral and "of N" over each beat's words, once per row instead
-    // of twice per beat — and no <sup> is emitted anywhere. Same claim, readable mark.
+    // the `When¹ · Then¹` superscripts were "hard to read and not intuitive"), and again the same
+    // day when the words went SENTENCE-FIRST ("even more easy to read"): the number is the row's
+    // MARK COLUMN now — a ringed numeral beside each beat's words, the context row's mark a small
+    // hollow ring with no number — and no <sup>, and no label column, is emitted anywhere.
     await expect(fst.locator('.sbrow.beatstart')).toHaveCount(1)
     await expect(fst.locator('.sbrow').nth(2)).toHaveClass(/beatstart/)
-    await expect(fst.locator('.sbeye .sbno')).toHaveText(['1', '2'])
-    await expect(fst.locator('.sbeye .sbof').first()).toHaveText('of 2')
-    await expect(fst.locator('.sbrow.bgiven .sbeye')).toHaveCount(0)
+    await expect(fst.locator('.sbno:not(.hollow)')).toHaveText(['1', '2'])
+    await expect(fst.locator('.sbrow.bgiven .sbno.hollow')).toHaveCount(1)
+    await expect(fst.locator('.sbrow.bgiven .sbno:not(.hollow)')).toHaveCount(0)
+    // the keyword leads its own sentence — When/Then/Given inside the words, no label column
+    await expect(fst.locator('.sbrow').nth(1).locator('.sbwhen .lead')).toHaveText('When')
+    await expect(fst.locator('.sbrow').nth(1).locator('.sbthen .lead')).toHaveText('Then')
+    await expect(fst.locator('.sbrow.bgiven .sbgiven .lead')).toHaveText('Given')
+    await expect(fst.locator('.sbk')).toHaveCount(0)
     await expect(fst.locator('sup')).toHaveCount(0)
     expect(await fst.locator('.sbwrap').evaluate(el => getComputedStyle(el).borderTopWidth), 'the block is bordered').toBe('1px')
     expect(await fst.locator('.sbrow.bgiven').evaluate(el => getComputedStyle(el).backgroundColor), 'the Given row is tinted').not.toBe('rgba(0, 0, 0, 0)')
@@ -590,22 +596,26 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(req).toHaveAttribute('data-status', 'changed')
       await expect(req.locator('.h .chip.changed .mark.c')).toHaveCount(1)
       await expect(req.locator('.h .chip.ok')).toHaveCount(0)          // NOT a plain Passed chip
-      // the Focus proof header's MARK must AGREE with the chip — a Changed requirement WAS proved by a
-      // real passing test, so it reads with the ✓ (pass) mark and names the drift on its own stale
-      // note, never the self-contradictory "not passed yet". (2026-08-25: the proof header is the
-      // covering test's NAME behind a pass/fail mark; the "proven by / covered by" WORD is gone.)
+      // THE DRIFT IS SAID BY THE CHIP, and only by it (the human, 2026-09-02: the TEST ✓ <name> group
+      // came off the title row — "can we remove the test ✓ Tsumiki — the full flow (R1–R8)"). Until
+      // then a second MARK beside the test's name carried the ✓ and spelled the drift on hover; the
+      // reader's one word for a Changed requirement is the ◈ Changed chip on this very row now. A
+      // Changed requirement WAS proved by a real passing test, so it may never read the
+      // self-contradictory "not passed yet" — that leg stands unchanged, and the mark is asserted GONE
+      // rather than quietly dropped (the R8 assert-the-gone precedent).
       const fptop = dt.locator('.focusov .frmeta .fptop')                   // on the TITLE ROW since 2026-09-02
-      await expect(fptop.locator('.fpm')).toHaveClass(/\bpass\b/)          // ✓ — it WAS proved
-      await expect(fptop.locator('.fpname')).not.toBeEmpty()               // the covering test's name
+      await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveText('◈ Changed')
+      await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bchanged\b/)
+      await expect(fptop.locator('.fpm')).toHaveCount(0)                   // no mark to agree or disagree
+      await expect(fptop.locator('.fpname')).toHaveCount(0)                // and no test name on the row
       await expect(dt.locator('.focusov .fread')).not.toContainText('not passed yet')
-      await expect(fptop.locator('.fpm')).toHaveAttribute('title', /re-verify/)
+      await expect(fptop.locator('.fpacts > .runone')).toBeVisible()       // the covering test's Run still rides it
       // the drift is said in WORDS, and only in words (2026-09-02): the media band that carried the
-      // "pinned era" bar and the watermark over it is gone with the reader's video, so the stalenote
-      // asserted just above IS the Changed cue in the reader — assert the retired pair is absent
-      // rather than quietly dropping the leg (the R8 assert-the-gone precedent)
+      // "pinned era" bar and the watermark over it is gone with the reader's video, so the ◈ Changed
+      // chip asserted just above IS the Changed cue in the reader — assert the retired surfaces are
+      // absent rather than quietly dropping the leg (the R8 assert-the-gone precedent)
       await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
       await expect(dt.locator('.focusov .feval .wmark')).toHaveCount(0)
-      await expect(fptop.locator('.fpm')).toHaveAttribute('title', /edited after this proof ran/)
       await expect(dt.locator('.focusov .fread .stalenote')).toHaveCount(0)   // no note under the name — there is no "under"
       // LIST: the row's state cell spells the fifth word out — never a plain Passed
       await dt.locator('.viewseg .vseg[data-view="grid"]').click()
@@ -613,9 +623,12 @@ test('renders — a Changed requirement wears the indigo changed chip, never a p
       await expect(row.locator('.lst-head .lpf')).toHaveText(/◈ Changed/)
       await expect(row.locator('.lst-head .lpf')).toHaveClass(/changed/)
       await expect(row.locator('.lst-head .lpf.passed')).toHaveCount(0)
-      // …and the open row (the Focus body itself) names the drift on its proof line
+      // …and the open row (the Focus body itself) says the drift the same way its Focus twin does:
+      // the ◈ Changed chip on its title row, with no mark beside it (2026-09-02, the human)
       await row.locator('.lst-head').click()
-      await expect(row.locator('.lst-body .frmeta .fptop .fpm')).toHaveAttribute('title', /re-verify/)
+      await expect(row.locator('.lst-body .fread .frmeta .fchip')).toHaveText('◈ Changed')
+      await expect(row.locator('.lst-body .fread .frmeta .fchip')).toHaveClass(/\bchanged\b/)
+      await expect(row.locator('.lst-body .frmeta .fptop .fpm')).toHaveCount(0)
     }
   } finally { restore() }
 })

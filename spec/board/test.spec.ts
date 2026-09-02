@@ -273,9 +273,13 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     await expect(ov.locator('.feval .fmedia')).toHaveCount(0)      // no band…
     await expect(ov.locator('.feval video')).toHaveCount(0)        // …and no player, video baked or not
     await expect(ov.locator('.feval .fvlab')).toHaveCount(0)
-    // what the reader DOES carry is the proof header — the covering test named behind its mark —
-    // and the per-beat rows; the run's raw record is one ⋯ menu away, which is the rest of this leg
-    await expect(ov.locator('.frmeta .fptop .fpname')).not.toBeEmpty()
+    // what the reader DOES carry on the title row is the covering test's wired Run and the one ⋯;
+    // the run's raw record is one menu away, which is the rest of this leg. (The TEST ✓ <name> group
+    // left the row 2026-09-02 on the human's ask — "can we remove the test ✓ Tsumiki — the full flow
+    // (R1–R8)" — so the assert-the-gone opposite stands where the name assertion did.)
+    await expect(ov.locator('.frmeta .fptop .fpname')).toHaveCount(0)
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)
+    await expect(ov.locator('.frmeta .fptop .fpacts > .runone')).toBeVisible()
     await ov.locator('.frmeta .fmenu .fmenubtn').click()
     await ov.locator('.frmeta .fmenupop [data-steps]').click()
     const sheet = page.locator('#stepsheet')
@@ -494,13 +498,21 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     const rid = await test0.locator('.tags .tag[data-r]').first().getAttribute('data-r')
     const flow = ((await test0.locator('.ttl').textContent()) || '').trim()
     // …and the board SERVES the many-to-many wire: open that requirement — in the List an open row
-    // IS the Focus body (board R13, 2026-08-21), so the proof line inside it names this very test,
-    // resolved BY TAG (break the tag lookup and this fails)
+    // IS the Focus body (board R13, 2026-08-21), so the reader resolves this very test BY TAG.
+    // WHERE that resolution is READ moved on 2026-09-02 (the human: "can we remove the test ✓ Tsumiki
+    // — the full flow (R1–R8)"): the title row no longer names the test, so the check re-homes on the
+    // row's one ⋯, whose "Edit this test" prompt is composed FROM the resolved test — break the tag
+    // lookup and the prompt names the wrong test (or none) and this still fails.
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-head`).click()
     const body = dt.locator(`.gridview .lst-card[data-r="${rid}"] .lst-body`)
     await expect(body.locator('.fread .frmeta .fid')).toHaveText(rid!)
-    await expect(body.locator('.frmeta .fptop .fpname')).toContainText(flow)   // the title row names this very test, resolved by tag
+    await expect(body.locator('.frmeta .fptop .fpname')).toHaveCount(0)   // the name is off the row…
+    await body.locator('.frmeta .fmenu .fmenubtn').click()
+    await body.locator('.frmeta .fmenupop [data-prompt="edittest"]').click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody')).toContainText(flow)         // …and named where it is acted on
+    await page.locator('#promptsheet [data-promptclose]').click()
   })
 })
 
@@ -704,15 +716,17 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
     // both halves agree on the scene count, and DRIVING the walk moves the drawing's --ph to that
     // scene's park point — the proof step drives the drawing. The per-cell dots are gone (the human,
-    // 2026-09-02); the behaviour gutter's ‹ n / N › is the walk, and STEP is the default so the loop
-    // holds while we walk it.
-    const tour = rows.nth(1).locator('.sbtext .tourstep')
-    const tpos = tour.locator('.tspos')
+    // 2026-09-02) and so is the gutter's ‹ n / N › (the same day): the row's ONE moment strip over
+    // the two pictures is the walk, and STEP is the default so the loop holds while we walk it.
+    const strip = rows.nth(1).locator('.mstrip')
+    const tpos = strip.locator('.mpos')
     const tposN = async () => Number(((await tpos.textContent()) || '0 / 0').split('/')[0].trim())
+    await expect(strip, 'ONE stepper on the row, over both pictures').toHaveCount(1)
+    await expect(rows.nth(1).locator('.mseg'), 'one segment per moment of the beat').toHaveCount(sub.length)
     await expect(tpos).toHaveText('1 / ' + sub.length)                 // both halves agree on the scene count
-    for (let i = 0; i < sub.length && (await tposN()) < sub.length; i++) { await tour.locator('.tsnext').click(); await page.waitForTimeout(60) }
+    for (let i = 0; i < sub.length && (await tposN()) < sub.length; i++) { await strip.locator('.mnext').click(); await page.waitForTimeout(60) }
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[sub.length - 1], 2)
-    await tour.locator('.tsnext').click()                              // ↺ wraps to the first scene
+    await strip.locator('.mnext').click()                              // ↺ wraps to the first moment
     await expect.poll(phOf, { timeout: 8000 }).toBeCloseTo(sub[0], 2)
     // ONE reader control group, ONE speed (the human, 2026-08-28 — superseding the per-pane dropdowns;
     // on the TITLE ROW since 2026-09-02): the schematic frames, every beat cell's stepper and the video
@@ -754,17 +768,21 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await page.goto('/#/board/R13')
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText('R13')
 
-    // THE PROOF on the RIGHT — the header NAMES the covering test (R13/R5, reworded 2026-08-25): a
-    // pass/fail/none MARK, then the test's own name, then the wired Run + ⋯. No "THE PROOF" label, no
-    // "proven by", no unit/flow badge, no "+N more cover it".
-    // THE PROOF LINE RIDES THE TITLE ROW (the human, 2026-09-02: the covering test at the bottom of
-    // the card "is just weird" — it joins the header, combined with the row's existing ⋯). Nothing
-    // sits beneath the beat rows now: no proof header, no prose.
+    // THE COVERING TEST'S ACTIONS RIDE THE TITLE ROW (the human, 2026-09-02: the covering test at the
+    // bottom of the card "is just weird" — it joins the header, combined with the row's existing ⋯).
+    // Nothing sits beneath the beat rows now: no proof header, no prose.
+    // What rides the row is the TEST'S ACTIONS ONLY — the wired Run and the one ⋯. The TEST eyebrow,
+    // the ✓/✗/◌ mark and the test's own name were there for a few hours on 2026-08-25's shape and the
+    // human asked for them gone the same day this landed ("can we remove the test ✓ Tsumiki — the
+    // full flow (R1–R8)"): the requirement's own chip two elements to the left already says the
+    // state, so a second mark beside a test title only crowded the line. Asserted as the R8
+    // assert-the-gone opposite so it cannot creep back.
     await expect(ov.locator('.feval .fphead')).toHaveCount(0)                            // no header under the rows
     const tline = ov.locator('.fread > .frmeta .fptop')
     await expect(tline).toBeVisible()
-    await expect(tline.locator('.fpname')).not.toBeEmpty()                           // the covering test's name, in the title row
-    await expect(tline.locator('.fpm')).toHaveClass(/\b(pass|fail|none)\b/)          // the honesty mark leads it
+    await expect(tline.locator('.fpname')).toHaveCount(0)                            // no test NAME on the row…
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)                          // …no second mark beside the chip…
+    await expect(tline.locator('.fbarl')).toHaveCount(0)                             // …and no TEST eyebrow
     await expect(ov.locator('.fread .fpby, .fread .fprun')).toHaveCount(0)             // the old proof lines stay gone
     await expect(ov.locator('.feval .fev .test.infocus')).toHaveCount(1)              // the moved node still feeds Logs / Steps
     await expect(tline.locator('.fpacts > .runone')).toBeVisible()                    // Run always shown, on the row
@@ -816,9 +834,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(ov.locator('.feval .fmbar, .feval .fmpanel, .feval .fvlab, .feval .fvjumps')).toHaveCount(0)
     expect(await page.evaluate(() => localStorage.getItem('sbFocusMedia')),
       'no pane-wide media preference is stored any more').toBeNull()
-    // …and the proof still READS: the covering test named behind its mark, above the beat rows that
-    // carry the harvested frames — the band's removal took chrome, never the proof itself
-    await expect(ov.locator('.frmeta .fptop .fpname')).not.toBeEmpty()
+    // …and the proof still READS: the state on the row's own chip and the covering test's wired Run
+    // beside it, above the beat rows that carry the harvested frames — the band's removal took
+    // chrome, never the proof itself. (The test's mark and name left the row 2026-09-02, the human.)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
+    await expect(ov.locator('.frmeta .fptop .fpname')).toHaveCount(0)
+    await expect(ov.locator('.frmeta .fptop .fpacts > .runone')).toBeVisible()
     await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first()).toBeAttached()
 
     // THE BEAT'S OWN PROOF CELL — Task 13's frame-stepper, moved onto the row it proves. STEP is the
@@ -837,13 +858,15 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     // (natural width — a positive, not an attribute's absence) well before the loop shows it
     await expect.poll(() => stepper.locator('.fsteps img').evaluateAll(
       (els: HTMLImageElement[]) => els.every(i => i.complete && i.naturalWidth > 0)), { timeout: 1000 }).toBe(true)
-    // NO per-cell chrome: no dots, no n/N counter, no mode toolbar — the gutter ‹ n / N › is the readout
+    // NO per-cell chrome: no dots, no n/N counter, no mode toolbar — the row's ONE moment strip over
+    // the two pictures is the readout (and the retired gutter tour is nowhere: .tourstep is gone)
     await expect(stepper.locator('.pdots')).toHaveCount(0)
     await expect(stepper.locator('.fstepn')).toHaveCount(0)
     await expect(playCell.locator('.pcmodes')).toHaveCount(0)
     await expect(playCell.locator('.pczoom')).toHaveCount(0)
+    await expect(ov.locator('.fread .tourstep')).toHaveCount(0)
     await expect(stepper).toBeVisible()
-    const gpos = playRow.locator('.sbtext .tourstep .tspos')
+    const gpos = playRow.locator('.mstrip .mpos')
     // AUTO PLAYS ITSELF: switch to auto (which enables the speed), 4× bounds every hold at ~1.5s, and
     // the gutter position advances on its own — REAL timers + polling, argued: Playwright's fake clock
     // would also freeze the board's own SSE/fold timers this very screen is proving.
@@ -873,16 +896,20 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       .toContain(stillSrc.split('?')[0].split('/').pop()!)
     await page.locator('#lbclose').click()
 
-    // FAILED → the failure reads on the proof header's MARK, and the harvested red frames stay on the
-    // beat rows. (Rewritten 2026-09-02 with the band: this leg used to assert the band's ✗ chip and
-    // its filmstrip of the failing run's own frames. Neither exists in the reader now — the run's
-    // frames are read on the test's own row, in List/Flow. What must NOT be lost is that a failed
-    // requirement can never read green here, so that is what is asserted, positively.)
+    // FAILED → the failure reads on the title row's own CHIP, and the harvested red frames stay on
+    // the beat rows. (Rewritten 2026-09-02 with the band: this leg used to assert the band's ✗ chip
+    // and its filmstrip of the failing run's own frames. Neither exists in the reader now — the run's
+    // frames are read on the test's own row, in List/Flow. Rewritten again the same day when the
+    // human took the test group off the row: the ✗ the leg measured is the requirement chip's now.
+    // What must NOT be lost is that a failed requirement can never read green here, so that is what
+    // is asserted, positively.)
     await force(evId!, 'failed')
     await reopen(evId!)
     await expect(media, 'still no band under a failure').toHaveCount(0)
-    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)      // ✗ leads the proof line
-    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveText('✗ Failed')     // ✗ leads the row
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
+    await expect(ov.locator('.fread .frmeta .fchip')).not.toHaveClass(/\bpassed\b/)
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)                      // no second mark to disagree with it
     await expect(ov.locator('.fread .fstory .sbrow .sbproof img').first(),
       'the harvested frames still stand under a failure — the rows are the proof').toBeAttached()
 
@@ -891,11 +918,14 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'changed')
     await reopen(evId!)
     await expect(ov.locator('.feval .wmark')).toHaveCount(0)
-    // …on the title row's mark (the note that stood under the name went with the proof header,
-    // 2026-09-02): the chip already spells ◈ Changed, and the mark names the drift on hover
+    // …on the title row's CHIP (the note that stood under the name went with the proof header,
+    // 2026-09-02, and the mark whose hover spelled the drift went with the test group the same day,
+    // the human): the chip spells ◈ Changed in words, which is the reader's one Changed cue —
+    // hue never alone, and never a second mark to disagree with it
     await expect(ov.locator('.fread .stalenote')).toHaveCount(0)
-    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveAttribute('title', /edited after this proof ran/)
-    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveAttribute('title', /re-verify/)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveText('◈ Changed')
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(/\bchanged\b/)
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)
 
     // UNTESTED → the honest line and the next move, now in the proof HEADER where the band used to
     // carry them; the button still opens the add-test prompt with this requirement pre-picked
@@ -903,8 +933,10 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(evId!, 'untested')
     await reopen(evId!)
     await expect(ov.locator('.feval .fmedia')).toHaveCount(0)   // no frames, no video — nothing to show
-    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bnone\b/)           // ◌ — covered, nothing green
-    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveText('○ Untested')        // covered, nothing green
+    await expect(ov.locator('.fread .frmeta .fchip')).not.toHaveClass(/\bpassed\b/)
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)
+    await expect(ov.locator('.frmeta .fptop .fpacts > .runone')).toBeVisible()        // Run still stands on the row
     await ov.locator('.frmeta .fmenubtn').click()
     await ov.locator('.frmeta .fmenupop [data-prompt="addtest"]').click()
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
@@ -983,10 +1015,12 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await expect(card2).not.toHaveClass(/\bopen\b/)
     await expect(dt.locator('.testpane .test')).toHaveCount(inPane + 1)
 
-    // The proof header's MARK is COVERAGE-honest (board R4/R3): a ✓ (pass) only for a Passed
-    // requirement, a ✗ (fail) under a failed run — the honesty cue that replaced the "proven by /
-    // covered by" WORD when the header became the covering test's name (2026-08-25). Same forced-status
-    // technique as above; the coverage tags stay real, so the header resolves a genuine covering test.
+    // The title row's state is COVERAGE-honest (board R4/R3): ✓ Passed only for a Passed requirement,
+    // ✗ Failed under a failed run. That honesty rode a second MARK beside the covering test's name
+    // until 2026-09-02, when the human took the whole TEST ✓ <name> group off the row; the chip is the
+    // one word for it now, so the leg measures the chip and asserts the mark is gone. Same
+    // forced-status technique as above; the coverage tags stay real, so the row still resolves a
+    // genuine covering test into its Run and its ⋯.
     const [passedId, otherId] = await dt.locator('.reqpane .req').evaluateAll(
       els => els.slice(0, 2).map(el => el.getAttribute('data-r')))
     expect(otherId, 'R13 needs at least two requirements to exercise both branches').toBeTruthy()
@@ -997,13 +1031,16 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     await force(otherId!, 'failed')
     await page.goto(`/#/board/${passedId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(passedId!)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveText('✓ Passed')   // ✓ — proven
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bpassed\b/)
-    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bpass\b/)   // ✓ — proven
+    await expect(dt.locator('.focusov .frmeta .fpm')).toHaveCount(0)                    // no second mark on the row
+    await expect(dt.locator('.focusov .frmeta .fptop .fpacts > .runone')).toBeVisible() // the test's Run does ride it
     await page.goto(`/#/board/${otherId}`)
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText(otherId!)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveText('✗ Failed')   // ✗ — never reads as green
     await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveClass(/\bfailed\b/)
-    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)   // ✗ — a failed run never reads as green
-    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).not.toHaveClass(/\bpassed\b/)
+    await expect(dt.locator('.focusov .frmeta .fpm')).toHaveCount(0)
   })
 })
 
@@ -1130,7 +1167,7 @@ test('The schematic mirrors the real UI — the app\'s own measured layout, or h
     await expect(r2story).toContainText('no schematic drawn yet')
     await expect(r2story.locator('.sbframe svg')).toHaveCount(0)         // no picture where none was drawn
     await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
-    await expect(r2story.locator('.sbrow .sbtext .sbstep').first()).toBeVisible()   // the labelled beats still show
+    await expect(r2story.locator('.sbrow .sbtext .sbwhen').first()).toBeVisible()   // the keyword-led sentences still show
     await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
     await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
   })
@@ -1375,8 +1412,12 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // THE GIVEN ROW — the context row: the whole page on both sides, the Given alone, no camera toggle
     const given = story.locator('.sbwrap .sbrow').first()
     await expect(given).toHaveClass(/\bbgiven\b/)
-    await expect(given.locator('.sbtext .sbk')).toHaveCount(1)
-    await expect(given.locator('.sbtext .sbk')).toContainText('Given')
+    // the Given is ONE keyword-led sentence (the human, 2026-09-02: "even more easy to read") — no
+    // label column, and the mark column carries a hollow ring rather than a step number
+    await expect(given.locator('.sbtext .sbgiven')).toHaveCount(1)
+    await expect(given.locator('.sbtext .sbgiven')).toContainText('Given')
+    await expect(given.locator('.sbtext .sbno.hollow')).toHaveCount(1)
+    await expect(given.locator('.sbtext .sbno:not(.hollow)')).toHaveCount(0)
     await expect(given.locator('.pcbox.zoomed')).toHaveCount(0)      // whole page, both cells
     await expect(given.locator('.pczoom')).toHaveCount(0)            // and nothing to aim
   })
@@ -1402,29 +1443,38 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     const cell = row.locator('.sbproof')
     await reveal(cell)
     // NO PER-CELL CHROME (the human, 2026-09-02): no mode toolbar, no dots, no n/N counter, and no
-    // full-frame toggle inside the proof — the gutter ‹ n / N › is the one readout, the lightbox the
-    // whole frame.
+    // full-frame toggle inside the proof — the row's ONE moment strip is the readout, the lightbox
+    // the whole frame.
     await expect(cell.locator('.pcmodes')).toHaveCount(0)
     await expect(cell.locator('.pdots')).toHaveCount(0)
     await expect(cell.locator('.fstepn')).toHaveCount(0)
     await expect(cell.locator('.pczoom')).toHaveCount(0)
     // …and NO SUPERSCRIPT NUMBERING anywhere in the reader (the human, 2026-09-02: the When¹/Then¹
-    // marks were "hard to read and not intuitive"). The count moved onto the row as an eyebrow, and
-    // a requirement with ONE beat has nothing to count, so it carries none — the oracle is the prd's
-    // own beat list, read independently of what the board rendered.
+    // marks were "hard to read and not intuitive"). The count is the MARK COLUMN beside each beat's
+    // words now — a ringed numeral per beat and a hollow ring on the context row — with the oracle
+    // the prd's own beat list, read independently of what the board rendered.
     await expect(ov.locator('.fread sup.bno')).toHaveCount(0)
     const nb = (prdBeats(spec.rid) || { beats: [] }).beats.length
-    const eyes = ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbno')
-    if (nb > 1) await expect(eyes).toHaveCount(nb)
-    else await expect(eyes).toHaveCount(0)
+    const numerals = ov.locator('.fread .fstory .sbwrap .sbrow .sbno:not(.hollow)')
+    await expect(numerals, 'one ringed numeral per beat').toHaveCount(nb)
+    await expect(numerals).toHaveText(Array.from({ length: nb }, (_, k) => String(k + 1)))
+    await expect(ov.locator('.fread .fstory .sbwrap .sbrow.bgiven .sbno.hollow'),
+      'the context row is marked, never numbered').toHaveCount(1)
     const stepper = cell.locator('.pcplay .fsteps-wrap')
     await expect(stepper).toBeVisible()
     const frameN = await stepper.locator('.fsteps img').count()
     expect(frameN, 'the beat harvested a pair — a loop needs frames to play').toBeGreaterThan(1)
-    // the ONE readout + walk is the gutter tour on the row (the SELECTED beat's, since walking flips
-    // to step and selects it)
-    const tour = row.locator('.sbtext .tourstep')
+    // THE ROW'S ONE STEPPER (the human, 2026-09-02: "schematic and proof should share same stepper
+    // (as their steps must be same???)"). Exactly one strip on the row, over BOTH pictures, with one
+    // segment per moment the proof actually has — a segment count that drifted from the frame count
+    // would be two lists again — and the retired gutter tour nowhere in the reader.
+    const tour = row.locator('.mstrip')
     await expect(tour).toHaveCount(1)
+    await expect(row.locator('.sbtext .mstrip'), 'the strip is over the pictures, not in the words').toHaveCount(0)
+    await expect(ov.locator('.fread .tourstep')).toHaveCount(0)
+    await expect(row.locator('.mseg')).toHaveCount(frameN)
+    await expect(row.locator('.mseg').last(), 'the last moment is the beat\'s result').toHaveClass(/\bthen\b/)
+    await expect(row.locator('.mseg.then .msegl'), '…and says so in words, not by hue alone').toContainText('then ·')
 
     // STEP IS THE DEFAULT, and the controls ride the TITLE ROW (left of the ⋯ menu), not a bar of
     // their own. The speed is AUTO-ONLY — disabled while stepping.
@@ -1435,11 +1485,24 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     const spd = tools.locator('select.pspd')
     await expect(spd).toBeDisabled()
 
-    // WALKED BY HAND in step: the › advances the SELECTED row's two cells by exactly one scene
-    const posText = () => tour.locator('.tspos').textContent()
+    // WALKED BY HAND in step: the › advances the SELECTED row's two cells by exactly one moment,
+    // and the strip PAINTS the moment on show — the current segment is the one the frames are at
+    const posText = () => tour.locator('.mpos').textContent()
+    const curSeg = () => row.locator('.mseg').evaluateAll(ss => ss.findIndex(x => x.classList.contains('cur')))
     const pos0 = await posText()
-    await tour.locator('.tsnext').click()
+    expect(await curSeg(), 'the strip opens painted on the first moment').toBe(0)
+    await tour.locator('.mnext').click()
     await expect.poll(posText).not.toBe(pos0)
+    await expect.poll(curSeg, { message: 'the strip paints the moment the pictures are on' }).toBe(1)
+    // …and a CLICK ON A SEGMENT jumps both cells to that moment — the strip is the control, not a gauge
+    const phAt = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
+    const phBefore = await phAt()
+    await row.locator('.mseg').first().click()
+    await expect.poll(posText, { timeout: 6000 }).toBe('1 / ' + frameN)
+    await expect.poll(curSeg).toBe(0)
+    await expect.poll(phAt, { timeout: 8000, message: 'the drawing came with it — one stepper, two renderings' })
+      .not.toBeCloseTo(phBefore, 2)
+    await tour.locator('.mnext').click()                                     // back where the leg found it
 
     // AUTO PLAYS ITSELF: switch to auto, the speed wakes, and the position advances on its own at the
     // reader's one speed. 4× bounds every hold at ~1.5s, so the wait is bounded — real timers, because
@@ -1509,7 +1572,8 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(bar.locator('.medbar.pmode button.on')).toHaveText('step')   // STEP is the default now
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
-    await expect(bar.locator('.tourstep')).toHaveCount(0)                     // the tour control is per-ROW, never on the bar
+    await expect(bar.locator('.mstrip')).toHaveCount(0)                       // the stepper is per-ROW, never on the bar
+    await expect(ov.locator('.fread .tourstep')).toHaveCount(0)               // and the retired gutter tour is gone
     await expect(bar.locator('select.pspd')).toBeDisabled()                   // speed is auto-only
   })
 
@@ -1523,15 +1587,18 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
   })
 
-  // THE PER-BEAT GUIDED TOUR steps BOTH cells of ITS row in lock-step, tracks the scene in the gutter
-  // ‹ n / N ›, dims prev at scene 1, and turns next into a Restart ↺ at the end that wraps to scene 1.
-  // STEP is the default now, so the reader opens HELD on scene 1 — no click into step first.
+  // THE ROW'S ONE STEPPER steps BOTH pictures of ITS row in lock-step, names each moment, tracks the
+  // position in its own readout, dims prev at the first moment, and turns next into a Restart ↺ at the
+  // end that wraps to the first. STEP is the default, so the reader opens HELD on moment 1 — no click
+  // into step first. (Rewritten 2026-09-02, rule 4, with the human's decision as the reason: the
+  // gutter's ‹ n / N › read as if it belonged to the sentence and left the pictures looking like two
+  // players — "schematic and proof should share same stepper (as their steps must be same???)".)
   await checkReq('R20', async () => {
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    const tour = row.locator('.sbtext .tourstep')
-    const prev = tour.locator('.tsprev')
-    const nextb = tour.locator('.tsnext')
-    const pos = tour.locator('.tspos')
+    const tour = row.locator('.mstrip')
+    const prev = tour.locator('.mprev')
+    const nextb = tour.locator('.mnext')
+    const pos = tour.locator('.mpos')
     const mode = ov.locator('.fread .frmeta .frtools .medbar.pmode')
     await reveal(tour)
     // the drawing's own park points — one per scene of this beat, the same list the loop steps
@@ -1539,9 +1606,27 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       .getAttribute('data-viz-subphases') || '').split('|')[0].trim().split(/\s+/).map(Number))
     expect(sub.length, 'the drawing publishes a park point per scene of this beat').toBeGreaterThan(1)
     const N = sub.length
-    // the tour control is IN the behaviour gutter: ONE quiet line ‹ n / N › — no box, no dots, no labels
+    // ONE stepper, ACROSS THE TWO PICTURES it steps, with one NAMED segment per moment — and none of
+    // the rejected filmstrip's beads, nor the retired gutter line in the words
     await expect(tour).toHaveCount(1)
     await expect(tour.locator('.srbead')).toHaveCount(0)                      // no per-scene beads
+    await expect(row.locator('.sbtext .mstrip')).toHaveCount(0)               // never back in the gutter
+    await expect(row.locator('.mseg')).toHaveCount(N)
+    // the segment NAMES come from the harvest, never from a counter: where the run recorded what it
+    // proved, no segment may fall back to the generic name (the fallback is the honest word for a
+    // harvest that has none — a name it does not have is not invented, board rule 3)
+    const named = await row.evaluate(el => {
+      const r = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
+      const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + r + '"]')
+      const beats = JSON.parse(src!.getAttribute('data-ev-beats') || '[]')
+      const b1 = beats.find((b: any) => Number(b.n) === 1)
+      return (b1 && b1.values || []).filter((v: any) => v && v.label).length
+    })
+    if (named > 0) {
+      const labels = await row.locator('.mseg .msegl').allTextContents()
+      expect(labels.filter(t => /what the test checked/.test(t)).length,
+        'a harvest that named its moments leaves no segment generically named').toBe(0)
+    }
     const phOf = () => row.locator('.sbframe').evaluate(f => parseFloat((f as HTMLElement).style.getPropertyValue('--ph')))
     const posN = async () => Number(((await pos.textContent()) || '0 / 0').split('/')[0].trim())
 
@@ -1596,7 +1681,7 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // position of a row's tour (0 when the beat is single-scene and carries no tour — then it simply
     // never changes, which the isolation check below still reads correctly)
     const posOf = async (r: ReturnType<typeof rows.nth>) =>
-      Number(((await r.locator('.sbtext .tourstep .tspos').count()) ? await r.locator('.sbtext .tourstep .tspos').textContent() : '0 / 0')!
+      Number(((await r.locator('.mstrip .mpos').count()) ? await r.locator('.mstrip .mpos').textContent() : '0 / 0')!
         .split('/')[0].trim())
     await reveal(rowA.locator('.sbproof'))
     // the FIRST steppable beat opens SELECTED and visibly marked; no other row is
@@ -1614,14 +1699,21 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect.poll(() => opacOf(rowB, '.sbframe'),
       { message: 'an unselected beat stands back' }).toBeLessThan(1)
     await expect.poll(() => opacOf(rowB, '.sbproof')).toBeLessThan(1)
-    // …and the row's own NUMBER is the other mark — a ringed 1 · 2 · 3 over each beat's words, in
-    // beat order (R4 has three When/Then), with the retired superscripts nowhere in the reader
+    // …and the row's own NUMBER is the other mark — a ringed 1 · 2 · 3 in the MARK COLUMN beside each
+    // beat's words, in beat order (R4 has three When/Then), with the retired superscripts nowhere in
+    // the reader. The selected row's numeral steps up to --ink: measured, since a cue that stopped
+    // applying is the failure here.
     await expect(ov.locator('.fread sup.bno')).toHaveCount(0)
     const nb4 = (prdBeats('R4') || { beats: [] }).beats.length
     expect(nb4, 'R4 is the multi-beat specimen this leg needs').toBeGreaterThan(1)
-    await expect(ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbno'))
+    await expect(ov.locator('.fread .fstory .sbwrap .sbrow .sbno:not(.hollow)'))
       .toHaveText(Array.from({ length: nb4 }, (_, k) => String(k + 1)))
-    await expect(ov.locator('.fread .fstory .sbwrap .sbrow .sbeye .sbof').first()).toHaveText('of ' + nb4)
+    const inkOf = (r: ReturnType<typeof rows.nth>) => r.locator('.sbno').evaluate(el => getComputedStyle(el).borderTopColor)
+    expect(await inkOf(rowA), 'the selected beat\'s numeral is inked').not.toBe(await inkOf(rowB))
+    // …and NO per-row keyboard hint (the human, 2026-09-02: "the hint of walk this beat… is repeating
+    // on every block, again please avoid duplicated things") — the footer says it once
+    await expect(ov.locator('.fread .fstory .sbtext')).not.toContainText('walk')
+    await expect(ov.locator('.fread .fstory .kbd')).toHaveCount(0)
 
     // ISOLATION: → walks the SELECTED row (rowA) only. rowB's tour position must not move.
     const aStart = await posOf(rowA); const bStart = await posOf(rowB)
@@ -1660,7 +1752,7 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
     const backRow = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    const backPos = backRow.locator('.sbtext .tourstep .tspos')
+    const backPos = backRow.locator('.mstrip .mpos')
     await reveal(backRow.locator('.sbproof'))
     const tools = ov.locator('.fread .frmeta .frtools')
     await tools.locator('.medbar.pmode button', { hasText: 'auto' }).click()
@@ -2024,18 +2116,21 @@ test('The proof is scannable as frames — one still per checked value, cut from
 
     // (1b) UNDER A FAILURE the reader never reads green (D3's honesty, kept; its surface changed).
     // The band carried the ✗ chip and the failing run's red frames; with the band gone the failure
-    // reads on the proof header's MARK and the harvested red frames stay on the beat rows — and the
-    // run's own cut frames are read on the test's evidence, leg (2). Forced status, same technique.
+    // reads on the title row and the harvested red frames stay on the beat rows — and the run's own
+    // cut frames are read on the test's evidence, leg (2). The row's word for it is the requirement
+    // CHIP since 2026-09-02, when the human took the TEST ✓ <name> group (and its mark) off the row.
+    // Forced status, same technique.
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'failed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)
-    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bpass\b/)
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveText('✗ Failed')
+    await expect(ov.locator('.fread .frmeta .fchip')).not.toHaveClass(/\bpassed\b/)
+    await expect(ov.locator('.frmeta .fpm')).toHaveCount(0)
     await expect(ov.locator('.fread .fstory .sbrow .sbproof .fsteps img').first()).toBeAttached()
     await dt.locator('.reqpane .req[data-r="R1"]').evaluate(el => el.setAttribute('data-status', 'passed'))
     await dt.locator('.viewseg .vseg[data-view="grid"]').click()
     await dt.locator('.viewseg .vseg[data-view="focus"]').click()
-    await expect(ov.locator('.frmeta .fptop .fpm')).not.toHaveClass(/\bfail\b/)   // and only on a failure
+    await expect(ov.locator('.fread .frmeta .fchip')).toHaveText('✓ Passed')   // and only on a failure
     // …and NO run-frame strip crowds the reader in either state: the per-beat harvest on the rows is
     // the proof there (2026-08-28), and since 2026-09-02 there is no band left to hold one
     await expect(ov.locator('.feval .fcell, .feval .fstrip')).toHaveCount(0)
@@ -2086,9 +2181,18 @@ test('The proof is scannable as frames — one still per checked value, cut from
     await page.goto('/#/board/R15')
     await expect(dt.locator('.focusov .fread .frmeta .fid')).toHaveText('R15')
     await expect(dt.locator('.focusov .feval .fmedia')).toHaveCount(0)
-    await expect(dt.locator('.focusov .frmeta .fptop .fpm')).toHaveClass(/\bfail\b/)
-    // the proof line names the test whose run FAILED — never the passing one that also covers R15
-    await expect(dt.locator('.focusov .frmeta .fptop .fpname')).toHaveText(B_TITLE)   // the covering test's name heads the proof (2026-08-25)
+    await expect(dt.locator('.focusov .fread .frmeta .fchip')).toHaveText('✗ Failed')
+    // the reader's PRIMARY is still the test whose run FAILED — never the passing one that also
+    // covers R15. Its NAME headed the title row until 2026-09-02 (the human took the group off), so
+    // the resolution is read where the name lives now: the row's one ⋯ composes "Edit this test"
+    // from the primary, and it must name B, not A.
+    await expect(dt.locator('.focusov .frmeta .fptop .fpname')).toHaveCount(0)
+    await dt.locator('.focusov .frmeta .fmenubtn').click()
+    await dt.locator('.focusov .frmeta .fmenupop [data-prompt="edittest"]').click()
+    await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    await expect(page.locator('#promptbody')).toContainText(B_TITLE)
+    await expect(page.locator('#promptbody')).not.toContainText(A_TITLE)
+    await page.locator('#promptsheet [data-promptclose]').click()
     // and the failing run's own cut frame is still readable — on that test's own evidence row.
     // dt-scoped, not pane-scoped: this row is the reader's PRIMARY, so it is borrowed out of the
     // .testpane right now (count/class/text reads work on it wherever it sits — CLAUDE.md).
@@ -2262,9 +2366,9 @@ test('Home leads with a dismissible feature strip of six cards', async ({ page }
     // a card OPENS the live example of itself: beats → a requirement whose reader leads with a
     // behavior block; the three views → the List view of a real screen
     await strip.locator('.feat[data-feat="beats"]').click()
-    // (.sbk is the beat LABEL — Given / When N / Then N — so it exists only where a behavior block
-    // does: a prose-only requirement's single row carries a bare .sbv and would fail this)
-    await expect(page.locator('.dt:not([hidden]) .focusov .fread .fstory .sbrow .sbtext .sbk').first()).toBeVisible()
+    // (.sbwhen is a BEAT's sentence — When … — so it exists only where a behavior block does: a
+    // prose-only requirement's single row carries one .sbgiven and would fail this)
+    await expect(page.locator('.dt:not([hidden]) .focusov .fread .fstory .sbrow .sbtext .sbwhen').first()).toBeVisible()
     await page.locator('.dt:not([hidden]) .close').click()
     await page.waitForSelector('.card')
     await page.locator('#featwrap .feat[data-feat="views"]').click()

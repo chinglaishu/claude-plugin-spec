@@ -224,6 +224,30 @@ export function parseLayoutAttachment (name) {
   return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
 }
 
+// THE MOMENT'S NAME AND ITS OFFSET (the human, 2026-09-02: "schematic and proof should share same
+// stepper (as their steps must be same???)"). A beat is ONE ordered list of MOMENTS — every value
+// the test proved, in the order it proved them, then the beat's result — and the row's single
+// stepper names each of them by the assertion the run actually made. Both facts ride the value
+// frame's own layout skeleton (spec/_base.ts snapValue passes the current CLAIM's label into
+// snapLayout beside the `at` offset that already rode there), so this is a pure lift, never a
+// guess: a skeleton that carries neither yields neither, and the board falls back to a generic
+// name and equal holds rather than inventing either one.
+//
+// The label is bounded and collapsed HERE too, not only at capture: what is on disk was written by
+// a run and is read back into an HTML attribute, so the reader's own gate cannot depend on the
+// writer having been careful.
+export const MOMENT_LABEL_MAX = 140
+export function valueMeta (layout) {
+  const out = {}
+  const at = layout ? Number(layout.at) : NaN
+  if (Number.isFinite(at)) out.at = at
+  if (layout && typeof layout.label === 'string') {
+    const label = layout.label.replace(/\s+/g, ' ').trim().slice(0, MOMENT_LABEL_MAX)
+    if (label) out.label = label
+  }
+  return out
+}
+
 // THE FOCUS RECT (2026-08-28): where the ring was when the beat's AFTER frame was taken, in page
 // coordinates, with the viewport it was measured in — so the board can ZOOM the proof media onto
 // the component being proven instead of showing a full-page frame and asking a reader to hunt.
