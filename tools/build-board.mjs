@@ -1493,6 +1493,30 @@ const howView = (ctaAction, ci) => `<section class="dt" id="howview" hidden>
            only thing. The click-to-advance controller is a later pass; every act is present here. -->
       ${walkthrough(ctaAction)}
 
+      <!-- KEYBOARD — the ONE place the board's shortcuts are written down (the human, 2026-09-02:
+           "remove the short cut key hint in this page, only mention in the setting page"). The
+           reader's footer used to carry this legend under every requirement, on every page of every
+           screen; a legend you read once does not belong on a surface you look at all day. It sits
+           ABOVE the collapsed full-method reference on purpose — a reference you have to open first
+           is not where a person looks a shortcut up. The keys themselves are unchanged (the reader's
+           onKey in tools/board/client.js). -->
+      <div class="sect howkeys" id="howkeys">
+        <div class="sect-head"><span class="lbl">keyboard</span>
+          <h2>Every key the board answers to</h2><span class="rule"></span></div>
+        <dl class="hklist">
+          <div class="hkrow"><dt><span class="kbd">← →</span></dt>
+            <dd>walk the <b>selected</b> beat — one moment at a time, in the reader</dd></div>
+          <div class="hkrow"><dt><span class="kbd">↑ ↓</span></dt>
+            <dd>pick which beat is selected</dd></div>
+          <div class="hkrow"><dt><span class="kbd">PgUp / PgDn</span></dt>
+            <dd>change requirement — the previous / next one on this screen</dd></div>
+          <div class="hkrow"><dt><span class="kbd">Esc</span></dt>
+            <dd>close what is open — the frame lightbox, then the run panel, then the screen itself</dd></div>
+          <div class="hkrow"><dt><span class="kbd">r</span></dt>
+            <dd>run the open screen's suite</dd></div>
+        </dl>
+      </div>
+
       <!-- The full method, demoted to a collapsed reference (board R11). It wraps the old overview and
            the skill flowcharts; a native <details> is the "See the full method" control reached from
            the end of Act 4 — no client JS (that is a later pass). The deep #howitworks/<skillId> pages
@@ -2050,9 +2074,13 @@ export function build () {
      beat sets its own pace by hand */
   .pspdwrap[data-off] { opacity:.4; }
   .pspdwrap[data-off] select.pspd { cursor:not-allowed; }
-  /* 22px is a deliberate step above --t-xl (the reading title leads the page); it rides the same
-     knob so the hierarchy holds at any scale (Task 14) */
-  .fread .fttl { flex:1 1 auto; min-width:0; font-size:calc(19px * var(--scale)); font-weight:600;
+  /* THE ONLY HEAD ON THIS PAGE (the human, 2026-09-02: "revise all font size and design system, now
+     it looks not so balance on font size"). --t-xl/600 is the requirement's title and nothing else in
+     the reader takes that size — the beat's When was at --t-xl too and the two read as two heads
+     competing. It is the TOKEN now, not calc(19px * --scale) re-spelt: the two were the same number
+     by luck, and the comment that used to sit here still claimed 22px, a step above --t-xl that had
+     not existed for some time (rule 6). */
+  .fread .fttl { flex:1 1 auto; min-width:0; font-size:var(--t-xl); font-weight:600;
     line-height:1.34; letter-spacing:-.015em; margin:0; color:var(--ink); }
   /* one step up with the beats (the human, 2026-08-28): the requirement column is read, not scanned,
      and half of it sitting a step below the other half read as two different importances */
@@ -2148,7 +2176,7 @@ export function build () {
   .fstory .sbno { display:inline-flex; align-items:center; justify-content:center; flex:none;
     min-width:calc(30px * var(--scale)); height:calc(30px * var(--scale));
     border:2px solid var(--line3); border-radius:999px; background:var(--paper);
-    font:var(--t-md) var(--mono); color:var(--ink-3); }
+    font:var(--t-sm) var(--mono); color:var(--ink-3); }
   .fstory .sbno.hollow { min-width:calc(14px * var(--scale)); width:calc(14px * var(--scale));
     height:calc(14px * var(--scale)); margin-top:calc(6px * var(--scale)); }
   .fstory .sbrule { flex:1 1 auto; width:1px; background:var(--hair);
@@ -2198,19 +2226,29 @@ export function build () {
      Measured: --ink on --paper 15.9:1 (the When) and on --card the same; --ink-2 on --paper 8.9:1
      (the Then / the Given); --ink-3 on --paper 6.42:1 (the lead word); --ai on --paper 8.16:1
      (the Then's lead) — all AA and above. */
+  /* ONE LADDER, THREE RUNGS (the human, 2026-09-02): the requirement title at --t-xl is the page's
+     only head; the beat's When is --t-lg/600 — the loudest thing INSIDE a row, a clear step under
+     the title it belongs to; its Then and the Given are --t-md, body size, because they are read as
+     sentences and not scanned as headings. Before this the When shared --t-xl with the title (two
+     heads) and the Then sat at --t-lg, so the row's own hierarchy was one step off the page's.
+     The cell is padded evenly on the --s scale (--s5 all round; the left side used to be --s4, which
+     pulled the mark column off the rhythm every other cell keeps), and the WORDS are centred in the
+     row: a tall picture row stranded them at the top with a column of dead space beneath. The mark
+     column still spans the full row — its numeral and the hairline under it are what tie a beat's
+     sentences to its pictures, so it stretches while the words centre. */
   .fstory .sbtext { display:grid; grid-template-columns:calc(34px * var(--scale)) minmax(0,1fr);
-    gap:0 var(--s3); align-items:start; min-width:0; border-right:1px solid var(--hair);
-    padding:var(--s5) var(--s5) var(--s5) var(--s4); }
-  .fstory .sbwords { min-width:0; padding-top:3px; }
-  .fstory .sbwords p { margin:0; max-width:34ch; }
-  .fstory .sbwhen { font-size:var(--t-xl); font-weight:600; line-height:1.5; letter-spacing:-.012em;
+    gap:0 var(--s3); align-content:center; align-items:start; min-width:0; border-right:1px solid var(--hair);
+    padding:var(--s5); }
+  .fstory .sbwords { min-width:0;  }
+  .fstory .sbwords p { margin:0; max-width:36ch; }
+  .fstory .sbwhen { font-size:var(--t-lg); font-weight:600; line-height:1.5; letter-spacing:-.01em;
     color:var(--ink); }
-  .fstory .sbthen { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2);
+  .fstory .sbthen { font-size:var(--t-md); line-height:1.6; color:var(--ink-2);
     margin-top:var(--s3) !important; padding-top:var(--s3); border-top:1px solid var(--hair); }
-  .fstory .sbgiven { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2); }
+  .fstory .sbgiven { font-size:var(--t-md); line-height:1.6; color:var(--ink-2); }
   /* the keyword INSIDE the sentence — quiet before the words it introduces. The Then's carries the
      reader's indigo AND the word itself, so the state is never hue alone. */
-  .fstory .sbwords .lead { font-weight:500; color:var(--ink-3); }
+  .fstory .sbwords .lead { font-size:inherit; font-weight:500; color:var(--ink-3); }
   .fstory .sbwords .lead.then { color:var(--ai); font-weight:600; }
   .fstory .sbwords .sbv { min-width:0; }
 
@@ -2234,10 +2272,17 @@ export function build () {
   .mstrip .mnav.restart { font-size:var(--t-lg); }        /* ↺ reads better a touch smaller */
   .mstrip .mnav:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
   .mstrip .mtrack { display:flex; gap:var(--s2); flex:1 1 auto; min-width:0; align-items:flex-end; }
-  .mstrip .mseg { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:5px;
+  .mstrip .mseg { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:var(--s1);
     background:none; border:0; padding:0; margin:0; cursor:pointer; text-align:center; }
-  .mstrip .msegl { font:var(--t-xs) var(--sans); color:var(--ink-3); padding:0 4px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* A SEGMENT'S NAME IS READ, NOT GLANCED AT (the human, 2026-09-02 — the strip showed
+     "…parent still has no ch…"). It is the assertion the run recorded, so a mid-word ellipsis
+     hides the very thing that names the moment. --t-sm (one step up from --t-xs, the smallest
+     size in the system and wrong for a sentence) and it WRAPS — to two lines, clamped, so a long
+     claim reads while the strip keeps its height. .mtrack's align-items:flex-end keeps every bar
+     level whether its name took one line or two. */
+  .mstrip .msegl { font:var(--t-sm)/1.35 var(--sans); color:var(--ink-3); padding:0 var(--s1);
+    white-space:normal; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; }
   .mstrip .msegb { height:8px; border-radius:999px; background:var(--wash);
     border:1px solid var(--hair-2); transition:background .2s ease, border-color .2s ease; }
   .mstrip .mseg.done .msegb { background:var(--hair-2); }
@@ -2248,7 +2293,9 @@ export function build () {
   .mstrip .mseg.then.cur .msegb { background:var(--ai); border-color:var(--ai); }
   .mstrip .mseg:focus-visible { outline:2px solid var(--ink); outline-offset:3px; border-radius:var(--r-sm); }
   .mstrip .mread { display:flex; align-items:center; gap:var(--s2); flex:none; margin-left:auto; }
-  .mstrip .mpos { font:var(--t-md) var(--mono); color:var(--ink); letter-spacing:.04em; }
+  /* the readout sits WITH its chip, not over it: --t-sm mono beside the --t-micro WHEN/THEN chip
+     reads as one pair, where --t-md put a body-sized number next to a label two steps smaller */
+  .mstrip .mpos { font:var(--t-sm) var(--mono); color:var(--ink); letter-spacing:.04em; }
   .mstrip .mkind { font:var(--t-micro) var(--mono); letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; }
   .mstrip .mkind.then { color:var(--ai); border-color:var(--ai-line); background:var(--ai-tint); }
@@ -2499,7 +2546,9 @@ export function build () {
     background:var(--paper); border-top:1px solid var(--hair); box-shadow:0 -2px 8px rgba(28,27,24,.05); }
   .dtfoot[hidden] { display:none; }
   /* Task 8 — the mockup's pager: 30px round pages with no border at rest (a hairline on hover), and
-     the "← → to review one by one" hint at the right (--ink-3 on --paper 6.4:1). The mockup INVERTS
+     no hint text at all — the keyboard legend left this bar on 2026-09-02 (the human: "remove the
+     short cut key hint in this page, only mention in the setting page") and is said once on the
+     guide, under Keyboard. The mockup INVERTS
      the current page in sumi; the detail already spends its one inverted element on Run all (the
      design system: exactly one per screen), so the current page wears a solid ink RING and a bold
      number instead — a divergence listed for the human in the Task 8 report.
@@ -2508,7 +2557,7 @@ export function build () {
      hair tick between families; each dot wears its requirement's MARK as a small badge at its
      shoulder in the state's hue (hue never alone — the glyph is the card's), a failed dot also on
      the bengara tint; the requirement's title rises as a bubble on hover and keyboard focus. The
-     bar wraps at narrow widths, the hint staying at the right.
+     bar wraps at narrow widths.
      WCAG AA, measured against spec/_design.css (text on its background, rest and hover):
        number --ink-2 on --paper 9.48 · on --wash 7.80 (hover) · on --bengara-tint 8.08 (failed);
        the current (ink) number on --bengara-tint 14.30
@@ -2553,7 +2602,6 @@ export function build () {
   .fdot[data-status="changed"]:hover { background:var(--ai-tint); }
   .fdot[data-status="failed"]:hover { background:var(--bengara-tint); }
   .fdot[data-status="not-reached"]:hover { background:var(--yamabuki-tint); }
-  .fpk { color:var(--ink-3); font-size:var(--t-xs); margin-left:var(--s3); white-space:nowrap; flex:none; }
   /* the thin tick between two FAMILIES' groups (board R17) — a hair rule, inert */
   .fdotfam { flex:none; align-self:center; width:1px; height:22px; background:var(--hair-2); margin:0 var(--s1); }
   /* the CURRENT dot — no offset outline ring (harsh). It lifts instead: an integral ink ring, a bold
@@ -3251,6 +3299,21 @@ export function build () {
   #howview .sect-head h2 { font-size:var(--t-lg); }
   #howview .sect-head .lbl { position:relative; top:-1px; }
   #howview .rule { height:1px; background:var(--hair); flex:1; align-self:center; }
+  /* THE KEYBOARD SECTION (the human, 2026-09-02: "remove the short cut key hint in this page, only
+     mention in the setting page"). The reader's footer legend, said once, here. Two columns — the
+     keys, then what they do — on the guide's own type: the description at --t-md/--ink-2 like every
+     other body line on this page, and the keys in the system's .kbd chip. The chip's own --ink-4
+     is measured 5.18:1 on --paper and is a HINT beside live text; here it IS the content, so it
+     steps up to --ink-2 (9.48:1 on --paper) within this section only. Tokens and the --s scale
+     throughout; no hue carries anything. */
+  #howview .howkeys .hklist { margin:0; display:grid; gap:var(--s3); max-width:640px; }
+  #howview .howkeys .hkrow { display:grid; grid-template-columns:calc(120px * var(--scale)) minmax(0,1fr);
+    gap:var(--s3); align-items:baseline; }
+  #howview .howkeys dt { margin:0; }
+  #howview .howkeys dd { margin:0; font-size:var(--t-md); line-height:1.6; color:var(--ink-2); }
+  #howview .howkeys dd b { color:var(--ink); font-weight:600; }
+  #howview .howkeys .kbd { margin-left:0; color:var(--ink-2); border-color:var(--hair-2);
+    font-size:var(--t-sm); padding:var(--s1) var(--s2); }
 
   /* the guide, as a four-act walkthrough (board R11) — LAYOUT only. Every colour, size, radius and
      mark is a token or a board class reused from above; no raw hue is introduced here. The acts are

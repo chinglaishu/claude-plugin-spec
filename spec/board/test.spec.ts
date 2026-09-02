@@ -958,10 +958,14 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
     const firstId = (await ov.locator('.fread .frmeta .fid').textContent())!.trim()
     await dt.locator('.dtfoot .fnav.next').click()
     await expect(ov.locator('.fread .frmeta .fid')).not.toHaveText(firstId)
-    // the mockup's pager: the hint at the right, 30px pages, the current page ringed in ink (NOT
-    // inverted — Run all is the detail's one inverted element, the design system's rule; the mockup's
-    // sumi fill is a listed divergence), and ← → paging one requirement at a time from the keyboard
-    await expect(dt.locator('.dtfoot .fpk')).toHaveText('← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement')
+    // the mockup's pager: 30px pages, the current page ringed in ink (NOT inverted — Run all is the
+    // detail's one inverted element, the design system's rule; the mockup's sumi fill is a listed
+    // divergence). NO keyboard hint rides this bar any more (rule 4 — the human, 2026-09-02:
+    // "remove the short cut key hint in this page, only mention in the setting page"): this leg
+    // asserted the legend's exact words, and the legend moved to the guide, so the leg asserts its
+    // ABSENCE. Where it went is proven in the R20 test ("the guide is where the shortcuts live").
+    await expect(dt.locator('.dtfoot .fpk'), 'no keyboard legend on the pager bar').toHaveCount(0)
+    await expect(dt.locator('.dtfoot')).not.toContainText('PgUp')
     const curDot = dt.locator('.dtfoot .fdot.cur')
     expect(await curDot.evaluate(el => getComputedStyle(el).borderColor)).toBe('rgb(28, 27, 24)')
     expect(await curDot.evaluate(el => el.getBoundingClientRect().height)).toBe(30)
@@ -1764,6 +1768,31 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const at2 = await backPos.textContent()
     await expect.poll(() => backPos.textContent(), { timeout: 12000 }).not.toBe(at2)
     await tools.locator('select.pspd').selectOption('1')
+  })
+
+  // THE SHORTCUTS ARE SAID ONCE, AND NOT IN THE READER (the human, 2026-09-02: "remove the short
+  // cut key hint in this page, only mention in the setting page"). R20's prose used to end "the
+  // keyboard hint is said once in the reader's footer"; the human moved it off the reading surface
+  // altogether, so this leg asserts BOTH halves of that move — nothing in the reader (its rows, its
+  // card, its pager footer) names a key, and the guide lists every key the reader answers to.
+  // The KEYS themselves are untouched — the legs above still walk, select and page with them.
+  await checkReq('R20', async () => {
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await expect(dt.locator('.dtfoot .fpk'), 'the footer legend is gone').toHaveCount(0)
+    await expect(dt.locator('.dtfoot')).not.toContainText('PgUp')
+    await expect(ov.locator('.fread .kbd'), 'and nothing inside the reader names a key').toHaveCount(0)
+    // …the guide is where they live now: one Keyboard section, every key the reader answers to
+    await page.goto('/#howitworks')
+    const keys = page.locator('#howview .howkeys')
+    await expect(keys).toBeVisible()
+    await expect(keys.locator('.sect-head .lbl')).toHaveText('keyboard')
+    // each key is a .kbd chip — the system's keyboard component, not prose about keys. The SET is
+    // the claim (the guide names every key the reader answers to); the sentence beside each one is
+    // prose and is not pinned here.
+    await expect(keys.locator('.kbd')).toHaveText(['← →', '↑ ↓', 'PgUp / PgDn', 'Esc', 'r'])
+    await expect(keys).toContainText('walk')
+    await expect(keys).toContainText('change requirement')
   })
 })
 
@@ -3299,7 +3328,10 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await expect(dt.locator('.focusov .fid')).toHaveText(prd.ids[1])
     await page.keyboard.press('PageUp')
     await expect(dt.locator('.focusov .fid')).toHaveText(firstId)
-    await expect(bar.locator('.fpk')).toHaveText('← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement')
+    // …and the bar is the MAP and nothing else: the keyboard legend that used to sit at its right
+    // is gone (rule 4 — the human, 2026-09-02: "remove the short cut key hint in this page, only
+    // mention in the setting page"; the guide lists the keys once, proven in the R20 test)
+    await expect(bar.locator('.fpk'), 'no keyboard legend on the jump-map bar').toHaveCount(0)
     // the old top block is GONE — the pager is the only map (Focus and List alike)
     await expect(page.locator('.reqmap, .tocg, .tocit')).toHaveCount(0)
     await page.goto('/#/board/grid')

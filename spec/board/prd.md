@@ -503,8 +503,11 @@ beat carries its **own number in a mark column beside its words** — a ringed n
 running down the row, the context row's mark a small hollow ring with no number. The `When¹ · Then¹`
 **superscripts are gone** with it (the human, 2026-09-02: "hard to read and not intuitive"), and so
 is the label column: `When` / `Then` / `Given` are the **first word of the sentence they name** (the
-human, the same day: "even more easy to read"), and the keyboard hint is said **once in the reader's
-footer**, never repeated on every row ("the hint of walk this beat… is repeating on every block"). Both halves of a row move on the same call a timer
+human, the same day: "even more easy to read"). The keyboard legend is **not in the reader at all** —
+not per row, and not in its footer either (corrected in place 2026-09-02, rule 6, on the human's own
+instruction: "remove the short cut key hint in this page, only mention in the setting page"; the
+footer's one-line legend, which this paragraph named for a few hours, is now said **once on the
+guide**, under Keyboard). The keys themselves are unchanged. Both halves of a row move on the same call a timer
 would have made, so the lock-step survives the mode. Session-scoped, stored nowhere. It is a **play**
 mode, never a media mode.
 
@@ -527,7 +530,12 @@ the product and really fix the problem": the gutter `‹ n / N ›` is replaced 
 the two pictures whose segments are the beat's moments, each named by the assertion the run recorded;
 a drawing that cannot match the harvest's moments is parked instead of free-running; and the words go
 sentence-first — the eyebrow and the label column give way to a mark column and keyword-led
-sentences, with the keyboard hint said once in the footer.*
+sentences. Amended again 2026-09-02, same session, on the human's instruction ("revise all font size
+and design system, now it looks not so balance on font size and also spacing. Also remove the short
+cut key hint in this page, only mention in the setting page"): the reader carries no keyboard legend
+anywhere — the keys are listed once on the guide — and the reader's type is one ladder, the
+requirement title the only head at --t-xl with the beat's When a step under it at --t-lg and its
+Then / Given at body size.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the row's one
@@ -536,7 +544,9 @@ sentences, with the keyboard hint said once in the footer.*
      is chosen), that the auto/step + speed controls sit on the title row with the speed disabled in
      step, and that ← → move only the SELECTED beat row while ↑ ↓ change the beat and PgUp/PgDn the
      requirement. Beat 2 asserts the Given row's cell is a plain uncaptioned still: one frame, no
-     stepper, no dots, no caption. -->
+     stepper, no dots, no caption. A last leg of the stepper test (added 2026-09-02) asserts both
+     halves of the legend's move: nothing in the reader — its rows, its card, its pager footer —
+     names a key, and #howview's Keyboard section lists every key the reader answers to. -->
 
 ## R21 — The reader reads behaviour first
 

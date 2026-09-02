@@ -1849,12 +1849,12 @@ const B = window.__BOARD__ || {}
     const prev = document.createElement('button'); prev.className = 'fnav prev'; prev.textContent = '‹'
     const dots = document.createElement('div'); dots.className = 'fdots'
     const next = document.createElement('button'); next.className = 'fnav next'; next.textContent = '›'
-    // the mockup's hint (Task 8) — and the keys it names: ← → page one requirement at a time while
-    // this reader is open and no field has the focus (the guide's stepper claims the same keys only
-    // while #howview is the open view, so the two never both fire)
-    const hint = document.createElement('span'); hint.className = 'fpk'
-    hint.textContent = '← → walk the beat · ↑ ↓ pick the beat · PgUp/PgDn change requirement'
-    pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next); pager.appendChild(hint)
+    // NO KEYBOARD HINT HERE (the human, 2026-09-02: "remove the short cut key hint in this page,
+    // only mention in the setting page"). Task 8's `.fpk` line rode the pager since the mockup; the
+    // keys it named are now listed ONCE, on the guide (#howview's Keyboard section) — the reader is
+    // for reading, and a permanent legend on a page you look at every day is chrome. The keys
+    // themselves are unchanged (buildFocus's onKey below).
+    pager.appendChild(prev); pager.appendChild(dots); pager.appendChild(next)
     function render () {
       if (bodyRestore) { bodyRestore(); bodyRestore = null }   // reclaim the previous page's moved nodes
       const old = ov.querySelector('.fpage'); if (old) { stopSteppers(old); old.remove() }

@@ -214,7 +214,7 @@ test('renderSchematic refuses on*= event handlers and javascript:/data: hrefs (t
 // and listed which ids each serves; the same pass marked 13 requirements text-only ON PURPOSE
 // (absences, streaming, a one-slot fight, an in-place edit, a reload) — those must STILL fall to
 // null, read from the prd files so the pin is against the signed text, never a paraphrase.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { parsePrd } from './spec-store.mjs'
 import { parseBehavior } from './behavior.mjs'
 
@@ -1985,12 +1985,19 @@ test('renderSchematic bakes the layout-stale mark beside the text-stale one', ()
 // the comparison. So on a scene whose claim failed, the ringed value is drawn as the EXPECTED one —
 // in the same asserted ink as any measured value, with the callout unchanged (the "got 4 ✕" is the
 // burn-in's, and stays the burn-in's alone).
+// The demo's harvest is the REAL thing and moves: since 2026-09-02 R9 also photographs the task
+// about to be deleted and the list where it stood (v2, v3), and every value frame carries its own
+// claim. These tests are about the RULE, not the demo's current shape — so they take the first value
+// and the LAST one (the counter check, the one that fails) and strip the on-disk claims first, then
+// inject exactly the claim each case is about.
 const R9L = n => JSON.parse(readFileSync(new URL(`R9.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
+const stripClaim = L => { const { claim, ...rest } = L; return rest }
+const r9Last = () => { let k = 1; while (existsSync(new URL(`R9.b1.v${k + 1}.layout.json`, DEMO_EV))) k++; return k }
 const R9BEH = b('five open leaves and a delete', 'you delete one', 'To do still reads 5 — a delete is only an archive')
 const r9Beat = claim => ({
-  before: R9L('before'),
-  after: R9L('after'),
-  values: [R9L('v1'), claim ? { ...R9L('v2'), claim } : R9L('v2')]
+  before: stripClaim(R9L('before')),
+  after: stripClaim(R9L('after')),
+  values: [stripClaim(R9L('v1')), claim ? { ...stripClaim(R9L('v' + r9Last())), claim } : stripClaim(R9L('v' + r9Last()))]
 })
 const drawR9 = claim => renderWireframe([r9Beat(claim)], { behavior: R9BEH, id: 'R9', pass: !claim || claim.ok !== false })
 // the counter's own value, wherever the overlay typed it: the NUMBER standing at the drawn

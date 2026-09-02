@@ -216,7 +216,13 @@ change.
   stale banner says "behind the harvest". A row with no proof loop at all still walks (or scrubs) its
   drawing — nothing is beside it to disagree with. The words are sentence-first (`.sbmark` numeral +
   `.sbwhen`/`.sbthen`/`.sbgiven` with the keyword as the sentence's `.lead`); `.sbstep`/`.sbk`/`.sbeye`
-  are gone, and the keyboard hint is said ONCE in the reader's footer, never per row. `buildMedia` now renders only
+  are gone, and NO keyboard hint lives in the reader at all — not per row and not in its footer
+  either (corrected 2026-09-02, rule 6: the pager's `.fpk` legend went with the human's "remove the
+  short cut key hint in this page, only mention in the setting page"; the keys are listed once in
+  #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder — `.fttl` --t-xl/600 is
+  the only head, `.sbwhen` --t-lg/600 under it, `.sbthen`/`.sbgiven` --t-md, `.sbno`/`.msegl`/`.mpos`
+  --t-sm (a segment name WRAPS to two clamped lines; it never mid-sentence ellipses) — and the words
+  cell centres itself in a tall row while the mark column still spans it. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
   pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the
