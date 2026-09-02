@@ -1,10 +1,10 @@
 {
-  "version": "0.35.0",
+  "version": "0.35.2",
   "files": {
     "tools/spec-store.mjs": "619269f480280fe27ba8a0ee1c22221f4257cb4db56ac05e6b148e25a06de908",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
     "tools/journey.mjs": "8ea1d34d2db8a4152e15a0dc123b61bee5b8c5efaa1fbfcf95945533031fecfa",
-    "tools/build-board.mjs": "56b2d04a4789c602d6f564009c981ca76df310ae98535c80dcaa6aeeccb592a9",
+    "tools/build-board.mjs": "ded32f8c3d37b32340b4f2be64ae2d2d222a0338600311782c1938571601ca21",
     "tools/behavior.mjs": "e8e77bd5993afddd792716ae333068ecf35027ea3fbd930bc20de8257c03a445",
     "tools/flow.mjs": "4051dcf5db27b585edba65b85bf1bc3eca1232f4233c6fc8d177da80f5fe16d4",
     "tools/reqhash.mjs": "212fac74a5e289dbc3ca3b556fe0f6bf0fd5e6bc1513ab28eb8421be04cc0e89",
@@ -15,7 +15,7 @@
     "tools/viz-derive.mjs": "8f7fcb5c34a6fac01ab98b3efdeabd72e50c9ba5bf547a408aef2d7a6603a517",
     "tools/evidence.mjs": "abbc73ad67c6d7f05fb2472d5f162aa169e938adfdb4a4591f121e5c20dbda58",
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
-    "tools/board/client.js": "60d7cbd1c95ec0d902f4f4a1ed728ff8d611678af5bc16c752bef564581ef9d4",
+    "tools/board/client.js": "1e3fc4f9e44c42cd1e67ab1a29d10e92998f112e667ffeb12757ffbe626ed07b",
     "tools/board/stepper.js": "31987212f92826ab90f0bf84d8d4879d10c2ca1a87e26df413575dd322fedcbf",
     "tools/serve-board.mjs": "15277e22324dcd35f759ea59878a3de0352280ea65998dd78490c885f0bf6fa9",
     "tools/watch-dir.mjs": "d990826c25a9a26ecd4d5862a4c5d8cb3055088892b66abd77322f71244d916a",
