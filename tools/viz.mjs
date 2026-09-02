@@ -940,8 +940,12 @@ function normLayout (l) {
   if (!(w > 0) || !(h > 0)) return null
   const els = []
   const seen = new Set()
+  // Draw cap. WAS 200 — fine for a form, but a DATA GRID captures ~360 boxes (its cells ARE the
+  // content), and at 200 every value below the fold was cut, so the mirror drew a grid with headers
+  // and empty rows beside a photograph full of numbers (the human, 2026-09-03). Matched to snapLayout's
+  // own CAP so what the harvest keeps, the drawing draws; `seen` still collapses identical geometries.
   for (const e of (Array.isArray(l.els) ? l.els : [])) {
-    if (!e || typeof e !== 'object' || els.length >= 200) continue
+    if (!e || typeof e !== 'object' || els.length >= 360) continue
     const x = num(e.x); const y = num(e.y); const ew = num(e.w); const eh = num(e.h)
     if (x == null || y == null || !(ew > 0) || !(eh > 0)) continue
     const kind = KINDS.has(e.kind) ? e.kind : 'container'

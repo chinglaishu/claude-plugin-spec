@@ -867,10 +867,17 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
     const info = test.info()
     const data: any = await raceTimeout(page.evaluate((ring: Box | null) => {
       const OVERLAY = '__specboard-focus'
-      const CAP = 150            // enough boxes to recognise a screen, few enough to draw
-      const MAXD = 14            // depth cap — a deep component tree adds wrappers, not information
+      const CAP = 360            // enough boxes to recognise a screen (a data grid alone is ~200 cells)
+      // Depth cap. WAS 14 — which reached a sidebar link (depth ~11) but stopped 7–11 levels SHORT of
+      // an AG-GRID cell VALUE (measured at depth 21–25 on dojostack: grid → viewport → clipper →
+      // container → row → cell → wrapper → value-span). So the mirror drew every data grid as textless
+      // grey boxes while the photograph beside it showed the real numbers — the drawing was useless to
+      // compare (the human, 2026-09-03). A deep WRAPPER still adds no text (the leaf+text rule below
+      // only lettered childless nodes) and no box below MIN, so raising this only reaches the values
+      // that were being missed; CAP + BUDGET keep the walk bounded.
+      const MAXD = 28
       const MIN = 12             // px: below this an element is a divider or an icon fleck
-      const BUDGET = 6000        // nodes visited, so a huge app costs a bounded walk
+      const BUDGET = 9000        // nodes visited, so a huge app costs a bounded walk
       const vw = window.innerWidth || 0
       const vh = window.innerHeight || 0
       const rb = ring ? { x: ring.x, y: ring.y, w: ring.width, h: ring.height } : null
