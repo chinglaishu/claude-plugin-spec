@@ -39,6 +39,9 @@ export function snapLayoutWalk (arg) {
   // that were being missed; CAP + BUDGET keep the walk bounded.
   const MAXD = 28
   const MIN = 12             // px: below this an element is a divider or an icon fleck
+  // the viewport edge's own slack — spec/_replica.mjs's VIS_PAD, by the same reasoning (see the
+  // off-screen test below): the fold is not a knife edge when two renderings are being compared
+  const EDGE_PAD = 2
   const BUDGET = 9000        // nodes visited, so a huge app costs a bounded walk
   const vw = win.innerWidth || 0
   const vh = win.innerHeight || 0
@@ -347,7 +350,15 @@ export function snapLayoutWalk (arg) {
     // reading that as display:none dropped the header's whole subtree, picker included, on every
     // harvest. Only `display:none` prunes; a zero-sized element takes no slot but IS descended.
     const sized = r.width >= 1 && r.height >= 1
-    if (sized && (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh)) return null   // off-screen, and its subtree
+    // off-screen, and its subtree — with a HAIR of slack on every edge (task 3b, 2026-09-04). The
+    // gate walks the live page and then the replica and compares them box for box, and two
+    // renderings of one page land a fraction apart: this repo's own CI chip begins a quarter of a
+    // pixel below a 900 px fold, was measured live at 899.8 and dropped in the replica at 900.25,
+    // and the gate reported `missing-box` on a file that was right. spec/_replica.mjs's own viewport
+    // clip has carried 2 px of slack for exactly this case since phase 3; the edge test here says
+    // the same thing now. A box a real distance off-screen still costs nothing.
+    if (sized && (r.right <= -EDGE_PAD || r.left >= vw + EDGE_PAD ||
+      r.bottom <= -EDGE_PAD || r.top >= vh + EDGE_PAD)) return null
     // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT MEASURE (mirror-9, 2026-09-02). Opacity
     // is inherited by PAINT, not by property: Tsumiki hides a row's edit/delete buttons with
     // `opacity:0` until hover, so the BUTTON came back at 0 and its 16×16 icon — which has no

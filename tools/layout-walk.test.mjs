@@ -475,3 +475,26 @@ test('every box the walk drops as occluded is reported, so the capture can plate
   assert.ok(report.occluded.includes(p.bg), 'the covered section is named: ' + report.occluded.length)
   assert.ok(!report.occluded.includes(p.modal), 'the thing on top is not')
 })
+
+// ── THE FOLD IS NOT A KNIFE EDGE (task 3b, 2026-09-04) ──────────────────────────────────────────
+// The gate walks the live page and then the replica, and compares them box for box. This walk
+// dropped anything whose top was `>= vh`, exactly — so the init page's own CI chip, which begins a
+// quarter of a pixel below a 900 px fold, was measured on the live page (899.8) and dropped in the
+// replica (900.25), and the gate reported `missing-box` on a file that was correct. Two renderings
+// of one page land a fraction apart; that is the whole reason GATE_TOL exists, and spec/_replica.mjs
+// already gives its own viewport clip 2 px of slack for this very case ("the 2 px tolerance keeps
+// exactly that hairline case"). The edge test here now says the same thing.
+test('a box that begins a hair below the fold is still measured — two renderings land a fraction apart', () => {
+  const chip = el('span', [1300, 900.25, 57, 22], { text: 'CI gate', cs: painted })
+  const body = el('body', [0, 0, 1440, 1916], { children: [chip] })
+  const L = walk(body, null)
+  assert.ok(L.els.some(e => e.text === 'CI gate'), 'the hairline case is kept: ' + JSON.stringify(L.els))
+})
+
+test('…but a box a real distance off-screen still costs nothing', () => {
+  const far = el('div', [0, 1200, 300, 40], { text: 'Below the fold', cs: painted })
+  const right = el('div', [1500, 100, 300, 40], { text: 'Off to the right', cs: painted })
+  const body = el('body', [0, 0, 1440, 1916], { children: [far, right] })
+  const L = walk(body, null)
+  assert.ok(!L.els.some(e => /Below the fold|Off to the right/.test(e.text || '')), 'the skip is a hair, not a page')
+})
