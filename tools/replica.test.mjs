@@ -251,12 +251,17 @@ test('what the page does not show is not in the replica — display:none, visibi
 })
 
 // ── 4. caps ─────────────────────────────────────────────────────────────────────────────────────
+// The two cap fixtures stack their rows ON SCREEN. They used to run 8000 px down the page, and phase
+// 3's section F rule — an element that does not intersect what is being pictured costs nothing —
+// correctly stopped them truncating at all, which is the whole point of that rule. Rule 4: the change
+// was right and the fixtures were wrong; the caps themselves are what these tests are about, so the
+// rows now overlap inside the viewport where they are all genuinely captured.
 test('the node cap stops the walk, says so on the root, and keeps the file under 200 KB', () => {
   const kids = []
   for (let i = 0; i < 4000; i++) {
-    kids.push(el('div', [0, i, 300, 18], { text: 'row ' + i + ' — a long enough label to add bytes fast', cs: { color: 'rgb(2, 8, 23)', 'font-size': '13px', padding: '4px 8px' } }))
+    kids.push(el('div', [0, (i % 48) * 18, 300, 18], { text: 'row ' + i + ' — a long enough label to add bytes fast', cs: { color: 'rgb(2, 8, 23)', 'font-size': '13px', padding: '4px 8px' } }))
   }
-  const root = el('div', [0, 0, 400, 8000], { children: kids })
+  const root = el('div', [0, 0, 400, 880], { children: kids })
   const body = el('body', [0, 0, 1440, 900], { children: [root] })
   const r = cap(body, { target: kids[0], ring: { x: 0, y: 0, width: 300, height: 18 } })
   assert.equal(r.truncated, true)
@@ -415,8 +420,8 @@ test('a bottom-ruled row keeps its rule: the four border edges are diffed, not t
 test('the byte cap stops a text-heavy scene, and the file is still under 200 KB', () => {
   const long = 'x'.repeat(2000)
   const kids = []
-  for (let i = 0; i < 400; i++) kids.push(el('p', [0, i * 20, 900, 18], { text: long + ' ' + i, cs: { color: 'rgb(2, 8, 23)' } }))
-  const root = el('div', [0, 0, 900, 8000], { children: kids })
+  for (let i = 0; i < 400; i++) kids.push(el('p', [0, (i % 44) * 20, 900, 18], { text: long + ' ' + i, cs: { color: 'rgb(2, 8, 23)' } }))
+  const root = el('div', [0, 0, 900, 880], { children: kids })
   const body = el('body', [0, 0, 1440, 900], { children: [root] })
   const r = cap(body, { target: kids[0], ring: { x: 0, y: 0, width: 900, height: 18 } })
   assert.equal(r.truncated, true)
@@ -1317,15 +1322,17 @@ test('an element that inherits its parent\'s type declares nothing about it — 
   const row = el('div', [0, 0, 400, 40], { children: [same, other], cs: { ...TYPE, display: 'flex' } })
   const body = el('body', [0, 0, 1440, 900], { children: [row], cs: { ...TYPE } })
   const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 } })
-  const rules = r.html.split('\n').filter(l => l.startsWith('.rep '))
-  const rowRule = rules.find(l => /display:flex/.test(l))
-  assert.ok(/font-family/.test(rowRule), 'the SCENE ROOT still carries its whole inherited set — the file must stand alone')
-  const kids = rules.filter(l => l !== rowRule && !/display:flex/.test(l))
-  assert.equal(kids.length, 2, 'two children, two declaration sets')
-  assert.ok(!kids.some(l => /font-family|font-size|line-height|letter-spacing/.test(l)),
-    'a child that changes none of its inherited type says nothing about it')
-  assert.ok(!/color/.test(kids.find(l => !/color/.test(l)) || 'color'), 'the one that inherits its colour is silent about it')
-  assert.ok(kids.some(l => /color:rgb\(180, 0, 0\)/.test(l)), 'the one that CHANGES it still declares it')
+  // the scene root is the BODY here (the row is 400x40, so the body is the first ancestor that is
+  // 3x the ring and no bigger than the viewport); its rule is written twice — `.rep .rN` for the
+  // descendants and `.rep.rN` for the root itself, which a descendant selector cannot reach
+  const rules = r.html.split('\n').filter(l => l.startsWith('.rep'))
+  const twin = rules.find(l => l.startsWith('.rep.'))
+  assert.ok(/font-family/.test(twin), 'the SCENE ROOT still carries its whole inherited set — the file must stand alone')
+  assert.equal((r.html.match(/font-family/g) || []).length, 2, 'the root\'s rule and its twin — nothing else')
+  const kids = rules.filter(l => !l.startsWith('.rep.') && l.slice(6) !== twin.slice(5))
+  assert.ok(kids.some(l => /^\.rep \.r\d+\{display:flex\}$/.test(l)), 'the row changes only its layout, and says only that')
+  assert.ok(kids.some(l => /^\.rep \.r\d+\{color:rgb\(180, 0, 0\)\}$/.test(l)), 'the span that CHANGES its colour declares only that')
+  assert.match(r.html, /<span data-b="20,20,60,16">same<\/span>/, 'and the one that changes nothing gets no class at all')
 })
 
 test('the scene root carries its inherited type even when it equals the tag default — the file is read in an empty iframe', () => {
@@ -1334,9 +1341,9 @@ test('the scene root carries its inherited type even when it equals the tag defa
   const body = el('body', [0, 0, 1440, 900], { children: [row], cs: { ...TYPE } })
   // the probe the diff measures a tag default with is appended to the app's OWN body, so it inherits
   // the app's type: diffing the root against it would drop precisely the app's own font
-  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 }, defaults: { div: { ...TYPE } } })
-  assert.ok(/font-family:Inter/.test(r.html), 'the app\'s own stack is in the file')
-  assert.equal((r.html.match(/font-family/g) || []).length, 1, 'once — on the root, nowhere else')
+  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 }, defaults: { body: { ...TYPE }, div: { ...TYPE }, span: { ...TYPE } } })
+  assert.ok(/font-family:Inter/.test(r.html), 'the app\'s own stack is in the file even though it IS the measured default')
+  assert.equal((r.html.match(/font-family/g) || []).length, 2, 'on the root\'s rule and its twin — nowhere else')
 })
 
 test('an element wholly outside the scene root costs nothing — it and its subtree are skipped', () => {
@@ -1346,7 +1353,7 @@ test('an element wholly outside the scene root costs nothing — it and its subt
   const word = el('span', [420, 100, 60, 16], { text: 'Live' })
   const bar = el('div', [400, 88, 640, 44], { children: [word, drawer] })
   const btn = el('button', [500, 92, 120, 36], { text: 'x' })
-  bar.children.push(btn); bar.childNodes.push(btn)
+  bar.children.push(btn); bar.childNodes.push(btn); btn.parentElement = bar
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 } })
   assert.deepEqual(r.region, { x: 400, y: 88, w: 640, h: 44 })
@@ -1360,7 +1367,7 @@ test('a ZERO-SIZED box is still descended — 0.42.1\'s rule, kept', () => {
   const shrunk = el('div', [420, 100, 0, 0], { children: [word] })      // a min-w-0 flex wrapper
   const bar = el('div', [400, 88, 640, 44], { children: [shrunk] })
   const btn = el('button', [500, 92, 120, 36], { text: 'x' })
-  bar.children.push(btn); bar.childNodes.push(btn)
+  bar.children.push(btn); bar.childNodes.push(btn); btn.parentElement = bar
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 } })
   assert.ok(r.html.includes('Live'), 'a sizeless wrapper is measured as nothing and walked through')
@@ -1379,8 +1386,8 @@ test('a 1200-element viewport of one font and one colour fits in under 60 KB, un
   const r = cap(body, { target: page, ring: { x: 0, y: 0, width: 400, height: 300 } })
   assert.equal(r.truncated, false, 'the whole viewport fits')
   assert.ok(r.bytes < 60000, `under 60 KB — got ${r.bytes}`)
-  assert.equal((r.html.match(/font-family/g) || []).length, 1,
-    'the app\'s stack is written ONCE, not once per element — the 197 KB dojostack replicas were this')
+  assert.equal((r.html.match(/font-family/g) || []).length, 2,
+    'the app\'s stack is written ONCE (the root\'s rule and its twin), not once per element — the 197 KB dojostack replicas were this')
 })
 
 test('the page\'s own @font-face RULES ride out beside the urls — the gate renders the replica in the app\'s type', () => {

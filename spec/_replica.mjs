@@ -111,6 +111,18 @@ export function captureReplica (arg) {
   // the ONE list, handed in (see the header). A caller that forgets it gets structure with no paint
   // rather than a thrown capture — the harness always passes it.
   const PROPS = (arg && Array.isArray(arg.props) && arg.props.length) ? arg.props.map(String) : []
+  // ── PHASE 3, SECTION F (2026-09-03): AN INHERITED PROPERTY IS DIFFED AGAINST THE PARENT ────────
+  // Found on real data: vendored 0.43.0 harvested 45 replicas in dojostack and NINE hit the 200 KB
+  // cap at 197-198 KB, every one of them a whole-viewport region — and a truncated replica can never
+  // pass a likeness gate. The bytes were going almost entirely into repeating the app's own type on
+  // every element: the probe a tag default is measured with is appended to the app's body, so it
+  // answers with whatever the app sets THERE, and any app that sets its font on a wrapper (Tailwind's
+  // `font-sans` on a shell div, a themed `#root`) made every one of its 1200 descendants declare the
+  // whole stack again. What a reader can see is only what an element CHANGES about its inherited
+  // type, so that is what is written; the value the browser resolves is unchanged, because each
+  // level either declares its own or inherits its parent's, inductively, from the root down.
+  const INHERITED = ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'color',
+    'letter-spacing', 'text-align', 'text-transform', 'white-space', 'visibility']
   const NODE_CAP = Number.isFinite(Number(caps.nodes)) ? Number(caps.nodes) : 1500
   const BYTE_CAP = Number.isFinite(Number(caps.bytes)) ? Number(caps.bytes) : 200000
   const HTML_NS = 'http://www.w3.org/1999/xhtml'
@@ -213,6 +225,17 @@ export function captureReplica (arg) {
   if (!root) root = doc.body || null
   if (!root) return null
   const rootRect = rectOf(root)
+  // WHAT IS BEING PICTURED (phase 3, section F): the scene root's own box, clipped to the viewport.
+  // A body-rooted scene is often taller than the screen, and the half below the fold is in no
+  // photograph, in no layout skeleton and of no use to a reader — only in the byte count.
+  const VIS = (() => {
+    if (!rootRect) return null
+    const box = { x: rootRect.left, y: rootRect.top, w: rootRect.width, h: rootRect.height }
+    if (!(vw > 0 && vh > 0)) return box
+    const x0 = Math.max(box.x, 0); const y0 = Math.max(box.y, 0)
+    const x1 = Math.min(box.x + box.w, vw); const y1 = Math.min(box.y + box.h, vh)
+    return (x1 > x0 && y1 > y0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : box
+  })()
 
   // ── the style diff ────────────────────────────────────────────────────────────────────────────
   // Each element's computed values against a PROBE of the same tag+namespace — so what rides out is
@@ -261,14 +284,21 @@ export function captureReplica (arg) {
   const DATA_MAX = 32000
   const affordable = (url) => String(url).slice(0, 5) === 'data:' &&
     String(url).length <= DATA_MAX && bytes + String(url).length <= BYTE_CAP - MARGIN
-  const classOf = (cs, tag, ns) => {
+  const classOf = (cs, tag, ns, parentCs, isRoot) => {
     if (!cs || !PROPS.length) return ''
     const d = defaultsOf(tag, ns)
     const out = []
     for (const p of PROPS) {
       const v = gp(cs, p)
       if (!v) continue                                  // a value the page will not answer for is not a declaration
-      if (v === String(d[p] == null ? '' : d[p])) continue
+      const inh = has(INHERITED, p)
+      // THE SCENE ROOT CARRIES ITS WHOLE INHERITED SET (section F). It is read in an EMPTY iframe —
+      // the board's, and the gate's — where nothing sets the app's type, and its own tag default was
+      // measured with a probe INSIDE the app, which already inherits it. Diffing there would drop
+      // precisely the app's own font and leave the file dependent on a page it will never be in.
+      if (inh && isRoot) { out.push(p + ':' + v); continue }
+      const against = inh && parentCs ? gp(parentCs, p) : String(d[p] == null ? '' : d[p])
+      if (v === against) continue
       out.push(p + ':' + v)
     }
     if (!out.length) return ''
@@ -318,21 +348,22 @@ export function captureReplica (arg) {
   // the two pseudo-elements a page draws its ticks, bullets and separators with: materialised as a
   // span carrying the quoted string, with its own diffed class, so the picture shows what a reader
   // sees rather than an empty box where the CSS drew a ✓
-  const pseudo = (node, which) => {
+  const pseudo = (node, which, hostCs) => {
     const cs = styleOf(node, '::' + which)
     if (!cs) return null
     const raw = gp(cs, 'content').trim()
     const m = /^"([\s\S]*)"$|^'([\s\S]*)'$/.exec(raw)
     const text = m ? (m[1] != null ? m[1] : m[2]) : ''
     if (!text) return null
-    const cls = classOf(cs, 'span', HTML_NS)
+    // a pseudo-element inherits from the element it is drawn on, so that is what it is diffed against
+    const cls = classOf(cs, 'span', HTML_NS, hostCs, false)
     const attrs = [['class', cls || null], ['data-pseudo', which]]
     const kids = [T(text)]
     bytes += esc(text).length + costOf('span', attrs, kids)
     return E('span', attrs, kids)
   }
 
-  const serialise = (node, isRoot) => {
+  const serialise = (node, isRoot, parentCs) => {
     if (!node || node.nodeType !== 1) return null
     // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
     // veil and the callout card — is painted INTO the page under test, so a capture whose scene root
@@ -351,11 +382,20 @@ export function captureReplica (arg) {
       const op = parseFloat(gp(cs, 'opacity'))
       if (Number.isFinite(op) && op <= 0.02) return null
     }
+    const r = rectOf(node)
+    // AN ELEMENT NOBODY CAN SEE COSTS NOTHING (phase 3, section F). A virtualised grid's off-screen
+    // rows, a collapsed drawer's content, everything below the fold of a body-rooted scene: the live
+    // skeleton the gate compares against never measured any of it (the walk drops what is off-screen),
+    // the photograph beside it does not show it, and on dojostack it was most of a 197 KB file. So an
+    // element with a SIZE that does not intersect what is being pictured is skipped with its subtree.
+    // A ZERO-SIZED box is still descended — 0.42.1's rule: a `min-w-0` flex wrapper measures 0 wide
+    // and its children are exactly what the scene is of.
+    if (!isRoot && r && r.width >= 1 && r.height >= 1 && VIS &&
+      !(r.right > VIS.x && r.left < VIS.x + VIS.w && r.bottom > VIS.y && r.top < VIS.y + VIS.h)) return null
     if (capped()) { truncated = true; return null }
     nodes++
     const fam = gp(cs, 'font-family')
     if (fam) for (const f of fam.split(',')) families.add(f.trim().replace(/^["']|["']$/g, '').toLowerCase())
-    const r = rectOf(node)
     const ns = node.namespaceURI || HTML_NS
 
     // what tag this element is EMITTED as — the diff is taken against that tag's defaults, so a
@@ -400,7 +440,7 @@ export function captureReplica (arg) {
       kids = []
     }
 
-    const cls = classOf(cs, emit, emit === tag ? ns : HTML_NS)
+    const cls = classOf(cs, emit, emit === tag ? ns : HTML_NS, parentCs, !!isRoot)
     // the allowlisted attributes of the ORIGINAL element, only where the element still is itself
     const attrs = [['class', cls || null]]
     if (emit === tag && node.getAttributeNames) {
@@ -426,7 +466,7 @@ export function captureReplica (arg) {
 
     if (kids == null) {
       const out = []
-      const before = pseudo(node, 'before')
+      const before = pseudo(node, 'before', cs)
       if (before) out.push(before)
       // a shadow root REPLACES the light children in the picture, because that is what the browser
       // paints; slotted content is a known gap of this phase, noted rather than guessed at
@@ -447,10 +487,10 @@ export function captureReplica (arg) {
           continue
         }
         if (k.nodeType !== 1) continue
-        const child = serialise(k, false)
+        const child = serialise(k, false, cs)
         if (child) out.push(child)
       }
-      const after = pseudo(node, 'after')
+      const after = pseudo(node, 'after', cs)
       if (after) out.push(after)
       kids = out
     }
@@ -1038,17 +1078,32 @@ export function captureReplica (arg) {
   // served replica loads every face from 'self' and the file itself still carries no external URL.
   // What is listed is only what can actually be fetched over http(s): a `data:` face needs no
   // fetching, and `blob:` / `javascript:` are not urls this harness would ever hand to page.request.
+  //
+  // …and, beside them, the RULES THEMSELVES (`fontFaces`, phase 3): the in-page gate mounts this
+  // replica in a hidden iframe and walks it with the same walk that measured the live page, and a
+  // frame set in a fallback stack lays every word out at a different width — every text box would
+  // drift and the gate would report a page of false gaps. The rules are handed to that frame's own
+  // srcdoc and NEVER written into the replica file, so the file still carries no external URL.
+  // Bounded like everything here: 64 rules, 64 KB, an unreadable sheet skipped.
   const fonts = []
+  const fontFaces = []
+  let faceBytes = 0
   const base = String((doc && doc.baseURI) || (win && win.location && win.location.href) || '')
   const sheets = (doc.styleSheets && doc.styleSheets.length != null) ? doc.styleSheets : []
-  for (let i = 0; i < sheets.length && fonts.length < 8; i++) {
+  for (let i = 0; i < sheets.length; i++) {
     let rules = null
     try { rules = sheets[i] && sheets[i].cssRules } catch { rules = null }
     if (!rules) continue
-    for (let j = 0; j < rules.length && fonts.length < 8; j++) {
+    for (let j = 0; j < rules.length; j++) {
       const rule = rules[j]
       if (!rule || !rule.style) continue
-      if (!/^\s*@font-face/i.test(String(rule.cssText || ''))) continue
+      const faceText = String(rule.cssText || '')
+      if (!/^\s*@font-face/i.test(faceText)) continue
+      if (fontFaces.length < 64 && faceBytes + faceText.length <= 64000) {
+        fontFaces.push(faceText)
+        faceBytes += faceText.length
+      }
+      if (fonts.length >= 8) continue
       const family = gp(rule.style, 'font-family').trim().replace(/^["']|["']$/g, '')
       if (!family || !families.has(family.toLowerCase())) continue
       const src = gp(rule.style, 'src')
@@ -1081,6 +1136,7 @@ export function captureReplica (arg) {
     classes: walkRules,
     bytes: html.length,
     truncated,
-    fonts
+    fonts,
+    fontFaces
   }
 }
