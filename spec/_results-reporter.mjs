@@ -5,7 +5,7 @@ import { join, relative, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -316,9 +316,17 @@ function harvestEvidence (harvest, ranAt) {
             // failed — the schematic is the intent, the photograph is what happened — so it has to
             // survive the fold. Lifted whole or not at all (valueMeta claimOf).
             if (meta.claim) got.claim = meta.claim
+            // …and whether this moment's PHOTOGRAPH landed at all (task 3b, item 5, 2026-09-04).
+            // The shot is bounded so a slow page costs the bound and never the run; when it is
+            // reached the frame is missing and the moment used to VANISH from the fold, taking its
+            // replica with it (pruned as superseded) and reddening every beat that needs a claimed
+            // specimen, with nothing anywhere saying why. The moment is what the run MEASURED, so it
+            // stays — marked, and named in the fold's own output below.
+            if (meta.dropped) got.dropped = true
           } catch { /* an unreadable skeleton — the frame simply plays untimed and unnamed */ }
         }
-        if (got.frame) row.values.push(got)
+        if (valueLanded(got)) row.values.push(got)
+        if (got.dropped) gapLines.push(`evidence drop · ${scr} ${rid} b${b.n} v${v.k} · the page would not photograph this moment; its measurement and its replica are kept`)
       }
       // THE FOCUS RECT: where the ring stood when this beat was proven, read back out of the layouts
       // that already recorded it (tools/evidence.mjs focusFromLayouts) — the board zooms the media
@@ -394,10 +402,11 @@ function harvestEvidence (harvest, ranAt) {
     }
     out[qid] = entry
   }
-  // the gapped moments of this run, at most 12 of them and then the count — one line each, naming
-  // the file, the kind and where on the page it stood
+  // the gapped moments of this run — and the dropped photographs beside them (task 3b, item 5) — at
+  // most 12 of them and then the count: one line each, naming the file, the kind and where on the
+  // page it stood
   for (const line of gapLines.slice(0, 12)) console.log(line)
-  if (gapLines.length > 12) console.log(`…and ${gapLines.length - 12} more replica gap(s)`)
+  if (gapLines.length > 12) console.log(`…and ${gapLines.length - 12} more replica gap(s) / dropped frame(s)`)
   return out
 }
 

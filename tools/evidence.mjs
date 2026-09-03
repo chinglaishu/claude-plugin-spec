@@ -410,7 +410,26 @@ export function valueMeta (layout) {
   }
   const claim = claimOf(layout && layout.claim)
   if (claim) out.claim = claim
+  // …and WHETHER THE PHOTOGRAPH LANDED (task 3b, item 5, 2026-09-04). `snapEvidence` bounds its
+  // screenshot so a slow page costs the bound and never the run; on a loaded machine that bound was
+  // reached, the frame was never attached, and the fold — which kept a moment only if its photograph
+  // landed — dropped the moment whole and pruned its replica with it. Four board beats then went red
+  // on a missing specimen with nothing anywhere saying why. The bound stays; the SILENCE goes. Only
+  // the flag itself travels, never a truthy anything.
+  if (layout && layout.dropped === true) out.dropped = true
   return out
+}
+
+/**
+ * valueLanded(got) → did this moment happen at all?
+ *
+ * A moment is what the run MEASURED, not what it managed to photograph: a skeleton with no frame is
+ * a moment whose picture was dropped (and which says so, above), and the board's reader already
+ * skips a frameless one. Keeping it is what makes the drop visible in the index instead of silently
+ * shortening the beat — and what keeps its replica from being pruned as superseded.
+ */
+export function valueLanded (got) {
+  return !!(got && (got.frame || got.layout))
 }
 
 // THE FOCUS RECT (2026-08-28): where the ring was when the beat's AFTER frame was taken, in page

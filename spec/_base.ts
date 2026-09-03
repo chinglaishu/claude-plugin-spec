@@ -880,9 +880,20 @@ export async function flowStep (title: string, fn: () => Promise<void> | void): 
 // it (2026-08-29). The value frames are what put the beat's WHEN in the proof at all: a box
 // carrying what was typed into it is empty before the beat and cleared again after it.
 type Phase = 'before' | 'after' | string
-async function snapEvidence (id: string, beat: number, seq: number, phase: Phase): Promise<void> {
+// THE SHOT'S OWN DEADLINE (task 3b, item 5, 2026-09-04). It was 2500 ms, and on a loaded machine it
+// was reached: `page.screenshot` timed out inside the `try`, the value frame was never attached, and
+// the fold — which kept a moment only if its photograph landed — dropped the moment whole and pruned
+// its replica, which reddened four board beats that need a claimed specimen (task-4b, "what is red"
+// #2). Two changes, neither of which can make a run red: a slightly larger bound, and a shot that
+// asks the page for LESS — `animations: 'disabled'` stops Playwright waiting for a CSS transition to
+// finish (this harness paints a ring and a card that transition on every beat), `caret: 'hide'`
+// removes the other thing it waits on. And when it still does not land, the moment SAYS SO (the
+// skeleton carries `dropped`, the fold keeps the moment and prints a line) rather than vanishing.
+const SHOT_MS = 4000
+async function snapEvidence (id: string, beat: number, seq: number, phase: Phase): Promise<boolean> {
   const page = CURRENT_PAGE
-  if (!page) return
+  if (!page) return false
+  let took = -1
   try {
     const info = test.info()
     // seq (which check of this id) keys the FILE, not the attachment: two checks clamped onto the
@@ -900,8 +911,10 @@ async function snapEvidence (id: string, beat: number, seq: number, phase: Phase
       if (c) { c.dataset.sbwas = c.style.display; c.style.display = 'none' }
       if (p) { p.dataset.sbwas = p.style.display; p.style.display = 'none' }
     }).catch(() => {})
+    const t0 = Date.now()
     try {
-      await page.screenshot({ path: file, timeout: 2500 })
+      await page.screenshot({ path: file, timeout: SHOT_MS, animations: 'disabled', caret: 'hide' })
+      took = Date.now() - t0
     } finally {
       await page.evaluate(() => {
         for (const sel of ['.sb-call', '.sb-ptr']) {
@@ -911,7 +924,16 @@ async function snapEvidence (id: string, beat: number, seq: number, phase: Phase
       }).catch(() => {})
     }
     info.attachments.push({ name: `evidence ${id}#${beat} ${phase}`, path: file, contentType: 'image/png' })
+    // …and what it cost, when a run asks (BOARD_SHOT_TIMING=1): the measurement that says whether
+    // this bound is the right one, on a real harvest rather than on a hunch.
+    if (process.env.BOARD_SHOT_TIMING) process.stderr.write(`shot · ${id}#${beat} ${phase} · ${took}ms\n`)
+    return true
   } catch { /* evidence is a by-product — the proof is the assertion, never the photo */ }
+  // …but a DROPPED one is said out loud (task 3b, item 5): never red, never silent. The caller
+  // records it on the moment's own skeleton, so the fold keeps the moment and the index says which
+  // picture is missing.
+  process.stderr.write(`evidence frame dropped · ${id}#${beat} ${phase} · the page would not photograph inside ${SHOT_MS}ms\n`)
+  return false
 }
 const safeId = (id: string) => id.replace(/[^a-zA-Z0-9_.-]+/g, '_')
 
@@ -947,7 +969,7 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean,
   ring?: Box | null }   // the ring box THIS claim was made under (fix round 2) — an anchor's own
   // reference point when a later rebuild has to find where this claim's fix now belongs
-async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null): Promise<void> {
+async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null, dropped = false): Promise<void> {
   const page = CURRENT_PAGE
   // a moment whose walk does not land leaves NO reading behind: the replica taken next is then
   // written ungated, and the gate says so, rather than being checked against another moment's page
@@ -985,6 +1007,10 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
     // than this file inventing a claim for a frame that asserted nothing.
     const extra: Record<string, unknown> = {}
     if (at != null) extra.at = at
+    // …and whether the PHOTOGRAPH of this moment landed (task 3b, item 5): a bounded by-product may
+    // go missing, but it may not go missing quietly — the fold reads this back (tools/evidence.mjs
+    // valueMeta) and keeps the moment, marked, instead of dropping it and pruning its replica.
+    if (dropped) extra.dropped = true
     const one = (s: unknown) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 140)
     if (label) {
       const l = one(label)
@@ -1366,13 +1392,13 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   if (phase === 'after' && CURRENT_PAGE) {          // every run paints the card now, so every run lets it land
     await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
   }
-  await snapEvidence(id, beat, seq, phase)
+  const shot = await snapEvidence(id, beat, seq, phase)
   // …and the app's own DOM of the same moment, measured and serialised in ONE page pass (task 3b,
   // item 1): the photograph is the evidence, and the measurement and the markup that ride after it
   // are now taken together, so nothing can settle between them. The writes stay in this order —
   // the skeleton first, then the replica the gate checks against it.
   const m = await captureMoment(claim)
-  await snapLayout(id, beat, seq, phase, at, label, claim, m.skel)
+  await snapLayout(id, beat, seq, phase, at, label, claim, m.skel, !shot)
   await snapReplica(id, beat, seq, phase, claim, m.rep)
 }
 

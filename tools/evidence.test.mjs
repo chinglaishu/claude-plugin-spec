@@ -493,3 +493,25 @@ test('a sheet round-trips: deriveFacesCss writes it relative, absoluteFacesCss s
   assert.equal(absoluteFacesCss(rel, dir),
     '@font-face { font-family: "Inter"; src: url("/spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2"); }')
 })
+
+// ── A DROPPED VALUE STILL SAYS SO (task 3b, item 5 — 2026-09-04) ───────────────────────────────
+// `snapEvidence` bounds its screenshot so a slow page costs the bound and never the run. On a loaded
+// machine that bound was reached, the value frame was never attached, and the fold — which kept a
+// moment only if its PHOTOGRAPH landed — dropped the whole moment and pruned its replica. Four board
+// beats then went red on a missing specimen, and nothing anywhere said why (task-4b, "what is red"
+// #2). A by-product must stay bounded; a by-product that goes missing must be VISIBLE.
+test('valueMeta lifts the flag a dropped photograph leaves on the skeleton beside it', async () => {
+  const { valueMeta } = await import('./evidence.mjs')
+  assert.deepEqual(valueMeta({ w: 1440, h: 900, at: 12, dropped: true }), { at: 12, dropped: true })
+  assert.deepEqual(valueMeta({ w: 1440, h: 900, at: 12 }), { at: 12 }, 'a moment that photographed fine says nothing')
+  assert.deepEqual(valueMeta({ dropped: 'yes' }), {}, 'only the flag itself, never a truthy anything')
+})
+
+test('a moment the run MEASURED survives the fold even when its photograph did not land', async () => {
+  const { valueLanded } = await import('./evidence.mjs')
+  assert.equal(valueLanded({ frame: 'a.png', layout: 'a.json' }), true)
+  assert.equal(valueLanded({ frame: 'a.png', layout: null }), true, 'a photograph alone is a moment')
+  assert.equal(valueLanded({ frame: null, layout: 'a.json' }), true, 'and so is a measurement alone — the drop is recorded, not swallowed')
+  assert.equal(valueLanded({ frame: null, layout: null }), false, 'nothing at all is not a moment')
+  assert.equal(valueLanded(null), false)
+})
