@@ -83,6 +83,20 @@ export function containsRun (hay, needle) {
 // metadata children; belt and suspenders alongside the walk's own SVG-textContent fix), and for a
 // skeleton from a release older than fix round 2 that has not been re-harvested yet.
 export const NO_TEXT_TAGS = ['style', 'script', 'title', 'desc', 'metadata']
+
+// THE FILE'S CAP MUST ACCOUNT FOR WHAT THE GATE ADDS AFTER THE WALK (fix round 2, item 4). spec/
+// _replica.mjs's own byte budget covers the sheet plus the serialised root; it has no idea the
+// FILE will also carry a comment header (spec/_base.ts) and — once gated — `data-replica-layout`
+// and `data-replica-gaps` (this module's `withReplicaAttrs`, spliced in AFTER the walk's own
+// accounting is done). Board R21's census gap: the walk's own accounting was correct — its html
+// landed under its own cap — but 41 gaps' worth of JSON (~7 KB) pushed the FINAL FILE past 200 KB
+// anyway, so the cap enforced was never the one the plan promised: the file. The caller (spec/
+// _base.ts) reserves this many bytes off the top when it asks captureReplica for its budget, so
+// the header and the gate's own attributes always have room without ever touching the walk's
+// internal accounting. `GATE_MAX_GAPS` is `replicaGaps`'s own default `opts.max` — one number,
+// read by both, so the reserve can never fall out of step with what the gate can actually write.
+export const GATE_MAX_GAPS = 40
+export const GATE_BYTE_RESERVE = 8000
 const clean = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim()
 const near = (a, b) => Math.abs(Number(a) - Number(b)) <= GATE_TOL
 const sameBox = (a, b) => near(a.x, b.x) && near(a.y, b.y) && near(a.w, b.w) && near(a.h, b.h)
@@ -124,7 +138,7 @@ const WALK_CAP = 360
  * wrapper that fits it exactly).
  */
 export function replicaGaps (live, replica, region, opts = {}) {
-  const max = Number.isFinite(Number(opts.max)) ? Number(opts.max) : 40
+  const max = Number.isFinite(Number(opts.max)) ? Number(opts.max) : GATE_MAX_GAPS
   const out = []
   const liveEls = (live && Array.isArray(live.els) ? live.els : [])
   const repEls = (replica && Array.isArray(replica.els) ? replica.els : [])

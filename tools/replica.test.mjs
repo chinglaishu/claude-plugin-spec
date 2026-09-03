@@ -327,6 +327,39 @@ test('the probe\'s toolbar shape round-trips: the ringed button, its words, its 
   assert.equal(spanCls[0], spanCls[1], 'the two identically-styled words share one class')
 })
 
+// ── FIX ROUND 2, item 4: A BIG INLINE SVG IS A PICTURE, NEVER UNROLLED SHAPE BY SHAPE ─────────────
+// board R21's census gap (204,887 bytes, over the 200 KB cap): the ring stood on the board's own
+// drawn schematic — a 488×305 diagram with 400+ rect/text/path shapes — embedded in the Focus
+// reader for R18–R22's dogfooding, and every one of those shapes was walked, diffed and classed
+// individually: 80 KB of style rules, 124 KB of markup, for ONE component. constraints.md's "the
+// app's own inline <svg> icons inside a replica are the component and stay" protects an ICON (the
+// probe test above, 14×14, still stays verbatim); it was never license to unroll a diagram.
+test('a big inline svg (a diagram, a chart — never a small icon) is plated, not unrolled shape by shape', () => {
+  const shapes = []
+  for (let i = 0; i < 40; i++) {
+    shapes.push(el('rect', [10, 10 + i * 6, 40, 5], { attrs: { fill: 'rgb(1,2,3)' }, cs: { fill: 'rgb(1,2,3)' } }))
+    shapes.push(el('text', [10, 10 + i * 6, 40, 5], { text: 'label ' + i, cs: { fill: 'rgb(4,5,6)' } }))
+  }
+  const diagram = el('svg', [100, 100, 300, 260], { ns: 'http://www.w3.org/2000/svg', children: shapes, attrs: { viewBox: '0 0 300 260' } })
+  const root = el('div', [0, 0, 400, 400], { children: [diagram] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: diagram, ring: { x: 100, y: 100, width: 300, height: 260 } })
+  assert.ok(r.html.includes('data-plate="svg"'), 'the diagram is a plate the size of its box: ' + r.html.slice(0, 400))
+  assert.ok(!r.html.includes('<rect'), 'none of its shapes are unrolled')
+  assert.ok(!r.html.includes('label 0'), 'nor a word of their text')
+  assert.ok(!r.html.includes('<svg'), 'not even the svg element itself — a div wears the plate')
+})
+
+test('…but a small inline icon still stays the component, verbatim — the boundary matches the skeleton\'s own ICON_MAX', () => {
+  const path = el('path', [4, 4, 8, 8], { ns: 'http://www.w3.org/2000/svg', attrs: { d: 'M2 2l4 4', stroke: 'currentColor' } })
+  const icon = el('svg', [0, 0, 16, 16], { ns: 'http://www.w3.org/2000/svg', children: [path], attrs: { viewBox: '0 0 16 16' } })
+  const root = el('div', [0, 0, 100, 100], { children: [icon] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: icon, ring: { x: 0, y: 0, width: 16, height: 16 } })
+  assert.ok(!r.html.includes('data-plate="svg"'), 'a 16×16 icon is not a diagram')
+  assert.ok(r.html.includes('<svg') && r.html.includes('<path'), 'it stays the component, shapes included: ' + r.html)
+})
+
 // ── the fonts the region needs ──────────────────────────────────────────────────────────────────
 test('the same-origin @font-face urls for a family the region actually uses ride out with the replica', () => {
   const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': '"Inter Tight", system-ui, sans-serif' } })

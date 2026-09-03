@@ -30,7 +30,7 @@ import { captureReplica, REPLICA_PROPS } from './_replica.mjs'
 // pure module, read here at capture time and by `npm run proof mirror` alike; `layoutHash` is the
 // same pin the drawing is stamped with, so a replica and a drawing of one moment agree about which
 // harvest they came from.
-import { replicaGaps, claimGaps, textOf, withReplicaAttrs } from '../tools/replica-gate.mjs'
+import { replicaGaps, claimGaps, textOf, withReplicaAttrs, GATE_BYTE_RESERVE } from '../tools/replica-gate.mjs'
 import { layoutHash } from '../tools/viz.mjs'
 
 export { expect }
@@ -1051,6 +1051,10 @@ function chooseBase (c: CurCheck | null, claim: Claim | null): string | null {
 // ungated replica is honest; the gate refuses it as "not gated" rather than passing it unseen.
 const REPLICA_FRAME = '__specboard-replica'
 const REPLICA_HOST = '__specboard-replica-host'
+// spec/_replica.mjs's own default `caps.bytes` — restated here (never imported: captureReplica is
+// serialised by source into the page and must stay self-contained) so the reserve subtracted below
+// is legible as "the plan's 200 KB minus what the gate adds", not a bare number.
+const REPLICA_CAPTURE_BYTE_CAP = 200000
 async function gateReplica (page: Page, rep: any): Promise<any | null> {
   const reg = rep && rep.region ? rep.region : null
   if (!reg || typeof rep.html !== 'string' || !rep.html) return null
@@ -1136,7 +1140,14 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
         claim,
         claims: c ? c.claims.map(x => ({ ...x })) : [],
         base,
-        minRegion: c ? c.minRegion : null
+        minRegion: c ? c.minRegion : null,
+        // THE FILE'S CAP, NOT JUST THE WALK'S (fix round 2, item 4 — board R21's census gap: the
+        // walk's own accounting landed rep.html under 200 KB, but the comment header below and the
+        // gate's own data-replica-layout/-gaps attributes (`gate()`, spliced in AFTER this call
+        // returns) are not part of that budget at all, and 41 gaps' worth of JSON pushed the FINAL
+        // FILE to 204,887 bytes. Reserving GATE_BYTE_RESERVE off the top makes the promise the plan
+        // actually made — "≤ 200 KB, the file" — true regardless of how gapped a moment turns out.
+        caps: { bytes: REPLICA_CAPTURE_BYTE_CAP - GATE_BYTE_RESERVE }
       }), 2500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!rep || typeof rep.html !== 'string' || !rep.html) return

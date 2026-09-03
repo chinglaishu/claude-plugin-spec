@@ -8,7 +8,7 @@
 // browser.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf, replicaNote } from './replica-gate.mjs'
+import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf, replicaNote, GATE_MAX_GAPS, GATE_BYTE_RESERVE } from './replica-gate.mjs'
 
 // ── the fixture the brief names: six elements, one of them outside the region ────────────────────
 // (a header word · a button with the focus · two row words · a painted divider · a leaf outside)
@@ -321,4 +321,17 @@ test('a live element tagged style/script/etc never demands its text back — eve
   const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 300, h: 20, kind: 'image', tag: 'style', text: '.wf0{animation:x 1s}' }] }
   const rep = { w: 1440, h: 900, els: [] }
   assert.deepEqual(replicaGaps(live, rep, REGION), [], 'no missing-text for a tag that paints nothing')
+})
+
+// ── FIX ROUND 2, item 4: replicaGaps' own default max is GATE_MAX_GAPS, not a bare literal ────────
+// The caller (spec/_base.ts) reserves GATE_BYTE_RESERVE bytes off captureReplica's own budget so
+// the file still fits once the gate's `data-replica-gaps` JSON is spliced in afterward — a reserve
+// that can only stay honest if it is sized off the SAME number replicaGaps actually caps at.
+test('replicaGaps defaults to exactly GATE_MAX_GAPS, so the byte reserve and the gap cap can never disagree', () => {
+  const live = { w: 1440, h: 900, els: [] }
+  for (let i = 0; i < GATE_MAX_GAPS + 20; i++) {
+    live.els.push({ x: 120, y: 100 + i, w: 40, h: 16, kind: 'text', text: 'w' + i })
+  }
+  assert.equal(replicaGaps(live, { w: 1440, h: 900, els: [] }, REGION).length, GATE_MAX_GAPS)
+  assert.ok(GATE_BYTE_RESERVE > 0)
 })

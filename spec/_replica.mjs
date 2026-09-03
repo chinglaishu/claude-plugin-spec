@@ -371,6 +371,11 @@ export function captureReplica (arg) {
   const DATA_MAX = 32000
   const affordable = (url) => String(url).slice(0, 5) === 'data:' &&
     String(url).length <= DATA_MAX && bytes + String(url).length <= BYTE_CAP - MARGIN
+  // AN ICON VS A PICTURE (fix round 2, item 4) — matches spec/_layout-walk.mjs's own ICON_MAX, so
+  // the skeleton and the replica agree on where "the app's own inline icon" ends and "a diagram" —
+  // never something specboard's own capture unrolls shape by shape — begins. See the svg branch
+  // below, in `serialise`.
+  const SVG_ICON_MAX = 64
   const classOf = (cs, tag, ns, parentCs, isRoot, extra) => {
     if (!cs || !PROPS.length) return ''
     const d = defaultsOf(tag, ns)
@@ -582,6 +587,17 @@ export function captureReplica (arg) {
       const src = String((node.getAttribute && node.getAttribute('src')) || '')
       if (affordable(src)) { extra.push(['src', src]) } else { emit = 'div'; extra.push(['data-plate', 'img'], ...box) }
       kids = []
+    } else if (tag === 'svg' && (!r || r.width > SVG_ICON_MAX || r.height > SVG_ICON_MAX)) {
+      // "NOTHING SPECBOARD DRAWS MAY BE SVG. The app's own inline <svg> icons inside a replica are
+      // the component and stay" (constraints.md) — but an ICON is small, and the census's byte hog
+      // was not one: the board's own drawn schematic, embedded in its Focus reader for R18–R22's
+      // dogfooding, is a 488×305 diagram with 400+ rect/text/path shapes — one ring, 80 KB of style
+      // rules and 124 KB of markup, on its own (fix round 2, item 4). SVG_ICON_MAX matches the
+      // layout skeleton's own icon/picture boundary (spec/_layout-walk.mjs ICON_MAX) so both halves
+      // draw the line in the same place. Plated exactly like an uncapturable canvas — the box it
+      // occupies, nothing more: honest ("a picture is here" is true of a diagram too) and bounded
+      // (a chart's byte cost no longer depends on how many shapes it happens to have).
+      emit = 'div'; extra.push(['data-plate', 'svg'], ...box); kids = []
     }
 
     // A SCROLLED CONTAINER KEEPS ITS SCROLL (phase 3, 2026-09-03 — the gate's second catch, on this
