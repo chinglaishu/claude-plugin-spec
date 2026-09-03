@@ -339,7 +339,10 @@ function runMirror () {
     }
     if (r.gaps.length > 12) console.log(`    …and ${r.gaps.length - 12} more`)
   }
-  if (!rows.length) console.log('no committed wireframe drawings — nothing to mirror yet')
+  // Since phase 4a (2026-09-03) NONE is the healthy answer: a harvested requirement's picture is
+  // its HTML replica, gated below, and no wireframe is derived or kept for one. This line is the
+  // gate saying which guard is actually standing, not an apology for an empty pass.
+  if (!rows.length) console.log('no committed wireframe drawings — replicas gated instead')
   if (bad) {
     console.log('\nA committed schematic no longer matches the harvest it was drawn from. Re-derive it')
     console.log('(node tools/viz-derive.mjs <screen>); if the gaps survive the redraw, the renderer has')

@@ -25,7 +25,7 @@
 // This shell is the ONLY writer; viz.mjs stays pure. The board never runs this — a drawing is
 // derived authored content, committed like code (the schematics spec's storage decision).
 
-import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { allScreens, SPEC } from './spec-store.mjs'
 import { deriveSchematic, renderWireframe, gapSummary } from './viz.mjs'
@@ -77,12 +77,45 @@ const beatLayouts = (screen, id, max) => {
 // says WHICH source drew it, so a pass reads at a glance as mirror-or-archetype
 const how = d => (d.kind === 'wireframe' ? ' · mirrors the real UI' : '')
 
+// THE DRAWN MIRROR IS RETIRED (phase 4a, 2026-09-03 — the human's Expected View decision: "the
+// picture beside a proof is a real HTML replica of the app's own component"). A requirement whose
+// harvest landed even one replica has the app's own markup to show, so nothing draws a wireframe of
+// it any more: the board renders the replica, and a committed drawing beside it would be a second,
+// worse answer to "what does this component look like" — the exact drift this product exists to
+// stop. The SKETCH kit (the archetypes, drawn from the sentence) stays for the case it was always
+// right for: a requirement with no harvest at all, where there is no UI to replicate yet.
+const REPLICA_FILE = id => new RegExp('^' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+  '\\.b\\d+\\.(?:before|after|v\\d+)\\.(?:actual|expected)\\.html$')
+const replicaIndex = screen => {
+  const dir = join(SPEC, screen, 'evidence')
+  if (!existsSync(dir)) return []
+  try { return readdirSync(dir) } catch { return [] }
+}
+const hasReplica = (files, id) => files.some(f => REPLICA_FILE(id).test(f))
+
 let wrote = 0
+let retired = 0
 for (const s of screens) {
   const dir = join(SPEC, s.name, 'viz')
   const seen = new Set()
+  const evFiles = replicaIndex(s.name)
   for (const r of s.reqs) {
     seen.add(`${r.id}.svg`)
+    // THE REPLICA HAS TAKEN OVER (phase 4a): nothing is drawn for a requirement that has one, and a
+    // wireframe left over from before is deleted here at the fold — deterministic, printed, and
+    // never a silent removal. An ARCHETYPE sketch is left alone: it claims nothing about the app.
+    if (hasReplica(evFiles, r.id)) {
+      const svgPath = join(dir, `${r.id}.svg`)
+      if (existsSync(svgPath)) {
+        let body = ''
+        try { body = readFileSync(svgPath, 'utf8') } catch { body = '' }
+        if (/data-viz-kind="wireframe"/.test(body)) {
+          try { rmSync(svgPath, { force: true }); retired++ } catch { /* already gone */ }
+          console.log(`  ✗ ${s.name}/${r.id} — drawn mirror retired; the replica is the Expected picture`)
+        }
+      }
+      continue
+    }
     // the MIRROR first: a measured layout beats a guessed archetype every time (2026-08-28). A
     // requirement with layouts needs no behavior block at all — the drawing comes from the screen.
     const nbeats = (r.behavior && r.behavior.beats && r.behavior.beats.length) || 12
@@ -135,4 +168,4 @@ for (const s of screens) {
     }
   }
 }
-console.log(`${wrote} drawing(s) written`)
+console.log(`${wrote} drawing(s) written` + (retired ? `, ${retired} drawn mirror(s) retired` : ''))
