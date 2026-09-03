@@ -2284,11 +2284,19 @@ export function build () {
      5.50:1, --koke on --paper 7.02:1. */
   .pcbox .pcchips { position:absolute; left:0; top:0; right:0; bottom:0; z-index:3;
     pointer-events:none; }
+  /* THE CHIP IS A REAL CONTROL (2026-09-04, the review's I1). It is a real button element, not a
+     div: the value is ellipsised to one line, so the only way to read the whole of it is the
+     tooltip, and a tooltip a keyboard cannot reach is a tooltip half the readers do not have. A
+     button also gives the aria-label a role to be announced with — on a bare div most AT ignores it.
+     Same pattern the strip's segments already use. Button resets, because the design system's own
+     chrome must not inherit the UA's. */
   .pcbox .pchip { position:absolute; left:0; top:0; transform-origin:0 0; pointer-events:auto;
     display:flex; align-items:baseline; gap:var(--s2); min-width:0;
     padding:var(--s2) var(--s3); background:var(--paper); border:1px solid var(--line2);
-    border-radius:var(--r); box-shadow:var(--sh-md); }
-  .pcbox .pchip .pcl { flex:none; font:var(--t-xs) var(--mono); letter-spacing:.1em;
+    border-radius:var(--r); box-shadow:var(--sh-md);
+    font:inherit; text-align:left; cursor:default; -webkit-appearance:none; appearance:none; }
+  .pcbox .pchip:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .pcbox .pchip .pcl { flex:none; font:var(--t-sm) var(--mono); letter-spacing:.1em;
     text-transform:uppercase; color:var(--ink-3); }
   .pcbox .pchip .pcb { min-width:0; display:flex; flex-direction:column; gap:2px; }
   .pcbox .pchip .pcvr { display:flex; align-items:baseline; gap:6px; min-width:0;
@@ -2307,14 +2315,19 @@ export function build () {
     text-align:left; white-space:normal; pointer-events:none; }
   .pcbox .pchip.tipup .mtip { top:auto; bottom:calc(100% + var(--s1)); }
   .pcbox .pchip.tipr .mtip { left:auto; right:0; }
-  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus-visible .mtip { display:block; }
+  /* :focus, not only :focus-visible — the whole value has to be reachable by keyboard, and a
+     programmatic focus (which is what a reader's own "jump to the chip" would do, and what the
+     board's test drives) does not always set :focus-visible. */
+  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus .mtip { display:block; }
 
   /* ── THE DIFFERENCE MARKER (phase 5) ─────────────────────────────────────────────────────────
      One label ACROSS the two cells on a failed moment, on the seam, at the ring's own height: the
      two values are a sentence about the element both pictures are ringing. One per failed claim,
      stacked; none at all on a passing moment. Iron-oxide, with the ✕ mark beside it — the hue names
      the state and never carries it alone, and nothing here is inverted (the screen's one inverted
-     element is spent elsewhere). --bengara on --bengara-tint 5.50:1, --ink-3 on it 5.54:1. */
+     element is spent elsewhere). --bengara on --bengara-tint 5.50:1, --ink-3 on it 5.47:1
+     (re-measured 2026-09-04 in review — this comment said 5.54, which was arithmetic, not a value
+     that had been computed; both still pass). */
   .pics .mdiffs { position:absolute; left:50%; transform:translateX(-50%); z-index:4;
     display:flex; flex-direction:column; align-items:center; gap:var(--s1); pointer-events:none; }
   .pics .mdiff { display:flex; align-items:baseline; gap:6px; max-width:44ch; white-space:nowrap;
@@ -2326,28 +2339,10 @@ export function build () {
   .pics .mdiff .mdv { font:600 var(--t-sm) var(--mono); color:var(--ink);
     max-width:16ch; overflow:hidden; text-overflow:ellipsis; }
   .pics .mdiff .mdv.no { color:var(--bengara); }
-  .pics .mdiff .mdsep { color:var(--ink-4); }
-
-  /* ── THE LOUPE (phase 5) ─────────────────────────────────────────────────────────────────────
-     Under the two pictures, the ringed element ALONE — the replica's and the photograph's — at ONE
-     scale (1.6×, the human 2026-09-03; both sides scale down together where it will not fit). It
-     shares .pics's grid by sitting in the same .sbright column, so its halves line up with the
-     pictures they magnify rather than being sized to match them. Hidden on a moment with no ring:
-     there is nothing to magnify, and an empty pair of boxes would suggest there was. */
-  .fstory .loupe { display:grid; grid-template-columns:1fr 1fr; min-width:0;
-    border-top:1px solid var(--hair); background:var(--canvas); }
-  .fstory .lpcell { min-width:0; padding:var(--s3); }
-  /* the rule between the two halves is an INSET SHADOW, not a border: a border would take a pixel
-     out of one half and the loupe's whole claim is that both sides are the same width */
-  .fstory .lpcell.expected { box-shadow:inset -1px 0 0 var(--hair); }
-  .fstory .lpview { position:relative; overflow:hidden; background:var(--paper);
-    border:1px solid var(--hair); border-radius:var(--r-sm); }
-  .fstory .lpstage { position:absolute; left:0; top:0; transform-origin:0 0; }
-  .fstory .lpframe { display:block; width:100%; height:100%; border:0; background:var(--paper);
-    pointer-events:none; }
-  .fstory .lpshot { position:absolute; left:0; top:0; width:100%; height:100%; display:block; }
-  .fstory .lpcap { display:block; padding-top:var(--s1); font:var(--t-xs) var(--mono);
-    letter-spacing:.06em; color:var(--ink-3); }
+  /* the separator takes --ink-3 (5.47:1 on the tint), NOT --ink-4: measured at 4.41:1 in review,
+     under the 4.5:1 floor the design system holds every text pair to. Quiet is not an excuse for
+     unreadable. */
+  .pics .mdiff .mdsep { color:var(--ink-3); }
 
   /* ── THE PROVED PHRASE (design C) ────────────────────────────────────────────────────────────
      The sentence is written once; the moment on show underlines the part of it being proved, so the
@@ -2416,7 +2411,7 @@ export function build () {
      layout, the sentence's archetype, nothing drawn yet, or a drawing whose text has moved past it.
      Derived from the marks the viz pass stamps on the svg, never stored. Tokens only, --ink-3 on
      --paper, and it is TEXT — the glyph is a mark, no hue carries the state. */
-  .fstory .sbprov { align-self:stretch; font:var(--t-micro) var(--mono); letter-spacing:.04em;
+  .fstory .sbprov { align-self:stretch; font:var(--t-xs) var(--mono); letter-spacing:.04em;
     color:var(--ink-3); padding-top:var(--s2); text-align:center; }
   .fstory .sbprov .pvm { margin-right:4px; }
   .fstory .sbrow.bgiven .sbframe { background:var(--canvas); }
@@ -2482,7 +2477,12 @@ export function build () {
      size as the requirement title, one weight lighter so the title stays the card's one 600 head),
      the Then and the Given at --t-lg, the column names and beat numerals at --t-sm/--t-md, the
      strip's names and readout at --t-md. Nothing else on the page moved. */
-  .fstory .sbwhen { font-size:var(--t-xl); font-weight:500; line-height:1.4; letter-spacing:-.01em;
+  /* ONE SIZE FOR THE THREE SENTENCES (2026-09-04, the human: "the font-size difference between Given
+     and When/Then is too much, it looks weird"). Given, When and Then all read at --t-lg; what tells
+     them apart is WEIGHT and INK, not size — the When keeps 500 and full --ink, the Then and the
+     Given sit at --ink-2, and each keyword lead carries its own colour. Nothing in the words cell is
+     larger than --t-lg any more; the requirement's title (--t-xl/600) is the reader's only head. */
+  .fstory .sbwhen { font-size:var(--t-lg); font-weight:500; line-height:1.45; letter-spacing:-.01em;
     color:var(--ink); }
   .fstory .sbthen { font-size:var(--t-lg); line-height:1.55; color:var(--ink-2);
     margin-top:var(--s3) !important; padding-top:var(--s3); border-top:1px solid var(--hair); }
@@ -2507,10 +2507,11 @@ export function build () {
   .mstrip .mnav { display:inline-flex; align-items:center; justify-content:center; flex:none;
     width:calc(32px * var(--scale)); height:calc(32px * var(--scale));
     border:1px solid var(--hair-2); border-radius:999px; background:var(--paper);
-    color:var(--ink); font-size:calc(17px * var(--scale)); line-height:1; cursor:pointer; padding:0; }
+    color:var(--ink); font-size:var(--t-lg); line-height:1; cursor:pointer; padding:0; }
   .mstrip .mnav:hover { border-color:var(--ink-3); }
   .mstrip .mnav[disabled] { color:var(--ink-4); opacity:.4; cursor:default; }
-  .mstrip .mnav.restart { font-size:var(--t-lg); }        /* ↺ reads better a touch smaller */
+  /* (the ↺ used to step down from a 17px chevron; the chevrons are --t-lg now, so there is nothing
+     left to step down from and the override is gone — 2026-09-04, rule 6) */
   .mstrip .mnav:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
   .mstrip .mtrack { display:flex; gap:var(--s2); flex:1 1 auto; min-width:0; align-items:flex-end; }
   .mstrip .mseg { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:var(--s1);
@@ -2523,7 +2524,17 @@ export function build () {
     padding:var(--s2) var(--s3); background:var(--paper); color:var(--ink); border:1px solid var(--line2);
     border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-md)/1.45 var(--sans);
     text-align:left; white-space:normal; pointer-events:none; }
-  .mstrip .mseg:hover .mtip, .mstrip .mseg:focus-visible .mtip { display:block; }
+  .mstrip .mseg:hover .mtip, .mstrip .mseg:focus .mtip { display:block; }
+  /* …and the two VALUES under the name (2026-09-04, the review's C1): one expected / actual pair,
+     or one ticked line per fact on the beat's result. The key is the system's one label style, the
+     value its mono; a failed one takes iron-oxide AND the ✕ its key already carries, so hue never
+     stands alone here either. --ink-3 on --paper 6.42:1, --bengara on --paper 6.46:1. */
+  .mstrip .mtip b { display:block; margin-bottom:var(--s1); font-weight:600; }
+  .mstrip .mtip .tvr { display:flex; align-items:baseline; gap:var(--s2); }
+  .mstrip .mtip .tk { flex:none; min-width:5ch; font:var(--t-sm) var(--mono); letter-spacing:.06em;
+    text-transform:uppercase; color:var(--ink-3); }
+  .mstrip .mtip .tv { font:var(--t-md) var(--mono); color:var(--ink); }
+  .mstrip .mtip .tv.bad { color:var(--bengara); }
 
   /* A SEGMENT'S NAME IS READ, NOT GLANCED AT (the human, 2026-09-02 — the strip showed
      "…parent still has no ch…"). It is the assertion the run recorded. It is ONE line at --t-md
@@ -2547,7 +2558,7 @@ export function build () {
   /* the readout sits WITH its chip, not over it: --t-sm mono beside the --t-micro WHEN/THEN chip
      reads as one pair, where --t-md put a body-sized number next to a label two steps smaller */
   .mstrip .mpos { font:var(--t-md) var(--mono); color:var(--ink); letter-spacing:.04em; }
-  .mstrip .mkind { font:var(--t-xs) var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  .mstrip .mkind { font:var(--t-sm) var(--mono); letter-spacing:.1em; text-transform:uppercase;
     color:var(--ink-3); border:1px solid var(--hair-2); border-radius:999px; padding:2px 8px; }
   .mstrip .mkind.then { color:var(--ai); border-color:var(--ai-line); background:var(--ai-tint); }
 

@@ -1864,12 +1864,21 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
   await checkReq('R20', async () => {
     const cs = claimSpecimen()
     expect(cs, 'a board beat whose harvest carries a claim').toBeTruthy()
-    const claims = (cs!.beat.values || []).filter((v: any) => v && v.frame && v.claim).map((v: any) => v.claim)
+    const vals = (cs!.beat.values || []).filter((v: any) => v && v.frame && v.claim)
+    const claims = vals.map((v: any) => v.claim)
     // back to STEP: the leg above left the reader in auto at 4×, and the play mode is reader-wide and
     // session-scoped (it survives the rebuild below on purpose), so a chip read while the loop was
     // still running would be a race, not an assertion
     await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="step"]').click()
     await armFocus(dt, cs!.rid)
+    // A CLAIM THAT CAN TELL THE TWO SIDES APART (2026-09-04, the review's I3). The board's one
+    // claimed moment PASSES, so expected === got there — and a chip that rendered `expected` on both
+    // sides would have satisfied every assertion below while showing the reader a lie. The same
+    // fixture R23 uses derives a FAILED moment from the real harvest, so `expected` and `got` differ
+    // and each side can be pinned to its own value. Restored in the finally at the end of the test.
+    const wrong = 'not what the app gave'
+    const wrote = await armClaim(dt, cs!.rid, wrong)
+    expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
     await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
     await page.goto('/#/board/' + cs!.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
@@ -1884,12 +1893,16 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(aChip, '…and one on the Actual').toHaveCount(1)
     await expect(eChip.locator('.pcl')).toHaveText('expected')
     await expect(aChip.locator('.pcl')).toHaveText('actual')
-    expect(plain(await eChip.locator('.pcv').innerText()), 'the Expected chip says what the requirement asks for')
-      .toContain(plain(c0.expected))
-    expect(plain(await aChip.locator('.pcv').innerText()), 'the Actual chip says what the app gave')
-      .toContain(plain(c0.missing ? 'MISSING' : c0.got))
+    const eSaid = plain(await eChip.locator('.pcv').innerText())
+    const aSaid = plain(await aChip.locator('.pcv').innerText())
+    expect(eSaid, 'the Expected chip says what the requirement asks for').toContain(plain(c0.expected))
+    expect(aSaid, 'the Actual chip says what the app gave').toContain(plain(wrong))
+    // …and the two sides are NOT the same words: this is the leg the fixture exists for
+    expect(aSaid.includes(plain(c0.expected)),
+      'the Actual chip shows what happened, never the requirement\'s own value').toBe(false)
     // the MARK beside the hue — a greyscale reader loses nothing
-    await expect(aChip.locator('.pcm'), 'the Actual chip carries its mark').toHaveText(c0.ok ? '✓' : '✕')
+    await expect(aChip.locator('.pcm'), 'the Actual chip carries its mark').toHaveText('✕')
+    await expect(aChip, 'and the chip itself reads as the failure it is').toHaveClass(/\bbad\b/)
     // ONE LINE, ELLIPSISED, with the whole text in a STYLED tooltip — never the native title
     const val = aChip.locator('.pcv')
     expect(await val.evaluate(el => getComputedStyle(el).whiteSpace), 'a chip never wraps').toBe('nowrap')
@@ -1899,6 +1912,31 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(tip).toBeHidden()
     await aChip.hover()
     await expect(tip, 'hovering a chip shows its whole text').toBeVisible()
+    await row.locator('.sbtext').hover()
+    await expect(tip).toBeHidden()
+    // …AND A KEYBOARD REACHES IT TOO (the review's I1). The value is one ellipsised line, so the
+    // tooltip is the ONLY way to read the whole of it; a chip a keyboard cannot focus hides it from
+    // half the readers. It is a real button, so it takes focus and its aria-label is announced.
+    expect(await aChip.evaluate(el => el.tagName.toLowerCase()), 'the chip is a real control').toBe('button')
+    await aChip.focus()
+    await expect(tip, 'focusing a chip shows its whole text').toBeVisible()
+    expect(plain(await aChip.getAttribute('aria-label') || ''), 'and it is announced with both parts')
+      .toContain(plain(wrong))
+    await row.locator('.sbtext').hover()
+    await page.locator('body').click({ position: { x: 2, y: 2 } })
+    // …AND THE STRIP SAYS BOTH VALUES TOO (the review's C1 — the brief's deliverable B). A segment's
+    // label is the moment's NAME; its tooltip must also carry what that moment expected and what the
+    // app gave, because the name alone cannot tell you whether the moment passed.
+    const seg0 = row.locator('.mseg').first()
+    const stip = seg0.locator('.mtip')
+    await seg0.hover()
+    await expect(stip).toBeVisible()
+    const stipText = plain(await stip.innerText())
+    const name0 = String(vals[0].label || '').trim()
+    expect(name0, 'the harvest named that moment — the oracle for the tooltip\'s head').not.toBe('')
+    expect(stipText, 'the strip tooltip carries the moment’s name').toContain(plain(name0))
+    expect(stipText, '…what the requirement expected').toContain(plain(c0.expected))
+    expect(stipText, '…and what the app actually gave').toContain(plain(wrong))
     await row.locator('.sbtext').hover()
     // …AND THE BEAT'S RESULT IS A CHECKLIST. Walk to the last moment: the two chips list one item per
     // claim the beat made — the facts, never a count of them.
@@ -1912,22 +1950,28 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
       .toHaveCount(claims.length)
     await hudCheck('the beat’s result is a checklist', claims.length + ' fact(s)',
       (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
+    // …and the derived failure goes back where it came from: the fixture is a DOM attribute on the
+    // reader, not a change to the tree, but leaving it armed would hand the next test a board whose
+    // one claim reads red
+    await armClaim(dt, cs!.rid, null)
   })
 
 })
 
-// Board R23 — A FAILED MOMENT NAMES ITS DIFFERENCE, AND THE LOUPE COMPARES THE RINGED ELEMENT ALONE
-// (phase 5 of the Expected View plan the human accepted 2026-09-03). Two pictures side by side leave
-// a reader to FIND the difference in two places at once; a failed moment says it in words, once, on
-// the seam. And under them, the ringed element alone on both sides at one magnification — the
-// comparison the framed page cannot make.
+// Board R23 — A FAILED MOMENT NAMES ITS DIFFERENCE (phase 5 of the Expected View plan the human
+// accepted 2026-09-03). Two pictures side by side leave a reader to FIND the difference in two
+// places at once; a failed moment says it in words, once, on the seam.
+//
+// (The requirement's second half — a LOUPE magnifying the ringed element on both sides — was removed
+// by the human on 2026-09-04, "the row of loupe · the ringed element is useless", and its beat is
+// deleted with it rather than left asserting something the board no longer builds.)
 //
 // The board's own suite passes, so nothing here is red on its own: the failed moment is DERIVED from
 // the real harvest by rewriting what the run recorded as the OUTCOME (armClaim), which is the same
 // established fixture technique R18's stale-banner leg and R20's honest-blank leg already use. The
 // frames, the layouts and the replicas stay exactly as the run took them, and the fixture is
-// restored in a finally with the board rebuilt from disk.
-test('A failed moment names its difference, and the loupe compares the ringed element alone', async ({ page }) => {
+// restored at the end of the test — in a finally, so a mid-test failure cannot leave it armed.
+test('A failed moment names its difference', async ({ page }) => {
   await coverReqs('R23')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -1938,73 +1982,48 @@ test('A failed moment names its difference, and the loupe compares the ringed el
   const other = rid === 'R2' ? 'R3' : 'R2'
   const rowOf = () => ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
 
-  // beat 1 — THE DIFFERENCE MARKER. One label across the two cells naming both values, one per
-  // failed claim; and NONE on the passing moment the very same row shows a step later.
-  await checkReq('R23', async () => {
-    await armFocus(dt, rid)
-    const wrote = await armClaim(dt, rid, 'not this')
-    expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
+  // THE DIFFERENCE MARKER. One label across the two cells naming both values, one per failed claim;
+  // and NONE on a row that claimed nothing at all.
+  try {
+    await checkReq('R23', async () => {
+      await armFocus(dt, rid)
+      const wrote = await armClaim(dt, rid, 'not this')
+      expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
+      await page.goto('/#/board/' + other)
+      await page.goto('/#/board/' + rid)
+      await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
+      const row = rowOf()
+      await reveal(row)
+      const marks = row.locator('.pics .mdiff')
+      await expect(marks, 'exactly one marker for the one failed claim').toHaveCount(1)
+      const said = plain(await marks.first().innerText())
+      expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
+      expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
+      // it spans the SEAM — one label about a relation, not one per cell
+      const seam = await row.evaluate(el => {
+        const p = el.querySelector('.pics') as HTMLElement
+        const m = p.querySelector('.mdiff') as HTMLElement
+        const a = p.getBoundingClientRect(); const b = m.getBoundingClientRect()
+        return { mid: (b.left + b.right) / 2 - a.left, half: a.width / 2, top: b.top - a.top, h: a.height }
+      })
+      expect(Math.abs(seam.mid - seam.half), 'the marker sits on the seam between the cells').toBeLessThan(8)
+      expect(seam.top >= -1 && seam.top <= seam.h, 'and inside the pictures it is about').toBe(true)
+      // …AND NONE WHERE NOTHING FAILED. The Given row is the context row — it rings nothing and claims
+      // nothing — so it carries no marker at all: a label that appeared on every moment would say
+      // "difference" where there is none, which is the opposite of what it is for.
+      const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
+      await expect(given.locator('.mdiff'), 'the context row claims nothing, so it differs in nothing')
+        .toHaveCount(0)
+      await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
+    })
+  } finally {
+    // the fixture is the READER's, not the tree's — it rewrites one DOM attribute and a reload clears
+    // it — but it is restored anyway so nothing downstream in this file reads a row this test
+    // rewrote, and in a `finally` so a mid-test failure cannot leave it armed (2026-09-04: the
+    // comment above promised a finally the code did not have).
+    await armClaim(dt, rid, null)
     await page.goto('/#/board/' + other)
-    await page.goto('/#/board/' + rid)
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
-    const row = rowOf()
-    await reveal(row)
-    const marks = row.locator('.pics .mdiff')
-    await expect(marks, 'exactly one marker for the one failed claim').toHaveCount(1)
-    const said = plain(await marks.first().innerText())
-    expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
-    expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
-    // it spans the SEAM — one label about a relation, not one per cell
-    const seam = await row.evaluate(el => {
-      const p = el.querySelector('.pics') as HTMLElement
-      const m = p.querySelector('.mdiff') as HTMLElement
-      const a = p.getBoundingClientRect(); const b = m.getBoundingClientRect()
-      return { mid: (b.left + b.right) / 2 - a.left, half: a.width / 2, top: b.top - a.top, h: a.height }
-    })
-    expect(Math.abs(seam.mid - seam.half), 'the marker sits on the seam between the cells').toBeLessThan(8)
-    expect(seam.top >= -1 && seam.top <= seam.h, 'and inside the pictures it is about').toBe(true)
-    await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
-  })
-
-  // beat 2 — THE LOUPE: the ringed element alone, both sides, ONE scale. And nothing at all where a
-  // moment rang nothing.
-  await checkReq('R23', async () => {
-    const row = rowOf()
-    const loupe = row.locator('.loupe')
-    await expect(loupe, 'the row carries one loupe').toHaveCount(1)
-    await expect(loupe).toBeVisible()
-    await expect(loupe.locator('.lpcell')).toHaveCount(2)
-    await expect(loupe.locator('.lpcell.expected .lpframe'), 'the Expected side is the replica, sandboxed').toHaveCount(1)
-    expect(await loupe.locator('.lpcell.expected .lpframe').getAttribute('sandbox'),
-      'and inert — no allow-* token').toBe('')
-    await expect(loupe.locator('.lpcell.actual .lpshot'), 'the Actual side is the photograph').toHaveCount(1)
-    const geo = await loupe.evaluate(el => {
-      const v = [].slice.call(el.querySelectorAll('.lpview')) as HTMLElement[]
-      const t = [].slice.call(el.querySelectorAll('.lpstage')) as HTMLElement[]
-      return {
-        w: v.map(x => Math.round(x.getBoundingClientRect().width)),
-        h: v.map(x => Math.round(x.getBoundingClientRect().height)),
-        tf: t.map(x => getComputedStyle(x).transform),
-        k: Number((el as HTMLElement).dataset.lpscale || 0)
-      }
-    })
-    expect(geo.w[0], 'both sides are the same width: ' + JSON.stringify(geo.w)).toBe(geo.w[1])
-    expect(geo.h[0], '…and the same height').toBe(geo.h[1])
-    expect(geo.tf[0], 'one magnification, one crop — the same transform on both').toBe(geo.tf[1])
-    expect(geo.k, 'magnified, never past the 1.6× the human chose').toBeGreaterThan(1)
-    expect(geo.k).toBeLessThanOrEqual(1.6)
-    await hudCheck('the loupe shows one element at one scale', 'same width', geo.w[0] === geo.w[1] ? 'same width' : 'two widths')
-    // …AND A MOMENT WITH NO RING HAS NO LOUPE AND NO MARKER: the Given row is the context row, it
-    // rings nothing, and the row does not pretend there is something to magnify.
-    const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
-    await expect(given.locator('.loupe')).toHaveCount(0)
-    await expect(given.locator('.mdiff')).toHaveCount(0)
-  })
-
-  // the fixture is the reader's, not the tree's — but restore it anyway and rebuild from disk, so
-  // nothing downstream in this file reads a row this test rewrote
-  await armClaim(dt, rid, null)
-  await page.goto('/#/board/' + other)
+  }
 })
 
 // Board R20, second half — AUTO ↔ STEP, and a PER-BEAT WALK (the human, 2026-08-30: "the go to next

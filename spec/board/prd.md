@@ -563,13 +563,11 @@ moment that claimed nothing shows no chip, because a label with nothing to say i
      one un-wrapped ellipsised line each with a styled tooltip and no native title — then walks on to
      the beat's result and asserts the checklist carries one item per claim the beat made. -->
 
-## R23 — A failed moment names its difference, and the loupe compares the ringed element alone
+## R23 — A failed moment names its difference
 
 - **Given** a beat whose moment on show claimed a value the app did not give
 - **When** the row shows that moment
-- **Then** ONE marker sits across the two cells naming both values — the expected and the actual — one marker per failed claim and none at all on a moment that passed
-- **When** you look under the two pictures
-- **Then** a loupe shows the ringed element ALONE on both sides — the replica's and the photograph's — at the same width and the same magnification, and it is not there at all on a moment that ringed nothing
+- **Then** ONE marker sits across the two cells naming both values — the expected and the actual — one marker per failed claim and none at all on a moment that passed or ringed nothing
 
 Two pictures side by side answer "does the app do this?" — but on a failure they leave the reader to
 find the difference themselves, in two places at once. So a failed moment **says the difference in
@@ -579,25 +577,25 @@ own height because that is where the eye already is; and a Then that claimed sev
 one marker per **failed** claim, never a count. A moment that passed shows none — a marker on every
 moment would say "difference" where there is none.
 
-The **loupe** answers the other half. The camera above frames the component *in its page*, which is
-what makes "the app really shows this" believable; the loupe drops the page and shows the ringed
-element **by itself, magnified, twice**, so the two can be compared as shapes and words rather than
-as regions of a screenshot. Both sides take **one** scale — 1.6×, and where that will not fit, both
-scale down **together**: two loupes at different magnifications compare nothing. Where a moment rang
-nothing there is nothing to magnify, and the row does not pretend otherwise.
-
 *Drafted 2026-09-04 on the human's behalf, transcribing phase 5 of the Expected View plan they
-accepted on 2026-09-03 (docs/expected-view-plan-2026-09-03.html — "one marker per failed claim
-across the two cells; the loupe row under the cells with the ringed element alone on both sides at
-one scale", with the 1.6× their own number). Canon as written, and theirs to reword or remove like
-any other.*
+accepted on 2026-09-03 (docs/expected-view-plan-2026-09-03.html). Canon as written, and theirs to
+reword or remove like any other — which is exactly what happened to its other half the same day.*
 
-<!-- Proven by spec/board/test.spec.ts, "A failed moment names its difference …" — beat 1 makes a
-     real harvested moment's claim FAIL on the board's own data (the established data-ev-beats
-     fixture technique) and asserts exactly one marker appears, carrying both values, and that the
-     same row on the passing moment beside it carries none. Beat 2 asserts the loupe shows the
-     ringed element on both sides at one width and one recorded scale, and disappears on a moment
-     with no ring. -->
+*AMENDED 2026-09-04, hours later, on the human's own instruction: **the loupe is removed** ("the row
+of loupe · the ringed element is useless"). This requirement was drafted with a second When/Then —
+"a loupe shows the ringed element ALONE on both sides … at the same width and the same
+magnification" — and a paragraph arguing that the framed page cannot compare two elements as shapes.
+Both are deleted rather than kept as history that no longer describes the board, and the reason is
+recorded here instead (rule 6): the human read the built row and judged the magnified pair to add
+nothing the two framed pictures did not already show. The title moved with the meaning — it was "A
+failed moment names its difference, and the loupe compares the ringed element alone". The marker is
+unchanged in every respect.*
+
+<!-- Proven by spec/board/test.spec.ts, "A failed moment names its difference …" — its one beat makes
+     a real harvested moment's claim FAIL on the board's own data (the established data-ev-beats
+     fixture technique) and asserts exactly one marker appears, carrying both values, centred on the
+     seam and inside the pictures it is about; then that the Given row — which rings nothing — carries
+     none. -->
 
 ## R21 — The reader reads behaviour first
 

@@ -1138,7 +1138,12 @@ const B = window.__BOARD__ || {}
     layer._paint = function (m, vp) {
       const lines = m ? chipLines(m, side) : []
       if (!m || !m.aim || !lines.length) { cur = null; layer.textContent = ''; layer.hidden = true; return }
-      const chip = document.createElement('div')
+      // A BUTTON, not a div (2026-09-04, the review's I1): the value is one ellipsised line, so the
+      // whole of it lives in the tooltip — and a tooltip only a mouse can open is a tooltip half the
+      // readers do not have. It is also what makes the aria-label announced at all. It does nothing
+      // when pressed: the chip is a label you can reach, not an action.
+      const chip = document.createElement('button')
+      chip.type = 'button'
       chip.className = 'pchip ' + side + (lines.some(function (l) { return !l.ok }) ? ' bad' : '')
       const lab = document.createElement('span'); lab.className = 'pcl'
       lab.textContent = side === 'expected' ? 'expected' : 'actual'
@@ -1248,60 +1253,6 @@ const B = window.__BOARD__ || {}
     }
     layer._place = place
     return layer
-  }
-
-  // ── THE LOUPE (phase 5) — the ringed element ALONE, on both sides, at ONE scale ───────────────
-  // The camera above frames the component IN ITS PAGE, which is what makes "the app really shows
-  // this" believable; the loupe answers the other question — are the two elements the SAME? — by
-  // dropping the page entirely and showing the ringed element by itself, magnified, twice. The
-  // Actual side is the photograph cropped to the ring; the Expected side is a second sandboxed frame
-  // of the very srcdoc the cell above is showing (never a rebuild of it: two builds of one moment is
-  // how two pictures of it stop agreeing). 1.6× is the human's number (2026-09-03), and where 1.6×
-  // will not fit BOTH sides scale down together — two loupes at different scales compare nothing.
-  // A moment with no ring has nothing to magnify and the row hides it.
-  function loupeRow (vp) {
-    const el = document.createElement('div'); el.className = 'loupe'
-    el.hidden = true
-    const mk = function (side, label) {
-      const c = document.createElement('div'); c.className = 'lpcell ' + side
-      const view = document.createElement('div'); view.className = 'lpview'
-      const stage = document.createElement('div'); stage.className = 'lpstage'
-      stage.style.width = vp.vw + 'px'; stage.style.height = vp.vh + 'px'
-      const cap = document.createElement('span'); cap.className = 'lpcap'; cap.textContent = label
-      view.appendChild(stage); c.appendChild(view); c.appendChild(cap)
-      el.appendChild(c)
-      return { cell: c, view: view, stage: stage }
-    }
-    const E = mk('expected', 'expected · the ringed element')
-    const A = mk('actual', 'actual · the ringed element')
-    const ifr = document.createElement('iframe'); ifr.className = 'lpframe'
-    ifr.setAttribute('sandbox', '')                 // the same inertness the cell above has
-    ifr.setAttribute('title', 'Expected, magnified')
-    E.stage.appendChild(ifr)
-    const img = document.createElement('img'); img.className = 'lpshot'; img.alt = ''
-    A.stage.appendChild(img)
-    el._paint = function (m, src, doc) {
-      el._last = { m: m, src: src, doc: (typeof doc === 'string') ? doc : (el._last ? el._last.doc : null) }
-      const ring = m && m.aim
-      if (!ring) { el.hidden = true; return }
-      // shown BEFORE it is measured: the row is built detached, so a loupe that hid itself while
-      // unmeasurable would have no box for the observer below to notice growing, and would stay
-      // hidden for ever on exactly the moments it belongs to
-      el.hidden = false
-      // ONE fit for both sides — measured on the Actual cell and applied to the Expected, so the
-      // two are equal by construction rather than by two measurements agreeing
-      const v = window.SBStepper.loupeFit(ring, { w: A.view.clientWidth })
-      if (!v) return                       // not laid out yet; the observer paints it when it is
-      if (typeof doc === 'string' && ifr.srcdoc !== doc) ifr.srcdoc = doc
-      if (src && img.getAttribute('src') !== src) img.setAttribute('src', src)
-      const tf = 'translate(' + (-v.x * v.scale) + 'px,' + (-v.y * v.scale) + 'px) scale(' + v.scale + ')'
-      ;[E, A].forEach(function (c) { c.view.style.height = v.h + 'px'; c.stage.style.transform = tf })
-      el.dataset.lpscale = String(Math.round(v.scale * 1000) / 1000)
-    }
-    if (window.ResizeObserver) {
-      new ResizeObserver(function () { if (el._last) el._paint(el._last.m, el._last.src, el._last.doc) }).observe(A.view)
-    }
-    return el
   }
 
   // ── THE PROVED PHRASE, IN THE ROW'S OWN WORDS (design C) ─────────────────────────────────────
@@ -1599,7 +1550,11 @@ const B = window.__BOARD__ || {}
   // ONE STEPPER FOR THE ROW, over its two pictures. `moments` names each index — the assertion the
   // run recorded (values[].label), the last one the beat's Then. A name it does not have falls back
   // to a generic one rather than being invented: the strip says what the harvest knows.
-  function momentStrip (driver, moments) {
+  // `claims[i]` is what moment i PROVED — `{ claim }` for a value moment, `{ facts }` for the beat's
+  // result — so the tooltip can say the values as well as the name. Without it (a drawing-only row,
+  // which had no assertion to name its scenes after) a segment's tooltip is its name alone, exactly
+  // as before.
+  function momentStrip (driver, moments, claims) {
     if (!driver || !(driver.count > 1)) return null
     const N = driver.count
     const names = []
@@ -1629,10 +1584,36 @@ const B = window.__BOARD__ || {}
       // too long"). A name that wrapped made one row's strip taller than the next; the label is a
       // single ellipsised line now and the full name is a STYLED tooltip (.mtip) the segment shows on
       // hover / keyboard focus — not the native title, which would stack a second tooltip on top.
+      // …AND THE TWO VALUES WITH IT (2026-09-04, the review's C1 — the brief's deliverable B). The
+      // segment's label is the moment's NAME; hovering it must also say what that moment expected and
+      // what the app gave, because the name alone cannot tell you whether the moment passed. Same
+      // shape the plan's reference row uses: the name in bold, then one `expected` / `actual` pair —
+      // or, on the beat's result, one ticked line per fact. The chips over the pictures carry the
+      // same values; this is the readout for the moment you are NOT standing on.
       const tip = document.createElement('span'); tip.className = 'mtip'; tip.setAttribute('role', 'tooltip')
-      tip.textContent = full
+      const head = document.createElement('b'); head.textContent = full
+      tip.appendChild(head)
+      const said = []
+      const line = function (key, text, bad) {
+        const row = document.createElement('span'); row.className = 'tvr'
+        const k = document.createElement('span'); k.className = 'tk'; k.textContent = key
+        const v = document.createElement('span'); v.className = 'tv' + (bad ? ' bad' : '')
+        v.textContent = text
+        row.appendChild(k); row.appendChild(v); tip.appendChild(row)
+        said.push(key + ' ' + text)
+      }
+      const q = function (t) { return '“' + String(t == null ? '' : t) + '”' }
+      const got = function (c) { return c.missing ? 'MISSING' : q(c.got) }
+      const cl = (claims && claims[i]) || null
+      if (cl && cl.facts && cl.facts.length) {
+        for (const c of cl.facts) line(c.ok ? '✓' : '✕', c.ok ? q(c.expected) : (q(c.expected) + ' · got ' + got(c)), !c.ok)
+      } else if (cl && cl.claim) {
+        line('expected', q(cl.claim.expected), false)
+        line('actual', got(cl.claim), cl.claim.ok === false)
+      }
       seg.appendChild(lab); seg.appendChild(bar); seg.appendChild(tip)
-      seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i])
+      seg.setAttribute('aria-label', 'moment ' + (i + 1) + ' of ' + N + ' — ' + names[i] +
+        (said.length ? ' — ' + said.join(' · ') : ''))
       seg.addEventListener('click', function () {
         if (PLAY_MODE !== 'step') setMode('step')   // jumping holds the loop, else it snaps on
         driver.goto(i)
@@ -1785,7 +1766,7 @@ const B = window.__BOARD__ || {}
       // whole beat at the very moment the checklist appears. It inherits the last ring the beat
       // painted, which is the element the checklist is about. This moves no picture and invents no
       // overlay: the frames are the run's own, ring and all; only the FRAMING, the chip's spot and
-      // the loupe's crop read it. (The same rule the drawing already used for an element the app
+      // the chip's spot read it. (The same rule the drawing already used for an element the app
       // never had — draw it beside the ring the beat last stood on.)
       let last = null
       for (const s of out) { if (s.aim) last = s.aim; else if (last) s.aim = last }
@@ -2202,11 +2183,11 @@ const B = window.__BOARD__ || {}
       // walked on, so the row showed two different moments of the beat and said it was showing one:
       // exactly the drift R19/R20 forbid. The cell now says what it does not have, for THIS moment,
       // and `data-repsrc` (the reader's own readout, and the seam the board's tests poll) says so too.
-      // THE PAGE IS PUBLISHED, not just set (phase 4b): the loupe under the row shows the SAME
-      // document clipped to the ring, so it takes the very srcdoc this cell is showing rather than
-      // rebuilding one of its own — two builds of "the same page" is how two pictures of one moment
-      // stop being one picture.
-      const show = function (doc) { ifr.srcdoc = doc; fr._doc = doc; if (fr._onDoc) fr._onDoc(doc) }
+      // ONE PLACE THE PAGE IS SET, so the honest-blank and the real replica cannot drift apart in
+      // how they hand the document over. (It also PUBLISHED the srcdoc for the loupe under the row
+      // until 2026-09-04, when the human removed that row — "the row of loupe · the ringed element
+      // is useless" — and the hook went with its one reader.)
+      const show = function (doc) { ifr.srcdoc = doc }
       const blank = function (why) {
         fr.dataset.repsrc = ''
         fr.dataset.repside = ''
@@ -2375,9 +2356,8 @@ const B = window.__BOARD__ || {}
       if (strip) right.appendChild(strip)
       right.appendChild(pics)
       el.appendChild(text); el.appendChild(right)
-      // the row's two containers, named — phase 5 hangs the difference marker inside .pics (it spans
-      // the seam between the cells) and the loupe under it inside .sbright (so its two halves line
-      // up with the two pictures they magnify, by sharing their grid rather than by guessing widths)
+      // the row's two containers, named — phase 5 hangs the difference marker inside .pics, which
+      // is the seam between the two cells it spans
       el._pics = pics; el._right = right
       return el
     }
@@ -2496,7 +2476,7 @@ const B = window.__BOARD__ || {}
           // show different moments of the beat. A row with no proof loop (a single-frame beat) has
           // one moment on both sides and nothing to step. The AIMING and everything drawn over the
           // pictures is installed once the row exists (showMoment, below): the marker lives inside
-          // .pics and the loupe under it, so neither can be built before the row they hang in.
+          // .pics, so it cannot be built before the row it hangs in.
           rowDriver = pc._stepper ? proofDriver(pc._stepper) : null
           rowStep = pc._rowStep || null
         } else if (link) {
@@ -2531,27 +2511,27 @@ const B = window.__BOARD__ || {}
           if (thenTxt && rowDriver.count > 0) moments[rowDriver.count - 1] = thenTxt
         }
         const tc = textCell(markCol(i + 1), html)
-        const strip = rowDriver ? momentStrip(rowDriver, moments) : null
+        // …and WHAT each moment proved, so the strip's tooltip can say both values beside the name
+        // (the review's C1). Index-aligned with `moments` by construction — both come off the row's
+        // one ordered list of shots — and short by however many scenes a drawing-only row padded.
+        const proved = (pc._shots || []).map(function (s) { return { claim: s.claim, facts: s.facts } })
+        const strip = rowDriver ? momentStrip(rowDriver, moments, proved) : null
         const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc, strip)
         // ── ONE MOMENT, EVERYWHERE ON THE ROW (design C, phases 4b + 5) ────────────────────────
         // A beat row shows ONE moment at a time, and everything on it is a rendering of that one
-        // moment: the two pictures, the chip over each, the marker across their seam, the loupe
-        // under them, and the underline in the sentence. So there is ONE function that shows a
+        // moment: the two pictures, the chip over each, the marker across their seam, and the
+        // underline in the sentence. So there is ONE function that shows a
         // moment, and every mover — the loop, the strip, the keys — goes through it. Anything that
         // aimed or painted on its own is exactly how the halves of a row drift apart.
         if (hasReps) {
           const shots = pc._shots || []
           const diffs = vpRow ? diffLayer(rowEl._pics) : null
-          const lp = vpRow ? loupeRow(vpRow) : null
-          if (lp) rowEl._right.appendChild(lp)
           if (diffs && pc._camBox) (pc._camBox._views = pc._camBox._views || []).push(function () { diffs._place() })
           // the sentence's own halves, kept as they were authored so each step re-renders from the
           // source rather than underlining on top of the last underline
           const said = [].slice.call(tc.querySelectorAll('.sbthen .sbv, .sbwhen .sbv'))
             .map(function (el) { return { el: el, html: el.innerHTML } })
-          let curJ = 0
           const showMoment = function (j, animate) {
-            curJ = j
             const m = shots[j] || null
             const mf = momentFrame(m, vpRow)
             if (pc._aimMoment) pc._aimMoment(mf.ring, mf.chip, animate)
@@ -2562,7 +2542,6 @@ const B = window.__BOARD__ || {}
             // the same iron-oxide the marker and the ring do — one moment, one reading, everywhere
             rowEl.classList.toggle('hasfail', failedClaims(m).length > 0)
             if (diffs) diffs._paint(m, pc._camBox, vpRow)
-            if (lp) lp._paint(m, m ? m.src : null, fc._doc)
             // THE PROVED PHRASE. The Then is asked first — a claim is a fact about the beat's result,
             // and that is where the sentence usually says it; the When answers only where the Then
             // does not, which is the "you read the picker" case. Nothing matched underlines nothing.
@@ -2578,9 +2557,6 @@ const B = window.__BOARD__ || {}
           if (pc._stepper) {
             pc._stepper._onFrame = function (j) { if (fc._step) fc._step(j); showMoment(j, true) }
           }
-          // the Expected page arrives asynchronously (it is fetched); the loupe takes it the moment
-          // it lands rather than showing the moment before it
-          if (fc) fc._onDoc = function (doc) { if (lp) lp._paint(shots[curJ] || null, (shots[curJ] || {}).src || null, doc) }
           showMoment(pc._stepper ? pc._stepper._cur() : 0, false)
         }
         // the row's own strip and the ← → keys (targeting the SELECTED row) drive the walk; clicking

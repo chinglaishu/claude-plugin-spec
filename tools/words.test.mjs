@@ -47,7 +47,26 @@ test('no claim, no text, an empty expected — nothing, never a guess', () => {
   assert.equal(provedPhrase('some words here', null), null)
   assert.equal(provedPhrase('', { expected: 'x' }), null)
   assert.equal(provedPhrase('some words here', { expected: '   ' }), null)
-  assert.equal(provedPhrase('some words here', { expected: 'a' }), null)   // one character is noise
+  // …and a one-character value that is PUNCTUATION still matches nothing: edged() only guards a
+  // value found inside a longer WORD, so a bare "·" or "-" would land on any of them
+  assert.equal(provedPhrase('a total of 4 - net', { expected: '-' }), null)
+})
+
+// A ONE-CHARACTER VALUE IS A REAL VALUE (2026-09-04, the review's I5). The rule refused anything
+// under two characters, which threw away the commonest claim a counter makes — demo/todo's R9 proves
+// "To do should still read 5" and underlined NOTHING on the flagship render. edged() is already the
+// guard the floor was standing in for: a digit inside a longer number is refused because the char
+// beside it is wordish, so the floor was only costing honest matches.
+test('a single digit at a word edge is the phrase — the floor was over-cautious', () => {
+  const t = 'the delete is a soft archive — an Undo appears and "To do" still reads 5 until the undo window passes'
+  const r = provedPhrase(t, { expected: '5', got: '4', ok: false })
+  assert.deepEqual(cut(t, r), '5')
+  assert.equal(t.slice(r[0] - 1, r[0]), ' ', 'and it is the standalone 5, not one inside a number')
+})
+
+test('…but a digit inside a longer number is still refused', () => {
+  assert.equal(provedPhrase('the row reads 15 items', { expected: '5' }), null)
+  assert.equal(provedPhrase('the count is 4b now', { expected: '4' }), null)
 })
 
 test('a (missing) got still underlines what was EXPECTED — the sentence is the truth', () => {

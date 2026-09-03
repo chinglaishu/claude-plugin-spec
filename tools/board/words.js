@@ -41,8 +41,11 @@
   }
 
   // provedPhrase(text, claim) → [start, end] | null
-  //   1. the claim's `expected`, where the sentence says it (two characters or more — a one-character
-  //      value matches everywhere and means nothing);
+  //   1. the claim's `expected`, where the sentence says it — one character is enough when it is a
+  //      LETTER OR DIGIT (2026-09-04, the review's I5: the old two-character floor threw away the
+  //      commonest claim a counter makes, and edged() is already the guard it was standing in for —
+  //      a digit inside a longer number is refused because the char beside it is wordish). A
+  //      one-character PUNCTUATION value keeps the floor: edged() lets "-" or "·" land anywhere;
   //   2. else the LONGEST run of three or more words of the claim's own label that the sentence
   //      carries — a label is the assertion's name, so its longest shared run is the phrase the
   //      assertion is about;
@@ -51,7 +54,8 @@
     var t = String(text == null ? '' : text)
     if (!t || !claim || typeof claim !== 'object') return null
     var exp = typeof claim.expected === 'string' ? claim.expected.replace(/\s+/g, ' ').trim() : ''
-    if (exp.length >= 2) {
+    var wordy = exp.length === 1 && wordish(exp)
+    if (exp.length >= 2 || wordy) {
       var at = findAt(t, exp)
       if (at >= 0) return [at, at + exp.length]
     }

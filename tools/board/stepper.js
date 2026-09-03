@@ -237,35 +237,12 @@
     return { x: x, y: y, w: w, h: h, scale: scale }
   }
 
-  // ── THE LOUPE (phase 5) — the ringed element ALONE, on both sides, at ONE scale ────────────────
-  // Under the two pictures, the same element twice: the Expected replica's and the Actual
-  // photograph's, cropped to the ring with a little pad and magnified. 1.6× is the human's number
-  // (2026-09-03). Where 1.6× would not fit the cell, BOTH sides scale down together — two loupes at
-  // different scales would be a comparison of nothing. Returns the page-unit origin, the cell-pixel
-  // size of the viewport and the scale; null where there is no ring to magnify.
-  var LOUPE_MAX = 1.6
-  var LOUPE_PAD = 14
-  function loupeFit (ring, cell, opts) {
-    var o = opts || {}
-    var max = o.max != null ? +o.max : LOUPE_MAX
-    var pad = o.pad != null ? +o.pad : LOUPE_PAD
-    if (!boxOk(ring) || !cell) return null
-    var cw = +cell.w; var chh = +cell.h
-    if (!(num(cw) && cw > 0)) return null
-    var bw = ring.w + 2 * pad; var bh = ring.h + 2 * pad
-    var scale = Math.min(max, cw / bw)
-    if (num(chh) && chh > 0) scale = Math.min(scale, chh / bh)
-    if (!(scale > 0)) return null
-    return { x: ring.x - pad, y: ring.y - pad, w: bw * scale, h: bh * scale, scale: scale }
-  }
-
   globalThis.SBStepper = {
     stepperHolds: stepperHolds,
     scaleHold: scaleHold,
     cameraDur: cameraDur,
     cameraView: cameraView,
     cameraCss: cameraCss,
-    frameFor: frameFor,
-    loupeFit: loupeFit
+    frameFor: frameFor
   }
 })()

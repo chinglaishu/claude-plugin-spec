@@ -267,11 +267,23 @@ change.
   are gone, and NO keyboard hint lives in the reader at all — not per row and not in its footer
   either (corrected 2026-09-02, rule 6: the pager's `.fpk` legend went with the human's "remove the
   short cut key hint in this page, only mention in the setting page"; the keys are listed once in
-  #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder, and since 2026-09-02
-  (the human: "the font size within the table is still too small") its words run one rung above the
-  chrome — `.fttl` --t-xl/600 is the only 600 head, `.sbwhen` --t-xl/500 under it, `.sbthen`/`.sbgiven`
-  --t-lg, `.sbno`/`.msegl`/`.mpos` --t-md, the column names `.sbhc` --t-sm (a segment name is ONE ellipsised line — every strip is one height — with the full name in a styled hover/focus tooltip `.mtip`, never the native title; the human 2026-09-02) — and the words
-  cell centres itself in a tall row while the mark column still spans it. `buildMedia` now renders only
+  #howview's Keyboard section, `.howkeys`). The reader's type is ONE ladder with NO RUNG MORE THAN ONE
+  STEP FROM ITS NEIGHBOUR IN THE SAME ROW, and since 2026-09-04 (the human: "the font-size difference
+  between Given and When/Then is too much, it looks weird") **the three sentences are one size** —
+  `.sbgiven`/`.sbwhen`/`.sbthen` all --t-lg, told apart by weight and ink rather than by size (the
+  When keeps 500 and full --ink; each keyword lead keeps its own colour). `.fttl` --t-xl/600 is the
+  reader's ONLY head and the only --t-xl in it; nothing in the words cell is larger than --t-lg.
+  Under them: the strip's `‹ ›` `.mnav` --t-lg, `.sbno`/`.msegl`/`.mpos`/`.mtip .tv`/`.pchip .pcvr`
+  --t-md, the column names `.sbhc` + `.mkind`/`.mtip .tk`/`.pchip .pcl`/`.mdiff .mdv` + the stale
+  banner's head --t-sm, and `.mdiff .mdk`/`.sbprov`/`.pcnone`/`.noschem` + the banner's body --t-xs.
+  (Corrected 2026-09-04, rule 6: this said `.sbwhen` was --t-xl/500 and the smallest reader rung
+  --t-micro. The When came down a step on the human's instruction above; `.mnav`'s raw 17px and
+  `.mkind`'s two-step drop to --t-xs were found by the same audit and put on the scale.) A segment
+  name is ONE ellipsised line — every strip is one height — with the full name AND both values
+  (`expected …` / `actual …`) in a styled hover/focus tooltip `.mtip`, never the native title (the
+  human 2026-09-02; the values added 2026-09-04). The chip over each picture is a real `<button>` so
+  a keyboard can open its tooltip too. And the words cell centres itself in a tall row while the mark
+  column still spans it. `buildMedia` now renders only
   the whole-REQUIREMENT proof band (failed-run filmstrip · the committed video · the Changed
   watermark). The speed control is ONE reader-wide 0.25×–4× dropdown (`.pspd`), broadcast to every
   pane via `onSpd`/`PLAY_SPD` (loops scale their holds; video maps it to playbackRate; the

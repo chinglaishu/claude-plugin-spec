@@ -102,7 +102,7 @@ test('cameraDur treats a broken base or speed as sane defaults', () => {
 // natural size, because a picker blown up to fill a cell loses the header it sits in ("zoomed in a
 // bit too much", the human, on the first cut). The scale is ABSOLUTE — page pixels to cell pixels —
 // so both cells, which stand on the same page coordinates, are framed identically by construction.
-const { frameFor, loupeFit } = globalThis.SBStepper
+const { frameFor } = globalThis.SBStepper
 const VP = { vw: 1440, vh: 900 }
 
 test('a small ring alone takes the cap — 1.25×, never more', () => {
@@ -150,27 +150,4 @@ test('broken inputs frame nothing rather than something invented', () => {
   assert.equal(frameFor({ x: 0, y: 0, w: 0, h: 10 }, null, VP, { w: 450, h: 281 }), null)
   assert.equal(frameFor({ x: 0, y: 0, w: 10, h: 10 }, null, { vw: 0, vh: 900 }, { w: 450, h: 281 }), null)
   assert.equal(frameFor({ x: 0, y: 0, w: 10, h: 10 }, null, VP, { w: 0, h: 281 }), null)
-})
-
-// ── THE LOUPE (phase 5) — the ringed element ALONE, both sides, ONE scale ────────────────────────
-test('the loupe magnifies to 1.6× and reports the box that holds the element', () => {
-  const v = loupeFit({ x: 780, y: 5, w: 132, h: 28 }, { w: 400, h: 200 })
-  assert.equal(v.scale, 1.6)
-  assert.equal(v.x, 780 - 14)                                   // the pad rides in page units
-  assert.equal(v.y, 5 - 14)
-  assert.equal(Math.round(v.w), Math.round((132 + 28) * 1.6))
-  assert.equal(Math.round(v.h), Math.round((28 + 28) * 1.6))
-})
-
-test('an element too wide for the cell scales DOWN — both sides equally, never one of them', () => {
-  const v = loupeFit({ x: 100, y: 100, w: 600, h: 40 }, { w: 400, h: 200 })
-  assert.ok(v.scale < 1.6)
-  assert.ok(Math.abs(v.w - 400) < 0.5, 'it fills the cell exactly: ' + v.w)
-  assert.equal(loupeFit({ x: 100, y: 100, w: 600, h: 40 }, { w: 400, h: 200 }).scale, v.scale)
-})
-
-test('no ring, no loupe', () => {
-  assert.equal(loupeFit(null, { w: 400, h: 200 }), null)
-  assert.equal(loupeFit({ x: 1, y: 1, w: 0, h: 10 }, { w: 400, h: 200 }), null)
-  assert.equal(loupeFit({ x: 1, y: 1, w: 10, h: 10 }, { w: 0, h: 200 }), null)
 })
