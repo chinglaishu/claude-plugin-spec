@@ -767,6 +767,17 @@ export async function proveVisible (
   const shown = present ? await shownText(target) : MISSING
   await hudCheck(label, expected, shown, { assert: false, missing: !present }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
   const ok = present && (opts.match ? !!opts.match(shown) : shown === expected)
+  // …AND THE CLAIM MUST SAY WHAT THE ASSERTION SAYS (fix round 4, found while verifying the Expected
+  // on real data). `hudCheck` can only compare two strings, so a check carrying its OWN `match`
+  // predicate — the demo's R8, "a completed stamp survived the reload", expected "done" against a
+  // stamp reading "done 1d ago" — PASSED its assertion while recording `ok: false`. That false claim
+  // is read by three things downstream: the layout skeleton's claim (so the drawn mirror invents an
+  // "intended" scene for a check that was right), `chooseBase` (so a GREEN requirement's Expected is
+  // built from a stale BASE instead of its own Actual), and `data-claims`. On the demo's R8 the
+  // consequence was visible in the harvest: the Expected rang a different row of a different scene
+  // from the Actual. The verdict belongs to the assertion, so it is written back here, before
+  // anything photographs or files the claim.
+  if (CLAIM && CLAIM.ok !== ok) { CLAIM.ok = ok; await paintHud({}) }
   // A wrong value turns the ring bengara BEFORE we throw, and we hold on that red frame, so the
   // recording shows exactly which cell failed rather than cutting away at the assertion. hudCheck
   // gained its own assert (76714c5); it must run with assert:false here or it would throw before this
