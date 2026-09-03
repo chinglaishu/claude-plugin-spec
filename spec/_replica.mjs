@@ -123,6 +123,16 @@ export function captureReplica (arg) {
   // level either declares its own or inherits its parent's, inductively, from the root down.
   const INHERITED = ['font-family', 'font-size', 'font-weight', 'font-style', 'line-height', 'color',
     'letter-spacing', 'text-align', 'text-transform', 'white-space', 'visibility']
+  // the four borders and the outline: `<width> <style> <color>` / `<color> <style> <width>` — either
+  // way, nothing is drawn when the style is `none`/`hidden` or the width is zero
+  const EDGE = ['border-top', 'border-right', 'border-bottom', 'border-left', 'outline']
+  const drawsNothing = (v) => {
+    const t = String(v || '').trim()
+    if (!t) return true
+    if (/(^|\s)(none|hidden)(\s|$)/.test(t)) return true
+    const w = /(^|\s)(-?[\d.]+)px(\s|$)/.exec(t)
+    return !!w && Number(w[2]) === 0
+  }
   const NODE_CAP = Number.isFinite(Number(caps.nodes)) ? Number(caps.nodes) : 1500
   const BYTE_CAP = Number.isFinite(Number(caps.bytes)) ? Number(caps.bytes) : 200000
   const HTML_NS = 'http://www.w3.org/1999/xhtml'
@@ -225,17 +235,19 @@ export function captureReplica (arg) {
   if (!root) root = doc.body || null
   if (!root) return null
   const rootRect = rectOf(root)
-  // WHAT IS BEING PICTURED (phase 3, section F): the scene root's own box, clipped to the viewport.
-  // A body-rooted scene is often taller than the screen, and the half below the fold is in no
-  // photograph, in no layout skeleton and of no use to a reader — only in the byte count.
-  const VIS = (() => {
-    if (!rootRect) return null
-    const box = { x: rootRect.left, y: rootRect.top, w: rootRect.width, h: rootRect.height }
-    if (!(vw > 0 && vh > 0)) return box
-    const x0 = Math.max(box.x, 0); const y0 = Math.max(box.y, 0)
-    const x1 = Math.min(box.x + box.w, vw); const y1 = Math.min(box.y + box.h, vh)
-    return (x1 > x0 && y1 > y0) ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : box
-  })()
+  // WHAT IS BEING PICTURED (phase 3, section F): the scene root's OWN box, and nothing narrower.
+  //
+  // It was briefly the scene root clipped to the VIEWPORT — a body-rooted scene is often taller than
+  // the screen, and the half below the fold is in no photograph and in no layout skeleton. The gate
+  // caught that on its first real harvest and it was wrong: a row's `<span class="id">R1</span>`
+  // begins at y=900.45 on a 900 px viewport, so the clip dropped it — and its two visible siblings,
+  // which start at 897, then slid 33 px left in the replica because their flex row had lost its
+  // first item. AN ELEMENT THE PAGE DOES NOT DRAW STILL HOLDS ITS SPACE, and everything laid out
+  // after it depends on that. So the skip is only what the brief asked for: outside the SCENE ROOT,
+  // which is the box the file is a picture of.
+  const VIS = rootRect
+    ? { x: rootRect.left, y: rootRect.top, w: rootRect.width, h: rootRect.height }
+    : null
 
   // ── the style diff ────────────────────────────────────────────────────────────────────────────
   // Each element's computed values against a PROBE of the same tag+namespace — so what rides out is
@@ -330,7 +342,7 @@ export function captureReplica (arg) {
   const DATA_MAX = 32000
   const affordable = (url) => String(url).slice(0, 5) === 'data:' &&
     String(url).length <= DATA_MAX && bytes + String(url).length <= BYTE_CAP - MARGIN
-  const classOf = (cs, tag, ns, parentCs, isRoot) => {
+  const classOf = (cs, tag, ns, parentCs, isRoot, extra) => {
     if (!cs || !PROPS.length) return ''
     const d = defaultsOf(tag, ns)
     const out = []
@@ -338,6 +350,13 @@ export function captureReplica (arg) {
       const v = gp(cs, p)
       if (!v) continue                                  // a value the page will not answer for is not a declaration
       const inh = has(INHERITED, p)
+      // AN EDGE THAT PAINTS NOTHING IS NOT A DECLARATION (phase 3, section F). With the probes in an
+      // about:blank frame every class of a reset-styled app carries four `border-<side>:0px none
+      // rgb(…)` and an `outline:… none 3px` — ~190 bytes per class for something no reader can see.
+      // A zero-width or `none`-styled edge draws nothing, so where the TAG's own default draws
+      // nothing either the declaration changes no pixel. Where it DOES — a UA-bordered <input> the
+      // app has reset to 0 — it stays, or the replica would sprout a border the app removed.
+      if (EDGE.indexOf(p) >= 0 && drawsNothing(v) && drawsNothing(String(d[p] == null ? '' : d[p]))) continue
       // THE SCENE ROOT CARRIES ITS WHOLE INHERITED SET (section F). It is read in an EMPTY iframe —
       // the board's, and the gate's — where nothing sets the app's type, and its own tag default was
       // measured with a probe INSIDE the app, which already inherits it. Diffing there would drop
@@ -347,8 +366,18 @@ export function captureReplica (arg) {
       if (v === against) continue
       out.push(p + ':' + v)
     }
-    if (!out.length) return ''
-    const decl = out.join(';')
+    // …and whatever the caller has to say about this element that its own computed style cannot —
+    // today only a scrolled parent's offset (see `serialise`), appended last so it wins over the
+    // `margin` shorthand above and so the declaration SET still keys the shared class correctly.
+    for (const e of (extra || [])) if (e) out.push(e)
+    return classFor(out)
+  }
+  // …and the ONE place a class is minted, whatever the declarations were derived from: the style
+  // diff above, or the synthetic set a placeholder is made of (below).
+  const classFor = (decls) => {
+    const list = (decls || []).filter(Boolean)
+    if (!list.length) return ''
+    const decl = list.join(';')
     let cls = seen.get(decl)
     if (!cls) {
       cls = 'r' + seen.size
@@ -409,7 +438,36 @@ export function captureReplica (arg) {
     return E('span', attrs, kids)
   }
 
-  const serialise = (node, isRoot, parentCs) => {
+  // A BOX THAT HOLDS SPACE AND PAINTS NOTHING — what an element the picture does not show is worth
+  // (see the note in `serialise`). Its declarations are SYNTHETIC, not diffed: the element's own
+  // display (an inline one blockified so a size means anything), its measured border box, and its
+  // margins, so the flow after it is unchanged. Nothing about its paint travels, and its subtree is
+  // dropped — which is the whole saving.
+  const placeholder = (node, cs, shift, r0) => {
+    const r = r0 || rectOf(node)
+    if (!r || (r.width < 1 && r.height < 1)) return null
+    if (capped()) { truncated = true; return null }
+    nodes++
+    let dsp = (cs && gp(cs, 'display')) || 'block'
+    if (dsp === 'inline' || dsp === 'contents' || !dsp) dsp = 'inline-block'
+    const mt = (cs && parseFloat(gp(cs, 'margin-top'))) || 0
+    const ml = (cs && parseFloat(gp(cs, 'margin-left'))) || 0
+    const decls = [
+      'display:' + dsp,
+      'box-sizing:border-box',
+      'width:' + Math.round(r.width) + 'px',
+      'height:' + Math.round(r.height) + 'px',
+      'margin:' + ((shift && shift.top ? mt - shift.top : mt)) + 'px ' +
+        ((cs && parseFloat(gp(cs, 'margin-right'))) || 0) + 'px ' +
+        ((cs && parseFloat(gp(cs, 'margin-bottom'))) || 0) + 'px ' +
+        ((shift && shift.left ? ml - shift.left : ml)) + 'px'
+    ]
+    const attrs = [['class', classFor(decls) || null], ['data-plate', 'space']]
+    bytes += costOf('div', attrs, [])
+    return E('div', attrs, [])
+  }
+
+  const serialise = (node, isRoot, parentCs, shift) => {
     if (!node || node.nodeType !== 1) return null
     // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
     // veil and the callout card — is painted INTO the page under test, so a capture whose scene root
@@ -421,12 +479,21 @@ export function captureReplica (arg) {
     const cs = styleOf(node)
     // WHAT THE PAGE DOES NOT SHOW IS NOT IN THE REPLICA — the same reading the skeleton walk makes,
     // so the two pictures of one moment agree about what was on screen.
+    //
+    // …BUT IT STILL HOLDS ITS SPACE (phase 3, 2026-09-03). `display:none` takes none, so it goes
+    // whole. Everything else here — faded to nothing, `visibility:hidden`, and the off-region skip
+    // below — is laid out exactly as if it were visible, and dropping it slides every sibling after
+    // it: Tsumiki's row buttons are `opacity:0` until hover, and this repo's own init page has a row
+    // whose first span begins half a pixel below the fold. So they are emitted as a PLACEHOLDER —
+    // one empty box of the same size, in the same flow, painting nothing, its subtree (the expensive
+    // part) dropped. `placeholder` is below `serialise`'s own helpers, so it is defined by the time
+    // this runs.
     if (cs) {
       if (gp(cs, 'display') === 'none') return null
       const vis = gp(cs, 'visibility')
-      if (vis === 'hidden' || vis === 'collapse') return null
+      if (vis === 'hidden' || vis === 'collapse') return placeholder(node, cs, shift)
       const op = parseFloat(gp(cs, 'opacity'))
-      if (Number.isFinite(op) && op <= 0.02) return null
+      if (Number.isFinite(op) && op <= 0.02) return placeholder(node, cs, shift)
     }
     const r = rectOf(node)
     // AN ELEMENT NOBODY CAN SEE COSTS NOTHING (phase 3, section F). A virtualised grid's off-screen
@@ -437,7 +504,9 @@ export function captureReplica (arg) {
     // A ZERO-SIZED box is still descended — 0.42.1's rule: a `min-w-0` flex wrapper measures 0 wide
     // and its children are exactly what the scene is of.
     if (!isRoot && r && r.width >= 1 && r.height >= 1 && VIS &&
-      !(r.right > VIS.x && r.left < VIS.x + VIS.w && r.bottom > VIS.y && r.top < VIS.y + VIS.h)) return null
+      !(r.right > VIS.x && r.left < VIS.x + VIS.w && r.bottom > VIS.y && r.top < VIS.y + VIS.h)) {
+      return placeholder(node, cs, shift, r)
+    }
     if (capped()) { truncated = true; return null }
     nodes++
     const fam = gp(cs, 'font-family')
@@ -486,7 +555,21 @@ export function captureReplica (arg) {
       kids = []
     }
 
-    const cls = classOf(cs, emit, emit === tag ? ns : HTML_NS, parentCs, !!isRoot)
+    // A SCROLLED CONTAINER KEEPS ITS SCROLL (phase 3, 2026-09-03 — the gate's second catch, on this
+    // repo's own init page: the setup drawer's panel sits 234 px down its own scroll, so the live
+    // skeleton measured every word in it 234 px above where the replica rendered them — 24 gaps in
+    // one file, all the same offset). A replica has no script and no scrollbar to restore, so the
+    // scroll is baked into the FLOW: the first child of a scrolled box starts at its own margin
+    // minus the scroll, which is exactly where the browser draws it. The children after it follow,
+    // in normal flow and in a column flex alike. A scrolled GRID is a known limit — its items are
+    // placed by track, not by the margin of the one before them — and the gate will say so rather
+    // than the file quietly lying.
+    const xdecl = []
+    if (shift && (shift.top || shift.left)) {
+      if (shift.top) xdecl.push('margin-top:' + ((parseFloat(gp(cs, 'margin-top')) || 0) - shift.top) + 'px')
+      if (shift.left) xdecl.push('margin-left:' + ((parseFloat(gp(cs, 'margin-left')) || 0) - shift.left) + 'px')
+    }
+    const cls = classOf(cs, emit, emit === tag ? ns : HTML_NS, parentCs, !!isRoot, xdecl)
     // the allowlisted attributes of the ORIGINAL element, only where the element still is itself
     const attrs = [['class', cls || null]]
     if (emit === tag && node.getAttributeNames) {
@@ -519,6 +602,10 @@ export function captureReplica (arg) {
       const src = node.shadowRoot && node.shadowRoot.childNodes && node.shadowRoot.childNodes.length
         ? node.shadowRoot.childNodes
         : (node.childNodes || [])
+      // this element's own scroll, handed to the FIRST child it serialises (see the note above)
+      const sTop = Math.round(Number(node.scrollTop) || 0)
+      const sLeft = Math.round(Number(node.scrollLeft) || 0)
+      let toShift = (sTop || sLeft) ? { top: sTop, left: sLeft } : null
       for (let i = 0; i < src.length; i++) {
         if (capped()) { truncated = true; break }
         const k = src[i]
@@ -533,8 +620,8 @@ export function captureReplica (arg) {
           continue
         }
         if (k.nodeType !== 1) continue
-        const child = serialise(k, false, cs)
-        if (child) out.push(child)
+        const child = serialise(k, false, cs, toShift)
+        if (child) { out.push(child); if (child.tag) toShift = null }
       }
       const after = pseudo(node, 'after', cs)
       if (after) out.push(after)

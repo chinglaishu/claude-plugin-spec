@@ -1325,7 +1325,7 @@ test('an element that inherits its parent\'s type declares nothing about it — 
   // the scene root is the BODY here (the row is 400x40, so the body is the first ancestor that is
   // 3x the ring and no bigger than the viewport); its rule is written twice — `.rep .rN` for the
   // descendants and `.rep.rN` for the root itself, which a descendant selector cannot reach
-  const rules = r.html.split('\n').filter(l => l.startsWith('.rep'))
+  const rules = r.html.replace('<style>', '').split('\n').filter(l => l.startsWith('.rep'))
   const twin = rules.find(l => l.startsWith('.rep.'))
   assert.ok(/font-family/.test(twin), 'the SCENE ROOT still carries its whole inherited set — the file must stand alone')
   assert.equal((r.html.match(/font-family/g) || []).length, 2, 'the root\'s rule and its twin — nothing else')
@@ -1424,4 +1424,81 @@ test('the @font-face harvest is bounded — 64 rules, 64 KB, and an unreadable s
   const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: [blocked, { cssRules: rules }], baseURI: 'https://app.example/board' }) })
   assert.equal(r.fontFaces.length, 64)
   assert.ok(r.fontFaces.join('').length <= 64000)
+})
+
+test('an edge that paints nothing is not a declaration — when the tag draws none either', () => {
+  // With the probes moved into an about:blank frame (where the replica is actually read), every class
+  // an app with a reset produces carries four `border-<side>:0px none rgb(...)` and an
+  // `outline:rgb(...) none 3px` — ~190 bytes per class for something no reader can see. A zero-width
+  // or `none`-styled edge draws nothing; where the TAG's own default draws nothing either, saying so
+  // changes no pixel. Where it does not — a UA-bordered <input> the app has reset to 0 — the
+  // declaration stays, or the replica would sprout a border the app removed.
+  const reset = { 'border-top': '0px none rgb(28, 27, 24)', 'border-right': '0px none rgb(28, 27, 24)', 'border-bottom': '0px none rgb(28, 27, 24)', 'border-left': '0px none rgb(28, 27, 24)', outline: 'rgb(28, 27, 24) none 3px' }
+  const plain = el('div', [10, 10, 100, 20], { text: 'plain', cs: { ...reset, 'background-color': 'rgb(9, 9, 9)' } })
+  const ruled = el('div', [10, 40, 100, 20], { text: 'ruled', cs: { ...reset, 'border-bottom': '1px solid rgb(205, 199, 184)', color: 'rgb(1,1,1)' } })
+  const field = el('input', [10, 70, 100, 20], { cs: { ...reset, color: 'rgb(1,1,1)' }, value: 'typed' })
+  const row = el('div', [0, 0, 400, 200], { children: [plain, ruled, field], cs: { ...reset } })
+  const body = el('body', [0, 0, 1440, 900], { children: [row], cs: { ...reset } })
+  const r = cap(body, {
+    target: row,
+    ring: { x: 0, y: 0, width: 200, height: 100 },
+    // the UA gives an <input> — and here, standing in for it, a <span> — a real border; a plain div none
+    defaults: { div: { ...reset }, body: { ...reset }, span: { ...reset, 'border-top': '2px inset rgb(118, 118, 118)', 'border-right': '2px inset rgb(118, 118, 118)', 'border-bottom': '2px inset rgb(118, 118, 118)', 'border-left': '2px inset rgb(118, 118, 118)' } }
+  })
+  const rules = r.html.replace('<style>', '').split('\n').filter(l => l.startsWith('.rep'))
+  const plainRule = rules.find(l => /background-color:rgb\(9, 9, 9\)/.test(l))
+  assert.ok(plainRule, 'the plain row still has a class: ' + JSON.stringify(rules))
+  assert.ok(!/border-|outline/.test(plainRule), 'nothing it says about its edges is visible, so it says nothing: ' + plainRule)
+  assert.ok(rules.some(l => /border-bottom:1px solid rgb\(205, 199, 184\)/.test(l)), 'a rule that IS drawn stays')
+  assert.ok(rules.some(l => /border-top:0px none/.test(l)),
+    'and so does a zero edge that overrides a tag which would otherwise draw one — the field the app reset')
+})
+
+test('a SCROLLED container keeps its scroll — its content starts where the page has it, not at the top', () => {
+  // The gate found this on this repo's own init page: the setup drawer's panel is a scrollable box
+  // sitting 234 px down its own scroll, so the live skeleton measured every word 234 px higher than
+  // the replica rendered it — 24 gaps in one file, all the same offset. A replica has no script and
+  // no scrollbar to restore, so the scroll is baked into the flow: the first child of a scrolled box
+  // starts at its own margin MINUS the scroll, which is exactly where the browser draws it.
+  const a = el('div', [10, -220, 380, 100], { text: 'scrolled out of view above', cs: { 'margin-top': '6px' } })
+  const b = el('div', [10, -114, 380, 100], { text: 'partly visible' })
+  const c = el('div', [10, -8, 380, 100], { text: 'the row the page is looking at' })
+  const pane = el('div', [10, 40, 400, 300], { children: [a, b, c], cs: { overflow: 'auto' } })
+  pane.scrollTop = 234
+  const shell = el('main', [0, 0, 900, 600], { children: [pane] })
+  const body = el('body', [0, 0, 1440, 900], { children: [shell] })
+  const r = cap(body, { target: pane, ring: { x: 10, y: 40, width: 400, height: 300 } })
+  const rules = r.html.replace('<style>', '').split('\n').filter(l => l.startsWith('.rep'))
+  assert.ok(rules.some(l => /margin:-228px /.test(l)),
+    'the first child carries its own 6px margin less the 234px of scroll: ' + JSON.stringify(rules))
+  assert.equal((r.html.match(/-228px/g) || []).length, 1, 'only the first child — the rest follow it')
+  // …and the two rows scrolled up out of the pane are placeholders: the same space, nothing drawn
+  assert.equal((r.html.match(/data-plate="space"/g) || []).length, 2)
+  assert.ok(!r.html.includes('scrolled out of view above'), 'a placeholder carries no words')
+})
+
+test('a container that is NOT scrolled gains nothing', () => {
+  const a = el('div', [10, 46, 380, 100], { text: 'first' })
+  const pane = el('div', [10, 40, 400, 300], { children: [a], cs: { overflow: 'auto' } })
+  const shell = el('main', [0, 0, 900, 600], { children: [pane] })
+  const body = el('body', [0, 0, 1440, 900], { children: [shell] })
+  const r = cap(body, { target: pane, ring: { x: 10, y: 40, width: 400, height: 300 } })
+  assert.ok(!/margin:-/.test(r.html), 'no synthetic offset where the page has no scroll')
+})
+
+test('an element the page has faded out still holds its space — a placeholder, never a hole', () => {
+  // Tsumiki hides a row's edit and delete buttons with opacity:0 until hover. They are laid out all
+  // the same, so dropping them slid every sibling after them along the row.
+  const ghost = el('button', [10, 10, 60, 20], { text: 'delete', cs: { opacity: '0' } })
+  const hidden = el('span', [80, 10, 40, 20], { text: 'edit', cs: { visibility: 'hidden' } })
+  const gone = el('span', [130, 10, 40, 20], { text: 'never', cs: { display: 'none' } })
+  const shown = el('span', [180, 10, 60, 20], { text: 'Renew passport' })
+  const row = el('div', [0, 0, 400, 40], { children: [ghost, hidden, gone, shown] })
+  const page = el('main', [0, 0, 900, 600], { children: [row] })
+  const body = el('body', [0, 0, 1440, 900], { children: [page] })
+  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 } })
+  assert.equal((r.html.match(/data-plate="space"/g) || []).length, 2, 'the faded one and the hidden one')
+  assert.ok(!r.html.includes('delete') && !r.html.includes('>edit<'), 'neither shows a word')
+  assert.ok(!r.html.includes('never'), 'and display:none takes no space, so it leaves nothing at all')
+  assert.ok(r.html.includes('Renew passport'), 'what the page does show is untouched')
 })
