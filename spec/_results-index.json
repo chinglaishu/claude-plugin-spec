@@ -6,7 +6,7 @@
       {
         "title": "Home lists every screen as a card",
         "ok": true,
-        "ms": 1836,
+        "ms": 1972,
         "error": null,
         "line": 39,
         "reqs": {
@@ -16,7 +16,7 @@
       {
         "title": "A requirement and its proof are read together in one card that scrolls inside itself",
         "ok": true,
-        "ms": 1168,
+        "ms": 1138,
         "error": null,
         "line": 64,
         "reqs": {
@@ -26,7 +26,7 @@
       {
         "title": "A requirement expands; a test leads with its flow name",
         "ok": true,
-        "ms": 999,
+        "ms": 1025,
         "error": null,
         "line": 72,
         "reqs": {
@@ -36,7 +36,7 @@
       {
         "title": "Steps read from the definition; a run overlays passed/failed/not-reached, and the video explains itself",
         "ok": true,
-        "ms": 1918,
+        "ms": 1847,
         "error": null,
         "line": 138,
         "reqs": {
@@ -46,7 +46,7 @@
       {
         "title": "Story-step evidence renders from the test definition",
         "ok": true,
-        "ms": 821,
+        "ms": 780,
         "error": null,
         "line": 311,
         "reqs": {
@@ -56,7 +56,7 @@
       {
         "title": "R10 — the Flow player plays the VOICED recording when a run produced one",
         "ok": true,
-        "ms": 969,
+        "ms": 971,
         "error": null,
         "line": 329,
         "reqs": {
@@ -66,7 +66,7 @@
       {
         "title": "Requirement state is computed and assertion-backed",
         "ok": true,
-        "ms": 834,
+        "ms": 881,
         "error": null,
         "line": 367,
         "reqs": {
@@ -76,7 +76,7 @@
       {
         "title": "A test tags the requirements it covers — and Focus serves that link",
         "ok": true,
-        "ms": 1101,
+        "ms": 1037,
         "error": null,
         "line": 488,
         "reqs": {
@@ -86,7 +86,7 @@
       {
         "title": "A requirement names the tests that cover it",
         "ok": true,
-        "ms": 770,
+        "ms": 833,
         "error": null,
         "line": 519,
         "reqs": {
@@ -96,7 +96,7 @@
       {
         "title": "The detail shows no wireframe or design affordance",
         "ok": true,
-        "ms": 824,
+        "ms": 792,
         "error": null,
         "line": 599,
         "reqs": {
@@ -106,7 +106,7 @@
       {
         "title": "No acceptance gate — nothing on the detail waits to be accepted",
         "ok": true,
-        "ms": 823,
+        "ms": 863,
         "error": null,
         "line": 611,
         "reqs": {
@@ -116,7 +116,7 @@
       {
         "title": "The detail offers a Focus / List / Flow toggle — Focus leads with the behavior, and media derives from status × beats",
         "ok": true,
-        "ms": 5913,
+        "ms": 5382,
         "error": null,
         "line": 631,
         "reqs": {
@@ -126,7 +126,7 @@
       {
         "title": "The schematic mirrors the real UI — the app's own measured layout, or honestly no picture",
         "ok": true,
-        "ms": 5193,
+        "ms": 5005,
         "error": null,
         "line": 1102,
         "reqs": {
@@ -136,7 +136,7 @@
       {
         "title": "A beat row is a comparison — one camera on one region, one beat in both cells",
         "ok": true,
-        "ms": 2289,
+        "ms": 2360,
         "error": null,
         "line": 1316,
         "reqs": {
@@ -146,7 +146,7 @@
       {
         "title": "The proof plays itself — step is the default, no dots/counter/toggle, the whole frame in the lightbox",
         "ok": true,
-        "ms": 3513,
+        "ms": 4439,
         "error": null,
         "line": 1433,
         "reqs": {
@@ -156,7 +156,7 @@
       {
         "title": "The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again",
         "ok": true,
-        "ms": 9867,
+        "ms": 9633,
         "error": null,
         "line": 1573,
         "reqs": {
@@ -166,7 +166,7 @@
       {
         "title": "The reader reads behaviour first — one fixed order, and no control to change it",
         "ok": true,
-        "ms": 2248,
+        "ms": 2140,
         "error": null,
         "line": 1821,
         "reqs": {
@@ -176,7 +176,7 @@
       {
         "title": "Flow reads like Focus — the rail on the left scrubs the one recording, a failure stops it and the rest reads not-reached",
         "ok": true,
-        "ms": 2122,
+        "ms": 1893,
         "error": null,
         "line": 1900,
         "reqs": {
@@ -186,7 +186,7 @@
       {
         "title": "The proof is scannable as frames — one still per checked value, cut from the recording",
         "ok": true,
-        "ms": 2791,
+        "ms": 2543,
         "error": null,
         "line": 2076,
         "reqs": {
@@ -196,7 +196,7 @@
       {
         "title": "A finished run refreshes the board in place — no reload, the panel stays (dispatch R7)",
         "ok": true,
-        "ms": 4398,
+        "ms": 4354,
         "error": null,
         "line": 2358,
         "reqs": {
@@ -206,7 +206,7 @@
       {
         "title": "hudCheck asserts the value it paints — a mismatch throws, a match does not",
         "ok": true,
-        "ms": 226,
+        "ms": 200,
         "error": null,
         "line": 2373,
         "reqs": {}
@@ -214,7 +214,7 @@
       {
         "title": "Searching requirement text hides groups that miss",
         "ok": true,
-        "ms": 762,
+        "ms": 749,
         "error": null,
         "line": 2381,
         "reqs": {
@@ -224,7 +224,7 @@
       {
         "title": "Home leads with a dismissible feature strip of six cards",
         "ok": true,
-        "ms": 1430,
+        "ms": 1392,
         "error": null,
         "line": 2392,
         "reqs": {
@@ -234,7 +234,7 @@
       {
         "title": "A test opens to its evidence and the log opens in a window",
         "ok": true,
-        "ms": 987,
+        "ms": 979,
         "error": null,
         "line": 2450,
         "reqs": {
@@ -244,7 +244,7 @@
       {
         "title": "The guide opens as manager and staff — without, then with",
         "ok": true,
-        "ms": 908,
+        "ms": 874,
         "error": null,
         "line": 2477,
         "reqs": {
@@ -254,7 +254,7 @@
       {
         "title": "Acts 1 and 2 play once, hold, and stand still under reduced motion",
         "ok": true,
-        "ms": 6600,
+        "ms": 6627,
         "error": null,
         "line": 2564,
         "reqs": {
@@ -264,7 +264,7 @@
       {
         "title": "The walkthrough steps on click and holds — never auto-advances",
         "ok": true,
-        "ms": 2028,
+        "ms": 2022,
         "error": null,
         "line": 2610,
         "reqs": {
@@ -274,7 +274,7 @@
       {
         "title": "A deep-linked skill URL shows the skill detail on cold load",
         "ok": true,
-        "ms": 651,
+        "ms": 655,
         "error": null,
         "line": 2635,
         "reqs": {
@@ -284,7 +284,7 @@
       {
         "title": "The guide ends with the derived next action, and there is no rail",
         "ok": true,
-        "ms": 1085,
+        "ms": 908,
         "error": null,
         "line": 2649,
         "reqs": {
@@ -294,7 +294,7 @@
       {
         "title": "The home cards say which screens gate CI, derived from spec/_ci.json",
         "ok": true,
-        "ms": 2845,
+        "ms": 2856,
         "error": null,
         "line": 2727,
         "reqs": {
@@ -304,7 +304,7 @@
       {
         "title": "The ⋯ menus hand you a ready Claude prompt — the board authors nothing itself",
         "ok": true,
-        "ms": 1797,
+        "ms": 1678,
         "error": null,
         "line": 2794,
         "reqs": {
@@ -314,7 +314,7 @@
       {
         "title": "＋ New flow opens the composer — a derived library, the joint check, a truthful two-path button",
         "ok": true,
-        "ms": 2182,
+        "ms": 2079,
         "error": null,
         "line": 2972,
         "reqs": {
@@ -325,7 +325,7 @@
       {
         "title": "The compose endpoint composes deterministically and refuses honestly — no job spawns on a refusal",
         "ok": true,
-        "ms": 1788,
+        "ms": 1419,
         "error": null,
         "line": 3084,
         "reqs": {
@@ -335,7 +335,7 @@
       {
         "title": "Home, the detail, then a finished run refreshes it in place — composed",
         "ok": true,
-        "ms": 2514,
+        "ms": 2451,
         "error": null,
         "line": 3185,
         "reqs": {
@@ -347,7 +347,7 @@
       {
         "title": "Requirements sub-group within a screen — family headers on the card and in List, the Focus counter, and the pager that is the jump-map",
         "ok": true,
-        "ms": 3665,
+        "ms": 3598,
         "error": null,
         "line": 3229,
         "reqs": {
@@ -355,7 +355,7 @@
         }
       }
     ],
-    "ranAt": 1788438649934,
+    "ranAt": 1788448576027,
     "srcHashes": {
       "_modes": "1172a15d2f88",
       "board": "434b25f7d28a",
@@ -392,8 +392,8 @@
         "before": "spec/board/evidence/R1.before.png",
         "after": "spec/board/evidence/R1.after.png",
         "window": {
-          "from": 2315,
-          "to": 2410
+          "from": 392,
+          "to": 473
         },
         "beats": [
           {
@@ -406,18 +406,18 @@
             "replicaAfter": "spec/board/evidence/R1.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R1.b1.after.expected.html",
             "window": {
-              "from": 2315,
-              "to": 2410
+              "from": 392,
+              "to": 473
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z",
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z",
         "video": {
           "path": "spec/board/evidence/0146b62800aa.webm",
           "from": 572,
@@ -428,8 +428,8 @@
         "before": "spec/board/evidence/R2.before.png",
         "after": "spec/board/evidence/R2.after.png",
         "window": {
-          "from": 338,
-          "to": 812
+          "from": 342,
+          "to": 770
         },
         "beats": [
           {
@@ -442,14 +442,18 @@
             "replicaAfter": "spec/board/evidence/R2.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R2.b1.after.expected.html",
             "window": {
-              "from": 338,
-              "to": 812
+              "from": 342,
+              "to": 770
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z",
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z",
         "video": {
           "path": "spec/board/evidence/0146b62800aa.webm",
           "from": 1048,
@@ -460,8 +464,8 @@
         "before": "spec/board/evidence/R3.before.png",
         "after": "spec/board/evidence/R3.after.png",
         "window": {
-          "from": 404,
-          "to": 640
+          "from": 425,
+          "to": 644
         },
         "beats": [
           {
@@ -474,21 +478,25 @@
             "replicaAfter": "spec/board/evidence/R3.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R3.b1.after.expected.html",
             "window": {
-              "from": 404,
-              "to": 640
+              "from": 425,
+              "to": 644
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 1,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R10": {
         "before": "spec/board/evidence/R10.before.png",
         "after": "spec/board/evidence/R10.after.png",
         "window": {
-          "from": 417,
-          "to": 1539
+          "from": 429,
+          "to": 1441
         },
         "beats": [
           {
@@ -501,10 +509,14 @@
             "replicaAfter": "spec/board/evidence/R10.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R10.b1.after.expected.html",
             "window": {
-              "from": 417,
-              "to": 1539
+              "from": 429,
+              "to": 1441
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": 110.828125,
@@ -515,15 +527,15 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R4": {
         "before": "spec/board/evidence/R4.before.png",
         "after": "spec/board/evidence/R4.after.png",
         "window": {
-          "from": 400,
-          "to": 470
+          "from": 427,
+          "to": 499
         },
         "beats": [
           {
@@ -536,21 +548,25 @@
             "replicaAfter": "spec/board/evidence/R4.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R4.b1.after.expected.html",
             "window": {
-              "from": 400,
-              "to": 470
+              "from": 427,
+              "to": 499
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R5": {
         "before": "spec/board/evidence/R5.before.png",
         "after": "spec/board/evidence/R5.after.png",
         "window": {
-          "from": 443,
-          "to": 742
+          "from": 403,
+          "to": 655
         },
         "beats": [
           {
@@ -563,21 +579,25 @@
             "replicaAfter": "spec/board/evidence/R5.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R5.b1.after.expected.html",
             "window": {
-              "from": 443,
-              "to": 742
+              "from": 403,
+              "to": 655
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 40,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R6": {
         "before": "spec/board/evidence/R6.before.png",
         "after": "spec/board/evidence/R6.after.png",
         "window": {
-          "from": 383,
-          "to": 403
+          "from": 426,
+          "to": 445
         },
         "beats": [
           {
@@ -590,21 +610,25 @@
             "replicaAfter": "spec/board/evidence/R6.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R6.b1.after.expected.html",
             "window": {
-              "from": 383,
-              "to": 403
+              "from": 426,
+              "to": 445
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R7": {
         "before": "spec/board/evidence/R7.before.png",
         "after": "spec/board/evidence/R7.after.png",
         "window": {
-          "from": 425,
-          "to": 445
+          "from": 386,
+          "to": 400
         },
         "beats": [
           {
@@ -617,21 +641,25 @@
             "replicaAfter": "spec/board/evidence/R7.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R7.b1.after.expected.html",
             "window": {
-              "from": 425,
-              "to": 445
+              "from": 386,
+              "to": 400
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R8": {
         "before": "spec/board/evidence/R8.before.png",
         "after": "spec/board/evidence/R8.after.png",
         "window": {
-          "from": 374,
-          "to": 475
+          "from": 385,
+          "to": 464
         },
         "beats": [
           {
@@ -644,21 +672,25 @@
             "replicaAfter": "spec/board/evidence/R8.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R8.b1.after.expected.html",
             "window": {
-              "from": 374,
-              "to": 475
+              "from": 385,
+              "to": 464
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R13": {
         "before": "spec/board/evidence/R13.before.png",
         "after": "spec/board/evidence/R13.after.png",
         "window": {
-          "from": 351,
-          "to": 5534
+          "from": 356,
+          "to": 4978
         },
         "beats": [
           {
@@ -671,21 +703,25 @@
             "replicaAfter": "spec/board/evidence/R13.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R13.b1.after.expected.html",
             "window": {
-              "from": 351,
-              "to": 5534
+              "from": 356,
+              "to": 4978
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R14": {
         "before": "spec/board/evidence/R14.before.png",
         "after": "spec/board/evidence/R14.after.png",
         "window": {
-          "from": 432,
-          "to": 2410
+          "from": 419,
+          "to": 2143
         },
         "beats": [
           {
@@ -698,14 +734,18 @@
             "replicaAfter": "spec/board/evidence/R14.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R14.b1.after.expected.html",
             "window": {
-              "from": 432,
-              "to": 2410
+              "from": 419,
+              "to": 2143
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z",
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z",
         "video": {
           "path": "spec/board/evidence/f1ae34958282.webm",
           "from": 255,
@@ -716,8 +756,8 @@
         "before": "spec/board/evidence/R9.before.png",
         "after": "spec/board/evidence/R9.after.png",
         "window": {
-          "from": 2875,
-          "to": 2941
+          "from": 324,
+          "to": 391
         },
         "beats": [
           {
@@ -730,25 +770,25 @@
             "replicaAfter": "spec/board/evidence/R9.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R9.b1.after.expected.html",
             "window": {
-              "from": 2875,
-              "to": 2941
+              "from": 324,
+              "to": 391
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R11": {
         "before": "spec/board/evidence/R11.before.png",
         "after": "spec/board/evidence/R11.after.png",
         "window": {
-          "from": 291,
-          "to": 6252
+          "from": 290,
+          "to": 6239
         },
         "beats": [
           {
@@ -761,10 +801,14 @@
             "replicaAfter": "spec/board/evidence/R11.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R11.b1.after.expected.html",
             "window": {
-              "from": 291,
-              "to": 565
+              "from": 290,
+              "to": 502
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           },
           {
             "n": 2,
@@ -776,21 +820,25 @@
             "replicaAfter": "spec/board/evidence/R11.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R11.b2.after.expected.html",
             "window": {
-              "from": 6104,
-              "to": 6252
+              "from": 6120,
+              "to": 6239
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R12": {
         "before": "spec/board/evidence/R12.before.png",
         "after": "spec/board/evidence/R12.after.png",
         "window": {
-          "from": 579,
-          "to": 739
+          "from": 400,
+          "to": 535
         },
         "beats": [
           {
@@ -803,21 +851,25 @@
             "replicaAfter": "spec/board/evidence/R12.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R12.b1.after.expected.html",
             "window": {
-              "from": 579,
-              "to": 739
+              "from": 400,
+              "to": 535
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R15": {
         "before": "spec/board/evidence/R15.before.png",
         "after": "spec/board/evidence/R15.after.png",
         "window": {
-          "from": 595,
-          "to": 1428
+          "from": 557,
+          "to": 1291
         },
         "beats": [
           {
@@ -830,21 +882,25 @@
             "replicaAfter": "spec/board/evidence/R15.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R15.b1.after.expected.html",
             "window": {
-              "from": 595,
-              "to": 1428
+              "from": 557,
+              "to": 1291
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R16": {
         "before": "spec/board/evidence/R16.before.png",
         "after": "spec/board/evidence/R16.after.png",
         "window": {
-          "from": 257,
-          "to": 1101
+          "from": 256,
+          "to": 1015
         },
         "beats": [
           {
@@ -857,21 +913,25 @@
             "replicaAfter": "spec/board/evidence/R16.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R16.b1.after.expected.html",
             "window": {
-              "from": 257,
-              "to": 1101
+              "from": 256,
+              "to": 1015
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R17": {
         "before": "spec/board/evidence/R17.before.png",
         "after": "spec/board/evidence/R17.after.png",
         "window": {
-          "from": 265,
-          "to": 290
+          "from": 277,
+          "to": 299
         },
         "beats": [
           {
@@ -884,21 +944,25 @@
             "replicaAfter": "spec/board/evidence/R17.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R17.b1.after.expected.html",
             "window": {
-              "from": 265,
-              "to": 290
+              "from": 277,
+              "to": 299
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R18": {
         "before": "spec/board/evidence/R18.before.png",
         "after": "spec/board/evidence/R18.after.png",
         "window": {
-          "from": 495,
-          "to": 4785
+          "from": 415,
+          "to": 4581
         },
         "beats": [
           {
@@ -911,10 +975,14 @@
             "replicaAfter": "spec/board/evidence/R18.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R18.b1.after.expected.html",
             "window": {
-              "from": 495,
-              "to": 908
+              "from": 415,
+              "to": 793
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 387.109375,
               "y": 186.796875,
@@ -934,10 +1002,14 @@
             "replicaAfter": "spec/board/evidence/R18.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R18.b2.after.expected.html",
             "window": {
-              "from": 1385,
-              "to": 2273
+              "from": 1301,
+              "to": 2160
             },
             "values": [],
+            "gate": {
+              "gaps": 3,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": 107.5,
@@ -957,10 +1029,14 @@
             "replicaAfter": "spec/board/evidence/R18.b3.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R18.b3.after.expected.html",
             "window": {
-              "from": 2759,
-              "to": 3775
+              "from": 2714,
+              "to": 3607
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": 146.5,
@@ -980,10 +1056,14 @@
             "replicaAfter": "spec/board/evidence/R18.b4.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R18.b4.after.expected.html",
             "window": {
-              "from": 4294,
-              "to": 4785
+              "from": 4172,
+              "to": 4581
             },
             "values": [],
+            "gate": {
+              "gaps": 3,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": 83.5,
@@ -994,15 +1074,15 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R19": {
         "before": "spec/board/evidence/R19.before.png",
         "after": "spec/board/evidence/R19.after.png",
         "window": {
-          "from": 410,
-          "to": 1951
+          "from": 434,
+          "to": 1987
         },
         "beats": [
           {
@@ -1015,10 +1095,14 @@
             "replicaAfter": "spec/board/evidence/R19.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R19.b1.after.expected.html",
             "window": {
-              "from": 410,
-              "to": 825
+              "from": 434,
+              "to": 850
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 44.21875,
               "y": 425.71875,
@@ -1038,10 +1122,14 @@
             "replicaAfter": "spec/board/evidence/R19.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R19.b2.after.expected.html",
             "window": {
-              "from": 1309,
-              "to": 1951
+              "from": 1383,
+              "to": 1987
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 44.21875,
               "y": 426.71875,
@@ -1052,15 +1140,15 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R20": {
         "before": "spec/board/evidence/R20.before.png",
         "after": "spec/board/evidence/R20.after.png",
         "window": {
-          "from": 397,
-          "to": 8973
+          "from": 401,
+          "to": 8711
         },
         "beats": [
           {
@@ -1073,10 +1161,14 @@
             "replicaAfter": "spec/board/evidence/R20.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R20.b1.after.expected.html",
             "window": {
-              "from": 397,
-              "to": 2403
+              "from": 401,
+              "to": 3299
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 886.171875,
               "y": 476.96875,
@@ -1096,10 +1188,14 @@
             "replicaAfter": "spec/board/evidence/R20.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R20.b2.after.expected.html",
             "window": {
-              "from": 2858,
-              "to": 3152
+              "from": 3789,
+              "to": 4077
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 886.171875,
               "y": 175.5625,
@@ -1119,10 +1215,14 @@
             "replicaAfter": "spec/board/evidence/R20.b3.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R20.b3.after.expected.html",
             "window": {
-              "from": 1825,
-              "to": 6654
+              "from": 1842,
+              "to": 6597
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 376.5625,
               "y": 450.71875,
@@ -1142,10 +1242,14 @@
             "replicaAfter": "spec/board/evidence/R20.b4.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R20.b4.after.expected.html",
             "window": {
-              "from": 7115,
-              "to": 7865
+              "from": 7119,
+              "to": 7711
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 886.171875,
               "y": 197.96875,
@@ -1165,10 +1269,14 @@
             "replicaAfter": "spec/board/evidence/R20.b5.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R20.b5.after.expected.html",
             "window": {
-              "from": 8423,
-              "to": 8973
+              "from": 8202,
+              "to": 8711
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 886.171875,
               "y": 476.96875,
@@ -1179,15 +1287,15 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R21": {
         "before": "spec/board/evidence/R21.before.png",
         "after": "spec/board/evidence/R21.after.png",
         "window": {
-          "from": 468,
-          "to": 1832
+          "from": 451,
+          "to": 1702
         },
         "beats": [
           {
@@ -1200,10 +1308,14 @@
             "replicaAfter": "spec/board/evidence/R21.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R21.b1.after.expected.html",
             "window": {
-              "from": 468,
-              "to": 849
+              "from": 451,
+              "to": 806
             },
             "values": [],
+            "gate": {
+              "gaps": 6,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": -270.5,
@@ -1223,10 +1335,14 @@
             "replicaAfter": "spec/board/evidence/R21.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R21.b2.after.expected.html",
             "window": {
-              "from": 1444,
-              "to": 1832
+              "from": 1358,
+              "to": 1702
             },
             "values": [],
+            "gate": {
+              "gaps": 3,
+              "gated": true
+            },
             "focus": {
               "x": 43.21875,
               "y": 107.5,
@@ -1237,15 +1353,15 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       },
       "R22": {
         "before": "spec/board/evidence/R22.before.png",
         "after": "spec/board/evidence/R22.after.png",
         "window": {
-          "from": 257,
-          "to": 2357
+          "from": 255,
+          "to": 2352
         },
         "beats": [
           {
@@ -1258,10 +1374,14 @@
             "replicaAfter": "spec/board/evidence/R22.b1.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R22.b1.after.expected.html",
             "window": {
-              "from": 257,
-              "to": 650
+              "from": 255,
+              "to": 624
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            },
             "focus": {
               "x": 1299.71875,
               "y": 379.828125,
@@ -1281,10 +1401,14 @@
             "replicaAfter": "spec/board/evidence/R22.b2.after.actual.html",
             "replicaExpectedAfter": "spec/board/evidence/R22.b2.after.expected.html",
             "window": {
-              "from": 1067,
-              "to": 2357
+              "from": 1127,
+              "to": 2352
             },
             "values": [],
+            "gate": {
+              "gaps": 33,
+              "gated": true
+            },
             "focus": {
               "x": 61.109375,
               "y": 313.890625,
@@ -1295,8 +1419,8 @@
             }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z"
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z"
       }
     }
   },
@@ -1689,8 +1813,8 @@
         "before": "spec/dispatch/evidence/R7.before.png",
         "after": "spec/dispatch/evidence/R7.after.png",
         "window": {
-          "from": 487,
-          "to": 1182
+          "from": 400,
+          "to": 1058
         },
         "beats": [
           {
@@ -1703,14 +1827,18 @@
             "replicaAfter": "spec/dispatch/evidence/R7.b1.after.actual.html",
             "replicaExpectedAfter": "spec/dispatch/evidence/R7.b1.after.expected.html",
             "window": {
-              "from": 487,
-              "to": 1182
+              "from": 400,
+              "to": 1058
             },
-            "values": []
+            "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true
+            }
           }
         ],
-        "runId": "1788438649934",
-        "at": "2026-09-03T12:30:49.934Z",
+        "runId": "1788448576027",
+        "at": "2026-09-03T15:16:16.027Z",
         "video": {
           "path": "spec/dispatch/evidence/b75296d7e494.webm",
           "from": 608,
@@ -1945,7 +2073,7 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 1302,
+        "ms": 1452,
         "error": null,
         "line": 27,
         "reqs": {
@@ -1955,7 +2083,7 @@
       {
         "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
         "ok": true,
-        "ms": 197,
+        "ms": 184,
         "error": null,
         "line": 63,
         "reqs": {}
@@ -1963,7 +2091,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 279,
+        "ms": 265,
         "error": null,
         "line": 75,
         "reqs": {}
@@ -1971,7 +2099,7 @@
       {
         "title": "R3 — a drafted PRD is canon the moment it is written: one CARD, no guess chip, nothing waiting, no gate",
         "ok": true,
-        "ms": 2005,
+        "ms": 1868,
         "error": null,
         "line": 95,
         "reqs": {
@@ -1981,7 +2109,7 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 646,
+        "ms": 608,
         "error": null,
         "line": 109,
         "reqs": {
@@ -1991,7 +2119,7 @@
       {
         "title": "R2 — a crawled route is a row with its screenshot and NO PRD: inventory, never fake coverage",
         "ok": true,
-        "ms": 629,
+        "ms": 616,
         "error": null,
         "line": 121,
         "reqs": {
@@ -2001,7 +2129,7 @@
       {
         "title": "R6 — voice-over is a saved, per-project switch, off by default",
         "ok": true,
-        "ms": 1535,
+        "ms": 1450,
         "error": null,
         "line": 147,
         "reqs": {
@@ -2011,7 +2139,7 @@
       {
         "title": "R6 — the switch is disabled until piper is ready, with a copyable install helper",
         "ok": true,
-        "ms": 755,
+        "ms": 748,
         "error": null,
         "line": 179,
         "reqs": {
@@ -2021,7 +2149,7 @@
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 696,
+        "ms": 662,
         "error": null,
         "line": 206,
         "reqs": {
@@ -2031,7 +2159,7 @@
       {
         "title": "A crawled row becomes a card — the rerun marks it, the draft lands as one card, home counts it and search finds it — composed",
         "ok": true,
-        "ms": 3308,
+        "ms": 3151,
         "error": null,
         "line": 221,
         "reqs": {
@@ -2042,7 +2170,7 @@
         }
       }
     ],
-    "ranAt": 1788439756095,
+    "ranAt": 1788448480655,
     "srcHashes": {
       "_modes": "1172a15d2f88",
       "board": "434b25f7d28a",
@@ -2063,8 +2191,8 @@
         "before": "spec/init/evidence/R6.before.png",
         "after": "spec/init/evidence/R6.after.png",
         "window": {
-          "from": 282,
-          "to": 1158
+          "from": 262,
+          "to": 1115
         },
         "beats": [
           {
@@ -2077,25 +2205,25 @@
             "replicaAfter": "spec/init/evidence/R6.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R6.b1.after.expected.html",
             "window": {
-              "from": 282,
-              "to": 1158
+              "from": 262,
+              "to": 1115
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z"
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z"
       },
       "R3": {
         "before": "spec/init/evidence/R3.before.png",
         "after": "spec/init/evidence/R3.after.png",
         "window": {
-          "from": 470,
-          "to": 1643
+          "from": 420,
+          "to": 1484
         },
         "beats": [
           {
@@ -2108,18 +2236,18 @@
             "replicaAfter": "spec/init/evidence/R3.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R3.b1.after.expected.html",
             "window": {
-              "from": 470,
-              "to": 1643
+              "from": 420,
+              "to": 1484
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z",
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z",
         "video": {
           "path": "spec/init/evidence/9cf65f4ca0af.webm",
           "from": 463,
@@ -2130,8 +2258,8 @@
         "before": "spec/init/evidence/R5.before.png",
         "after": "spec/init/evidence/R5.after.png",
         "window": {
-          "from": 286,
-          "to": 300
+          "from": 261,
+          "to": 274
         },
         "beats": [
           {
@@ -2144,18 +2272,18 @@
             "replicaAfter": "spec/init/evidence/R5.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R5.b1.after.expected.html",
             "window": {
-              "from": 286,
-              "to": 300
+              "from": 261,
+              "to": 274
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z",
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z",
         "video": {
           "path": "spec/init/evidence/9cf65f4ca0af.webm",
           "from": 331,
@@ -2166,8 +2294,8 @@
         "before": "spec/init/evidence/R1.before.png",
         "after": "spec/init/evidence/R1.after.png",
         "window": {
-          "from": 534,
-          "to": 954
+          "from": 442,
+          "to": 1113
         },
         "beats": [
           {
@@ -2180,25 +2308,25 @@
             "replicaAfter": "spec/init/evidence/R1.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R1.b1.after.expected.html",
             "window": {
-              "from": 534,
-              "to": 954
+              "from": 442,
+              "to": 1113
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z"
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z"
       },
       "R4": {
         "before": "spec/init/evidence/R4.before.png",
         "after": "spec/init/evidence/R4.after.png",
         "window": {
-          "from": 263,
-          "to": 292
+          "from": 238,
+          "to": 263
         },
         "beats": [
           {
@@ -2211,25 +2339,25 @@
             "replicaAfter": "spec/init/evidence/R4.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R4.b1.after.expected.html",
             "window": {
-              "from": 263,
-              "to": 292
+              "from": 238,
+              "to": 263
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z"
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z"
       },
       "R2": {
         "before": "spec/init/evidence/R2.before.png",
         "after": "spec/init/evidence/R2.after.png",
         "window": {
-          "from": 263,
-          "to": 301
+          "from": 243,
+          "to": 275
         },
         "beats": [
           {
@@ -2242,18 +2370,18 @@
             "replicaAfter": "spec/init/evidence/R2.b1.after.actual.html",
             "replicaExpectedAfter": "spec/init/evidence/R2.b1.after.expected.html",
             "window": {
-              "from": 263,
-              "to": 301
+              "from": 243,
+              "to": 275
             },
             "values": [],
-            "replica": {
+            "gate": {
               "gaps": 0,
               "gated": true
             }
           }
         ],
-        "runId": "1788439756095",
-        "at": "2026-09-03T12:49:16.095Z"
+        "runId": "1788448480655",
+        "at": "2026-09-03T15:14:40.655Z"
       }
     }
   },
