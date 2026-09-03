@@ -246,6 +246,53 @@ test('a focused SVG\'s embedded <style> text never becomes the element\'s "text"
   assert.ok(!rec.text || !/animation/.test(rec.text), 'the style block\'s CSS never rides as this element\'s text: ' + JSON.stringify(rec))
 })
 
+// ── FIX ROUND 3 (the re-review's own finding on fix round 2, item 4): a focused ANCESTOR of a big
+// svg still ran the unmodified innerText fallback, so a plain `div` wrapping the board's own drawn
+// schematic aggregated the diagram's rendered `<text>` labels into 48 characters no honest replica
+// could ever contain (spec/_replica.mjs plates that same svg to an empty box). The fix above excluded
+// only the svg ITSELF; this excludes any focused element whose SUBTREE contains one — same threshold
+// (`ICON_MAX`, pinned equal to spec/_replica.mjs's `SVG_ICON_MAX` in tools/replica.test.mjs, since
+// neither self-contained file may import the other) plus `iframe`/`video`/`canvas`, plated regardless
+// of size.
+test('a focused ANCESTOR wrapping a big (platable) svg never aggregates the diagram\'s own rendered labels either', () => {
+  const label1 = el('text', [400, 200, 50, 14], { text: 'Total tasks' })
+  const label2 = el('text', [400, 220, 50, 14], { text: '24' })
+  const bigSvg = el('svg', [387, 187, 488, 305], { children: [label1, label2] })
+  const wrapper = el('div', [387, 187, 488, 305], { children: [bigSvg] })
+  const body = el('body', [0, 0, 1440, 900], { children: [wrapper] })
+  const ring = { x: 387, y: 187, width: 488, height: 305 }
+  const L = walk(body, ring, wrapper)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.ok(rec, 'the wrapper div is recorded and focused: ' + JSON.stringify(L.els))
+  assert.ok(!rec.text, 'the diagram\'s own rendered labels never become the wrapper\'s "text": ' + JSON.stringify(rec))
+})
+
+test('a focused ancestor wrapping a SMALL icon-sized svg still gets its aggregate fallback text — an icon rides verbatim, unaffected', () => {
+  const label = el('span', [10, 10, 20, 14], { text: 'Draft' })
+  const icon = el('svg', [4, 4, 16, 16], { children: [] })
+  const wrapper = el('div', [0, 0, 60, 24], { children: [icon, label] })
+  const body = el('body', [0, 0, 1440, 900], { children: [wrapper] })
+  const ring = { x: 0, y: 0, width: 60, height: 24 }
+  const L = walk(body, ring, wrapper)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.equal(rec.text, 'Draft', 'a small (icon-sized) svg does not block the fallback: ' + JSON.stringify(rec))
+})
+
+test('an iframe/video/canvas anywhere in a focused subtree blocks the aggregate fallback the same way — plated regardless of size', () => {
+  for (const tag of ['iframe', 'video', 'canvas']) {
+    // fallback content a real browser can expose via innerText/textContent (a <video>'s child text
+    // node, an <iframe title>'s document, a <canvas>'s accessible fallback) — exactly what would leak
+    // without the exclusion; an empty media element would pass even unfixed, proving nothing
+    const media = el(tag, [10, 10, 40, 30], { text: 'fallback content the plate will drop' })
+    const wrapper = el('div', [0, 0, 60, 60], { children: [media] })
+    const body = el('body', [0, 0, 1440, 900], { children: [wrapper] })
+    const ring = { x: 0, y: 0, width: 60, height: 60 }
+    const L = walk(body, ring, wrapper)
+    const rec = L.els.find(e => e.tag === 'div' && e.focus)
+    assert.ok(!rec.text, tag + ': ' + JSON.stringify(rec))
+  }
+})
+
 // ── FIX ROUND 2, item 3: CONTENT BEHIND A FULL-VIEWPORT OVERLAY IS NOT SHOWN EITHER ───────────────
 // board R18's census: `missing-box container 1318×480` plus rows of missing/moved text underneath —
 // all of it the "Board" screen's own requirement list, which tools/board/client.js's `show`/

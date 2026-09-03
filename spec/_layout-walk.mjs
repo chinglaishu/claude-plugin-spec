@@ -86,6 +86,35 @@ export function snapLayoutWalk (arg) {
     for (let i = 0; i < kids.length; i++) { if (kids[i].nodeType === 3) s += (kids[i].textContent == null ? '' : kids[i].textContent) }
     return clean(s)
   }
+  // A FOCUSED WRAPPER'S innerText FALLBACK MUST NOT AGGREGATE A DESCENDANT THE REPLICA WILL PLATE
+  // (fix round 3, board R18–R21, the re-review's own finding: the SVG-text fix below excluded only
+  // the svg ITSELF, never an ancestor div sharing its `focus`). A beat's focus is the UNION of every
+  // ring it stood on, so several plain `div` ancestors wrapping a big, ring-focused schematic also
+  // read `focus:true` — ordinary HTML elements, not svg, so the fallback two lines down still ran
+  // for them, and `el.innerText` walks straight into the diagram's own rendered `<text>` shapes and
+  // returns the whole thing's concatenated labels, truncated to 48 characters. spec/_replica.mjs
+  // PLATES that same svg (bigger than its own `SVG_ICON_MAX`) to an empty box with no shapes and no
+  // text at all — so an honest replica could never contain the word this walk just claimed. The two
+  // constants are the SAME NUMBER by design (spec/_replica.mjs's own comment cross-references this
+  // one; tools/replica.test.mjs pins them equal from source, since neither file may import the
+  // other — both are serialised into a page by source and must stay self-contained). `iframe`,
+  // `video` and a `canvas` are plated by `_replica.mjs` regardless of size, so any of those three
+  // anywhere in the subtree is unsafe too.
+  const PLATED_MEDIA = ['IFRAME', 'VIDEO', 'CANVAS']
+  const hasPlatedMedia = (node, depth) => {
+    if (!node || depth > 40) return false
+    const t = String(node.tagName || '').toUpperCase()
+    if (PLATED_MEDIA.indexOf(t) >= 0) return true
+    if (t === 'SVG') {
+      let r = null
+      try { r = typeof node.getBoundingClientRect === 'function' ? node.getBoundingClientRect() : null } catch { r = null }
+      return !r || r.width > ICON_MAX || r.height > ICON_MAX
+    }
+    const kids = node.children
+    if (!kids) return false
+    for (let i = 0; i < kids.length; i++) { if (hasPlatedMedia(kids[i], depth + 1)) return true }
+    return false
+  }
   // THE ICON A WORDLESS CONTROL IS MADE OF (mirror-10, 2026-09-02, the human on the demo's R1
   // scene 3: "there's a weird extra circle on each row's right side in the schematic"). A row's
   // chevron is a 28×28 <button class="caret"> holding a 24-unit stroked <svg>; the button took
@@ -346,7 +375,7 @@ export function snapLayoutWalk (arg) {
       // carry. The walk never descends into an svg's own children anyway (`if (m.tag !== 'SVG')
       // walk(...)`, below), so there is no OTHER path that could supply a truer value here — an
       // icon's own drawable content is read by `iconOf`, not by text.
-      if (focus && !text && tag !== 'SVG') text = clean(el.innerText || el.textContent)
+      if (focus && !text && tag !== 'SVG' && !hasPlatedMedia(el, 0)) text = clean(el.innerText || el.textContent)
       const rec = {
         x: Math.round(r.left), y: Math.round(r.top),
         w: Math.round(r.width), h: Math.round(r.height),

@@ -10,6 +10,7 @@
 // them.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { captureReplica, REPLICA_PROPS } from '../spec/_replica.mjs'
 
 // ── a tiny DOM: enough of Node / Element / CSSStyleDeclaration for the capture to read ──────────
@@ -358,6 +359,23 @@ test('…but a small inline icon still stays the component, verbatim — the bou
   const r = cap(body, { target: icon, ring: { x: 0, y: 0, width: 16, height: 16 } })
   assert.ok(!r.html.includes('data-plate="svg"'), 'a 16×16 icon is not a diagram')
   assert.ok(r.html.includes('<svg') && r.html.includes('<path'), 'it stays the component, shapes included: ' + r.html)
+})
+
+// FIX ROUND 3 — this file's SVG_ICON_MAX and spec/_layout-walk.mjs's ICON_MAX must be the SAME
+// NUMBER: the walk uses it to decide whether a focused ancestor's innerText fallback may safely
+// aggregate a descendant svg's rendered text (an icon stays verbatim in the replica; a diagram gets
+// PLATED to an empty box by the constant right here). Neither file may import the other — both are
+// serialised BY SOURCE into a page (spec/_base.ts's page.evaluate) and must stay self-contained, so
+// there is no shared module to import from — so this reads both files' raw source and pins the two
+// literal numbers equal, the way `_replica.mjs`'s own header comment already claims they are.
+test('SVG_ICON_MAX (here) and ICON_MAX (spec/_layout-walk.mjs) are pinned to the same number', () => {
+  const here = readFileSync(new URL('../spec/_replica.mjs', import.meta.url), 'utf8')
+  const walk = readFileSync(new URL('../spec/_layout-walk.mjs', import.meta.url), 'utf8')
+  const a = /const SVG_ICON_MAX = (\d+)/.exec(here)
+  const b = /const ICON_MAX = (\d+)/.exec(walk)
+  assert.ok(a, 'SVG_ICON_MAX must still be a literal const in spec/_replica.mjs')
+  assert.ok(b, 'ICON_MAX must still be a literal const in spec/_layout-walk.mjs')
+  assert.equal(a[1], b[1], 'the icon/diagram boundary must be the same number on both sides of the gate')
 })
 
 // ── the fonts the region needs ──────────────────────────────────────────────────────────────────
