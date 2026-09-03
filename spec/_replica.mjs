@@ -15,25 +15,44 @@
 // replaces appending a probe element to a real body).
 //
 // Shape in:  { target: Element|null, ring: {x,y,width,height}|null, props?: string[],
-//              caps?: { nodes?, bytes? }, claims?: Claim[], lastRight?: string|null, env? }
+//              caps?: { nodes?, bytes? }, claim?: Claim|null, claims?: Claim[], base?: string|null, env? }
 // Shape out: null when there is nothing to capture, else
 //   { kit, html, expected, region: {x,y,w,h}, ring: {x,y,w,h}|null, nodes, classes, bytes, truncated, fonts }
 // `html` is the whole file body bar its comment header: one <style> of diffed classes, then one root
 // element. No script, no handler, no external URL — the second wall behind the iframe sandbox.
 //
-// ── PHASE 2: `expected` — THE SAME MARKUP WITH THE BEAT'S CLAIMS APPLIED (2026-09-03) ────────────
+// ── PHASE 2 (fix round 1, 2026-09-03): `expected` — ONE CLAIM, NEVER A REPLAY ────────────────────
 // A requirement is the truth and the app is what happened, so the row's two pictures are the same
 // component twice: `html` is the ACTUAL (what the app rendered) and `expected` is what it should
 // have rendered — the wrong value corrected to the requirement's own word, the element the app
-// removed put back from the beat's last right replica, the element it never had drawn in as a
-// marked placeholder. That is tools/viz.mjs `intendedLayout` (kit mirror-13, the human 2026-09-02:
-// "the schematic should be correct, only the proof should be wrong") restated on real markup.
-// `claims` is every claim the beat has made SO FAR, in order, the current moment's last — they
-// accumulate down the beat — and `lastRight` is the html body of its most recent all-ok Actual (its
-// before replica to begin with), which is the only place a restore may take an element from.
+// removed put back, the element it never had drawn in as a marked placeholder. That is tools/viz.mjs
+// `intendedLayout` (kit mirror-13, the human 2026-09-02: "the schematic should be correct, only the
+// proof should be wrong") restated on real markup.
 //
-// The claims are applied to a CLONE of the output tree, never to the Actual: the photograph's own
-// half must stay the app's picture, whatever the requirement asked for.
+// The controller's fix-round-1 ruling REPLACED the phase-2 design that shipped in 0.43.1. That design
+// replayed every claim the beat had made so far against the CURRENT moment's scene on every capture —
+// which is wrong twice over (the reviewer's C1/C2/I3): a stale claim's `got` can match an unrelated
+// leaf once the ring has moved (a false `data-claim="fixed"` naming a value nothing in this scene ever
+// read), and — worse — a FAILED beat's Expected was built from the scene the app got WRONG instead of
+// the scene it last got RIGHT, so a restored row landed on top of whatever the wrong scene happened to
+// contain (mirror-13's own mistake, shipped in a new place).
+//
+// So this capture takes exactly ONE claim — `arg.claim`, this moment's, or null — and a BASE:
+//   `arg.base === null` → nothing has failed in this beat yet (or nothing failed before AND this
+//     claim itself did not fail): the Expected is the CURRENT ACTUAL tree, with an `ok` claim only
+//     TINTING the leaf inside the CURRENT ring that carries `got` — no text ever changes here.
+//   `arg.base` given (an html string, either the beat's `lastExpected` or its `lastRight`, decided by
+//     the caller — see spec/_base.ts) → the Expected is that base's OWN TREE, parsed back and
+//     re-minted into this capture's own class sheet, with ONLY the current claim applied to it, IN
+//     PLACE. A restore never clones or inserts: the row the app removed is already sitting in the
+//     base (it was there before the app went wrong), so `missing` MARKS it, never splices a copy.
+// `arg.claims` is every claim of the beat so far, in order — informational ONLY, carried into the
+// Expected root's `data-claims` for the board to read; it is never applied to anything. There is no
+// code path left that loops a claims array against a tree — a claim cannot be replayed because there
+// is nothing here that replays one.
+//
+// The claim is applied to the BASE tree (or a clone of the current tree), never to the Actual: the
+// photograph's own half must stay the app's picture, whatever the requirement asked for.
 //
 // COORDINATES: `region` and `ring` are both VIEWPORT px, the same frame spec/_layout-walk.mjs
 // records its ring in. The plan's note said "page px (viewport coords + scroll)"; putting the two in
@@ -79,13 +98,15 @@ export function captureReplica (arg) {
     ? env.getComputedStyle
     : (win && win.getComputedStyle ? win.getComputedStyle.bind(win) : null)
   const defaultsFor = env && typeof env.defaultsFor === 'function' ? env.defaultsFor : null
-  // THE BEAT'S CLAIMS, and the last replica the app got right (phase 2 — see the header). A caller
-  // that passes neither gets an `expected` that is the Actual bar the side it names, which is
+  // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (informational only, see the header), and the
+  // BASE the caller wants the Expected built from (fix round 1 — see the header). A caller that
+  // passes none of the three gets an `expected` that is the Actual bar the side it names, which is
   // exactly right for a beat's BEFORE moment: nothing has been claimed yet.
+  const CLAIM = (arg && arg.claim && typeof arg.claim === 'object') ? arg.claim : null
   const CLAIMS = (arg && Array.isArray(arg.claims)) ? arg.claims : []
-  const LAST_RIGHT = (arg && typeof arg.lastRight === 'string' && arg.lastRight) ? arg.lastRight : ''
-  // …and how `lastRight` is turned back into nodes: an inert <template> in the page (it parses but
-  // never runs, loads or paints), a stub env's own parser in a node test.
+  const BASE = (arg && typeof arg.base === 'string' && arg.base) ? arg.base : ''
+  // …and how a base html string is turned back into nodes: an inert <template> in the page (it
+  // parses but never runs, loads or paints), a stub env's own parser in a node test.
   const parseHtmlEnv = env && typeof env.parseHtml === 'function' ? env.parseHtml : null
   // the ONE list, handed in (see the header). A caller that forgets it gets structure with no paint
   // rather than a thrown capture — the harness always passes it.
@@ -291,10 +312,6 @@ export function captureReplica (arg) {
     return E('span', attrs, kids)
   }
 
-  // the ringed element's node in OUR tree — what a claim searches inside, and what a restored row
-  // is put beside. Set as the walk reaches it.
-  let focusNode = null
-
   const serialise = (node, isRoot) => {
     if (!node || node.nodeType !== 1) return null
     // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
@@ -419,24 +436,37 @@ export function captureReplica (arg) {
     }
     bytes += costOf(emit, attrs, kids)
     const made = E(emit, attrs, kids)
-    if (node === focusEl) focusNode = made
     if (isRoot) made.cls = cls
     return made
   }
 
-  // ── THE CLAIM MACHINERY (phase 2) ─────────────────────────────────────────────────────────────
-  // Everything below reads and edits OUR tree only. `clean` is the skeleton walk's rule (collapse
-  // whitespace, trim), so what a claim matches against is the words a reader sees.
+  // ── THE CLAIM MACHINERY (fix round 1) ─────────────────────────────────────────────────────────
+  // Everything below reads and edits a TREE — a clone of the tree this capture just built, or a BASE
+  // tree parsed back from an earlier moment's html (see below). `clean` is the skeleton walk's rule
+  // (collapse whitespace, trim), so what a claim matches against is the words a reader sees.
   const clean = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim()
   const textOf = (n) => isText(n) ? n.text : n.kids.map(textOf).join('')
   const elemsIn = (n) => { const out = []; const walk = (x) => { if (isText(x)) return; out.push(x); for (const k of x.kids) walk(k) }; walk(n); return out }
   const isLeaf = (n) => !n.kids.some(k => !isText(k))
   const setAttr = (n, k, v) => { for (const a of n.attrs) if (a[0] === k) { a[1] = v; return } n.attrs.push([k, v]) }
+  const delAttr = (n, k) => { n.attrs = n.attrs.filter(a => a[0] !== k) }
   const parents = new Map()
   const link = (n) => { if (isText(n)) return; for (const k of n.kids) { parents.set(k, n); link(k) } }
   const findRing = (n) => {
     for (const e of elemsIn(n)) for (const a of e.attrs) if (a[0] === 'data-ring' && a[1] === '1') return e
     return null
+  }
+  const firstMatch = (list, pred) => { for (const l of list) if (pred(l)) return l; return null }
+  // the leaf a claim's `got` names: scoped by the tree's OWN data-ring marker first (a base tree
+  // carries no boxes — the mark IS its "ring box" now) and, failing that, anywhere in the tree.
+  const scopedLeaf = (rootNode, pred) => {
+    const ringNode = findRing(rootNode)
+    if (ringNode) {
+      const l = firstMatch(elemsIn(ringNode).filter(isLeaf), pred)
+      if (l) return { leaf: l, ringNode }
+    }
+    const l2 = firstMatch(elemsIn(rootNode).filter(isLeaf), pred)
+    return l2 ? { leaf: l2, ringNode } : null
   }
   // the intended value takes the app's, in place: the whole text when the claim read the whole text,
   // else the substring, else — the words ran across several nodes — the leaf simply says the
@@ -448,26 +478,125 @@ export function captureReplica (arg) {
     n.kids = [T(want)]
   }
   const swapDirect = (n, got, want) => { for (const k of n.kids) if (isText(k) && k.text.indexOf(got) >= 0) k.text = k.text.replace(got, want) }
+  const isMark = (n, ...kinds) => {
+    if (isText(n)) return false
+    const a = n.attrs.find(x => x[0] === 'data-claim')
+    return !!a && kinds.indexOf(a[1]) >= 0
+  }
+  // insert AFTER the ring, and after anything a PRIOR claim on this same base already inserted there
+  // (fix round 1, I1) — never nearer the ring than something the beat put there before it, which is
+  // what read an Undo ahead of the task it belonged to.
   const insertBeside = (rootNode, ringNode, made) => {
     const parent = ringNode === rootNode ? null : parents.get(ringNode)
-    if (parent) {
-      const at = parent.kids.indexOf(ringNode)
-      parent.kids.splice(at < 0 ? parent.kids.length : at + 1, 0, made)
-      parents.set(made, parent)
-    } else {
-      rootNode.kids.push(made)
-      parents.set(made, rootNode)
-    }
+    const siblings = parent ? parent.kids : rootNode.kids
+    const at = parent ? siblings.indexOf(ringNode) : -1
+    let ins = at + 1
+    while (ins < siblings.length && isMark(siblings[ins], 'new', 'restored')) ins++
+    siblings.splice(ins, 0, made)
+    parents.set(made, parent || rootNode)
     link(made)
   }
+  const ROW_TAGS = ['li', 'tr', 'option']
+  const ROW_ROLES = ['row', 'listitem', 'option', 'gridcell']
+  // the nearest ancestor that reads as ONE ROW — else the element itself (fix round 1, I2: the
+  // stub's own `<li>` fixture used to be the only shape this could ever pass on).
+  const climbToRow = (n, rootNode) => {
+    for (let a = parents.get(n); a && a !== rootNode; a = parents.get(a)) {
+      if (ROW_TAGS.indexOf(a.tag) >= 0) return a
+      const role = a.attrs.find(x => x[0] === 'role')
+      if (role && ROW_ROLES.indexOf(role[1]) >= 0) return a
+    }
+    return n
+  }
+  // the element that IS the thing a `missing` claim names: its clean text equals the expected words;
+  // failing that, the SMALLEST element that still contains them (the brief's "first in document
+  // order" is always the outermost one — the whole scene).
+  const findByText = (rootNode, want) => {
+    const wanted = clean(want)
+    if (!wanted) return null
+    const all = elemsIn(rootNode).filter(e => e !== rootNode)
+    for (const e of all) if (clean(textOf(e)) === wanted) return e
+    let best = null; let bestN = Infinity
+    for (const e of all) {
+      if (clean(textOf(e)).indexOf(wanted) < 0) continue
+      const n = elemsIn(e).length
+      if (n < bestN) { best = e; bestN = n }          // fix round 1, M3: '<' keeps the FIRST of a tie
+    }
+    return best
+  }
 
-  // ── the beat's LAST RIGHT replica, as nodes ────────────────────────────────────────────────────
-  // Parsed once, lazily, and only when a restore actually asks for it. In the page an inert
-  // <template> does the parsing (it never runs, loads or paints what it holds); a node test hands in
-  // `env.parseHtml`. What comes back is re-sanitised on the way in — it is our own output, but a
-  // second wall costs nothing and a restored node must NEVER carry a second `data-ring` or a stale
-  // `data-claim` from the moment it was captured in.
-  const IMPORT_ATTRS = ATTRS.concat(['class', 'data-control', 'data-plate', 'data-ph', 'data-pseudo'])
+  // ONE CLAIM, applied to ONE tree, IN PLACE — never a loop over a claims array. That loop is what
+  // replayed a stale claim against a scene it was never made on (fix round 1, C1/C2/I3); deleting it
+  // is what makes a replay impossible BY CONSTRUCTION, not a rule asking the code not to do it — there
+  // is no `claims` here for this function to iterate, only the one `c` it was handed.
+  function applyOneClaim (rootNode, c) {
+    const want = String(c.expected == null ? '' : c.expected)
+    const got = String(c.got == null ? '' : c.got)
+    if (!want && !got) return                            // nothing was claimed, nothing to apply
+    if (c.ok === true) {
+      // rule 1: the leaf the check read, marked — the board tints it, nothing is rewritten
+      const found = got ? scopedLeaf(rootNode, x => clean(textOf(x)).indexOf(got) >= 0) : null
+      if (found) setAttr(found.leaf, 'data-claim', 'ok')
+      return
+    }
+    if (c.missing === true) {
+      // rules 3/4: the element the app did not show. The base ALREADY HAS it — that is the entire
+      // reason a base was chosen — so a restore never clones or inserts, only MARKS the row it finds,
+      // climbed to the nearest thing that reads as a row (fix round 1, C2/I2: no splicing). Nothing
+      // found at all means the app never had it: a marked placeholder, beside the ring, after
+      // anything the beat already put there.
+      const src = findByText(rootNode, want)
+      if (src) { setAttr(climbToRow(src, rootNode), 'data-claim', 'restored'); return }
+      const ringNode = findRing(rootNode) || rootNode
+      insertBeside(rootNode, ringNode, E('span', [['data-claim', 'new']], [T(want)]))
+      return
+    }
+    // rule 2: the wrong value takes the requirement's word, on the leaf inside the ring box that
+    // carries it (or, failing that, wherever in the tree it can be found — never a silent no-op), and
+    // on every worded wrapper up to that ring (a row whose own text reads "To do 4" around a leaf
+    // reading "4" must not be left saying both numbers).
+    const found = got ? scopedLeaf(rootNode, x => clean(textOf(x)).indexOf(got) >= 0) : null
+    if (found) {
+      const { leaf, ringNode } = found
+      swapLeaf(leaf, got, want)
+      const bound = ringNode || rootNode
+      if (leaf !== bound) {
+        // …bounded at the tree root too — the whole-tree fallback can find `got` on a leaf whose
+        // stale ring sits in an unrelated branch, and climbing must still stop somewhere sane
+        for (let a = parents.get(leaf); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === bound || a === rootNode) break }
+      }
+      setAttr(leaf, 'data-claim', 'fixed')
+      setAttr(leaf, 'data-claim-got', got)
+      // the base's ring is stale the moment a fix lands somewhere else — RE-POINT it here, so the
+      // NEXT claim's scoped search starts from where this one actually landed, not from where the
+      // beat began (fix round 1, C1: a replay could never do this, because it never knew which claim
+      // was "current").
+      if (ringNode && ringNode !== leaf) delAttr(ringNode, 'data-ring')
+      if (ringNode !== leaf) setAttr(leaf, 'data-ring', '1')
+      return
+    }
+    const ringNode = findRing(rootNode) || rootNode
+    const leaves = elemsIn(ringNode).filter(isLeaf)
+    const tl = firstMatch(leaves, x => clean(textOf(x)) !== '')
+    if (tl) {
+      tl.kids = [T(want)]
+      setAttr(tl, 'data-claim', 'fixed')
+      if (got) setAttr(tl, 'data-claim-got', got)
+    } else {
+      const span = E('span', [['data-claim', 'fixed']], [T(want)])
+      ringNode.kids.push(span)
+      parents.set(span, ringNode)
+    }
+  }
+
+  // ── a BASE, parsed back into nodes and re-minted into THIS capture's own sheet ───────────────────
+  // In the page an inert <template> does the parsing (it never runs, loads or paints what it holds);
+  // a node test hands in `env.parseHtml`. What comes back is re-sanitised on the way in — it is our
+  // own output, but a second wall costs nothing. `data-ring` and `data-claim*` ARE imported now (fix
+  // round 1) — the whole point of handing in a base is that its ring and its earlier marks are
+  // exactly what the next claim needs to find and build on.
+  const IMPORT_ATTRS = ATTRS.concat(['class', 'data-control', 'data-plate', 'data-ph', 'data-pseudo',
+    'data-ring', 'data-claim', 'data-claim-got'])
   const fromDom = (n) => {
     if (!n) return null
     if (n.nodeType === 3) { const t = String(n.textContent == null ? '' : n.textContent); return t ? T(t) : null }
@@ -491,44 +620,44 @@ export function captureReplica (arg) {
     for (const k of (n.childNodes || [])) { const c = fromDom(k); if (c) kids.push(c) }
     return E(tag, attrs, kids)
   }
-  let lastTree                                   // undefined = not parsed yet; null = nothing usable
-  let lastCss = {}
-  const lastRightTree = () => {
-    if (lastTree !== undefined) return lastTree
-    lastTree = null
-    if (!LAST_RIGHT) return lastTree
+  // parses a base html string ONCE into { kids, cssMap } — the base ROOT's own children (its root
+  // wrapper is never reused; the caller supplies its OWN root attrs) and the sheet those children's
+  // borrowed class tokens resolve against. null when there is nothing usable.
+  const parseBase = (htmlStr) => {
+    if (!htmlStr) return null
     let domRoot = null
-    if (parseHtmlEnv) { try { domRoot = parseHtmlEnv(LAST_RIGHT) } catch { domRoot = null } }
+    if (parseHtmlEnv) { try { domRoot = parseHtmlEnv(htmlStr) } catch { domRoot = null } }
     else if (doc.createElement) {
       try {
         const t = doc.createElement('template')
-        t.innerHTML = LAST_RIGHT
+        t.innerHTML = htmlStr
         domRoot = t.content || t
       } catch { domRoot = null }
     }
-    if (!domRoot) return lastTree
+    if (!domRoot) return null
     // …and the SHEET it arrived with. A class name is minted per capture, in walk order, so `r3` in
-    // the before replica and `r3` in this one are two different declarations — a restored row that
-    // kept its name would be painted as whatever this moment happens to call r3. Its declarations
-    // are read out of its own <style> and re-minted here (deduped like any other), so the row comes
-    // back looking the way the app drew it.
-    lastCss = {}
+    // one moment's html and `r3` in this one are two different declarations — a base that kept its
+    // names would be painted as whatever THIS moment happens to call r3. Its declarations are read
+    // out of its own <style> and re-minted here (deduped like any other), so it comes back looking
+    // the way it was captured.
+    const cssMap = {}
     const re = /\.rep\s*\.(r\d+)\s*\{([^}]*)\}/g
     let m
-    while ((m = re.exec(LAST_RIGHT))) if (!lastCss[m[1]]) lastCss[m[1]] = m[2]
-    const kids = []
-    for (const k of (domRoot.childNodes || [])) { const v = fromDom(k); if (v) kids.push(v) }
-    lastTree = kids.length ? E('_root', [], kids) : null
-    return lastTree
+    while ((m = re.exec(htmlStr))) if (!cssMap[m[1]]) cssMap[m[1]] = m[2]
+    const tops = []
+    for (const k of (domRoot.childNodes || [])) { const v = fromDom(k); if (v) tops.push(v) }
+    const rootEl = tops.find(k => !isText(k))
+    if (!rootEl) return null
+    return { kids: rootEl.kids, cssMap }
   }
-  const remapClasses = (n) => {
+  const remapClasses = (n, cssMap) => {
     if (isText(n)) return
     for (const a of n.attrs) {
       if (a[0] !== 'class') continue
       const out = []
       for (const tok of String(a[1]).split(/\s+/)) {
         if (!/^r\d+$/.test(tok)) continue                 // `rep` means nothing on a borrowed node
-        const decl = lastCss[tok]
+        const decl = cssMap[tok]
         if (!decl) continue
         let cls = seen.get(decl)
         if (!cls) { cls = 'r' + seen.size; seen.set(decl, cls); RULES.push({ cls, decl }) }
@@ -537,92 +666,7 @@ export function captureReplica (arg) {
       a[1] = out.join(' ')
     }
     n.attrs = n.attrs.filter(a => !(a[0] === 'class' && !a[1]))
-    for (const k of n.kids) remapClasses(k)
-  }
-  // the element in the last right replica that IS the thing the claim names. Its clean text equals
-  // the expected words; failing that, the SMALLEST element that still contains them — the brief's
-  // "first in document order" is always the outermost one, i.e. the whole scene, which would restore
-  // the entire page beside the ring.
-  const findRestorable = (want) => {
-    const tree = lastRightTree()
-    if (!tree) return null
-    const all = elemsIn(tree).slice(1)
-    const wanted = clean(want)
-    if (!wanted) return null
-    for (const e of all) if (clean(textOf(e)) === wanted) return e
-    let best = null; let bestN = Infinity
-    for (const e of all) {
-      if (clean(textOf(e)).indexOf(wanted) < 0) continue
-      const n = elemsIn(e).length
-      if (n <= bestN) { best = e; bestN = n }
-    }
-    return best
-  }
-
-  function applyClaims (rootNode) {
-    link(rootNode)
-    const out = []
-    for (const c of CLAIMS) {
-      if (!c || typeof c !== 'object') continue
-      const want = String(c.expected == null ? '' : c.expected)
-      const got = String(c.got == null ? '' : c.got)
-      if (!want && !got) continue                         // nothing was claimed, nothing to apply
-      const ringNode = findRing(rootNode) || rootNode
-      const leaves = elemsIn(ringNode).filter(isLeaf)
-      const firstLeaf = (pred) => { for (const l of leaves) if (pred(l)) return l; return null }
-      if (c.ok === true) {
-        // 1. the leaf the check read, marked — the board tints it, nothing is rewritten
-        const l = got ? firstLeaf(x => clean(textOf(x)).indexOf(got) >= 0) : null
-        if (l) setAttr(l, 'data-claim', 'ok')
-      } else if (c.missing === true) {
-        // 3 / 4. the element the app did not show: put back from the last right replica if it is
-        // there, else drawn as a placeholder beside the ring
-        const src = findRestorable(want)
-        let made = null
-        if (src) {
-          const copy = cloneNode(src)
-          // one restored element may not carry the file past its cap — above it, the honest
-          // placeholder says the same thing in a few bytes
-          if (bytes + ser(copy).length <= BYTE_CAP) {
-            remapClasses(copy)
-            setAttr(copy, 'data-claim', 'restored')
-            made = copy
-          }
-        }
-        if (!made) made = E('span', [['data-claim', 'new']], [T(want)])
-        insertBeside(rootNode, ringNode, made)
-      } else {
-        // 2. the wrong value takes the requirement's word
-        const l = got ? firstLeaf(x => clean(textOf(x)).indexOf(got) >= 0) : null
-        if (l) {
-          swapLeaf(l, got, want)
-          if (l !== ringNode) {
-            for (let a = parents.get(l); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === ringNode) break }
-          }
-          setAttr(l, 'data-claim', 'fixed')
-          setAttr(l, 'data-claim-got', got)
-        } else {
-          const tl = firstLeaf(x => clean(textOf(x)) !== '')
-          if (tl) {
-            tl.kids = [T(want)]
-            setAttr(tl, 'data-claim', 'fixed')
-            if (got) setAttr(tl, 'data-claim-got', got)
-          } else {
-            const span = E('span', [['data-claim', 'fixed']], [T(want)])
-            ringNode.kids.push(span)
-            parents.set(span, ringNode)
-          }
-        }
-      }
-      out.push({
-        label: String(c.label == null ? '' : c.label),
-        expected: want,
-        got,
-        ok: c.ok === true,
-        ...(c.missing === true ? { missing: true } : {})
-      })
-    }
-    return out
+    for (const k of n.kids) remapClasses(k, cssMap)
   }
 
   const built = serialise(root, true)
@@ -661,24 +705,40 @@ export function captureReplica (arg) {
   const actualRoot = E('div', [...rootAttrs, ['data-replica-side', 'actual'], ['style', 'position:relative']], built.kids)
   const html = '<style>' + sheet(walkRules) + '</style>\n' + ser(actualRoot)
 
-  // ── THE EXPECTED HALF: the claims applied to a CLONE of the same tree ──────────────────────────
-  // tools/viz.mjs intendedLayout (kit mirror-13) restated on real markup. In claim order, cumulative:
-  //   1. an OK claim MARKS the leaf inside the ring that the check read — no text changes; the board
-  //      tints it, so a reader can see which words the assertion actually stood on.
-  //   2. a WRONG VALUE takes the requirement's word in place of the app's, on the first leaf inside
-  //      the ring that carries it, and on every worded wrapper up to the ring (a row whose own text
-  //      reads "To do 4" around a leaf reading "4" must not be left saying both numbers).
-  //   3. an element the app REMOVED (`missing`) is put back FROM THE BEAT'S LAST RIGHT REPLICA — the
-  //      app's own markup for it, never an invention — beside the ring, marked `restored`.
-  //   4. an element the app NEVER HAD is a marked placeholder beside the ring: drawn because the
-  //      requirement says it is there, and honestly labelled as the one thing nothing measured.
-  // Every fallback is BOUNDED and visible: a claim never silently fails to apply, because a claim
-  // that quietly did nothing is a picture saying the app was right.
+  // ── THE EXPECTED HALF (fix round 1): ONE claim, applied to its BASE, never a replay ──────────────
+  // tools/viz.mjs intendedLayout (kit mirror-13) restated on real markup — see the header for the
+  // controller's ruling in full. `arg.base === null` (nothing has failed yet, or nothing failed
+  // before AND this claim itself did not fail): the Expected is the CURRENT ACTUAL tree, and an `ok`
+  // claim only TINTS the leaf inside the CURRENT ring — no text ever moves here. `arg.base` given:
+  // the Expected IS that base's own tree, parsed back and re-minted, with ONLY this moment's claim
+  // applied to it in place — spec/_base.ts decides which base (its beat's `lastExpected` if an
+  // earlier claim already failed, else its `lastRight`), so the picture a failed beat ends on is
+  // built from the scene the app last got RIGHT, never from the scene it just got wrong (C2).
+  let expectedKids
+  const baseParsed = parseBase(BASE)
+  if (baseParsed) {
+    expectedKids = baseParsed.kids
+    for (const k of expectedKids) remapClasses(k, baseParsed.cssMap)
+  } else {
+    // no usable base (arg.base === null, or a string that would not parse): the Expected starts from
+    // THIS moment's own Actual — the bounded fallback rules 2-4 kept from the original brief.
+    expectedKids = built.kids.map(cloneNode)
+  }
   const claimRoot = E('div',
     [...rootAttrs, ['data-replica-side', 'expected'], ['data-claims', '[]'], ['style', 'position:relative']],
-    built.kids.map(cloneNode))
-  const applied = applyClaims(claimRoot)
-  for (const a of claimRoot.attrs) if (a[0] === 'data-claims') a[1] = JSON.stringify(applied)
+    expectedKids)
+  link(claimRoot)
+  if (CLAIM) applyOneClaim(claimRoot, CLAIM)
+  // `data-claims` is EVERY claim of the beat so far, in order — informational only, for the board to
+  // read. It is never applied to anything: there is no loop here over this list at all.
+  const claimList = CLAIMS.map(c => ({
+    label: String((c && c.label) == null ? '' : c.label),
+    expected: String((c && c.expected) == null ? '' : c.expected),
+    got: String((c && c.got) == null ? '' : c.got),
+    ok: !!(c && c.ok === true),
+    ...(c && c.missing === true ? { missing: true } : {})
+  }))
+  for (const a of claimRoot.attrs) if (a[0] === 'data-claims') a[1] = JSON.stringify(claimList)
   const expected = '<style>' + sheet(RULES.length) + '</style>\n' + ser(claimRoot)
 
   // ── the fonts the region needs ────────────────────────────────────────────────────────────────

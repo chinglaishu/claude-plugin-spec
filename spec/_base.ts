@@ -955,7 +955,30 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 // A by-product exactly like the skeleton: bounded by the same 2500 ms deadline, every failure
 // swallowed, and it only reads the page — never a gate, never a thing that can change what the
 // assertion then reads.
-async function snapReplica (id: string, beat: number, seq: number, phase: Phase): Promise<void> {
+// FIX ROUND 1 (2026-09-03) — the controller's ruling replaced the 0.43.1 contract that replayed
+// EVERY claim of the beat against whatever the CURRENT moment happened to be (the reviewer's
+// C1/C2/I3: a stale claim could land on a leaf it was never made on once the ring moved, and a
+// FAILED beat's after picture was built from the scene the app got WRONG rather than the scene it
+// last got RIGHT). spec/_replica.mjs now takes exactly ONE claim and a BASE; this function's only
+// remaining job is choosing that base, per moment:
+//   an EARLIER claim in this beat already failed  → base = the beat's lastExpected (it already
+//     carries every earlier claim, applied once each, never replayed)
+//   else the CURRENT claim itself fails            → base = the beat's lastRight (its last all-ok
+//     Actual, the before replica to begin with — the only place a restore may find the row the app
+//     removed, since a base built from the wrong scene is the C2 mistake all over again)
+//   else (nothing has failed yet)                  → base = null (spec/_replica.mjs builds the
+//     Expected from THIS moment's own Actual, at most tinting an `ok` claim's leaf)
+function chooseBase (c: CurCheck | null, claim: Claim | null): string | null {
+  if (!c) return null
+  // the CURRENT claim (if any) is already the last entry of c.claims — snapValue pushes it before
+  // this runs — so "an earlier claim failed" means every entry BAR that last one.
+  const prior = claim ? c.claims.slice(0, -1) : c.claims
+  if (prior.some(x => x.ok !== true)) return c.lastExpected
+  if (claim && claim.ok !== true) return c.lastRight
+  return null
+}
+
+async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   // the BEAT being harvested — set for the whole of it, its before and after frames included
@@ -970,15 +993,17 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase)
     // for "where this beat starts"; with no ring at all the capture takes the body under its caps.
     let handle: any = null
     if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
+    const base = chooseBase(c, claim)
     const rep: any = await raceTimeout(
       page.evaluate(captureReplica as any, {
         ring: LAST_BOX,
         target: handle,
         props: REPLICA_PROPS,
-        // the beat's claims SO FAR, in order, and the last replica the app got right — the two
-        // inputs the Expected half is made of (spec/_replica.mjs applyClaims)
+        // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (informational only — the board's
+        // `data-claims`, never applied), and the base spec/_replica.mjs builds the Expected from
+        claim,
         claims: c ? c.claims.map(x => ({ ...x })) : [],
-        lastRight: c ? c.lastRight : null
+        base
       }), 2500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!rep || typeof rep.html !== 'string' || !rep.html) return
@@ -990,14 +1015,16 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase)
     const file = info.outputPath(`replica-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
     writeFileSync(file, head('Actual') + rep.html + '\n')
     info.attachments.push({ name: `replica ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
-    // ── THE EXPECTED HALF (phase 2, 2026-09-03) ─────────────────────────────────────────────────
+    // ── THE EXPECTED HALF ────────────────────────────────────────────────────────────────────────
     // Never at a BEFORE moment: the beat has claimed nothing there, so an Expected would be the
     // Actual under a second name. At every other moment it is this capture's own expected — except
     // the AFTER frame of a beat that FAILED, which shows the last intended state the beat reached
-    // (the human, 2026-09-02: "the schematic should be correct, only the proof should be wrong").
-    // Deriving that frame's own Expected instead would apply the claims to a scene the app got
-    // wrong, which is one right value in a wrong picture — exactly the mirror-13 mistake.
-    const failed = !!c && c.claims.some(x => !x.ok)
+    // (the human, 2026-09-02: "the schematic should be correct, only the proof should be wrong") —
+    // KEPT BYTE-FOR-BYTE as `lastExpected` rather than re-derived, even though a `base`-driven
+    // re-capture with no claim of its own would land on the same tree: the after phase never passes
+    // a claim, so `chooseBase` already resolved `base = lastExpected` for it above, and this is the
+    // belt to that braces — the file written is never in doubt about which string it is.
+    const failed = !!c && c.claims.some(x => x.ok !== true)
     if (phase !== 'before') {
       const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
       if (typeof keep === 'string' && keep) {
@@ -1009,6 +1036,9 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase)
     // …and what the NEXT moment of this beat will be built from. `lastRight` only moves while every
     // claim so far held: the moment the app goes wrong, a restore must reach back past it, or it
     // would put the row back together out of the very state the requirement says is broken.
+    // `lastExpected` always advances to THIS moment's own Expected — which, once something has
+    // failed, IS the previous lastExpected with only this one claim added (never a replay of the
+    // rest), so the chain accumulates one claim per link, not one re-application per moment.
     if (c) {
       if (!failed) c.lastRight = rep.html
       if (typeof rep.expected === 'string' && rep.expected) c.lastExpected = rep.expected
@@ -1089,7 +1119,7 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   // …and the app's own DOM of the same moment, AFTER the skeleton (2026-09-03): the photograph is
   // the evidence, the measurement rides after it, and the replica after that — so a page that dies
   // mid-harvest loses the cheapest artefact first.
-  await snapReplica(id, beat, seq, phase)
+  await snapReplica(id, beat, seq, phase, claim)
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,
