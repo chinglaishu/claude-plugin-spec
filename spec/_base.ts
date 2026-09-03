@@ -26,6 +26,13 @@ import { snapLayoutWalk } from './_layout-walk.mjs'
 // list and travels IN through the arg, because a module reference is undefined inside the page.
 // @ts-ignore — a plain .mjs beside the spec; Playwright's loader takes it, tsc never sees this file
 import { captureReplica, REPLICA_PROPS } from './_replica.mjs'
+// …and the two of them COMPOSED INTO ONE PAGE EXPRESSION (task 3b, item 1, 2026-09-04): the
+// skeleton and the replica are two readings of one moment, and taking them in two evaluates gave an
+// SPA several hundred ms to settle a view change between them — the gate then read every difference
+// as a replica gap (board R3/R5/R11 came and went across runs with nothing aimed at them). See
+// spec/_moment.mjs: one pass, no yield, and the walk's own answers (the ringed element it actually
+// measured, the boxes it dropped as occluded) handed straight to the capture.
+import { momentFunction } from './_moment.mjs'
 // THE REPLICA'S GATE (phase 3, 2026-09-03). What "the replica looks like the app" MEANS lives in one
 // pure module, read here at capture time and by `npm run proof mirror` alike; `layoutHash` is the
 // same pin the drawing is stamped with, so a replica and a drawing of one moment agree about which
@@ -940,7 +947,7 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean,
   ring?: Box | null }   // the ring box THIS claim was made under (fix round 2) — an anchor's own
   // reference point when a later rebuild has to find where this claim's fix now belongs
-async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
+async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null, data: any = null): Promise<void> {
   const page = CURRENT_PAGE
   // a moment whose walk does not land leaves NO reading behind: the replica taken next is then
   // written ungated, and the gate says so, rather than being checked against another moment's page
@@ -949,13 +956,9 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
   if (!page) return
   try {
     const info = test.info()
-    // the ringed ELEMENT rides along with its box (2026-09-03): a handle resolved with a short
-    // bound — a target that has just left the page is simply not handed over, and the walk falls
-    // back to the ring's own centre. Disposed after the read; never a gate.
-    let handle: any = null
-    if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
-    const data: any = await raceTimeout(page.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: handle }), 2500)
-    if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
+    // `data` is the walk's own output, read by `captureMoment` in the SAME page pass as the replica
+    // (task 3b, item 1 — see spec/_moment.mjs). This function no longer measures anything; it writes
+    // what that one pass measured, so the skeleton and the replica beside it can never be two pages.
     if (!data || !Array.isArray(data.els) || !data.els.length) return
     const file = info.outputPath(`layout-${safeId(id)}-b${beat}-c${seq}-${phase}.json`)  // seq keys the file only — see snapEvidence
     // `at` — this frame's offset in ms from the moment the beat's `proves` step started, so the
@@ -1131,7 +1134,7 @@ async function gateReplica (page: Page, rep: any): Promise<any | null> {
   }
 }
 
-async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null): Promise<void> {
+async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null, rep: any = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   // the BEAT being harvested — set for the whole of it, its before and after frames included
@@ -1140,39 +1143,10 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
   const c = CUR_CHECK
   try {
     const info = test.info()
-    // the ringed ELEMENT again, on snapLayout's own terms: handed over when it resolves inside a
-    // short bound, else the capture falls back to the element under the ring's centre. On a BEFORE
-    // phase that is the PREVIOUS beat's ring (nothing has been pointed at yet) — the honest scene
-    // for "where this beat starts"; with no ring at all the capture takes the body under its caps.
-    let handle: any = null
-    if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
-    const base = chooseBase(c, claim)
-    // THE REGION GROWS MONOTONICALLY (fix round 2, rule 1) — folded in with THIS moment's own ring
-    // before the capture runs, so the union handed to spec/_replica.mjs already covers everywhere
-    // the beat has rung, this moment included, and a later moment's scene-root walk never has to
-    // shrink back below ground an earlier one already claimed.
-    if (c) c.minRegion = unionBox(c.minRegion, LAST_BOX)
-    const rep: any = await raceTimeout(
-      page.evaluate(captureReplica as any, {
-        ring: LAST_BOX,
-        target: handle,
-        props: REPLICA_PROPS,
-        // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (each carrying the ring box it was made
-        // under — informational for `data-claims`, and the anchor a rebuild needs for the ones that
-        // failed), and the base spec/_replica.mjs builds the Expected from
-        claim,
-        claims: c ? c.claims.map(x => ({ ...x })) : [],
-        base,
-        minRegion: c ? c.minRegion : null,
-        // THE FILE'S CAP, NOT JUST THE WALK'S (fix round 2, item 4 — board R21's census gap: the
-        // walk's own accounting landed rep.html under 200 KB, but the comment header below and the
-        // gate's own data-replica-layout/-gaps attributes (`gate()`, spliced in AFTER this call
-        // returns) are not part of that budget at all, and 41 gaps' worth of JSON pushed the FINAL
-        // FILE to 204,887 bytes. Reserving GATE_BYTE_RESERVE off the top makes the promise the plan
-        // actually made — "≤ 200 KB, the file" — true regardless of how gapped a moment turns out.
-        caps: { bytes: REPLICA_CAPTURE_BYTE_CAP - GATE_BYTE_RESERVE }
-      }), 2500)
-    if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
+    // `rep` is the capture's own output, taken by `captureMoment` in the SAME page pass as the
+    // skeleton (task 3b, item 1 — see spec/_moment.mjs), handed the ringed element the walk
+    // actually measured and the boxes it dropped as occluded. This function no longer captures
+    // anything; it gates and writes what that one pass produced.
     if (!rep || typeof rep.html !== 'string' || !rep.html) return
     // NO PICTURE WHERE NOTHING WAS MEASURED (fix round 1, C3). `snapLayout` writes no skeleton when
     // its walk finds nothing — an API-only beat runs against a blank page (spec/dispatch R4/R5/R6) —
@@ -1329,6 +1303,58 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
 // focus rect the board zooms the media onto — tools/evidence.mjs focusFromLayout lifts it into the
 // index), so there is one measurement and one source of truth. Photograph FIRST — the picture is
 // the evidence; the measurement rides after it.
+// ONE MOMENT, ONE PASS (task 3b, item 1 — 2026-09-04). The skeleton and the replica used to be two
+// `page.evaluate` calls with a handle resolve between them, on either side of a screenshot; an SPA
+// settles a view change in that window, and the pair then described two different pages (board
+// R3/R5/R11 came and went from the gate's census across runs with nothing aimed at them — the
+// signature of a race, not of a capture defect). `spec/_moment.mjs` composes the two self-contained
+// page functions into one expression: the walk runs, then the capture, with no await between them,
+// so the page cannot move inside the pair. The ringed element and the ring box are resolved ONCE and
+// handed to both — and the walk's own answers (the element it actually measured under the ring, the
+// boxes it dropped as occluded) go straight across to the capture inside the page, which is what
+// makes the two halves agree rather than merely be simultaneous.
+const MOMENT_FN = momentFunction(String(snapLayoutWalk), String(captureReplica))
+async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: any }> {
+  const page = CURRENT_PAGE
+  if (!page) return { skel: null, rep: null }
+  const c = CUR_CHECK
+  try {
+    // the ringed ELEMENT (2026-09-03): a handle resolved with a short bound — a target that has just
+    // left the page is simply not handed over, and the walk falls back to the ring's own centre.
+    // Disposed after the read; never a gate. ONE resolve for both halves now.
+    let handle: any = null
+    if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
+    // THE REGION GROWS MONOTONICALLY (fix round 2, rule 1) — folded in with THIS moment's own ring
+    // before the capture runs, so the union handed to spec/_replica.mjs already covers everywhere
+    // the beat has rung, this moment included, and a later moment's scene-root walk never has to
+    // shrink back below ground an earlier one already claimed.
+    if (c) c.minRegion = unionBox(c.minRegion, LAST_BOX)
+    const out: any = await raceTimeout(page.evaluate(MOMENT_FN as any, {
+      ring: LAST_BOX,
+      target: handle,
+      props: REPLICA_PROPS,
+      // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (each carrying the ring box it was made
+      // under — informational for `data-claims`, and the anchor a rebuild needs for the ones that
+      // failed), and the base spec/_replica.mjs builds the Expected from
+      claim,
+      claims: c ? c.claims.map(x => ({ ...x })) : [],
+      base: chooseBase(c, claim),
+      minRegion: c ? c.minRegion : null,
+      // THE FILE'S CAP, NOT JUST THE WALK'S (fix round 2, item 4 — board R21's census gap: the
+      // walk's own accounting landed rep.html under 200 KB, but the comment header written beside it
+      // and the gate's own data-replica-layout/-gaps attributes (spliced in AFTER this call returns)
+      // are not part of that budget at all, and 41 gaps' worth of JSON pushed the FINAL FILE to
+      // 204,887 bytes. Reserving GATE_BYTE_RESERVE off the top makes the promise the plan actually
+      // made — "≤ 200 KB, the file" — true regardless of how gapped a moment turns out.
+      caps: { bytes: REPLICA_CAPTURE_BYTE_CAP - GATE_BYTE_RESERVE }
+    // …one deadline for the pair, the two 2500 ms bounds they had apart. Bounded exactly like every
+    // other by-product: a page that will not answer costs the bound and never fails the assertion.
+    }), 4000)
+    if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
+    return { skel: out ? out.skel : null, rep: out ? out.rep : null }
+  } catch { return { skel: null, rep: null } }
+}
+
 async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   // LET THE CARD LAND FIRST, on the AFTER frame (2026-08-31). The beat's resting scene turns the card
   // over to its Then, which can WRAP TO MORE LINES than the When and therefore FLIP SIDES — a bottom-
@@ -1341,11 +1367,13 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
     await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
   }
   await snapEvidence(id, beat, seq, phase)
-  await snapLayout(id, beat, seq, phase, at, label, claim)
-  // …and the app's own DOM of the same moment, AFTER the skeleton (2026-09-03): the photograph is
-  // the evidence, the measurement rides after it, and the replica after that — so a page that dies
-  // mid-harvest loses the cheapest artefact first.
-  await snapReplica(id, beat, seq, phase, claim)
+  // …and the app's own DOM of the same moment, measured and serialised in ONE page pass (task 3b,
+  // item 1): the photograph is the evidence, and the measurement and the markup that ride after it
+  // are now taken together, so nothing can settle between them. The writes stay in this order —
+  // the skeleton first, then the replica the gate checks against it.
+  const m = await captureMoment(claim)
+  await snapLayout(id, beat, seq, phase, at, label, claim, m.skel)
+  await snapReplica(id, beat, seq, phase, claim, m.rep)
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,

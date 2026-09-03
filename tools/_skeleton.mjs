@@ -100,6 +100,10 @@ export const FILES = [
   // project with _base.ts and not this cannot harvest a single replica (guard-caught by
   // update.test.mjs's every-relative-import-is-vendored check, exactly as the walk is)
   'spec/_replica.mjs',
+  // …and the composer that makes the two of them ONE page pass (task 3b, 2026-09-04): without it
+  // spec/_base.ts cannot build the expression it evaluates, so a project would harvest nothing at
+  // all (guard-caught by the same every-relative-import-is-vendored check)
+  'spec/_moment.mjs',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
   // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
   'spec/_auth.setup.ts',
