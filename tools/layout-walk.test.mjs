@@ -278,6 +278,48 @@ test('a focused ancestor wrapping a SMALL icon-sized svg still gets its aggregat
   assert.equal(rec.text, 'Draft', 'a small (icon-sized) svg does not block the fallback: ' + JSON.stringify(rec))
 })
 
+// FIX ROUND 3 (continued) — found by `npm run proof mirror`'s OWN independent node-text check
+// (tools/proof-integrity.mjs `checkReplicas`, not the in-page gate) after the plated-media fix above
+// landed and re-harvested: a reader toolbar wrapper (Play / auto-step / speed buttons) and a
+// storyline pager wrapper (its counter plus several requirement chips) both got `focus:true` from a
+// beat's ring union and still aggregated every sibling control's own separately-recorded text into
+// one 48-char blob no single replica element could ever match.
+test('a focused wrapper spanning TWO OR MORE separate text-bearing controls does not aggregate them — each is already recorded on its own', () => {
+  const play = el('button', [10, 10, 40, 20], { text: 'Play' })
+  const speed = el('button', [60, 10, 40, 20], { text: '1×' })
+  const toolbar = el('div', [0, 0, 200, 40], { children: [play, speed] })
+  const body = el('body', [0, 0, 1440, 900], { children: [toolbar] })
+  const ring = { x: 0, y: 0, width: 200, height: 40 }
+  const L = walk(body, ring, toolbar)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.ok(rec, JSON.stringify(L.els))
+  assert.ok(!rec.text, 'two sibling controls never fuse into one aggregate string: ' + JSON.stringify(rec))
+  // and each control is still separately recorded, exactly as an honest replica would render it
+  assert.ok(L.els.some(e => e.text === 'Play'))
+  assert.ok(L.els.some(e => e.text === '1×'))
+})
+
+test('a focused wrapper with exactly ONE text-bearing leaf still gets its fallback text — a single value nested a level deep', () => {
+  const icon = el('svg', [4, 4, 12, 12], { children: [] })     // small, decorative, no text of its own
+  const valueSpan = el('span', [20, 4, 30, 12], { text: '24' })
+  const wrapper = el('div', [0, 0, 60, 20], { children: [icon, valueSpan] })
+  const body = el('body', [0, 0, 1440, 900], { children: [wrapper] })
+  const ring = { x: 0, y: 0, width: 60, height: 20 }
+  const L = walk(body, ring, wrapper)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.equal(rec.text, '24', 'exactly one real value nested inside still falls back: ' + JSON.stringify(rec))
+})
+
+test('a focused wrapper with NO text-bearing leaf at all stays textless, as before', () => {
+  const icon = el('svg', [4, 4, 12, 12], { children: [] })
+  const wrapper = el('div', [0, 0, 20, 20], { children: [icon] })
+  const body = el('body', [0, 0, 1440, 900], { children: [wrapper] })
+  const ring = { x: 0, y: 0, width: 20, height: 20 }
+  const L = walk(body, ring, wrapper)
+  const rec = L.els.find(e => e.tag === 'div' && e.focus)
+  assert.ok(!rec.text, JSON.stringify(rec))
+})
+
 test('an iframe/video/canvas anywhere in a focused subtree blocks the aggregate fallback the same way — plated regardless of size', () => {
   for (const tag of ['iframe', 'video', 'canvas']) {
     // fallback content a real browser can expose via innerText/textContent (a <video>'s child text

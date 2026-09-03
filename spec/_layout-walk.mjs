@@ -138,6 +138,31 @@ export function snapLayoutWalk (arg) {
     for (let i = 0; i < kids.length; i++) { if (hasPlatedMedia(kids[i], depth + 1)) return true }
     return false
   }
+  // A FOCUSED WRAPPER SPANNING MULTIPLE SEPARATE CONTROLS MUST NOT AGGREGATE THEIR TEXT EITHER (fix
+  // round 3, board R18 — found by the CLI gate's OWN independent node-text check, not the in-page
+  // gate, after the plated-media fix above landed: a reader toolbar wrapper (Play / auto-step / speed
+  // buttons) and a storyline pager wrapper (its own counter plus several requirement chips) both get
+  // `focus:true` from a beat's ring UNION and still ran the same innerText fallback, aggregating every
+  // sibling control's own text into one unmatchable 48-char blob ("PLAY auto step PLAY SPEED 0.25×
+  // 0.5× 1× ", "‹ 1 · THE BOARD'S SHAPE R1 R9 R16 R17 2 · READIN"). Each of those controls is ALREADY
+  // separately recorded by this same walk with its own correct text — the aggregate adds nothing an
+  // honest replica (which renders each control as its own element, never concatenated together) could
+  // ever answer for. Safe only when the wrapper has AT MOST ONE text-bearing leaf anywhere in its
+  // subtree — a single value nested a level or two deep (an icon beside its own label); two or more
+  // means the wrapper is a GROUP of controls, not one value, and the fallback is skipped. Bounded like
+  // `hasPlatedMedia`: depth-capped, and an early exit the moment a second leaf is found.
+  const countTextLeaves = (node, depth, capAt) => {
+    if (!node || depth > 40) return 0
+    if (nonPseudoChildren(node) === 0) return ownWords(node) ? 1 : 0
+    const kids = node.children
+    if (!kids) return 0
+    let n = 0
+    for (let i = 0; i < kids.length; i++) {
+      n += countTextLeaves(kids[i], depth + 1, capAt)
+      if (n >= capAt) return n
+    }
+    return n
+  }
   // THE ICON A WORDLESS CONTROL IS MADE OF (mirror-10, 2026-09-02, the human on the demo's R1
   // scene 3: "there's a weird extra circle on each row's right side in the schematic"). A row's
   // chevron is a 28×28 <button class="caret"> holding a 24-unit stroked <svg>; the button took
@@ -399,7 +424,7 @@ export function snapLayoutWalk (arg) {
       // carry. The walk never descends into an svg's own children anyway (`if (m.tag !== 'SVG')
       // walk(...)`, below), so there is no OTHER path that could supply a truer value here — an
       // icon's own drawable content is read by `iconOf`, not by text.
-      if (focus && !text && tag !== 'SVG' && !hasPlatedMedia(el, 0)) text = clean(el.innerText || el.textContent)
+      if (focus && !text && tag !== 'SVG' && !hasPlatedMedia(el, 0) && countTextLeaves(el, 0, 2) <= 1) text = clean(el.innerText || el.textContent)
       const rec = {
         x: Math.round(r.left), y: Math.round(r.top),
         w: Math.round(r.width), h: Math.round(r.height),
