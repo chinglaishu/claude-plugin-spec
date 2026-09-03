@@ -491,8 +491,12 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await expect(schem).not.toContainText('the idea, not the real UI')
   // (reordered 2026-08-30, rule 4 — the human removed the column-order toggle and fixed the story
   // BEHAVIOUR FIRST, board R21, so the header names its three cells in that one order now)
-  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'schematic', 'proof'])
-  await expect(schem).not.toContainText('no schematic drawn yet')
+  // …and the human RENAMED the two pictures on 2026-09-03 (Schematic → Expected, Proof → Actual),
+  // because the picture beside a proof is now a real HTML replica of the app's own component rather
+  // than a house-style drawing. This assertion still demanded the old names — a stale test, not a
+  // broken board (rule 4, rule 6: the decision is the human's, the wording follows it).
+  await expect(schem.locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'expected', 'actual'])
+  await expect(schem).not.toContainText('no Expected yet')
   await expect(schem).toHaveAttribute('data-vizhash', vizat)
   await expect(schem).not.toContainText('≠')
   await expect(schem.locator('.sbstale')).toHaveCount(0)          // fresh — no stale banner at all
@@ -518,9 +522,10 @@ test('renders — the drawn schematic fills the Focus slot: loop, stills per bea
   await expect(schem.locator('.sbframe[data-loop]')).toHaveCount(0)    // parked, not looping
   await page.emulateMedia({ reducedMotion: null })
 
-  // a requirement with NO drawing keeps the honest placeholder line
+  // a requirement with NO drawing keeps the honest placeholder line — reworded with the pictures
+  // themselves on 2026-09-03 (Schematic → Expected), which this had not followed
   await page.goto('/#/' + name + '/R2')
-  await expect(dt.locator('.focusov .fread .fstory')).toContainText('no schematic drawn yet')
+  await expect(dt.locator('.focusov .fread .fstory')).toContainText('no Expected yet')
 
   // THE TEXT MOVES PAST THE DRAWING → quiet grey + the dated stale banner. The committed SVG stays
   // byte-identical; only prd.md changes — staleness is COMPUTED from the pin, never stored. A goto
