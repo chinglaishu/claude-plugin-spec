@@ -355,7 +355,11 @@ let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
 // a FAILED beat's after moment can show the intended state it reached rather than one derived from
 // a scene the app got wrong.
 type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number, soft: string[],   // soft: the beat's collected soft-claim failures (proveVisible `soft`)
-  claims: Claim[], lastRight: string | null, lastExpected: string | null }
+  claims: Claim[], lastRight: string | null, lastExpected: string | null,
+  // the UNION of every ring box the beat has rung so far (fix round 2, rule 1) — grows
+  // monotonically, never shrinks; spec/_replica.mjs's scene-root walk must contain it, so a later
+  // moment's own Actual always has room to graft an earlier moment's claim back into by anchor.
+  minRegion: { x: number, y: number, w: number, h: number } | null }
 let CUR_CHECK: CurCheck | null = null
 // The current beat the callout shows — as ONE SENTENCE, chosen by the shared rule (the human,
 // 2026-08-30: "only have to include the text for current small step (as less text as possible) —
@@ -886,7 +890,9 @@ function raceTimeout<T> (p: Promise<T>, ms: number): Promise<T | null> {
 // A by-product exactly like the frames: bounded (a walk budget in the page, a deadline outside
 // it), every failure swallowed. It measures and never touches the page, so it cannot change what
 // the assertion then reads.
-type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean }
+type Claim = { label: string, expected: string, got: string, ok: boolean, missing?: boolean,
+  ring?: Box | null }   // the ring box THIS claim was made under (fix round 2) — an anchor's own
+  // reference point when a later rebuild has to find where this claim's fix now belongs
 async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
@@ -968,6 +974,18 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 //     removed, since a base built from the wrong scene is the C2 mistake all over again)
 //   else (nothing has failed yet)                  → base = null (spec/_replica.mjs builds the
 //     Expected from THIS moment's own Actual, at most tinting an `ok` claim's leaf)
+// the running union of every ring box a beat has rung so far (fix round 2, rule 1) — grows
+// monotonically; a box on either side missing just returns the other, never throws away geometry.
+function unionBox (a: { x: number, y: number, w: number, h: number } | null, b: Box | null):
+  { x: number, y: number, w: number, h: number } | null {
+  if (!b) return a
+  const bx = { x: b.x, y: b.y, w: b.width, h: b.height }
+  if (!a) return bx
+  const x0 = Math.min(a.x, bx.x); const y0 = Math.min(a.y, bx.y)
+  const x1 = Math.max(a.x + a.w, bx.x + bx.w); const y1 = Math.max(a.y + a.h, bx.y + bx.h)
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
+}
+
 function chooseBase (c: CurCheck | null, claim: Claim | null): string | null {
   if (!c) return null
   // the CURRENT claim (if any) is already the last entry of c.claims — snapValue pushes it before
@@ -994,16 +1012,23 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     let handle: any = null
     if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
     const base = chooseBase(c, claim)
+    // THE REGION GROWS MONOTONICALLY (fix round 2, rule 1) — folded in with THIS moment's own ring
+    // before the capture runs, so the union handed to spec/_replica.mjs already covers everywhere
+    // the beat has rung, this moment included, and a later moment's scene-root walk never has to
+    // shrink back below ground an earlier one already claimed.
+    if (c) c.minRegion = unionBox(c.minRegion, LAST_BOX)
     const rep: any = await raceTimeout(
       page.evaluate(captureReplica as any, {
         ring: LAST_BOX,
         target: handle,
         props: REPLICA_PROPS,
-        // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (informational only — the board's
-        // `data-claims`, never applied), and the base spec/_replica.mjs builds the Expected from
+        // THIS MOMENT'S ONE CLAIM, the beat's claims-so-far (each carrying the ring box it was made
+        // under — informational for `data-claims`, and the anchor a rebuild needs for the ones that
+        // failed), and the base spec/_replica.mjs builds the Expected from
         claim,
         claims: c ? c.claims.map(x => ({ ...x })) : [],
-        base
+        base,
+        minRegion: c ? c.minRegion : null
       }), 2500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!rep || typeof rep.html !== 'string' || !rep.html) return
@@ -1160,8 +1185,11 @@ async function snapValue (): Promise<void> {
   // back at the reader. Same source, same instant — the claim proveVisible just painted on the bar.
   // …and the claim JOINS THE BEAT'S LIST before the moment is harvested (phase 2, 2026-09-03): the
   // Expected replica of this moment is the app's markup with every claim up to and including this
-  // one applied, so it has to be on the list the capture is handed, not added after the fact.
-  if (CLAIM) c.claims.push({ ...CLAIM })
+  // one applied, so it has to be on the list the capture is handed, not added after the fact. Its
+  // OWN ring box rides along too (fix round 2) — LAST_BOX is already this moment's, the re-paint
+  // above having settled it — so a later rebuild can find where THIS claim's fix belongs once the
+  // ring has moved on to somewhere its old base's region does not cover.
+  if (CLAIM) c.claims.push({ ...CLAIM, ring: LAST_BOX ? { ...LAST_BOX } : null })
   await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0),
     CLAIM ? CLAIM.label : null, CLAIM ? { ...CLAIM } : null)
 }
@@ -1223,7 +1251,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     // the frame, where it always was: the offsets a value carries are measured from the instant the
     // `proves` step starts, not from the photograph before it.
     const outer = CUR_CHECK
-    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null }
+    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null, minRegion: null }
     await snapPhase(id, beatNo, cursor + 1, 'before')
     CUR_CHECK.t0 = Date.now()
     try {
@@ -1262,7 +1290,7 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
   // a target (renderOverlay's no-ring rule)
   const outerTop = CUR_CHECK                           // same beat window as the nested path above
-  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null }
+  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null, minRegion: null }
   await snapPhase(id, beatNo, cursor + 1, 'before')
   CUR_CHECK.t0 = Date.now()
   try {

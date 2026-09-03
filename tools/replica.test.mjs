@@ -521,6 +521,7 @@ const capC = (body, o = {}) => captureReplica({
   claim: o.claim === undefined ? null : o.claim,
   claims: o.claims || [],
   base: o.base === undefined ? null : o.base,
+  minRegion: o.minRegion === undefined ? null : o.minRegion,
   env: { ...env(body, o), parseHtml }
 })
 
@@ -832,4 +833,163 @@ test('the borrowed base is styled by the sheet it arrives with, re-minted, not b
   assert.ok(r.expected.includes('.rep .' + cls[1] + '{padding:4px 0px;border-bottom:1px solid rgb(226, 232, 240)}'),
     'declared in the EXPECTED\'s own sheet, with the declarations it was captured in: ' + r.expected)
   assert.ok(!r.html.includes('border-bottom'), 'none of which reached the ACTUAL sheet')
+})
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// FIX ROUND 2 (2026-09-03) — THE REBUILD: root cause 2, made a non-issue by construction.
+//
+// task-2-review.md's root cause 2: the counter and the task row are never in one captured scene, so
+// no single base could carry both "still listed" and "To do 5" — round 1's bounded fallback then
+// overwrote the just-restored title with a stray "5". The controller's ruling: the REGION GROWS
+// MONOTONICALLY (`arg.minRegion`, the union of every ring box the beat has rung), so a later
+// moment's own Actual always has room for everything earlier moments rang too; a claim is only ever
+// patched into a base IN PLACE when that base's OWN region already contains the current ring
+// (`data-replica-region`, read back by `parseBase`); when it does not, `spec/_replica.mjs` REBUILDS
+// from the current (grown) Actual and re-applies every earlier FAILED claim by ANCHOR — the live
+// element under that claim's own ring centre, resolved fresh against the current DOM
+// (`document.elementsFromPoint`) — never by searching text again. A claim with no anchor inside the
+// grown region is flagged `unanchored: true` and left unapplied, never guessed at.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+
+test('fix round 2, rule 1: minRegion forces the scene root to contain it too — the region grows, never shrinks', () => {
+  const ring = el('span', [10, 10, 20, 20], { text: 'x' })
+  const near = el('div', [0, 0, 100, 100], { children: [ring] })       // area 10000 ≥ 3×400 — qualifies alone
+  const far = el('div', [500, 500, 30, 30], {})                        // stands in for an earlier moment's ring
+  const big = el('div', [0, 0, 600, 600], { children: [near, far] })
+  const body = el('body', [0, 0, 1440, 900], { children: [big] })
+
+  const withoutMin = capC(body, { target: ring, ring: { x: 10, y: 10, width: 20, height: 20 } })
+  assert.deepEqual(withoutMin.region, { x: 0, y: 0, w: 100, h: 100 },
+    'without minRegion, `near` qualifies alone: ' + JSON.stringify(withoutMin.region))
+
+  const withMin = capC(body, {
+    target: ring, ring: { x: 10, y: 10, width: 20, height: 20 },
+    minRegion: { x: 500, y: 500, w: 30, h: 30 }
+  })
+  assert.deepEqual(withMin.region, { x: 0, y: 0, w: 600, h: 600 },
+    '`near` no longer contains the grown region, so the walk continues to `big`: ' + JSON.stringify(withMin.region))
+})
+
+test('fix round 2, rule 2: a base whose region does not contain the current ring is never patched in place', () => {
+  const btn = el('button', [10, 10, 40, 20], { text: 'Draft' })
+  const smallScene = el('div', [0, 0, 60, 40], { children: [btn] })
+  const bodyA = el('body', [0, 0, 1440, 900], { children: [smallScene] })
+  const before = capC(bodyA, { target: btn, ring: { x: 10, y: 10, width: 40, height: 20 } })
+  assert.deepEqual(before.region, { x: 0, y: 0, w: 60, h: 40 }, 'the base region is small: ' + JSON.stringify(before.region))
+
+  // a SECOND, unrelated element far away — what the CURRENT ring targets, well outside the base's
+  // own region
+  const other = el('span', [500, 500, 30, 20], { text: 'Overdue' })
+  const bodyB = el('body', [0, 0, 1440, 900], { children: [other] })
+  const r = capC(bodyB, {
+    target: other, ring: { x: 500, y: 500, width: 30, height: 20 },
+    claim: { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false },
+    base: before.html
+  })
+  // NOT patched in place: the base's own content never rides into an Expected it cannot cover
+  assert.ok(!r.expected.includes('Draft'), 'the base was never patched in place: ' + r.expected)
+  // the CURRENT claim still applies, on the current (rebuilt) scene
+  assert.ok(r.expected.includes('Due today') && !/>Overdue</.test(r.expected), r.expected)
+})
+
+// ── the full shape: a restored row AND an inserted placeholder, both re-anchored, then the current
+// claim — the exact R9 sequence (still listed → an Undo → the counter), on a stub DOM ────────────
+test('fix round 2, rule 3: the rebuild re-anchors earlier failed claims in claim order and applies the current claim last', () => {
+  // the row's own (small) scene: row -> ul -> wrap qualifies as scene root (ul alone is too small)
+  const cb = el('button', [4, 4, 18, 18], {})
+  const ttl = el('span', [30, 5, 200, 18], { text: 'Pay the electricity bill' })
+  const row = el('li', [0, 0, 300, 28], { children: [cb, ttl] })
+  const nextRow = el('li', [0, 28, 300, 28], { children: [el('span', [30, 33, 200, 18], { text: 'Call the dentist' })] })
+  const ul = el('ul', [0, 0, 300, 56], { children: [row, nextRow] })
+  const wrap = el('div', [0, 0, 300, 120], { children: [ul] })
+  const bodyRow = el('body', [0, 0, 1440, 900], { children: [wrap] })
+
+  const before = capC(bodyRow, { target: row, ring: { x: 0, y: 0, width: 300, height: 28 } })
+  assert.deepEqual(before.region, { x: 0, y: 0, w: 300, h: 120 }, 'the row\'s own scene is small: ' + JSON.stringify(before.region))
+
+  const claim0 = { label: 'still listed', expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true,
+    ring: { x: 0, y: 0, width: 300, height: 28 } }
+  // v1: missing claim, ring unchanged (the deleted row's own locator no longer resolves) — still
+  // inside the base's own region → applied IN PLACE, restored (fix round 1's own mechanism)
+  const r1 = capC(bodyRow, {
+    target: row, ring: { x: 0, y: 0, width: 300, height: 28 },
+    claim: claim0, claims: [claim0], base: before.html
+  })
+  assert.ok(/<li[^>]*data-claim="restored"[^>]*data-claim-of="0"[^>]*>[\s\S]*Pay the electricity bill/.test(r1.expected), r1.expected)
+
+  const claim1 = { label: 'an Undo appears', expected: 'Undo', got: '(missing)', ok: false, missing: true,
+    ring: { x: 0, y: 0, width: 300, height: 28 } }
+  // v2: a SECOND missing claim, same ring — still in place, inserted after the restored row
+  const r2 = capC(bodyRow, {
+    target: row, ring: { x: 0, y: 0, width: 300, height: 28 },
+    claim: claim1, claims: [claim0, claim1], base: r1.expected
+  })
+  assert.ok(/data-claim="restored"[\s\S]*<span data-claim="new" data-claim-of="1">Undo<\/span>/.test(r2.expected), r2.expected)
+
+  // v3: the CURRENT claim rings a DIFFERENT, distant element — a counter — well outside r2's own
+  // (row-scoped) region. minRegion carries the row's box forward, so THIS moment's own Actual scene
+  // grows to cover both the row's old position and the counter.
+  const counter = el('div', [500, 0, 80, 24], { text: 'To do 4' })
+  const header = el('div', [500, 0, 200, 40], { children: [counter] })
+  // the LIVE page now: the row is gone, "Call the dentist" has shifted up into its old slot
+  const shifted = el('li', [0, 0, 300, 28], { children: [el('span', [30, 5, 200, 18], { text: 'Call the dentist' })] })
+  const ulC = el('ul', [0, 0, 300, 28], { children: [shifted] })
+  const page = el('div', [0, 0, 700, 400], { children: [ulC, header] })
+  const bodyC = el('body', [0, 0, 1440, 900], { children: [page] })
+
+  const claim2 = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false,
+    ring: { x: 500, y: 0, width: 80, height: 24 } }
+  const r3 = capC(bodyC, {
+    target: counter, ring: { x: 500, y: 0, width: 80, height: 24 },
+    claim: claim2, claims: [claim0, claim1, claim2], base: r2.expected,
+    minRegion: { x: 0, y: 0, w: 300, h: 28 },
+    hits: [shifted]
+  })
+  // the current claim applied: the counter now reads the requirement's word
+  assert.ok(r3.expected.includes('To do 5') && !/>To do 4</.test(r3.expected), r3.expected)
+  // BOTH earlier failed claims re-anchored, in CLAIM ORDER, before the anchor (the row that shifted
+  // up to occupy the deleted row's old slot) — the restored title, THEN Undo, THEN "Call the dentist"
+  const iTitle = r3.expected.indexOf('Pay the electricity bill')
+  const iUndo = r3.expected.indexOf('>Undo<')
+  const iDentist = r3.expected.indexOf('Call the dentist')
+  assert.ok(iTitle >= 0 && iUndo >= 0 && iDentist >= 0, r3.expected)
+  assert.ok(iTitle < iUndo && iUndo < iDentist,
+    'restored row, then Undo, then the anchor (the row that moved up) — claim order: ' + r3.expected)
+  assert.ok(/data-claim="restored"[^>]*data-claim-of="0"/.test(r3.expected), 'the restore keeps its own claim index')
+  assert.ok(/data-claim="new" data-claim-of="1"/.test(r3.expected), 'so does the placeholder')
+  // and the Actual is untouched by any of it — the app's own (still wrong) picture
+  assert.ok(r3.html.includes('To do 4') && !r3.html.includes('Pay the electricity bill') && !r3.html.includes('Undo'), r3.html)
+})
+
+test('fix round 2, rule 3: an unanchored claim is flagged, not applied', () => {
+  const btn = el('button', [10, 10, 40, 20], { text: 'Draft' })
+  const smallScene = el('div', [0, 0, 60, 40], { children: [btn] })
+  const bodyA = el('body', [0, 0, 1440, 900], { children: [smallScene] })
+  const claim0 = { label: 'the track', expected: 'Published', got: 'Draft', ok: false,
+    ring: { x: 10, y: 10, width: 40, height: 20 } }
+  const before = capC(bodyA, { target: btn, ring: { x: 10, y: 10, width: 40, height: 20 } })
+  const r1 = capC(bodyA, {
+    target: btn, ring: { x: 10, y: 10, width: 40, height: 20 },
+    claim: claim0, claims: [claim0], base: before.html
+  })
+  assert.ok(r1.expected.includes('Published') && r1.expected.includes('data-claim-of="0"'), r1.expected)
+
+  // v2: a totally different scene — nothing at claim0's old ring centre resolves to anything this
+  // capture walked at all (elementsFromPoint returns empty — no hits configured)
+  const other = el('span', [500, 500, 30, 20], { text: 'Overdue' })
+  const bodyB = el('body', [0, 0, 1440, 900], { children: [other] })
+  const claim1 = { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false,
+    ring: { x: 500, y: 500, width: 30, height: 20 } }
+  const r2 = capC(bodyB, {
+    target: other, ring: { x: 500, y: 500, width: 30, height: 20 },
+    claim: claim1, claims: [claim0, claim1], base: r1.expected,
+    minRegion: { x: 10, y: 10, w: 40, h: 20 }
+    // no `hits` — claim0's anchor resolves to nothing
+  })
+  assert.ok(r2.expected.includes('Due today'), 'the current claim still applies: ' + r2.expected)
+  const rendered2 = r2.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.ok(!rendered2.includes('Published'), 'the unanchored claim was never applied — no guess, no fallback: ' + rendered2)
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r2.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unanchored, true, 'flagged, honestly: ' + JSON.stringify(json))
+  assert.ok(!json[1].unanchored, 'the current claim itself is never "unanchored" — it just applies')
 })
