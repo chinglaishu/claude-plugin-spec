@@ -18,7 +18,6 @@ import { join, resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { execFileSync } from 'node:child_process'
 import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -26,8 +25,8 @@ const args = process.argv.slice(2)
 const force = args.includes('--force')
 // THE RULE (2026-09-04): the positional argument is the APP REPO (default: the current directory) and
 // the board goes into `<appRepo>/specboard/` — a folder the app's git ignores wholesale (one appended
-// line) and that carries its OWN git repo, so the PRDs, tests and harvest are versioned without ever
-// touching the app's history. Two escapes: `--dir <boardDir>` puts the board anywhere else (the app
+// line). It is LOCAL-ONLY, single user, and deliberately NOT a git repo of its own (the human declined
+// that): sharing across a team is the next step — the board's files stored in the cloud. Two escapes: `--dir <boardDir>` puts the board anywhere else (the app
 // repo then gets the one-line `.specboard` pointer, since the folder name no longer finds it), and
 // `--flat` is the old vendored-in layout (the board's files straight into the app repo). A repo that
 // already has a board (nested, pointed-to, or flat) is re-scaffolded IN PLACE — never given a second.
@@ -83,10 +82,7 @@ if (DEST === APP) {
   appendIgnore(join(APP, '.gitignore'), ROOT_IGNORE, '# specboard update scratch')
 } else {
   appendIgnore(join(DEST, '.gitignore'), boardIgnoreLines(), `# specboard — the board for ${relative(DEST, APP) || '.'}`)
-  if (NESTED_HERE) appendIgnore(join(APP, '.gitignore'), ['/' + NESTED + '/'], '# specboard lives here, versioned by its own git repo inside — never by this one')
-  if (!existsSync(join(DEST, '.git'))) {
-    try { execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: DEST, stdio: 'ignore' }); copied.push('.git (its own repo)') } catch { /* no git — the folder still works, just unversioned */ }
-  }
+  if (NESTED_HERE) appendIgnore(join(APP, '.gitignore'), ['/' + NESTED + '/'], '# specboard — the local spec board (single user, local only until the cloud step); never committed here')
 }
 
 // The version manifest — the base-of-record update.mjs compares against. Written on every scaffold
