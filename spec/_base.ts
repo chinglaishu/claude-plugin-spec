@@ -347,7 +347,15 @@ let PROVING: { state: 'active' | 'pass' | 'fail', text: string } | null = null
 // right beat and to say WHEN in that beat the frame was taken (the board paces the beat's loop off
 // the step's own window, so the offset is measured from the same origin). Saved and restored around
 // each checkReq so a nested one cannot strand the outer beat's identity.
-type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number, soft: string[] }   // soft: the beat's collected soft-claim failures (proveVisible `soft`)
+// …and since phase 2 of the Expected View plan (2026-09-03) the beat also carries its CLAIMS and the
+// two replicas they are applied against: `claims` is every claim the beat has made so far, in order
+// (snapValue pushes each one as it photographs it), `lastRight` the html of the most recent Actual
+// replica whose claims were ALL ok — the beat's before replica to begin with, and the only place a
+// removed element may be restored from — and `lastExpected` the last Expected the beat produced, so
+// a FAILED beat's after moment can show the intended state it reached rather than one derived from
+// a scene the app got wrong.
+type CurCheck = { id: string, beat: number, seq: number, t0: number, k: number, soft: string[],   // soft: the beat's collected soft-claim failures (proveVisible `soft`)
+  claims: Claim[], lastRight: string | null, lastExpected: string | null }
 let CUR_CHECK: CurCheck | null = null
 // The current beat the callout shows — as ONE SENTENCE, chosen by the shared rule (the human,
 // 2026-08-30: "only have to include the text for current small step (as less text as possible) —
@@ -950,6 +958,10 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 async function snapReplica (id: string, beat: number, seq: number, phase: Phase): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
+  // the BEAT being harvested — set for the whole of it, its before and after frames included
+  // (checkReq opens it before the before-frame and closes it after the after-frame), because the
+  // Expected half is a property of the beat, not of one assertion inside it.
+  const c = CUR_CHECK
   try {
     const info = test.info()
     // the ringed ELEMENT again, on snapLayout's own terms: handed over when it resolves inside a
@@ -959,17 +971,48 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase)
     let handle: any = null
     if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
     const rep: any = await raceTimeout(
-      page.evaluate(captureReplica as any, { ring: LAST_BOX, target: handle, props: REPLICA_PROPS }), 2500)
+      page.evaluate(captureReplica as any, {
+        ring: LAST_BOX,
+        target: handle,
+        props: REPLICA_PROPS,
+        // the beat's claims SO FAR, in order, and the last replica the app got right — the two
+        // inputs the Expected half is made of (spec/_replica.mjs applyClaims)
+        claims: c ? c.claims.map(x => ({ ...x })) : [],
+        lastRight: c ? c.lastRight : null
+      }), 2500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!rep || typeof rep.html !== 'string' || !rep.html) return
     const i = id.indexOf(':')
     const scr = i > -1 ? id.slice(0, i) : basename(dirname(String(info.file || '')))
     // THE FILE BODY: a comment saying what this is, the sheet, the root. No doctype, no <html>,
     // no <head> — the board drops the whole body into an iframe's srcdoc.
-    const body = `<!-- specboard replica-1 · ${scr}:${id} b${beat} ${phase} · Actual · sanitised, no script -->\n${rep.html}\n`
+    const head = (side: string) => `<!-- specboard replica-1 · ${scr}:${id} b${beat} ${phase} · ${side} · sanitised, no script -->\n`
     const file = info.outputPath(`replica-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
-    writeFileSync(file, body)
+    writeFileSync(file, head('Actual') + rep.html + '\n')
     info.attachments.push({ name: `replica ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
+    // ── THE EXPECTED HALF (phase 2, 2026-09-03) ─────────────────────────────────────────────────
+    // Never at a BEFORE moment: the beat has claimed nothing there, so an Expected would be the
+    // Actual under a second name. At every other moment it is this capture's own expected — except
+    // the AFTER frame of a beat that FAILED, which shows the last intended state the beat reached
+    // (the human, 2026-09-02: "the schematic should be correct, only the proof should be wrong").
+    // Deriving that frame's own Expected instead would apply the claims to a scene the app got
+    // wrong, which is one right value in a wrong picture — exactly the mirror-13 mistake.
+    const failed = !!c && c.claims.some(x => !x.ok)
+    if (phase !== 'before') {
+      const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
+      if (typeof keep === 'string' && keep) {
+        const xf = info.outputPath(`replica-expected-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)
+        writeFileSync(xf, head('Expected') + keep + '\n')
+        info.attachments.push({ name: `replica-expected ${id}#${beat} ${phase}`, path: xf, contentType: 'text/html' })
+      }
+    }
+    // …and what the NEXT moment of this beat will be built from. `lastRight` only moves while every
+    // claim so far held: the moment the app goes wrong, a restore must reach back past it, or it
+    // would put the row back together out of the very state the requirement says is broken.
+    if (c) {
+      if (!failed) c.lastRight = rep.html
+      if (typeof rep.expected === 'string' && rep.expected) c.lastExpected = rep.expected
+    }
     await harvestFonts(page, info, rep.fonts)
   } catch { /* the replica is a by-product too — a page that would not serialise simply has none */ }
 }
@@ -1085,6 +1128,10 @@ async function snapValue (): Promise<void> {
   // …and the CLAIM ITSELF with it (the human, 2026-09-02): expected, got and the verdict, so the
   // drawn mirror can show the INTENT on a scene the app failed instead of mirroring the wrong value
   // back at the reader. Same source, same instant — the claim proveVisible just painted on the bar.
+  // …and the claim JOINS THE BEAT'S LIST before the moment is harvested (phase 2, 2026-09-03): the
+  // Expected replica of this moment is the app's markup with every claim up to and including this
+  // one applied, so it has to be on the list the capture is handed, not added after the fact.
+  if (CLAIM) c.claims.push({ ...CLAIM })
   await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0),
     CLAIM ? CLAIM.label : null, CLAIM ? { ...CLAIM } : null)
 }
@@ -1138,13 +1185,17 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     await emitNote('▸ proving ' + id + (title ? ' — ' + title : ''))
     await paintHud({})
     await hideFocus()                                  // the previous beat's ring must not haunt this
-  // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
-  // a target (renderOverlay's no-ring rule)
-  await snapPhase(id, beatNo, cursor + 1, 'before')
-    // the beat is now OPEN: every value proveVisible rings inside fn files itself under it, timed
-    // from here — the same origin the reporter's window uses (the `proves` step starts next)
+    // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
+    // a target (renderOverlay's no-ring rule)
+    // THE BEAT OPENS BEFORE ITS OWN BEFORE-FRAME (2026-09-03, phase 2). It used to open after it —
+    // and the before frame's replica is the beat's STARTING POINT, the `lastRight` a later restore
+    // reaches back to, so it has to be filed on the beat it belongs to. `t0` is still stamped after
+    // the frame, where it always was: the offsets a value carries are measured from the instant the
+    // `proves` step starts, not from the photograph before it.
     const outer = CUR_CHECK
-    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0, soft: [] }
+    CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null }
+    await snapPhase(id, beatNo, cursor + 1, 'before')
+    CUR_CHECK.t0 = Date.now()
     try {
       await test.step('proves ' + id, async () => { await fn(); failSoft(id) })
       setChip(id, 'pass')
@@ -1163,9 +1214,12 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
       beat('req-done', id + ' fail')
       throw err
     } finally {
-      CUR_CHECK = outer                                // the beat closes before its after-frame
-      // the AFTER frame lands pass or fail — a failed proof's pair shows the state it broke in
+      // the AFTER frame lands pass or fail — a failed proof's pair shows the state it broke in.
+      // The beat closes AFTER it (2026-09-03, phase 2): its Expected half is the last intended state
+      // the beat reached, which only the beat's own claim list knows. It used to close first, when
+      // nothing downstream of the frame read the beat at all.
       await snapPhase(id, beatNo, cursor + 1, 'after')
+      CUR_CHECK = outer
     }
     return
   }
@@ -1177,9 +1231,10 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
   await hideFocus()                                  // the previous beat's ring must not haunt this
   // beat's BEFORE frame — clean scene, the ring and callout appear only once the action reveals
   // a target (renderOverlay's no-ring rule)
-  await snapPhase(id, beatNo, cursor + 1, 'before')
   const outerTop = CUR_CHECK                           // same beat window as the nested path above
-  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: Date.now(), k: 0, soft: [] }
+  CUR_CHECK = { id, beat: beatNo, seq: cursor + 1, t0: 0, k: 0, soft: [], claims: [], lastRight: null, lastExpected: null }
+  await snapPhase(id, beatNo, cursor + 1, 'before')
+  CUR_CHECK.t0 = Date.now()
   try {
     await test.step('proves ' + id, async () => { await fn(); failSoft(id) })
     setChip(id, 'pass')
@@ -1198,10 +1253,11 @@ export async function checkReq (id: string, fn: () => Promise<void> | void): Pro
     await paintHud({ head: '✗ FAILED — ' + id + (title ? ' · ' + title : ''), failed: true })
     if (CURRENT_PAGE) await CURRENT_PAGE.waitForTimeout(700 + recordHold(0)).catch(() => {})
   } finally {
-    CUR_CHECK = outerTop
     // the AFTER frame lands pass or fail — here after the verdict paint, so a failed proof's
-    // after-frame carries the red bar a renderer would want to show
+    // after-frame carries the red bar a renderer would want to show. The beat closes after it, for
+    // the reason the nested path above gives.
     await snapPhase(id, beatNo, cursor + 1, 'after')
+    CUR_CHECK = outerTop
   }
 }
 export function coverReqs (...ids: string[]): void {
