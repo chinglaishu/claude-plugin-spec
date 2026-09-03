@@ -463,8 +463,25 @@ test('harvested text is data: escaped, and never able to make the builder refuse
   // ESCAPED label can still contain the literal substring ` onerror=`, which would drop the whole
   // figure — the drawing defuses it rather than losing itself to its own app's copy.
   assert.ok(!/\son\w+\s*=/i.test(d.svg), 'no on*= substring survives')
-  assert.ok(renderSchematic({ viz: { svg: d.svg, phases: d.phases, hash: 'x', textHash: 'x', stale: false } }) !== '',
-    'so the builder bakes it')
+  // …and the builder refuses it — but for a reason that has nothing to do with the text (2026-09-03,
+  // rule 4). This leg used to assert `renderSchematic(...) !== ''`, i.e. that an escaped label does
+  // not cost the figure its place on the board. The human's Expected View decision retired the drawn
+  // ui-mirror: no WIREFRAME is baked any more, whatever it carries, so the old leg was asserting a
+  // behaviour the decision removed. The claim it was really making — an escaped label is data, never
+  // structure — is proven by the three assertions above and, below, on the picture the board DOES
+  // bake: an archetype sketch carrying the same hostile text.
+  assert.equal(renderSchematic({ viz: { svg: d.svg, phases: d.phases, hash: 'x', textHash: 'x', stale: false } }), '',
+    'a wireframe is never baked — the Expected picture is the replica now (board R18)')
+  const sketch = deriveSchematic({
+    given: 'a page with <img src=x onerror="alert(1)"> & "q" on it',
+    beats: [{ when: 'you open it', then: 'the label reads <img src=x onerror="alert(1)"> & "q"' }]
+  })
+  if (sketch) {
+    assert.ok(!/<img/.test(sketch.svg), 'the sketch escapes it too')
+    assert.ok(!/\son\w+\s*=/i.test(sketch.svg), '…and defuses the on*= substring')
+    assert.ok(renderSchematic({ viz: { svg: sketch.svg, phases: sketch.phases, hash: 'x', textHash: 'x', stale: false } }) !== '',
+      'so the builder still bakes the picture it does bake')
+  }
 })
 
 test('layoutHash pins the geometry — same layouts, same hash; a moved box moves it', () => {
