@@ -249,7 +249,7 @@ function harvestEvidence (harvest, ranAt) {
     // own window, so a per-beat row can show, pace and seek its own proof. Best-effort throughout.
     for (const b of (r.beats || [])) {
       const bp = beatEvidencePaths(scr, rid, b.n)
-      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaBefore: null, replicaAfter: null, window: b.window || null, values: [] }
+      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaBefore: null, replicaAfter: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
         if (b[phase] && landFrame(b[phase], bp[phase])) row[phase] = bp[phase]
       }
@@ -261,7 +261,10 @@ function harvestEvidence (harvest, ranAt) {
       // …and the ACTUAL REPLICA of each end of the beat (2026-09-03): the app's own sanitised DOM,
       // copied as it was captured — an html file has nothing to re-encode either, and re-encoding
       // the picture the Expected view is built from is exactly how a mirror drifts.
-      for (const key of ['replicaBefore', 'replicaAfter']) {
+      // …and the EXPECTED replica of the beat's resting moment beside it (phase 2, 2026-09-03): the
+      // same markup with the beat's claims applied — the requirement's own half of the comparison.
+      // Landed with the Actual, from the same capture, or the row would show two moments.
+      for (const key of ['replicaBefore', 'replicaAfter', 'replicaExpectedAfter']) {
         if (!b[key]) continue
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
@@ -273,13 +276,14 @@ function harvestEvidence (harvest, ranAt) {
       // untimed, and the loop falls back to equal holds.
       for (const v of (b.values || [])) {
         const vp = valueEvidencePaths(scr, rid, b.n, v.k)
-        const got = { k: v.k, frame: null, layout: null, replica: null, at: null }
+        const got = { k: v.k, frame: null, layout: null, replica: null, replicaExpected: null, at: null }
         if (v.frame && landFrame(v.frame, vp.frame)) got.frame = vp.frame
         if (v.layout) {
           try { copyFileSync(v.layout, join(process.cwd(), vp.layout)); got.layout = vp.layout } catch { /* dropped */ }
         }
-        if (v.replica) {
-          try { copyFileSync(v.replica, join(process.cwd(), vp.replica)); got.replica = vp.replica } catch { /* dropped */ }
+        for (const key of ['replica', 'replicaExpected']) {
+          if (!v[key]) continue
+          try { copyFileSync(v[key], join(process.cwd(), vp[key])); got[key] = vp[key] } catch { /* dropped */ }
         }
         if (got.layout) {
           try {
@@ -537,7 +541,7 @@ export default class ResultsIndexReporter {
         if (vk) {
           const k = Number(vk[1])
           const vslot = ((slot.values ||= {})[k] ||= {})
-          const field = tag ? 'frame' : (lay ? 'layout' : 'replica')
+          const field = tag ? 'frame' : (lay ? 'layout' : (rep.side === 'expected' ? 'replicaExpected' : 'replica'))
           if (!vslot[field]) vslot[field] = a.path
           h.latestKey = key
           if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
@@ -550,7 +554,14 @@ export default class ResultsIndexReporter {
         // performs it; later same-beat checks still count for coverage, their frames are extra.
         if (tag) { if (!slot[tag.phase]) slot[tag.phase] = a.path }
         else if (lay) { const f = lay.phase === 'before' ? 'layoutBefore' : 'layoutAfter'; if (!slot[f]) slot[f] = a.path }
-        else { const f = rep.phase === 'before' ? 'replicaBefore' : 'replicaAfter'; if (!slot[f]) slot[f] = a.path }
+        else {
+          // the EXPECTED half lands only on the beat's resting moment (phase 2): a before has claimed
+          // nothing, so the harness attaches none and a name that says otherwise is not folded.
+          const f = rep.side === 'expected'
+            ? (rep.phase === 'before' ? null : 'replicaExpectedAfter')
+            : (rep.phase === 'before' ? 'replicaBefore' : 'replicaAfter')
+          if (f && !slot[f]) slot[f] = a.path
+        }
         // this BEAT's own span in the recording: the k-th `proves <id>` step of the test is the
         // k-th checkReq call, which is the k-th beat this capture saw (the step NAME is untouched —
         // coverage still derives from it). First-wins here too, same reason as the frames.

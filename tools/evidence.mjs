@@ -94,7 +94,12 @@ export function beatEvidencePaths (screen, id, n) {
     // is a real HTML replica of the app's own component, not a drawing of it). One name away from
     // the photograph it was taken beside, on the same deterministic rule: a re-harvest overwrites.
     replicaBefore: `${dir}/${b}.before.actual.html`,
-    replicaAfter: `${dir}/${b}.after.actual.html`
+    replicaAfter: `${dir}/${b}.after.actual.html`,
+    // …and the EXPECTED replica of the beat's resting moment (phase 2, 2026-09-03): the same markup
+    // with the beat's claims applied — what the requirement says the app should have rendered. Only
+    // the AFTER moment has one: a beat's before has claimed nothing yet, so an Expected there would
+    // be the Actual under a second name, and two files saying one thing is how they drift apart.
+    replicaExpectedAfter: `${dir}/${b}.after.expected.html`
   }
 }
 
@@ -108,7 +113,15 @@ export function beatEvidencePaths (screen, id, n) {
 export function valueEvidencePaths (screen, id, n, k) {
   const dir = `spec/${screen}/evidence`
   const b = `${bare(id)}.b${Number(n) || 1}.v${Number(k) || 1}`
-  return { dir, frame: `${dir}/${b}.png`, layout: `${dir}/${b}.layout.json`, replica: `${dir}/${b}.actual.html` }
+  // …and both replicas of that moment (phase 2, 2026-09-03): what the app rendered, and what the
+  // requirement says it should have — the row's two pictures of one instant.
+  return {
+    dir,
+    frame: `${dir}/${b}.png`,
+    layout: `${dir}/${b}.layout.json`,
+    replica: `${dir}/${b}.actual.html`,
+    replicaExpected: `${dir}/${b}.expected.html`
+  }
 }
 
 // THE SCREEN'S WEB FONTS (2026-09-03). A replica is the app's own DOM, so it is only the app's own
@@ -193,6 +206,9 @@ export function resolvePrimaryVideo (harvest) {
           // the same capture as the photograph it is shown against.
           replicaBefore: s.replicaBefore || null,
           replicaAfter: s.replicaAfter || null,
+          // …and the EXPECTED half of that resting moment (phase 2): resolved from the SAME capture
+          // as the Actual it is shown against, for the same reason the skeleton is
+          replicaExpectedAfter: s.replicaExpectedAfter || null,
           window: s.window || null,
           // the beat's asserted values in CHECK order (2026-08-29) — sorted by the check number the
           // attachment carried, never by the order the attachments happened to arrive in
@@ -200,7 +216,8 @@ export function resolvePrimaryVideo (harvest) {
             k,
             frame: (s.values[k] || {}).frame || null,
             layout: (s.values[k] || {}).layout || null,
-            replica: (s.values[k] || {}).replica || null
+            replica: (s.values[k] || {}).replica || null,
+            replicaExpected: (s.values[k] || {}).replicaExpected || null
           }))
         }
       })
@@ -253,10 +270,14 @@ export function parseLayoutAttachment (name) {
 // The ACTUAL REPLICA attachment names snapReplica emits — `replica <id>#<n> before|after|v<k>`,
 // mirroring the frame and its skeleton exactly (2026-09-03). Same strictness for the same reason:
 // a name that is not one of these is not a replica and must never be folded as one.
-const REPLICA_ATT = /^replica ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
+// …and since phase 2 (2026-09-03) a moment files TWO of them: `replica …` is the ACTUAL (the app's
+// own picture) and `replica-expected …` the EXPECTED (the same markup with the beat's claims
+// applied). One parser for both, because they must always be folded onto the same moment — a row
+// showing an Expected from one capture beside an Actual from another is a comparison of nothing.
+const REPLICA_ATT = /^replica(-expected)? ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
 export function parseReplicaAttachment (name) {
   const m = REPLICA_ATT.exec(String(name || ''))
-  return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
+  return m ? { id: m[2], beat: m[3] ? Number(m[3]) : null, phase: m[4], side: m[1] ? 'expected' : 'actual' } : null
 }
 
 // …and the FONT files fetched beside them — `font <hash> <family>`. The hash is the content hash the
@@ -410,10 +431,15 @@ export function foldEvidence (index, entries) {
           if (o.layoutAfter) carried.layoutAfter = o.layoutAfter
           if (!carried.focus && o.focus) carried.focus = o.focus   // the zoom rides with its layout
         }
-        if (!(b.replicaBefore || b.replicaAfter) && (o.replicaBefore || o.replicaAfter)) {
+        // the Expected rides in the SAME test as the Actual (phase 2): the two are one picture of
+        // one moment, so a fold that carries one and refreshes the other would put a stale intent
+        // beside a fresh photograph — exactly the drift the mirror guard exists to refuse.
+        if (!(b.replicaBefore || b.replicaAfter || b.replicaExpectedAfter) &&
+            (o.replicaBefore || o.replicaAfter || o.replicaExpectedAfter)) {
           carried = carried === b ? { ...carried } : carried
           if (o.replicaBefore) carried.replicaBefore = o.replicaBefore
           if (o.replicaAfter) carried.replicaAfter = o.replicaAfter
+          if (o.replicaExpectedAfter) carried.replicaExpectedAfter = o.replicaExpectedAfter
         }
         return carried
       })
@@ -433,10 +459,10 @@ export function foldEvidence (index, entries) {
             ? [b.before, b.after, b.layoutBefore, b.layoutAfter,
                 // …and the beat's two ACTUAL REPLICAS (2026-09-03), on the frames' rule: a dropped
                 // beat leaves neither a picture nor the html it was built from behind
-                b.replicaBefore, b.replicaAfter,
+                b.replicaBefore, b.replicaAfter, b.replicaExpectedAfter,
                 // …and every asserted-value frame the beat carried, with its skeleton and its own
                 // replica: a beat that lost a check must not leave its frames behind (2026-08-29)
-                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout, v.replica] : []))]
+                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout, v.replica, v.replicaExpected] : []))]
             : [])]
       const kept = new Set(vals(raw).filter(Boolean))
       for (const p of vals(old)) {

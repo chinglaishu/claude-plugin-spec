@@ -28,7 +28,10 @@ test('beatEvidencePaths keys the harvest by the beat the check proves', () => {
     layoutBefore: 'spec/board/evidence/R4.b2.before.layout.json',
     layoutAfter: 'spec/board/evidence/R4.b2.after.layout.json',
     replicaBefore: 'spec/board/evidence/R4.b2.before.actual.html',
-    replicaAfter: 'spec/board/evidence/R4.b2.after.actual.html'
+    replicaAfter: 'spec/board/evidence/R4.b2.after.actual.html',
+    // the EXPECTED half of the resting moment joined the shape in phase 2 (2026-09-03) — this
+    // assertion was correctly broken by that change (rule 4), not wrong before it
+    replicaExpectedAfter: 'spec/board/evidence/R4.b2.after.expected.html'
   })
 })
 test('beatEvidencePaths takes the bare id off a qualified one, and defaults to beat 1', () => {
@@ -48,7 +51,8 @@ test('valueEvidencePaths names each asserted-value frame inside its beat', () =>
     dir: 'spec/todo/evidence',
     frame: 'spec/todo/evidence/R1.b1.v2.png',
     layout: 'spec/todo/evidence/R1.b1.v2.layout.json',
-    replica: 'spec/todo/evidence/R1.b1.v2.actual.html'
+    replica: 'spec/todo/evidence/R1.b1.v2.actual.html',
+    replicaExpected: 'spec/todo/evidence/R1.b1.v2.expected.html'      // phase 2, 2026-09-03
   })
   assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 1).frame, 'spec/todo/evidence/R1.b3.v1.png',
     'a qualified id lands in the requirement\'s own screen, like every other path here')

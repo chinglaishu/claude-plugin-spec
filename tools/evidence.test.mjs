@@ -152,7 +152,9 @@ test('per-beat: the requirement-level pair is derived, and every beat keeps its 
   // `replicaBefore`/`replicaAfter` joined the beat's shape in phase 1 of the Expected View plan
   // (2026-09-03) — null where the run harvested no replica, exactly as the skeletons read on a beat
   // captured before they existed. This assertion was CORRECTLY broken by that change (rule 4).
-  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', replicaBefore: null, replicaAfter: null, window: { from: 100, to: 400 }, values: [] })
+  // …and `replicaExpectedAfter` in phase 2 (2026-09-03), on the same rule: a null where nothing was
+  // harvested. Correctly broken by that change too (rule 4).
+  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', replicaBefore: null, replicaAfter: null, replicaExpectedAfter: null, window: { from: 100, to: 400 }, values: [] })
   assert.deepEqual(r.beats[1].window, { from: 900, to: 1200 }, 'each beat keeps its OWN span, so a per-beat row seeks its own moment')
 })
 
@@ -184,8 +186,8 @@ test('per-beat: the asserted-value frames resolve in check order, each with its 
   }
   const r = resolvePrimaryVideo(harvest)['todo:R1']
   assert.deepEqual(r.beats[0].values, [
-    { k: 1, frame: 'v1.png', layout: 'v1.json', replica: null },
-    { k: 2, frame: 'v2.png', layout: 'v2.json', replica: null }
+    { k: 1, frame: 'v1.png', layout: 'v1.json', replica: null, replicaExpected: null },
+    { k: 2, frame: 'v2.png', layout: 'v2.json', replica: null, replicaExpected: null }
   ])
 })
 
@@ -319,7 +321,7 @@ test('per-beat: the replica of each phase and each asserted value resolves with 
   const r = resolvePrimaryVideo(harvest)['todo:R1']
   assert.equal(r.beats[0].replicaBefore, 'b1.html')
   assert.equal(r.beats[0].replicaAfter, 'a1.html')
-  assert.deepEqual(r.beats[0].values, [{ k: 1, frame: 'v1.png', layout: 'v1.json', replica: 'v1.html' }])
+  assert.deepEqual(r.beats[0].values, [{ k: 1, frame: 'v1.png', layout: 'v1.json', replica: 'v1.html', replicaExpected: null }])
   assert.deepEqual(r.fonts, [{ hash: 'aaaa1111bbbb2222', family: 'Inter Tight', ext: 'woff2', src: '/tmp/x/font-aaaa1111bbbb2222.woff2' }],
     'the faces the page uses travel with the requirement, to be committed once per screen')
 })
