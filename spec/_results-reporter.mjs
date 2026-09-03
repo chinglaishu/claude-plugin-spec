@@ -5,7 +5,7 @@ import { join, relative, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, valueLanded, claimSlot, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -621,6 +621,13 @@ export default class ResultsIndexReporter {
         const n = t.beat || 1
         if (!cap.beats[n]) { cap.beats[n] = {}; cap.order.push(n) }
         const slot = cap.beats[n]
+        // …AND ONE MOMENT COMES FROM ONE TEST (task 3b, 2026-09-04). A frame, its skeleton and its
+        // replica are three views of ONE capture, and the gate compares two of them box for box. In
+        // a run with no recording every test's captures land in this same map (there is no video
+        // path to separate them) and the fill below is first-wins PER FIELD — so a requirement
+        // proven by TWO tests could take its measurement from one page and its picture from another.
+        // Board R20's lightbox beat did exactly that. The first test to fill a beat owns it.
+        if (!claimSlot(slot, test.title)) continue
         // an ASSERTED-VALUE phase (2026-08-29) — `v<k>`, the k-th value proveVisible rang and read
         // inside this beat. Kept in its own numbered map so the beat's proof can play
         // before → each value → after; first-wins per k for the same reason the pair is.

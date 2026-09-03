@@ -515,3 +515,20 @@ test('a moment the run MEASURED survives the fold even when its photograph did n
   assert.equal(valueLanded({ frame: null, layout: null }), false, 'nothing at all is not a moment')
   assert.equal(valueLanded(null), false)
 })
+
+// ── ONE MOMENT COMES FROM ONE TEST (task 3b, 2026-09-04) ───────────────────────────────────────
+// Two tests can prove the same requirement, and in a CLI run (no recording) both their captures land
+// in the SAME per-beat slot, which fills first-wins PER FIELD. So a beat could take its skeleton
+// from one test's page and its replica from another's — board R20's lightbox beat did exactly that:
+// the skeleton was measured with the lightbox open (the toolbar behind it correctly dropped) and the
+// replica came from the other test's page, where the lightbox is closed. The gate then read a
+// picture of one page against a measurement of another (`extra-box 7`, `missing-text 4`), and no
+// capture fix could ever have closed it. A slot belongs to whoever fills it first.
+test('a beat slot is claimed by the first test to fill it, and refuses another test\'s artefacts', async () => {
+  const { claimSlot } = await import('./evidence.mjs')
+  const slot = {}
+  assert.equal(claimSlot(slot, 'a test'), true, 'the first test claims it')
+  assert.equal(claimSlot(slot, 'a test'), true, 'and keeps filling it')
+  assert.equal(claimSlot(slot, 'another test'), false, 'a second test does not get to interleave')
+  assert.equal(slot.by, 'a test', 'the owner rides on the slot, and nothing else')
+})

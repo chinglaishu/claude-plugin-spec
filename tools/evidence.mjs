@@ -428,6 +428,23 @@ export function valueMeta (layout) {
  * skips a frameless one. Keeping it is what makes the drop visible in the index instead of silently
  * shortening the beat — and what keeps its replica from being pruned as superseded.
  */
+/**
+ * claimSlot(slot, owner) → may this owner fill this beat slot?
+ *
+ * A beat's frame, its skeleton and its replica are three views of ONE capture, and the gate compares
+ * two of them box for box — so they must come from one test's page. In a run with no recording every
+ * test's captures land in the same per-capture map (there is no video path to separate them), and
+ * the fill is first-wins PER FIELD: a requirement proven by two tests could take its skeleton from
+ * one and its replica from the other. Board R20's lightbox beat did exactly that — a measurement
+ * with the lightbox open against a picture of the page without it, which no capture fix could close.
+ * The first test to fill a slot owns it; the rest of its fields still land, another test's do not.
+ */
+export function claimSlot (slot, owner) {
+  if (!slot || owner == null) return true
+  if (slot.by === undefined) { slot.by = owner; return true }
+  return slot.by === owner
+}
+
 export function valueLanded (got) {
   return !!(got && (got.frame || got.layout))
 }
