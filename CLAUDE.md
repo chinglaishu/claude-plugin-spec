@@ -121,6 +121,10 @@ tools/viz.mjs                pure: behavior chain → archetype → the drawn sc
 tools/viz-derive.mjs         the viz pass's shell: derives/commits spec/<screen>/viz/*.svg. RUN AT EVERY FOLD
                              by spec/_results-reporter.mjs (deriveSchematics) — a drawing is a by-product of
                              the harvest it is drawn from; the command stays for a by-hand pass
+tools/replica-gate.mjs       pure: THE REPLICA'S GUARD (phase 3, 2026-09-03) — replicaGaps (the live skeleton against the
+                             rendered replica's own skeleton, 1.5 px), claimGaps (a failed claim's value must be IN the
+                             Expected), replicaAttrs/withReplicaAttrs/textOf/replicaNote. Read by BOTH the in-page gate at
+                             capture time (spec/_base.ts) and `npm run proof mirror` (tools/proof-integrity.mjs checkReplicas)
 tools/flow.mjs               pure: a recorded test's steps → its kind (unit/flow) and chapters for the Flow player
 tools/evidence.mjs           pure: the proves-step window, ffmpeg args (frame · downscale), evidence paths, the fold
 tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (holds off the window + frame anchors) —
@@ -312,7 +316,18 @@ change.
   to `frameBody` that drops a measured element now FAILS the gate instead of shipping a skeleton. If
   a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
   the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
-  words), tighten the rule rather than silencing it. **The capture spends its budget on the ring
+  words), tighten the rule rather than silencing it. **THE REPLICA IS GATED THE SAME WAY** (phase 3,
+  2026-09-03): right after the capture, in the app's own page, the ACTUAL replica is rendered back in
+  a hidden `<iframe srcdoc>` at the region's own coordinates and walked with the SAME
+  `snapLayoutWalk` that measured the live page, and every box and word the live skeleton recorded
+  inside the scene root must come back (`replicaGaps`, tools/replica-gate.mjs, 1.5 px on each edge);
+  the pin and the gap list ride on the root as `data-replica-layout` / `data-replica-gaps`, the fold
+  prints every gapped moment, and `npm run proof mirror` refuses a replica that is gapped, ungated,
+  truncated, or whose pin no longer hashes the skeleton beside it — plus an Expected that does not
+  carry a failed claim's own value (the Expected is gated TEXTUALLY, never geometrically: its root
+  carries this moment's region while its body may be an earlier moment's base tree). The same rule
+  applies as to the drawing: **when a real harvest shows a gap, fix the CAPTURE — never the
+  tolerance and never the guard.** **The capture spends its budget on the ring
   first, never in document order (2026-09-03, the human, on dojostack's House View: "the schematic is
   useless — off focus, the versioning component not shown").** The walk had one global 360-slot cap
   filled in DOM order — sidebar, header, wrapper divs — so on any page bigger than the cap the ringed
