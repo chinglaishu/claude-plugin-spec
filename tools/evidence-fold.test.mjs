@@ -665,3 +665,60 @@ test('why the verdict may not live in `replica`: a non-path there loses the file
   assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'),
     'the keep-set is built from those very fields, so the run would delete the file it just wrote')
 })
+
+// ── A REPLICA WITH NO SKELETON BESIDE IT IS NOT EVIDENCE OF ANYTHING (task 3b, item 4) ──────────
+// `spec/dispatch` R4/R5/R6 are API-only beats: they run against a blank page, so the walk measures
+// nothing and — since phase 3's C3a — no replica is written for them at all. But twelve replica
+// files from BEFORE that rule were still on disk and still in the index, and `npm run proof mirror`
+// was permanently red about them ("not gated … no layout skeleton beside it") through no fault of
+// any harvest. The reason they survived every re-harvest is here: the beat-level replica carry
+// asked only whether the new beat brought a replica, never whether anything was measured at that
+// moment. A replica is the picture the gate checks AGAINST the skeleton; with no skeleton it can
+// never be checked, so carrying it forward keeps a row red forever. It is dropped, and its files
+// are pruned, exactly like any other path the new entry no longer names.
+test('a beat that brings no skeleton does not carry an orphan replica — the files are pruned', () => {
+  const old = entry({ beats: [{ n: 1, before: 'spec/dispatch/evidence/R4.b1.before.png',
+    replicaBefore: 'spec/dispatch/evidence/R4.b1.before.actual.html',
+    replicaAfter: 'spec/dispatch/evidence/R4.b1.after.actual.html',
+    replicaExpectedAfter: 'spec/dispatch/evidence/R4.b1.after.expected.html' }] })
+  const index = { dispatch: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'dispatch:R4': entry({ beats: [{ n: 1, before: 'spec/dispatch/evidence/R4.b1.before.png' }] }) })
+  const b = index.dispatch.evidence.R4.beats[0]
+  assert.equal(b.replicaBefore, undefined, 'nothing measured that moment, so nothing pictures it')
+  assert.equal(b.replicaAfter, undefined)
+  assert.equal(b.replicaExpectedAfter, undefined)
+  assert.deepEqual(prune.sort(), ['spec/dispatch/evidence/R4.b1.after.actual.html',
+    'spec/dispatch/evidence/R4.b1.after.expected.html',
+    'spec/dispatch/evidence/R4.b1.before.actual.html'].sort())
+})
+
+test('a beat whose SKELETON is carried keeps the replica that was checked against it', () => {
+  // the carry that exists for a real reason (a run whose capture failed must not delete the source
+  // the Expected view is built from) is untouched: skeleton and replica travel together or not at all
+  const old = entry({ beats: [{ n: 1, layoutBefore: 'spec/board/evidence/R4.b1.before.layout.json',
+    layoutAfter: 'spec/board/evidence/R4.b1.after.layout.json',
+    replicaBefore: 'spec/board/evidence/R4.b1.before.actual.html',
+    replicaAfter: 'spec/board/evidence/R4.b1.after.actual.html' }] })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1, before: 'spec/board/evidence/R4.b1.before.png' }] }) })
+  const b = index.board.evidence.R4.beats[0]
+  assert.equal(b.layoutBefore, 'spec/board/evidence/R4.b1.before.layout.json', 'the skeleton is carried as before')
+  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html', 'and the picture checked against it rides with it')
+  assert.equal(b.replicaAfter, 'spec/board/evidence/R4.b1.after.actual.html')
+  assert.deepEqual(prune, [], 'nothing is orphaned')
+})
+
+test('a beat that carries only a BEFORE skeleton carries only the before replica', () => {
+  const old = entry({ beats: [{ n: 1, layoutBefore: 'spec/board/evidence/R4.b1.before.layout.json',
+    replicaBefore: 'spec/board/evidence/R4.b1.before.actual.html',
+    replicaAfter: 'spec/board/evidence/R4.b1.after.actual.html',
+    replicaExpectedAfter: 'spec/board/evidence/R4.b1.after.expected.html' }] })
+  const index = { board: { evidence: { R4: old } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1 }] }) })
+  const b = index.board.evidence.R4.beats[0]
+  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html')
+  assert.equal(b.replicaAfter, undefined, 'the after moment measured nothing, so its picture is not kept')
+  assert.equal(b.replicaExpectedAfter, undefined)
+  assert.deepEqual(prune.sort(), ['spec/board/evidence/R4.b1.after.actual.html',
+    'spec/board/evidence/R4.b1.after.expected.html'].sort())
+})

@@ -517,12 +517,25 @@ export function foldEvidence (index, entries) {
         // the Expected rides in the SAME test as the Actual (phase 2): the two are one picture of
         // one moment, so a fold that carries one and refreshes the other would put a stale intent
         // beside a fresh photograph — exactly the drift the mirror guard exists to refuse.
+        // …AND ONLY WHERE SOMETHING WAS MEASURED (task 3b, item 4, 2026-09-04). A replica is the
+        // picture the gate checks AGAINST the skeleton of the same moment; with no skeleton it can
+        // never be checked, and `npm run proof mirror` says so forever ("not gated … no layout
+        // skeleton beside it"). spec/dispatch R4/R5/R6 are API-only beats — they run against a blank
+        // page, the walk measures nothing, and since phase 3's C3a no replica is written for them at
+        // all — yet twelve files from before that rule survived every re-harvest, because this carry
+        // asked only whether the NEW beat brought a replica. So the two travel together or not at
+        // all: the before replica rides with the before skeleton, the after pair with the after one,
+        // and an orphan is dropped and its file pruned like any other path the new entry stopped
+        // naming. (The carry itself stays: a run whose capture failed must not delete the source the
+        // Expected view is built from.)
+        const hasB = !!(carried.layoutBefore || b.layoutBefore)
+        const hasA = !!(carried.layoutAfter || b.layoutAfter)
         if (!(b.replicaBefore || b.replicaAfter || b.replicaExpectedAfter) &&
-            (o.replicaBefore || o.replicaAfter || o.replicaExpectedAfter)) {
+            ((o.replicaBefore && hasB) || ((o.replicaAfter || o.replicaExpectedAfter) && hasA))) {
           carried = carried === b ? { ...carried } : carried
-          if (o.replicaBefore) carried.replicaBefore = o.replicaBefore
-          if (o.replicaAfter) carried.replicaAfter = o.replicaAfter
-          if (o.replicaExpectedAfter) carried.replicaExpectedAfter = o.replicaExpectedAfter
+          if (o.replicaBefore && hasB) carried.replicaBefore = o.replicaBefore
+          if (o.replicaAfter && hasA) carried.replicaAfter = o.replicaAfter
+          if (o.replicaExpectedAfter && hasA) carried.replicaExpectedAfter = o.replicaExpectedAfter
         }
         return carried
       })
