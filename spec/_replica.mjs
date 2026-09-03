@@ -29,13 +29,23 @@
 // The ONE property list the diff asks each element for — the probe's list
 // (docs/expected-view-capture-probe-2026-09-03.cjs) plus what the probe's toolbar could not say:
 // how text is set (align, tracking, casing, slant), whether the element is visible at all, and the
-// three that decide where a box actually lands (outline, z-index, transform). `border` covers all
-// four edges; `cursor` and `overflow-x/y` are not needed for a picture.
+// three that decide where a box actually lands (outline, z-index, transform).
+//
+// NO SHORTHAND THAT CAN GO EMPTY (fix round 1, F3). `border` was here, and getComputedStyle
+// serialises a shorthand to "" the moment its edges disagree — so every bottom-ruled row, ruled list
+// and toolbar rule was diffed as "no value" and thrown away by the "an empty value is not a
+// declaration" rule. The four longhands each serialise in full, whatever the other three say. Grid
+// geometry was missing outright, so any grid-laid component collapsed to a stack of blocks.
+// `cursor` and `overflow-x/y` are still not needed for a picture; `background-image` stays
+// deliberately absent (an external url() may never enter the file — see the header).
 export const REPLICA_PROPS = [
   'display', 'position', 'top', 'left', 'right', 'bottom',
-  'flex', 'flex-direction', 'align-items', 'justify-content', 'gap',
+  'flex', 'flex-direction', 'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis',
+  'align-items', 'align-self', 'justify-content', 'gap', 'column-gap', 'row-gap',
+  'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row', 'grid-auto-flow',
   'width', 'height', 'min-width', 'max-width', 'padding', 'margin',
-  'border', 'border-radius', 'outline', 'background-color', 'color',
+  'border-top', 'border-right', 'border-bottom', 'border-left',
+  'border-radius', 'outline', 'background-color', 'color',
   'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',
   'letter-spacing', 'text-align', 'text-transform', 'text-decoration', 'text-overflow',
   'white-space', 'overflow', 'box-shadow', 'opacity', 'visibility',
@@ -180,6 +190,14 @@ export function captureReplica (arg) {
   const TEXT_MAX = 2000           // one text node's share: a picture of a component, not a document
   const capped = () => truncated || nodes >= NODE_CAP || bytes >= BYTE_CAP - MARGIN
   const spend = (s) => { bytes += s.length; return s }
+  // AN INLINE PICTURE RIDES ONLY WHILE THE BUDGET CAN AFFORD IT (fix round 1, F4). A `data:` src is
+  // unbounded — one screenshot pasted into a page is megabytes — and it is emitted as ONE attribute,
+  // so the walk's per-element check could not stop it carrying the finished file past caps.bytes.
+  // Above DATA_MAX, or with too little budget left, the element becomes the plate of its own box:
+  // an honest "a picture is here", exactly what an uncapturable canvas already gets.
+  const DATA_MAX = 32000
+  const affordable = (url) => String(url).slice(0, 5) === 'data:' &&
+    String(url).length <= DATA_MAX && bytes + String(url).length <= BYTE_CAP - MARGIN
   const classOf = (cs, tag, ns) => {
     if (!cs || !PROPS.length) return ''
     const d = defaultsOf(tag, ns)
@@ -228,6 +246,11 @@ export function captureReplica (arg) {
 
   const serialise = (node, isRoot) => {
     if (!node || node.nodeType !== 1) return ''
+    // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
+    // veil and the callout card — is painted INTO the page under test, so a capture whose scene root
+    // reaches <body> would serialise it as part of the component. spec/_layout-walk.mjs has refused
+    // to measure it since it existed; this is the same refusal, subtree included.
+    if (node.id === OVERLAY) return ''
     const tag = String(node.tagName || '').toLowerCase()
     if (!tag || has(DROP, tag)) return ''
     const cs = styleOf(node)
@@ -277,12 +300,12 @@ export function captureReplica (arg) {
       // webgl, a stub) is a plate the size of its box — never a blank element pretending to be the art
       let url = ''
       try { url = typeof node.toDataURL === 'function' ? String(node.toDataURL() || '') : '' } catch { url = '' }
-      if (url.slice(0, 5) === 'data:') { emit = 'img'; extra.push(['src', url]); inner = '' } else { emit = 'div'; extra.push(['data-plate', 'canvas'], ...box); inner = '' }
+      if (affordable(url)) { emit = 'img'; extra.push(['src', url]); inner = '' } else { emit = 'div'; extra.push(['data-plate', 'canvas'], ...box); inner = '' }
     } else if (tag === 'iframe' || tag === 'video') {
       emit = 'div'; extra.push(['data-plate', tag], ...box); inner = ''
     } else if (tag === 'img') {
-      const src = (node.getAttribute && node.getAttribute('src')) || ''
-      if (String(src).slice(0, 5) === 'data:') { extra.push(['src', String(src)]) } else { emit = 'div'; extra.push(['data-plate', 'img'], ...box) }
+      const src = String((node.getAttribute && node.getAttribute('src')) || '')
+      if (affordable(src)) { extra.push(['src', src]) } else { emit = 'div'; extra.push(['data-plate', 'img'], ...box) }
       inner = ''
     }
 
@@ -368,8 +391,18 @@ export function captureReplica (arg) {
   // captured region actually uses. A cross-origin sheet throws on .cssRules — skipped, never thrown
   // on. The urls are FETCHED outside the page (spec/_base.ts, with page.request) so nothing here
   // touches the network, and the replica itself never carries an external URL.
+  //
+  // RESOLVED AGAINST THE DOCUMENT BASE FIRST (fix round 1, F1). The CSSOM hands a src back exactly
+  // as it was authored, and a self-hosted face is almost always written RELATIVE
+  // (`url(../fonts/x.woff2)`) — so the absolute-only test threw away precisely the same-origin case
+  // this rule exists to catch, and every self-hosting app fell back to a system stack. Resolve, then
+  // ask whether the origin is ours: same-origin is what the served replica's `font-src 'self' data:`
+  // will actually load, and a face from another origin is not the page's to carry.
   const fonts = []
-  const sheets = (doc.styleSheets && doc.styleSheets.length != null) ? doc.styleSheets : []
+  const base = String((doc && doc.baseURI) || (win && win.location && win.location.href) || '')
+  let ourOrigin = null
+  try { ourOrigin = base ? new URL(base).origin : null } catch { ourOrigin = null }
+  const sheets = (ourOrigin && doc.styleSheets && doc.styleSheets.length != null) ? doc.styleSheets : []
   for (let i = 0; i < sheets.length && fonts.length < 8; i++) {
     let rules = null
     try { rules = sheets[i] && sheets[i].cssRules } catch { rules = null }
@@ -385,8 +418,14 @@ export function captureReplica (arg) {
       for (const u of urls) {
         const m = /url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(u)
         if (!m) continue
-        const url = m[1].trim()
-        if (!/^https?:\/\//i.test(url)) continue
+        const raw = m[1].trim()
+        if (!raw || raw.slice(0, 5) === 'data:') continue      // an inline face needs no fetching
+        let url = ''
+        try {
+          const abs = new URL(raw, base)
+          if (abs.origin !== ourOrigin) continue                // another origin's face is not ours to carry
+          url = abs.href
+        } catch { continue }                                    // an src that will not resolve is not a url
         if (!fonts.some(f => f.url === url)) fonts.push({ family, url })
         break                                   // one file per family per rule — the first format wins
       }
