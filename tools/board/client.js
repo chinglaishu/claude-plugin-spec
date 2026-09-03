@@ -1062,13 +1062,22 @@ const B = window.__BOARD__ || {}
   const CHIP_LINE = 22             // a chip line, in PAGE units — what the camera must reserve
   const CHIP_PAD = 10
   function chipHeight (lines) { return CHIP_LINE * Math.max(1, lines) + 2 * CHIP_PAD }
+  // BELOW THE RING FIRST, then above — the burn-in's own order (tools/overlay-geometry.mjs
+  // calloutSpot), so the chip lands where a reader who has watched a recording expects the
+  // explaining box to be, and where the plan's reference row renders it. (The brief for this phase
+  // said above-first; corrected here with the reason rather than followed silently — a chip above a
+  // ring covers the row the value is READ IN, which is the very defect calloutSpot's order exists to
+  // avoid, and it would put the board's chip and the video's card on opposite sides of one ring.)
+  // Left-aligned to the ring, which is the one thing this rule does differently: the ring's own left
+  // edge is where the eye lands, and a centred chip on a narrow target hangs off both sides of it.
   function chipSpot (ring, vp, lines) {
     if (!ring || !vp) return null
     const w = CARDG.width
     const h = chipHeight(lines)
     const m = CARDG.margin
+    const below = ring.y + ring.h + CARDG.gap
     const above = ring.y - CARDG.gap - h
-    const y = above >= m ? above : (ring.y + ring.h + CARDG.gap)
+    const y = (below + h <= vp.vh - m) ? below : (above >= m ? above : below)
     const x = Math.max(m, Math.min(ring.x, Math.max(m, vp.vw - w - m)))
     return { x: x, y: Math.max(m, Math.min(y, Math.max(m, vp.vh - h - m))), w: w, h: h }
   }
@@ -1221,16 +1230,18 @@ const B = window.__BOARD__ || {}
       layer.hidden = false
       bad.forEach(function (c) {
         const el = document.createElement('div'); el.className = 'mdiff'
-        const put = function (word, val, no) {
+        const put = function (word, val, no, quoted) {
           const k = document.createElement('span'); k.className = 'mdk'; k.textContent = word
           const v = document.createElement('b'); v.className = 'mdv' + (no ? ' no' : '')
-          v.textContent = '“' + String(val) + '”'
+          v.textContent = (quoted === false) ? String(val) : ('“' + String(val) + '”')
           el.appendChild(k); el.appendChild(v)
         }
         put('expected', c.expected == null ? '' : c.expected, false)
         const sep = document.createElement('span'); sep.className = 'mdsep'; sep.textContent = '·'
         el.appendChild(sep)
-        put('actual', c.missing ? 'missing' : (c.got == null ? '' : c.got), true)
+        // NOTHING WAS THERE is a word, not a quoted value — the same word the chip beside it uses,
+        // because two names for one fact reads as two facts
+        put('actual', c.missing ? 'MISSING' : (c.got == null ? '' : c.got), true, !c.missing)
         layer.appendChild(el)
       })
       place()

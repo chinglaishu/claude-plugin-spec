@@ -1939,7 +1939,13 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
   // measured ink lands on indigo legitimately adds strokes carrying that token — the count went
   // 14 → 71 on a re-harvest that had moved no ring at all. A ring is asked for by its OWN signature
   // instead: the paper halo ringSVG paints outside every indigo ring.)
-  for (const [id, vals, rings] of [['R1', ['v1', 'v2', 'v3'], 4], ['R3', ['v1', 'v2'], 3]]) {
+  // (rule 4 again, 2026-09-04: the demo was re-harvested for phase 4b, and R1's halo count moved
+  // 4 → 6 with ZERO new gaps. The halo is drawn per RINGED SHAPE, not per ringed scene: since the
+  // capture began measuring the ring target and its subtree FIRST (2026-09-03), two of R1's scenes
+  // ring a wrapper AND the leaf inside it, so one scene draws two halos. The VEIL is the per-scene
+  // signature — one wash per ringed scene — so the two are pinned as the different numbers they are
+  // rather than being asserted equal. The harvest moved; the pin moves with it.)
+  for (const [id, vals, rings, veils] of [['R1', ['v1', 'v2', 'v3'], 6, 4], ['R3', ['v1', 'v2'], 3, 3]]) {
     const L = n => JSON.parse(readFileSync(new URL(`${id}.b1.${n}.layout.json`, DEMO_EV), 'utf8'))
     const beat = { before: L('before'), after: L('after'), values: vals.map(L) }
     const d = renderWireframe([beat], { behavior: GUARDB, id, pass: true })
@@ -1947,7 +1953,9 @@ test('mirror-11: the demo\'s real harvest is unmoved — zero gaps, the same rin
     for (const g of d.gaps) assert.deepEqual(g.gaps, [], `${id} frame ${g.frame} — ${gapSummary(g.gaps)}`)
     assert.equal((d.svg.match(/<rect[^>]*stroke="var\(--paper\)"[^>]*opacity="0\.92"/g) || []).length, rings,
       `${id}: every ring the harvest asked for`)
-    assert.equal((d.svg.match(/opacity="0\.12"/g) || []).length, rings, `${id}: and one veil per ringed scene`)
+    assert.equal((d.svg.match(/opacity="0\.12"/g) || []).length, veils, `${id}: and one veil per ringed scene`)
+    assert.equal(veils, [beat.before, ...beat.values, beat.after].filter(l => l && l.ring).length,
+      `${id}: the veil count IS the harvest's own ringed-scene count`)
     tokensOnly(d.svg)
   }
 })
