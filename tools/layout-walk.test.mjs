@@ -341,3 +341,47 @@ test('a hit inside the walk\'s own narration overlay never counts as occlusion',
   const L = walk(body, null, null, null, point)
   assert.ok(L.els.some(e => e.text === 'Real content'), 'the overlay is the walk\'s own instrument, not something the app drew on top')
 })
+
+// ── FIX ROUND 3 — the re-review's own scrutiny on fix round 2, item 3: "does this risk hiding
+// content under a translucent veil the user can still see?" `elementFromPoint` answers stacking
+// order only, with no idea whether the frontmost element is opaque, half-see-through, or paints
+// nothing at all — so a translucent scrim the APP itself draws (a modal backdrop, a loading veil —
+// the same `rgba(…, .4)` pattern this codebase's own dim overlay uses, just not inside
+// `#__specboard-focus`) or an invisible click-catcher (used purely to close a dropdown on an outside
+// click) would occlude everything under it just the same, though a human viewer sees it dimmed or
+// sees straight through it. An occluder must now actually PAINT: an opaque background (alpha ≥ 0.98)
+// or be an image/video/canvas.
+test('a TRANSLUCENT scrim drawn by the app does not occlude — dimmed is not gone', () => {
+  const bgLeaf = el('div', [100, 300, 300, 40], { text: 'Real content under the scrim', cs: painted })
+  const scrim = el('div', [0, 0, 1440, 900], { cs: { backgroundColor: 'rgba(28, 27, 24, 0.4)' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [bgLeaf, scrim] })
+  const point = () => scrim
+  const L = walk(body, null, null, null, point)
+  assert.ok(L.els.some(e => e.text === 'Real content under the scrim'), 'a translucent hit never blocks what a viewer still sees through it: ' + JSON.stringify(L.els))
+})
+
+test('an INVISIBLE click-catcher (no background at all) does not occlude', () => {
+  const bgLeaf = el('div', [100, 300, 300, 40], { text: 'Real content under the catcher', cs: painted })
+  const catcher = el('div', [0, 0, 1440, 900], { cs: { backgroundColor: 'rgba(0, 0, 0, 0)' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [bgLeaf, catcher] })
+  const point = () => catcher
+  const L = walk(body, null, null, null, point)
+  assert.ok(L.els.some(e => e.text === 'Real content under the catcher'), 'a transparent hit blocks nothing: ' + JSON.stringify(L.els))
+})
+
+test('an OPAQUE scrim still occludes — the paint requirement narrows the check, it does not remove it', () => {
+  const p = occludedPage()   // its `modal` carries `painted`: an opaque rgb(255,255,255) background
+  const L = walk(p.body, null, null, null, p.point)
+  assert.ok(!L.els.some(e => /Home page content/.test(e.text || '')), 'a truly opaque hit still occludes: ' + JSON.stringify(L.els))
+})
+
+test('an <img>/<video>/<canvas> occludes even with no background-color declared — it paints by being what it is', () => {
+  for (const tag of ['img', 'video', 'canvas']) {
+    const bgLeaf = el('div', [100, 300, 300, 40], { text: 'Real content under the ' + tag, cs: painted })
+    const media = el(tag, [0, 0, 1440, 900], { cs: {} })
+    const body = el('body', [0, 0, 1440, 900], { children: [bgLeaf, media] })
+    const point = () => media
+    const L = walk(body, null, null, null, point)
+    assert.ok(!L.els.some(e => /Real content under the/.test(e.text || '')), tag + ': ' + JSON.stringify(L.els))
+  }
+})

@@ -58,6 +58,29 @@ export function snapLayoutWalk (arg) {
     return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
   }
   const has = (el, n) => !!(el.hasAttribute && el.hasAttribute(n))
+  // AN OCCLUDER MUST ACTUALLY PAINT SOMETHING (fix round 3 — the re-review's own scrutiny on fix
+  // round 2, item 3: "does this risk hiding content under a translucent veil the user can still
+  // see?"). `elementFromPoint` answers stacking order only — it does not know or care whether the
+  // frontmost element is opaque, half-see-through, or paints nothing at all. Treating ANY unrelated
+  // hit as full occlusion would make a translucent scrim (this codebase's own dim overlay pattern,
+  // `spec/_base.ts` `rgba(28,27,24,.12)` — or the same thing drawn by the APP itself, a modal
+  // backdrop, a loading scrim) read as "gone" rather than "dimmed", and would make an invisible
+  // click-catcher (`background:transparent`, used purely to close a dropdown on an outside click) eat
+  // everything under it. Mirrors the walk's OWN existing rule for its budget ("no slot for an
+  // unpainted wrapper — no bg, no border, no words, no icon"): an occluder needs an opaque background
+  // (alpha ≥ 0.98) or to BE an image/video/canvas — nothing less blocks what a human still sees.
+  const paints = (n) => {
+    if (!n) return false
+    const t = String(n.tagName || '').toUpperCase()
+    if (t === 'IMG' || t === 'VIDEO' || t === 'CANVAS' || t === 'PICTURE') return true
+    let hcs = null
+    try { hcs = getComputedStyle(n) } catch { hcs = null }
+    if (!hcs) return false
+    const m = /^rgba?\(\s*[\d.]+[,\s]+[\d.]+[,\s]+[\d.]+(?:[,/\s]+([\d.]+))?/i.exec(String(hcs.backgroundColor || ''))
+    if (!m) return false
+    const alpha = m[1] != null ? Number(m[1]) : 1
+    return Number.isFinite(alpha) && alpha >= 0.98
+  }
   // A REPLICA MATERIALISES A ::before/::after AS A REAL CHILD SPAN (spec/_replica.mjs's `pseudo()`,
   // marked `data-pseudo`) so a reader sees "▶ Run" instead of an empty box where the app drew a tick
   // with CSS. That span makes `childElementCount` nonzero on the button it decorates, so this walk's
@@ -309,7 +332,8 @@ export function snapLayoutWalk (arg) {
       eop = pop * (Number.isFinite(ov) ? ov : 1)
       if (eop < 0.05) return null
     }
-    // AN ELEMENT BEHIND AN OPAQUE OVERLAY IS NOT SHOWN EITHER (fix round 2, item 3 — board R18's
+    // AN ELEMENT BEHIND AN OPAQUE OVERLAY IS NOT SHOWN EITHER (fix round 2, item 3, tightened in fix
+    // round 3 to require the overlay to actually PAINT — see `paints` above — board R18's
     // `missing-box container 1318×480` census gap). The board's own detail view is a full-viewport
     // `position:fixed` panel; opening it only locks the PAGE's scroll (tools/board/client.js `show`)
     // — the home page's requirement list underneath stays mounted, `display:block`, `visibility:
@@ -336,7 +360,7 @@ export function snapLayoutWalk (arg) {
       if (hit && hit !== el) {
         const related = (el.contains && el.contains(hit)) || (hit.contains && hit.contains(el))
         const inOverlay = hit.id === OVERLAY || (hit.closest && hit.closest('#' + OVERLAY))
-        if (!related && !inOverlay) return null
+        if (!related && !inOverlay && paints(hit)) return null
       }
     }
     const out = { el, tag, eop, rec: null }
