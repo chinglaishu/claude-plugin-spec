@@ -58,6 +58,34 @@ export function snapLayoutWalk (arg) {
     return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
   }
   const has = (el, n) => !!(el.hasAttribute && el.hasAttribute(n))
+  // A REPLICA MATERIALISES A ::before/::after AS A REAL CHILD SPAN (spec/_replica.mjs's `pseudo()`,
+  // marked `data-pseudo`) so a reader sees "▶ Run" instead of an empty box where the app drew a tick
+  // with CSS. That span makes `childElementCount` nonzero on the button it decorates, so this walk's
+  // OWN leaf rule — "no child elements" — stopped recognising "Run" (or a requirement chip's "R18")
+  // as a leaf and dropped its text outright when the walk read the REPLICA back for the in-page gate
+  // (board R18/R10, 2026-09-03: every chip and the primary Run button came back `missing-text`, the
+  // box exactly right, the word gone). A `data-pseudo` span never exists on the live page — only the
+  // file the replica capture writes carries the attribute — so counting it out of the leaf test
+  // changes nothing there; `ownWords` reads only this element's OWN direct text-node children, never
+  // a descendant element's (pseudo or not), so the tooltip a `data-pseudo="after"` span carries can
+  // never leak into the word it decorates.
+  // `element.children` is an ELEMENTS-only collection by definition (real DOM and this stub alike),
+  // so no nodeType check is needed here — only whether it carries the marker.
+  const pseudoTag = (n) => !!(n && n.getAttribute && n.getAttribute('data-pseudo'))
+  const nonPseudoChildren = (element) => {
+    const kids = element.children
+    if (!kids) return element.childElementCount || 0
+    let n = 0
+    for (let i = 0; i < kids.length; i++) if (!pseudoTag(kids[i])) n++
+    return n
+  }
+  const ownWords = (element) => {
+    const kids = element.childNodes
+    if (!kids) return clean(element.textContent)   // no childNodes exposed — the old, whole-subtree read
+    let s = ''
+    for (let i = 0; i < kids.length; i++) { if (kids[i].nodeType === 3) s += (kids[i].textContent == null ? '' : kids[i].textContent) }
+    return clean(s)
+  }
   // THE ICON A WORDLESS CONTROL IS MADE OF (mirror-10, 2026-09-02, the human on the demo's R1
   // scene 3: "there's a weird extra circle on each row's right side in the schematic"). A row's
   // chevron is a 28×28 <button class="caret"> holding a 24-unit stroked <svg>; the button took
@@ -284,11 +312,11 @@ export function snapLayoutWalk (arg) {
     }
     const out = { el, tag, eop, rec: null }
     if (!sized) return out                          // no box to draw — but its children may have one
-    const leafWords = el.childElementCount === 0 && !!clean(el.textContent)
+    const leafWords = nonPseudoChildren(el) === 0 && !!ownWords(el)
     const floor = leafWords ? 6 : MIN
     if (r.width >= floor && r.height >= floor) {
-      const leaf = el.childElementCount === 0
-      let text = leaf ? clean(el.textContent) : ''
+      const leaf = nonPseudoChildren(el) === 0
+      let text = leaf ? ownWords(el) : ''
       // a field showing its PLACEHOLDER is empty, and the drawing has to say so in the quiet
       // ink rather than in the field's own text colour — otherwise "Add a task and press
       // Enter…" reads as something a person typed (mirror-9)

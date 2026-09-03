@@ -191,6 +191,47 @@ test('every recorded element carries its own tag, lowercased', () => {
   assert.equal(rec.tag, 'span')
 })
 
+// FIX ROUND 3 (2026-09-03, board R18/R10) — found by re-rendering a gapped `.actual.html` back
+// through this same walk (the in-page gate's own read). A replica materialises a ::before/::after
+// as a real `<span data-pseudo="…">` child (spec/_replica.mjs's `pseudo()`) so a reader sees "▶ Run"
+// instead of an empty box where the app drew a tick with CSS — but that span makes
+// `childElementCount` nonzero on the button it decorates, so the walk's OLD leaf rule ("no child
+// elements") stopped recognising "Run" and every requirement chip's "R18" as a leaf and dropped
+// their text entirely: box exactly right, word gone, one `missing-text` gap per chip plus the Run
+// button, on every board screen that button and those chips appear on.
+test('a leaf with only a data-pseudo child is still read as a leaf — its own text, none of the pseudo span\'s', () => {
+  const pseudo = el('span', [10, 10, 10, 14], { text: '▶', attrs: { 'data-pseudo': 'before' } })
+  const btn = el('button', [10, 10, 60, 24], { children: [pseudo] })
+  btn.childNodes = [pseudo, { nodeType: 3, textContent: 'Run' }]
+  const body = el('body', [0, 0, 1440, 900], { children: [btn] })
+  const L = walk(body, null)
+  const rec = L.els.find(e => e.tag === 'button')
+  assert.ok(rec, 'the button is recorded: ' + JSON.stringify(L.els))
+  assert.equal(rec.text, 'Run', 'the pseudo glyph is not glued onto the button\'s own text')
+})
+
+test('a data-pseudo AFTER span carrying a long tooltip never leaks into the leaf\'s own word', () => {
+  const tip = el('span', [0, 0, 1, 1],
+    { text: 'R18 — Three views of a screen\'s requirements: Focus, List, Flow · passed', attrs: { 'data-pseudo': 'after' } })
+  const chip = el('button', [759, 856, 30, 30], { children: [tip] })
+  chip.childNodes = [{ nodeType: 3, textContent: 'R18' }, tip]
+  const body = el('body', [0, 0, 1440, 900], { children: [chip] })
+  const L = walk(body, null)
+  const rec = L.els.find(e => e.tag === 'button')
+  assert.equal(rec.text, 'R18', 'the tooltip text never rides as the chip\'s own word: ' + JSON.stringify(rec))
+})
+
+test('a real (non-pseudo) child element still disqualifies an element from the leaf rule, as before', () => {
+  const real = el('span', [10, 10, 20, 14], { text: 'Draft' })
+  const wrap = el('button', [10, 10, 60, 24], { children: [real] })
+  wrap.childNodes = [real]
+  const body = el('body', [0, 0, 1440, 900], { children: [wrap] })
+  const L = walk(body, null)
+  const rec = L.els.find(e => e.tag === 'button')
+  assert.ok(rec, JSON.stringify(L.els))
+  assert.ok(!rec.text, 'a button wrapping a real element is still not a leaf, unchanged: ' + JSON.stringify(rec))
+})
+
 test('a focused SVG\'s embedded <style> text never becomes the element\'s "text" — the walk never descends into an svg\'s children, so nothing else could supply one either', () => {
   const styleNode = el('style', [0, 0, 0, 0], { text: '.vzabc .wf0{animation:vabc123f0 3s linear infinite}' })
   // real SVGElement.textContent concatenates every descendant text node, <style> included — the stub's
