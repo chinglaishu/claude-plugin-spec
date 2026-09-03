@@ -6,3 +6,4 @@ playwright-report/
 e2e/.report.json
 # serve's spawn lock — runtime state, one per machine.
 .kg-serve.lock
+.superpowers/
