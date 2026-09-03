@@ -1188,10 +1188,16 @@ async function snapValue (): Promise<void> {
   // one applied, so it has to be on the list the capture is handed, not added after the fact. Its
   // OWN ring box rides along too (fix round 2) — LAST_BOX is already this moment's, the re-paint
   // above having settled it — so a later rebuild can find where THIS claim's fix belongs once the
-  // ring has moved on to somewhere its old base's region does not cover.
-  if (CLAIM) c.claims.push({ ...CLAIM, ring: LAST_BOX ? { ...LAST_BOX } : null })
+  // ring has moved on to somewhere its old base's region does not cover, AND (fix round 3, found
+  // while re-harvesting: the CURRENT claim's own wrong-value fix went `unlocated` on R9's counter
+  // because this copy — the one `snapReplica` actually applies via `applyOneClaim` — never carried
+  // `ring` at all, only the ARRAY entry `c.claims` got it) so `applyOneClaim`'s own geometric locate
+  // has a box to work with for the moment it is CURRENTLY applying, not only for the ones a later
+  // rebuild replays.
+  const claimWithRing = CLAIM ? { ...CLAIM, ring: LAST_BOX ? { ...LAST_BOX } : null } : null
+  if (claimWithRing) c.claims.push(claimWithRing)
   await snapPhase(c.id, c.beat, c.seq, 'v' + c.k, Math.max(0, Date.now() - c.t0),
-    CLAIM ? CLAIM.label : null, CLAIM ? { ...CLAIM } : null)
+    CLAIM ? CLAIM.label : null, claimWithRing)
 }
 // the overlay's own transition (.16s) plus a frame — the ring is where it says it is after this
 const OVERLAY_SETTLE_MS = 220
