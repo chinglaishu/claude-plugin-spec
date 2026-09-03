@@ -449,3 +449,261 @@ test('REPLICA_PROPS is one list, and it carries what the diff needs', () => {
   assert.ok(!REPLICA_PROPS.includes('border'), 'the shorthand is gone — it goes empty when the edges differ')
   assert.equal(new Set(REPLICA_PROPS).size, REPLICA_PROPS.length, 'no prop is asked for twice')
 })
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// PHASE 2 — THE EXPECTED REPLICA: the same sanitised markup with the beat's CLAIMS applied.
+// The human's 2026-09-03 decision put a real HTML replica beside every proof; a requirement is the
+// truth and the app is what happened, so the row's left half must show what the app SHOULD have
+// rendered — the wrong value corrected to the requirement's word, the element the app removed put
+// back, the element it never had drawn in as a marked placeholder. tools/viz.mjs intendedLayout
+// (kit mirror-13) is the same rule set on measured boxes; this is it on real markup.
+//
+// Every rule below is asserted on the tree the capture itself builds, and every test also asserts
+// the ACTUAL is untouched — a claim may never edit the photograph's own half.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+
+// A MINIMAL PARSER for the markup the capture itself emits (quoted attributes, escaped text, no
+// comments) — what `env.parseHtml` stands in for. In the page the capture parses `lastRight` with an
+// inert <template>; a node test has no parser at all, so it hands one in, exactly the way `env`
+// already hands in a window, a document and a getComputedStyle.
+function parseHtml (html) {
+  const VOIDT = new Set(['br', 'hr', 'img', 'input', 'meta', 'link', 'source', 'wbr', 'col', 'area', 'base', 'track'])
+  const mk = (tag, attrs) => ({
+    nodeType: 1,
+    tagName: String(tag).toUpperCase(),
+    childNodes: [],
+    getAttributeNames: () => Object.keys(attrs),
+    getAttribute: n => (n in attrs ? attrs[n] : null)
+  })
+  const unesc = s => String(s).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+  const root = mk('template', {})
+  const stack = [root]
+  const push = n => stack[stack.length - 1].childNodes.push(n)
+  let i = 0
+  while (i < html.length) {
+    const lt = html.indexOf('<', i)
+    if (lt < 0) { if (i < html.length) push({ nodeType: 3, textContent: unesc(html.slice(i)) }); break }
+    if (lt > i) push({ nodeType: 3, textContent: unesc(html.slice(i, lt)) })
+    const gt = html.indexOf('>', lt)
+    if (gt < 0) break
+    const raw = html.slice(lt + 1, gt)
+    i = gt + 1
+    if (raw.charAt(0) === '/') { if (stack.length > 1) stack.pop(); continue }
+    const m = /^([a-zA-Z0-9:-]+)/.exec(raw)
+    if (!m) continue
+    const tag = m[1].toLowerCase()
+    const attrs = {}
+    const re = /([a-zA-Z0-9_:-]+)="([^"]*)"/g
+    let a
+    while ((a = re.exec(raw))) attrs[a[1]] = unesc(a[2])
+    const node = mk(tag, attrs)
+    push(node)
+    if (!raw.endsWith('/') && !VOIDT.has(tag)) stack.push(node)
+  }
+  return root
+}
+const capC = (body, o = {}) => captureReplica({
+  target: o.target || null,
+  ring: o.ring || null,
+  caps: o.caps,
+  props: REPLICA_PROPS,
+  claims: o.claims || [],
+  lastRight: o.lastRight === undefined ? null : o.lastRight,
+  env: { ...env(body, o), parseHtml }
+})
+
+// ── rule 1: an OK claim marks the leaf the check read, and changes not one character ────────────
+test('an ok claim marks the leaf the assertion read, and edits nothing', () => {
+  const word = el('span', [520, 100, 60, 20], { text: 'Draft', cs: { color: 'rgb(1,1,1)' } })
+  const btn = el('button', [500, 92, 130, 36], { children: [word] })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, {
+    target: btn,
+    ring: { x: 500, y: 92, width: 130, height: 36 },
+    claims: [{ label: 'the track word', expected: 'Draft', got: 'Draft', ok: true }]
+  })
+  assert.ok(/data-claim="ok"[^>]*>Draft</.test(r.expected), 'the leaf is marked, not rewritten: ' + r.expected)
+  assert.ok(!r.html.includes('data-claim'), 'and the Actual carries no claim mark at all')
+})
+
+// ── rule 2: a WRONG VALUE — the Expected says what the requirement says ─────────────────────────
+test('the probe\'s toolbar: the Expected reads Published where the Actual reads Draft', () => {
+  const label = el('span', [510, 100, 50, 20], { text: 'Version', cs: { color: 'rgb(100, 116, 139)' } })
+  const track = el('span', [566, 100, 34, 20], { text: 'Draft', cs: { color: 'rgb(2, 8, 23)' } })
+  const btn = el('button', [500, 92, 130, 36], { children: [label, track], cs: { 'border-radius': '6px' } })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn], cs: { display: 'flex' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, {
+    target: btn,
+    ring: { x: 500, y: 92, width: 130, height: 36 },
+    claims: [{ label: 'the version track', expected: 'Published', got: 'Draft', ok: false }]
+  })
+  assert.ok(r.expected.includes('Version') && r.expected.includes('Published'),
+    'the button reads "Version … Published": ' + r.expected)
+  assert.ok(!r.expected.includes('Draft'), 'and no longer the value the app had')
+  assert.ok(/data-claim="fixed"[^>]*data-claim-got="Draft"[^>]*>Published</.test(r.expected),
+    'the leaf says what it was corrected from: ' + r.expected)
+  assert.ok(r.html.includes('>Draft<') && !r.html.includes('Published'),
+    'and the ACTUAL is the photograph\'s own half — untouched')
+})
+
+test('the worded wrapper swaps too: an ancestor whose own text carries the value', () => {
+  const n = el('b', [60, 0, 12, 20], { text: '4' })
+  const counter = el('div', [0, 0, 120, 24], { children: [n] })
+  counter.childNodes = [txt('To do 4 — '), n]
+  const head = el('div', [0, 0, 500, 40], { children: [counter] })
+  const body = el('body', [0, 0, 1440, 900], { children: [head] })
+  const r = capC(body, {
+    target: counter,
+    ring: { x: 0, y: 0, width: 120, height: 24 },
+    claims: [{ label: 'the open count', expected: '5', got: '4', ok: false }]
+  })
+  assert.ok(r.expected.includes('To do 5 — '), 'the wrapper\'s own words say the intended value: ' + r.expected)
+  assert.ok(/data-claim="fixed"[^>]*>5</.test(r.expected), 'and the leaf is the one marked')
+  assert.ok(r.html.includes('To do 4 — '), 'the Actual keeps what the app rendered')
+})
+
+test('no leaf carries the value: the ring\'s first text leaf takes it, never a silent no-op', () => {
+  const label = el('span', [510, 100, 50, 20], { text: 'Version' })
+  const btn = el('button', [500, 92, 130, 36], { children: [label] })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, {
+    target: btn,
+    ring: { x: 500, y: 92, width: 130, height: 36 },
+    claims: [{ label: 'the track word', expected: 'Published', got: 'Draft', ok: false }]
+  })
+  assert.ok(/data-claim="fixed"[^>]*>Published</.test(r.expected), r.expected)
+  assert.ok(!r.expected.includes('Version'), 'the bounded fallback took the first text leaf')
+})
+
+test('a ring with no words at all gets the expected value as a marked span inside it', () => {
+  const path = el('path', [604, 104, 10, 6], { ns: 'http://www.w3.org/2000/svg', attrs: { d: 'M6 9l6 6 6-6' } })
+  const svg = el('svg', [602, 102, 14, 14], { ns: 'http://www.w3.org/2000/svg', children: [path] })
+  const btn = el('button', [600, 100, 20, 20], { children: [svg] })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, {
+    target: btn,
+    ring: { x: 600, y: 100, width: 20, height: 20 },
+    claims: [{ label: 'the state', expected: 'Published', got: '', ok: false }]
+  })
+  assert.ok(/<button[^>]*>[\s\S]*<span data-claim="fixed">Published<\/span>[\s\S]*<\/button>/.test(r.expected),
+    'appended INSIDE the ringed element: ' + r.expected)
+  assert.ok(r.html.includes('d="M6 9l6 6 6-6"'), 'and the icon is still the component')
+})
+
+// ── rules 3 & 4: the Tsumiki shape — a removed row restored, a never-there one drawn ────────────
+const TASKS = ['Buy milk', 'Water the plants', 'Call the dentist', 'Book the flight', 'Pay the bill']
+function tsumikiBefore () {
+  const items = TASKS.map((t, i) => el('li', [0, i * 30, 300, 28], {
+    children: [el('span', [8, i * 30 + 4, 200, 20], { text: t, cs: { color: 'rgb(2, 8, 23)', 'font-size': '14px' } })]
+  }))
+  const ul = el('ul', [0, 0, 300, 150], { children: items })
+  const main = el('main', [0, 0, 600, 400], { children: [ul] })
+  const body = el('body', [0, 0, 1440, 900], { children: [main] })
+  return capC(body, { target: items[0], ring: { x: 0, y: 0, width: 300, height: 28 } }).html
+}
+function tsumikiAfter (opts) {
+  const counter = el('div', [400, 0, 80, 24], { text: 'To do 4', cs: { color: 'rgb(180, 0, 0)', 'font-weight': '650' } })
+  const head = el('div', [0, 0, 500, 40], { children: [counter], cs: { display: 'flex' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [head] })
+  return capC(body, {
+    target: counter,
+    ring: { x: 400, y: 0, width: 80, height: 24 },
+    claims: [
+      { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false },
+      { label: 'still listed', expected: 'Water the plants', got: '(missing)', ok: false, missing: true }
+    ],
+    ...opts
+  })
+}
+
+test('a removed row is RESTORED from the beat\'s last right replica, beside the ring', () => {
+  const r = tsumikiAfter({ lastRight: tsumikiBefore() })
+  assert.ok(r.expected.includes('To do 5'), 'the counter says what the requirement says: ' + r.expected)
+  assert.ok(/<li[^>]*data-claim="restored"[^>]*>[\s\S]*Water the plants/.test(r.expected),
+    'and the row the app deleted is listed again, marked as restored: ' + r.expected)
+  assert.ok(!/data-claim="restored"[^>]*data-ring/.test(r.expected), 'the restored clone never carries a second ring')
+  assert.ok(!r.expected.includes('Buy milk'), 'only the row the claim names comes back')
+  assert.ok(r.html.includes('To do 4') && !r.html.includes('Water the plants'),
+    'and the ACTUAL is still the app\'s own picture')
+})
+
+test('with no right replica to restore from, the same claim is drawn as a marked placeholder', () => {
+  const r = tsumikiAfter({ lastRight: null })
+  assert.ok(r.expected.includes('<span data-claim="new">Water the plants</span>'),
+    'the never-there element is drawn, never silently dropped: ' + r.expected)
+  assert.ok(r.expected.includes('To do 5'))
+})
+
+test('the restored clone is styled by the sheet it arrives with, not by a class that means something else', () => {
+  const r = tsumikiAfter({ lastRight: tsumikiBefore() })
+  const cls = /<li class="(r\d+)"[^>]*data-claim="restored"/.exec(r.expected) ||
+    /<li[^>]*data-claim="restored"[^>]*class="(r\d+)"/.exec(r.expected)
+  assert.ok(cls, 'the restored row keeps a class: ' + r.expected)
+  assert.ok(r.expected.includes('.rep .' + cls[1] + '{'), 'and that class is declared in the Expected\'s own sheet')
+})
+
+// ── the claims accumulate, in order, on one tree ────────────────────────────────────────────────
+test('claims accumulate: two claims on two leaves both land, and the Actual is unchanged by either', () => {
+  const a = el('span', [10, 10, 60, 20], { text: 'Draft', cs: { color: 'rgb(1,1,1)' } })
+  const b = el('span', [80, 10, 60, 20], { text: '4', cs: { color: 'rgb(2,2,2)' } })
+  const bar = el('div', [0, 0, 400, 40], { children: [a, b] })
+  const wrap0 = el('div', [0, 0, 800, 200], { children: [bar] })
+  const body = el('body', [0, 0, 1440, 900], { children: [wrap0] })
+  const r = capC(body, {
+    target: bar,
+    ring: { x: 0, y: 0, width: 400, height: 40 },
+    claims: [
+      { label: 'the track', expected: 'Published', got: 'Draft', ok: false },
+      { label: 'the count', expected: '5', got: '4', ok: false }
+    ]
+  })
+  assert.ok(r.expected.includes('Published') && r.expected.includes('>5<'), r.expected)
+  assert.ok(!r.expected.includes('Draft'))
+  assert.equal(r.html.includes('Draft') && r.html.includes('>4<'), true, 'the Actual is the app\'s, always')
+  assert.ok(!r.html.includes('Published') && !r.html.includes('>5<'))
+})
+
+test('a claim with neither an expected nor a got is skipped, and never marks anything', () => {
+  const word = el('span', [10, 10, 60, 20], { text: 'Draft' })
+  const bar = el('div', [0, 0, 400, 40], { children: [word] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, {
+    target: bar,
+    ring: { x: 0, y: 0, width: 400, height: 40 },
+    claims: [{ label: 'nothing', expected: '', got: '', ok: false }]
+  })
+  assert.ok(!r.expected.includes('data-claim='), 'nothing to apply, nothing applied: ' + r.expected)
+  assert.equal(JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"')).length, 0)
+})
+
+// ── the two roots say which side they are ───────────────────────────────────────────────────────
+test('each root names its side, and only the Expected carries the claims it applied', () => {
+  const word = el('span', [520, 100, 60, 20], { text: 'Draft' })
+  const btn = el('button', [500, 92, 130, 36], { children: [word] })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const claims = [{ label: 'the track word', expected: 'Published', got: 'Draft', ok: false }]
+  const r = capC(body, { target: btn, ring: { x: 500, y: 92, width: 130, height: 36 }, claims })
+  assert.ok(r.html.includes('data-replica-side="actual"'), 'the photograph\'s half says so')
+  assert.ok(!r.html.includes('data-claims'), 'and carries no claim json — it asserted nothing')
+  assert.ok(r.expected.includes('data-replica-side="expected"'))
+  const json = /data-claims="([^"]*)"/.exec(r.expected)
+  assert.ok(json, 'the Expected carries the claims it applied: ' + r.expected.slice(0, 300))
+  assert.deepEqual(JSON.parse(json[1].replace(/&quot;/g, '"')), claims)
+  assert.ok(r.expected.startsWith('<style>'), 'and it is the same shape as the Actual — sheet, then root')
+})
+
+test('with no claims at all the Expected is the Actual, bar the side it names', () => {
+  const word = el('span', [520, 100, 60, 20], { text: 'Draft' })
+  const btn = el('button', [500, 92, 130, 36], { children: [word] })
+  const bar = el('div', [400, 88, 640, 44], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = capC(body, { target: btn, ring: { x: 500, y: 92, width: 130, height: 36 } })
+  assert.equal(typeof r.expected, 'string')
+  assert.equal(r.expected.replace('data-replica-side="expected"', 'data-replica-side="actual"').replace(/ data-claims="[^"]*"/, ''), r.html,
+    'nothing was claimed, so nothing differs')
+})
