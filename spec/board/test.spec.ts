@@ -1493,6 +1493,45 @@ const armFocus = async (dt: any, rid: string) =>
     el.setAttribute('data-ev-beats', JSON.stringify(beats))
     return b1.focus
   }, FOCUS)
+// A SPECIMEN THAT CLAIMED SOMETHING — the row phases 4b and 5 are about. A chip says what a moment
+// claimed, a marker says how it differed, and a loupe magnifies what it rang, so all three need a
+// beat whose harvest carries a real claim on a real value frame. Read off the fold's own record.
+const claimSpecimen = () => replicaSpecimens().find(s => (s.beat.values || [])
+  .some((v: any) => v && v.frame && v.claim && typeof v.claim.expected === 'string' && v.claim.expected.trim()))
+// …and the fixture that makes that claim FAIL. The board's own suite passes (that is the point of
+// it), so nothing in this repo's harvest is red — the failed moment R23 is about is DERIVED, the
+// same established data-ev-beats technique R18 and R20 already use: the committed frames, layouts
+// and replicas stay exactly as the run took them; only what the run RECORDED as the outcome is
+// rewritten, and the reader is rebuilt from that. Returns what it wrote, so the test can assert the
+// marker carries those very words. `null` restores.
+const armClaim = async (dt: any, rid: string, got: string | null) =>
+  dt.locator(`.reqpane .req[data-r="${rid}"]`).evaluate((el: Element, arg: any) => {
+    const beats = JSON.parse(el.getAttribute('data-ev-beats') || '[]')
+    const b1 = beats.filter((b: any) => Number(b.n) === 1)[0]
+    const v = b1 && (b1.values || []).filter((x: any) => x && x.frame && x.claim)[0]
+    if (!v) return null
+    const el2 = el as HTMLElement
+    if (arg.got === null) {
+      if (el2.dataset.wasEv) { el.setAttribute('data-ev-beats', el2.dataset.wasEv); delete el2.dataset.wasEv }
+      return null
+    }
+    if (!el2.dataset.wasEv) el2.dataset.wasEv = el.getAttribute('data-ev-beats') || ''
+    v.claim = { expected: v.claim.expected, got: arg.got, ok: false, label: v.claim.label }
+    el.setAttribute('data-ev-beats', JSON.stringify(beats))
+    return { expected: v.claim.expected, got: arg.got }
+  }, { got })
+// the ABSOLUTE magnification a camera box shows its page at — page pixels to cell pixels — which is
+// the number the moment camera caps (tools/board/stepper.js frameFor: never past 1.25×). Read back
+// out of the transform and the media's own laid-out width, so it answers for the replica (a page-
+// sized frame) and the photograph (a screenshot) identically.
+const camScale = (box: any, vw: number) => box.evaluate((el: Element, w: number) => {
+  const sub = (el.querySelector('.fsteps img.on') || el.querySelector('.camsub')) as HTMLElement
+  if (!sub) return null
+  const t = getComputedStyle(sub).transform
+  const m = new DOMMatrixReadOnly(t && t !== 'none' ? t : '')
+  const mw = sub.offsetWidth
+  return (mw > 0 && w > 0) ? m.a * mw / w : null
+}, vw)
 // the region a camera box actually frames, read back OUT of its own transform, as a fraction of the
 // media it frames — which is the whole page on both sides, so the two cells are comparable even
 // though one is a drawing at its own viewBox and the other a screenshot at its own pixel size
@@ -1638,6 +1677,50 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     await expect(given.locator('.pcbox.zoomed')).toHaveCount(0)      // whole page, both cells
     await expect(given.locator('.pczoom')).toHaveCount(0)            // and nothing to aim
   })
+
+  // beat 3 — THE EASED CAMERA (the human, 2026-09-03: the first cut of design C "zoomed in a bit too
+  // much"). A moment's frame is the ring UNION THE CHIP that explains it, with generous room and a
+  // gentle cap: never more than 1.25× the app's own natural size, because a picker blown up to fill
+  // the cell loses the header it sits in — and a chip cropped off the edge is a caption on nothing.
+  // Asserted on BOTH cells, since a cap that held on one side would frame two different regions.
+  await checkReq('R19', async () => {
+    const cs = claimSpecimen()
+    expect(cs, 'a board beat whose harvest carries a claim to caption').toBeTruthy()
+    await armFocus(dt, cs!.rid)
+    await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
+    await page.goto('/#/board/' + cs!.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    await reveal(row)
+    const vw = Number(cs!.beat.vw || (cs!.beat.focus && cs!.beat.focus.vw) || 0)
+    expect(vw, 'the beat records the page it was measured in').toBeGreaterThan(0)
+    const scales: number[] = []
+    for (const [name, sel] of [['the Expected', '.sbframe'], ['the Actual', '.sbproof']] as Array<[string, string]>) {
+      const box = row.locator(sel + ' .pcbox')
+      await expect(box, name + ' cell is framed on the moment').toHaveClass(/\bzoomed\b/)
+      const k = await camScale(box, vw)
+      expect(k, name + ' cell is under a camera').toBeTruthy()
+      expect(k, name + ' camera never magnifies past 1.25× (' + k + ')').toBeLessThanOrEqual(1.26)
+      scales.push(k as number)
+      // …and the chip it framed FOR is wholly in shot: the union rule is what puts it there, so a
+      // chip whose box escapes the camera means the union was not taken
+      const chip = box.locator('.pchip')
+      await expect(chip, name + ' cell carries its one chip').toHaveCount(1)
+      const fits = await box.evaluate((el: Element) => {
+        const c = el.querySelector('.pchip') as HTMLElement
+        if (!c) return null
+        const a = el.getBoundingClientRect(); const b = c.getBoundingClientRect()
+        return { l: b.left - a.left, t: b.top - a.top, r: a.right - b.right, bo: a.bottom - b.bottom }
+      })
+      expect(fits, name + ' chip is measurable').toBeTruthy()
+      for (const side of ['l', 't', 'r', 'bo'] as const) {
+        expect(fits![side], name + ' chip is fully in frame (' + side + '): ' + JSON.stringify(fits)).toBeGreaterThanOrEqual(-1)
+      }
+    }
+    expect(Math.abs(scales[0] - scales[1]), 'one camera: both cells at the SAME magnification').toBeLessThan(0.02)
+    await hudCheck('the moment camera is capped at 1.25×', 'within the cap',
+      Math.max(scales[0], scales[1]) <= 1.26 ? 'within the cap' : 'zoomed to ' + Math.max(scales[0], scales[1]))
+  })
 })
 
 // Board R20 — THE PROOF PLAYS ITSELF. One mode, no toolbar, already running, zoomed onto the focus
@@ -1772,6 +1855,156 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(given.locator('.sbproof .pdots')).toHaveCount(0)
   })
 
+  // THE CHIPS — one per cell, the value only (design C, the human 2026-09-02/03: "every text once").
+  // The sentence lives in the words cell and the moment's name in the strip, so the chip over each
+  // picture says only what THAT side holds: EXPECTED "…" on the replica, ACTUAL ✓/✕ "…" on the
+  // photograph. The oracle is the CLAIM the run recorded, read out of the fold's own record — not
+  // out of the page — so a chip that showed the neighbouring moment's value, or the same value on
+  // both sides regardless of what the app did, fails here.
+  await checkReq('R20', async () => {
+    const cs = claimSpecimen()
+    expect(cs, 'a board beat whose harvest carries a claim').toBeTruthy()
+    const claims = (cs!.beat.values || []).filter((v: any) => v && v.frame && v.claim).map((v: any) => v.claim)
+    // back to STEP: the leg above left the reader in auto at 4×, and the play mode is reader-wide and
+    // session-scoped (it survives the rebuild below on purpose), so a chip read while the loop was
+    // still running would be a race, not an assertion
+    await ov.locator('.fread .frmeta .frtools .medbar.pmode button[data-mode="step"]').click()
+    await armFocus(dt, cs!.rid)
+    await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
+    await page.goto('/#/board/' + cs!.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    await reveal(row)
+    // the row opens on the beat's FIRST value moment (its opening state is the Given row above it),
+    // so the chips on show are that claim's
+    const c0 = claims[0]
+    const eChip = row.locator('.sbframe .pchip')
+    const aChip = row.locator('.sbproof .pchip')
+    await expect(eChip, 'one chip on the Expected cell').toHaveCount(1)
+    await expect(aChip, '…and one on the Actual').toHaveCount(1)
+    await expect(eChip.locator('.pcl')).toHaveText('expected')
+    await expect(aChip.locator('.pcl')).toHaveText('actual')
+    expect(plain(await eChip.locator('.pcv').innerText()), 'the Expected chip says what the requirement asks for')
+      .toContain(plain(c0.expected))
+    expect(plain(await aChip.locator('.pcv').innerText()), 'the Actual chip says what the app gave')
+      .toContain(plain(c0.missing ? 'MISSING' : c0.got))
+    // the MARK beside the hue — a greyscale reader loses nothing
+    await expect(aChip.locator('.pcm'), 'the Actual chip carries its mark').toHaveText(c0.ok ? '✓' : '✕')
+    // ONE LINE, ELLIPSISED, with the whole text in a STYLED tooltip — never the native title
+    const val = aChip.locator('.pcv')
+    expect(await val.evaluate(el => getComputedStyle(el).whiteSpace), 'a chip never wraps').toBe('nowrap')
+    expect(await val.evaluate(el => getComputedStyle(el).textOverflow), 'a long value ellipsises').toBe('ellipsis')
+    expect(await aChip.getAttribute('title'), 'no native title beside the styled tooltip').toBeNull()
+    const tip = aChip.locator('.mtip')
+    await expect(tip).toBeHidden()
+    await aChip.hover()
+    await expect(tip, 'hovering a chip shows its whole text').toBeVisible()
+    await row.locator('.sbtext').hover()
+    // …AND THE BEAT'S RESULT IS A CHECKLIST. Walk to the last moment: the two chips list one item per
+    // claim the beat made — the facts, never a count of them.
+    const strip = row.locator('.mstrip')
+    const n = await row.locator('.mseg').count()
+    for (let k = 1; k < n; k++) await strip.locator('.mnext').click()
+    await expect(row.locator('.mseg').last()).toHaveClass(/\bcur\b/)
+    await expect(row.locator('.sbframe .pchip .pcvr'), 'the Expected checklist has one item per claim')
+      .toHaveCount(claims.length)
+    await expect(row.locator('.sbproof .pchip .pcvr'), '…and so does the Actual')
+      .toHaveCount(claims.length)
+    await hudCheck('the beat’s result is a checklist', claims.length + ' fact(s)',
+      (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
+  })
+
+})
+
+// Board R23 — A FAILED MOMENT NAMES ITS DIFFERENCE, AND THE LOUPE COMPARES THE RINGED ELEMENT ALONE
+// (phase 5 of the Expected View plan the human accepted 2026-09-03). Two pictures side by side leave
+// a reader to FIND the difference in two places at once; a failed moment says it in words, once, on
+// the seam. And under them, the ringed element alone on both sides at one magnification — the
+// comparison the framed page cannot make.
+//
+// The board's own suite passes, so nothing here is red on its own: the failed moment is DERIVED from
+// the real harvest by rewriting what the run recorded as the OUTCOME (armClaim), which is the same
+// established fixture technique R18's stale-banner leg and R20's honest-blank leg already use. The
+// frames, the layouts and the replicas stay exactly as the run took them, and the fixture is
+// restored in a finally with the board rebuilt from disk.
+test('A failed moment names its difference, and the loupe compares the ringed element alone', async ({ page }) => {
+  await coverReqs('R23')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const cs = claimSpecimen()
+  expect(cs, 'a board beat whose harvest carries a claim to fail').toBeTruthy()
+  const rid = cs!.rid
+  const other = rid === 'R2' ? 'R3' : 'R2'
+  const rowOf = () => ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+
+  // beat 1 — THE DIFFERENCE MARKER. One label across the two cells naming both values, one per
+  // failed claim; and NONE on the passing moment the very same row shows a step later.
+  await checkReq('R23', async () => {
+    await armFocus(dt, rid)
+    const wrote = await armClaim(dt, rid, 'not this')
+    expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
+    await page.goto('/#/board/' + other)
+    await page.goto('/#/board/' + rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
+    const row = rowOf()
+    await reveal(row)
+    const marks = row.locator('.pics .mdiff')
+    await expect(marks, 'exactly one marker for the one failed claim').toHaveCount(1)
+    const said = plain(await marks.first().innerText())
+    expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
+    expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
+    // it spans the SEAM — one label about a relation, not one per cell
+    const seam = await row.evaluate(el => {
+      const p = el.querySelector('.pics') as HTMLElement
+      const m = p.querySelector('.mdiff') as HTMLElement
+      const a = p.getBoundingClientRect(); const b = m.getBoundingClientRect()
+      return { mid: (b.left + b.right) / 2 - a.left, half: a.width / 2, top: b.top - a.top, h: a.height }
+    })
+    expect(Math.abs(seam.mid - seam.half), 'the marker sits on the seam between the cells').toBeLessThan(8)
+    expect(seam.top >= -1 && seam.top <= seam.h, 'and inside the pictures it is about').toBe(true)
+    await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
+  })
+
+  // beat 2 — THE LOUPE: the ringed element alone, both sides, ONE scale. And nothing at all where a
+  // moment rang nothing.
+  await checkReq('R23', async () => {
+    const row = rowOf()
+    const loupe = row.locator('.loupe')
+    await expect(loupe, 'the row carries one loupe').toHaveCount(1)
+    await expect(loupe).toBeVisible()
+    await expect(loupe.locator('.lpcell')).toHaveCount(2)
+    await expect(loupe.locator('.lpcell.expected .lpframe'), 'the Expected side is the replica, sandboxed').toHaveCount(1)
+    expect(await loupe.locator('.lpcell.expected .lpframe').getAttribute('sandbox'),
+      'and inert — no allow-* token').toBe('')
+    await expect(loupe.locator('.lpcell.actual .lpshot'), 'the Actual side is the photograph').toHaveCount(1)
+    const geo = await loupe.evaluate(el => {
+      const v = [].slice.call(el.querySelectorAll('.lpview')) as HTMLElement[]
+      const t = [].slice.call(el.querySelectorAll('.lpstage')) as HTMLElement[]
+      return {
+        w: v.map(x => Math.round(x.getBoundingClientRect().width)),
+        h: v.map(x => Math.round(x.getBoundingClientRect().height)),
+        tf: t.map(x => getComputedStyle(x).transform),
+        k: Number((el as HTMLElement).dataset.lpscale || 0)
+      }
+    })
+    expect(geo.w[0], 'both sides are the same width: ' + JSON.stringify(geo.w)).toBe(geo.w[1])
+    expect(geo.h[0], '…and the same height').toBe(geo.h[1])
+    expect(geo.tf[0], 'one magnification, one crop — the same transform on both').toBe(geo.tf[1])
+    expect(geo.k, 'magnified, never past the 1.6× the human chose').toBeGreaterThan(1)
+    expect(geo.k).toBeLessThanOrEqual(1.6)
+    await hudCheck('the loupe shows one element at one scale', 'same width', geo.w[0] === geo.w[1] ? 'same width' : 'two widths')
+    // …AND A MOMENT WITH NO RING HAS NO LOUPE AND NO MARKER: the Given row is the context row, it
+    // rings nothing, and the row does not pretend there is something to magnify.
+    const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
+    await expect(given.locator('.loupe')).toHaveCount(0)
+    await expect(given.locator('.mdiff')).toHaveCount(0)
+  })
+
+  // the fixture is the reader's, not the tree's — but restore it anyway and rebuild from disk, so
+  // nothing downstream in this file reads a row this test rewrote
+  await armClaim(dt, rid, null)
+  await page.goto('/#/board/' + other)
 })
 
 // Board R20, second half — AUTO ↔ STEP, and a PER-BEAT WALK (the human, 2026-08-30: "the go to next

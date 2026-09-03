@@ -1885,6 +1885,12 @@ export function build () {
   // its own <script> BEFORE the client (which reads globalThis.SBStepper); node --test reaches the
   // same bytes directly (tools/stepper.test.mjs), so the pace the board plays is the pace tested
   const stepperJs = readFileSync(join(ROOT, 'tools', 'board', 'stepper.js'), 'utf8')
+  // …and the PROVED PHRASE beside it (phase 4b, design C): which words of a beat's sentence the
+  // moment on show is proving. A third verbatim real-JS file, emitted in its own <script> before the
+  // client (which reads globalThis.SBWords), for exactly the reason the stepper is — node --test
+  // reaches the same bytes (tools/words.test.mjs), so the rule the board underlines by is the rule
+  // the tests pin.
+  const wordsJs = readFileSync(join(ROOT, 'tools', 'board', 'words.js'), 'utf8')
 
   // the design system's text is read ONCE and reused: inlined below, and parsed for the --scale
   // the breakpoint emits compute from (see parseScale/scaledBp at the top of this file)
@@ -2259,7 +2265,99 @@ export function build () {
   .fstory .sbrow.beatstart { border-top:2px solid var(--hair-2); }
   .fstory .sbrow.bgiven { background:var(--canvas); }
   .fstory .sbright { display:flex; flex-direction:column; min-width:0; }
-  .fstory .pics { display:grid; grid-template-columns:1fr 1fr; min-width:0; flex:1 1 auto; }
+  /* position:relative — the row's DIFFERENCE MARKER (phase 5) hangs on the seam between the two
+     cells, which is the middle of this box */
+  .fstory .pics { display:grid; grid-template-columns:1fr 1fr; min-width:0; flex:1 1 auto;
+    position:relative; }
+
+  /* ── THE CHIPS: ONE PER CELL, THE VALUE ONLY (design C, the human 2026-09-02/03) ──────────────
+     "Every text once." The sentence is in the words cell, the moment's name is the strip's, and the
+     chip over each picture says only what THAT side holds: EXPECTED "…" on the replica, ACTUAL ✓/✕
+     "…" on the photograph. It is the board's own descendant of the card the burn-in used to paint —
+     same paper, same hairline, same width (--board geom CARD.width, applied in client.js) — so a
+     reader who has seen a recording recognises it. The MARK carries the state beside the hue, so
+     nothing is lost in greyscale.
+     ONE LINE, ALWAYS, with the whole text one hover away, exactly as the strip's names are: a chip
+     that wrapped would cover the very element it is labelling. It lives INSIDE the camera box on
+     purpose — it is a label on THIS picture, and the camera's edge is where the picture stops.
+     Measured: --ink on --paper 15.9:1, --ink-3 on --paper 6.42:1, --bengara on --bengara-tint
+     5.50:1, --koke on --paper 7.02:1. */
+  .pcbox .pcchips { position:absolute; left:0; top:0; right:0; bottom:0; z-index:3;
+    pointer-events:none; }
+  .pcbox .pchip { position:absolute; left:0; top:0; transform-origin:0 0; pointer-events:auto;
+    display:flex; align-items:baseline; gap:var(--s2); min-width:0;
+    padding:var(--s2) var(--s3); background:var(--paper); border:1px solid var(--line2);
+    border-radius:var(--r); box-shadow:var(--sh-md); }
+  .pcbox .pchip .pcl { flex:none; font:var(--t-xs) var(--mono); letter-spacing:.1em;
+    text-transform:uppercase; color:var(--ink-3); }
+  .pcbox .pchip .pcb { min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .pcbox .pchip .pcvr { display:flex; align-items:baseline; gap:6px; min-width:0;
+    font:600 var(--t-md)/1.3 var(--mono); color:var(--ink); }
+  .pcbox .pchip .pcv { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pcbox .pchip .pcm { flex:none; font-weight:700; color:var(--koke); }
+  .pcbox .pchip .pcvr.no, .pcbox .pchip .pcvr.no .pcm { color:var(--bengara); }
+  .pcbox .pchip.bad { background:var(--bengara-tint); border-color:var(--bengara-line); }
+  .pcbox .pchip.bad .pcl { color:var(--bengara); }
+  /* the whole text, one hover away — the styled tooltip, never the native title (which would stack a
+     second one on top). It flips toward the picture's middle so the camera's edge clips it less. */
+  .pcbox .pchip .mtip { display:none; position:absolute; left:0; top:calc(100% + var(--s1));
+    z-index:6; width:max-content; max-width:min(34ch, 50vw); padding:var(--s2) var(--s3);
+    background:var(--paper); color:var(--ink); border:1px solid var(--line2);
+    border-radius:var(--r); box-shadow:var(--sh-md); font:var(--t-md)/1.45 var(--sans);
+    text-align:left; white-space:normal; pointer-events:none; }
+  .pcbox .pchip.tipup .mtip { top:auto; bottom:calc(100% + var(--s1)); }
+  .pcbox .pchip.tipr .mtip { left:auto; right:0; }
+  .pcbox .pchip:hover .mtip, .pcbox .pchip:focus-visible .mtip { display:block; }
+
+  /* ── THE DIFFERENCE MARKER (phase 5) ─────────────────────────────────────────────────────────
+     One label ACROSS the two cells on a failed moment, on the seam, at the ring's own height: the
+     two values are a sentence about the element both pictures are ringing. One per failed claim,
+     stacked; none at all on a passing moment. Iron-oxide, with the ✕ mark beside it — the hue names
+     the state and never carries it alone, and nothing here is inverted (the screen's one inverted
+     element is spent elsewhere). --bengara on --bengara-tint 5.50:1, --ink-3 on it 5.54:1. */
+  .pics .mdiffs { position:absolute; left:50%; transform:translateX(-50%); z-index:4;
+    display:flex; flex-direction:column; align-items:center; gap:var(--s1); pointer-events:none; }
+  .pics .mdiff { display:flex; align-items:baseline; gap:6px; max-width:44ch; white-space:nowrap;
+    padding:3px var(--s3); background:var(--bengara-tint); border:1px solid var(--bengara-line);
+    border-radius:999px; box-shadow:var(--sh-md); }
+  .pics .mdiff::before { content:"✕"; font:700 var(--t-sm) var(--mono); color:var(--bengara); }
+  .pics .mdiff .mdk { font:var(--t-xs) var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); }
+  .pics .mdiff .mdv { font:600 var(--t-sm) var(--mono); color:var(--ink);
+    max-width:16ch; overflow:hidden; text-overflow:ellipsis; }
+  .pics .mdiff .mdv.no { color:var(--bengara); }
+  .pics .mdiff .mdsep { color:var(--ink-4); }
+
+  /* ── THE LOUPE (phase 5) ─────────────────────────────────────────────────────────────────────
+     Under the two pictures, the ringed element ALONE — the replica's and the photograph's — at ONE
+     scale (1.6×, the human 2026-09-03; both sides scale down together where it will not fit). It
+     shares .pics's grid by sitting in the same .sbright column, so its halves line up with the
+     pictures they magnify rather than being sized to match them. Hidden on a moment with no ring:
+     there is nothing to magnify, and an empty pair of boxes would suggest there was. */
+  .fstory .loupe { display:grid; grid-template-columns:1fr 1fr; min-width:0;
+    border-top:1px solid var(--hair); background:var(--canvas); }
+  .fstory .lpcell { min-width:0; padding:var(--s3); }
+  /* the rule between the two halves is an INSET SHADOW, not a border: a border would take a pixel
+     out of one half and the loupe's whole claim is that both sides are the same width */
+  .fstory .lpcell.expected { box-shadow:inset -1px 0 0 var(--hair); }
+  .fstory .lpview { position:relative; overflow:hidden; background:var(--paper);
+    border:1px solid var(--hair); border-radius:var(--r-sm); }
+  .fstory .lpstage { position:absolute; left:0; top:0; transform-origin:0 0; }
+  .fstory .lpframe { display:block; width:100%; height:100%; border:0; background:var(--paper);
+    pointer-events:none; }
+  .fstory .lpshot { position:absolute; left:0; top:0; width:100%; height:100%; display:block; }
+  .fstory .lpcap { display:block; padding-top:var(--s1); font:var(--t-xs) var(--mono);
+    letter-spacing:.06em; color:var(--ink-3); }
+
+  /* ── THE PROVED PHRASE (design C) ────────────────────────────────────────────────────────────
+     The sentence is written once; the moment on show underlines the part of it being proved, so the
+     eye is taken to the phrase instead of being handed a second copy in a chip. An underline is a
+     MARK, not a hue — it reads the same in greyscale — and it takes the row's own ink: the Then's
+     indigo where the phrase is in the Then, iron-oxide where the claim failed. */
+  .fstory .sbwords u.sbprove { text-decoration:none; border-bottom:2px solid var(--ink);
+    padding-bottom:1px; }
+  .fstory .sbthen u.sbprove { border-color:var(--ai); }
+  .fstory .sbrow.hasfail .sbwords u.sbprove { border-color:var(--bengara); }
   /* THE SELECTED BEAT ROW (the human, 2026-09-02: "make clear which when/then is selected, and the
      ← → keys only apply on that one"). Exactly one When/Then row is selected at a time — the one the
      arrows walk. A left INK accent marks it (inset box-shadow, so a grid row takes no layout shift),
@@ -2335,7 +2433,13 @@ export function build () {
      photograph frames this identically. The .reppage carries the harvest's aspect ratio, which is
      what gives the cell its height, exactly as an <img> gives the Actual cell its own.
      pointer-events:none: a click on the cell is the reader's, never the replica's. */
-  .fstory .sbframe.sbrep { padding:0; }
+  /* THE TWO CELLS ARE THE SAME WIDTH (2026-09-04, phase 4b, correcting 4a's padding:0 in place —
+     rule 6). The stated intent above has always been that the two pictures of a row are one width;
+     while the camera returned a scale RELATIVE to each cell's own media that was cosmetic, but the
+     MOMENT camera is absolute — page pixels to cell pixels — so a 22px difference in cell width was
+     two different magnifications of two different regions, which is exactly what R19 forbids. The
+     replica cell takes the same inset every other picture cell has. */
+  .fstory .sbframe.sbrep { padding:var(--s3); }
   .fstory .sbframe .reppage { position:relative; width:100%; background:var(--paper); overflow:hidden; }
   .fstory .sbframe .repscale { position:absolute; left:0; top:0; transform-origin:0 0; }
   .fstory .sbframe .repframe { display:block; width:100%; height:100%; border:0;
@@ -4232,6 +4336,7 @@ ${detail}
 
 <script>window.__BOARD__ = ${islandJson(BOARD_DATA)}</script>
 <script>${stepperJs}</script>
+<script>${wordsJs}</script>
 <script>${clientJs}</script>
 `
 

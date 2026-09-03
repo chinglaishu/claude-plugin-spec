@@ -457,6 +457,8 @@ sides carry that beat and no other — is unchanged.*
 - **Given** a beat whose harvest holds each value it proved and the state it left
 - **When** its row renders
 - **Then** the Actual cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
+- **When** the moment on show claimed a value
+- **Then** each picture carries ONE chip and it says only what that side holds — `EXPECTED "…"` over the replica, `ACTUAL ✓ "…"` or `ACTUAL ✕ "…"` over the photograph, the mark carrying the state beside the hue — on a single line with the whole text in a hover tooltip, and on the beat's result the two chips are CHECKLISTS of the claims it made; a moment that claimed nothing carries no chip at all
 - **When** the reader opens
 - **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
@@ -539,7 +541,12 @@ and design system, now it looks not so balance on font size and also spacing. Al
 cut key hint in this page, only mention in the setting page"): the reader carries no keyboard legend
 anywhere — the keys are listed once on the guide — and the reader's type is one ladder, the
 requirement title the only head at --t-xl with the beat's When a step under it at --t-lg and its
-Then / Given at body size.*
+Then / Given at body size. Amended 2026-09-04 for the CHIPS (the human's design C, 2026-09-02 and
+2026-09-03, carried by the Expected View plan): "every text once" — the sentence is written once in
+the words cell, the moment's name once in the strip, and the chip over each picture says ONLY that
+side's value, so the burned callout card left the still frames and the two chips replace it. A Then
+proves several facts at once, so its chips are the beat's checklist rather than one value; and a
+moment that claimed nothing shows no chip, because a label with nothing to say is chrome.*
 
 <!-- Proven by spec/board/test.spec.ts, "The proof plays itself …" — beat 1 asserts a harvested beat
      row's proof cell carries NO dots, NO n/N counter and NO full-frame toggle (only the row's one
@@ -550,7 +557,47 @@ Then / Given at body size.*
      requirement. Beat 2 asserts the Given row's cell is a plain uncaptioned still: one frame, no
      stepper, no dots, no caption. A last leg of the stepper test (added 2026-09-02) asserts both
      halves of the legend's move: nothing in the reader — its rows, its card, its pager footer —
-     names a key, and #howview's Keyboard section lists every key the reader answers to. -->
+     names a key, and #howview's Keyboard section lists every key the reader answers to. A third leg
+     (added 2026-09-04) walks the row to a CLAIMED moment and reads the two chips off the real
+     harvest — one per cell, EXPECTED against the claim's own expected and ACTUAL against its got,
+     one un-wrapped ellipsised line each with a styled tooltip and no native title — then walks on to
+     the beat's result and asserts the checklist carries one item per claim the beat made. -->
+
+## R23 — A failed moment names its difference, and the loupe compares the ringed element alone
+
+- **Given** a beat whose moment on show claimed a value the app did not give
+- **When** the row shows that moment
+- **Then** ONE marker sits across the two cells naming both values — the expected and the actual — one marker per failed claim and none at all on a moment that passed
+- **When** you look under the two pictures
+- **Then** a loupe shows the ringed element ALONE on both sides — the replica's and the photograph's — at the same width and the same magnification, and it is not there at all on a moment that ringed nothing
+
+Two pictures side by side answer "does the app do this?" — but on a failure they leave the reader to
+find the difference themselves, in two places at once. So a failed moment **says the difference in
+words, once, on the seam**: `expected "Published" · actual "Draft"`. It is one label rather than one
+per cell because a difference is a relation, not a property of either side; it stands at the ring's
+own height because that is where the eye already is; and a Then that claimed several facts stacks
+one marker per **failed** claim, never a count. A moment that passed shows none — a marker on every
+moment would say "difference" where there is none.
+
+The **loupe** answers the other half. The camera above frames the component *in its page*, which is
+what makes "the app really shows this" believable; the loupe drops the page and shows the ringed
+element **by itself, magnified, twice**, so the two can be compared as shapes and words rather than
+as regions of a screenshot. Both sides take **one** scale — 1.6×, and where that will not fit, both
+scale down **together**: two loupes at different magnifications compare nothing. Where a moment rang
+nothing there is nothing to magnify, and the row does not pretend otherwise.
+
+*Drafted 2026-09-04 on the human's behalf, transcribing phase 5 of the Expected View plan they
+accepted on 2026-09-03 (docs/expected-view-plan-2026-09-03.html — "one marker per failed claim
+across the two cells; the loupe row under the cells with the ringed element alone on both sides at
+one scale", with the 1.6× their own number). Canon as written, and theirs to reword or remove like
+any other.*
+
+<!-- Proven by spec/board/test.spec.ts, "A failed moment names its difference …" — beat 1 makes a
+     real harvested moment's claim FAIL on the board's own data (the established data-ev-beats
+     fixture technique) and asserts exactly one marker appears, carrying both values, and that the
+     same row on the passing moment beside it carries none. Beat 2 asserts the loupe shows the
+     ringed element on both sides at one width and one recorded scale, and disappears on a moment
+     with no ring. -->
 
 ## R21 — The reader reads behaviour first
 

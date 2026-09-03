@@ -992,6 +992,338 @@ const B = window.__BOARD__ || {}
     return apply
   }
 
+  // ── THE MOMENT'S CAMERA (design C, phase 4b — the human, 2026-09-03) ─────────────────────────
+  // The camera above frames a BEAT (its focus rect is the union of the beat's rings) and aims at
+  // each scene inside it. Design C frames a MOMENT: the ring the assertion painted, UNION the chip
+  // that says what it claimed — a chip framed out of view is a caption on nothing — with 45% of the
+  // pair's own size as room around it and a cap of 1.25× the app's natural size ("zoomed in a bit
+  // too much", the human, on the first cut: a picker blown up to fill a cell loses the header it
+  // sits in). The maths is pure and shared (tools/board/stepper.js frameFor).
+  //
+  // Both cells of a row stand on the SAME page coordinates — the replica is the app's own markup at
+  // the app's own coordinates and the photograph is the app's own pixels — so one absolute page→cell
+  // scale frames the two identically by construction, rather than by two computations agreeing.
+  // `box._aim(ring, chip, animate)` keeps the older camera's shape, so buildStoryline drives either.
+  function aimFrame (box, vp) {
+    let ring = null
+    let chip = null
+    box._views = box._views || []
+    const apply = function (animate) {
+      const want = !!(ZOOMED && ring)
+      box.classList.toggle('zoomed', want)
+      // not laid out yet — the reader is built DETACHED (see aimCamera's own note); retry, bounded
+      if (want && (box.clientWidth < 1 || box.clientHeight < 1)) {
+        if ((apply._tries = (apply._tries || 0) + 1) < 120 && window.requestAnimationFrame) {
+          requestAnimationFrame(function () { apply(animate) })
+        }
+        return
+      }
+      apply._tries = 0
+      const view = want
+        ? window.SBStepper.frameFor(ring, chip, vp, { w: box.clientWidth, h: box.clientHeight })
+        : null
+      // the media is laid out at the box's WIDTH, so one page pixel is already r cell pixels; the
+      // transform supplies the rest of the absolute scale the frame asks for
+      const r = box.clientWidth / vp.vw
+      const css = (view && r > 0)
+        ? window.SBStepper.cameraCss({ ok: true, scale: view.scale / r, tx: -view.x * view.scale, ty: -view.y * view.scale })
+        : 'none'
+      const dur = (animate && !REDUCED) ? window.SBStepper.cameraDur(CAM_TWEEN, PLAY_SPD) : 0
+      const ease = 'cubic-bezier(0.4, 0, 0.2, 1)'
+      const trans = dur > 0 ? ('transform ' + dur + 'ms ' + ease + ', opacity ' + dur + 'ms ' + ease) : 'none'
+      for (const m of box.querySelectorAll('.camsub')) { m.style.transition = trans; m.style.transform = css }
+      box.classList.toggle('zoomed', !!view)
+      box._view = view
+      // everything drawn in PAGE coordinates over this picture — the chips, the row's difference
+      // marker — rides the same view and the same glide, so nothing can be left pointing at where
+      // the ring used to be. A list, not one hook: two things now read the camera.
+      for (const f of (box._views || [])) f(view, dur)
+    }
+    box._aim = function (r0, c0, animate) { ring = r0 || null; chip = c0 || null; apply(animate !== false) }
+    apply(false)
+    if (window.ResizeObserver) new ResizeObserver(function () { apply(false) }).observe(box)
+    onZoom(box, function () { apply(false) })
+    return apply
+  }
+
+  // ── THE CHIPS: ONE PER CELL, THE VALUE ONLY (design C) ───────────────────────────────────────
+  // "Every text once" (the human, 2026-09-02/03). The sentence is in the words cell, the moment's
+  // name is in the strip's caption, and the two chips over the pictures say only what each side
+  // holds: EXPECTED "…" on the replica, ACTUAL ✓/✕ "…" on the photograph. The MARK carries the state
+  // beside the hue, so a greyscale reader loses nothing. One line, ellipsised, with the whole text
+  // one hover away in a styled .mtip — never the native title, which would stack a second tooltip.
+  //
+  // The chip's GEOMETRY is page-space (so the camera can frame it and both cells can agree on it);
+  // its RENDERING is cell-space (so its type is the reader's own, crisp at every zoom, rather than
+  // the app's pixels magnified). chipSpot is the chip's own placement rule — above the ring where
+  // there is room, else below, left-aligned to it — stated here because it is the CHIP's rule, not
+  // the burned card's (tools/overlay-geometry.mjs calloutSpot still owns that one); the numbers it
+  // uses are that module's, read off the island.
+  const CHIP_LINE = 22             // a chip line, in PAGE units — what the camera must reserve
+  const CHIP_PAD = 10
+  function chipHeight (lines) { return CHIP_LINE * Math.max(1, lines) + 2 * CHIP_PAD }
+  function chipSpot (ring, vp, lines) {
+    if (!ring || !vp) return null
+    const w = CARDG.width
+    const h = chipHeight(lines)
+    const m = CARDG.margin
+    const above = ring.y - CARDG.gap - h
+    const y = above >= m ? above : (ring.y + ring.h + CARDG.gap)
+    const x = Math.max(m, Math.min(ring.x, Math.max(m, vp.vw - w - m)))
+    return { x: x, y: Math.max(m, Math.min(y, Math.max(m, vp.vh - h - m))), w: w, h: h }
+  }
+  // the chip's own words: a value moment says one value, a Then says the beat's CHECKLIST — every
+  // claim it made, ticked on the Expected side (that is what the requirement says) and ticked or
+  // crossed on the Actual (that is what the app did), the crossed ones carrying what was got. Facts
+  // are the beat's claims; never a count of them.
+  function chipLines (m, side) {
+    const q = function (s) { return '“' + String(s) + '”' }
+    if (m.facts && m.facts.length) {
+      return m.facts.map(function (c) {
+        return side === 'expected'
+          ? { mark: '✓', text: q(c.expected), ok: true }
+          : (c.ok
+              ? { mark: '✓', text: q(c.expected), ok: true }
+              : { mark: '✕', text: c.missing ? 'MISSING' : q(c.got), ok: false })
+      })
+    }
+    if (!m.claim) return []
+    const c = m.claim
+    return [side === 'expected'
+      ? { mark: '', text: q(c.expected), ok: true }
+      : { mark: c.ok ? '✓' : '✕', text: (c.missing ? 'MISSING' : q(c.got)), ok: !!c.ok }]
+  }
+  // ONE CHIP LAYER PER CELL — built once, repainted per moment, positioned off the camera's own view
+  // so it always lands over the picture it explains. It is inside the camera box: a chip that
+  // wandered outside would be chrome floating over the row rather than a label on this picture.
+  function chipLayer (box, side) {
+    const layer = document.createElement('div')
+    layer.className = 'pcchips ' + side
+    box.appendChild(layer)
+    let cur = null                                   // {spot, chip}
+    const place = function (view, dur) {
+      if (!cur || !cur.spot) { layer.hidden = true; return }
+      const v = view || box._view
+      layer.hidden = false
+      const el = cur.chip
+      if (v) {
+        el.style.transition = dur > 0 ? ('transform ' + dur + 'ms cubic-bezier(0.4, 0, 0.2, 1)') : 'none'
+        el.style.transform = 'translate(' + ((cur.spot.x - v.x) * v.scale) + 'px,' + ((cur.spot.y - v.y) * v.scale) + 'px)'
+        el.style.maxWidth = (CARDG.width * v.scale) + 'px'
+        // the tooltip flips toward the picture's middle so the box's own edge cannot clip it
+        el.classList.toggle('tipup', (cur.spot.y - v.y) * v.scale > box.clientHeight * 0.55)
+        el.classList.toggle('tipr', (cur.spot.x - v.x) * v.scale > box.clientWidth * 0.5)
+      } else {
+        // no camera on this moment (the whole page): the chip sits over the ring where the page has
+        // it, at the cell's own natural scale
+        const r = box.clientWidth / (cur.vp ? cur.vp.vw : 1)
+        el.style.transition = 'none'
+        el.style.transform = 'translate(' + (cur.spot.x * r) + 'px,' + (cur.spot.y * r) + 'px)'
+        el.style.maxWidth = (CARDG.width * r) + 'px'
+      }
+    }
+    box._views = box._views || []
+    box._views.push(place)
+    // paint(moment) — null, or a moment with nothing claimed, shows NO chip at all: a chip over a
+    // bare snapValue would be a label with nothing to say (design C: the value only).
+    layer._paint = function (m, vp) {
+      const lines = m ? chipLines(m, side) : []
+      if (!m || !m.aim || !lines.length) { cur = null; layer.textContent = ''; layer.hidden = true; return }
+      const chip = document.createElement('div')
+      chip.className = 'pchip ' + side + (lines.some(function (l) { return !l.ok }) ? ' bad' : '')
+      const lab = document.createElement('span'); lab.className = 'pcl'
+      lab.textContent = side === 'expected' ? 'expected' : 'actual'
+      chip.appendChild(lab)
+      const body = document.createElement('span'); body.className = 'pcb'
+      const full = []
+      lines.forEach(function (l) {
+        const row = document.createElement('span'); row.className = 'pcvr' + (l.ok ? '' : ' no')
+        if (l.mark) {
+          const mk = document.createElement('span'); mk.className = 'pcm'; mk.textContent = l.mark
+          row.appendChild(mk)
+        }
+        const tx = document.createElement('span'); tx.className = 'pcv'; tx.textContent = l.text
+        row.appendChild(tx)
+        body.appendChild(row)
+        full.push((l.mark ? l.mark + ' ' : '') + l.text)
+      })
+      chip.appendChild(body)
+      const tip = document.createElement('span'); tip.className = 'mtip'; tip.setAttribute('role', 'tooltip')
+      tip.textContent = (side === 'expected' ? 'expected' : 'actual') + ' — ' + full.join(' · ')
+      chip.appendChild(tip)
+      chip.setAttribute('aria-label', tip.textContent)
+      layer.textContent = ''
+      layer.appendChild(chip)
+      cur = { spot: chipSpot(m.aim, vp, lines.length), chip: chip, vp: vp }
+      place(box._view, 0)
+    }
+    return layer
+  }
+  // THE MOMENT'S FRAME — the ring and the chip box the camera must hold, computed ONCE for the row
+  // (phase 4b). Both cells take the same pair: the chip is the same width on either side (the card's
+  // one width) and the taller of the two decides the union, so a checklist on one side can never
+  // frame a region the other side does not show. A moment that claimed nothing has no chip, and the
+  // camera frames its ring alone.
+  // …and a moment that recorded NO ring of its own still has a region it is about: the beat's focus
+  // rect (the union of the rings the beat painted, or — on a beat whose checks never rang anything —
+  // whatever the harvest recorded as its subject). That is what the older beat camera framed, and
+  // dropping to the whole page here would have un-zoomed every beat whose assertions read the page
+  // with reveal() rather than proveVisible(), which is most of this board's own. The LOUPE does not
+  // take the fallback (it is about a ringed ELEMENT, and there is none), and neither does a chip: a
+  // moment with no claim has nothing to say either way.
+  function momentFrame (m, vp) {
+    const ring = (m && (m.aim || m.focus)) ? (m.aim || m.focus) : null
+    if (!ring || !vp) return { ring: ring, chip: null }
+    const lines = Math.max(chipLines(m, 'expected').length, chipLines(m, 'actual').length)
+    return { ring: ring, chip: lines ? chipSpot(ring, vp, lines) : null }
+  }
+  // …and the moment's FAILED CLAIMS, asked once (the difference marker and the chips' ✕ both need
+  // exactly this list). A passing moment has none, which is why no marker is drawn on one.
+  function failedClaims (m) {
+    if (!m) return []
+    if (m.facts && m.facts.length) return m.facts.filter(function (c) { return c && c.ok === false })
+    return (m.claim && m.claim.ok === false) ? [m.claim] : []
+  }
+
+  // ── THE DIFFERENCE MARKER (phase 5) ──────────────────────────────────────────────────────────
+  // On a FAILED moment, ONE label ACROSS the two cells: `expected "Published" · actual "Draft"`. It
+  // sits on the seam between them, at the ring's own projected height, because that is where a
+  // reader's eyes already are — the two values are a sentence about the very element both pictures
+  // are ringing, and reading it should not cost a look away. One marker per failed claim (a Then
+  // with several facts stacks them), and NONE on a passing moment: a marker that appeared on every
+  // moment would say "difference" where there is none, which is the opposite of what it is for.
+  //
+  // It reads its position off the ACTUAL cell's camera view, so it travels with the pan and the
+  // glide; a ring the camera has taken off-screen parks the marker at the top of the pictures
+  // rather than off the row (a label pointing outside the frame is a label pointing at nothing).
+  function diffLayer (pics) {
+    const layer = document.createElement('div'); layer.className = 'mdiffs'
+    layer.hidden = true
+    pics.appendChild(layer)
+    let cur = null                              // {moment, box, vp}
+    const place = function () {
+      if (!cur || !cur.box) return
+      const box = cur.box
+      const view = box._view
+      const ring = cur.m && cur.m.aim
+      const r = (cur.vp && cur.vp.vw > 0 && box.clientWidth > 0) ? box.clientWidth / cur.vp.vw : 0
+      const ry = ring ? (view ? (ring.y - view.y) * view.scale : ring.y * r) : 0
+      const off = box.offsetTop - pics.clientTop
+      const h = pics.clientHeight || 0
+      const want = (ry >= 0 && (!box.clientHeight || ry <= box.clientHeight)) ? off + ry : 0
+      layer.style.top = Math.max(0, h ? Math.min(want, h - 4) : want) + 'px'
+    }
+    layer._paint = function (m, box, vp) {
+      const bad = failedClaims(m)
+      layer.textContent = ''
+      cur = { m: m, box: box, vp: vp }
+      if (!bad.length) { layer.hidden = true; return }
+      layer.hidden = false
+      bad.forEach(function (c) {
+        const el = document.createElement('div'); el.className = 'mdiff'
+        const put = function (word, val, no) {
+          const k = document.createElement('span'); k.className = 'mdk'; k.textContent = word
+          const v = document.createElement('b'); v.className = 'mdv' + (no ? ' no' : '')
+          v.textContent = '“' + String(val) + '”'
+          el.appendChild(k); el.appendChild(v)
+        }
+        put('expected', c.expected == null ? '' : c.expected, false)
+        const sep = document.createElement('span'); sep.className = 'mdsep'; sep.textContent = '·'
+        el.appendChild(sep)
+        put('actual', c.missing ? 'missing' : (c.got == null ? '' : c.got), true)
+        layer.appendChild(el)
+      })
+      place()
+    }
+    layer._place = place
+    return layer
+  }
+
+  // ── THE LOUPE (phase 5) — the ringed element ALONE, on both sides, at ONE scale ───────────────
+  // The camera above frames the component IN ITS PAGE, which is what makes "the app really shows
+  // this" believable; the loupe answers the other question — are the two elements the SAME? — by
+  // dropping the page entirely and showing the ringed element by itself, magnified, twice. The
+  // Actual side is the photograph cropped to the ring; the Expected side is a second sandboxed frame
+  // of the very srcdoc the cell above is showing (never a rebuild of it: two builds of one moment is
+  // how two pictures of it stop agreeing). 1.6× is the human's number (2026-09-03), and where 1.6×
+  // will not fit BOTH sides scale down together — two loupes at different scales compare nothing.
+  // A moment with no ring has nothing to magnify and the row hides it.
+  function loupeRow (vp) {
+    const el = document.createElement('div'); el.className = 'loupe'
+    el.hidden = true
+    const mk = function (side, label) {
+      const c = document.createElement('div'); c.className = 'lpcell ' + side
+      const view = document.createElement('div'); view.className = 'lpview'
+      const stage = document.createElement('div'); stage.className = 'lpstage'
+      stage.style.width = vp.vw + 'px'; stage.style.height = vp.vh + 'px'
+      const cap = document.createElement('span'); cap.className = 'lpcap'; cap.textContent = label
+      view.appendChild(stage); c.appendChild(view); c.appendChild(cap)
+      el.appendChild(c)
+      return { cell: c, view: view, stage: stage }
+    }
+    const E = mk('expected', 'expected · the ringed element')
+    const A = mk('actual', 'actual · the ringed element')
+    const ifr = document.createElement('iframe'); ifr.className = 'lpframe'
+    ifr.setAttribute('sandbox', '')                 // the same inertness the cell above has
+    ifr.setAttribute('title', 'Expected, magnified')
+    E.stage.appendChild(ifr)
+    const img = document.createElement('img'); img.className = 'lpshot'; img.alt = ''
+    A.stage.appendChild(img)
+    el._paint = function (m, src, doc) {
+      el._last = { m: m, src: src, doc: (typeof doc === 'string') ? doc : (el._last ? el._last.doc : null) }
+      const ring = m && m.aim
+      if (!ring) { el.hidden = true; return }
+      // shown BEFORE it is measured: the row is built detached, so a loupe that hid itself while
+      // unmeasurable would have no box for the observer below to notice growing, and would stay
+      // hidden for ever on exactly the moments it belongs to
+      el.hidden = false
+      // ONE fit for both sides — measured on the Actual cell and applied to the Expected, so the
+      // two are equal by construction rather than by two measurements agreeing
+      const v = window.SBStepper.loupeFit(ring, { w: A.view.clientWidth })
+      if (!v) return                       // not laid out yet; the observer paints it when it is
+      if (typeof doc === 'string' && ifr.srcdoc !== doc) ifr.srcdoc = doc
+      if (src && img.getAttribute('src') !== src) img.setAttribute('src', src)
+      const tf = 'translate(' + (-v.x * v.scale) + 'px,' + (-v.y * v.scale) + 'px) scale(' + v.scale + ')'
+      ;[E, A].forEach(function (c) { c.view.style.height = v.h + 'px'; c.stage.style.transform = tf })
+      el.dataset.lpscale = String(Math.round(v.scale * 1000) / 1000)
+    }
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { if (el._last) el._paint(el._last.m, el._last.src, el._last.doc) }).observe(A.view)
+    }
+    return el
+  }
+
+  // ── THE PROVED PHRASE, IN THE ROW'S OWN WORDS (design C) ─────────────────────────────────────
+  // Every text once: the chips say the value, the strip says the moment's name, and the sentence —
+  // written once, in the words cell — UNDERLINES the part of itself the moment on show is proving.
+  // The range comes from the pure rule (tools/board/words.js), which works on TEXT; this splices it
+  // back into the row's own markup by walking the text nodes, so a sentence carrying `code` or an
+  // emphasis keeps it. Re-rendered from the original html on every step — the words are small, and
+  // rebuilding from the source is what keeps an underline from accumulating on top of the last one.
+  function underlineIn (host, html, range) {
+    host.innerHTML = html
+    if (!range || !(range[1] > range[0])) return
+    const marks = []
+    let pos = 0
+    const walk = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null)
+    let n = walk.nextNode()
+    while (n) {
+      const len = n.nodeValue.length
+      const a = Math.max(range[0], pos); const b = Math.min(range[1], pos + len)
+      if (a < b) marks.push({ node: n, from: a - pos, to: b - pos })
+      pos += len
+      n = walk.nextNode()
+    }
+    for (let i = marks.length - 1; i >= 0; i--) {
+      const mk = marks[i]
+      const tail = mk.node.splitText(mk.from)
+      if (mk.to - mk.from < tail.nodeValue.length) tail.splitText(mk.to - mk.from)
+      const u = document.createElement('u'); u.className = 'sbprove'
+      tail.parentNode.insertBefore(u, tail)
+      u.appendChild(tail)
+    }
+  }
+
   // ── THE EXPECTED PICTURE: THE APP'S OWN COMPONENT, ON PAPER ──────────────────────────────────
   // (the human, 2026-09-03 — the Expected View decision: "the picture beside a proof is a real HTML
   // replica of the app's own component", not a drawing of it.) The harvest commits, beside every
@@ -1011,6 +1343,11 @@ const B = window.__BOARD__ || {}
   const BD = window.__BOARD__ || {}
   const PAPER = BD.paperCss || {}
   const RINGG = (BD.geom && BD.geom.RING) || { inset: 4, stroke: 2, radius: 6, halo: 3 }
+  // …and the CALLOUT's numbers, from the same one place (tools/overlay-geometry.mjs CARD, baked onto
+  // the island): the chip that says what a moment claimed is the board's own descendant of the card
+  // the burn-in used to paint, so it takes that card's width, its gap off the ring and its margin
+  // off the page edge rather than inventing three numbers of its own.
+  const CARDG = (BD.geom && BD.geom.CARD) || { width: 360, gap: 12, margin: 12 }
   // fetched ONCE per path, for the life of the page: the path carries the harvest's content hash, so
   // a re-harvest is a different key and a re-opened reader never re-downloads what it already has
   const REP_TEXT = new Map()
@@ -1364,7 +1701,11 @@ const B = window.__BOARD__ || {}
     // construction, and no length check can drift. `rep` is the Expected where the harvest took one
     // and the Actual where it did not (a before moment has claimed nothing, so its Actual IS its
     // Expected); `repSide` says which, and `claim` is what the check asserted there.
-    const shot = function (src, cap, anchor, aim, rep, repSide, claim) {
+    // …and WHAT IT CLAIMED, in the two shapes a moment can carry it (phase 4b, design C): `claim` is
+    // the ONE value a value moment proved, `facts` the beat's whole CHECKLIST — every claim it made —
+    // which is what its Then is the result of. Facts are the claims themselves, never a count of
+    // them: "2 of 2 checks" is a scoreboard, and a reader cannot tell from it what was checked.
+    const shot = function (src, cap, anchor, aim, rep, repSide, claim, facts) {
       return {
         src: src,
         cap: cap,                    // the moment's NAME — the strip's segment label AND the img alt
@@ -1373,7 +1714,8 @@ const B = window.__BOARD__ || {}
         aim: (aim && aim.w > 0 && aim.h > 0) ? aim : null,
         rep: rep || '',
         repSide: rep ? (repSide || 'actual') : '',
-        claim: claim || null
+        claim: claim || null,
+        facts: (facts && facts.length) ? facts : null
       }
     }
     // THE ASSERTED VALUES BETWEEN THE ENDS (2026-08-29, the human: the When has to be visible in the
@@ -1393,8 +1735,15 @@ const B = window.__BOARD__ || {}
         const at = (b.window && typeof v.at === 'number') ? b.window.from + v.at : null
         const name = (typeof v.label === 'string' && v.label.trim())
           ? v.label.replace(/\s+/g, ' ').trim() : ('what the test checked, ' + (k + 1))
+        // the claim carries the assertion's own NAME with it (phase 4b): `provedPhrase` falls back to
+        // the label's longest shared run when the sentence does not say the value outright, and the
+        // fold files the label on the VALUE rather than inside the claim — so it is attached here,
+        // once, instead of every reader of a claim having to know where the other half lives.
+        const claim = v.claim
+          ? { expected: v.claim.expected, got: v.claim.got, ok: v.claim.ok, missing: v.claim.missing, label: v.claim.label || name }
+          : null
         return shot(v.frame, name, at, v.focus, v.replicaExpected || v.replica || '',
-          v.replicaExpected ? 'expected' : 'actual', v.claim || null)
+          v.replicaExpected ? 'expected' : 'actual', claim)
       })
     }
     // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
@@ -1413,9 +1762,22 @@ const B = window.__BOARD__ || {}
       // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
       // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule)
       if (b.after) {
+        // the result's chips are the beat's CHECKLIST — every claim it made, in the order it made
+        // them. A beat that claimed nothing has no checklist and shows no chip at all.
         out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
-          b.replicaExpectedAfter || b.replicaAfter || '', b.replicaExpectedAfter ? 'expected' : 'actual', null))
+          b.replicaExpectedAfter || b.replicaAfter || '', b.replicaExpectedAfter ? 'expected' : 'actual',
+          null, vals.map(function (v) { return v.claim }).filter(Boolean)))
       }
+      // THE RESULT STANDS WHERE THE BEAT LAST STOOD (phase 4b). A beat's RESULT moment records no
+      // ring of its own — the run paints one around each value it checks, not around the page it
+      // leaves — so its chips would have nowhere to sit and its camera would jump back out to the
+      // whole beat at the very moment the checklist appears. It inherits the last ring the beat
+      // painted, which is the element the checklist is about. This moves no picture and invents no
+      // overlay: the frames are the run's own, ring and all; only the FRAMING, the chip's spot and
+      // the loupe's crop read it. (The same rule the drawing already used for an element the app
+      // never had — draw it beside the ring the beat last stood on.)
+      let last = null
+      for (const s of out) { if (s.aim) last = s.aim; else if (last) s.aim = last }
       return out
     }
     // the LAST moment of a beat is its result, so it is named by the beat's own Then — "after — <Then>"
@@ -1459,7 +1821,10 @@ const B = window.__BOARD__ || {}
   // had, and every cell answering it differently broke the row's rhythm. A beat with a single frame
   // — the Given row, or a half-harvest — has nothing to loop and stays the still it is; the
   // zoom ↔ full-frame toggle rides wherever the harvest recorded a focus box.
-  function proofCell (r, i, nbeats, cards, thenTxt) {
+  // `vpIn` is the row's ONE viewport (buildStoryline's viewportOf) — the page both cells stand on.
+  // Passed in rather than re-derived here so the two cameras of a row can never take their page size
+  // from two different records; with none, this cell falls back to its own shots' measurements.
+  function proofCell (r, i, nbeats, cards, thenTxt, vpIn) {
     const cell = document.createElement('div'); cell.className = 'sbproof'
     const got = beatShots(r, i, nbeats, thenTxt)
     // the row's MOMENTS, in order — what the strip names its segments after (buildStoryline reads it)
@@ -1474,6 +1839,23 @@ const B = window.__BOARD__ || {}
       return cell
     }
     const focus = got.shots[0].focus
+    // THE MOMENT'S CAMERA, where the row has the app's own component to compare (phase 4b, the human
+    // 2026-09-03). A replica row frames the ring ∪ its chip at ≤ 1.25× (aimFrame) rather than the
+    // beat's whole union at up to 3.2×: the chip that says what was claimed must be in shot, and a
+    // component blown up to fill the cell loses the header it sits in. A row with no replica keeps
+    // the older beat camera — there is no chip beside its picture to hold in frame.
+    const vp = (function () {
+      if (vpIn && vpIn.vw > 0 && vpIn.vh > 0) return { vw: vpIn.vw, vh: vpIn.vh }
+      const f = got.shots[0].focus || got.shots[0].aim
+      return (f && f.vw > 0 && f.vh > 0) ? { vw: f.vw, vh: f.vh } : null
+    })()
+    // …and never on the GIVEN row: it is the context row, whole page on both sides by design (R19),
+    // and beatFocus is what says so — no focus rect, no camera, on either path. `vpIn` is the second
+    // half of that gate: only a BEAT row is handed the row viewport, because only a beat row has a
+    // showMoment to drive the moment camera; a cell that took it without one would zoom once and
+    // then never aim at anything.
+    const useFrame = !!(vpIn && vp && focus && hasReplicas(r))
+    cell._vp = vp
     const cam = document.createElement('div'); cam.className = 'pccam'
     if (got.shots.length > 1) {
       // THE LOOP — one camera box, the frames played in it, armed on build. The cell is still
@@ -1486,7 +1868,14 @@ const B = window.__BOARD__ || {}
       }))
       sbox.appendChild(step)
       cam.appendChild(sbox)
-      aimCamera(sbox, focus, CAM)
+      if (useFrame) {
+        aimFrame(sbox, vp)
+        cell._chips = chipLayer(sbox, 'actual')   // ACTUAL ✓/✕ "…" over the photograph
+        cell._camBox = sbox
+        // the row drives BOTH cells from one place (buildStoryline's showMoment), so this cell does
+        // not aim itself scene by scene: two aimers on one row is how the halves drift apart.
+        cell._aimMoment = function (ring, chip, animate) { sbox._aim(ring, chip, animate) }
+      } else aimCamera(sbox, focus, CAM)
       cell._stepper = step        // the row's drawing locks to this loop (buildStoryline)
       // THE CAMERA FOLLOWS THE SCENE (the human, 2026-08-31). The beat's rings can be most of a page
       // apart; one static frame that held them all could only do it by zooming back out. So the
@@ -1499,8 +1888,10 @@ const B = window.__BOARD__ || {}
       // (buildStoryline parses data-viz-cardspots) in the SAME scene order as the shots, so card j and
       // shot j are one moment; a mismatched count (an older drawing) simply carries none.
       cell._cards = (cards && cards.length === got.shots.length) ? cards : []
-      step._onScene = function (j) { sbox._aim((cell._aims || [])[j] || null, (cell._cards || [])[j] || null, true) }
-      sbox._aim(cell._aims[0] || null, (cell._cards || [])[0] || null, false)   // initial: snap, don't zoom-in
+      if (!useFrame) {
+        step._onScene = function (j) { sbox._aim((cell._aims || [])[j] || null, (cell._cards || [])[j] || null, true) }
+        sbox._aim(cell._aims[0] || null, (cell._cards || [])[0] || null, false)   // initial: snap, don't zoom-in
+      }
       // …and the row can TAKE THE PAN BACK. A drawing that cannot be linked to this loop (an older
       // harvest, a mismatched scene count) shows a scene of its own choosing, and a proof cell that
       // panned alone would leave the two cells framing different regions — the one thing R19
@@ -1758,7 +2149,7 @@ const B = window.__BOARD__ || {}
     // Every replica of the row is fetched ONCE, up front, never on each step: a person walking a
     // beat back and forth must not re-download the picture, and a moment whose file has not arrived
     // yet simply holds the one before it rather than flashing blank.
-    const replicaCell = function (shots, focus, vp, facesPath, layPath) {
+    const replicaCell = function (shots, focus, vp, facesPath, layPath, momentCam) {
       const fr = document.createElement('div'); fr.className = 'sbframe sbrep'
       const box = document.createElement('div'); box.className = 'pcbox'
       // the PAGE: the app's own viewport, at 100% of the cell, so the camera transform that frames
@@ -1781,7 +2172,11 @@ const B = window.__BOARD__ || {}
       }
       fit()
       if (window.ResizeObserver) new ResizeObserver(fit).observe(page)
-      aimCamera(box, focus, CAM)
+      // ONE CAMERA, ONE RULE, BOTH CELLS (phase 4b): the Expected cell takes the moment camera
+      // wherever its Actual does — same maths, same page coordinates, same chip box — and the older
+      // beat camera on the context row, which frames the whole page on both sides.
+      if (momentCam && focus) { aimFrame(box, vp); fr._chips = chipLayer(box, 'expected') } else aimCamera(box, focus, CAM)
+      fr._camBox = box
       // the shared pieces of every moment's page: the screen's faces, and the beat's own shell plates.
       // The FACES are baked (the review's C2): an `about:srcdoc` document resolves a relative url
       // against the PARENT's base, so the sheet the board hands over is the one whose every url the
@@ -1796,11 +2191,16 @@ const B = window.__BOARD__ || {}
       // walked on, so the row showed two different moments of the beat and said it was showing one:
       // exactly the drift R19/R20 forbid. The cell now says what it does not have, for THIS moment,
       // and `data-repsrc` (the reader's own readout, and the seam the board's tests poll) says so too.
+      // THE PAGE IS PUBLISHED, not just set (phase 4b): the loupe under the row shows the SAME
+      // document clipped to the ring, so it takes the very srcdoc this cell is showing rather than
+      // rebuilding one of its own — two builds of "the same page" is how two pictures of one moment
+      // stop being one picture.
+      const show = function (doc) { ifr.srcdoc = doc; fr._doc = doc; if (fr._onDoc) fr._onDoc(doc) }
       const blank = function (why) {
         fr.dataset.repsrc = ''
         fr.dataset.repside = ''
-        ifr.srcdoc = repSrcdoc({ body: '', faces: '', plates: [], region: null, ring: null, ok: true,
-          vw: vp.vw, vh: vp.vh, note: why })
+        show(repSrcdoc({ body: '', faces: '', plates: [], region: null, ring: null, ok: true,
+          vw: vp.vw, vh: vp.vh, note: why }))
       }
       const paint = function (j) {
         const sh = shots[j]
@@ -1816,15 +2216,17 @@ const B = window.__BOARD__ || {}
             return
           }
           const region = repRect(got[0], 'data-replica-region')
-          ifr.srcdoc = repSrcdoc({
+          show(repSrcdoc({
             body: body,
             faces: got[1] || '',
             plates: repPlates(got[2], region, vp.vw, vp.vh),
             region: region,
             ring: repRect(got[0], 'data-ring-box'),
-            ok: !(sh.claim && sh.claim.ok === false),
+            // the ring reddens where THIS moment failed — a value's own claim, or, on the beat's
+            // result, any claim in its checklist that the app did not answer
+            ok: !failedClaims(sh).length,
             vw: vp.vw, vh: vp.vh
-          })
+          }))
           // WHICH moment this cell is showing, said out loud on the cell (phase 4a): the reader's
           // own readout for a person, and the deterministic seam the board's own tests walk — the
           // path is the harvest's, so "both pictures move together" can be asserted against the
@@ -1865,11 +2267,11 @@ const B = window.__BOARD__ || {}
     // ONE ROW'S EXPECTED CELL, from the Actual cell beside it: the same ordered moments, so the two
     // are two renderings of one list. A row whose harvest carries no replica — and no viewport to
     // stand one on — says so out loud instead of showing a picture of something else.
-    const expectedCell = function (pc, i) {
+    const expectedCell = function (pc, i, momentCam) {
       const shots = (pc && pc._shots) || []
       const vp = viewportOf(i)
       if (vp && shots.some(function (s) { return s.rep })) {
-        return replicaCell(shots, beatFocus(r, i, nbeats), vp, r.ev.faces, beatLayout(i || 1))
+        return replicaCell(shots, beatFocus(r, i, nbeats), vp, r.ev.faces, beatLayout(i || 1), momentCam)
       }
       // a replica that cannot be STOOD ON A PAGE — an older harvest that landed the markup but no
       // layout skeleton, so nothing knows the viewport it was measured in — is not a picture. Where
@@ -1962,6 +2364,10 @@ const B = window.__BOARD__ || {}
       if (strip) right.appendChild(strip)
       right.appendChild(pics)
       el.appendChild(text); el.appendChild(right)
+      // the row's two containers, named — phase 5 hangs the difference marker inside .pics (it spans
+      // the seam between the cells) and the loupe under it inside .sbright (so its two halves line
+      // up with the two pictures they magnify, by sharing their grid rather than by guessing widths)
+      el._pics = pics; el._right = right
       return el
     }
     // the column names, as a table header over the rows (the human, 2026-08-28) — the one row that
@@ -2042,7 +2448,8 @@ const B = window.__BOARD__ || {}
         // the beat's Then, as PLAIN TEXT — the name of the row's last moment (its result), used by
         // the strip's final segment and by the closing frame's alt
         const thenTxt = bt.then ? textOf(bt.then.txt) : ''
-        const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i], thenTxt)
+        const vpRow = viewportOf(i + 1)
+        const pc = proofCell(r, i + 1, nbeats, cardspots && cardspots[i], thenTxt, vpRow)
         // LOCK-STEP (2026-08-29, the human: same story order, comparable timing). The drawing takes
         // its scenes from the proof's own loop when the two agree on how many there are — the beat's
         // drawn park points against the beat's harvested frames.
@@ -2064,7 +2471,7 @@ const B = window.__BOARD__ || {}
         // THE EXPECTED CELL IS THE REPLICA (phase 4a) wherever the harvest landed one; the sketch
         // path below is what a requirement with no UI harvested yet still gets.
         const fc = hasReps
-          ? expectedCell(pc, i + 1)
+          ? expectedCell(pc, i + 1, true)
           : (canPair
             ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
               beatFocus(r, i + 1, nbeats), driveDraw)
@@ -2076,17 +2483,10 @@ const B = window.__BOARD__ || {}
           // ONE STEPPER, TWO RENDERINGS. The row's proof loop is the clock; the Expected cell swaps
           // to the same moment's replica and pans to the same ring, so the two pictures can never
           // show different moments of the beat. A row with no proof loop (a single-frame beat) has
-          // one moment on both sides and nothing to step.
-          if (pc._stepper && fc._step) {
-            pc._stepper._onFrame = function (j) {
-              fc._step(j)
-              fc._aimScene((pc._aims || [])[j] || null, (pc._cards || [])[j] || null, true)
-            }
-            if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null, (pc._cards || [])[0] || null, false)
-            rowDriver = proofDriver(pc._stepper)
-          } else if (fc._aimScene) {
-            fc._aimScene((pc._aims || [])[0] || null, null, false)
-          }
+          // one moment on both sides and nothing to step. The AIMING and everything drawn over the
+          // pictures is installed once the row exists (showMoment, below): the marker lives inside
+          // .pics and the loupe under it, so neither can be built before the row they hang in.
+          rowDriver = pc._stepper ? proofDriver(pc._stepper) : null
           rowStep = pc._rowStep || null
         } else if (link) {
           pc._stepper._onFrame = function (j, ms) {
@@ -2122,6 +2522,56 @@ const B = window.__BOARD__ || {}
         const tc = textCell(markCol(i + 1), html)
         const strip = rowDriver ? momentStrip(rowDriver, moments) : null
         const rowEl = row(i === 0 ? '' : 'beatstart', fc, tc, pc, strip)
+        // ── ONE MOMENT, EVERYWHERE ON THE ROW (design C, phases 4b + 5) ────────────────────────
+        // A beat row shows ONE moment at a time, and everything on it is a rendering of that one
+        // moment: the two pictures, the chip over each, the marker across their seam, the loupe
+        // under them, and the underline in the sentence. So there is ONE function that shows a
+        // moment, and every mover — the loop, the strip, the keys — goes through it. Anything that
+        // aimed or painted on its own is exactly how the halves of a row drift apart.
+        if (hasReps) {
+          const shots = pc._shots || []
+          const diffs = vpRow ? diffLayer(rowEl._pics) : null
+          const lp = vpRow ? loupeRow(vpRow) : null
+          if (lp) rowEl._right.appendChild(lp)
+          if (diffs && pc._camBox) (pc._camBox._views = pc._camBox._views || []).push(function () { diffs._place() })
+          // the sentence's own halves, kept as they were authored so each step re-renders from the
+          // source rather than underlining on top of the last underline
+          const said = [].slice.call(tc.querySelectorAll('.sbthen .sbv, .sbwhen .sbv'))
+            .map(function (el) { return { el: el, html: el.innerHTML } })
+          let curJ = 0
+          const showMoment = function (j, animate) {
+            curJ = j
+            const m = shots[j] || null
+            const mf = momentFrame(m, vpRow)
+            if (pc._aimMoment) pc._aimMoment(mf.ring, mf.chip, animate)
+            if (fc._aimScene) fc._aimScene(mf.ring, mf.chip, animate)
+            if (pc._chips) pc._chips._paint(m, vpRow)
+            if (fc._chips) fc._chips._paint(m, vpRow)
+            // the row says whether the moment on show FAILED, so the underline in its sentence takes
+            // the same iron-oxide the marker and the ring do — one moment, one reading, everywhere
+            rowEl.classList.toggle('hasfail', failedClaims(m).length > 0)
+            if (diffs) diffs._paint(m, pc._camBox, vpRow)
+            if (lp) lp._paint(m, m ? m.src : null, fc._doc)
+            // THE PROVED PHRASE. The Then is asked first — a claim is a fact about the beat's result,
+            // and that is where the sentence usually says it; the When answers only where the Then
+            // does not, which is the "you read the picker" case. Nothing matched underlines nothing.
+            const claim = m ? (failedClaims(m)[0] || ((m.facts && m.facts[0]) || m.claim) || null) : null
+            let hit = -1; let rng = null
+            for (let k = 0; k < said.length && hit < 0; k++) {
+              const got = claim ? window.SBWords.provedPhrase(said[k].el.textContent || '', claim) : null
+              if (got) { hit = k; rng = got }
+            }
+            said.forEach(function (p, k) { underlineIn(p.el, p.html, k === hit ? rng : null) })
+          }
+          rowEl._showMoment = showMoment
+          if (pc._stepper) {
+            pc._stepper._onFrame = function (j) { if (fc._step) fc._step(j); showMoment(j, true) }
+          }
+          // the Expected page arrives asynchronously (it is fetched); the loupe takes it the moment
+          // it lands rather than showing the moment before it
+          if (fc) fc._onDoc = function (doc) { if (lp) lp._paint(shots[curJ] || null, (shots[curJ] || {}).src || null, doc) }
+          showMoment(pc._stepper ? pc._stepper._cur() : 0, false)
+        }
         // the row's own strip and the ← → keys (targeting the SELECTED row) drive the walk; clicking
         // anywhere on the row SELECTS it (the human, 2026-09-02: "make clear which when/then is
         // selected"), so ← → then walk this beat and no other. Selection is additive — it never eats

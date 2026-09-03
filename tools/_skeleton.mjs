@@ -59,6 +59,11 @@ export const FILES = [
   // without it. NOT caught by the every-relative-import-is-vendored guard (nothing imports it —
   // it is inlined), so it must be listed directly.
   'tools/board/stepper.js',
+  // …and the PROVED PHRASE rule (phase 4b, design C): which words of a beat's sentence the moment on
+  // show is proving. Inlined verbatim into board.html exactly like stepper.js — so, for the same
+  // reason, invisible to the every-relative-import-is-vendored guard and listed here directly: a
+  // scaffolded project whose build cannot read it emits no board at all.
+  'tools/board/words.js',
   'tools/serve-board.mjs',
   // the resilient directory watch serve-board.mjs builds both of its watchers on — an unhandled
   // FSWatcher 'error' (a watched directory deleted under Node's recursive walker, which is what

@@ -186,11 +186,86 @@
   function round2 (n) { return Math.round(n * 100) / 100 }
   function round3 (n) { return Math.round(n * 1000) / 1000 }
 
+  // ── THE EASED CAMERA (phase 4b, the human 2026-09-03) ──────────────────────────────────────────
+  // Design C frames a MOMENT, not a beat: the ring the assertion painted, UNION the chip that says
+  // what it claimed — a chip framed out of view is a caption on nothing — with generous room around
+  // the pair and a gentle cap. Both numbers are the human's, on the first cut of this row ("zoomed
+  // in a bit too much" — a picker blown up to fill the cell loses the header it sits in): 45% of the
+  // union's own size as room on every side, and never more than 1.25× the app's NATURAL size.
+  //
+  // The scale here is ABSOLUTE — page pixels to cell pixels — which is what makes the two cells one
+  // camera by construction: the replica stands at the app's own coordinates and the photograph is
+  // the app's own pixels, so one absolute scale on one page rect frames both identically. (The older
+  // cameraView above returns a scale RELATIVE to media laid out at cell width; it still frames the
+  // sketch cell, which has no page coordinates of its own. client.js converts.)
+  //
+  // Returns { x, y, w, h, scale } — the page-unit region on show and the scale it is shown at — or
+  // null when there is nothing to magnify: no ring, unusable numbers, or a fit at or below the
+  // cell's own natural scale, where a "zoom" would be zooming OUT. The caller then shows the whole
+  // frame, honestly.
+  var FRAME_PAD = 0.45
+  var FRAME_MAX = 1.25
+  function num (v) { return typeof v === 'number' && isFinite(v) }
+  function boxOk (b) { return !!(b && num(b.x) && num(b.y) && num(b.w) && num(b.h) && b.w > 0 && b.h > 0) }
+  function frameFor (ring, chip, viewport, cell, opts) {
+    var o = opts || {}
+    var pad = o.pad != null ? +o.pad : FRAME_PAD
+    var max = o.max != null ? +o.max : FRAME_MAX
+    if (!boxOk(ring)) return null
+    if (!viewport || !cell) return null
+    var vw = +viewport.vw; var vh = +viewport.vh
+    var cw = +cell.w; var ch = +cell.h
+    if (!(num(vw) && num(vh) && num(cw) && num(ch)) || vw <= 0 || vh <= 0 || cw <= 0 || ch <= 0) return null
+    // the union of the ring and its chip — the pair the moment is ABOUT
+    var x0 = ring.x; var y0 = ring.y
+    var x1 = ring.x + ring.w; var y1 = ring.y + ring.h
+    if (boxOk(chip)) {
+      x0 = Math.min(x0, chip.x); y0 = Math.min(y0, chip.y)
+      x1 = Math.max(x1, chip.x + chip.w); y1 = Math.max(y1, chip.y + chip.h)
+    }
+    var uw = x1 - x0; var uh = y1 - y0
+    var want = 1 + 2 * pad
+    var scale = Math.min(max, cw / (uw * want), ch / (uh * want))
+    var natural = cw / vw                       // the scale the cell shows the whole page at
+    if (!(scale > natural)) return null          // nothing to magnify — the whole frame is honest
+    // the region the cell then shows, centred on the union and clamped inside the page: a target at
+    // the page's edge PANS rather than showing blank ground beside the evidence
+    var w = cw / scale; var h = ch / scale
+    var cx = x0 + uw / 2; var cy = y0 + uh / 2
+    var x = w >= vw ? (vw - w) / 2 : Math.min(Math.max(0, cx - w / 2), vw - w)
+    var y = h >= vh ? (vh - h) / 2 : Math.min(Math.max(0, cy - h / 2), vh - h)
+    return { x: x, y: y, w: w, h: h, scale: scale }
+  }
+
+  // ── THE LOUPE (phase 5) — the ringed element ALONE, on both sides, at ONE scale ────────────────
+  // Under the two pictures, the same element twice: the Expected replica's and the Actual
+  // photograph's, cropped to the ring with a little pad and magnified. 1.6× is the human's number
+  // (2026-09-03). Where 1.6× would not fit the cell, BOTH sides scale down together — two loupes at
+  // different scales would be a comparison of nothing. Returns the page-unit origin, the cell-pixel
+  // size of the viewport and the scale; null where there is no ring to magnify.
+  var LOUPE_MAX = 1.6
+  var LOUPE_PAD = 14
+  function loupeFit (ring, cell, opts) {
+    var o = opts || {}
+    var max = o.max != null ? +o.max : LOUPE_MAX
+    var pad = o.pad != null ? +o.pad : LOUPE_PAD
+    if (!boxOk(ring) || !cell) return null
+    var cw = +cell.w; var chh = +cell.h
+    if (!(num(cw) && cw > 0)) return null
+    var bw = ring.w + 2 * pad; var bh = ring.h + 2 * pad
+    var scale = Math.min(max, cw / bw)
+    if (num(chh) && chh > 0) scale = Math.min(scale, chh / bh)
+    if (!(scale > 0)) return null
+    return { x: ring.x - pad, y: ring.y - pad, w: bw * scale, h: bh * scale, scale: scale }
+  }
+
   globalThis.SBStepper = {
     stepperHolds: stepperHolds,
     scaleHold: scaleHold,
     cameraDur: cameraDur,
     cameraView: cameraView,
-    cameraCss: cameraCss
+    cameraCss: cameraCss,
+    frameFor: frameFor,
+    loupeFit: loupeFit
   }
 })()

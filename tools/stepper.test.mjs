@@ -94,3 +94,83 @@ test('cameraDur treats a broken base or speed as sane defaults', () => {
   assert.equal(cameraDur(undefined, 1), 420)    // no base → the default base
   assert.equal(cameraDur(-5, 1), 420)
 })
+
+// ── THE EASED CAMERA (phase 4b, the human 2026-09-03) ────────────────────────────────────────────
+// The row's two cells frame ONE region per moment: the ring the assertion painted UNION the chip
+// that says what it claimed (a chip framed out of view is a caption on nothing), with generous room
+// around it — 45% of the union on every side — and a gentle cap: never more than 1.25× the app's own
+// natural size, because a picker blown up to fill a cell loses the header it sits in ("zoomed in a
+// bit too much", the human, on the first cut). The scale is ABSOLUTE — page pixels to cell pixels —
+// so both cells, which stand on the same page coordinates, are framed identically by construction.
+const { frameFor, loupeFit } = globalThis.SBStepper
+const VP = { vw: 1440, vh: 900 }
+
+test('a small ring alone takes the cap — 1.25×, never more', () => {
+  const v = frameFor({ x: 780, y: 5, w: 132, h: 28 }, null, VP, { w: 450, h: 281 })
+  assert.equal(v.scale, 1.25)
+  assert.equal(Math.round(v.w), Math.round(450 / 1.25))     // the region is the cell, at that scale
+  assert.equal(Math.round(v.h), Math.round(281 / 1.25))
+})
+
+test('the frame contains the ring AND the chip, with 45% room around the pair', () => {
+  const ring = { x: 780, y: 5, w: 132, h: 28 }
+  const chip = { x: 740, y: 45, w: 360, h: 44 }
+  const v = frameFor(ring, chip, VP, { w: 450, h: 281 })
+  const inside = (b) => b.x >= v.x - 0.5 && b.y >= v.y - 0.5 &&
+    b.x + b.w <= v.x + v.w + 0.5 && b.y + b.h <= v.y + v.h + 0.5
+  assert.equal(inside(ring), true, 'the ring is in frame')
+  assert.equal(inside(chip), true, 'and so is the chip that explains it')
+  // the union is 1100−740 = 360 wide; 45% each side wants 360 × 1.9 = 684 page px in a 450px cell
+  assert.ok(Math.abs(v.scale - 450 / 684) < 0.001, 'the fit, not the cap: ' + v.scale)
+})
+
+test('a chip wider than the ring widens the frame — a caption is never cropped off', () => {
+  const ring = { x: 780, y: 5, w: 132, h: 28 }
+  const narrow = frameFor(ring, null, VP, { w: 450, h: 281 })
+  const wide = frameFor(ring, { x: 700, y: 45, w: 360, h: 44 }, VP, { w: 450, h: 281 })
+  assert.ok(wide.scale < narrow.scale, 'the wider pair is framed further back')
+  assert.ok(wide.w > narrow.w)
+})
+
+test('a target that already spans the page is not "zoomed" — the whole frame, honestly', () => {
+  assert.equal(frameFor({ x: 0, y: 0, w: 1440, h: 900 }, null, VP, { w: 450, h: 281 }), null)
+  // …and neither is one whose fit lands below the cell's own natural scale (450/1440 = 0.3125)
+  assert.equal(frameFor({ x: 20, y: 20, w: 700, h: 700 }, null, VP, { w: 450, h: 281 }), null)
+})
+
+test('a ring at the page edge PANS — the frame never shows ground beside the page', () => {
+  const v = frameFor({ x: 1380, y: 860, w: 40, h: 30 }, null, VP, { w: 450, h: 281 })
+  assert.ok(v.x + v.w <= VP.vw + 0.001, 'clamped at the right edge: ' + JSON.stringify(v))
+  assert.ok(v.y + v.h <= VP.vh + 0.001, 'and at the foot')
+  assert.ok(v.x >= 0 && v.y >= 0)
+})
+
+test('broken inputs frame nothing rather than something invented', () => {
+  assert.equal(frameFor(null, null, VP, { w: 450, h: 281 }), null)
+  assert.equal(frameFor({ x: 0, y: 0, w: 0, h: 10 }, null, VP, { w: 450, h: 281 }), null)
+  assert.equal(frameFor({ x: 0, y: 0, w: 10, h: 10 }, null, { vw: 0, vh: 900 }, { w: 450, h: 281 }), null)
+  assert.equal(frameFor({ x: 0, y: 0, w: 10, h: 10 }, null, VP, { w: 0, h: 281 }), null)
+})
+
+// ── THE LOUPE (phase 5) — the ringed element ALONE, both sides, ONE scale ────────────────────────
+test('the loupe magnifies to 1.6× and reports the box that holds the element', () => {
+  const v = loupeFit({ x: 780, y: 5, w: 132, h: 28 }, { w: 400, h: 200 })
+  assert.equal(v.scale, 1.6)
+  assert.equal(v.x, 780 - 14)                                   // the pad rides in page units
+  assert.equal(v.y, 5 - 14)
+  assert.equal(Math.round(v.w), Math.round((132 + 28) * 1.6))
+  assert.equal(Math.round(v.h), Math.round((28 + 28) * 1.6))
+})
+
+test('an element too wide for the cell scales DOWN — both sides equally, never one of them', () => {
+  const v = loupeFit({ x: 100, y: 100, w: 600, h: 40 }, { w: 400, h: 200 })
+  assert.ok(v.scale < 1.6)
+  assert.ok(Math.abs(v.w - 400) < 0.5, 'it fills the cell exactly: ' + v.w)
+  assert.equal(loupeFit({ x: 100, y: 100, w: 600, h: 40 }, { w: 400, h: 200 }).scale, v.scale)
+})
+
+test('no ring, no loupe', () => {
+  assert.equal(loupeFit(null, { w: 400, h: 200 }), null)
+  assert.equal(loupeFit({ x: 1, y: 1, w: 0, h: 10 }, { w: 400, h: 200 }), null)
+  assert.equal(loupeFit({ x: 1, y: 1, w: 10, h: 10 }, { w: 0, h: 200 }), null)
+})
