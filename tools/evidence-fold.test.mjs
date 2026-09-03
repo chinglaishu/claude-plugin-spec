@@ -420,6 +420,36 @@ test('replicas: an entry that never had one gains none from a replica-less fold'
   assert.equal('replicaBefore' in index.board.evidence.R4.beats[0], false)
 })
 
+// ── FIX ROUND 2 (task 3): the BEAT-level carry (this file's "replicas: a fold lands each beat's
+// pair..." test, above) must not leak down to a VALUE moment. The carry exists so a run whose page
+// tore down mid-capture does not delete the picture a row is built from — but a value moment that
+// SURVIVES the re-harvest (same frame, same layout — this is not the "dropped entirely" case the
+// test above covers) and comes back with no `replica` of its own was RE-CHECKED and re-gated this
+// run; carrying the old picture forward would show a photograph beside a picture nobody just
+// verified. No carry code exists for `values[].replica`/`replicaExpected` (only beats have one), so
+// this is a REGRESSION PIN, not a fix — but it is exactly the C1 shape (fix round 1's review) one
+// level down, and worth guarding the same way.
+test('replicas: a re-harvested value moment whose new entry names no replica gets its old one pruned, not carried', () => {
+  const withRep = k => beat(1, {
+    values: Array.from({ length: k }, (_, i) => ({
+      frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
+      layout: `spec/board/evidence/R4.b1.v${i + 1}.layout.json`,
+      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`
+    }))
+  })
+  const noRep = k => beat(1, {
+    values: Array.from({ length: k }, (_, i) => ({
+      frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
+      layout: `spec/board/evidence/R4.b1.v${i + 1}.layout.json`
+      // the SAME value moment (same frame, same layout) — but THIS run's capture named no replica
+    }))
+  })
+  const index = { board: { evidence: { R4: entry({ beats: [withRep(1)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [noRep(1)] }) })
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.v1.actual.html'), prune.join(' '))
+  assert.equal('replica' in index.board.evidence.R4.beats[0].values[0], false, 'not carried onto the fresh entry either')
+})
+
 // FONTS are refcounted per SCREEN like the committed video: many requirements of one screen share
 // the same face, so a file is pruned only when no entry of that screen names it any more.
 const font = (hash, family = 'Inter Tight', ext = 'woff2') => ({ hash, family, ext, path: `spec/board/evidence/_fonts/${hash}.${ext}` })
