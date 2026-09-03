@@ -7,7 +7,7 @@
 // pruning, so an old index cleans itself up on its next fold.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, foldEvidence } from './evidence.mjs'
+import { evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, foldEvidence } from './evidence.mjs'
 
 test('evidencePaths derives the deterministic per-requirement home under the screen dir — frames only', () => {
   assert.deepEqual(evidencePaths('board', 'R4'), {
@@ -26,7 +26,9 @@ test('beatEvidencePaths keys the harvest by the beat the check proves', () => {
     before: 'spec/board/evidence/R4.b2.before.png',
     after: 'spec/board/evidence/R4.b2.after.png',
     layoutBefore: 'spec/board/evidence/R4.b2.before.layout.json',
-    layoutAfter: 'spec/board/evidence/R4.b2.after.layout.json'
+    layoutAfter: 'spec/board/evidence/R4.b2.after.layout.json',
+    replicaBefore: 'spec/board/evidence/R4.b2.before.actual.html',
+    replicaAfter: 'spec/board/evidence/R4.b2.after.actual.html'
   })
 })
 test('beatEvidencePaths takes the bare id off a qualified one, and defaults to beat 1', () => {
@@ -45,7 +47,8 @@ test('valueEvidencePaths names each asserted-value frame inside its beat', () =>
   assert.deepEqual(valueEvidencePaths('todo', 'R1', 1, 2), {
     dir: 'spec/todo/evidence',
     frame: 'spec/todo/evidence/R1.b1.v2.png',
-    layout: 'spec/todo/evidence/R1.b1.v2.layout.json'
+    layout: 'spec/todo/evidence/R1.b1.v2.layout.json',
+    replica: 'spec/todo/evidence/R1.b1.v2.actual.html'
   })
   assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 1).frame, 'spec/todo/evidence/R1.b3.v1.png',
     'a qualified id lands in the requirement\'s own screen, like every other path here')
@@ -331,4 +334,106 @@ test('T13: the carry is gone — a proven, hash-matched entry still sheds its le
   assert.deepEqual(prune, ['spec/board/evidence/R4.clip.webp'])
   assert.equal('clip' in index.board.evidence.R4, false)
   assert.equal('clipRunId' in index.board.evidence.R4, false, 'the cutter stamp retired with the cut')
+})
+
+// ── 2026-09-03: the ACTUAL REPLICA rides beside every frame (phase 1 of the Expected View plan;
+// the human's decision that day: the picture beside a proof is a real HTML replica of the app's own
+// component). One file per moment, named the way the layout skeleton one name away from it is, and
+// the web fonts the replica needs land once per screen under evidence/_fonts/.
+test('beatEvidencePaths names the beat\'s two replicas beside its frames and skeletons', () => {
+  const p = beatEvidencePaths('board', 'R4', 2)
+  assert.equal(p.replicaBefore, 'spec/board/evidence/R4.b2.before.actual.html')
+  assert.equal(p.replicaAfter, 'spec/board/evidence/R4.b2.after.actual.html')
+  assert.equal(beatEvidencePaths('asset-plan', 'asset-plan:R5').replicaBefore,
+    'spec/asset-plan/evidence/R5.b1.before.actual.html', 'a qualified id lands in its own screen, as ever')
+})
+test('valueEvidencePaths names the asserted value\'s replica', () => {
+  assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 2).replica, 'spec/todo/evidence/R1.b3.v2.actual.html')
+})
+test('fontEvidencePath puts a screen\'s web fonts in one place, named by content', () => {
+  assert.equal(fontEvidencePath('board', 'a1b2c3d4e5f60718', 'woff2'), 'spec/board/evidence/_fonts/a1b2c3d4e5f60718.woff2')
+})
+
+test('parseReplicaAttachment reads the names snapReplica attaches, and nothing else', () => {
+  assert.deepEqual(parseReplicaAttachment('replica R4#1 before'), { id: 'R4', beat: 1, phase: 'before' })
+  assert.deepEqual(parseReplicaAttachment('replica asset-plan:R5#2 after'), { id: 'asset-plan:R5', beat: 2, phase: 'after' })
+  assert.deepEqual(parseReplicaAttachment('replica R1#1 v3'), { id: 'R1', beat: 1, phase: 'v3' })
+  assert.deepEqual(parseReplicaAttachment('replica R4 before'), { id: 'R4', beat: null, phase: 'before' })
+  assert.equal(parseReplicaAttachment('layout R4#1 before'), null, 'a skeleton is not a replica')
+  assert.equal(parseReplicaAttachment('evidence R4#1 before'), null, 'nor is a frame')
+  assert.equal(parseReplicaAttachment('replica R4#1 during'), null)
+  assert.equal(parseReplicaAttachment('replica R1#1 v'), null, 'a value phase must be numbered')
+  assert.equal(parseReplicaAttachment(''), null)
+})
+test('parseFontAttachment reads `font <hash> <family>` — a family may have spaces, a hash may not', () => {
+  assert.deepEqual(parseFontAttachment('font a1b2c3d4e5f60718 Inter Tight'), { hash: 'a1b2c3d4e5f60718', family: 'Inter Tight' })
+  assert.deepEqual(parseFontAttachment('font 0123456789abcdef Roboto'), { hash: '0123456789abcdef', family: 'Roboto' })
+  assert.equal(parseFontAttachment('font NOTAHASH Inter'), null, 'a hash is hex')
+  assert.equal(parseFontAttachment('font a1b2c3d4e5f60718'), null, 'and a font without a family is not one')
+  assert.equal(parseFontAttachment('replica R4#1 before'), null)
+  assert.equal(parseFontAttachment(''), null)
+})
+
+const rep = (n, over = {}) => beat(n, {
+  replicaBefore: `spec/board/evidence/R4.b${n}.before.actual.html`,
+  replicaAfter: `spec/board/evidence/R4.b${n}.after.actual.html`,
+  ...over
+})
+test('replicas: a fold lands each beat\'s pair, and a replica-less re-fold CARRIES it (the layout\'s rule)', () => {
+  // same reason the skeleton is carried: the replica is the source the Expected view is built from,
+  // so a run whose capture failed must not delete it and drop the row back to a picture-less proof
+  const index = { board: { evidence: { R4: entry({ beats: [rep(1)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaBefore: null, replicaAfter: null })] }) })
+  assert.deepEqual(prune, [], 'nothing is pruned by a carry')
+  const b = index.board.evidence.R4.beats[0]
+  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html')
+  assert.equal(b.replicaAfter, 'spec/board/evidence/R4.b1.after.actual.html')
+})
+test('replicas: a beat that brings fresh ones replaces its own, and a dropped beat takes them with it', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [rep(1), rep(2)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [rep(1)] }) })
+  assert.ok(prune.includes('spec/board/evidence/R4.b2.before.actual.html'))
+  assert.ok(prune.includes('spec/board/evidence/R4.b2.after.actual.html'))
+})
+test('replicas: an asserted value\'s replica is pruned with its frame', () => {
+  const withRep = k => beat(1, {
+    values: Array.from({ length: k }, (_, i) => ({
+      frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
+      layout: `spec/board/evidence/R4.b1.v${i + 1}.layout.json`,
+      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`
+    }))
+  })
+  const index = { board: { evidence: { R4: entry({ beats: [withRep(2)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withRep(1)] }) })
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.v2.actual.html'), prune.join(' '))
+})
+test('replicas: an entry that never had one gains none from a replica-less fold', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [beat(1)] }) } } }
+  foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1)] }) })
+  assert.equal('replicaBefore' in index.board.evidence.R4.beats[0], false)
+})
+
+// FONTS are refcounted per SCREEN like the committed video: many requirements of one screen share
+// the same face, so a file is pruned only when no entry of that screen names it any more.
+const font = (hash, family = 'Inter Tight', ext = 'woff2') => ({ hash, family, ext, path: `spec/board/evidence/_fonts/${hash}.${ext}` })
+test('fonts: a font-less fold carries the screen\'s faces rather than orphaning the replica', () => {
+  const index = { board: { evidence: { R4: entry({ fonts: [font('aaaa1111bbbb2222')] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2' }) })
+  assert.deepEqual(prune, [])
+  assert.deepEqual(index.board.evidence.R4.fonts, [font('aaaa1111bbbb2222')])
+})
+test('fonts: a face no entry of the screen names any more is pruned, one still named is kept', () => {
+  const shared = font('aaaa1111bbbb2222')
+  const index = {
+    board: {
+      evidence: {
+        R4: entry({ fonts: [shared] }),
+        R5: entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', fonts: [shared] })
+      }
+    }
+  }
+  let prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', fonts: [font('cccc3333dddd4444')] }) })
+  assert.deepEqual(prune, [], 'R5 still wears the old face')
+  prune = foldEvidence(index, { 'board:R5': entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', runId: 'r2', fonts: [font('cccc3333dddd4444')] }) })
+  assert.deepEqual(prune, ['spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2'])
 })

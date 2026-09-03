@@ -149,7 +149,10 @@ test('per-beat: the requirement-level pair is derived, and every beat keeps its 
   assert.equal(r.beats.length, 2)
   // `values` (2026-08-29) is part of every beat's shape now — empty where the checks photographed
   // no asserted value, which is what a beat harvested before this change looks like.
-  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', window: { from: 100, to: 400 }, values: [] })
+  // `replicaBefore`/`replicaAfter` joined the beat's shape in phase 1 of the Expected View plan
+  // (2026-09-03) — null where the run harvested no replica, exactly as the skeletons read on a beat
+  // captured before they existed. This assertion was CORRECTLY broken by that change (rule 4).
+  assert.deepEqual(r.beats[0], { n: 1, before: 'b1.png', after: 'a1.png', layoutBefore: 'b1.json', layoutAfter: 'a1.json', replicaBefore: null, replicaAfter: null, window: { from: 100, to: 400 }, values: [] })
   assert.deepEqual(r.beats[1].window, { from: 900, to: 1200 }, 'each beat keeps its OWN span, so a per-beat row seeks its own moment')
 })
 
@@ -181,8 +184,8 @@ test('per-beat: the asserted-value frames resolve in check order, each with its 
   }
   const r = resolvePrimaryVideo(harvest)['todo:R1']
   assert.deepEqual(r.beats[0].values, [
-    { k: 1, frame: 'v1.png', layout: 'v1.json' },
-    { k: 2, frame: 'v2.png', layout: 'v2.json' }
+    { k: 1, frame: 'v1.png', layout: 'v1.json', replica: null },
+    { k: 2, frame: 'v2.png', layout: 'v2.json', replica: null }
   ])
 })
 
@@ -286,4 +289,43 @@ test('valueMeta refuses a label that is not a usable name — collapsed, bounded
   assert.deepEqual(valueMeta({ label: 42 }), {}, 'only a string is a name')
   assert.equal(valueMeta({ label: 'x'.repeat(400) }).label.length, 140, 'bounded — a segment is a label, not a paragraph')
   assert.deepEqual(valueMeta({ at: 'soon' }), {}, 'an unusable offset is no offset')
+})
+
+// ── 2026-09-03, phase 1 of the Expected View plan: the ACTUAL REPLICA of every moment resolves with
+// the frame it was taken beside, and the web fonts the run fetched for the page ride out with the
+// requirement so the fold can commit them once per screen.
+test('per-beat: the replica of each phase and each asserted value resolves with its frame', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const harvest = {
+    'todo:R1': {
+      fonts: [{ hash: 'aaaa1111bbbb2222', family: 'Inter Tight', ext: 'woff2', src: '/tmp/x/font-aaaa1111bbbb2222.woff2' }],
+      caps: {
+        _novideo: {
+          srcVideo: null,
+          order: [1],
+          beats: {
+            1: {
+              before: 'b1.png', after: 'a1.png',
+              replicaBefore: 'b1.html', replicaAfter: 'a1.html',
+              window: { from: 100, to: 4000 },
+              values: { 1: { frame: 'v1.png', layout: 'v1.json', replica: 'v1.html' } }
+            }
+          }
+        }
+      },
+      latestKey: '_novideo'
+    }
+  }
+  const r = resolvePrimaryVideo(harvest)['todo:R1']
+  assert.equal(r.beats[0].replicaBefore, 'b1.html')
+  assert.equal(r.beats[0].replicaAfter, 'a1.html')
+  assert.deepEqual(r.beats[0].values, [{ k: 1, frame: 'v1.png', layout: 'v1.json', replica: 'v1.html' }])
+  assert.deepEqual(r.fonts, [{ hash: 'aaaa1111bbbb2222', family: 'Inter Tight', ext: 'woff2', src: '/tmp/x/font-aaaa1111bbbb2222.woff2' }],
+    'the faces the page uses travel with the requirement, to be committed once per screen')
+})
+
+test('per-beat: a requirement whose run fetched no font resolves to an empty set, never undefined', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const harvest = { 'todo:R1': { caps: { _novideo: { srcVideo: null, order: [1], beats: { 1: { before: 'b1.png', after: 'a1.png' } } } }, latestKey: '_novideo' } }
+  assert.deepEqual(resolvePrimaryVideo(harvest)['todo:R1'].fonts, [])
 })
