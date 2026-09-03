@@ -1795,7 +1795,13 @@ const B = window.__BOARD__ || {}
             ok: !(sh.claim && sh.claim.ok === false),
             vw: vp.vw, vh: vp.vh
           })
+          // WHICH moment this cell is showing, said out loud on the cell (phase 4a): the reader's
+          // own readout for a person, and the deterministic seam the board's own tests walk — the
+          // path is the harvest's, so "both pictures move together" can be asserted against the
+          // index rather than against a tween.
           fr.dataset.repside = sh.repSide
+          fr.dataset.repsrc = sh.rep
+          fr.dataset.repmoment = String(j)
         })
       }
       for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once

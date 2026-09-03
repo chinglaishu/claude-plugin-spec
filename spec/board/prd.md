@@ -141,11 +141,12 @@ requirement at a time, as **one card read top to bottom**: the id · state · **
 header row, which also carries the reader's **one play speed** and its **play mode** (auto ↔
 step, R20) *(a slim bar of their own until 2026-09-02, when the human moved them onto the title row)*,
 then the requirement's **storyline — a row per beat** under
-a **behavior · schematic · proof** header row *(the column-order toggle this bar carried was removed
-2026-08-30 with R21's rewrite — behaviour always leads)*. Each row carries that beat's three cells side by
-side: the beat's **Given / When→Then words**, the **drawn schematic** frame (a short animation of the
-drawing performing *that beat's* action, quiet grey when stale, parked as a still under reduced
-motion), and that beat's **own harvested proof** — with the drawing and the photograph aimed at the
+a **behavior · expected · actual** header row *(the column-order toggle this bar carried was removed
+2026-08-30 with R21's rewrite — behaviour always leads; RENAMED 2026-09-03 from "behavior · schematic
+· proof" by the human's Expected View decision — see R18)*. Each row carries that beat's three cells side by
+side: the beat's **Given / When→Then words**, the **Expected** picture (the app's own component,
+captured around the ring with the requirement's claim applied — a labelled sketch where no UI has
+been harvested), and that beat's **own harvested Actual** — with the replica and the photograph aimed at the
 **same region** by one shared **zoom camera** that every cell flips together, and **stepped by ONE
 strip that spans them both**, one named segment per moment the beat proved *(the human, 2026-09-02:
 "schematic and proof should share same stepper (as their steps must be same???)" — the walk was a
@@ -153,7 +154,7 @@ strip that spans them both**, one named segment per moment the beat proved *(the
 neither)*. The header row also carries the covering
 test's **actions** — the wired **▶ Run** — and ends in the card's **one ⋯**, which carries the test's
 actions (run in background · logs · steps · add · edit · remove a test) and the requirement's (reword
-· add · remove · the schematic doesn't match my app). The test's **name is not on the row**: it is
+· add · remove · the Expected picture doesn't match my app). The test's **name is not on the row**: it is
 read where it is acted on — the ⋯'s edit/remove prompts, the Logs and the Steps windows. *(This
 sentence read "**names the covering test** — a small pass/fail/none mark, the test's own name, then
 Run" for a few hours on 2026-09-02, when the proof header first joined this row; the human asked for
@@ -320,95 +321,89 @@ recommendation, after seeing the re-harvested reader: the Focus reader stays fre
 filmstrip — a failure is read off the beat row's own red harvested frame and the ✗ on the proof
 header, and the cut frames live on the test's evidence.*
 
-## R18 — The schematic mirrors the real UI
+## R18 — The Expected picture is the app's own component
 
 - **Given** a requirement whose beats were harvested with their layout skeletons
-- **When** its schematic derives
-- **Then** it is drawn from the app's own measured layout — the page's real structure at the viewport it was measured in, with the focused element's own text where a beat ringed one
-- **When** no layout was ever harvested for it
-- **Then** it falls back to the archetype drawing, or to the labelled beats under an honest "no schematic drawn yet" — never a guessed picture
-- **When** the requirement's text moves past the drawing
-- **Then** the storyline says so with its stale banner and renders the drawing quiet — there is no per-cell "drawn from the app's measured layout" caption *(removed 2026-09-02, the human: "avoid useless things"; the ⋯ menu's "the schematic doesn't match my app" prompt is still the R15-pattern escape, and it still carries the drawing's provenance into the prompt)*
-- **When** the harvest's geometry moves past the drawing
-- **Then** the same stale banner says the layout moved, and the proof gate refuses the drawing until it is redrawn — a mirror that has stopped matching what the run measured is never shown as current
+- **When** its Expected picture renders
+- **Then** it is the app's OWN markup for the region the assertion ringed — captured, sanitised and committed beside the frame, re-rendered on paper at the app's own coordinates, with the requirement's claim applied to the element the check read
+- **When** no UI was ever harvested for it
+- **Then** it falls back to a labelled sketch drawn from the sentence, or to the labelled beats under an honest "no Expected yet" — never a guessed picture of a screen
+- **When** the requirement's text moves past the harvest
+- **Then** the storyline says so with its stale banner — there is no per-cell caption *(removed 2026-09-02, the human: "avoid useless things"; the ⋯ menu's "the Expected picture doesn't match my app" prompt is still the R15-pattern escape, and it still carries the picture's provenance into the prompt)*
+- **When** the app moves past the picture, or the gate finds something the harvest measured that the picture does not carry
+- **Then** the same stale banner says the layout moved or names the replica gap, and the proof gate refuses that picture until the screen is re-harvested — a picture that has stopped matching what the run measured is never shown as current
 
-The drawn half of a beat row used to be an **archetype**: a house diagram chosen from the *shape* of
-the sentence — true to the idea and to nothing on screen. It is a **mirror** now. The drawing is
-derived from the page's own measured boxes (the layout skeleton captured beside every evidence
-frame, `spec/<screen>/evidence/<id>.b<n>.<phase>.layout.json`), one frame per scene, at the
-viewport's own aspect, carrying the page's **real text and input values at their measured sizes** —
-not a skeleton of grey bars — with the ringed element's own text where a beat ringed one *(the human,
-2026-09-02: "make the schematic look like actual web as close as possible"; it stays a drawing in the
-house palette, so it never passes for the photograph beside it)*. A beat is
-drawn **scene by scene**: one frame per value it proved, in the order it proved them, then the state
-it left — so the When is in the picture, not only its result. That is what
-makes a row a **comparison** instead of an illustration: the left cell is the same screen as the
-right one, drawn rather than photographed. Two pins ride the svg — the requirement text's hash, which
-is what stales it, and the **layout's own hash**, the geometry it was drawn from. A requirement whose
-harvest carries no layout is **not given a picture anyway**: it keeps the archetype drawing where the
-text yields one, and otherwise its rows read as labelled beats with the drawing's absence said out
-loud. A guessed picture beside a real photograph would be the most convincing lie this board could
-tell. On a **failing** beat the drawing shows the **intended** value — what the requirement asks for,
-on the ringed element, in the same ink as any measured value — while the photograph beside it keeps
-what the app actually produced, with its red ring and its "got … ✕". The two cells are not two copies
-of one fact: **the schematic and the behaviour are the truth**, the thing a human can disagree with
-and rewrite; the proof is what happened. So a failed row reads as **intent vs. outcome**, and a
-drawing that agreed with the failure would leave nothing on the row saying what was wanted. The
-verdict stays the photograph's alone — the drawing never types a "got" *(the human, 2026-09-02, on
-Tsumiki's deliberately failing R9: "for the failed test case, schematic should be correct (schematic
-and behaviour are truth — otherwise user should disagree this truth and update it). But now even the
-schematic is wrong as well, please update")*.
+The Expected half of a beat row used to be a **drawing**. First an **archetype** — a house diagram
+chosen from the *shape* of the sentence, true to the idea and to nothing on screen — then a
+**wireframe mirror** derived from the page's own measured boxes. Both are retired for a harvested
+requirement: the picture is now a **replica**, the app's own DOM. `spec/_replica.mjs` walks up from
+the element `proveVisible` handed over to the smallest ancestor at least 3× the ring's area,
+serialises that subtree with its computed styles, strips every script, handler and external URL, and
+commits it as `spec/<screen>/evidence/<id>.b<n>.<phase>.actual.html`; the **Expected** file beside it
+is the same markup with the beat's claims applied. The board renders it in an `<iframe sandbox
+srcdoc>` with no `allow-*` token — no script, no network, no origin — on a paper page carrying the
+app's shell plates, wearing the same ring and dim the photograph beside it wears. That is what makes
+a row a **comparison** instead of an illustration: both cells are the same component at the same
+moment, one as the requirement says it should be, one as the app rendered it.
 
-<!-- REVERSED 2026-09-02 (rule 6, with the reason attached). This sentence previously read: "The same
-     rule holds on a failing beat: the drawing mirrors what the app MEASURED — the wrong value,
-     ringed — and never the value the requirement wanted … so the one difference between the two
-     cells of a failed row is the verdict itself", written earlier the same day when the human kept
-     the lead's keep-the-mirror-honest recommendation. Seeing it on the demo's R9 they reversed it:
-     a drawing that agrees with a failed run states nothing, and the requirement's own intent then
-     appears nowhere on the row. Conforming the doc silently to the old renderer would have left the
-     board asserting the opposite of what it now draws. -->
-*Reversed 2026-09-02 (the human, above), replacing the mirror-the-measurement rule this paragraph
-carried for one day. The renderer moved with it (kit `mirror-11` → `mirror-12`): a value frame now
-carries the CLAIM it made — expected, got, verdict — and the beat's after frame, which asserts
-nothing of its own, takes the beat's last failed claim as its intended end state.*
+On a **failing** beat the Expected shows the **intended** state — the last state the app got right,
+with every failed claim applied: a wrong value corrected on the ringed element, an element the app
+removed restored, one it never had drawn beside the ring — while the photograph keeps what the app
+actually produced, with its red ring. The two cells are not two copies of one fact: **the Expected
+and the behaviour are the truth**, the thing a human can disagree with and rewrite; the Actual is
+what happened. The verdict stays the photograph's alone *(the human, 2026-09-02, on Tsumiki's
+deliberately failing R9: "for the failed test case, schematic should be correct (schematic and
+behaviour are truth — otherwise user should disagree this truth and update it)")*.
 
-**The gap between the drawing and the proof cannot open again** *(the human, 2026-09-02: "make sure
-the gap between schematic and proof will not exist again")*. Twice the kit quietly stopped drawing
-something the harvest had measured — the tick box, then the row's own leaves — and nothing on the
-board said so until a person looked at a beat row. So the mirror is now guarded three ways, all
-derived, none stored: every frame is checked against its OWN skeleton as it is drawn
-(`mirrorGaps`, reported by the viz pass); `npm run proof mirror` refuses a committed drawing that
-has a gap or whose layout pin has moved; and the storyline's stale banner reads BOTH reasons a
-drawing can stop being true — the words changed, or the app did. A gapped drawing is still written
-and still shown, because a gapped mirror beats no mirror — but it is never shown as current.
+**The gap between the two pictures cannot open again** *(the human, 2026-09-02: "make sure the gap
+between schematic and proof will not exist again")*. The replica is gated by **measurement**, at
+capture: it is re-rendered in a hidden iframe in the app's own page and walked with the very walk
+that measured the live page, box for box and word for word, and every miss is a **replica gap** filed
+on the harvest. `npm run proof mirror` refuses a committed replica that has a gap, that was never
+gated, whose pin no longer hashes the skeleton beside it, or that ran out of bytes; the storyline's
+stale banner reads all four reasons. A gapped replica is still written and still shown, because a
+gapped picture beats no picture — but it is never shown as current.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
-Amended 2026-08-29 on the human's ask (both cells must reflect the When and the Then, with the
-actual content — "you type \"Water the plants\"" visible as typed): the drawing now enacts the
-beat scene by scene rather than ringing only its outcome. Amended 2026-09-02 on the human's ask:
-the mirror renders real text and input values at their measured sizes (a high-fidelity drawing, not
-a bar skeleton), and the per-cell "drawn from…" provenance caption is removed — staleness rides the
-storyline's stale banner, and the ⋯ "schematic doesn't match my app" escape still carries the
-provenance into its prompt. Amended 2026-09-02 on the human's standing order ("make sure the gap
-between schematic and proof will not exist again"): the fourth beat — a harvest that has moved past
-its drawing is said by the banner and refused by the proof gate.*
+Amended 2026-08-29, then twice on 2026-09-02 (the mirror renders real text at measured sizes; the
+harvest that moved past its drawing is said by the banner and refused by the gate). REPLACED
+2026-09-03 by the human's Expected View decision (docs/expected-view-plan-2026-09-03.html): the
+picture beside a proof is a real HTML replica of the app's own component, not a drawing of it —
+Schematic is renamed **Expected**, Proof **Actual**, and the drawn ui-mirror is retired. The old text
+is kept in the comment below.*
 
-<!-- Proven by spec/board/test.spec.ts, "The schematic mirrors the real UI …" — beat 1 reads a
-     harvested board requirement's committed drawing off the live reader and asserts the mirror
-     marks (data-viz-archetype="ui-mirror", data-viz-kind="wireframe", a layout pin, the app's own
-     layout in its accessible label) plus the two ties to the measured skeleton: the viewBox is the
-     harvested viewport's own aspect, and the drawn shape count tracks the measured element count.
-     Beat 2 serves board.html with one requirement's schematic stripped and asserts the honest
-     placeholder — labelled beats, no svg, no borrowed picture. -->
+<!-- REPLACED/RENAMED 2026-09-03 (the human: Expected View plan, docs/expected-view-plan-2026-09-03.html).
+     This requirement previously read "R18 — The schematic mirrors the real UI", and its beats were:
 
-## R19 — A beat row is a comparison: same region, same beat, one drawn, one real
+       Given a requirement whose beats were harvested with their layout skeletons
+       When its schematic derives
+       Then it is drawn from the app's own measured layout — the page's real structure at the viewport
+         it was measured in, with the focused element's own text where a beat ringed one
+       When no layout was ever harvested for it
+       Then it falls back to the archetype drawing, or to the labelled beats under an honest "no
+         schematic drawn yet" — never a guessed picture
+       When the requirement's text moves past the drawing
+       Then the storyline says so with its stale banner and renders the drawing quiet
+       When the harvest's geometry moves past the drawing
+       Then the same stale banner says the layout moved, and the proof gate refuses the drawing until
+         it is redrawn
+
+     The drawn wireframe was the answer to "make the schematic look like actual web as close as
+     possible" (the human, 2026-09-02). It got close and stopped: a drawing of a component is a
+     renderer that has to be taught every CSS rule the app already knows, and each thing it had not
+     been taught was a gap only a person's eye caught. The human's answer on 2026-09-03 was to stop
+     drawing and start CAPTURING. Everything the old text asserted about honesty — never a guessed
+     picture, the intended state on a failure, the gate that refuses a picture the harvest has moved
+     past — is carried forward above, on the replica instead of on the drawing. -->
+
+## R19 — A beat row is a comparison: same region, same beat, one expected, one real
 
 - **Given** a beat whose harvest recorded the focus box its assertion ringed
 - **When** its row renders
-- **Then** the schematic cell and the proof cell are aimed by ONE camera at the same region of the same page, so the drawing and the photograph can never frame different things
+- **Then** the Expected cell and the Actual cell are aimed by ONE camera at the same region of the same page, so the replica and the photograph can never frame different things
 - **When** you read the words that caption them
-- **Then** both sides carry that beat and no other — the drawing derived from and labelled with its When → Then, the row's text cell showing the same sentence — while the Given row stays whole-page and uncaptioned on both sides
+- **Then** both sides carry that beat and no other — the replica captured at that beat's own moment and the photograph taken at it, with the row's text cell showing the sentence they are both of — while the Given row stays whole-page and uncaptioned on both sides
 
 A row is only worth its width if the two halves are **the same view of the same moment**. The focus
 rect the harvest recorded — the **union of the rings** this beat's assertions painted — sets the
@@ -417,26 +412,35 @@ other. Each **scene** sets the **aim**: the camera centres on the ring that scen
 both cells at once — a single fixed frame holding rings hundreds of pixels apart could only fit them
 by zooming back out until neither could be read *(amended 2026-08-30, the human: "more aggressive
 zoom in on the area it's focusing"; the whole screenshot is one click away in the proof lightbox)*.
-The proof cell frames it, and the drawing beside it is framed by the identical
-fractional transform, re-expressed
-in the drawing's own coordinates so the region matches even when the aspects do not. **One camera aims
+The Actual cell frames it, and the replica beside it is framed by the identical
+transform — the replica stands at the app's OWN coordinates, so the two cells share one coordinate
+system outright rather than one being re-expressed into the other's. **One camera aims
 both** — there is no inline zoom toggle any more (the human, 2026-09-02, with the full-frame button
 removed): both cells always frame the component, and the whole screenshot is the lightbox a click on
 the proof opens. And the two cells
-step **together**: the proof's own loop drives the drawing, so frame *n* of the photograph and scene
-*n* of the drawing are the same moment — same region, same clock. The **words** are
-the same beat too — and the same **sentence**: the drawn card and the burned one ask one shared rule
-(`tools/callout-text.mjs`) which single line a scene says, so mid-beat neither can claim a Then that
-has not happened; the harness burns that line into the recording the proof frames are cut from, and
-the row's text cell reads the full beat off the prd — one language across the row, three surfaces
-that must agree *(amended 2026-08-30 with the one-sentence card, R10)*. The
+step **together**: the row's one stepper walks the beat's moments, so frame *n* of the photograph and
+the replica the Expected cell is showing are the same moment — same region, same clock. The **words** are
+the same beat too — and the same **sentence**: the callout burned into the RECORDING says one
+line per scene (`tools/callout-text.mjs`), so mid-beat it cannot claim a Then that has not happened,
+and the row's text cell reads the full beat off the prd — one language across the row *(amended
+2026-08-30 with the one-sentence card, R10; the still frames stopped carrying that card on
+2026-09-03, design C's "every text once" — the board's own chips beside the two cells say the
+claim now, and the video keeps the burned card because a recording has no chips)*. The
 **Given row is the context row**: it is about *where* the component sits, not what it says, so both
 its cells stay whole-page and carry no beat and no callout.
 
 *Drafted 2026-08-28 on the human's behalf, transcribing the storyline redesign they ordered and
 reviewed in this session — canon as written, and theirs to reword or remove like any other.
 Amended 2026-08-29 on the human's ask: the camera is the union of the beat's rings (so the first
-scene is never cropped away), and the two cells now share one clock — the proof drives the drawing.*
+scene is never cropped away), and the two cells now share one clock — the proof drives the drawing.
+RENAMED 2026-09-03 by the human's Expected View decision (docs/expected-view-plan-2026-09-03.html):
+"schematic cell" → **Expected cell**, "proof cell" → **Actual cell**, and "the drawing" → **the
+replica** wherever it means the picture. One clause changed meaning with the picture rather than only
+its name, and is called out here rather than conformed silently (rule 6): the second Then said the
+drawn side was "derived from and LABELLED WITH its When → Then" — a wireframe carried the beat's
+sentence in its own accessible label. A replica is the app's markup and labels nothing; the sentence
+lives in the row's words cell, which is where a reader reads it. The claim the row still makes — both
+sides carry that beat and no other — is unchanged.*
 
 <!-- Proven by spec/board/test.spec.ts, "A beat row is a comparison …" — beat 1 forces a focus rect
      onto a real requirement's harvested beat (the established deterministic technique; the frames
@@ -452,7 +456,7 @@ scene is never cropped away), and the two cells now share one clock — the proo
 
 - **Given** a beat whose harvest holds each value it proved and the state it left
 - **When** its row renders
-- **Then** the proof cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
+- **Then** the Actual cell frames the thing being proven and nothing around it — no media toolbar, no dots, no `n / N` counter — with the whole screenshot one click away in the proof lightbox; the beat's position is read and walked on ONE stepper strip spanning both pictures, one segment per moment the beat proved, each named by the assertion the run recorded
 - **When** the reader opens
 - **Then** it opens in **step** — each beat held on its first scene — with the reader-wide controls (the **auto ↔ step** pair and the speed) on the requirement's title row, left of its ⋯ menu
 - **When** you walk a beat — its strip's `‹ ›`, a click on one of its named segments, or the ← → keys while its row is the **selected** one (visibly marked) — with ↑ ↓ selecting which When/Then and PgUp / PgDn paging the requirement
@@ -695,7 +699,7 @@ remove like any other.*
 
 - **Given** a screen documented by its requirements and the tests that prove them
 - **When** you open its detail
-- **Then** no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only
+- **Then** no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only; nothing is LOADED from anywhere (a beat row's Expected picture is the harvest's own committed replica, inert in a `srcdoc` sandbox, never an artifact this tool owns) *(narrowed 2026-09-03, rule 6, by the human's Expected View decision — see R18)*
 
 Sketching or designing a screen before it exists is a real job, but a different one, and already well
 served elsewhere. specboard tracks requirements and their proof — **nothing else**. It does not render,
