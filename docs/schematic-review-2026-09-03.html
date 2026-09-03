@@ -1,0 +1,224 @@
+<title>What the Schematic Is For</title>
+<style>
+  :root{
+    --paper:#fdfcf9; --canvas:#f4f1ea; --wash:#eae6dc; --hair:#e2ddd1; --hair2:#cdc7b8;
+    --ink:#1c1b18; --ink2:#46443f; --ink3:#5f5d56; --ink4:#6e6b64;
+    --ai:#2f4a63; --ai-tint:#e6eaee; --ai-line:#b9c4ce;
+    --bad:#8d4a38; --bad-tint:#f2e8e4; --bad-line:#d8c0b6;
+    --ok:#4d5c37; --ok-tint:#eaece1; --ok-line:#bcc4a8;
+    --open:#8a6412; --open-tint:#f6eeda; --open-line:#dfc98c;
+    --sans:"Helvetica Neue",Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"SF Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sh:0 2px 8px rgba(28,27,24,.07),0 1px 2px rgba(28,27,24,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#232220; --canvas:#1a1917; --wash:#2c2b28; --hair:#3a3934; --hair2:#4a4843;
+      --ink:#efeae0; --ink2:#cfc9bd; --ink3:#aaa498; --ink4:#8f8a7f;
+      --ai:#9fb6cc; --ai-tint:#26313c; --ai-line:#3d5063;
+      --bad:#d59a86; --bad-tint:#3a2a24; --bad-line:#6a4538;
+      --ok:#a9b98a; --ok-tint:#2a3022; --ok-line:#4d5c37;
+      --open:#d8b25f; --open-tint:#3a3220; --open-line:#8a6412;
+      --sh:0 2px 8px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#232220; --canvas:#1a1917; --wash:#2c2b28; --hair:#3a3934; --hair2:#4a4843;
+    --ink:#efeae0; --ink2:#cfc9bd; --ink3:#aaa498; --ink4:#8f8a7f;
+    --ai:#9fb6cc; --ai-tint:#26313c; --ai-line:#3d5063;
+    --bad:#d59a86; --bad-tint:#3a2a24; --bad-line:#6a4538;
+    --ok:#a9b98a; --ok-tint:#2a3022; --ok-line:#4d5c37;
+    --open:#d8b25f; --open-tint:#3a3220; --open-line:#8a6412;
+    --sh:0 2px 8px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .page{max-width:940px;margin:0 auto;padding:40px 24px 72px;display:flex;flex-direction:column;gap:36px}
+  h1,h2,h3{margin:0;text-wrap:balance;font-weight:600;letter-spacing:-.01em}
+  h1{font-size:28px;line-height:1.2} h2{font-size:20px;line-height:1.25} h3{font-size:15px;color:var(--ink2)}
+  p{margin:0;max-width:68ch}
+  .eyebrow{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+  .sub{color:var(--ink2)}
+  header{display:flex;flex-direction:column;gap:12px}
+  section{background:var(--paper);border:1px solid var(--hair);border-radius:14px;box-shadow:var(--sh);padding:26px 28px;display:flex;flex-direction:column;gap:18px}
+  .thesis{border-left:3px solid var(--ai-line);background:var(--ai-tint);padding:14px 18px;border-radius:0 8px 8px 0;font-size:16px;max-width:none}
+  svg text{font-family:var(--sans)}
+  .diagram{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--hair2);vertical-align:bottom}
+  td{padding:10px;border-bottom:1px solid var(--hair);vertical-align:top}
+  td.k{color:var(--ink2);font-weight:600;width:22%}
+  .good{color:var(--ok)} .weak{color:var(--bad)} .so{color:var(--open)}
+  .pill{display:inline-block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;border-radius:4px;padding:1px 6px;border:1px solid var(--hair2);color:var(--ink3);background:var(--wash);vertical-align:middle}
+  .pill.ok{color:var(--ok);background:var(--ok-tint);border-color:var(--ok-line)}
+  .pill.bad{color:var(--bad);background:var(--bad-tint);border-color:var(--bad-line)}
+  .pill.open{color:var(--open);background:var(--open-tint);border-color:var(--open-line)}
+  ol,ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;color:var(--ink2)}
+  li strong{color:var(--ink)}
+  .rec{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:760px){.rec{grid-template-columns:1fr}}
+  .card{border:1px solid var(--hair2);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--canvas)}
+  .card h3{display:flex;align-items:center;gap:8px}
+  .card .why{font-size:13.5px;color:var(--ink3)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--wash);padding:1px 5px;border-radius:4px}
+  .census{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+  .tile{border:1px solid var(--hair);border-radius:10px;padding:12px 14px;background:var(--canvas);display:flex;flex-direction:column;gap:4px}
+  .tile .n{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+  .tile .l{font-size:12.5px;color:var(--ink3)}
+  .mock{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:760px){.mock{grid-template-columns:1fr}}
+  .mock figure{margin:0;display:flex;flex-direction:column;gap:6px}
+  .mock figcaption{font-size:12.5px;color:var(--ink3)}
+</style>
+
+<div class="page">
+  <header>
+    <span class="eyebrow">specboard · design review · 2026-09-03</span>
+    <h1>What the schematic is for, and how close it can honestly be</h1>
+    <p class="sub">You asked two things: how a schematic is made today in each case, and what a reader actually needs from it to spot a UI bug or understand the behaviour that was wanted. The second question decides the first.</p>
+  </header>
+
+  <section>
+    <p class="thesis">A Focus row has two pictures of the same moment. The photograph is what the app did. The schematic must be what the requirement <em>wants</em>, drawn in the app's own geometry. The row exists to show the <strong>difference</strong> between them. Likeness is not the goal; it is what makes the difference readable.</p>
+    <p class="sub">Everything below follows from that. A drawing that copies the photograph perfectly tells the reader nothing. A drawing that shows the intent but looks nothing like the app cannot be compared. The useful schematic is the intent wearing the app's clothes, with the disagreement marked.</p>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Today</span><h2>Two paths make one drawing</h2></div>
+    <div class="diagram">
+      <svg viewBox="0 0 900 330" width="100%" role="img" aria-label="Pipeline: requirement text and the harvested skeleton both feed the drawing; the archetype kit is the fallback when no skeleton exists">
+        <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--ink3)"/></marker></defs>
+        <g font-size="12" fill="var(--ink)">
+          <!-- left column: sources -->
+          <rect x="20" y="30" width="200" height="64" rx="8" fill="var(--ai-tint)" stroke="var(--ai-line)"/>
+          <text x="120" y="56" text-anchor="middle" font-weight="600">Requirement text</text>
+          <text x="120" y="76" text-anchor="middle" fill="var(--ink3)">Given · When · Then in prd.md</text>
+
+          <rect x="20" y="130" width="200" height="78" rx="8" fill="var(--ok-tint)" stroke="var(--ok-line)"/>
+          <text x="120" y="156" text-anchor="middle" font-weight="600">Harvest skeleton</text>
+          <text x="120" y="174" text-anchor="middle" fill="var(--ink3)">boxes · words · paint · ring</text>
+          <text x="120" y="192" text-anchor="middle" fill="var(--ink3)">per scene, from proveVisible</text>
+
+          <rect x="20" y="240" width="200" height="64" rx="8" fill="var(--bad-tint)" stroke="var(--bad-line)"/>
+          <text x="120" y="266" text-anchor="middle" font-weight="600">Claims</text>
+          <text x="120" y="286" text-anchor="middle" fill="var(--ink3)">expected · got · ok · missing</text>
+
+          <!-- middle: the two paths -->
+          <rect x="330" y="120" width="230" height="100" rx="8" fill="var(--paper)" stroke="var(--hair2)"/>
+          <text x="445" y="146" text-anchor="middle" font-weight="600">Path A · ui-mirror</text>
+          <text x="445" y="166" text-anchor="middle" fill="var(--ink3)">draw the skeleton as it stands;</text>
+          <text x="445" y="182" text-anchor="middle" fill="var(--ink3)">a FAILED scene = last right state</text>
+          <text x="445" y="198" text-anchor="middle" fill="var(--ink3)">+ every expected value (mirror-13)</text>
+
+          <rect x="330" y="30" width="230" height="64" rx="8" fill="var(--paper)" stroke="var(--hair2)" stroke-dasharray="4 3"/>
+          <text x="445" y="54" text-anchor="middle" font-weight="600">Path B · archetype kit</text>
+          <text x="445" y="74" text-anchor="middle" fill="var(--ink3)">9 idea sketches matched from the words</text>
+
+          <!-- right: output -->
+          <rect x="670" y="100" width="210" height="140" rx="8" fill="var(--paper)" stroke="var(--ai)" stroke-width="1.5"/>
+          <text x="775" y="128" text-anchor="middle" font-weight="600">The schematic</text>
+          <text x="775" y="150" text-anchor="middle" fill="var(--ink3)">one SVG · a still per scene</text>
+          <text x="775" y="168" text-anchor="middle" fill="var(--ink3)">stepped beside the photograph</text>
+          <text x="775" y="192" text-anchor="middle" fill="var(--ink3)">stale when the text moved</text>
+          <text x="775" y="208" text-anchor="middle" fill="var(--ink3)">or the app did (layout pin)</text>
+          <text x="775" y="228" text-anchor="middle" fill="var(--ink3)">mirror gate refuses a gap</text>
+
+          <!-- arrows -->
+          <path d="M220 170 L330 170" stroke="var(--ink3)" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+          <path d="M220 272 C 280 272, 290 200, 330 190" stroke="var(--ink3)" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+          <path d="M220 62 L330 62" stroke="var(--ink3)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)" fill="none"/>
+          <path d="M560 170 L670 170" stroke="var(--ink3)" stroke-width="1.2" marker-end="url(#arr)" fill="none"/>
+          <path d="M560 62 C 610 62, 630 120, 670 130" stroke="var(--ink3)" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr)" fill="none"/>
+          <text x="615" y="52" text-anchor="middle" fill="var(--ink4)" font-size="11">only when no skeleton exists</text>
+          <text x="275" y="160" text-anchor="middle" fill="var(--ink4)" font-size="11">geometry</text>
+          <text x="262" y="246" text-anchor="middle" fill="var(--ink4)" font-size="11">intent (text only)</text>
+          <!-- what never reaches the drawing -->
+          <path d="M120 94 L120 118" stroke="var(--bad)" stroke-width="1.2" stroke-dasharray="2 3" fill="none"/>
+          <text x="140" y="112" fill="var(--bad)" font-size="11">the words never shape Path A</text>
+        </g>
+      </svg>
+    </div>
+    <div class="census">
+      <div class="tile"><span class="n">31 / 33</span><span class="l">dojostack drawings that are mirrors of a harvest</span></div>
+      <div class="tile"><span class="n">38 / 40</span><span class="l">specboard's own board, the same</span></div>
+      <div class="tile"><span class="n">0</span><span class="l">archetype drawings left on either board once harvested</span></div>
+      <div class="tile"><span class="n">9</span><span class="l">archetypes in the kit for a screen with no UI yet</span></div>
+    </div>
+    <p class="sub">So in practice there is one path. The archetype sketch lives only until the first harvest, then the mirror replaces it and nothing of the sketch's intent survives except the prose. The requirement's words never shape a mirror drawing; only a claim's <code>expected</code> string does, and only on a scene that failed.</p>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">How closeness is ensured today</span><h2>What holds the mirror to the app, and where it cannot</h2></div>
+    <table>
+      <thead><tr><th>Mechanism</th><th>What it guarantees</th><th>Verdict</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Same skeleton feeds the drawing</td><td>The boxes, words, paint and icons the drawing shows are the ones the harvest measured on the real page, at the moment of the assertion. Nothing is guessed.</td><td><span class="pill ok">strong</span></td></tr>
+        <tr><td class="k">Ring-first capture (0.42)</td><td>The ringed element and its neighbourhood are always measured, whatever the page size; the rest of the budget lands around the ring.</td><td><span class="pill ok">strong</span></td></tr>
+        <tr><td class="k">Mirror gate</td><td>A drawing missing a measured word, plate, icon or its ringed element fails <code>proof mirror</code>; the layout pin catches a drawing behind its harvest.</td><td><span class="pill ok">strong</span></td></tr>
+        <tr><td class="k">Intended scene (mirror-13)</td><td>A failed scene is the last right state plus the expected values, so the drawing is the intent, not a copy of the defect.</td><td><span class="pill open">partial</span> only for facts the test <em>claimed</em>; unclaimed intent is invisible</td></tr>
+        <tr><td class="k">Colour by dye, size by measure</td><td>Colours map to design tokens, type sizes and insets are the page's own.</td><td><span class="pill open">partial</span> a 22 px word is drawn 22 px wide; the difference that matters can be the smallest thing in the frame</td></tr>
+        <tr><td class="k">The difference itself</td><td>Nothing marks where the two pictures disagree. The reader compares two full pages by eye; the failed claim's callout is the only cue.</td><td><span class="pill bad">gap</span></td></tr>
+        <tr><td class="k">Passing scenes</td><td>The drawing equals the photograph in grey. It confirms the app but says nothing about what the requirement is about.</td><td><span class="pill bad">gap</span></td></tr>
+        <tr><td class="k">No UI yet</td><td>The archetype sketch communicates a behaviour shape, not a component. It cannot be close to something that does not exist, and it is discarded on first harvest.</td><td><span class="pill bad">gap</span> the intent has no carrier across the boundary</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Step back</span><h2>What a reader needs, by job</h2></div>
+    <table>
+      <thead><tr><th>Reader's job</th><th>What they need to see</th><th>Today</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Spot a UI bug</td><td>The ringed component, large enough to read, intended and actual side by side at the same scale, with the disagreement named: this value, this missing control, this element that should be gone.</td><td>Both pictures exist and match geometrically; the disagreement is small on the page and unmarked.</td></tr>
+        <tr><td class="k">Judge whether the test proves the requirement</td><td>Which elements the test actually claimed, on the drawing. A passing beat whose claims skip the control the Then names is a weak proof, and the drawing should make that visible.</td><td>Claims are visible only on the strip's segment names, never on the picture.</td></tr>
+        <tr><td class="k">Understand the wanted behaviour before code exists</td><td>The idea as scenes, in the product's own visual language, so the human can say "no, the Undo belongs in the row" before anything is built.</td><td>A generic archetype in house style, or honest text. It does not look like the product.</td></tr>
+        <tr><td class="k">Understand the wanted behaviour after code exists</td><td>The intended state of every beat, even when the app agrees, drawn so a person can tell intent from happenstance.</td><td>Intent is drawn only on failure; on success the intent is indistinguishable from the app.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">Recommendation</span><h2>Keep one path. Make it an intent drawing with a diff, not a twin.</h2></div>
+    <div class="rec">
+      <div class="card">
+        <h3>1 · Mark the difference <span class="pill bad">highest value</span></h3>
+        <p>On a failed scene, draw a difference marker at the ringed element on both pictures: the expected word on the schematic, the measured word on the photograph, joined by one label ("expected Published · got Live"). Two rings, one sentence, no pixel hunting.</p>
+        <p class="why">Cost: renderer + the proof cell's overlay. Uses the claims that already ride the skeleton. Failure mode: a beat with several soft claims needs several markers; cap it at the failed ones.</p>
+      </div>
+      <div class="card">
+        <h3>2 · A loupe on the ring <span class="pill bad">highest value</span></h3>
+        <p>Under each row, the ringed component alone, drawn and photographed, at a fixed legible size. The full page stays as context above it. This is the "extremely alike" comparison surface; the page never was.</p>
+        <p class="why">Cost: a crop of the frame plus a re-render of the ring's neighbourhood at scale. Failure mode: a ring on a whole row loupes a row, which is fine.</p>
+      </div>
+      <div class="card">
+        <h3>3 · Show the claims on passing beats <span class="pill open">medium</span></h3>
+        <p>Tint every element a claim touched, in the requirement's dye, even when it passed. The drawing then says what the requirement is <em>about</em>, and a proof that never touches the control the Then names is visibly thin.</p>
+        <p class="why">Cost: renderer only; the values already carry their claims. Failure mode: none for meaning; a busy beat gets busy.</p>
+      </div>
+      <div class="card">
+        <h3>4 · Intent must be authored, not inferred <span class="pill open">medium</span></h3>
+        <p>The drawing can only show intent the test claimed. Make the kg-e2e rule explicit: every fact in a Then is a claim (soft), including "appears" and "is gone", so mirror-13 has something to draw. The gate can then refuse a beat whose Then names a state no claim covers.</p>
+        <p class="why">Cost: a lint rule on beats against their Then text. This is the one that turns the drawing from a picture of the app into a picture of the requirement.</p>
+      </div>
+      <div class="card">
+        <h3>5 · No UI yet: sketch in the app's chrome <span class="pill">later</span></h3>
+        <p>Draw the archetype inside a real skeleton borrowed from a sibling screen of the same app (its header, sidebar, grid style), with the new component sketched where the requirement's Given puts it. It then looks like this product, and the first harvest replaces only the sketched part.</p>
+        <p class="why">Cost: a "borrow chrome" step in the derive pass. Honest label stays: "a sketch, no UI yet".</p>
+      </div>
+      <div class="card">
+        <h3>6 · Keep the label honest <span class="pill">keep</span></h3>
+        <p>A mirror is labelled a mirror, a sketch a sketch, a text-only row text-only, and a drawing behind its harvest or its text says so. This is already right and is what makes the rest trustworthy.</p>
+        <p class="why">No change. Do not soften the gate to make a row look finished.</p>
+      </div>
+    </div>
+    <p class="sub">Order of work if you agree: 1 and 2 together (they share the ring's geometry), then 4 (a lint, cheap), then 3, then 5 when a screen without UI actually needs it. Each is a renderer or authoring change; none touches how requirements are stored or proven.</p>
+  </section>
+
+  <section>
+    <div><span class="eyebrow">What I would argue against</span><h2>Two tempting paths, and why not</h2></div>
+    <ul>
+      <li><strong>A model-drawn schematic from the prose.</strong> It would look plausible and be unfalsifiable. Nothing could gate it against the app, so the row would show two pictures with no honest relation. Every rule this board has is about the drawing being derived, never guessed.</li>
+      <li><strong>Copying the photograph into the schematic cell.</strong> It is the perfect mirror and says nothing. The value of the row is the difference; a twin has none.</li>
+    </ul>
+  </section>
+</div>
