@@ -293,10 +293,15 @@ export function textOf (html) {
 // at a glance whether the row's picture was checked and what the check found. A TRUNCATED capture
 // counts as a gap of its own: a file that ran out of bytes is a picture of part of a component, and
 // no likeness gate can pass one (the dojostack finding of 2026-09-03, section F).
+// …and since phase 4a (2026-09-03) it also carries the PIN the gate checked it against and the
+// truncation as its own word: the board's one stale banner names each reason a picture stopped
+// being true, and both of these are properties of the FILE. The pin lets a later build see the
+// harvest move past the replica by hashing the skeleton it already reads, instead of re-reading
+// every committed replica (8 MB on this board alone) on every rebuild.
 export function replicaNote (html) {
   const a = replicaAttrs(html)
   const list = a.truncated
     ? [{ kind: 'truncated', what: 'the capture ran out of bytes', x: 0, y: 0, w: 0, h: 0 }, ...a.gaps]
     : a.gaps
-  return { gaps: list.length, gated: !!a.layout, list }
+  return { gaps: list.length, gated: !!a.layout, list, pin: a.layout || '', trunc: !!a.truncated }
 }

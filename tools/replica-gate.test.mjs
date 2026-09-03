@@ -195,8 +195,9 @@ test('textOf is the body\'s words only — the style block, the comment and ever
 test('replicaNote is what a folded moment says about its replica: how many gaps, and whether it was gated at all', () => {
   const gaps = [{ kind: 'missing-text', what: 'Undo', x: 1, y: 2, w: 3, h: 4 }]
   const gated = withReplicaAttrs(ROOT, { layout: 'abc', gaps })
-  assert.deepEqual(replicaNote(gated), { gaps: 1, gated: true, list: gaps })
-  assert.deepEqual(replicaNote(ROOT), { gaps: 0, gated: false, list: [] })
+  // the shape grew in phase 4a (the pin + the truncation word — see below); the counts are unchanged
+  assert.deepEqual(replicaNote(gated), { gaps: 1, gated: true, list: gaps, pin: 'abc', trunc: false })
+  assert.deepEqual(replicaNote(ROOT), { gaps: 0, gated: false, list: [], pin: '', trunc: false })
 })
 
 test('replicaNote counts a truncated capture as a gap of its own — it can never be a likeness', () => {
@@ -205,6 +206,25 @@ test('replicaNote counts a truncated capture as a gap of its own — it can neve
   const note = replicaNote(t)
   assert.equal(note.gaps, 1)
   assert.equal(note.list[0].kind, 'truncated')
+})
+
+// ── PHASE 4a (2026-09-03): the board's stale banner reads the REPLICA's reasons ──────────────────
+// The Focus reader's one banner names each way the picture stops being true, and two of them are
+// properties of the file the fold just landed rather than of anything the board can re-derive
+// cheaply: the PIN it was gated against (so a later build can see the harvest move past it without
+// re-reading 8 MB of committed html) and whether the capture ran out of BYTES (a truncation is a
+// gap, but the banner says it in its own words — a part of a component is a different complaint
+// from a box that did not match).
+test('replicaNote carries the pin it was gated against, so a later build can see the harvest move past it', () => {
+  const gated = withReplicaAttrs(ROOT, { layout: 'a1b2c3d4e5f60718', gaps: [] })
+  assert.equal(replicaNote(gated).pin, 'a1b2c3d4e5f60718')
+  assert.equal(replicaNote(ROOT).pin, '', 'an ungated replica has no pin to report')
+})
+test('replicaNote says truncation in its own word too — the banner names it, not just the gap count', () => {
+  const t = withReplicaAttrs(ROOT.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit'),
+    { layout: 'abc', gaps: [] })
+  assert.equal(replicaNote(t).trunc, true)
+  assert.equal(replicaNote(withReplicaAttrs(ROOT, { layout: 'abc', gaps: [] })).trunc, false)
 })
 
 // ── FIX ROUND 1, C2: the gate could not see a box the app never had ─────────────────────────────

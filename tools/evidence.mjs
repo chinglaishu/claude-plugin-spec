@@ -132,6 +132,46 @@ export function valueEvidencePaths (screen, id, n, k) {
 export function fontEvidencePath (screen, hash, ext) {
   return `spec/${screen}/evidence/_fonts/${hash}.${ext}`
 }
+// …and the ONE STYLESHEET that DECLARES them (phase 4a, 2026-09-03). The files alone are bytes: a
+// replica set in the app's own type also needs the app's own `@font-face` rules, and the board
+// renders it in an OPAQUE-ORIGIN srcdoc iframe that may reach no external URL at all. So the rules
+// are committed beside the files they name, with every `url(...)` rewritten to the sibling file —
+// one sheet per screen, exactly like the faces themselves.
+export function facesCssPath (screen) {
+  return `spec/${screen}/evidence/_fonts/faces.css`
+}
+// PURE: the rules the harness could read (`{cssText, urls}` — the urls already absolute, resolved in
+// the page against its own baseURI) against the faces it actually FETCHED (`entry.fonts`, each with
+// the content hash the file is named by). A rule rides only when EVERY url it names was fetched —
+// half a face is a fallback stack wearing the app's name, and a browser that 404s one src silently
+// falls back anyway, so declaring it would be a picture of a different app (rule 3). A rule naming
+// no fetchable url at all (`local()`, a `data:` src) needs nothing committed and rides as it is.
+// Deduped by rule text and SORTED, so a re-fold of the same harvest writes the same bytes; bounded
+// at 64 KB like every other by-product, and `</style` is neutralised because this text goes into a
+// `<style>` element (the same defence gateReplica's own srcdoc takes).
+const FACES_CAP = 64000
+export function deriveFacesCss (rules, fonts) {
+  const byUrl = new Map()
+  for (const f of (Array.isArray(fonts) ? fonts : [])) {
+    if (f && f.url && f.hash && f.ext) byUrl.set(String(f.url), `${f.hash}.${f.ext}`)
+  }
+  const out = new Set()
+  for (const r of (Array.isArray(rules) ? rules : [])) {
+    const text = r && typeof r.cssText === 'string' ? r.cssText : ''
+    if (!/^\s*@font-face/i.test(text)) continue
+    const urls = Array.isArray(r.urls) ? r.urls.map(String) : []
+    if (urls.some(u => !byUrl.has(u))) continue          // all of a rule's urls, or none of the rule
+    let css = text
+    for (const u of urls) css = css.split(u).join(byUrl.get(u))
+    out.add(css.replace(/<\/style/gi, '<\\/style'))
+  }
+  let css = ''
+  for (const line of [...out].sort()) {
+    if (css.length + line.length + 1 > FACES_CAP) break
+    css += (css ? '\n' : '') + line
+  }
+  return css
+}
 
 // Task 16 #1 (the human, 2026-08-24): the screen's COMMITTED RECORDING — the primary flow's .webm,
 // persisted under the same committed evidence dir (spec/** is allowlisted and NOT gitignored; the
@@ -283,10 +323,17 @@ export function parseReplicaAttachment (name) {
 // …and the FONT files fetched beside them — `font <hash> <family>`. The hash is the content hash the
 // harness named the file by (hex), the family the name the page's @font-face declared; a family may
 // carry spaces, a hash may not. Anything else is not a font attachment.
-const FONT_ATT = /^font ([0-9a-f]{8,64}) (\S.*)$/
+// …and since phase 4a (2026-09-03) the SOURCE URL rides between them, optionally: `font <hash>
+// <url> <family>`. deriveFacesCss rewrites each `url(...)` of a committed @font-face rule to the
+// file beside it, and only the url can say which file a rule's src became — one family is several
+// files (a weight, an italic), so the family cannot answer it. Optional on purpose: a record from
+// before this carries no url and must still read as a fetched face, not as a missing one. Only
+// http(s) is lifted, which is also the only thing the harness ever fetches.
+const FONT_ATT = /^font ([0-9a-f]{8,64}) (?:(https?:\/\/\S+) )?(\S.*)$/
 export function parseFontAttachment (name) {
   const m = FONT_ATT.exec(String(name || ''))
-  return m ? { hash: m[1], family: m[2].trim() } : null
+  if (!m) return null
+  return { hash: m[1], ...(m[2] ? { url: m[2] } : {}), family: m[3].trim() }
 }
 
 // THE MOMENT'S NAME AND ITS OFFSET (the human, 2026-09-02: "schematic and proof should share same
@@ -393,6 +440,9 @@ export function foldEvidence (index, entries) {
       // the screen's WEB FONTS are refcounted on the same rule (2026-09-03): shared by every
       // requirement of the screen, so a face is orphaned only once no entry names it any more
       for (const f of (Array.isArray(e?.fonts) ? e.fonts : [])) if (f && f.path) s.add(f.path)
+      // …and the SHEET that declares them (phase 4a): one per screen, shared by every entry, so it
+      // is orphaned on the same rule — the last entry to drop it is the one that frees the file
+      if (e && e.fontFaces) s.add(e.fontFaces)
     }
     return s
   }
@@ -449,6 +499,9 @@ export function foldEvidence (index, entries) {
     // none (an unchanged page, a worker that already had them) keeps the faces the entry names, so
     // the committed files stay referenced and the replica stays set in the app's own type.
     if (!Array.isArray(raw.fonts) && old && Array.isArray(old.fonts)) raw = { ...raw, fonts: old.fonts }
+    // …and the sheet beside them (phase 4a): a fold that read no rule (a page with no web font, a
+    // capture that failed) keeps the committed one rather than leaving the replica in a fallback stack
+    if (!raw.fontFaces && old && old.fontFaces) raw = { ...raw, fontFaces: old.fontFaces }
     entry.evidence = { ...(entry.evidence || {}), [rid]: raw }
     if (old) {
       // every file an entry names — the requirement-level pair, every beat's four, and a legacy

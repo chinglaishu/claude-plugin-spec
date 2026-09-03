@@ -381,6 +381,23 @@ test('parseFontAttachment reads `font <hash> <family>` — a family may have spa
   assert.equal(parseFontAttachment(''), null)
 })
 
+// ── 2026-09-03, phase 4a (B): the SOURCE URL rides the name too ──────────────────────────────────
+// deriveFacesCss rewrites each `url(...)` in a committed @font-face rule to the file beside it, so
+// the fold has to know WHICH url each fetched file came from. The family cannot answer it — one
+// family is several files (a weight, an italic) — so the harness names the url in the attachment.
+// The old two-part form is still read: a record from before this must not read as un-fetched.
+test('parseFontAttachment also reads the url the face was fetched from — `font <hash> <url> <family>`', () => {
+  assert.deepEqual(parseFontAttachment('font a1b2c3d4e5f60718 https://x.test/inter.woff2 Inter Tight'),
+    { hash: 'a1b2c3d4e5f60718', url: 'https://x.test/inter.woff2', family: 'Inter Tight' })
+  assert.deepEqual(parseFontAttachment('font a1b2c3d4e5f60718 http://localhost:4187/f/a.woff Roboto'),
+    { hash: 'a1b2c3d4e5f60718', url: 'http://localhost:4187/f/a.woff', family: 'Roboto' })
+  // the older form keeps working, with no url to report
+  assert.deepEqual(parseFontAttachment('font a1b2c3d4e5f60718 Inter Tight'),
+    { hash: 'a1b2c3d4e5f60718', family: 'Inter Tight' })
+  // a family that merely LOOKS url-ish is not a url — only http(s) is lifted
+  assert.deepEqual(parseFontAttachment('font a1b2c3d4e5f60718 Inter'), { hash: 'a1b2c3d4e5f60718', family: 'Inter' })
+})
+
 const rep = (n, over = {}) => beat(n, {
   replicaBefore: `spec/board/evidence/R4.b${n}.before.actual.html`,
   replicaAfter: `spec/board/evidence/R4.b${n}.after.actual.html`,
@@ -473,6 +490,34 @@ test('fonts: a face no entry of the screen names any more is pruned, one still n
   assert.deepEqual(prune, [], 'R5 still wears the old face')
   prune = foldEvidence(index, { 'board:R5': entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', runId: 'r2', fonts: [font('cccc3333dddd4444')] }) })
   assert.deepEqual(prune, ['spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2'])
+})
+
+// …and the SHEET that declares them (phase 4a, 2026-09-03) rides on exactly the same rule as the
+// faces and the video: one file per screen, carried across a fold that fetched nothing, and pruned
+// only once no entry of the screen names it any more. A replica whose sheet was dropped renders in
+// a fallback stack — a picture of a different app.
+const FACES = 'spec/board/evidence/_fonts/faces.css'
+test('faces.css: a fold that read no @font-face rule carries the committed sheet', () => {
+  const index = { board: { evidence: { R4: entry({ fontFaces: FACES }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2' }) })
+  assert.deepEqual(prune, [])
+  assert.equal(index.board.evidence.R4.fontFaces, FACES)
+})
+test('faces.css: one deterministic path per screen — a re-fold overwrites it in place and prunes nothing', () => {
+  const index = {
+    board: {
+      evidence: {
+        R4: entry({ fontFaces: FACES }),
+        R5: entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', fontFaces: FACES })
+      }
+    }
+  }
+  // a fresh fold names the very same file (the path is `_fonts/faces.css`, not content-hashed like a
+  // face), so it is never superseded — the bytes are rewritten where they stand
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', fontFaces: FACES }) })
+  assert.deepEqual(prune, [], 'the screen keeps its one sheet, whichever entry re-folded')
+  assert.equal(index.board.evidence.R4.fontFaces, FACES)
+  assert.equal(index.board.evidence.R5.fontFaces, FACES, 'and the entries that did not fold keep theirs')
 })
 
 

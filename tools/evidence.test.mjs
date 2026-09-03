@@ -366,3 +366,71 @@ test('per-beat: a moment that harvested no Expected replica says so with a null,
   assert.equal(r.beats[0].replicaExpectedAfter, null)
   assert.equal(r.beats[0].values[0].replicaExpected, null)
 })
+
+// ── 2026-09-03, phase 4a (B): the screen's ONE readable stylesheet of @font-face rules ──────────
+// A replica is only the app's own picture while it is set in the app's own type, and the board
+// renders it in an OPAQUE-ORIGIN srcdoc iframe that may reach no external URL. The harness lists
+// each readable rule with the absolute urls it names (spec/_replica.mjs fontFaces) and fetches the
+// files Node-side (spec/_base.ts harvestFonts → `font <hash> <family>` attachments → entry.fonts);
+// this is the pure derivation between them: the rules that can actually be SERVED from the
+// committed `_fonts/` dir, with every url rewritten to the file beside them.
+test('deriveFacesCss rewrites a fetched url to the committed file, relative to the _fonts dir', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const css = deriveFacesCss(
+    [{ cssText: '@font-face { font-family: "Inter"; src: url("https://x.test/inter.woff2") format("woff2"); }', urls: ['https://x.test/inter.woff2'] }],
+    [{ hash: 'aaaa1111bbbb2222', ext: 'woff2', family: 'Inter', url: 'https://x.test/inter.woff2', path: 'spec/s/evidence/_fonts/aaaa1111bbbb2222.woff2' }]
+  )
+  assert.equal(css, '@font-face { font-family: "Inter"; src: url("aaaa1111bbbb2222.woff2") format("woff2"); }')
+})
+
+test('deriveFacesCss drops a rule naming a url nothing fetched — a face that cannot be served is not declared', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  assert.equal(deriveFacesCss(
+    [{ cssText: '@font-face { font-family: "Ghost"; src: url("https://x.test/ghost.woff2"); }', urls: ['https://x.test/ghost.woff2'] }],
+    []
+  ), '')
+})
+
+test('deriveFacesCss rewrites EVERY url of a multi-format rule, and drops the rule if any one is unfetched', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const rule = {
+    cssText: '@font-face { font-family: "Two"; src: url("https://x.test/a.woff2") format("woff2"), url("https://x.test/a.woff") format("woff"); }',
+    urls: ['https://x.test/a.woff2', 'https://x.test/a.woff']
+  }
+  const both = [
+    { hash: '1111aaaa2222bbbb', ext: 'woff2', url: 'https://x.test/a.woff2' },
+    { hash: '3333cccc4444dddd', ext: 'woff', url: 'https://x.test/a.woff' }
+  ]
+  assert.equal(deriveFacesCss([rule], both),
+    '@font-face { font-family: "Two"; src: url("1111aaaa2222bbbb.woff2") format("woff2"), url("3333cccc4444dddd.woff") format("woff"); }')
+  assert.equal(deriveFacesCss([rule], [both[0]]), '', 'all of a rule\'s urls or none of the rule')
+})
+
+test('deriveFacesCss keeps a rule that names no fetchable url at all — a data:/local() face needs nothing committed', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const rule = { cssText: '@font-face { font-family: "Sys"; src: local("Helvetica"); }', urls: [] }
+  assert.equal(deriveFacesCss([rule], []), '@font-face { font-family: "Sys"; src: local("Helvetica"); }')
+})
+
+test('deriveFacesCss is deterministic — deduped by rule text and sorted, so a re-fold writes the same bytes', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const b = { cssText: '@font-face { font-family: "B"; src: local("B"); }', urls: [] }
+  const a = { cssText: '@font-face { font-family: "A"; src: local("A"); }', urls: [] }
+  assert.equal(deriveFacesCss([b, a, b], []), a.cssText + '\n' + b.cssText)
+  assert.equal(deriveFacesCss([a, b], []), deriveFacesCss([b, b, a], []))
+})
+
+test('deriveFacesCss neutralises a </style in a rule and stays bounded — the text goes into a <style> element', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  const css = deriveFacesCss([{ cssText: '@font-face { font-family: "</style><script>x</script>"; src: local("x"); }', urls: [] }], [])
+  assert.ok(!/<\/style/i.test(css), 'nothing can close the element early: ' + css)
+  const many = []
+  for (let i = 0; i < 4000; i++) many.push({ cssText: '@font-face { font-family: "f' + i + '"; src: local("' + 'x'.repeat(60) + '"); }', urls: [] })
+  assert.ok(deriveFacesCss(many, []).length <= 64000, 'bounded like every other by-product')
+})
+
+test('deriveFacesCss on an empty harvest is the empty string, never a stylesheet of nothing', async () => {
+  const { deriveFacesCss } = await import('./evidence.mjs')
+  assert.equal(deriveFacesCss([], []), '')
+  assert.equal(deriveFacesCss(null, null), '')
+})
