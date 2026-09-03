@@ -496,3 +496,21 @@ test('two', async ({ page }) => {
   assert.equal(rows[1].beat, 2)
   assert.equal(rows[1].claims, 1)
 })
+
+// ── THE EXISTENCE LINT READS A BEAT'S FUNCTIONS TOO (phase 6, 2026-09-04) ────────────────────────
+// Found while wiring the intent lint: `npm run proof lint` was red on BOTH boards for a reason that
+// had nothing to do with a weak proof — every checkReq that keeps its assertion in a step function
+// (the beat-function convention the kg-e2e skill teaches) read as EXISTENCE-ONLY, because the lint
+// looked only at the block's own bytes. A proof does not stop being a proof because it was lifted
+// into spec/<screen>/steps.ts. Same expansion the intent lint uses, same helper sources.
+test('lintSource follows a checkReq into the beat function it calls', () => {
+  const spec = "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await tickOneSubTask(page, state) })\n})"
+  const steps = "export async function tickOneSubTask (page, state) {\n  await expect(page.locator('.n')).toHaveText('4')\n}"
+  assert.equal(lintSource(spec)[0].ok, false, 'the block alone asserts nothing')
+  assert.equal(lintSource(spec, { helpers: [steps] })[0].ok, true, 'the beat it calls asserts the value')
+})
+
+test('…and proveVisible IS a value assertion — it reads the value off the screen and asserts it', () => {
+  assert.equal(hasValueAssertion("await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })"), true)
+  assert.equal(hasValueAssertion("await expect(page.locator('.n')).toBeVisible()"), false)
+})

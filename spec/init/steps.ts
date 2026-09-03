@@ -1,4 +1,4 @@
-import { expect } from '../_base'
+import { expect, proveVisible } from '../_base'
 import type { Page } from '@playwright/test'
 import type { FlowState } from '../board/steps'
 import { writeFileSync, rmSync } from 'node:fs'
@@ -48,6 +48,11 @@ export async function rerunMarksNewRows (page: Page, state: FlowState): Promise<
   const newRow = found.locator('.frow', { hasText: state.fresh })
   await expect(boardRow).toContainText(/already on board|yours/i)
   await expect(newRow).toContainText(/new/i)
+  // the Then's TWO facts, each claimed on the chip that carries it (the authored-intent lint,
+  // phase 6): the new route marked new, and the settled one reading as already on the board —
+  // 'yours', the word the board actually uses for a route that already has a PRD of its own.
+  await proveVisible(newRow.locator('.fst'), 'new', 'The new route, marked new', { soft: true })
+  await proveVisible(boardRow.locator('.fst'), 'yours', 'The settled route, already on the board', { soft: true })
   state.rows = 2
 }
 
@@ -71,6 +76,9 @@ export async function draftedRowBecomesCard (page: Page, state: FlowState): Prom
     expect(await cardLoc.getAttribute('data-waiting')).toBeNull()
     await expect(cardLoc.locator('.pcount')).toHaveCount(1)
     await expect(cardLoc.locator('.rl li')).not.toHaveCount(0)
+    // the fact, claimed: an ORDINARY card, listing the drafted requirement's own title
+    await proveVisible(cardLoc.locator('.rl li .rtl').first(), 'A requirement read off the running page',
+      'The drafted requirement, listed on an ordinary card', { soft: true })
     await expect(page.locator('#home .card')).toHaveCount(state.screens + 1)   // the tree's own, plus this one
 
     // the detail carries NOTHING to accept — no gate anywhere (retried: the watcher can briefly

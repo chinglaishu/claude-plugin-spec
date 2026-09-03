@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, flowStep } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from '../_base'
 import { openSetupAfterCrawl, rerunMarksNewRows, draftedRowBecomesCard } from './steps'
 import { writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -57,6 +57,10 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
     await page.goto('/#init')
     await expect(page.locator('#initurl')).toHaveValue('http://localhost:3000')
     await expect(page.locator('#initroutes')).toHaveValue(/\/cart/)
+    // the fact this Then names, CLAIMED off the re-loaded form: what Setup reads back is what was
+    // saved (the authored-intent lint, phase 6 — proveVisible reads an input's own value)
+    await proveVisible(page.locator('#initurl'), 'http://localhost:3000',
+      'The URL Setup reads back after a fresh load', { soft: true })
   })
 })
 
@@ -113,6 +117,9 @@ test('R4 — nothing found is the greenfield case: no rows, a prompt to write th
   await checkReq('R4', async () => {
     await expect(view.locator('#initempty')).toBeVisible()
     await expect(view.locator('#initempty')).toContainText(/first PRD/i)
+    // the prompt itself, claimed — the next action a greenfield project is handed
+    await proveVisible(view.locator('#initempty b'), 'write the first PRD',
+      'The prompt a greenfield project is given', { soft: true })
     // greenfield is the ZERO case of the same flow — the found table is simply empty, not a mode
     await expect(view.locator('#initfound .frow')).toHaveCount(0)
   })
@@ -137,6 +144,9 @@ test('R2 — a crawled route is a row with its screenshot and NO PRD: inventory,
     // reserved for a route that already has a real PRD (R5's settled case)
     expect(existsSync(join(SPEC, 'storefront', 'prd.md'))).toBe(false)
     await expect(row.locator('.fst')).toHaveText('new')
+    // the row's own honesty, claimed: nothing was drafted, so it reads NEW — never fake coverage
+    await proveVisible(row.locator('.fst'), 'new',
+      'The crawled row, honestly ungoverned', { soft: true })
   })
 })
 
@@ -168,6 +178,12 @@ test('R6 — voice-over is a saved, per-project switch, off by default', async (
     await page.goto('/')
     await page.goto('/#init')
     await expect(page.locator('#initvoiceover')).toBeChecked()
+    // …and the switch's own state is CLAIMED, so the requirement's "reads it back ticked" has a
+    // value in the picture. A checkbox's `value` is the string "on" whatever its state, so
+    // proveVisible reads its CHECKED state instead (spec/_base.ts shownText) — otherwise this
+    // claim would pass with the box empty, which is exactly the assertion rule 2 refuses.
+    await proveVisible(page.locator('#initvoiceover'), 'checked',
+      'Voice-over, read back ticked from the project config', { soft: true })
 
     // and it switches back off — the toggle is a real two-way switch, not a one-shot opt-in
     await page.locator('#initvoiceover').uncheck()
@@ -190,6 +206,9 @@ test('R6 — the switch is disabled until piper is ready, with a copyable instal
     await expect(page.locator('#initview')).toBeVisible()
     await expect(page.locator('#initvoiceover')).toBeDisabled()
     await expect(page.locator('#initvoicestatus')).toContainText(/piper/i)
+    // what is missing, claimed in the words Setup actually shows
+    await proveVisible(page.locator('#initvoicestatus'), 'piper not found — install below, then Re-check.',
+      'What is missing, and what to do about it', { soft: true })
     const help = page.locator('#initvoicehelp')
     await expect(help).toBeVisible()
     await expect(help.locator('#initvoiceprompt')).toContainText(/piper/i)   // the copyable Claude prompt
@@ -200,6 +219,9 @@ test('R6 — the switch is disabled until piper is ready, with a copyable instal
     await page.locator('#initvoicerecheck').click()
     await expect(page.locator('#initvoiceover')).toBeEnabled()
     await expect(help).toBeHidden()
+    // …and Re-check's own answer, claimed: the same line now says voice-over can run
+    await proveVisible(page.locator('#initvoicestatus'), 'piper detected — voice-over can run.',
+      'Re-check, once all three are present', { soft: true })
   })
 })
 

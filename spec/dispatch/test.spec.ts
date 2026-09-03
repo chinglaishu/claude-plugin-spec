@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, flowStep } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from '../_base'
 import { openBoardDetail, clickRunOnCell, watchLogStream, verdictLandsInPlace } from './steps'
 import { openDetailReader, toggleViews } from '../board/steps'
 
@@ -389,6 +389,10 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
     const cases = page.locator('.dt[data-screen="board"]:not([hidden]) .test')
     const n = await cases.count()
     expect(n, 'the screen has several cases').toBeGreaterThan(3)
+    // the fact, claimed on a case this run did not single out: it is still here under its own name,
+    // with its own record beside it — folded, never replaced (the authored-intent lint, phase 6)
+    await proveVisible(cases.filter({ hasText: B_R2 }).first().locator('.tt'), B_R2,
+      'A case of its own, still carrying its own record', { soft: true })
     for (let i = 0; i < n; i++) {
       const title = await cases.nth(i).locator('.tt').textContent()
       // the record reached THIS case: its meta line is filled by the fold, never left blank
@@ -419,6 +423,10 @@ test('R7 — the run panel offers no background run', async ({ page }) => {
   await checkReq('R7', async () => {
     await expect(page.locator('.runbg')).toHaveCount(0)
     await expect(page.locator('#rpbg')).toHaveCount(0)
+    // …and the POSITIVE half, so this is not two absences and nothing else (rule 2, and the
+    // standing "assert a positive outcome" rule): the one control the panel offers a running job
+    // is Cancel — a job runs in the open or is stopped, and there is no third way out.
+    await expect(page.locator('#runpanel #rpcancel')).toHaveText('Cancel')
   })
 })
 
@@ -439,6 +447,10 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
     await expect(panel).toBeVisible()
     await expect(panel.locator('#rplog')).not.toBeEmpty()
     await expect(panel.locator('#rplog')).toContainText(/passing|passed|test/i)
+    // the fact, claimed: the panel is STILL the one that ran, still naming its run, after the run
+    // ended — nothing closed it and nothing blanked it out from under you
+    await proveVisible(panel.locator('#rptitle'), 'board · test.spec.ts',
+      'The panel, still on screen after its run ended', { soft: true })
   })
 })
 

@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs } from '../_base'
+import { test, expect, checkReq, coverReqs, proveVisible } from '../_base'
 import { writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -68,6 +68,11 @@ test('R1 — a conflict card is one fact stated two incompatible ways', async ({
     await expect(card.locator('.side .src')).toHaveText([WIDTH.a.source, WIDTH.b.source])
     // and the impact is stated — why this conflict is worth opening at all
     await expect(card.locator('header .imp')).toHaveText(WIDTH.impact)
+    // …and the ONE FACT the two sides contradict is CLAIMED — read off the card, photographed with
+    // the claim on it, so the requirement's own words have a value in the picture beside them
+    // (the authored-intent lint, phase 6).
+    await proveVisible(card.locator('header .sub'), WIDTH.subject,
+      'The one fact the two sides state incompatibly', { soft: true })
   })
 })
 
@@ -84,6 +89,9 @@ test('R2 — both positions are shown in full, each naming where it came from', 
     // so both sentences have to be readable without leaving the page.
     await expect(card.locator('.side', { hasText: WIDTH.a.source })).toContainText(WIDTH.a.quote)
     await expect(card.locator('.side', { hasText: WIDTH.b.source })).toContainText(WIDTH.b.quote)
+    // the fact the Then names, claimed: the first position, IN FULL, under the source it came from
+    await proveVisible(card.locator('.side', { hasText: WIDTH.a.source }).locator('.quote'),
+      WIDTH.a.quote, 'The first position, in full', { soft: true })
   })
 })
 
@@ -98,6 +106,9 @@ test('R3 — the tool never picks: resolving is refused until you choose a side'
 
     await card.locator('.side', { hasText: WIDTH.b.source }).click()
     await expect(card.locator('[data-resolve]')).toBeEnabled()
+    // the enabled button SAYS what pressing it would do — the claim reads that off the screen
+    await proveVisible(card.locator('[data-resolve]'), 'Resolve — rewrite spec/board/prd.md',
+      'Resolve, now enabled, naming the file it would rewrite', { soft: true })
     // picking is not deciding — nothing is written until you resolve
     expect(decisions()).toEqual({})
   })
@@ -134,6 +145,12 @@ test('R4 — resolving records which side lost, stays on Open, and offers the re
     await expect(settled).toBeVisible()
     await expect(settled).toContainText('spec/board/prd.md')
     await expect(settled.locator('[data-rewrite]')).toContainText('spec/init/prd.md')
+    // the two facts this Then names, claimed on the screen: the Settled count that ticked up, and
+    // the rewrite the Settled list offers — naming the file that LOST
+    await proveVisible(page.locator('#cfseg button[data-cf="settled"]'), 'Settled 1',
+      'The Settled count, ticked up', { soft: true })
+    await proveVisible(settled.locator('[data-rewrite]'), 'Rewrite spec/init/prd.md',
+      'The rewrite of the losing file, offered', { soft: true })
   })
 })
 
@@ -164,6 +181,9 @@ test('R5 — a decision survives a rescan that reorders and swaps the sides', as
     await expect(view.locator('.cf', { hasText: WIDTH.subject })).toHaveCount(0)
     // and the one you never settled is still open, so a rescan is not a way to lose questions
     await expect(view.locator('.cf', { hasText: ROW.subject })).toHaveCount(1)
+    // the fact, claimed: the settled row is still the SAME subject after a rescan that renamed it
+    await proveVisible(view.locator('.srow', { hasText: WIDTH.subject }).locator('.w'),
+      WIDTH.subject, 'Still settled, after a rescan gave it a new id', { soft: true })
   })
 
   await page.screenshot({ path: 'spec/conflicts/screen.png', fullPage: false })
@@ -185,6 +205,12 @@ test('R5 — undo puts a settled conflict back, and the scanner is never asked t
   await checkReq('R4', async () => {
     await expect(page.locator('#cfseg button[data-cf="open"]')).toContainText('Open 1')  // undo landed
     await expect(page.locator('#cfseg button.on')).toHaveAttribute('data-cf', 'settled')
+    // both counts read back: the conflict is on Open again and Settled is empty — and you are
+    // still standing on Settled, where you pressed Undo
+    await proveVisible(page.locator('#cfseg button[data-cf="open"]'), 'Open 1',
+      'The conflict, back under Open', { soft: true })
+    await proveVisible(page.locator('#cfseg button[data-cf="settled"]'), 'Settled 0',
+      'Settled, empty again — and still the tab you are on', { soft: true })
   })
   await page.locator('#cfseg button[data-cf="open"]').click()
   await expect(page.locator('#cfview .cf', { hasText: WIDTH.subject })).toHaveCount(1)

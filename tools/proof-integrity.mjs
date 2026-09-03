@@ -37,7 +37,10 @@ import { tmpdir } from 'node:os'
 // assertion (toBeVisible, toBeAttached, toHaveCount(0)) only checks that SOMETHING is there. Only the
 // former can fail because a requirement's substance changed — the latter would still pass with the
 // requirement's guts deleted, as long as the element itself still renders.
-const VALUE_ASSERTION = /toHaveText|toContainText|toHaveValue|toHaveAttribute|toHaveCount\(\s*[1-9]|toBe\(|toEqual\(|toMatch|toBeCloseTo|toBeGreaterThan|toBeLessThan/
+// `proveVisible` is one of them, and the strongest: it READS the value off the element (an input's
+// value, everything else's rendered text), photographs it with the claim burned in, and asserts the
+// two are equal. A beat whose only assertion is a proveVisible is the opposite of existence-only.
+const VALUE_ASSERTION = /toHaveText|toContainText|toHaveValue|toHaveAttribute|toHaveCount\(\s*[1-9]|toBe\(|toEqual\(|toMatch|toBeCloseTo|toBeGreaterThan|toBeLessThan|proveVisible\s*\(/
 
 export function hasValueAssertion (body) {
   return VALUE_ASSERTION.test(String(body || ''))
@@ -77,8 +80,20 @@ export function extractCheckReqBlocks (src) {
 }
 
 // One row per checkReq block: does it assert a value, or only that something exists.
-export function lintSource (src) {
-  return extractCheckReqBlocks(src).map(({ id, line, body }) => ({ id, line, ok: hasValueAssertion(body) }))
+//
+// …READ THROUGH THE BEAT FUNCTIONS IT CALLS (phase 6, 2026-09-04). A checkReq that keeps its
+// assertion in an exported step function — the beat-function convention the kg-e2e skill teaches —
+// used to read EXISTENCE-ONLY here, because this looked only at the block's own bytes: on both
+// boards the gate was red for a reason that had nothing to do with a weak proof. `opts.helpers` are
+// the other sources a beat may live in (every screen's steps.ts); expandBody appends what the block
+// calls, two levels deep. Not a weakening — the assertion is there, one call away.
+export function lintSource (src, opts = {}) {
+  const bodies = functionBodies(String(src || ''))
+  for (const h of opts.helpers || []) {
+    for (const [k, v] of functionBodies(h)) if (!bodies.has(k)) bodies.set(k, v)
+  }
+  return extractCheckReqBlocks(src)
+    .map(({ id, line, body }) => ({ id, line, ok: hasValueAssertion(expandBody(body, bodies)) }))
 }
 
 // Deep-walk an arbitrary JSON value (object/array/scalar), nudging every numeric leaf so a proof that
@@ -468,12 +483,19 @@ function screenDirs () {
 }
 
 function runLint () {
+  // every screen's beats, for BOTH lints below: a checkReq keeps its assertion in a step function
+  // (the beat-function convention), and board/test.spec.ts calls ../dispatch/steps, so the whole
+  // set is handed to each screen rather than only its own.
+  const helpers = screenDirs()
+    .map(s => join('spec', s, 'steps.ts'))
+    .filter(p => existsSync(p))
+    .map(p => readFileSync(p, 'utf8'))
   let anyBad = false
   for (const screen of screenDirs()) {
     const path = join('spec', screen, 'test.spec.ts')
     if (!existsSync(path)) continue
     const src = readFileSync(path, 'utf8')
-    for (const row of lintSource(src)) {
+    for (const row of lintSource(src, { helpers })) {
       const status = row.ok ? 'ok' : 'EXISTENCE-ONLY'
       if (!row.ok) anyBad = true
       console.log(`${screen} · ${row.id} · line ${row.line} · ${status}`)
@@ -485,14 +507,7 @@ function runLint () {
     console.log('assertion to check an actual value (kg-e2e rule 2).')
   }
   // …and then the AUTHORED INTENT (phase 6): the existence rows above ask whether each proof reads a
-  // value; these ask whether it reads the values the requirement's own Then names. A beat's step
-  // functions count as the beat (the beat-function convention), so every screen's steps.ts is handed
-  // over as a helper source — board/test.spec.ts calls ../dispatch/steps, and a proof does not stop
-  // being a proof because it was lifted into a beat.
-  const helpers = screenDirs()
-    .map(s => join('spec', s, 'steps.ts'))
-    .filter(p => existsSync(p))
-    .map(p => readFileSync(p, 'utf8'))
+  // value; these ask whether it reads the values the requirement's own Then names.
   let anyGap = false
   console.log('')
   for (const screen of screenDirs()) {

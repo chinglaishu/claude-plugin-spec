@@ -1,4 +1,4 @@
-import { expect } from '../_base'
+import { expect, proveVisible } from '../_base'
 import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 import type { FlowState } from '../board/steps'
@@ -72,6 +72,10 @@ export async function clickRunOnCell (page: Page, state: FlowState): Promise<voi
   await expect(panel).toBeVisible()
   await expect(panel.locator('#rptitle')).toContainText('board')
   await expect(panel.locator('#rpchip')).toContainText('running')
+  // the fact R1 names, CLAIMED: the panel opened already knowing which screen it is running —
+  // nothing was typed into it (the authored-intent lint, phase 6)
+  await proveVisible(panel.locator('#rptitle'), 'board · test.spec.ts',
+    'The panel, naming the screen whose cell you clicked', { soft: true })
   state.runScreen = 'board'
 }
 
@@ -82,6 +86,10 @@ export async function watchLogStream (page: Page, state: FlowState): Promise<voi
   const panel = page.locator('#runpanel')
   await expect(panel.locator('#rplog')).toContainText(/Running|passed|test/i, { timeout: 60000 })
   await expect(panel.locator('#rpchip')).toContainText('running')   // lines arrived BEFORE any verdict
+  // …and the chip that says so is claimed: output is on screen while the job is still RUNNING,
+  // which is the whole of R2 — a verdict-only panel is a button that goes quiet
+  await proveVisible(panel.locator('#rpchip'), 'running',
+    'The chip, still running while its log fills', { soft: true })
   state.streamed = true
 }
 
@@ -98,6 +106,11 @@ export async function verdictLandsInPlace (page: Page, state: FlowState): Promis
     { timeout: 30000 }).not.toBe(state.cellBefore)
   const after = await dt.locator('.tststeps[data-title="' + B_R1 + '"]').evaluate((el: any) => el._hist[0].at)
   expect(after > state.cellBefore, 'the cell folded a NEWER run in place: ' + after + ' > ' + state.cellBefore).toBe(true)
+  // the verdict itself, claimed in the requirement's own words. Which of the two it is depends on
+  // the run this beat just watched, so the claim carries the Then's phrase and a `match` that
+  // accepts exactly those two — never a third, and never an empty chip.
+  await proveVisible(panel.locator('#rpchip'), 'passed or failed', 'The verdict the panel landed on',
+    { match: (shown: string) => /^(passed|failed)$/.test(shown), soft: true })
   state.verdict = (await panel.locator('#rpchip').textContent() || '').trim()
 }
 
