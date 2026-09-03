@@ -1250,8 +1250,14 @@ export function captureReplica (arg) {
     try { rules = sheets[i] && sheets[i].cssRules } catch { rules = null }
     if (!rules) continue
     for (let j = 0; j < rules.length; j++) {
+      // both budgets full: nothing left to learn from this sheet or any other (fix round 1, M7)
+      if (fonts.length >= 8 && (fontFaces.length >= 64 || faceBytes >= 64000)) break
       const rule = rules[j]
       if (!rule || !rule.style) continue
+      // CSSFontFaceRule is type 5. Asking the TYPE first means a Tailwind-sized sheet is not
+      // serialised rule by rule on every capture just to find its handful of faces; a CSSOM that
+      // will not answer (an older engine, a stub) falls back to reading the text, as before.
+      if (typeof rule.type === 'number' && rule.type !== 5) continue
       const faceText = String(rule.cssText || '')
       if (!/^\s*@font-face/i.test(faceText)) continue
       if (fontFaces.length < 64 && faceBytes + faceText.length <= 64000) {
