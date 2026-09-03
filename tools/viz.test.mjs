@@ -2164,3 +2164,83 @@ test('mirrorGaps: a ringed scene whose skeleton never measured the ringed elemen
   // …and a scene with NO ring asks nothing of the kind
   assert.ok(!mirrorGaps(GUARD(false), guardFrame(0), { focus: false, anchors: [{ x: 271, y: 725.5, w: 738, h: 69.75 }] }).some(g => g.kind === 'missing-focus'))
 })
+
+// ── 2026-09-03, House View R1/R3/R7 on the fresh 0.42.0 capture: every REAL skeleton carried its ringed
+// element, yet the three failed scenes still reported missing-focus. Their scenes are DERIVED
+// (intendedLayout): the base — a ringless BEFORE frame, captured in document order — was already at
+// the 360-element cap, intendedLayout APPENDED the intended leaf as element 361, and normLayout's own
+// first-come draw cap cut exactly that one. The expected value was not drawn at all.
+const FULL_BASE = (() => {
+  // 360 painted boxes, none of them the header picker (the ringless before frame never reached it)
+  const els = [{ x: 0, y: 0, w: 1440, h: 900, kind: 'container', text: '' }]
+  for (let i = 0; els.length < 360; i++) {
+    const y = 100 + (i % 40) * 18; const x = 260 + Math.floor(i / 40) * 110
+    els.push({ x, y, w: 100, h: 16, kind: 'text', text: 'cell ' + i, fs: 11, bd: '226,232,240' })
+  }
+  return { w: 1440, h: 900, ring: null, els }
+})()
+const PICKER_BOX = { x: 1113, y: 6, w: 126, h: 28 }
+// the VALUE frame: the same page, ring-first captured, so the picker IS there — reading "Live"
+const PICKER_VALUE = (claim) => ({
+  w: 1440, h: 900, ring: PICKER_BOX, claim,
+  els: [
+    ...FULL_BASE.els.slice(0, 300),
+    { x: 1112, y: 6, w: 224, h: 28, kind: 'container', text: '', bg: '255,255,255', bd: '203,213,225', rd: 8 },
+    { ...PICKER_BOX, kind: 'button', text: 'Version Live · May 2031', focus: true, fs: 11, ta: 'c' },
+    { x: 1121, y: 1, w: 43, h: 10, kind: 'text', text: 'Version', fs: 10 },
+    { x: 1131, y: 12, w: 22, h: 16, kind: 'text', text: 'Live', focus: true, fs: 11, fw: 1 }
+  ]
+})
+const PICKER_META = { behavior: b('a live House View version', 'you read the header version picker', 'it states the version\'s track as a plain word — Published'), id: 'R3', title: 'The picker states the track', pass: false }
+
+test('the draw cap never drops the ringed element — a failed scene on a full base still types its expected value', () => {
+  const failed = PICKER_VALUE({ expected: 'Published', got: 'Live', ok: false })
+  const d = renderWireframe([{ before: FULL_BASE, values: [failed], after: PICKER_VALUE(null) }], PICKER_META)
+  const f1 = frameOf(d.svg, 1)
+  assert.ok(has(f1, 'Published'), 'the expected word is drawn in the failed scene')
+  const g1 = d.gaps[1]
+  assert.ok(g1.layout.els.some(e => e.focus), 'the frame\'s own reported skeleton carries its ringed element')
+  assert.deepEqual(g1.gaps.filter(g => g.kind === 'missing-focus'), [], 'and the guard has no missing-focus to raise: ' + gapSummary(g1.gaps))
+  assert.ok(g1.layout.els.length <= 360 || g1.layout.els.some(e => e.focus), 'past the cap, what goes is never the ringed element')
+})
+
+test('a present element the ringless base never measured is BORROWED from the value skeleton, not invented beside the ring', () => {
+  const failed = PICKER_VALUE({ expected: 'Published', got: 'Live', ok: false })
+  const d = renderWireframe([{ before: FULL_BASE, values: [failed], after: PICKER_VALUE(null) }], PICKER_META)
+  const L1 = d.gaps[1].layout
+  const picker = L1.els.find(e => e.kind === 'button' && Math.abs(e.x - PICKER_BOX.x) < 1 && Math.abs(e.w - PICKER_BOX.w) < 1)
+  assert.ok(picker, 'the picker button stands in the intended scene where the app has it (from the value skeleton)')
+  assert.ok(/Published/.test(picker.text) && !/Live/.test(picker.text), 'and it reads the expected track, not the measured one: ' + picker.text)
+  assert.ok(!L1.els.some(e => e.synthetic && e.text === 'Published'), 'no synthetic leaf is placed beside the ring — the element exists')
+  const f1 = frameOf(d.svg, 1)
+  assert.ok(has(f1, 'Published') && !has(f1, 'Live'), 'the drawing shows Published where Live was measured')
+})
+
+test('a wrong value on a present element: the leaf INSIDE the ringed box that reads the measured value takes the expected one — never a leaf invented beside it', () => {
+  // 2026-09-03, House View R3 on the board after 0.42.2: the base now HAD the picker (a button whose
+  // box the ring is around, holding a small "Live" leaf and a "Version" label), but the area-ratio
+  // rule rejected the small leaf, borrowing found nothing new, and "Published" was typed as a new leaf
+  // BESIDE the picker — in the Month box — and ringed there.
+  const withPicker = (claim, ring) => ({
+    w: 1440, h: 900, ring, claim,
+    els: [
+      { x: 0, y: 0, w: 1440, h: 900, kind: 'container', text: '' },
+      { x: 1112, y: 6, w: 224, h: 28, kind: 'container', text: '', bg: '255,255,255', bd: '203,213,225', rd: 8 },
+      { ...PICKER_BOX, kind: 'button', text: 'Version Live · May 2031', fs: 11, ta: 'c', ...(ring ? { focus: true } : {}) },
+      { x: 1121, y: 1, w: 43, h: 10, kind: 'text', text: 'Version', fs: 10 },
+      { x: 1131, y: 12, w: 22, h: 16, kind: 'text', text: 'Live', fs: 11, fw: 1, ...(ring ? { focus: true } : {}) },
+      { x: 1247, y: 6, w: 90, h: 28, kind: 'button', text: 'May 2031', fs: 11 }        // the Month picker beside it
+    ]
+  })
+  const base = withPicker(null, null)
+  const failed = withPicker({ expected: 'Published', got: 'VersionLive·May 2031', ok: false }, PICKER_BOX)
+  const d = renderWireframe([{ before: base, values: [failed], after: withPicker(null, PICKER_BOX) }], PICKER_META)
+  const L1 = d.gaps[1].layout
+  const live = L1.els.find(e => e.x === 1131 && e.w === 22)
+  assert.equal(live && live.text, 'Published', 'the leaf the check read now says the expected word')
+  assert.ok(!L1.els.some(e => e.synthetic), 'nothing is invented beside the picker')
+  assert.equal(L1.els.find(e => e.x === 1247 && e.w === 90).text, 'May 2031', 'the Month picker beside it is untouched')
+  assert.ok(L1.ring && L1.ring.x >= PICKER_BOX.x && L1.ring.x + L1.ring.w <= PICKER_BOX.x + PICKER_BOX.w + 1, 'the ring stays within the picker: ' + JSON.stringify(L1.ring))
+  const f1 = frameOf(d.svg, 1)
+  assert.ok(has(f1, 'Published') && !has(f1, 'Live'))
+})

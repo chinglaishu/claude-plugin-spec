@@ -945,7 +945,7 @@ function normLayout (l) {
   // and empty rows beside a photograph full of numbers (the human, 2026-09-03). Matched to snapLayout's
   // own CAP so what the harvest keeps, the drawing draws; `seen` still collapses identical geometries.
   for (const e of (Array.isArray(l.els) ? l.els : [])) {
-    if (!e || typeof e !== 'object' || els.length >= 360) continue
+    if (!e || typeof e !== 'object') continue
     const x = num(e.x); const y = num(e.y); const ew = num(e.w); const eh = num(e.h)
     if (x == null || y == null || !(ew > 0) || !(eh > 0)) continue
     const kind = KINDS.has(e.kind) ? e.kind : 'container'
@@ -1012,6 +1012,20 @@ function normLayout (l) {
   // …and what was dropped is REPORTED, not just forgotten (2026-09-02): mirrorGaps needs the boxes
   // the page had faded away in order to say a frame painted one of them anyway. Derived here so
   // there is one rule for "not on screen", never a second reading of `op` somewhere else.
+  // THE DRAW CAP NEVER DROPS THE RINGED ELEMENT (2026-09-03, House View R1/R3/R7). The cap used to
+  // be first-come — and intendedLayout APPENDS the intended element to a base that is already at the
+  // capture cap, so the one element a failed scene exists to draw was the one cut, and the guard then
+  // reported missing-focus on a skeleton that carried it. Past the cap, what goes is the LAST
+  // unfocused boxes; a focused (or intended) element is kept wherever it stands. Order is preserved.
+  if (els.length > 360) {
+    let room = 360 - els.filter(e => e.focus || e.intended).length
+    const kept = []
+    for (const e of els) {
+      if (e.focus || e.intended) { kept.push(e); continue }
+      if (room > 0) { kept.push(e); room-- }
+    }
+    els.length = 0; els.push(...kept)
+  }
   const hidden = els.filter(e => e.gone || gone.some(g => nestsIn(e, g)))
     .map(e => ({ x: e.x, y: e.y, w: e.w, h: e.h, kind: e.kind, text: e.text }))
   for (const e of live) delete e.gone
@@ -2191,17 +2205,66 @@ function intendedLayout (baseRaw, claims) {
     const oy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
     return (ox * oy) / Math.max(1, Math.max(a.w * a.h, b.w * b.h))
   }
-  for (const e of L.els) { if (e && typeof e === 'object') delete e.focus }
+  // the capture's own focus marks are read into the search above (a focused leaf is the one the check
+  // read), then cleared — the intended scene rings the element it puts the expected value on
+  for (const e of L.els) { if (e && typeof e === 'object' && e.focus) { e.wasFocus = true; delete e.focus } }
   let ring = null
-  for (const { claim, at } of claims) {
+  for (const { claim, at, present } of claims) {
     if (!claim || claim.ok !== false || !claim.expected) continue
     const els = L.els.filter(e => e && typeof e === 'object')
     const leaves = els.filter(e => worded(e) && !els.some(t => inside(t, e) && worded(t)))
     let target = null
     if (!claim.missing && at) {
-      let best = 0
-      for (const e of leaves) { const ov = overlap(e, at); if (ov > best) { best = ov; target = e } }
-      if (best < 0.4) target = null
+      // THE LEAF INSIDE THE RING THAT READS THE MEASURED VALUE (2026-09-03, House View R3 on the board):
+      // a ringed BUTTON holds small leaves — a "Version" label, the "Live" word the check read — and the
+      // area-ratio rule below rejected every one of them, so "Published" was typed as a new leaf BESIDE
+      // the picker (in the Month box) and ringed there. A worded leaf nested in the ringed box is a
+      // candidate whatever its size: the one whose words the measured `got` contains wins (that is the
+      // value the check read), else the one the capture focused, else the largest.
+      const within = leaves.filter(e => inside(e, at) || overlap(e, at) >= 0.6 * Math.min(1, (e.w * e.h) / Math.max(1, at.w * at.h)) && e.x >= at.x - 0.6 && e.y >= at.y - 0.6 && e.x + e.w <= at.x + at.w + 0.6 && e.y + e.h <= at.y + at.h + 0.6)
+      if (within.length) {
+        const got = norm(claim.got || '')
+        const reads = within.filter(e => { const t = norm(e.text); return t.length >= 2 && got.includes(t) && t !== norm(claim.expected) })
+        const pool = reads.length ? reads : within
+        const focused = pool.filter(e => e.wasFocus || e.focus)
+        const from = focused.length ? focused : pool
+        target = from.reduce((a, e) => (!a || e.w * e.h > a.w * a.h ? e : a), null)
+      }
+      if (!target) {
+        let best = 0
+        for (const e of leaves) { const ov = overlap(e, at); if (ov > best) { best = ov; target = e } }
+        if (best < 0.4) target = null
+      }
+    }
+    // A PRESENT ELEMENT THE BASE NEVER MEASURED IS BORROWED, NOT INVENTED (2026-09-03, House View
+    // R3): the base is a ringless BEFORE frame captured in document order, and the header picker was
+    // not in it — so a wrong value on a plainly present element fell through to the never-there rule
+    // and a bare "Published" leaf was drawn beside an empty ring. The VALUE skeleton was captured
+    // ring-first and has the element, with `focus` on it and on the leaf the check read. Those are
+    // brought into the intended scene as they stand, and the focused worded leaf takes the expected
+    // value — the element the app has, saying what the requirement says.
+    if (!target && !claim.missing && present && Array.isArray(present.els)) {
+      const key = e => [e.kind, Math.round(e.x), Math.round(e.y), Math.round(e.w), Math.round(e.h)].join('|')
+      const have = new Set(els.map(key))
+      const focused = present.els.filter(e => e && typeof e === 'object' && e.focus && Number.isFinite(e.x))
+      const outer = focused.reduce((a, e) => (!a || e.w * e.h > a.w * a.h ? e : a), null)
+      const borrowed = outer
+        ? present.els.filter(e => e && typeof e === 'object' && Number.isFinite(e.x) && (e.focus || inside(e, outer) || e === outer))
+        : []
+      const added = []
+      for (const e of borrowed) {
+        if (have.has(key(e))) continue
+        const c = structuredClone(e)
+        delete c.focus
+        L.els.push(c); added.push(c); have.add(key(e))
+      }
+      if (added.length) {
+        const all = L.els.filter(e => e && typeof e === 'object')
+        const bl = added.filter(e => worded(e) && !all.some(t => inside(t, e) && worded(t)))
+        const wasFocus = new Set(borrowed.filter(e => e.focus).map(key))
+        const pick = list => { let b = 0; let t = null; for (const e of list) { const ov = overlap(e, at); if (ov > b) { b = ov; t = e } } return t }
+        target = pick(bl.filter(e => wasFocus.has(key(e)))) || pick(bl) || (outer ? added.find(e => key(e) === key(outer)) : null) || null
+      }
     }
     if (!target) target = leaves.find(e => norm(e.text) === norm(claim.expected)) || null
     if (!target && at) {
@@ -2232,7 +2295,11 @@ function intendedLayout (baseRaw, claims) {
     target.focus = true
     target.intended = true
     // the same value in the element's own inner span (a counter's digit) moves with it
-    for (const t of els) if (inside(t, target) && worded(t) && raw(t.text) === was) t.text = claim.expected
+    const all2 = L.els.filter(e => e && typeof e === 'object')
+    for (const t of all2) if (inside(t, target) && worded(t) && raw(t.text) === was) t.text = claim.expected
+    // …and a worded WRAPPER around it that spells the old words among its own (a button whose text is
+    // "Version Live · May 2031" around a "Live" leaf) says the new ones too (2026-09-03)
+    if (was) for (const t of all2) if (t !== target && inside(target, t) && worded(t) && raw(t.text).includes(was)) t.text = raw(t.text).replace(was, claim.expected)
     ring = { x: target.x, y: target.y, w: target.w, h: target.h }
     L.claim = { ...claim }
   }
@@ -2280,7 +2347,7 @@ export function renderWireframe (beatLayouts, metaOrAfter, maybeMeta) {
       const rv = rawOf.get(v)
       const c = v.claim
       if (!(c && c.ok === false && c.expected)) { base = rv; return v }
-      applied.push({ claim: c, at: rv && rv.ring ? { ...rv.ring } : null })
+      applied.push({ claim: c, at: rv && rv.ring ? { ...rv.ring } : null, present: rv || null })
       const truth = base ? take(intendedLayout(base, applied)) : null
       return truth || v
     })

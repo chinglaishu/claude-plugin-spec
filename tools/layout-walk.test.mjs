@@ -119,3 +119,48 @@ test('without a ring the walk still measures the page in order, painted boxes an
   assert.ok(L.els.every(e => !e.focus))
   assert.ok(L.els.some(e => e.text === 'Row 3'))
 })
+
+// ── the second miss the House View harvest showed (2026-09-03, after the ring-first pass shipped) ──
+// The version picker sits under a `main` whose OWN box measures zero width (a min-w-0 flex region
+// whose children overflow it) — and a zero-sized box was read as display:none, its whole subtree
+// dropped. The captured "header" was a sibling bar. A box with no size is not a hidden box.
+function zeroWidthPage () {
+  const label = el('span', [1120, 12, 60, 16], { text: 'Version' })
+  const value = el('span', [1180, 12, 56, 16], { text: 'Live · Nov 2030' })
+  const picker = el('button', [1115, 5, 124, 28], { children: [label, value], cs: painted, attrs: { 'aria-label': 'Version' } })
+  const bar = el('div', [900, 0, 340, 40], { children: [picker], cs: painted })
+  const mainZero = el('main', [48, 0, 0, 95], { children: [bar] })              // width 0, children overflow it
+  const hiddenMenu = el('div', [0, 0, 0, 0], { cs: { display: 'none' }, children: [el('span', [0, 0, 80, 20], { text: 'never shown' })] })
+  const other = el('div', [240, 0, 1200, 40], { children: [el('span', [1352, 6, 28, 28], { text: '⟳', cs: painted })], cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [other, mainZero, hiddenMenu] })
+  return { body, picker, ring: { x: 1115, y: 5, width: 124, height: 28 } }
+}
+
+test('a zero-sized ancestor (a 0-width main whose children overflow it) is descended, not dropped as hidden', () => {
+  const p = zeroWidthPage()
+  const L = walk(p.body, p.ring)
+  assert.ok(L.els.some(e => e.focus && e.text && /Nov 2030/.test(e.text)), 'the picker under the 0-width main is captured and focused: ' + JSON.stringify(L.els))
+  assert.ok(!L.els.some(e => e.w === 0), 'and the zero-sized box itself takes no slot')
+})
+
+test('the same when the caller hands the element over — a zero-sized ancestor does not veto its ring', () => {
+  const p = zeroWidthPage()
+  const L = walk(p.body, p.ring, p.picker)
+  assert.ok(L.els.some(e => e.focus && e.x === 1115 && e.w === 124), 'the picker is recorded with focus')
+})
+
+test('display:none still prunes the whole subtree — a hidden menu\'s words never appear', () => {
+  const p = zeroWidthPage()
+  const L = walk(p.body, p.ring)
+  assert.ok(!L.els.some(e => e.text === 'never shown'))
+})
+
+test('the ring in the skeleton is the element\'s CURRENT box when the element is handed over', () => {
+  // R7 on House View: the ring was painted on "Publishing…", the button then re-laid out to "Activate",
+  // and the skeleton carried the stale ring beside an element measured somewhere else
+  const p = bigPage(10)
+  const stale = { x: 600, y: 400, width: 111, height: 34 }
+  const L = walk(p.body, stale, p.cell)
+  assert.deepEqual(L.ring, { x: 732, y: 648, w: 130, h: 32 }, 'the skeleton rings where the element IS')
+  assert.ok(L.els.some(e => e.focus && e.x === 732))
+})

@@ -316,7 +316,24 @@ change.
   ordered nearest-the-ring-first, and gives no slot to an unpainted wrapper (no bg, no border, no
   words, no icon) — it is still descended. And `mirrorGaps` has the one rule the drawing could not
   answer for itself: a ringed scene whose skeleton has no `focus` element is a `missing-focus` gap, so
-  a capture that misses its ring fails `npm run proof mirror` instead of shipping an empty ring. **On a FAILED assertion the drawing shows the
+  a capture that misses its ring fails `npm run proof mirror` instead of shipping an empty ring. The
+  gate caught two more the same day (0.42.1): **a zero-sized box is not a hidden box** — the House View
+  picker sits under a `min-w-0` flex `main` that measures 0 wide, and "zero rect ⇒ display:none, drop
+  the subtree" had dropped the whole header on every harvest (only `display:none` prunes now; a
+  sizeless element takes no slot but is descended); and **the ring is where the element is at capture
+  time** — R7's button re-laid out between the ring paint and the frame, so the walk takes the ring
+  from the handed-over element's current box and `snapValue` re-paints the overlay there first. And
+  two on the DRAW side (0.42.2), found when every real skeleton carried its ring yet the three FAILED
+  House View scenes still read missing-focus: their scenes are derived (`intendedLayout`) from a
+  ringless before frame that was already at the cap, the intended leaf was appended as element 361,
+  and `normLayout`'s own first-come draw cap cut exactly that one — so past the cap what goes is now
+  the last UNFOCUSED boxes, never a focused or intended element; and a present element the base never
+  measured is BORROWED from the value skeleton (its focused element and leaves, the focused leaf
+  taking the expected value, a worded wrapper swapping the old words) instead of a bare leaf invented
+  beside an empty ring. And one more on the board itself (0.42.3): with the picker now IN the base, the
+  area-ratio rule still rejected its small "Live" leaf and "Published" was invented in the Month box
+  beside it — so a worded leaf NESTED in the ringed box is a candidate whatever its size, the one whose
+  words the measured `got` contains first (that is the value the check read), then the focused one. **On a FAILED assertion the drawing shows the
   INTENDED state, not the app's** (the human, 2026-09-02: "schematic and behaviour are truth — otherwise
   the user should disagree this truth and update it"; and, one kit later, "the schematic should be
   correct, only the proof should be wrong"): each value frame's skeleton carries the claim (`expected ·

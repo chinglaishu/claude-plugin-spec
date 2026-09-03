@@ -33,7 +33,17 @@ export function snapLayoutWalk (arg) {
   const BUDGET = 9000        // nodes visited, so a huge app costs a bounded walk
   const vw = win.innerWidth || 0
   const vh = win.innerHeight || 0
-  const rb = ring ? { x: ring.x, y: ring.y, w: ring.width, h: ring.height } : null
+  let rb = ring ? { x: ring.x, y: ring.y, w: ring.width, h: ring.height } : null
+  // THE RING IS WHERE THE ELEMENT IS NOW (2026-09-03, House View R7): the ring was painted on a
+  // button reading "Publishing…", the button re-laid out to "Activate", and the skeleton carried the
+  // stale box beside an element measured somewhere else. When the caller hands the element over, its
+  // current box is the ring — the photograph is re-painted to the same box before the frame.
+  if (target && typeof target.getBoundingClientRect === 'function') {
+    try {
+      const tr = target.getBoundingClientRect()
+      if (tr && tr.width >= 1 && tr.height >= 1) rb = { x: tr.left, y: tr.top, w: tr.width, h: tr.height }
+    } catch { /* an element that will not measure keeps the painted ring */ }
+  }
   const rArea = rb ? Math.max(1, rb.w * rb.h) : 0
   const els = []
   let visited = 0
@@ -215,8 +225,13 @@ export function snapLayoutWalk (arg) {
     const tag = String(el.tagName || '').toUpperCase()
     if (skipTag(tag)) return null
     const r = r0 || el.getBoundingClientRect()
-    if (!r || r.width < 1 || r.height < 1) return null                 // display:none, and its subtree
-    if (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh) return null   // off-screen
+    if (!r) return null
+    // A BOX WITH NO SIZE IS NOT A HIDDEN BOX (2026-09-03, the House View version picker). A `min-w-0`
+    // flex `main` whose children overflow it measures 0 wide, and so does the wrapper around it — and
+    // reading that as display:none dropped the header's whole subtree, picker included, on every
+    // harvest. Only `display:none` prunes; a zero-sized element takes no slot but IS descended.
+    const sized = r.width >= 1 && r.height >= 1
+    if (sized && (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh)) return null   // off-screen, and its subtree
     // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT MEASURE (mirror-9, 2026-09-02). Opacity
     // is inherited by PAINT, not by property: Tsumiki hides a row's edit/delete buttons with
     // `opacity:0` until hover, so the BUTTON came back at 0 and its 16×16 icon — which has no
@@ -228,6 +243,7 @@ export function snapLayoutWalk (arg) {
     try { cs = getComputedStyle(el) } catch { /* an element that will not compute is measured as it is */ }
     let eop = pop
     if (cs) {
+      if (String(cs.display || '') === 'none') return null          // display:none, and its subtree
       const vis = String(cs.visibility || '')
       if (vis === 'hidden' || vis === 'collapse') return null
       const ov = parseFloat(cs.opacity)
@@ -235,6 +251,7 @@ export function snapLayoutWalk (arg) {
       if (eop < 0.05) return null
     }
     const out = { el, tag, eop, rec: null }
+    if (!sized) return out                          // no box to draw — but its children may have one
     const leafWords = el.childElementCount === 0 && !!clean(el.textContent)
     const floor = leafWords ? 6 : MIN
     if (r.width >= floor && r.height >= floor) {

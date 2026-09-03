@@ -330,6 +330,7 @@ let LAST_BOX: Box | null = null
 // …and the Locator the ring is around (2026-09-03): snapLayout hands the element itself to the
 // skeleton walk, so the ringed element is measured FIRST — never left to document order and the cap
 let LAST_TARGET: Locator | null = null
+let LAST_FAILED = false
 // Vestigial since the narration stopped rendering a "proving R5" line and the id strip (2026-08-27):
 // the verdict now rides on BEHAVIOR.state. Kept only because checkReq still assigns it and the
 // per-test reset clears it; to be removed with the chip strip in the follow-up pass.
@@ -601,6 +602,7 @@ async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Pr
   if (!box) { if (opts.failed && LAST_BOX) await renderOverlay(LAST_BOX, true); return }
   LAST_BOX = box
   LAST_TARGET = target
+  LAST_FAILED = !!opts.failed
   await renderOverlay(box, !!opts.failed)
 }
 // Hide the overlay so a NEW step starts clean — the ring and callout reappear only once the step
@@ -962,6 +964,19 @@ async function snapValue (): Promise<void> {
   // hanging between the box it left and the value it was pointing at. A frame whose ring is on the
   // wrong element is worse than no frame: it is a picture that misreads itself.
   await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})   // every run paints the card (2026-09-02), so every run lets it settle
+  // …AND RE-PAINT THE RING WHERE THE ELEMENT IS NOW (2026-09-03, House View R7): the ring was painted
+  // on a button reading "Publishing…", the button then re-laid out to "Activate" a few px away, and
+  // the frame photographed the ring beside its element. Bounded like every measurement here — a
+  // target that has gone is left as painted (the failed-and-missing case wants exactly that ring).
+  if (LAST_TARGET && LAST_BOX) {
+    const now = await raceTimeout(LAST_TARGET.first().boundingBox(), 400).catch(() => null)
+    if (now && (Math.abs(now.x - LAST_BOX.x) > 1 || Math.abs(now.y - LAST_BOX.y) > 1 ||
+      Math.abs(now.width - LAST_BOX.width) > 1 || Math.abs(now.height - LAST_BOX.height) > 1)) {
+      LAST_BOX = now
+      await renderOverlay(now, LAST_FAILED)
+      await CURRENT_PAGE.waitForTimeout(OVERLAY_SETTLE_MS).catch(() => {})
+    }
+  }
   // …and the NAME of what is being checked travels with it (the human, 2026-09-02): CLAIM is the
   // claim proveVisible/hudCheck just painted on the bar, so its label IS this moment's name — the
   // very words the row's one stepper puts under the segment. Set by the caller a line before this
