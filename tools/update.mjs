@@ -79,11 +79,11 @@ if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   const fromIdx = args.indexOf('--from-dir')
   const fromDir = fromIdx >= 0 ? resolve(args[fromIdx + 1]) : null
   const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--from-dir')
-  // An app repo that keeps its board BESIDE it carries a one-line `.specboard` pointer; `update.mjs .`
-  // run from the app repo lands in the sidecar, never re-vendors the skeleton into the app repo.
+  // An app repo keeps its board in `specboard/` (the rule) or wherever its one-line `.specboard` pointer
+  // says; `update.mjs .` run from the app repo lands on that board, never re-vendors into the app repo.
   const asked = resolve(positional[0] || process.cwd())
   const dest = resolveProject(asked)
-  if (dest !== asked) console.log(`${asked} → ${dest}  (following its ${POINTER} pointer)`)
+  if (dest !== asked) console.log(`${asked} → ${dest}  (its board — the ${POINTER} pointer or the specboard/ folder)`)
 
   if (dest === SRC) {
     console.error('Refusing to update specboard itself. Give a scaffolded project directory.'); process.exit(1)

@@ -5,12 +5,13 @@ description: Use BEFORE changing any screen or the code that implements it in a 
 
 # You are staff. The human decides what things mean.
 
-> **Where the board lives.** A project keeps its board either **in** the app repo (the default: `spec/`,
-> the vendored `tools/`, `board.html` beside the code) or **beside** it as a *sidecar* — then the app
-> repo carries exactly one file, `.specboard`, whose single line is the path of the board directory
-> (e.g. `../myapp_specboard`). If the repo you are in has `.specboard`, **`cd` into the directory it
-> names before every command below** — `spec/`, `tools/`, `npm run …` all live there, and nothing
-> specboard-related belongs in the app repo. `update.mjs`/`scaffold.mjs` follow the pointer themselves.
+> **Where the board lives.** THE RULE: a project's board — `spec/`, the vendored `tools/`, `board.html`,
+> `playwright.board.ts`, `node_modules` — lives in **`specboard/` inside the app repo**, a folder the app's
+> git ignores wholesale (`/specboard/`) and that is versioned by its **own** git repo inside. So from the
+> app repo, **`cd specboard` before every command below** — nothing specboard-related is ever committed to
+> the app's history. Two exceptions you may meet: a one-line `.specboard` file naming a board kept
+> elsewhere (cd there instead), or an old flat project with `spec/` at the root (stay put). `update.mjs`
+> and `scaffold.mjs` find the board themselves either way.
 
 A specboard project keeps its requirements as the visible source of truth: every screen is two ends —
 its requirements, and the tests that prove them against the real app — and the board derives, never

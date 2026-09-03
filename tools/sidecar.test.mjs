@@ -67,3 +67,36 @@ test('mergeManifest carries the `app` path across an update like it carries `pro
   assert.deepEqual(mergeManifest(fresh, prev), { ...fresh, project: { name: 'P' }, app: '../app' })
   assert.deepEqual(mergeManifest(fresh, { version: '1.0.0', files: {} }), fresh)
 })
+
+// THE RULE (the human, 2026-09-04, second decision): the board lives INSIDE the app repo in a folder
+// named `specboard/`, ignored wholesale by the app's git and versioned by its own — so no pointer is
+// needed; the folder name is the convention. `.specboard` stays as the override for any other place.
+import { NESTED, boardIgnoreLines } from './_skeleton.mjs'
+
+test('the nested folder is named specboard', () => { assert.equal(NESTED, 'specboard') })
+
+test('resolveProject: an app repo with a scaffolded specboard/ folder resolves to that folder', () => {
+  const b = box()
+  w(b, join(NESTED, MANIFEST), '{}')
+  assert.equal(resolveProject(b), join(b, NESTED))
+})
+
+test('resolveProject: an explicit pointer wins over the specboard/ convention', () => {
+  const b = box()
+  w(b, join(NESTED, MANIFEST), '{}')
+  mkdirSync(join(b, 'elsewhere'))
+  w(b, POINTER, 'elsewhere')
+  assert.equal(resolveProject(b), join(b, 'elsewhere'))
+})
+
+test('resolveProject: a bare specboard/ folder with no manifest is not a project (a fresh target)', () => {
+  const b = box()
+  mkdirSync(join(b, NESTED))
+  assert.equal(resolveProject(b), b)
+})
+
+test('the app repo ignores the whole folder; the folder ignores its own scratch, never the harvest', () => {
+  assert.ok(boardIgnoreLines().includes('node_modules/'))
+  assert.ok(boardIgnoreLines().includes('spec/.auth/'))
+  assert.ok(boardIgnoreLines().every(l => !/evidence|board\.html|_results-index/.test(l)))
+})

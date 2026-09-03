@@ -12,38 +12,41 @@ Everything below serves that one job.
 
 ## 0. Scaffold specboard into this project — first, always
 
-The tools resolve their root to the repo they live in, so to run the board on *this* project you
-vendor the skeleton into it (the tools, the one design system, the test harness, the run scripts). It
-never overwrites files you already have and it never copies specboard's own screens.
+THE RULE (the human, 2026-09-04): the board lives in **`specboard/` inside the app repo** — one folder
+holding `spec/`, the vendored `tools/`, `board.html`, `playwright.board.ts` and `node_modules`. The app's
+git **ignores the whole folder** (the scaffold appends `/specboard/` to its `.gitignore`), and the folder
+carries its **own git repo** (the scaffold runs `git init` there), because the PRDs and tests inside are
+the source of truth and must not be the one unversioned thing in the tree. Nothing specboard-related is
+ever committed to the app's history — no evidence frames, no fonts, no 4 MB board.html. The tools resolve
+their root to the folder they live in, so the board runs from there unchanged.
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" .
-```
-
-**Or keep the board OUT of the app repo — a sidecar.** Some teams do not want a harvest (evidence
-frames, fonts, drawings, a 4 MB board.html) inside the product's repo. Scaffold into a directory
-BESIDE it and name the app repo with `--app`; the app repo then carries exactly one file, `.specboard`,
-whose single line is the sidecar's relative path, and the sidecar's `spec/_specboard.json` records the
-way back as `app`. Run `npm install` / `npm run board` **in the sidecar**; every other skill follows
-the pointer (see the note at the top of each). The sidecar is its own git repo — commit it too.
-
-```bash
-node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" ../myapp_specboard --app .
+node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" .        # → ./specboard/  (re-running finds the existing board; never a second one)
 ```
 
 **If `$CLAUDE_PLUGIN_ROOT` is empty**, it is the directory two levels above this `SKILL.md` — the one
 containing `.claude-plugin/plugin.json` and `tools/`. Substitute that path.
 
+Two escapes, only when asked for: `--dir <boardDir>` keeps the board somewhere else (the app repo then
+gets a one-line `.specboard` pointer to it); `--flat` is the old vendored-in layout with `spec/` at the
+app's root. Every other skill starts with "cd into the board" and finds it either way.
+
+**Give the board folder a remote.** Its git repo starts local. Ask the human where it should push
+(a `<app>-specboard` repo beside the app's is the usual answer) — the board's history is the team's
+proof, and a folder that exists on one disk is not versioned yet.
+
 ## 1. Install dependencies and start the board
 
-The scaffold added the `board` / `board:build` / `staff` / `proof` / `e2e` scripts and the two dev deps to your `package.json`.
-It also wrote `spec/.gitignore` (transient run state only). **Commit `spec/<screen>/evidence/`** — the
-harvested proof frames (640px) are what a fresh clone's board shows (its gif mode plays them as the
-frame-stepper); nothing the scaffold writes ignores them, and `board.html` is committed as before.
+The scaffold wrote the board folder's `package.json` (the `board` / `board:build` / `staff` / `proof` /
+`e2e` scripts, the two dev deps), its `.gitignore` (scratch and secrets only) and `spec/.gitignore`
+(transient run state only). **Commit `spec/<screen>/evidence/` — in the board folder's own repo** — the
+harvested proof frames are what a fresh clone's board shows; nothing the scaffold writes ignores them,
+and `board.html` is committed as before.
 
 ```bash
+cd specboard
 npm install
-npm run board          # serves THIS project's board on http://localhost:4173 (empty at first)
+npm run board          # serves THIS project's board on its own port (printed by the scaffold; empty at first)
 ```
 
 Open it in the user's **real browser** over `http://localhost` — `file://` URLs do not work. On a

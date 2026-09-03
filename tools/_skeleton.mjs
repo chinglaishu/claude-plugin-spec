@@ -150,17 +150,35 @@ export const MANIFEST = 'spec/_specboard.json'
 //                       capabilities list (the app repo's .claude/ skills) resolve against it.
 export const POINTER = '.specboard'
 
+// THE RULE (the human, 2026-09-04, second decision — "stay everything in a specboard folder in the
+// repo, gitignore the entire folder, and apply it to any project later on"): the board lives INSIDE
+// the app repo in a folder named `specboard/`, ignored WHOLESALE by the app's git (one line,
+// `/specboard/`, appended by the scaffold) and versioned by its OWN git repo inside (the scaffold runs
+// `git init` there) — the PRDs and tests are the source of truth and must not be the one unversioned
+// thing in the tree. The folder name is the convention, so no pointer is needed; `.specboard` stays
+// as the override for a board kept anywhere else.
+export const NESTED = 'specboard'
+
+// The board folder's own .gitignore: its scratch, its secrets — never the harvest, never board.html
+// (those are the proof a fresh clone must show — D2). Pinned by tools/sidecar.test.mjs.
+export function boardIgnoreLines () {
+  return ['node_modules/', 'test-results/', 'spec/.auth/', '.DS_Store', '# specboard update scratch', ...ROOT_IGNORE]
+}
+
 // The project directory a path MEANS. A scaffolded project (it has the manifest) is itself; an app
-// repo carrying a pointer means the sidecar the pointer names; anything else is itself (a fresh
-// scaffold target). Pure; unit-tested in tools/sidecar.test.mjs.
+// repo carrying a pointer means the board the pointer names; an app repo with a scaffolded
+// `specboard/` folder means that folder (the rule); anything else is itself (a fresh scaffold
+// target). Pure; unit-tested in tools/sidecar.test.mjs.
 export function resolveProject (dir) {
   const d = resolve(dir)
   if (existsSync(join(d, MANIFEST))) return d
   const p = join(d, POINTER)
-  if (!existsSync(p)) return d
-  const target = readFileSync(p, 'utf8').split('\n').map(l => l.trim()).find(Boolean) || ''
-  if (!target) return d
-  return isAbsolute(target) ? target : resolve(d, target)
+  if (existsSync(p)) {
+    const target = readFileSync(p, 'utf8').split('\n').map(l => l.trim()).find(Boolean) || ''
+    if (target) return isAbsolute(target) ? target : resolve(d, target)
+  }
+  if (existsSync(join(d, NESTED, MANIFEST))) return join(d, NESTED)   // the convention
+  return d
 }
 
 // Where the APP lives, seen from the board root: the manifest's `app` (relative to the board root)

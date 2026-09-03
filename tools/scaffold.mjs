@@ -2,9 +2,11 @@
 // to run the board on YOUR code is to vendor the skeleton into your repo — then `npm run board`
 // there reads your spec/, writes your board.html, and runs your tests, with no path juggling.
 //
-//   node <plugin>/tools/scaffold.mjs [targetDir]                 (defaults to the current directory)
-//   node <plugin>/tools/scaffold.mjs <boardDir> --app <appRepo>  (a SIDECAR beside the app repo — the app
-//                                                                 repo gets only a one-line .specboard pointer)
+//   node <plugin>/tools/scaffold.mjs [appRepo]                  → <appRepo>/specboard/  (THE RULE: ignored by the
+//                                                                 app's git, its own git repo inside)
+//   node <plugin>/tools/scaffold.mjs [appRepo] --dir <boardDir>  → anywhere else; the app repo gets a one-line
+//                                                                 .specboard pointer
+//   node <plugin>/tools/scaffold.mjs [appRepo] --flat            → the old vendored-in layout
 //
 // It copies the tools and the shared test harness, the ONE design system, and the run scripts, and
 // it never overwrites a file you already have (so re-running to pull an update is safe with --force,
@@ -16,19 +18,29 @@ import { join, resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, SPEC_IGNORE, ROOT_IGNORE, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
+import { execFileSync } from 'node:child_process'
+import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, NESTED, SPEC_IGNORE, ROOT_IGNORE, boardIgnoreLines, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
 const force = args.includes('--force')
-// `--app <dir>` scaffolds a SIDECAR: the board goes into the target directory, the app repo at <dir>
-// gets only the one-line `.specboard` pointer to it, and the manifest records the way back (`app`).
-// Without --app the target IS the app repo (the vendored-in layout), exactly as before — unless it
-// already carries a pointer, in which case the scaffold follows it rather than vendoring a second board.
-const appIdx = args.indexOf('--app')
-const APP = appIdx >= 0 ? resolve(args[appIdx + 1]) : null
-const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--app')
-const DEST = APP ? resolve(positional[0] || process.cwd()) : resolveProject(positional[0] || process.cwd())
+// THE RULE (2026-09-04): the positional argument is the APP REPO (default: the current directory) and
+// the board goes into `<appRepo>/specboard/` — a folder the app's git ignores wholesale (one appended
+// line) and that carries its OWN git repo, so the PRDs, tests and harvest are versioned without ever
+// touching the app's history. Two escapes: `--dir <boardDir>` puts the board anywhere else (the app
+// repo then gets the one-line `.specboard` pointer, since the folder name no longer finds it), and
+// `--flat` is the old vendored-in layout (the board's files straight into the app repo). A repo that
+// already has a board (nested, pointed-to, or flat) is re-scaffolded IN PLACE — never given a second.
+const dirIdx = args.indexOf('--dir')
+const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--dir')
+const APP = resolve(positional[0] || process.cwd())
+const existing = resolveProject(APP)
+const flat = args.includes('--flat')
+const DEST = dirIdx >= 0 ? resolve(args[dirIdx + 1])
+  : existing !== APP ? existing              // already has a board somewhere — update that one
+    : flat || existsSync(join(APP, MANIFEST)) ? APP   // asked for flat, or already flat
+      : join(APP, NESTED)                    // the rule
+const NESTED_HERE = DEST === join(APP, NESTED)
 
 if (DEST === SRC) {
   console.error('Refusing to scaffold specboard onto itself. Give a target project directory.')
@@ -58,14 +70,23 @@ if (!existsSync(gi) || force) {
   writeFileSync(gi, [...SPEC_IGNORE, ''].join('\n'))
   copied.push('spec/.gitignore')
 }
-// The repo-root .gitignore gets the update scratch (a backup dir and .new files live at the paths
-// they shadow, anywhere in the tree). Appended, never clobbered.
-const rootGi = join(DEST, '.gitignore')
-const existing = existsSync(rootGi) ? readFileSync(rootGi, 'utf8') : ''
-const missing = ROOT_IGNORE.filter(p => !existing.split('\n').includes(p))
-if (missing.length) {
-  writeFileSync(rootGi, existing + (existing && !existing.endsWith('\n') ? '\n' : '') +
-    '# specboard update scratch\n' + missing.join('\n') + '\n')
+// Ignores. FLAT: the app repo's .gitignore gets the update scratch (a backup dir and .new files live at
+// the paths they shadow). NESTED / --dir: the board folder gets its OWN .gitignore (scratch + secrets,
+// never the harvest), its own git repo, and the app repo ignores the whole folder with one line.
+const appendIgnore = (file, lines, header) => {
+  const cur = existsSync(file) ? readFileSync(file, 'utf8') : ''
+  const missing = lines.filter(p => !cur.split('\n').map(l => l.trim()).includes(p))
+  if (!missing.length) return
+  writeFileSync(file, cur + (cur && !cur.endsWith('\n') ? '\n' : '') + (header ? header + '\n' : '') + missing.join('\n') + '\n')
+}
+if (DEST === APP) {
+  appendIgnore(join(APP, '.gitignore'), ROOT_IGNORE, '# specboard update scratch')
+} else {
+  appendIgnore(join(DEST, '.gitignore'), boardIgnoreLines(), `# specboard — the board for ${relative(DEST, APP) || '.'}`)
+  if (NESTED_HERE) appendIgnore(join(APP, '.gitignore'), ['/' + NESTED + '/'], '# specboard lives here, versioned by its own git repo inside — never by this one')
+  if (!existsSync(join(DEST, '.git'))) {
+    try { execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: DEST, stdio: 'ignore' }); copied.push('.git (its own repo)') } catch { /* no git — the folder still works, just unversioned */ }
+  }
 }
 
 // The version manifest — the base-of-record update.mjs compares against. Written on every scaffold
@@ -76,13 +97,13 @@ if (!existsSync(join(DEST, MANIFEST)) || force) {
   let prev = null
   try { prev = JSON.parse(readFileSync(join(DEST, MANIFEST), 'utf8')) } catch { prev = null }
   const fresh = mergeManifest(buildManifest(SRC), prev)
-  if (APP) fresh.app = relative(DEST, APP) || '.'
+  if (DEST !== APP) fresh.app = relative(DEST, APP) || '.'
   writeFileSync(join(DEST, MANIFEST), JSON.stringify(fresh, null, 2) + '\n')
   copied.push(MANIFEST)
 }
 // The sidecar's pointer in the app repo — one relative line, committed there, so every skill and
 // update run from the app repo finds this board. Never overwrites a pointer that already exists.
-if (APP && APP !== DEST) {
+if (DEST !== APP && !NESTED_HERE) {
   const ptr = join(APP, POINTER)
   if (!existsSync(ptr) || force) { writeFileSync(ptr, relative(APP, DEST) + '\n'); copied.push(relative(DEST, ptr)) }
 }
@@ -126,10 +147,11 @@ if (!pkg.scripts.board || pkg.scripts.board === SCRIPTS.board) {
 pkg.devDependencies = { ...(pkg.devDependencies || {}), ...DEV }
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
-console.log(`Scaffolded specboard into ${DEST}`)
+console.log(`Scaffolded specboard into ${DEST}${DEST !== APP ? `  (the board for ${APP}${NESTED_HERE ? ', ignored by its git, versioned by its own' : ''})` : ''}`)
 console.log(`  ${copied.length} file(s) written${skipped.length ? `, ${skipped.length} left alone (already present — pass --force to overwrite)` : ''}`)
 if (pkg.type !== 'module') console.log('  NOTE: your package.json is not "type":"module" — the tools are ESM.')
 console.log(`  board port: ${boardPort} (this project's own — recorded in ~/.specboard-ports.json)`)
 console.log('\nNext:')
+if (DEST !== APP) console.log(`  cd ${DEST}`)
 console.log('  npm install')
 console.log(`  npm run board      # empty board — open http://localhost:${boardPort} and use Set up → Crawl`)

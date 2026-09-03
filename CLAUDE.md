@@ -158,17 +158,24 @@ base against the project's current files and the new release, so an untouched fi
 locally-edited one is kept and the new version dropped beside it as `<file>.new` to merge — never a
 blind overwrite. `tools/update.test.mjs` (`npm run test:tools`) proves that decision table.
 
-**A board may live BESIDE its app repo — the sidecar layout** (the human, 2026-09-04: "put all
-specboard related file and image out of the dojostack_main repo … and make it still work"). The
-tools resolve their root to the directory they live in, so nothing in the fold cares where that is;
-the layout adds only the two ways the directories find each other, both one relative path and both in
-`tools/_skeleton.mjs` (pure, tested in `tools/sidecar.test.mjs`): the app repo's one-line
-**`.specboard`** pointer (`resolveProject` — followed by `update.mjs`, `scaffold.mjs` and every skill,
-so `update.mjs <appRepo>` lands in the sidecar and never re-vendors into the app), and the manifest's
-**`app`** path (`appRoot` → `APP_ROOT` in spec-store, carried across updates like `project`; the
-capabilities list reads the app repo's `.claude/` through it, and a project's own `spec/_app.ts`-style
-helpers should too). `scaffold.mjs <boardDir> --app <appRepo>` creates one. dojostack is the first:
-`~/workspace/dojostack/dojostack_specboard` (its own git repo, board on :4174) beside `dojostack_main`.
+**THE LAYOUT RULE — a project's board lives in `specboard/` INSIDE its app repo, ignored wholesale by
+the app's git and versioned by its own** (the human, 2026-09-04, in two steps: first "put all specboard
+related file and image out of the dojostack_main repo … and make it still work", then "stay everything
+in a specboard folder in the dojostack_main, gitignore the entire folder, and apply it on any project
+later on as a rule"). The tools resolve their root to the directory they live in, so nothing in the fold
+cares where that is; the layout adds only how the two directories find each other, all of it pure in
+`tools/_skeleton.mjs` (tests: `tools/sidecar.test.mjs`): `resolveProject(dir)` — the manifest here, else
+the one-line `.specboard` pointer (a board kept anywhere else), else `dir/specboard/` (the rule) — followed
+by `update.mjs`, `scaffold.mjs` and every skill's "Where the board lives" note, so `update.mjs <appRepo>`
+lands on the board and never re-vendors into the app; and the manifest's `app` path (`appRoot` →
+`APP_ROOT` in spec-store, carried across updates like `project`; the capabilities list reads the app
+repo's `.claude/` through it, and a project's own `spec/_app.ts`-style helpers should too). `scaffold.mjs
+[appRepo]` creates the nested board (appends `/specboard/` to the app's .gitignore, `git init`s the
+folder); `--dir <boardDir>` and `--flat` are the escapes. The folder's own git must not be the one
+unversioned thing in the tree: the PRDs and tests in it are the source of truth, and a wholly ignored
+folder with no repo of its own would vanish with one `git clean -fdx`. dojostack is the first:
+`~/workspace/dojostack/dojostack_main/specboard` (board on :4174). This repo and demo/todo stay flat
+(they ARE the board).
 
 Commands:
 
