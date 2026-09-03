@@ -494,3 +494,70 @@ test('an asserted value\'s Expected replica is pruned with its frame, like its A
   assert.ok(prune.includes('spec/board/evidence/R4.b1.v2.expected.html'), prune.join(' '))
   assert.ok(!prune.includes('spec/board/evidence/R4.b1.v1.expected.html'), 'the one still named stays')
 })
+
+// ── FIX ROUND 1, C1 (2026-09-03): THE GATE'S VERDICT IS NOT A PATH ──────────────────────────────
+// Phase 3's fold records what the in-page gate found on each landed replica. It first wrote that
+// verdict to `values[k].replica` — which valueEvidencePaths has meant as the replica's FILE PATH
+// since phase 1. The keep-set below is built from those very fields, so an object there is not the
+// path string the old entry carried, the path is named for pruning, and the run DELETES the
+// `.v<k>.actual.html` it has just written. The verdict lives in `gate` now; these two pin it.
+const valued = (over = {}) => ({
+  before: 'spec/todo/evidence/R1.before.png',
+  after: 'spec/todo/evidence/R1.after.png',
+  runId: 'r1',
+  beats: [{
+    n: 1,
+    before: 'spec/todo/evidence/R1.b1.before.png',
+    after: 'spec/todo/evidence/R1.b1.after.png',
+    replicaBefore: 'spec/todo/evidence/R1.b1.before.actual.html',
+    replicaAfter: 'spec/todo/evidence/R1.b1.after.actual.html',
+    replicaExpectedAfter: 'spec/todo/evidence/R1.b1.after.expected.html',
+    gate: { gaps: 0, gated: true },
+    values: [{
+      k: 1,
+      frame: 'spec/todo/evidence/R1.b1.v1.png',
+      layout: 'spec/todo/evidence/R1.b1.v1.layout.json',
+      replica: 'spec/todo/evidence/R1.b1.v1.actual.html',
+      replicaExpected: 'spec/todo/evidence/R1.b1.v1.expected.html',
+      gate: { gaps: 0, gated: true }
+    }]
+  }],
+  ...over
+})
+
+test('a value moment keeps its replica PATH and gains its gate verdict beside it', () => {
+  const index = {}
+  foldEvidence(index, { 'todo:R1': valued() })
+  const v = index.todo.evidence.R1.beats[0].values[0]
+  assert.equal(v.replica, 'spec/todo/evidence/R1.b1.v1.actual.html', 'the path is a path')
+  assert.equal(v.replicaExpected, 'spec/todo/evidence/R1.b1.v1.expected.html')
+  assert.deepEqual(v.gate, { gaps: 0, gated: true }, 'and the verdict has its own field')
+  assert.deepEqual(index.todo.evidence.R1.beats[0].gate, { gaps: 0, gated: true })
+})
+
+test('a re-fold of the same harvest prunes nothing the new entry still references — C1', () => {
+  const index = { todo: { evidence: { R1: valued() } } }
+  const prune = foldEvidence(index, { 'todo:R1': valued({ runId: 'r2' }) })
+  assert.deepEqual(prune, [], 'the value moment\'s replica files are still named by the new entry')
+  assert.ok(!prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'))
+  assert.equal(index.todo.evidence.R1.beats[0].values[0].replica, 'spec/todo/evidence/R1.b1.v1.actual.html')
+})
+
+test('a value moment the new harvest DROPPED still has its files pruned', () => {
+  const index = { todo: { evidence: { R1: valued() } } }
+  const gone = valued({ runId: 'r2' })
+  gone.beats[0].values = []
+  const prune = foldEvidence(index, { 'todo:R1': gone })
+  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'), 'the retention rule still works')
+  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.expected.html'))
+})
+
+test('why the verdict may not live in `replica`: a non-path there loses the file — C1 in one assertion', () => {
+  // the shape the phase-3 reporter wrote before this fix: {gaps, gated} where the path belongs
+  const index = { todo: { evidence: { R1: valued() } } }
+  const clobbered = valued({ runId: 'r2' })
+  clobbered.beats[0].values[0].replica = { gaps: 0, gated: true }
+  const prune = foldEvidence(index, { 'todo:R1': clobbered })
+  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'),
+    'the keep-set is built from those very fields, so the run would delete the file it just wrote')
+})

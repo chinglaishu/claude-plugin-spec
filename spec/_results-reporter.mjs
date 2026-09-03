@@ -279,6 +279,10 @@ function harvestEvidence (harvest, ranAt) {
       // resting moment is what the row shows, so that is the one the fold records and reports.
       noteReplica(row, row.replicaAfter, gapLines, scr, rid, b.n, 'after')
       noteReplica(null, row.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after expected')
+      // …and the beat's OPENING moment is reported too (fix round 1, M2): a gapped before-frame used
+      // to say nothing at the fold and only surface later in the CLI. The beat's own verdict stays
+      // the resting moment's — that is the one the row shows.
+      noteReplica(null, row.replicaBefore, gapLines, scr, rid, b.n, 'before')
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
       // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
       // `proves` step started, read back out of the skeleton that recorded it (spec/_base.ts
@@ -383,15 +387,20 @@ function harvestEvidence (harvest, ranAt) {
   return out
 }
 
-// ONE LANDED REPLICA'S VERDICT. `row` (when given) keeps it on the folded moment as
-// `replica: { gaps, gated }` — small, derived, and enough for a reader of the index to see whether
-// the row's picture was ever checked; the Expected's own reading is reported but not stored twice,
-// because the moment already has one. Never throws: a replica that will not read is simply not noted.
+// ONE LANDED REPLICA'S VERDICT, kept on the folded moment as `gate: { gaps, gated }` — small,
+// derived, and enough for a reader of the index to see whether the row's picture was ever checked.
+// The Expected's own reading is reported but not stored twice, because the moment already has one.
+// Never throws: a replica that will not read is simply not noted.
+//
+// THE FIELD IS `gate`, NOT `replica` (fix round 1, C1 — the brief's own name, corrected here). At a
+// VALUE moment `replica` is already the FILE PATH (tools/evidence.mjs valueEvidencePaths), so writing
+// the verdict there replaced the path with an object — and `foldEvidence`'s keep-set then failed to
+// find that path among the entry's references and PRUNED the very file the run had just written.
 function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
   if (!rel) return
   try {
     const note = replicaNote(readFileSync(join(process.cwd(), rel), 'utf8'))
-    if (row) row.replica = { gaps: note.gaps, gated: note.gated }
+    if (row) row.gate = { gaps: note.gaps, gated: note.gated }
     for (const g of note.list) {
       gapLines.push(`replica gap · ${screen} ${id} b${beat} ${phase} · ${g.kind} ${g.what} at ${g.x},${g.y} ${g.w}×${g.h}`)
     }
