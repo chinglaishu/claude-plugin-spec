@@ -1502,3 +1502,74 @@ test('an element the page has faded out still holds its space — a placeholder,
   assert.ok(!r.html.includes('never'), 'and display:none takes no space, so it leaves nothing at all')
   assert.ok(r.html.includes('Renew passport'), 'what the page does show is untouched')
 })
+
+// ── FIX ROUND 1, C2/I4: THE CAPTURE'S OWN INSTRUMENT IS NOT THE APP'S DOM ────────────────────────
+// The tag-default probe frame (phase 3) is appended to the app's own body, and `serialise` walks a
+// LIVE childNodes list — so on any body-rooted capture it arrived as an extra last child, took the
+// `opacity:0 → placeholder` branch, and was written into the file as a 200×200 empty box. It is in
+// all 18 of this repo's init replicas. `spec/_layout-walk.mjs` has refused to measure our overlay
+// since it existed; the probe frame gets the same refusal, by id.
+//
+// This also covers I4: the stub's `defaultsFor` is now optional, so this is the one test that goes
+// through probeEnv / dropProbe rather than around them.
+function probeStub (body) {
+  const made = []
+  const frameBody = { childNodes: [], appendChild (n) { this.childNodes.push(n) } }
+  const frameDoc = {
+    body: frameBody,
+    createElementNS: (ns, tag) => ({
+      tagName: String(tag).toUpperCase(),
+      // the UA's own answer, uncontaminated by the app: a plain box model and no reset
+      cs: style({ display: tag === 'span' ? 'inline' : 'block', 'box-sizing': 'content-box', margin: '0px' }),
+      remove () { frameBody.childNodes = frameBody.childNodes.filter(x => x !== this) }
+    })
+  }
+  const frame = {
+    nodeType: 1,
+    id: '',
+    tagName: 'IFRAME',
+    namespaceURI: 'http://www.w3.org/1999/xhtml',
+    childNodes: [],
+    children: [],
+    parentElement: body,
+    cs: style({ opacity: '0', position: 'fixed' }),
+    pseudo: { '::before': style({}), '::after': style({}) },
+    getBoundingClientRect: () => ({ left: -99999, top: 0, width: 200, height: 200, right: -99799, bottom: 200, x: -99999, y: 0 }),
+    getAttribute: () => null,
+    hasAttribute: () => false,
+    getAttributeNames: () => [],
+    setAttribute (k, v) { if (k === 'style') this.styleAttr = v },
+    contentDocument: frameDoc,
+    contentWindow: { getComputedStyle: (n) => n.cs },
+    remove () { body.childNodes = body.childNodes.filter(x => x !== frame); body.children = body.children.filter(x => x !== frame) }
+  }
+  return {
+    made,
+    frame,
+    env: {
+      window: { innerWidth: 1440, innerHeight: 900 },
+      document: {
+        body,
+        baseURI: 'https://app.example/board',
+        styleSheets: [],
+        createElement: (tag) => { made.push(tag); return frame }
+      },
+      getComputedStyle: (node, pseudo) => (pseudo ? (node.pseudo || {})[pseudo] || style({}) : node.cs || style({}))
+      // NO defaultsFor: this is the path the real page takes
+    }
+  }
+}
+
+test('the capture\'s own probe frame never enters the replica, and the page is left as it was found', () => {
+  const word = el('h1', [20, 20, 200, 30], { text: 'All screens', cs: { 'font-size': '20px' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [word] })
+  body.appendChild = function (n) { this.childNodes.push(n); this.children.push(n); n.parentElement = this }
+  const p = probeStub(body)
+  const r = captureReplica({ target: null, ring: null, props: REPLICA_PROPS, env: p.env })
+  assert.equal(p.made[0], 'iframe', 'the defaults were probed in a frame, not in the app')
+  assert.ok(r.html.includes('All screens'), 'the app\'s own content is there')
+  assert.ok(!r.html.includes('data-plate="space"'), 'and the instrument is not: no 200x200 box')
+  assert.ok(!/iframe/i.test(r.html))
+  assert.deepEqual(body.childNodes.map(n => n.tagName), ['H1'], 'the probe frame was removed after the walk')
+  assert.ok(/font-size:20px/.test(r.html), 'the frame\'s defaults are what the diff was taken against')
+})

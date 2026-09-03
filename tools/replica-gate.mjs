@@ -51,6 +51,18 @@ const inRegion = (e, region) => !region || (
 // back out of the replica would gate on nothing a reader can see.
 const painted = (e) => !!(e.bg || e.bd || e.icon)
 
+// …and the other direction (fix round 1, C2). The gate used to ask only live → replica, so a box the
+// APP NEVER HAD was invisible to it — which is how the capture's own probe frame ended up drawn as a
+// 200x200 empty plate in eighteen committed replicas with every row reading `ok`. A replica box that
+// is PAINTED, big enough for a reader to see (EXTRA_MIN on both sides), inside the region, and that
+// no live element stands on is a picture of something that was not on screen.
+//
+// Two bounds keep it honest rather than noisy: the size floor, and the live walk's own CAP — a
+// skeleton that filled its 360 slots did not measure everything it saw, so its silence about a box
+// is not evidence the box was absent.
+const EXTRA_MIN = 40
+const WALK_CAP = 360
+
 /**
  * replicaGaps(live, replica, region, opts) → [{ kind, what, x, y, w, h }]
  *
@@ -96,6 +108,16 @@ export function replicaGaps (live, replica, region, opts = {}) {
     //    own word for the element (its `kind`); the skeleton records no tag name.
     if (painted(e)) {
       if (!repEls.some(r => sameBox(r, e))) add({ kind: 'missing-box', what: String(e.kind || 'box'), ...at })
+    }
+  }
+  // …and now the other way round (see EXTRA_MIN above)
+  if (liveEls.length < WALK_CAP) {
+    for (const r of repEls) {
+      if (out.length >= max) break
+      if (!painted(r) || r.w < EXTRA_MIN || r.h < EXTRA_MIN) continue
+      if (!inRegion(r, region)) continue
+      if (liveEls.some(e => sameBox(e, r))) continue
+      out.push({ kind: 'extra-box', what: String(r.kind || 'box'), x: r.x, y: r.y, w: r.w, h: r.h })
     }
   }
   return out

@@ -176,6 +176,11 @@ export function captureReplica (arg) {
     if (tr && tr.width >= 1 && tr.height >= 1) rb = { x: tr.left, y: tr.top, w: tr.width, h: tr.height }
   }
   const OVERLAY = '__specboard-focus'
+  // …and the capture's OWN INSTRUMENT (fix round 1, C2): the tag-default probe frame below is
+  // appended to the app's body, and `serialise` walks a LIVE childNodes list — so on a body-rooted
+  // capture it arrived as an extra last child and was written into the file as a 200x200 empty box,
+  // in all 18 of this repo's init replicas. It is refused by id, exactly like the overlay.
+  const PROBE = '__specboard-probe'
   if (!focusEl && rb && typeof doc.elementsFromPoint === 'function') {
     const cx = rb.x + rb.w / 2
     const cy = rb.y + rb.h / 2
@@ -277,6 +282,7 @@ export function captureReplica (arg) {
     probeTried = true
     try {
       const f = doc.createElement('iframe')
+      f.id = PROBE                                   // …and never serialised (fix round 1, C2)
       f.setAttribute('aria-hidden', 'true')
       f.setAttribute('tabindex', '-1')
       f.setAttribute('style', 'position:fixed;left:-99999px;top:0;width:200px;height:200px;border:0;opacity:0;pointer-events:none;z-index:-1')
@@ -473,7 +479,7 @@ export function captureReplica (arg) {
     // veil and the callout card — is painted INTO the page under test, so a capture whose scene root
     // reaches <body> would serialise it as part of the component. spec/_layout-walk.mjs has refused
     // to measure it since it existed; this is the same refusal, subtree included.
-    if (node.id === OVERLAY) return null
+    if (node.id === OVERLAY || node.id === PROBE) return null
     const tag = String(node.tagName || '').toLowerCase()
     if (!tag || has(DROP, tag)) return null
     const cs = styleOf(node)

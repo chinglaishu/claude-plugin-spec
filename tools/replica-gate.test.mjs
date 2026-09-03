@@ -206,3 +206,39 @@ test('replicaNote counts a truncated capture as a gap of its own — it can neve
   assert.equal(note.gaps, 1)
   assert.equal(note.list[0].kind, 'truncated')
 })
+
+// ── FIX ROUND 1, C2: the gate could not see a box the app never had ─────────────────────────────
+// The capture leaked its own probe frame into every body-rooted replica and `replicaGaps` was blind
+// to it, because it only ever asked live → replica. A big PAINTED box in the replica that no live
+// element stands on is a picture of something the app does not show — the same defect class, from
+// the other side.
+test('a painted box the app never had is an extra-box gap', () => {
+  const rep = REP()
+  rep.els.push({ x: 200, y: 300, w: 120, h: 80, kind: 'container', bg: '255,0,0' })
+  const gaps = replicaGaps(LIVE(), rep, REGION)
+  assert.equal(gaps.length, 1)
+  assert.equal(gaps[0].kind, 'extra-box')
+  assert.deepEqual([gaps[0].x, gaps[0].y, gaps[0].w, gaps[0].h], [200, 300, 120, 80])
+})
+
+test('extra-box is bounded: small boxes, unpainted boxes and anything outside the region are not gaps', () => {
+  const rep = REP()
+  rep.els.push({ x: 200, y: 300, w: 30, h: 80, kind: 'container', bg: '255,0,0' })      // under 40 wide
+  rep.els.push({ x: 200, y: 320, w: 120, h: 80, kind: 'container' })                    // paints nothing
+  rep.els.push({ x: 900, y: 700, w: 200, h: 200, kind: 'container', bg: '0,0,255' })    // outside the scene
+  assert.deepEqual(replicaGaps(LIVE(), rep, REGION), [])
+})
+
+test('extra-box holds its tongue when the live walk was at its own cap — it did not measure everything', () => {
+  const live = LIVE()
+  for (let i = 0; i < 360; i++) live.els.push({ x: 2000, y: 2000, w: 10, h: 10, kind: 'container' })
+  const rep = REP()
+  rep.els.push({ x: 200, y: 300, w: 120, h: 80, kind: 'container', bg: '255,0,0' })
+  assert.deepEqual(replicaGaps(live, rep, REGION), [], 'a full skeleton is not proof the app lacks a box')
+})
+
+test('a replica box that DOES stand on a live element is no gap — the ordinary case', () => {
+  const rep = REP()
+  rep.els.push({ x: 110, y: 280, w: 560, h: 14, kind: 'container', bg: '255,255,255' })  // the divider's own box
+  assert.deepEqual(replicaGaps(LIVE(), rep, REGION), [])
+})
