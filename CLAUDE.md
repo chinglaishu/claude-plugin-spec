@@ -101,7 +101,13 @@ spec/_replica.mjs            the REPLICA PAIR's capture (2026-09-03), one self-c
                              list and travels in through the arg. It returns BOTH halves of the row: `html` the ACTUAL (what
                              the app rendered) and `expected` the same tree cloned with the beat's `claims` applied — a wrong
                              value taking the requirement's word, a removed element restored from `lastRight`, a never-there
-                             one drawn as a marked placeholder; unit-tested in tools/replica.test.mjs on a stub DOM
+                             one drawn as a marked placeholder; unit-tested in tools/replica.test.mjs on a stub DOM.
+                             It pays only for what a reader can see (phase 3): inherited properties are diffed against the
+                             PARENT and the tag defaults are probed in a hidden about:blank frame — the environment the
+                             file is READ in, not the app whose own reset would otherwise be diffed away — an edge that
+                             paints nothing where the tag draws none is not a declaration, and anything the picture does
+                             not draw (faded, hidden, outside the scene root) becomes a placeholder that HOLDS ITS SPACE,
+                             subtree dropped, so nothing after it slides. A scrolled box's scroll is baked into the flow.
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
