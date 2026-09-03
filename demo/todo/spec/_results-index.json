@@ -6,7 +6,7 @@
       {
         "title": "Tsumiki — the full flow (R1–R8)",
         "ok": true,
-        "ms": 12138,
+        "ms": 13959,
         "error": null,
         "line": 23,
         "reqs": {
@@ -23,7 +23,7 @@
       {
         "title": "Container roll-up — composed (R1–R4, R8)",
         "ok": true,
-        "ms": 7943,
+        "ms": 9124,
         "error": null,
         "line": 94,
         "reqs": {
@@ -38,7 +38,7 @@
       {
         "title": "R9 (demo) — a deleted task should be reversible, keeping the count — INTENTIONALLY FAILING",
         "ok": false,
-        "ms": 6439,
+        "ms": 6604,
         "error": "Error: 1 step(s) failed:\n  ✗ \"R9 — A deleted task is reversible: the count holds until you confirm\": proves R9 — 3 claims failed: Pay the electricity bill — still listed, only archived: expected \"Pay the electricity bill\", got \"(missing)\" · An Undo appears on the archived task: expected \"Undo\", got \"(missing)\" · To do should still read 5 — a delete is only an archive: expected \"5\", got \"4\"",
         "line": 137,
         "reqs": {
@@ -46,7 +46,7 @@
         }
       }
     ],
-    "ranAt": 1788437035152,
+    "ranAt": 1788459447745,
     "srcHashes": {
       "todo": "c6d2278a7845"
     },
@@ -65,8 +65,8 @@
         "before": "spec/todo/evidence/R1.before.png",
         "after": "spec/todo/evidence/R1.after.png",
         "window": {
-          "from": 234,
-          "to": 1630
+          "from": 631,
+          "to": 2136
         },
         "beats": [
           {
@@ -79,8 +79,8 @@
             "replicaAfter": "spec/todo/evidence/R1.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R1.b1.after.expected.html",
             "window": {
-              "from": 234,
-              "to": 1630
+              "from": 631,
+              "to": 2136
             },
             "values": [
               {
@@ -89,7 +89,13 @@
                 "layout": "spec/todo/evidence/R1.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v1.expected.html",
-                "at": 546,
+                "at": 541,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "d1091beaf872c2f2",
+                  "trunc": false
+                },
                 "label": "The task typed into the Add box",
                 "claim": {
                   "expected": "Water the plants",
@@ -103,7 +109,13 @@
                 "layout": "spec/todo/evidence/R1.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v2.expected.html",
-                "at": 889,
+                "at": 926,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "1c42fe13bafb437b",
+                  "trunc": false
+                },
                 "label": "The Add button, now enabled",
                 "claim": {
                   "expected": "Add",
@@ -117,7 +129,13 @@
                 "layout": "spec/todo/evidence/R1.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R1.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R1.b1.v3.expected.html",
-                "at": 1295,
+                "at": 1373,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "10d8cfdf7f4d156d",
+                  "trunc": false
+                },
                 "label": "The new row — its checkbox empty, stamped added just now",
                 "claim": {
                   "expected": "added just now",
@@ -126,6 +144,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "30308ab5d7cd7dc0",
+              "trunc": false
+            },
             "focus": {
               "x": 271,
               "y": 125,
@@ -136,8 +160,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 268,
@@ -148,8 +172,8 @@
         "before": "spec/todo/evidence/R2.before.png",
         "after": "spec/todo/evidence/R2.after.png",
         "window": {
-          "from": 2017,
-          "to": 2715
+          "from": 2593,
+          "to": 3375
         },
         "beats": [
           {
@@ -162,8 +186,8 @@
             "replicaAfter": "spec/todo/evidence/R2.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R2.b1.after.expected.html",
             "window": {
-              "from": 2017,
-              "to": 2715
+              "from": 2593,
+              "to": 3375
             },
             "values": [
               {
@@ -173,6 +197,12 @@
                 "replica": "spec/todo/evidence/R2.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R2.b1.v1.expected.html",
                 "at": 291,
+                "gate": {
+                  "gaps": 1,
+                  "gated": true,
+                  "pin": "66790ed02cf47a32",
+                  "trunc": false
+                },
                 "label": "The renamed task, read back off its row",
                 "claim": {
                   "expected": "Water the office plants",
@@ -186,7 +216,13 @@
                 "layout": "spec/todo/evidence/R2.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R2.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R2.b1.v2.expected.html",
-                "at": 624,
+                "at": 654,
+                "gate": {
+                  "gaps": 1,
+                  "gated": true,
+                  "pin": "7857da6f3bd53292",
+                  "trunc": false
+                },
                 "label": "The stamp flipped to edited",
                 "claim": {
                   "expected": "edited just now",
@@ -195,6 +231,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 1,
+              "gated": true,
+              "pin": "3b567895bb93503d",
+              "trunc": false
+            },
             "focus": {
               "x": 321,
               "y": 739.5,
@@ -205,8 +247,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 7304,
@@ -217,8 +259,8 @@
         "before": "spec/todo/evidence/R3.before.png",
         "after": "spec/todo/evidence/R3.after.png",
         "window": {
-          "from": 3083,
-          "to": 3793
+          "from": 3796,
+          "to": 4565
         },
         "beats": [
           {
@@ -231,8 +273,8 @@
             "replicaAfter": "spec/todo/evidence/R3.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R3.b1.after.expected.html",
             "window": {
-              "from": 3083,
-              "to": 3793
+              "from": 3796,
+              "to": 4565
             },
             "values": [
               {
@@ -241,7 +283,13 @@
                 "layout": "spec/todo/evidence/R3.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R3.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R3.b1.v1.expected.html",
-                "at": 252,
+                "at": 257,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "476769440426e4f1",
+                  "trunc": false
+                },
                 "label": "The container ring — one of three done",
                 "claim": {
                   "expected": "1/3",
@@ -255,7 +303,13 @@
                 "layout": "spec/todo/evidence/R3.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R3.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R3.b1.v2.expected.html",
-                "at": 628,
+                "at": 635,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "f3810230dc959305",
+                  "trunc": false
+                },
                 "label": "Adding a sub-task grew the ring by itself — one of four",
                 "claim": {
                   "expected": "1/4",
@@ -264,6 +318,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "019e7a8ac5c25fc3",
+              "trunc": false
+            },
             "focus": {
               "x": 287,
               "y": 216.375,
@@ -274,8 +334,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 11151,
@@ -286,8 +346,8 @@
         "before": "spec/todo/evidence/R5.before.png",
         "after": "spec/todo/evidence/R5.after.png",
         "window": {
-          "from": 4165,
-          "to": 6374
+          "from": 5009,
+          "to": 7478
         },
         "beats": [
           {
@@ -300,8 +360,8 @@
             "replicaAfter": "spec/todo/evidence/R5.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R5.b1.after.expected.html",
             "window": {
-              "from": 4165,
-              "to": 4901
+              "from": 5009,
+              "to": 5772
             },
             "values": [
               {
@@ -310,7 +370,13 @@
                 "layout": "spec/todo/evidence/R5.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R5.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b1.v1.expected.html",
-                "at": 252,
+                "at": 244,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "ceec5f1cbdb0e325",
+                  "trunc": false
+                },
                 "label": "To do — 7 leaves of work left",
                 "claim": {
                   "expected": "7",
@@ -324,7 +390,13 @@
                 "layout": "spec/todo/evidence/R5.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R5.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b1.v2.expected.html",
-                "at": 641,
+                "at": 639,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "3c5839fe778e872b",
+                  "trunc": false
+                },
                 "label": "One sub-task done — the count drops by exactly one",
                 "claim": {
                   "expected": "6",
@@ -333,6 +405,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "41c6fb8530bebfda",
+              "trunc": false
+            },
             "focus": {
               "x": 980.796875,
               "y": 30,
@@ -352,8 +430,8 @@
             "replicaAfter": "spec/todo/evidence/R5.b2.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R5.b2.after.expected.html",
             "window": {
-              "from": 6050,
-              "to": 6374
+              "from": 7119,
+              "to": 7478
             },
             "values": [
               {
@@ -363,6 +441,12 @@
                 "replica": "spec/todo/evidence/R5.b2.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R5.b2.v1.expected.html",
                 "at": 248,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "3810a08b4b4a67d6",
+                  "trunc": false
+                },
                 "label": "The container is not a task — the count dropped by two, to 4",
                 "claim": {
                   "expected": "4",
@@ -371,6 +455,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "b454417616218fc1",
+              "trunc": false
+            },
             "focus": {
               "x": 980.796875,
               "y": 30,
@@ -381,8 +471,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 14985,
@@ -393,8 +483,8 @@
         "before": "spec/todo/evidence/R4.before.png",
         "after": "spec/todo/evidence/R4.after.png",
         "window": {
-          "from": 5267,
-          "to": 7079
+          "from": 6226,
+          "to": 8332
         },
         "beats": [
           {
@@ -407,8 +497,8 @@
             "replicaAfter": "spec/todo/evidence/R4.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R4.b1.after.expected.html",
             "window": {
-              "from": 5267,
-              "to": 5680
+              "from": 6226,
+              "to": 6681
             },
             "values": [
               {
@@ -418,6 +508,12 @@
                 "replica": "spec/todo/evidence/R4.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R4.b1.v1.expected.html",
                 "at": 322,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "4fcab8559f9744e5",
+                  "trunc": false
+                },
                 "label": "Every sub-task done — the ring is full",
                 "claim": {
                   "expected": "4/4",
@@ -426,6 +522,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "ab1279056b77b244",
+              "trunc": false
+            },
             "focus": {
               "x": 287,
               "y": 216.375,
@@ -445,8 +547,8 @@
             "replicaAfter": "spec/todo/evidence/R4.b2.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R4.b2.after.expected.html",
             "window": {
-              "from": 6732,
-              "to": 7079
+              "from": 7919,
+              "to": 8332
             },
             "values": [
               {
@@ -455,7 +557,13 @@
                 "layout": "spec/todo/evidence/R4.b2.v1.layout.json",
                 "replica": "spec/todo/evidence/R4.b2.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R4.b2.v1.expected.html",
-                "at": 287,
+                "at": 295,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "0f91341746f67e50",
+                  "trunc": false
+                },
                 "label": "Reopen one sub-task and the parent reopens",
                 "claim": {
                   "expected": "3/4",
@@ -464,6 +572,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "6be8754faaabda59",
+              "trunc": false
+            },
             "focus": {
               "x": 287,
               "y": 216.375,
@@ -474,8 +588,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 18803,
@@ -486,8 +600,8 @@
         "before": "spec/todo/evidence/R6.before.png",
         "after": "spec/todo/evidence/R6.after.png",
         "window": {
-          "from": 8134,
-          "to": 9295
+          "from": 9612,
+          "to": 10754
         },
         "beats": [
           {
@@ -500,10 +614,16 @@
             "replicaAfter": "spec/todo/evidence/R6.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R6.b1.after.expected.html",
             "window": {
-              "from": 8134,
-              "to": 9295
+              "from": 9612,
+              "to": 10754
             },
             "values": [],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "6a20c03a2eb0cfd7",
+              "trunc": false
+            },
             "focus": {
               "x": 16,
               "y": 235,
@@ -514,8 +634,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 27153,
@@ -526,8 +646,8 @@
         "before": "spec/todo/evidence/R7.before.png",
         "after": "spec/todo/evidence/R7.after.png",
         "window": {
-          "from": 9683,
-          "to": 10358
+          "from": 11198,
+          "to": 11996
         },
         "beats": [
           {
@@ -540,8 +660,8 @@
             "replicaAfter": "spec/todo/evidence/R7.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R7.b1.after.expected.html",
             "window": {
-              "from": 9683,
-              "to": 10358
+              "from": 11198,
+              "to": 11996
             },
             "values": [
               {
@@ -550,7 +670,13 @@
                 "layout": "spec/todo/evidence/R7.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R7.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R7.b1.v1.expected.html",
-                "at": 289,
+                "at": 302,
+                "gate": {
+                  "gaps": 1,
+                  "gated": true,
+                  "pin": "02626badeecfef0c",
+                  "trunc": false
+                },
                 "label": "Renew passport is past due — overdue",
                 "claim": {
                   "expected": "overdue",
@@ -564,7 +690,13 @@
                 "layout": "spec/todo/evidence/R7.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R7.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R7.b1.v2.expected.html",
-                "at": 620,
+                "at": 676,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "6f08c2503dd0c15c",
+                  "trunc": false
+                },
                 "label": "Pay the electricity bill is due today",
                 "claim": {
                   "expected": "today",
@@ -573,6 +705,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "737fed82d1cbe62b",
+              "trunc": false
+            },
             "focus": {
               "x": 808.046875,
               "y": 438.75,
@@ -583,8 +721,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 39088,
@@ -595,8 +733,8 @@
         "before": "spec/todo/evidence/R8.before.png",
         "after": "spec/todo/evidence/R8.after.png",
         "window": {
-          "from": 10747,
-          "to": 11817
+          "from": 12440,
+          "to": 13618
         },
         "beats": [
           {
@@ -609,8 +747,8 @@
             "replicaAfter": "spec/todo/evidence/R8.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R8.b1.after.expected.html",
             "window": {
-              "from": 10747,
-              "to": 11817
+              "from": 12440,
+              "to": 13618
             },
             "values": [
               {
@@ -619,7 +757,13 @@
                 "layout": "spec/todo/evidence/R8.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v1.expected.html",
-                "at": 293,
+                "at": 288,
+                "gate": {
+                  "gaps": 1,
+                  "gated": true,
+                  "pin": "eb032dddda9ea431",
+                  "trunc": false
+                },
                 "label": "The rename survived the reload",
                 "claim": {
                   "expected": "Water the office plants",
@@ -633,7 +777,13 @@
                 "layout": "spec/todo/evidence/R8.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v2.expected.html",
-                "at": 628,
+                "at": 667,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "97cc72b66213745a",
+                  "trunc": false
+                },
                 "label": "The container came back at 3 of 4",
                 "claim": {
                   "expected": "3/4",
@@ -647,7 +797,13 @@
                 "layout": "spec/todo/evidence/R8.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R8.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R8.b1.v3.expected.html",
-                "at": 993,
+                "at": 1076,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "2e7d5e4270e71378",
+                  "trunc": false
+                },
                 "label": "A completed stamp survived the reload",
                 "claim": {
                   "expected": "done",
@@ -656,6 +812,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "bf10f950f90f0c59",
+              "trunc": false
+            },
             "focus": {
               "x": 287,
               "y": 216.375,
@@ -666,8 +828,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z",
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z",
         "video": {
           "path": "spec/todo/evidence/ff896c9d6878.webm",
           "from": 42970,
@@ -678,8 +840,8 @@
         "before": "spec/todo/evidence/R9.before.png",
         "after": "spec/todo/evidence/R9.after.png",
         "window": {
-          "from": 182,
-          "to": 3931
+          "from": 228,
+          "to": 4072
         },
         "beats": [
           {
@@ -692,8 +854,8 @@
             "replicaAfter": "spec/todo/evidence/R9.b1.after.actual.html",
             "replicaExpectedAfter": "spec/todo/evidence/R9.b1.after.expected.html",
             "window": {
-              "from": 182,
-              "to": 3931
+              "from": 228,
+              "to": 4072
             },
             "values": [
               {
@@ -702,7 +864,13 @@
                 "layout": "spec/todo/evidence/R9.b1.v1.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v1.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v1.expected.html",
-                "at": 263,
+                "at": 257,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "77476a60f28d247e",
+                  "trunc": false
+                },
                 "label": "To do — five open leaves before the delete",
                 "claim": {
                   "expected": "5",
@@ -716,7 +884,13 @@
                 "layout": "spec/todo/evidence/R9.b1.v2.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v2.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v2.expected.html",
-                "at": 606,
+                "at": 600,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "cbbd0c9f57811595",
+                  "trunc": false
+                },
                 "label": "The open task about to be deleted — Pay the electricity bill",
                 "claim": {
                   "expected": "Pay the electricity bill",
@@ -730,7 +904,13 @@
                 "layout": "spec/todo/evidence/R9.b1.v3.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v3.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v3.expected.html",
-                "at": 1394,
+                "at": 1410,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "0db1e6f585e0a6c6",
+                  "trunc": false
+                },
                 "label": "Pay the electricity bill — still listed, only archived",
                 "claim": {
                   "expected": "Pay the electricity bill",
@@ -745,7 +925,13 @@
                 "layout": "spec/todo/evidence/R9.b1.v4.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v4.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v4.expected.html",
-                "at": 2737,
+                "at": 2751,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "04067ab15df1d658",
+                  "trunc": false
+                },
                 "label": "An Undo appears on the archived task",
                 "claim": {
                   "expected": "Undo",
@@ -760,7 +946,13 @@
                 "layout": "spec/todo/evidence/R9.b1.v5.layout.json",
                 "replica": "spec/todo/evidence/R9.b1.v5.actual.html",
                 "replicaExpected": "spec/todo/evidence/R9.b1.v5.expected.html",
-                "at": 3678,
+                "at": 3713,
+                "gate": {
+                  "gaps": 0,
+                  "gated": true,
+                  "pin": "7d30293a518e7e89",
+                  "trunc": false
+                },
                 "label": "To do should still read 5 — a delete is only an archive",
                 "claim": {
                   "expected": "5",
@@ -769,6 +961,12 @@
                 }
               }
             ],
+            "gate": {
+              "gaps": 0,
+              "gated": true,
+              "pin": "5d9e95f446014e7d",
+              "trunc": false
+            },
             "focus": {
               "x": 321,
               "y": 30,
@@ -779,8 +977,8 @@
             }
           }
         ],
-        "runId": "1788437035152",
-        "at": "2026-09-03T12:03:55.152Z"
+        "runId": "1788459447745",
+        "at": "2026-09-03T18:17:27.745Z"
       }
     }
   }
