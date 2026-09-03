@@ -340,8 +340,10 @@ test('the same-origin @font-face urls for a family the region actually uses ride
 // stylesheet almost always writes it RELATIVE ("../fonts/inter.woff2"). The absolute-only test threw
 // away precisely the same-origin case the rule exists to catch — so every self-hosted face was
 // silently dropped and the replica fell back to a system stack. Resolve against the document's base
-// first, then ask whether it is ours.
-test('a RELATIVE @font-face src resolves against the document base; a cross-origin one is skipped', () => {
+// first, then keep everything that can be FETCHED over http(s) — every origin, per the controller's
+// ruling: the human's default is "web fonts embedded once per screen" and a CDN face is the common
+// case, and the Node-side fetch (with its caps) plus the local commit under _fonts/ is what bounds it.
+test('a RELATIVE @font-face src resolves against the document base; a CDN one is listed too', () => {
   const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'Inter Tight, sans-serif' } })
   const root = el('div', [0, 0, 400, 40], { children: [word] })
   const body = el('body', [0, 0, 1440, 900], { children: [root] })
@@ -352,11 +354,26 @@ test('a RELATIVE @font-face src resolves against the document base; a cross-orig
   assert.deepEqual(r.fonts, [{ family: 'Inter Tight', url: 'https://app.example/fonts/inter.woff2' }],
     'the relative src became the page\'s own absolute url')
 
+  // …and a CDN face is LISTED (the controller's ruling, fix round 1 follow-up: the human's default is
+  // "web fonts embedded once per screen", and a CDN face is the common case). The Node-side fetch is
+  // what bounds it — 8 per pass, 2 MB, 3 s, 6 s for the lot — and it lands under _fonts/ like any
+  // other, so the served replica loads it from 'self'.
   const foreign = [{ cssRules: [
     { cssText: '@font-face { font-family: Inter Tight; src: url(https://fonts.gstatic.com/s/inter.woff2); }', style: style({ 'font-family': 'Inter Tight', src: 'url(https://fonts.gstatic.com/s/inter.woff2)' }) }
   ] }]
   const r2 = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: foreign, baseURI: 'https://app.example/app/board' }) })
-  assert.deepEqual(r2.fonts, [], 'a face from another origin is not the page\'s own to carry')
+  assert.deepEqual(r2.fonts, [{ family: 'Inter Tight', url: 'https://fonts.gstatic.com/s/inter.woff2' }],
+    'another origin\'s face is fetched Node-side and committed locally, so it is listed')
+
+  // …but only what actually resolves to something fetchable over http(s): an inline face needs no
+  // fetching, and neither of the other two is a url this harness will ever hand to page.request.
+  const junk = [{ cssRules: [
+    { cssText: '@font-face { font-family: Inter Tight; src: url(data:font/woff2;base64,AAAA); }', style: style({ 'font-family': 'Inter Tight', src: 'url(data:font/woff2;base64,AAAA)' }) },
+    { cssText: '@font-face { font-family: Inter Tight; src: url(blob:https://app.example/9f2); }', style: style({ 'font-family': 'Inter Tight', src: 'url(blob:https://app.example/9f2)' }) },
+    { cssText: '@font-face { font-family: Inter Tight; src: url(javascript:void(0)); }', style: style({ 'font-family': 'Inter Tight', src: 'url(javascript:void(0))' }) }
+  ] }]
+  const r3 = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: junk, baseURI: 'https://app.example/app/board' }) })
+  assert.deepEqual(r3.fonts, [], 'data:, blob: and javascript: are not faces to fetch')
 })
 
 // FIX ROUND 1, F2: the narration overlay is OURS, painted into the page under test — the ring, the

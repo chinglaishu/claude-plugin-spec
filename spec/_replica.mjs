@@ -395,14 +395,19 @@ export function captureReplica (arg) {
   // RESOLVED AGAINST THE DOCUMENT BASE FIRST (fix round 1, F1). The CSSOM hands a src back exactly
   // as it was authored, and a self-hosted face is almost always written RELATIVE
   // (`url(../fonts/x.woff2)`) — so the absolute-only test threw away precisely the same-origin case
-  // this rule exists to catch, and every self-hosting app fell back to a system stack. Resolve, then
-  // ask whether the origin is ours: same-origin is what the served replica's `font-src 'self' data:`
-  // will actually load, and a face from another origin is not the page's to carry.
+  // this rule exists to catch, and every self-hosting app fell back to a system stack.
+  //
+  // EVERY origin, not only ours (the controller's ruling, 2026-09-03): the human's default is "web
+  // fonts embedded once per screen", and a CDN face is the common case — a target set in a
+  // gstatic.com face would otherwise render in a fallback stack, which is a picture of a different
+  // app. Listing it is not fetching it: spec/_base.ts fetches Node-side under its own caps (8 per
+  // pass, 2 MB, 3 s each, 6 s for the lot) and the fold commits the bytes under `_fonts/`, so the
+  // served replica loads every face from 'self' and the file itself still carries no external URL.
+  // What is listed is only what can actually be fetched over http(s): a `data:` face needs no
+  // fetching, and `blob:` / `javascript:` are not urls this harness would ever hand to page.request.
   const fonts = []
   const base = String((doc && doc.baseURI) || (win && win.location && win.location.href) || '')
-  let ourOrigin = null
-  try { ourOrigin = base ? new URL(base).origin : null } catch { ourOrigin = null }
-  const sheets = (ourOrigin && doc.styleSheets && doc.styleSheets.length != null) ? doc.styleSheets : []
+  const sheets = (doc.styleSheets && doc.styleSheets.length != null) ? doc.styleSheets : []
   for (let i = 0; i < sheets.length && fonts.length < 8; i++) {
     let rules = null
     try { rules = sheets[i] && sheets[i].cssRules } catch { rules = null }
@@ -419,11 +424,12 @@ export function captureReplica (arg) {
         const m = /url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(u)
         if (!m) continue
         const raw = m[1].trim()
-        if (!raw || raw.slice(0, 5) === 'data:') continue      // an inline face needs no fetching
+        if (!raw) continue
         let url = ''
         try {
           const abs = new URL(raw, base)
-          if (abs.origin !== ourOrigin) continue                // another origin's face is not ours to carry
+          // http(s) only — that also drops data: (nothing to fetch), blob: and javascript:
+          if (abs.protocol !== 'http:' && abs.protocol !== 'https:') continue
           url = abs.href
         } catch { continue }                                    // an src that will not resolve is not a url
         if (!fonts.some(f => f.url === url)) fonts.push({ family, url })
