@@ -1149,7 +1149,16 @@ async function gateReplica (page: Page, rep: any): Promise<any | null> {
     // capture fix able to clear it. The capture already marks the element `data-ring="1"`; resolving
     // it inside the frame makes both walks answer the focus question the same way.
     const ringed: any = await raceTimeout(fr.$('[data-ring]') as any, 400).catch(() => null)
-    const skel = await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: ringed }), 1200)
+    // …AND THE RING IS THE ONE THE LIVE SKELETON WAS MEASURED WITH (task 3b, 2026-09-04). `focus` is
+    // geometric, so a walk given a different ring flags a different set of elements: handing the
+    // replica's own `[data-ring]` element over let the walk re-derive the ring from it, and every
+    // geometric focus flag in the pair then disagreed (board R22, `missing-focus 15` on a replica
+    // that is otherwise gap-free — measured by re-rendering the committed file and re-walking it
+    // both ways). `ringFixed` keeps the skeleton's own ring; the target still forces the focus flag
+    // on the ringed element itself, which is fix round 1's I2.
+    const lr = LAST_LAYOUT && LAST_LAYOUT.ring ? LAST_LAYOUT.ring : null
+    const ring = lr ? { x: lr.x, y: lr.y, width: lr.w, height: lr.h } : LAST_BOX
+    const skel = await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring, target: ringed, ringFixed: true }), 1200)
     if (ringed) { try { await ringed.dispose() } catch { /* already gone */ } }
     return skel
   } catch { return null } finally {

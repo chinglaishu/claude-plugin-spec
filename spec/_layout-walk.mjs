@@ -50,7 +50,15 @@ export function snapLayoutWalk (arg) {
   // button reading "Publishing…", the button re-laid out to "Activate", and the skeleton carried the
   // stale box beside an element measured somewhere else. When the caller hands the element over, its
   // current box is the ring — the photograph is re-painted to the same box before the frame.
-  if (target && typeof target.getBoundingClientRect === 'function') {
+  // …UNLESS THE CALLER ALREADY KNOWS IT (task 3b, 2026-09-04). `focus` is geometric — everything
+  // mostly inside the ring and not far larger than it — so the two walks the gate compares agree
+  // only while they are given the SAME ring. The live walk is right to take the ring from the
+  // element handed over; the gate's walk of the REPLICA hands over the file's own `[data-ring]`
+  // element (so the replica cannot be left to rediscover the ring geometrically, fix round 1's I2),
+  // and re-deriving from it produced a different ring and a different set of focus flags: board R22
+  // came back `missing-focus 15` on a replica that was otherwise gap-free. A caller walking a
+  // rendering against a skeleton passes `ringFixed` and gets the ring it measured with.
+  if (target && !(arg && arg.ringFixed) && typeof target.getBoundingClientRect === 'function') {
     try {
       const tr = target.getBoundingClientRect()
       if (tr && tr.width >= 1 && tr.height >= 1) rb = { x: tr.left, y: tr.top, w: tr.width, h: tr.height }
@@ -81,6 +89,23 @@ export function snapLayoutWalk (arg) {
   // everything under it. Mirrors the walk's OWN existing rule for its budget ("no slot for an
   // unpainted wrapper — no bg, no border, no words, no icon"): an occluder needs an opaque background
   // (alpha ≥ 0.98) or to BE an image/video/canvas — nothing less blocks what a human still sees.
+  // …AND THE PIXEL AT A POINT IS PAINTED BY THE NEAREST PAINTED ELEMENT IN THE HIT'S OWN CHAIN
+  // (task 3b, 2026-09-04). `elementFromPoint` answers with the DEEPEST element there, which is very
+  // often a transparent wrapper inside an opaque panel — this board's own detail view is exactly
+  // that shape. Asking only whether the HIT itself paints read "not covered" for the home cards
+  // behind an opened detail, so the skeleton measured a page the photograph does not show and the
+  // replica (whose scene root is the panel) could never picture: board R5, `missing-box button
+  // 209x87`, sixteen of them. The climb stops at the first ancestor that also CONTAINS the element
+  // under test — its paint is behind that element, not over it — so a page's own painted shell never
+  // occludes its own contents.
+  const paintsOver = (hit, el) => {
+    let n = hit
+    for (let d = 0; n && d < 40; d++, n = n.parentElement) {
+      if (n.contains && n !== hit && n.contains(el)) return false
+      if (paints(n)) return true
+    }
+    return false
+  }
   const paints = (n) => {
     if (!n) return false
     const t = String(n.tagName || '').toUpperCase()
@@ -405,7 +430,7 @@ export function snapLayoutWalk (arg) {
       if (hit && hit !== el) {
         const related = (el.contains && el.contains(hit)) || (hit.contains && hit.contains(el))
         const inOverlay = hit.id === OVERLAY || (hit.closest && hit.closest('#' + OVERLAY))
-        if (!related && !inOverlay && paints(hit)) {
+        if (!related && !inOverlay && paintsOver(hit, el)) {
           // …and the replica capture is told, so it plates exactly what this walk refused to measure
           // (task 3b, item 2 — board R20's lightbox: the reader behind it came back as extra boxes)
           if (report) report.occluded.push(el)

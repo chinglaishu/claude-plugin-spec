@@ -498,3 +498,54 @@ test('…but a box a real distance off-screen still costs nothing', () => {
   const L = walk(body, null)
   assert.ok(!L.els.some(e => /Below the fold|Off to the right/.test(e.text || '')), 'the skip is a hair, not a page')
 })
+
+// ── THE REPLICA IS WALKED AGAINST THE SKELETON'S OWN RING (task 3b, 2026-09-04) ─────────────────
+// `focus` is GEOMETRIC — everything mostly inside the ring and not far larger than it — so the two
+// walks the gate compares only agree while they are given the SAME ring. The live walk takes its
+// ring from the element handed over ("the ring is where the element is now"), which is right when
+// the page is being measured; the gate's walk of the REPLICA hands over the file's own
+// `[data-ring]` element, so it re-derived a different ring and every geometric focus flag in the
+// pair disagreed — board R22 came back `missing-focus 15` on a replica that was otherwise perfect.
+// A caller that already KNOWS the ring says so, and it is not re-derived.
+test('ringFixed keeps the ring the caller was measured with, even with a target handed over', () => {
+  const leaf = el('span', [500, 300, 100, 20], { text: 'Live', cs: painted })
+  const box = el('div', [480, 290, 140, 40], { children: [leaf], cs: painted })
+  const other = el('div', [100, 700, 200, 40], { text: 'Elsewhere', cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [box, other] })
+  const ring = { x: 480, y: 290, width: 140, height: 40 }
+  const free = snapLayoutWalk({ ring, target: other, env: env(body) })
+  assert.deepEqual(free.ring, { x: 100, y: 700, w: 200, h: 40 }, 'without the flag the handed element still decides')
+  const fixed = snapLayoutWalk({ ring, target: other, env: env(body), ringFixed: true })
+  assert.deepEqual(fixed.ring, { x: 480, y: 290, w: 140, h: 40 }, 'with it, the ring is the one the caller measured')
+  assert.ok(fixed.els.some(e => e.text === 'Live' && e.focus), 'so the geometric focus flags land where the live walk put them')
+})
+
+// ── AN OCCLUDER PAINTS SOMEWHERE IN ITS OWN CHAIN (task 3b, 2026-09-04) ────────────────────────
+// `elementFromPoint` answers with the DEEPEST element at the point, which is very often a
+// transparent wrapper inside an opaque panel — the board's own detail view is exactly that. Asking
+// only whether the HIT paints therefore read "not covered" for the home cards sitting behind an
+// opened detail, so the skeleton measured them while the replica (whose scene root is the panel)
+// could never picture them: board R5, `missing-box button 209x87` sixteen times over. The pixel at
+// that point is painted by the nearest painted element in the HIT's own chain — so that is what is
+// asked, up to the first ancestor that also contains the element under test, whose paint is behind
+// it rather than over it.
+test('a transparent wrapper inside an opaque panel still occludes what the panel covers', () => {
+  const card = el('div', [100, 300, 200, 40], { text: 'Home card', cs: painted })
+  const inner = el('div', [0, 0, 1440, 900], { text: 'Detail', cs: { backgroundColor: 'rgba(0, 0, 0, 0)' } })
+  const panel = el('section', [0, 0, 1440, 900], { children: [inner], cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [card, panel] })
+  const L = walk(body, null, null, null, () => inner)
+  assert.ok(!L.els.some(e => /Home card/.test(e.text || '')), 'the card behind the panel is not measured: ' + JSON.stringify(L.els))
+  assert.ok(L.els.some(e => /Detail/.test(e.text || '')), 'and the panel itself is')
+})
+
+test('a shared painted ANCESTOR is behind an element, never over it', () => {
+  // the page's own painted shell contains everything, including the element being measured — asking
+  // "does anything in the hit's chain paint" without this stop would call every page occluded
+  const leaf = el('span', [100, 300, 200, 20], { text: 'A value', cs: { backgroundColor: 'rgba(0, 0, 0, 0)' } })
+  const sibling = el('div', [100, 300, 200, 20], { cs: { backgroundColor: 'rgba(0, 0, 0, 0)' } })
+  const shell = el('main', [0, 0, 1440, 900], { children: [leaf, sibling], cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [shell] })
+  const L = walk(body, null, null, null, () => sibling)
+  assert.ok(L.els.some(e => e.text === 'A value'), 'nothing here covers anything: ' + JSON.stringify(L.els))
+})
