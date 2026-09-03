@@ -1140,3 +1140,165 @@ test('fix round 3: the R9-shaped sequence — ok counter, delete the row, missin
     'nothing anywhere needed rewriting — every fact this base ever carried for this ring box was already correct')
   assert.ok(rE.html.includes('To do 4') && !rE.html.includes('Pay the electricity bill'), 'the Actual is still the app\'s own wrong picture')
 })
+
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// FIX ROUND 4 (2026-09-03) — the two findings task-2-rereview.md left open.
+//
+// N1 · THE EXPECTED'S RING IS THE CURRENT MOMENT'S RING, ON EVERY PATH. The in-place branch takes a
+// BASE's own children wholesale and `data-ring` rides in with them (IMPORT_ATTRS), so the Expected
+// rang whatever the base rang while the root's `data-ring-box` and the Actual rang THIS moment's
+// element — 6 of the demo's 33 harvested pairs pointed their two halves at different things, and
+// phase 4 draws ONE ring over BOTH pictures. The ring is now re-pointed by GEOMETRY after the claim
+// is applied: the node whose own `data-b` box matches the current ring box ≥60% BOTH ways, every
+// other `data-ring` stripped; failing that the leaf the claim itself landed on; failing that NO ring
+// at all and `ring: "none"` on this moment's `data-claims` entry — an honest gap, never a ring on
+// something this moment never rang.
+//
+// N2 · `locateByBox`'s CASE (c) IS DELETED. "Neither `got` nor `expected` under the ring, so take the
+// largest-overlap leaf" is a guess, and a base's `data-b` boxes are an OLDER layout: a row deleted
+// above shifts every row below it up, so the claim's ring box lands on the base's PREVIOUS occupant
+// and rewrites the very row the requirement says must still be listed. A false Expected is worse than
+// an honest gap, so a claim whose ring box holds no text leaf carrying `got` or `expected` is flagged
+// `unlocated` and NOT applied. Candidates are TEXT LEAVES only — a control/plate node's `data-b` is
+// there for the board's sake and must never win a claim.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+
+// the elements carrying data-ring="1", with their clean text — what phase 4 will draw its one ring on
+function ringed (html) {
+  const out = []
+  const re = /<([a-zA-Z0-9-]+)([^>]*\sdata-ring="1")([^>]*)>/g
+  let m
+  while ((m = re.exec(html))) {
+    const from = m.index + m[0].length
+    const close = html.indexOf('</' + m[1] + '>', from)
+    const inner = close < 0 ? html.slice(from) : html.slice(from, close)
+    out.push(inner.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim())
+  }
+  return out
+}
+
+test('fix round 4 (N1): an in-place base whose OLD ring was the task title rings THIS moment\'s counter, and only it', () => {
+  const ttl = el('span', [30, 5, 200, 18], { text: 'Pay the electricity bill', cs: { color: 'rgb(2,8,23)' } })
+  const row = el('li', [0, 0, 300, 28], { children: [ttl] })
+  const nextRow = el('li', [0, 30, 300, 28], { children: [el('span', [30, 35, 200, 18], { text: 'Call the dentist' })] })
+  const ul = el('ul', [0, 0, 300, 58], { children: [row, nextRow] })
+  const counter = el('div', [500, 0, 80, 24], { text: 'To do 5', cs: { color: 'rgb(180,0,0)' } })
+  const head = el('div', [500, 0, 200, 40], { children: [counter] })
+  const main = el('div', [0, 0, 700, 400], { children: [ul, head] })
+  const body = el('body', [0, 0, 1440, 900], { children: [main] })
+
+  // the BASE: captured with the ring on the ROW's title — the scene root is `main`, so it holds the
+  // counter too, and the base's own `data-ring` sits on the <li>
+  const rowRing = { x: 0, y: 0, width: 300, height: 28 }
+  const before = capC(body, { target: row, ring: rowRing }).html
+  assert.deepEqual(ringed(before), ['Pay the electricity bill'], 'the base rings the row: ' + ringed(before))
+
+  // THIS moment: the app's counter reads one too few, and the ring is on the COUNTER
+  const counter2 = el('div', [500, 0, 80, 24], { text: 'To do 4', cs: { color: 'rgb(180,0,0)' } })
+  const head2 = el('div', [500, 0, 200, 40], { children: [counter2] })
+  const main2 = el('div', [0, 0, 700, 400], { children: [head2] })
+  const body2 = el('body', [0, 0, 1440, 900], { children: [main2] })
+  const counterRing = { x: 500, y: 0, width: 80, height: 24 }
+  const claim = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false, ring: counterRing }
+  const r = capC(body2, {
+    target: counter2, ring: counterRing,
+    claim, claims: [claim], base: before, minRegion: rowRing
+  })
+  assert.ok(r.expected.includes('Pay the electricity bill'), 'the base WAS patched in place: ' + r.expected)
+  assert.deepEqual(ringed(r.expected), ['To do 5'],
+    'the Expected rings THIS moment\'s counter, and nothing else: ' + r.expected)
+  assert.deepEqual(ringed(r.html), ['To do 4'], 'and the Actual rings the same element: ' + r.html)
+})
+
+test('fix round 4 (N1): no node matches the current ring — the claim\'s own leaf takes it', () => {
+  // a `missing` claim locates its row by TEXT (the base genuinely still holds it), so a claim leaf
+  // exists even where NO `data-b` box lies under the current ring — the restored row is what the
+  // Expected rings, rather than nothing at all.
+  const mkRow = (title, y) => el('li', [0, y, 300, 28], {
+    children: [el('span', [30, y + 5, 200, 18], { text: title, cs: { color: 'rgb(2,8,23)' } })]
+  })
+  const ul = el('ul', [0, 0, 300, 60], { children: [mkRow('Buy milk', 0), mkRow('Water the plants', 30)] })
+  const main = el('div', [0, 0, 700, 400], { children: [ul] })
+  const body = el('body', [0, 0, 1440, 900], { children: [main] })
+  const before = capC(body, {}).html
+
+  // the app dropped the row AND the list collapsed: the ring the check was made under is now over
+  // empty space, so nothing in the base matches it geometrically
+  const ul2 = el('ul', [0, 0, 300, 28], { children: [mkRow('Buy milk', 0)] })
+  const main2 = el('div', [0, 0, 700, 400], { children: [ul2] })
+  const body2 = el('body', [0, 0, 1440, 900], { children: [main2] })
+  const ring = { x: 0, y: 200, width: 300, height: 28 }
+  const claim = { label: 'still listed', expected: 'Water the plants', got: '(missing)', ok: false, missing: true, ring }
+  const r = capC(body2, { ring, claim, claims: [claim], base: before })
+  assert.ok(/data-claim="restored"/.test(r.expected), r.expected)
+  assert.deepEqual(ringed(r.expected), ['Water the plants'],
+    'the ring falls back to the leaf the claim itself landed on: ' + r.expected)
+})
+
+test('fix round 4 (N1): nothing to ring — no data-ring at all, and the moment says ring "none"', () => {
+  const label = el('span', [10, 10, 50, 20], { text: 'Version' })
+  const btn = el('button', [0, 0, 130, 36], { children: [label] })
+  const bar = el('div', [0, 0, 640, 400], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const before = capC(body, { target: btn, ring: { x: 0, y: 0, width: 130, height: 36 } }).html
+
+  // the current ring is INSIDE the base's own region but over empty space: no leaf carries the claim,
+  // and no `data-b` box lies under the ring either
+  const ring = { x: 300, y: 300, width: 50, height: 20 }
+  const claim = { label: 'the track word', expected: 'Published', got: 'Draft', ok: false, ring }
+  const r = capC(body, { ring, claim, claims: [claim], base: before })
+  assert.ok(r.expected.includes('Version'), 'the base was patched in place, unchanged: ' + r.expected)
+  assert.deepEqual(ringed(r.expected), [], 'no ring at all — never one on something this moment never rang: ' + r.expected)
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unlocated, true, 'and the claim is honestly unlocated: ' + JSON.stringify(json))
+  assert.equal(json[0].ring, 'none', 'the moment says its Expected carries no ring: ' + JSON.stringify(json))
+})
+
+// ── N2: the re-review's own repro — a deleted row shifts the rows below it up ────────────────────
+test('fix round 4 (N2): the claim\'s ring box lands on the base\'s PREVIOUS occupant — unlocated, never a rewrite', () => {
+  const mkRow = (title, y) => el('li', [0, y, 300, 28], {
+    children: [el('span', [30, y + 5, 200, 18], { text: title, cs: { color: 'rgb(2,8,23)' } })]
+  })
+  const ul = el('ul', [0, 0, 300, 90], { children: [mkRow('Buy milk', 0), mkRow('Water the plants', 30), mkRow('Call the dentist', 60)] })
+  const main = el('div', [0, 0, 700, 400], { children: [ul] })
+  const body = el('body', [0, 0, 1440, 900], { children: [main] })
+  const before = capC(body, {}).html                        // whole-body base — its region holds every ring
+
+  // the app deleted row 2, so "Call the dentist" has moved UP into y=30 — where the base still has
+  // "Water the plants". The claim is rung on the dentist row, at its NEW position.
+  const shiftedUl = el('ul', [0, 0, 300, 60], { children: [mkRow('Buy milk', 0), mkRow('Call the dentist', 30)] })
+  const main2 = el('div', [0, 0, 700, 400], { children: [shiftedUl] })
+  const body2 = el('body', [0, 0, 1440, 900], { children: [main2] })
+  const ring = { x: 0, y: 30, width: 300, height: 28 }
+  const claim = { label: 'the due row', expected: 'Call the dentist today', got: 'Call the dentist', ok: false, ring }
+  const r = capC(body2, { target: shiftedUl.children[1], ring, claim, claims: [claim], base: before })
+
+  const rendered = r.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.ok(!rendered.includes('Call the dentist today'),
+    'the base\'s OWN row was never rewritten with a claim made somewhere else: ' + rendered)
+  assert.ok(rendered.includes('Water the plants'), 'the row the requirement still lists is intact: ' + rendered)
+  assert.ok(!/data-claim=/.test(rendered), 'nothing was marked at all — an honest gap: ' + rendered)
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unlocated, true, 'flagged: ' + JSON.stringify(json))
+})
+
+test('fix round 4 (N2): a text-less control under the ring never wins a claim', () => {
+  // an empty input carries `data-control` and therefore its own `data-b` — the board's, not a claim's
+  const input = el('input', [10, 10, 200, 24], { attrs: {}, value: '' })
+  const field = el('div', [0, 0, 300, 44], { children: [input] })
+  const bar = el('div', [0, 0, 640, 400], { children: [field] })
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const before = capC(body, { target: field, ring: { x: 0, y: 0, width: 300, height: 44 } }).html
+  assert.ok(before.includes('data-control="input"') && /data-control="input"[^>]*data-b=/.test(before),
+    'the control does carry a box: ' + before)
+
+  const ring = { x: 0, y: 0, width: 300, height: 44 }
+  const claim = { label: 'the typed name', expected: 'Ada', got: 'Grace', ok: false, ring }
+  const r = capC(body, { target: field, ring, claim, claims: [claim], base: before })
+  const rendered = r.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.ok(!rendered.includes('Ada'), 'the control was never given the expected text: ' + rendered)
+  assert.ok(!/data-claim=/.test(rendered), 'and nothing was marked: ' + rendered)
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unlocated, true, 'flagged: ' + JSON.stringify(json))
+})

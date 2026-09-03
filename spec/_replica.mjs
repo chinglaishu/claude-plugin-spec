@@ -571,14 +571,24 @@ export function captureReplica (arg) {
     const leafArea = Math.max(1, leafBox.w * leafBox.h)
     return (iw * ih) / leafArea
   }
-  // candidates: text leaves whose `data-b` lies ≥60% inside `ringBox`. Pick (a) one whose clean
-  // text contains `got`, else (b) one whose clean text ALREADY contains `expected` (nothing to
-  // change — mark it and stop), else (c) the largest-overlap leaf. `null` — no leaf lies inside the
-  // ring box at all — is the caller's cue to flag the claim `unlocated`, never to guess elsewhere.
+  // candidates: TEXT LEAVES — an element whose children are all text and whose words are not empty —
+  // whose `data-b` lies ≥60% inside `ringBox`. A `data-control`/`data-plate` node carries a box too
+  // (the board places it by that box), but it is not something a claim's words can be read off, so it
+  // is never a candidate (fix round 4, N2). Pick (a) one whose clean text contains `got`, else (b) one
+  // whose clean text ALREADY contains `expected` (nothing to change — mark it and stop). There is no
+  // (c): FIX ROUND 4 (N2) DELETED THE LARGEST-OVERLAP FALLBACK. A base's `data-b` boxes are an OLDER
+  // layout — delete a row and every row under it moves up, so the claim's own ring box lands on the
+  // base's PREVIOUS occupant — and rewriting that leaf with the requirement's word overwrites the very
+  // row the requirement says must still be listed (task-2-rereview.md, NEW-2). `null` — nothing under
+  // the ring carries `got` or `expected` — is the caller's cue to flag the claim `unlocated`: a false
+  // Expected is worse than an honest gap.
+  // (named apart from `serialise`'s own local `isTextLeaf` boolean — same rule, a predicate here)
+  const isWordedLeaf = (n) => !isText(n) && n.kids.length > 0 && n.kids.every(isText) && !!clean(textOf(n))
   const locateByBox = (rootNode, ringBox, got, want) => {
     if (!ringBox) return null
     const candidates = []
-    for (const e of elemsIn(rootNode).filter(isLeaf)) {
+    for (const e of elemsIn(rootNode)) {
+      if (!isWordedLeaf(e)) continue
       const b = attrBox(e)
       if (!b) continue
       const f = overlapFrac(b, ringBox)
@@ -593,9 +603,7 @@ export function captureReplica (arg) {
       const byWant = firstMatch(candidates, c => clean(textOf(c.node)).indexOf(want) >= 0)
       if (byWant) return { node: byWant.node, already: true }
     }
-    let best = candidates[0]
-    for (const c of candidates.slice(1)) if (c.frac > best.frac) best = c
-    return { node: best.node, already: false }
+    return null
   }
   // is `n` (or an ancestor of it, short of `rootNode`) already marked by SOME claim? A row this
   // same beat already touched is not "the spot's current occupant" — it is the thing a later
@@ -656,8 +664,10 @@ export function captureReplica (arg) {
     if (c.ok === true) {
       // rule 1: the leaf the check read, marked — the board tints it, nothing is rewritten
       const found = got ? scopedLeaf(rootNode, x => clean(textOf(x)).indexOf(got) >= 0) : null
-      if (found) { setAttr(found.leaf, 'data-claim', 'ok'); for (const [k, v] of claimOf) setAttr(found.leaf, k, v) }
-      return
+      if (!found) return null
+      setAttr(found.leaf, 'data-claim', 'ok')
+      for (const [k, v] of claimOf) setAttr(found.leaf, k, v)
+      return found.leaf
     }
     if (c.missing === true) {
       // rules 3/4: the element the app did not show. The base ALREADY HAS it — that is the entire
@@ -671,11 +681,11 @@ export function captureReplica (arg) {
         const row = climbToRow(src, rootNode)
         setAttr(row, 'data-claim', 'restored')
         for (const [k, v] of claimOf) setAttr(row, k, v)
-        return
+        return row
       }
       const made = E('span', [['data-claim', 'new'], ...claimOf], [T(want)])
       insertNearestBelow(rootNode, ringBoxOf(c.ring), made)
-      return
+      return made
     }
     // rule 2 (fix round 3): the wrong value is located by GEOMETRY — the claim's OWN ring box —
     // never by searching the tree for `got`: a base is a scene that was RIGHT, so it never shows the
@@ -683,12 +693,12 @@ export function captureReplica (arg) {
     // when nothing matched is GONE — a claim with no leaf inside its own ring box is flagged
     // `unlocated`, in `data-claims`, and never applied anywhere else.
     const loc = locateByBox(rootNode, ringBoxOf(c.ring), got, want)
-    if (!loc) { if (idx != null) unlocated.add(idx); return }
+    if (!loc) { if (idx != null) unlocated.add(idx); return null }
     if (loc.already) {
       // case (b): the leaf ALREADY reads the requirement's word — mark it, change nothing
       setAttr(loc.node, 'data-claim', 'fixed')
       for (const [k, v] of claimOf) setAttr(loc.node, k, v)
-      return
+      return loc.node
     }
     swapLeaf(loc.node, got, want)
     // …and on every worded wrapper up to the tree root (a row whose own text reads "To do 4" around
@@ -697,6 +707,56 @@ export function captureReplica (arg) {
     setAttr(loc.node, 'data-claim', 'fixed')
     setAttr(loc.node, 'data-claim-got', got)
     for (const [k, v] of claimOf) setAttr(loc.node, k, v)
+    return loc.node
+  }
+
+  // ── FIX ROUND 4 (N1): THE EXPECTED'S RING IS THE CURRENT MOMENT'S RING, ON EVERY PATH ──────────
+  // The in-place branch takes a BASE's own children wholesale and `data-ring` rides in with them
+  // (IMPORT_ATTRS — round 1 needed the base's ring to scope its text search), so the Expected rang
+  // whatever the base rang while the root's `data-ring-box` and the Actual rang THIS moment's
+  // element: on the demo's own harvest 6 of 33 pairs pointed their two halves at different things
+  // (task-2-rereview.md, NEW-1), and phase 4 draws ONE ring over BOTH pictures. So after the claim is
+  // applied the ring is re-pointed by GEOMETRY, the same `data-b` boxes rule 2 locates a claim with:
+  // the node whose own box matches the current ring box ≥60% BOTH ways (the ring around the node AND
+  // the node inside the ring — a one-way test would drill into a small word inside a wide button).
+  // Failing that, the leaf the claim itself landed on (a `missing` claim locates by text, so it can
+  // have a leaf where no box matches). Failing THAT, no `data-ring` at all and `ring: 'none'` on this
+  // moment's `data-claims` entry — an honest gap, never a ring on something this moment never rang.
+  const mutualFrac = (a, b) => {
+    const ix0 = Math.max(a.x, b.x); const iy0 = Math.max(a.y, b.y)
+    const ix1 = Math.min(a.x + a.w, b.x + b.w); const iy1 = Math.min(a.y + a.h, b.y + b.h)
+    const inter = Math.max(0, ix1 - ix0) * Math.max(0, iy1 - iy0)
+    return Math.min(inter / Math.max(1, a.w * a.h), inter / Math.max(1, b.w * b.h))
+  }
+  // every OTHER `data-ring` goes; the keeper's own attribute is left exactly where it already sat, so
+  // a tree that already rings the right element serialises byte-for-byte as it did before
+  const clearRingExcept = (n, keep) => {
+    if (isText(n)) return
+    if (n !== keep) n.attrs = n.attrs.filter(a => a[0] !== 'data-ring')
+    for (const k of n.kids) clearRingExcept(k, keep)
+  }
+  // returns 'none' when the Expected honestly carries no ring, else null
+  const retargetRing = (rootNode, ringBox, claimNode, rootIsRing) => {
+    let best = rootIsRing ? rootNode : null      // the scene root IS this moment's ringed element
+    // this moment rang NOTHING (a capture with no target and no ring): the Actual carries no
+    // `data-ring` either, so a base's stale one goes and the two halves still agree — that is not a
+    // gap to report, it is a moment with no ring
+    if (!best && !ringBox) { clearRingExcept(rootNode, null); return null }
+    if (!best) {
+      let bestF = 0
+      for (const e of elemsIn(rootNode)) {
+        if (e === rootNode) continue
+        const b = attrBox(e)
+        if (!b) continue
+        const f = mutualFrac(b, ringBox)
+        if (f >= 0.6 && f > bestF) { best = e; bestF = f }
+      }
+    }
+    if (!best && claimNode && !isText(claimNode)) best = claimNode
+    clearRingExcept(rootNode, best)
+    if (!best) return 'none'
+    setAttr(best, 'data-ring', '1')
+    return null
   }
 
   // ── a BASE, parsed back into nodes and re-minted into THIS capture's own sheet ───────────────────
@@ -937,7 +997,10 @@ export function captureReplica (arg) {
     [...rootAttrs, ['data-replica-side', 'expected'], ['data-claims', '[]'], ['style', 'position:relative']],
     expectedKids)
   link(claimRoot)
-  if (CLAIM) applyOneClaim(claimRoot, CLAIM, CLAIMS.length ? CLAIMS.length - 1 : null)
+  const curIdx = CLAIM ? (CLAIMS.length ? CLAIMS.length - 1 : null) : null
+  const claimNode = CLAIM ? applyOneClaim(claimRoot, CLAIM, curIdx) : null
+  // …and only now is the ring re-pointed at THIS moment's element (fix round 4, N1)
+  const ringNote = retargetRing(claimRoot, rb, claimNode, built.attrs.some(a => a[0] === 'data-ring'))
   // `data-claims` is EVERY claim of the beat so far, in order — informational only, for the board to
   // read. It is never applied to anything by text search; `unlocated` (fix round 3) is the ONLY
   // other thing that can happen to a wrong-value claim here, and it means exactly what it says — no
@@ -949,7 +1012,9 @@ export function captureReplica (arg) {
     got: String((c && c.got) == null ? '' : c.got),
     ok: !!(c && c.ok === true),
     ...(c && c.missing === true ? { missing: true } : {}),
-    ...(unlocated.has(idx) ? { unlocated: true } : {})
+    ...(unlocated.has(idx) ? { unlocated: true } : {}),
+    // fix round 4 (N1): this moment's Expected could not carry the ring at all — said, never hidden
+    ...(ringNote && curIdx === idx ? { ring: ringNote } : {})
   }))
   for (const a of claimRoot.attrs) if (a[0] === 'data-claims') a[1] = JSON.stringify(claimList)
   const expected = '<style>' + sheet(RULES.length) + '</style>\n' + ser(claimRoot)
