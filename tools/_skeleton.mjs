@@ -72,6 +72,10 @@ export const FILES = [
   // has nothing to call and every run degrades to silent, even with piper installed.
   'tools/narrate.mjs', 'tools/narrate-run.mjs',
   'tools/crawl.mjs', 'tools/ship-record.mjs', 'tools/staff.mjs', 'tools/proof-integrity.mjs',
+  // THE REPLICA'S GUARD (phase 3, 2026-09-03), pure: what "the replica looks like the app" means —
+  // read by the in-page gate at capture time (spec/_base.ts) AND by `npm run proof mirror`
+  // (tools/proof-integrity.mjs), so a scaffolded project cannot have one without the other.
+  'tools/replica-gate.mjs',
   // pure: maps _config.json's signIn + named authProfiles into Playwright projects (imported by
   // playwright.board.ts). Unit-tested in tools/auth-projects.test.mjs.
   'tools/auth-projects.mjs',

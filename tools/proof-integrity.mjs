@@ -19,6 +19,10 @@ import { readFileSync, writeFileSync, existsSync, copyFileSync, unlinkSync, read
 // that draws one (renderWireframe's per-frame report, mirrorGaps, layoutHash), so the gate and the
 // renderer can never drift apart. That drift IS the defect this gate exists to catch.
 import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from './viz.mjs'
+// …and the replica's own guard, for the same reason: what "the replica looks like the app" MEANS is
+// decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
+// this CLI alike. A gate that restates the capture's rules drifts from them.
+import { replicaAttrs, claimGaps, textOf } from './replica-gate.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -189,6 +193,81 @@ export function checkMirrors (spec = 'spec') {
   return rows
 }
 
+// ── THE REPLICA GATE (phase 3, 2026-09-03) ───────────────────────────────────────────────────────
+// The same guard, on the other picture. Since the human's 2026-09-03 decision the row's two pictures
+// are HTML replicas of the app's own component — `<id>.b<n>.<phase>.actual.html` (what the app
+// rendered) and `.expected.html` (what the requirement says it should have). Both are claims, and a
+// claim nobody measures stops being true silently; this refuses one that:
+//
+//   1. was NEVER GATED — no `data-replica-layout`. The in-page gate (spec/_base.ts snapReplica)
+//      renders the replica back in a hidden iframe and walks it with the very walk that measured the
+//      live page; a file with no pin is one that walk never checked. Honest, and refused.
+//   2. the HARVEST HAS MOVED PAST — the pin no longer hashes the skeleton beside it on disk.
+//   3. the IN-PAGE WALK already found a gap in (or that ran out of bytes: `data-replica-truncated`).
+//   4. (ACTUAL only) whose WORDS are not the skeleton's: every text-bearing element the live walk
+//      measured inside the replica's own region must appear in the replica's text. This is the rule
+//      that needs no DOM, so deleting a text node from a committed replica fails the gate here.
+//   5. (EXPECTED only) that does not carry a FAILED CLAIM's own expected value.
+//
+// The EXPECTED is deliberately NOT geometry-gated — see tools/replica-gate.mjs's header: its root
+// carries this moment's region while its body may be an earlier moment's base tree, and two frames
+// in one file cannot be measured against one live skeleton.
+const REPLICA_FILE = /^(.+)\.b(\d+)\.(before|after|v\d+)\.(actual|expected)\.html$/
+export function checkReplicas (spec = 'spec') {
+  const rows = []
+  if (!existsSync(spec)) return rows
+  const screens = readdirSync(spec, { withFileTypes: true })
+    .filter(d => d.isDirectory() && !d.name.startsWith('_')).map(d => d.name).sort()
+  for (const screen of screens) {
+    const dir = join(spec, screen, 'evidence')
+    if (!existsSync(dir)) continue
+    for (const f of readdirSync(dir).filter(n => REPLICA_FILE.test(n)).sort()) {
+      const m = REPLICA_FILE.exec(f)
+      const file = join(dir, f)
+      const row = { screen, id: m[1], file, side: m[4], ok: true, why: '', gaps: [] }
+      rows.push(row)
+      let html = ''
+      try { html = readFileSync(file, 'utf8') } catch { html = '' }
+      const a = replicaAttrs(html)
+      const why = []
+      if (a.truncated) row.gaps.push({ kind: 'truncated', what: 'the capture ran out of bytes', x: 0, y: 0, w: 0, h: 0 })
+      if (!a.layout) why.push('not gated: no data-replica-layout — nothing walked this replica back')
+      for (const g of a.gaps) row.gaps.push(g)
+      // the skeleton this moment was measured with, one name away (tools/evidence.mjs's own rule)
+      const layPath = file.replace(/\.(actual|expected)\.html$/, '.layout.json')
+      let lay = null
+      if (existsSync(layPath)) { try { lay = JSON.parse(readFileSync(layPath, 'utf8')) } catch { lay = null } }
+      if (!lay) {
+        why.push('no layout skeleton beside it — the replica claims a harvest that is gone')
+      } else {
+        if (a.layout && a.layout !== layoutHash(lay, null)) {
+          why.push('the layout pin has moved: the harvest is newer than the replica')
+        }
+        if (row.side === 'actual') {
+          // rule 4 — the words, with no DOM: the skeleton's own text, inside the replica's region
+          const text = textOf(html)
+          const reg = a.region
+          for (const e of (Array.isArray(lay.els) ? lay.els : [])) {
+            if (row.gaps.length >= 12) break
+            const t = String(e.text == null ? '' : e.text).replace(/\s+/g, ' ').trim()
+            if (!t) continue
+            if (e.w < 12 || e.h < 12) continue                  // the walk's own floor
+            if (reg && !(e.x >= reg.x - 1.5 && e.y >= reg.y - 1.5 &&
+              e.x + e.w <= reg.x + reg.w + 1.5 && e.y + e.h <= reg.y + reg.h + 1.5)) continue
+            if (text.indexOf(t) < 0) row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
+          }
+        }
+      }
+      // rule 5 — the Expected's own gate: what the requirement asked for must be in it
+      if (row.side === 'expected') for (const g of claimGaps(textOf(html), a.claims)) row.gaps.push(g)
+      if (row.gaps.length) why.unshift(`the replica is missing what the harvest measured — ${gapSummary(row.gaps)}`)
+      row.ok = !row.gaps.length && !why.length
+      row.why = why.join('; ')
+    }
+  }
+  return rows
+}
+
 // CLI --------------------------------------------------------------------------------------------
 // Thin, not unit-tested (mirrors tools/staff.mjs / tools/update.mjs: the pure derivation above is
 // what proof-integrity.test.mjs exercises).
@@ -259,7 +338,25 @@ function runMirror () {
     console.log('(node tools/viz-derive.mjs <screen>); if the gaps survive the redraw, the renderer has')
     console.log('stopped drawing something the app measured — fix that, never the guard.')
   }
-  process.exit(bad ? 1 : 0)
+  // …and the REPLICAS, in the same format after the drawings (phase 3, 2026-09-03): the row's other
+  // picture is gated the same way, and for the same reason.
+  const reps = checkReplicas('spec')
+  let repBad = false
+  for (const r of reps) {
+    if (!r.ok) repBad = true
+    console.log(`${r.screen} · ${r.id} · ${r.side} · ${r.ok ? 'ok' : 'REPLICA GAP'}${r.why ? ' · ' + r.why : ''}`)
+    for (const g of r.gaps.slice(0, 12)) {
+      console.log(`    ${g.kind} · ${g.what} · at ${g.x},${g.y} ${g.w}×${g.h} (viewport px)`)
+    }
+    if (r.gaps.length > 12) console.log(`    …and ${r.gaps.length - 12} more`)
+  }
+  if (!reps.length) console.log('no replicas — nothing to gate yet')
+  if (repBad) {
+    console.log('\nA committed replica is not the picture the harvest measured. Re-harvest the screen; if')
+    console.log('the gaps survive it, the CAPTURE has stopped carrying something the app shows — fix that,')
+    console.log('never the tolerance and never the guard.')
+  }
+  process.exit(bad || repBad ? 1 : 0)
 }
 
 function runPerturb (screen) {

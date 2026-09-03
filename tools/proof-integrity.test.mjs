@@ -133,3 +133,156 @@ test('the mirror gate ignores an archetype drawing — only a wireframe claims t
     assert.deepEqual(checkMirrors(root), [])
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+// ── THE REPLICA GATE (phase 3, 2026-09-03) ───────────────────────────────────────────────────────
+// The same guard, on the other picture. A committed .actual.html is a claim about what the app
+// rendered and a .expected.html a claim about what the requirement asked for; both stop being true
+// silently. checkReplicas refuses a replica that was never gated in the page, one the harvest has
+// moved past, one the in-page walk found a gap in, one whose words are not the skeleton's beside it,
+// and an Expected that does not carry a failed claim's own value.
+import { layoutHash } from './viz.mjs'
+import { checkReplicas } from './proof-integrity.mjs'
+
+const RLAY = {
+  w: 1440,
+  h: 900,
+  ring: { x: 120, y: 150, w: 90, h: 30 },
+  els: [
+    { x: 110, y: 110, w: 200, h: 24, kind: 'heading', text: 'All tasks' },
+    { x: 120, y: 150, w: 90, h: 30, kind: 'button', text: 'Archive', focus: true },
+    { x: 120, y: 200, w: 300, h: 20, kind: 'text', text: 'Pay the electricity bill' },
+    { x: 900, y: 600, w: 200, h: 20, kind: 'text', text: 'Outside the scene root' }
+  ]
+}
+const REP_ROOT = (side, body, extra = '') =>
+  '<!-- specboard replica-1 · todo:R1 b1 after · ' + side + ' -->\n<style>.rep .r1{color:red}</style>\n' +
+  '<div class="rep r0" data-replica-kit="replica-1" data-replica-region="100 100 600 300"' +
+  ' data-replica-side="' + side + '"' + extra + ' data-replica-layout="' + layoutHash(RLAY, null) + '"' +
+  ' data-replica-gaps="[]" style="position:relative">' + body + '</div>\n'
+const ACTUAL_BODY = '<h1 class="r1">All tasks</h1><button class="r1">Archive</button>' +
+  '<div class="r1">Pay the electricity bill</div>'
+const CLAIMS = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
+  '&quot;got&quot;:&quot;&quot;,&quot;ok&quot;:false}]'
+
+const repFixture = (mutate = {}) => {
+  const root = join(tmpdir(), 'replica-gate-' + Math.random().toString(36).slice(2))
+  mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
+  const lay = mutate.layout ? mutate.layout(structuredClone(RLAY)) : RLAY
+  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'), JSON.stringify(lay))
+  const actual = REP_ROOT('actual', ACTUAL_BODY)
+  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'),
+    mutate.actual ? mutate.actual(actual) : actual)
+  const expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"')
+  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.expected.html'),
+    mutate.expected ? mutate.expected(expected) : expected)
+  return root
+}
+
+test('the replica gate passes a gated pair whose pin, words and claims all still hold', () => {
+  const root = repFixture()
+  try {
+    const rows = checkReplicas(root).sort((a, b) => a.file.localeCompare(b.file))
+    assert.equal(rows.length, 2)
+    assert.deepEqual(rows.map(r => r.ok), [true, true], rows.map(r => r.why).join(' | '))
+    assert.equal(rows[0].screen, 'todo')
+    assert.equal(rows[0].id, 'R1')
+    assert.match(rows[0].file, /R1\.b1\.after\.actual\.html$/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('deleting a text node from a replica fixture fails the gate — the plan\'s own acceptance', () => {
+  const root = repFixture({ actual: h => h.replace('<div class="r1">Pay the electricity bill</div>', '') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].kind, 'missing-text')
+    assert.match(rows[0].gaps[0].what, /electricity/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('the node text gate reads the skeleton INSIDE the region only', () => {
+  // "Outside the scene root" is measured on the live page but lies outside the replica's own region,
+  // so the replica never carried it and must not be failed for it (the fixture above passes) — but a
+  // word that moves INTO the region has to be there
+  const root = repFixture({ layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].kind, 'missing-text')
+    assert.match(rows[0].gaps[0].what, /Outside the scene root/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('the replica gate refuses one the harvest has moved past — the layout pin', () => {
+  const root = repFixture({ layout: l => { l.els[1] = { ...l.els[1], w: 140 }; return l } })
+  try {
+    const rows = checkReplicas(root)
+    assert.deepEqual(rows.map(r => r.ok), [false, false])
+    assert.match(rows[0].why, /pin has moved/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('an UNGATED replica is refused — a picture nobody measured is not a proven likeness', () => {
+  const root = repFixture({ actual: h => h.replace(/ data-replica-layout="[^"]*"/, '') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.match(rows[0].why, /not gated/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('an Expected that does not carry a failed claim\'s own value is refused', () => {
+  // the BODY loses the words (the claim in data-claims still asks for them — that is the point)
+  const root = repFixture({ expected: h => h.replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1">Renew passport</div>') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].kind, 'missing-claim')
+    assert.match(rows[0].gaps[0].what, /electricity/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('the Expected is NOT geometry-gated — its content may be an older moment\'s layout', () => {
+  // the rereview's deferred question: an Expected's root carries THIS moment's region while its body
+  // can be a base's tree. Deleting a word the live skeleton measured is a gap on the ACTUAL only.
+  const root = repFixture({ expected: h => h.replace('<h1 class="r1">All tasks</h1>', '') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
+    assert.equal(rows[0].ok, true, rows[0].why)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a gap the IN-PAGE walk already found rides on the file and is reported here', () => {
+  const gaps = '[{&quot;kind&quot;:&quot;missing-box&quot;,&quot;what&quot;:&quot;row&quot;,&quot;x&quot;:1,&quot;y&quot;:2,&quot;w&quot;:3,&quot;h&quot;:4}]'
+  const root = repFixture({ actual: h => h.replace('data-replica-gaps="[]"', 'data-replica-gaps="' + gaps + '"') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].kind, 'missing-box')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a TRUNCATED replica is a gap — a picture that ran out of bytes cannot be a likeness', () => {
+  const root = repFixture({ actual: h => h.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit') })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].kind, 'truncated')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a replica whose skeleton is gone is refused, not quietly passed', () => {
+  const root = repFixture()
+  try {
+    rmSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'))
+    const rows = checkReplicas(root)
+    assert.deepEqual(rows.map(r => r.ok), [false, false])
+    assert.match(rows[0].why, /no layout skeleton/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a spec with no replicas yields no rows', () => {
+  const root = join(tmpdir(), 'replica-gate-empty-' + Math.random().toString(36).slice(2))
+  mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
+  try { assert.deepEqual(checkReplicas(root), []) } finally { rmSync(root, { recursive: true, force: true }) }
+})
