@@ -375,6 +375,22 @@ function harvestEvidence (harvest, ranAt) {
 // a drawing is not proof, so a derive that fails is logged and the run stands (rule 3 cuts the other
 // way here: never fake a green, and never fake a RED either).
 //
+// WHICH screens (2026-09-03). Not the test FILES' screens — a COMPOSED FLOW crosses screens, so one
+// run of spec/init/test.spec.ts lands fresh skeletons on the BOARD screen (its flow tags board:R1
+// and board:R9) while byScreen names only init. Deriving byScreen alone left the board's drawings a
+// harvest behind their own sources on every such run, and `npm run proof mirror` said exactly that:
+// "the layout pin has moved: the harvest is newer than the drawing". A drawing is a by-product of
+// the harvest it is drawn from, so the screens to redraw are the ones the EVIDENCE landed on, union
+// the ones that ran. Pure, unit-tested in tools/reporter-derive.test.mjs.
+export function screensToDraw (byScreen, evidence) {
+  const out = new Set(Object.keys(byScreen || {}))
+  for (const qid of Object.keys(evidence || {})) {
+    const i = String(qid).indexOf(':')
+    if (i > 0) out.add(String(qid).slice(0, i))     // never invent a screen for an unqualified id
+  }
+  return [...out]
+}
+
 // Pure seam, exported for tools/reporter-derive.test.mjs: `exec` is execFileSync in production.
 const VIZ_DERIVE = fileURLToPath(new URL('../tools/viz-derive.mjs', import.meta.url))
 export function deriveSchematics (screens, exec) {
@@ -566,7 +582,7 @@ export default class ResultsIndexReporter {
       // …and the DRAWINGS from that same harvest, so the schematic beside a requirement is never a
       // pass behind the frames beside it. Deterministic output: a re-derive whose geometry did not
       // move rewrites nothing (viz-derive compares bodies).
-      deriveSchematics(Object.keys(byScreen), execFileSync)
+      deriveSchematics(screensToDraw(byScreen, evidence), execFileSync)
 
       // Record a "recent runs" entry — but ONLY when the SERVER did not start this run. A board-started
       // run sets BOARD_RECORD and the server writes a richer entry itself (with per-test shots), so

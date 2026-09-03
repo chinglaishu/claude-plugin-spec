@@ -49,3 +49,23 @@ test('a derive that throws is swallowed — a drawing is a by-product, never a r
   assert.doesNotThrow(() => assert.equal(deriveSchematics(['board'], exec), false))
   assert.equal(exec.calls.length, 1, 'it really was attempted')
 })
+
+// ── 2026-09-03: WHICH screens the fold must draw. A COMPOSED FLOW crosses screens — the init flow
+// tags board:R1 and board:R9 — so one run of `spec/init/test.spec.ts` lands FRESH evidence on the
+// board screen while byScreen (keyed by the test FILE's screen) names only init. The board's
+// drawings were then a harvest behind their own skeletons on every such run, and `npm run proof
+// mirror` went red with "the layout pin has moved: the harvest is newer than the drawing" — found
+// by running exactly that one file (rule 4: the guard was right, the reporter was wrong).
+// The screens to draw are the test files' screens UNION the screens the evidence actually landed on.
+import { screensToDraw } from '../spec/_results-reporter.mjs'
+
+test('a cross-screen tag makes the OTHER screen a screen to draw', () => {
+  assert.deepEqual(
+    screensToDraw({ init: {} }, { 'init:R1': {}, 'board:R1': {}, 'board:R9': {} }).sort(),
+    ['board', 'init'], 'the board harvested fresh skeletons, so the board must be redrawn')
+})
+test('a screen that ran but harvested nothing is still drawn, and nothing is invented', () => {
+  assert.deepEqual(screensToDraw({ init: {}, board: {} }, {}).sort(), ['board', 'init'])
+  assert.deepEqual(screensToDraw({}, {}), [])
+  assert.deepEqual(screensToDraw({ init: {} }, { R1: {} }), ['init'], 'an unqualified id names no screen')
+})
