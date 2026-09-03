@@ -1382,3 +1382,39 @@ test('a 1200-element viewport of one font and one colour fits in under 60 KB, un
   assert.equal((r.html.match(/font-family/g) || []).length, 1,
     'the app\'s stack is written ONCE, not once per element — the 197 KB dojostack replicas were this')
 })
+
+test('the page\'s own @font-face RULES ride out beside the urls — the gate renders the replica in the app\'s type', () => {
+  // phase 3, deliverable B: the in-page gate mounts the replica in a hidden iframe and walks it with
+  // the SAME walk that measured the live page. A frame set in a fallback stack lays its words out at
+  // different widths, so every text box would drift and the gate would report a page of false gaps —
+  // the faces travel with the capture so the frame sets the type the app sets.
+  const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'Inter Tight, sans-serif' } })
+  const root = el('div', [0, 0, 400, 40], { children: [word] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const used = '@font-face { font-family: Inter Tight; src: url(https://app.example/fonts/inter.woff2); }'
+  const unused = '@font-face { font-family: Ghost Mono; src: url(https://app.example/fonts/ghost.woff2); }'
+  const sheets = [{ cssRules: [
+    { cssText: used, style: style({ 'font-family': 'Inter Tight', src: 'url(https://app.example/fonts/inter.woff2)' }) },
+    { cssText: unused, style: style({ 'font-family': 'Ghost Mono', src: 'url(https://app.example/fonts/ghost.woff2)' }) },
+    { cssText: '.a{color:red}', style: style({}) }
+  ] }]
+  const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets, baseURI: 'https://app.example/board' }) })
+  assert.deepEqual(r.fontFaces, [used, unused], 'every readable @font-face rule, whether or not this region uses it')
+  assert.deepEqual(r.fonts, [{ family: 'Inter Tight', url: 'https://app.example/fonts/inter.woff2' }],
+    'what gets FETCHED and committed is still only the family the region uses')
+  assert.ok(!r.html.includes('@font-face'), 'and none of it enters the replica FILE — no external url, as ever')
+})
+
+test('the @font-face harvest is bounded — 64 rules, 64 KB, and an unreadable sheet is skipped', () => {
+  const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'X' } })
+  const root = el('div', [0, 0, 400, 40], { children: [word] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const rules = []
+  for (let i = 0; i < 90; i++) {
+    rules.push({ cssText: '@font-face { font-family: F' + i + '; src: url(https://app.example/f' + i + '.woff2); }', style: style({ 'font-family': 'F' + i, src: 'url(https://app.example/f' + i + '.woff2)' }) })
+  }
+  const blocked = { get cssRules () { throw new Error('cross-origin') } }
+  const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: [blocked, { cssRules: rules }], baseURI: 'https://app.example/board' }) })
+  assert.equal(r.fontFaces.length, 64)
+  assert.ok(r.fontFaces.join('').length <= 64000)
+})
