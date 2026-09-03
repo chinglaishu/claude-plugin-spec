@@ -1,11 +1,11 @@
 import { writeFileSync, copyFileSync, mkdirSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { join, relative, basename } from 'node:path'
+import { join, relative, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, parseEvidenceAttachment, parseLayoutAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -249,13 +249,20 @@ function harvestEvidence (harvest, ranAt) {
     // own window, so a per-beat row can show, pace and seek its own proof. Best-effort throughout.
     for (const b of (r.beats || [])) {
       const bp = beatEvidencePaths(scr, rid, b.n)
-      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, window: b.window || null, values: [] }
+      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaBefore: null, replicaAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
         if (b[phase] && landFrame(b[phase], bp[phase])) row[phase] = bp[phase]
       }
       for (const key of ['layoutBefore', 'layoutAfter']) {
         if (!b[key]) continue
         // a plain copy: JSON has nothing to re-encode
+        try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
+      }
+      // …and the ACTUAL REPLICA of each end of the beat (2026-09-03): the app's own sanitised DOM,
+      // copied as it was captured — an html file has nothing to re-encode either, and re-encoding
+      // the picture the Expected view is built from is exactly how a mirror drifts.
+      for (const key of ['replicaBefore', 'replicaAfter']) {
+        if (!b[key]) continue
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
@@ -266,10 +273,13 @@ function harvestEvidence (harvest, ranAt) {
       // untimed, and the loop falls back to equal holds.
       for (const v of (b.values || [])) {
         const vp = valueEvidencePaths(scr, rid, b.n, v.k)
-        const got = { k: v.k, frame: null, layout: null, at: null }
+        const got = { k: v.k, frame: null, layout: null, replica: null, at: null }
         if (v.frame && landFrame(v.frame, vp.frame)) got.frame = vp.frame
         if (v.layout) {
           try { copyFileSync(v.layout, join(process.cwd(), vp.layout)); got.layout = vp.layout } catch { /* dropped */ }
+        }
+        if (v.replica) {
+          try { copyFileSync(v.replica, join(process.cwd(), vp.replica)); got.replica = vp.replica } catch { /* dropped */ }
         }
         if (got.layout) {
           try {
@@ -327,6 +337,22 @@ function harvestEvidence (harvest, ranAt) {
     // requirement the primary did not cover has r.srcVideo null and stays video-less (button hidden);
     // a CLI run resolves everything to '_novideo', so this is a no-op and the fold's carry keeps
     // whatever stands committed. Best-effort: a failed encode leaves the entry video-less.
+    // THE SCREEN'S WEB FONTS (2026-09-03): the faces the replica is set in, committed content-named
+    // under evidence/_fonts/ so many requirements of one screen share one file (foldEvidence
+    // refcounts them per screen, exactly like the video). A face that will not copy is simply not
+    // recorded — the replica then renders in the fallback stack, which is honest, not a fake green.
+    const faces = []
+    for (const f of (r.fonts || [])) {
+      if (!f || !f.hash || !f.ext || !f.src) continue
+      const rel = fontEvidencePath(scr, f.hash, f.ext)
+      const dest = join(process.cwd(), rel)
+      try {
+        mkdirSync(join(process.cwd(), paths.dir, '_fonts'), { recursive: true })
+        if (!existsSync(dest)) copyFileSync(f.src, dest)
+        if (!faces.some(x => x.hash === f.hash)) faces.push({ hash: f.hash, ext: f.ext, family: f.family || '', path: rel })
+      } catch { /* dropped, never fatal */ }
+    }
+    if (faces.length) entry.fonts = faces
     if (r.srcVideo) {
       const rel = commitVideo(r.srcVideo, scr, cache)
       if (rel) entry.video = { path: rel, from: entry.window ? entry.window.from : null, to: entry.window ? entry.window.to : null }
@@ -450,14 +476,31 @@ export default class ResultsIndexReporter {
       // rule coverage uses, so an `x:R3` tag's evidence lands on screen x. Folded run-wide: the
       // last capture of a requirement wins.
       const winCache = {}
+      // THE WEB FONTS this test fetched (2026-09-03), collected before the frames so every
+      // requirement the test harvested can name them: they are per PAGE, not per requirement, and
+      // the fold commits each face once per screen. Content-named by the harness, so a face already
+      // committed lands on itself.
+      const testFonts = []
+      for (const a of atts) {
+        const f = parseFontAttachment(a.name)
+        if (!f || !a.path) continue
+        const ext = (extname(a.path) || '').replace(/^\./, '').toLowerCase()
+        if (!ext) continue
+        if (!testFonts.some(x => x.hash === f.hash)) testFonts.push({ hash: f.hash, family: f.family, ext, src: a.path })
+      }
+      const fontedQids = new Set()
       for (const a of atts) {
         const tag = parseEvidenceAttachment(a.name)
         // …and the LAYOUT skeleton of the same phase (2026-08-28): the same id, the same beat, the
         // same capture, folded onto the same per-recording entry so the schematic is drawn from the
         // geometry of the frames it is shown beside.
         const lay = tag ? null : parseLayoutAttachment(a.name)
-        if ((!tag && !lay) || !a.path) continue
-        const t = tag || lay
+        // …and the ACTUAL REPLICA of that same moment (2026-09-03): the app's own sanitised DOM, the
+        // picture the board's Expected view is built from. Named and folded exactly like the pair
+        // above, so the three always describe one capture of one moment.
+        const rep = (tag || lay) ? null : parseReplicaAttachment(a.name)
+        if ((!tag && !lay && !rep) || !a.path) continue
+        const t = tag || lay || rep
         const qid = qualify(t.id, screen)
         // captures are kept PER recording (not last-wins): resolvePrimaryVideo then picks each
         // screen's primary as the recording COVERING THE MOST requirements — so a shorter flow that
@@ -478,9 +521,10 @@ export default class ResultsIndexReporter {
         if (vk) {
           const k = Number(vk[1])
           const vslot = ((slot.values ||= {})[k] ||= {})
-          const field = tag ? 'frame' : 'layout'
+          const field = tag ? 'frame' : (lay ? 'layout' : 'replica')
           if (!vslot[field]) vslot[field] = a.path
           h.latestKey = key
+          if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
           continue
         }
         // FIRST-wins per beat, never last: a chain checked more times than it has beats clamps its
@@ -489,7 +533,8 @@ export default class ResultsIndexReporter {
         // "To do reads 4" beside frames reading 5. The storyboard beat is the first check that
         // performs it; later same-beat checks still count for coverage, their frames are extra.
         if (tag) { if (!slot[tag.phase]) slot[tag.phase] = a.path }
-        else { const f = lay.phase === 'before' ? 'layoutBefore' : 'layoutAfter'; if (!slot[f]) slot[f] = a.path }
+        else if (lay) { const f = lay.phase === 'before' ? 'layoutBefore' : 'layoutAfter'; if (!slot[f]) slot[f] = a.path }
+        else { const f = rep.phase === 'before' ? 'replicaBefore' : 'replicaAfter'; if (!slot[f]) slot[f] = a.path }
         // this BEAT's own span in the recording: the k-th `proves <id>` step of the test is the
         // k-th checkReq call, which is the k-th beat this capture saw (the step NAME is untouched —
         // coverage still derives from it). First-wins here too, same reason as the frames.
@@ -497,6 +542,7 @@ export default class ResultsIndexReporter {
         const k = cap.order.indexOf(n)
         if (!slot.window) slot.window = wins[k] || wins[wins.length - 1] || null
         h.latestKey = key
+        if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
       }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.
