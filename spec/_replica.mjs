@@ -1318,27 +1318,35 @@ export function captureReplica (arg) {
       if (typeof rule.type === 'number' && rule.type !== 5) continue
       const faceText = String(rule.cssText || '')
       if (!/^\s*@font-face/i.test(faceText)) continue
-      if (fontFaces.length < 64 && faceBytes + faceText.length <= 64000) {
-        fontFaces.push(faceText)
-        faceBytes += faceText.length
-      }
-      if (fonts.length >= 8) continue
       const family = gp(rule.style, 'font-family').trim().replace(/^["']|["']$/g, '')
-      if (!family || !families.has(family.toLowerCase())) continue
       const src = gp(rule.style, 'src')
-      const urls = String(src).match(/url\(\s*["']?([^"')]+)["']?\s*\)/gi) || []
-      for (const u of urls) {
+      // EVERY url this rule names, resolved ABSOLUTE (phase 4a). The rule text is committed as the
+      // screen's own faces.css with each `url(...)` rewritten to the file the harness fetched it as
+      // (tools/evidence.mjs deriveFacesCss), and only the url can say which file that is — one
+      // family is several files. Resolving happens HERE because the page is the only place that
+      // knows its own base. A `data:` / `blob:` src resolves to no url at all: it needs nothing
+      // committed, so a rule made only of those is servable exactly as written.
+      const raws = String(src).match(/url\(\s*["']?([^"')]+)["']?\s*\)/gi) || []
+      const ruleUrls = []
+      for (const u of raws) {
         const m = /url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(u)
         if (!m) continue
         const raw = m[1].trim()
         if (!raw) continue
-        let url = ''
         try {
           const abs = new URL(raw, base)
           // http(s) only — that also drops data: (nothing to fetch), blob: and javascript:
           if (abs.protocol !== 'http:' && abs.protocol !== 'https:') continue
-          url = abs.href
+          if (ruleUrls.indexOf(abs.href) < 0) ruleUrls.push(abs.href)
         } catch { continue }                                    // an src that will not resolve is not a url
+      }
+      if (fontFaces.length < 64 && faceBytes + faceText.length <= 64000) {
+        fontFaces.push({ cssText: faceText, urls: ruleUrls })
+        faceBytes += faceText.length
+      }
+      if (fonts.length >= 8) continue
+      if (!family || !families.has(family.toLowerCase())) continue
+      for (const url of ruleUrls) {
         if (!fonts.some(f => f.url === url)) fonts.push({ family, url })
         break                                   // one file per family per rule — the first format wins
       }

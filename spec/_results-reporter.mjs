@@ -5,7 +5,7 @@ import { join, relative, basename, extname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
-import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, facesCssPath, deriveFacesCss, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, parseFontFacesAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
 // what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
 // found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
 import { replicaNote } from '../tools/replica-gate.mjs'
@@ -374,6 +374,20 @@ function harvestEvidence (harvest, ranAt) {
       } catch { /* dropped, never fatal */ }
     }
     if (faces.length) entry.fonts = faces
+    // …and the ONE SHEET that DECLARES them (phase 4a): the readable @font-face rules of this page,
+    // with every `url(...)` rewritten to the file committed beside it, so an opaque-origin srcdoc
+    // iframe can set the replica in the app's own type. A rule naming a face that did not fetch is
+    // dropped by deriveFacesCss — a browser would 404 it and fall back silently, which is a picture
+    // of a different app. One deterministic path per screen; rewritten in place at every fold.
+    const facesCss = deriveFacesCss(r.fontFaceRules || [], faces)
+    if (facesCss) {
+      const rel = facesCssPath(scr)
+      try {
+        mkdirSync(join(process.cwd(), paths.dir, '_fonts'), { recursive: true })
+        writeFileSync(join(process.cwd(), rel), facesCss + '\n')
+        entry.fontFaces = rel
+      } catch { /* dropped, never fatal — the replica then renders in a fallback stack, honestly */ }
+    }
     if (r.srcVideo) {
       const rel = commitVideo(r.srcVideo, scr, cache)
       if (rel) entry.video = { path: rel, from: entry.window ? entry.window.from : null, to: entry.window ? entry.window.to : null }
@@ -547,7 +561,25 @@ export default class ResultsIndexReporter {
         if (!f || !a.path) continue
         const ext = (extname(a.path) || '').replace(/^\./, '').toLowerCase()
         if (!ext) continue
-        if (!testFonts.some(x => x.hash === f.hash)) testFonts.push({ hash: f.hash, family: f.family, ext, src: a.path })
+        // the SOURCE URL rides with the face since phase 4a — deriveFacesCss needs it to rewrite the
+        // rule that names it; a record from before this carries none and simply matches no rule
+        if (!testFonts.some(x => x.hash === f.hash)) testFonts.push({ hash: f.hash, family: f.family, ext, src: a.path, ...(f.url ? { url: f.url } : {}) })
+      }
+      // …and the RULES the capture could read, per moment, unioned per test (phase 4a). Deduped by
+      // rule text: every moment of a page declares the same handful of faces, and the sheet the fold
+      // writes is one per screen.
+      const testFaces = []
+      const seenFace = new Set()
+      for (const a of atts) {
+        if (!parseFontFacesAttachment(a.name) || !a.path) continue
+        let list = null
+        try { list = JSON.parse(readFileSync(a.path, 'utf8')) } catch { list = null }
+        for (const r of (Array.isArray(list) ? list : [])) {
+          const cssText = r && typeof r.cssText === 'string' ? r.cssText : ''
+          if (!cssText || seenFace.has(cssText)) continue
+          seenFace.add(cssText)
+          testFaces.push({ cssText, urls: Array.isArray(r.urls) ? r.urls.map(String) : [] })
+        }
       }
       const fontedQids = new Set()
       for (const a of atts) {
@@ -586,6 +618,7 @@ export default class ResultsIndexReporter {
           if (!vslot[field]) vslot[field] = a.path
           h.latestKey = key
           if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
+          if (testFaces.length && !h.fontFaceRules) h.fontFaceRules = testFaces
           continue
         }
         // FIRST-wins per beat, never last: a chain checked more times than it has beats clamps its
@@ -611,6 +644,7 @@ export default class ResultsIndexReporter {
         if (!slot.window) slot.window = wins[k] || wins[wins.length - 1] || null
         h.latestKey = key
         if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
+        if (testFaces.length && !h.fontFaceRules) h.fontFaceRules = testFaces
       }
       // Always record the case — every case now carries at least its own log, even one with no shots,
       // no video and no steps, so "each test case has its own record" holds for every case.

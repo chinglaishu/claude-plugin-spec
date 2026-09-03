@@ -326,10 +326,26 @@ test('per-beat: the replica of each phase and each asserted value resolves with 
     'the faces the page uses travel with the requirement, to be committed once per screen')
 })
 
+test('per-beat: the @font-face RULES the run read travel with the requirement too, beside the faces', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const rules = [{ cssText: '@font-face { font-family: "Inter"; src: url("https://x/i.woff2"); }', urls: ['https://x/i.woff2'] }]
+  const harvest = {
+    'todo:R1': {
+      fonts: [{ hash: 'aaaa1111bbbb2222', url: 'https://x/i.woff2', ext: 'woff2', src: '/tmp/f.woff2' }],
+      fontFaceRules: rules,
+      caps: { _novideo: { srcVideo: null, order: [1], beats: { 1: { before: 'b.png', after: 'a.png' } } } },
+      latestKey: '_novideo'
+    }
+  }
+  const r = resolvePrimaryVideo(harvest)['todo:R1']
+  assert.deepEqual(r.fontFaceRules, rules, 'the rules the fold turns into the screen\'s one faces.css')
+})
+
 test('per-beat: a requirement whose run fetched no font resolves to an empty set, never undefined', async () => {
   const { resolvePrimaryVideo } = await import('./evidence.mjs')
   const harvest = { 'todo:R1': { caps: { _novideo: { srcVideo: null, order: [1], beats: { 1: { before: 'b1.png', after: 'a1.png' } } } }, latestKey: '_novideo' } }
   assert.deepEqual(resolvePrimaryVideo(harvest)['todo:R1'].fonts, [])
+  assert.deepEqual(resolvePrimaryVideo(harvest)['todo:R1'].fontFaceRules, [], 'and no rules either — an array, never undefined')
 })
 
 

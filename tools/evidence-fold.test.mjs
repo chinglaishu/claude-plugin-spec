@@ -496,6 +496,15 @@ test('fonts: a face no entry of the screen names any more is pruned, one still n
 // faces and the video: one file per screen, carried across a fold that fetched nothing, and pruned
 // only once no entry of the screen names it any more. A replica whose sheet was dropped renders in
 // a fallback stack — a picture of a different app.
+test('parseFontFacesAttachment reads `fontfaces <id>#<n> <phase>` — the readable @font-face rules of one moment', async () => {
+  const { parseFontFacesAttachment } = await import('./evidence.mjs')
+  assert.deepEqual(parseFontFacesAttachment('fontfaces R4#2 after'), { id: 'R4', beat: 2, phase: 'after' })
+  assert.deepEqual(parseFontFacesAttachment('fontfaces board:R4 v3'), { id: 'board:R4', beat: null, phase: 'v3' })
+  assert.equal(parseFontFacesAttachment('fontfaces R4#2 sideways'), null, 'a phase is before|after|v<k>')
+  assert.equal(parseFontFacesAttachment('font a1b2c3d4e5f60718 Inter'), null, 'a face FILE is not the rules')
+  assert.equal(parseFontFacesAttachment(''), null)
+})
+
 const FACES = 'spec/board/evidence/_fonts/faces.css'
 test('faces.css: a fold that read no @font-face rule carries the committed sheet', () => {
   const index = { board: { evidence: { R4: entry({ fontFaces: FACES }) } } }

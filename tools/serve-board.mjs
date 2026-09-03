@@ -70,7 +70,9 @@ const TYPES = {
   '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png',
   '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.webm': 'video/webm',
-  '.log': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8'
+  '.log': 'text/plain; charset=utf-8', '.txt': 'text/plain; charset=utf-8',
+  // the faces a replica is set in (phase 4a): the files themselves, under spec/**/_fonts/
+  '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.otf': 'font/otf'
 }
 
 const clients = new Set()
@@ -1284,6 +1286,13 @@ const server = createServer(async (req, res) => {
   const csp = rel.startsWith('spec/') && rel.endsWith('.html')
     ? { 'content-security-policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'self' data:" }
     : {}
+  // …AND THE FACES THOSE REPLICAS ARE SET IN ARE FETCHED CROSS-ORIGIN (phase 4a, 2026-09-03). The
+  // board renders a replica in an `<iframe sandbox srcdoc>` with no `allow-same-origin`, so the
+  // frame's origin is OPAQUE and every request it makes — including the `url()` of an @font-face
+  // rule — is a cross-origin one that a bare 200 refuses. Scoped to `spec/**/_fonts/*`: font files
+  // and the one faces.css beside them, which are content-addressed bytes with nothing to leak, and
+  // nothing else on this server becomes readable to another origin.
+  const cors = /^spec\/.*\/_fonts\/[^/]+$/.test(rel) ? { 'access-control-allow-origin': '*' } : {}
   // BYTE-RANGE support. The run recordings are MediaRecorder .webm files, which carry no duration
   // header — a <video> timeline can only become seekable once the browser probes the file's end,
   // and it probes with Range requests. Without 206 partials the player shows an unscrubbable
@@ -1299,7 +1308,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(206, {
       'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes',
       'content-range': 'bytes ' + start + '-' + end + '/' + size, 'content-length': end - start + 1,
-      ...csp
+      ...csp, ...cors
     })
     res.end(body.subarray(start, end + 1))
     return
@@ -1307,7 +1316,7 @@ const server = createServer(async (req, res) => {
   res.writeHead(200, {
     'content-type': type, 'cache-control': 'no-store',
     'accept-ranges': 'bytes', 'content-length': body.length,
-    ...csp
+    ...csp, ...cors
   })
   res.end(body)
 })

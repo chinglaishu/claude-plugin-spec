@@ -278,6 +278,9 @@ export function resolvePrimaryVideo (harvest) {
         // pass-through, so the reporter can commit each face once per screen and point the entry at
         // it. Always an array: a run that fetched none says so rather than leaving the key undefined.
         fonts: Array.isArray(h.fonts) ? h.fonts : [],
+        // …and the RULES that declare them (phase 4a), the same plain pass-through: the reporter
+        // turns them into the screen's one servable faces.css beside the files above.
+        fontFaceRules: Array.isArray(h.fontFaceRules) ? h.fontFaceRules : [],
         srcVideo: usePrimary ? primary : null
       }
     }
@@ -334,6 +337,16 @@ export function parseFontAttachment (name) {
   const m = FONT_ATT.exec(String(name || ''))
   if (!m) return null
   return { hash: m[1], ...(m[2] ? { url: m[2] } : {}), family: m[3].trim() }
+}
+
+// …and the READABLE @font-face RULES of a moment — `fontfaces <id>#<n> <phase>` (phase 4a). The
+// file the harness attaches under this name is JSON: `{cssText, urls}[]`, the urls already absolute.
+// Named per moment because that is where the capture reads them, folded per SCREEN because that is
+// what the board serves: one `_fonts/faces.css` beside the faces it declares.
+const FACES_ATT = /^fontfaces ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
+export function parseFontFacesAttachment (name) {
+  const m = FACES_ATT.exec(String(name || ''))
+  return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
 }
 
 // THE MOMENT'S NAME AND ITS OFFSET (the human, 2026-09-02: "schematic and proof should share same

@@ -1457,7 +1457,14 @@ test('the page\'s own @font-face RULES ride out beside the urls — the gate ren
     { cssText: '.a{color:red}', style: style({}) }
   ] }]
   const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets, baseURI: 'https://app.example/board' }) })
-  assert.deepEqual(r.fontFaces, [used, unused], 'every readable @font-face rule, whether or not this region uses it')
+  // PHASE 4a: each rule rides WITH the absolute urls it names, because the fold has to rewrite every
+  // `url(...)` to the file it was committed as — and only the url can say which file that is (one
+  // family is several files). The urls are resolved against the document base here, in the page,
+  // which is the only place that knows it.
+  assert.deepEqual(r.fontFaces, [
+    { cssText: used, urls: ['https://app.example/fonts/inter.woff2'] },
+    { cssText: unused, urls: ['https://app.example/fonts/ghost.woff2'] }
+  ], 'every readable @font-face rule, whether or not this region uses it, with its own urls')
   assert.deepEqual(r.fonts, [{ family: 'Inter Tight', url: 'https://app.example/fonts/inter.woff2' }],
     'what gets FETCHED and committed is still only the family the region uses')
   assert.ok(!r.html.includes('@font-face'), 'and none of it enters the replica FILE — no external url, as ever')
@@ -1474,7 +1481,29 @@ test('the @font-face harvest is bounded — 64 rules, 64 KB, and an unreadable s
   const blocked = { get cssRules () { throw new Error('cross-origin') } }
   const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: [blocked, { cssRules: rules }], baseURI: 'https://app.example/board' }) })
   assert.equal(r.fontFaces.length, 64)
-  assert.ok(r.fontFaces.join('').length <= 64000)
+  assert.ok(r.fontFaces.map(f => f.cssText).join('').length <= 64000)
+})
+
+test('a @font-face rule whose src is relative rides with its url RESOLVED — the fold matches on the absolute one', () => {
+  // the same rule F1 fixed for `fonts`: a self-hosted face is almost always authored relative, and
+  // an unresolved url can never be matched against the face the harness fetched
+  const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'Rel' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [el('div', [0, 0, 400, 40], { children: [word] })] })
+  const css = '@font-face { font-family: Rel; src: url("../fonts/rel.woff2") format("woff2"), local("Rel"); }'
+  const sheets = [{ cssRules: [{ cssText: css, style: style({ 'font-family': 'Rel', src: 'url("../fonts/rel.woff2") format("woff2"), local("Rel")' }) }] }]
+  const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets, baseURI: 'https://app.example/a/b/board' }) })
+  assert.deepEqual(r.fontFaces, [{ cssText: css, urls: ['https://app.example/a/fonts/rel.woff2'] }])
+  assert.deepEqual(r.fonts, [{ family: 'Rel', url: 'https://app.example/a/fonts/rel.woff2' }])
+})
+
+test('a data: / blob: @font-face rule rides with NO url — it needs nothing committed to be servable', () => {
+  const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'Emb' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [el('div', [0, 0, 400, 40], { children: [word] })] })
+  const css = '@font-face { font-family: Emb; src: url(data:font/woff2;base64,AAAA); }'
+  const sheets = [{ cssRules: [{ cssText: css, style: style({ 'font-family': 'Emb', src: 'url(data:font/woff2;base64,AAAA)' }) }] }]
+  const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets, baseURI: 'https://app.example/board' }) })
+  assert.deepEqual(r.fontFaces, [{ cssText: css, urls: [] }])
+  assert.deepEqual(r.fonts, [], 'nothing to fetch')
 })
 
 test('an edge that paints nothing is not a declaration — when the tag draws none either', () => {

@@ -1,6 +1,6 @@
 import { test as base, expect } from '@playwright/test'
 import type { BrowserContext, Page, Locator } from '@playwright/test'
-import { readFileSync, appendFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, appendFileSync, writeFileSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -879,7 +879,27 @@ async function snapEvidence (id: string, beat: number, seq: number, phase: Phase
     // same beat must not share a path, or the second's screenshot silently overwrites the first's
     // and the reporter's first-wins fold picks an already-clobbered file.
     const file = info.outputPath(`evidence-${safeId(id)}-b${beat}-c${seq}-${phase}.png`)
-    await page.screenshot({ path: file, timeout: 2500 })
+    // EVERY TEXT ONCE (design C, the human 2026-09-03). The STILLS keep the ring and the dim — both
+    // pictures of a row wear them — but not the CALLOUT CARD: the board's own chips carry the
+    // claim's words beside the two cells now, and a card burned into the photograph said the same
+    // sentence a third time, right over the component it points at. The VIDEO keeps the card (it is
+    // the only surface a recording has), so this hides it for the screenshot alone and puts it back.
+    await page.evaluate(() => {
+      const c = document.querySelector('#__specboard-focus .sb-call') as HTMLElement | null
+      const p = document.querySelector('#__specboard-focus .sb-ptr') as HTMLElement | null
+      if (c) { c.dataset.sbwas = c.style.display; c.style.display = 'none' }
+      if (p) { p.dataset.sbwas = p.style.display; p.style.display = 'none' }
+    }).catch(() => {})
+    try {
+      await page.screenshot({ path: file, timeout: 2500 })
+    } finally {
+      await page.evaluate(() => {
+        for (const sel of ['.sb-call', '.sb-ptr']) {
+          const e = document.querySelector('#__specboard-focus ' + sel) as HTMLElement | null
+          if (e && e.dataset.sbwas !== undefined) { e.style.display = e.dataset.sbwas; delete e.dataset.sbwas }
+        }
+      }).catch(() => {})
+    }
     info.attachments.push({ name: `evidence ${id}#${beat} ${phase}`, path: file, contentType: 'image/png' })
   } catch { /* evidence is a by-product — the proof is the assertion, never the photo */ }
 }
@@ -1062,7 +1082,7 @@ async function gateReplica (page: Page, rep: any): Promise<any | null> {
   // allow-scripts), but a serialised font-family carrying `</style>` would close the element early
   // and the frame would set its type in nothing — a page of false gaps (fix round 1, M3).
   const faces = Array.isArray(rep.fontFaces)
-    ? rep.fontFaces.join('\n').slice(0, 64000).replace(/<\/style/gi, '<\\/style')
+    ? rep.fontFaces.map((f: any) => String((f && f.cssText) || '')).join('\n').slice(0, 64000).replace(/<\/style/gi, '<\\/style')
     : ''
   const doc = '<!doctype html><html><head><style>html,body{margin:0;overflow:hidden}</style><style>' +
     faces + '</style></head><body><div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y +
@@ -1210,6 +1230,19 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
       if (!failed) c.lastRight = rep.html
       if (typeof rep.expected === 'string' && rep.expected) c.lastExpected = rep.expected
     }
+    // …and the RULES THEMSELVES, once per moment (phase 4a): the fold turns them into the screen's
+    // one `_fonts/faces.css` with every url rewritten to the committed file, so the board can set
+    // the replica in the app's own type inside an opaque-origin srcdoc iframe that may fetch no
+    // external URL. JSON rather than a name, because a rule is text with spaces in it.
+    if (Array.isArray(rep.fontFaces) && rep.fontFaces.length) {
+      try {
+        const ff = info.outputPath(`fontfaces-${safeId(id)}-b${beat}-c${seq}-${phase}.json`)
+        writeFileSync(ff, JSON.stringify(rep.fontFaces.map((f: any) => ({
+          cssText: String((f && f.cssText) || ''), urls: Array.isArray(f && f.urls) ? f.urls.map(String) : []
+        }))))
+        info.attachments.push({ name: `fontfaces ${id}#${beat} ${phase}`, path: ff, contentType: 'application/json' })
+      } catch { /* a by-product of a by-product — never a gate */ }
+    }
     await harvestFonts(page, info, rep.fonts)
   } catch { /* the replica is a by-product too — a page that would not serialise simply has none */ }
 }
@@ -1221,7 +1254,15 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
 // spec/<screen>/evidence/_fonts/<hash>.<ext>. Bounded on every axis: at most 8 per call, 2 MB each,
 // a 3 s deadline, and only the four font extensions a browser will load; every failure is skipped
 // in silence, because a missing face costs a fallback stack and nothing else.
-const FONTS_FETCHED = new Set<string>()
+// A MAP, NOT A SET (phase 4a, the dojostack finding of 2026-09-03: the entity screen's harvest
+// produced no `_fonts/` at all although houseview's did, in the SAME run). The dedupe key is the
+// url and the store is per WORKER, but the fold commits per SCREEN — so the first test to fetch a
+// face marked it done for the whole worker, and every later test on every later screen attached
+// nothing. Its replicas then rendered in a fallback stack (the faces were on disk, under another
+// screen) and `entry.fonts` was empty, which is exactly the missing `_fonts/` dir. So the cache now
+// remembers WHAT it fetched and re-attaches it for every test that needs it; `null` remembers a url
+// that would not fetch, so a dead face is still tried only once.
+const FONTS_FETCHED = new Map<string, { hash: string, ext: string, path: string } | null>()
 const FONT_TYPES: Record<string, string> = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf' }
 // THE WHOLE PASS IS BOUNDED, NOT ONLY EACH REQUEST (fix round 1, F5). Eight faces at 3.5 s each is
 // 28 s inside a 60 s test timeout — a by-product that could eat half a test's budget and redden a run
@@ -1242,11 +1283,22 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
       const left = until - Date.now()
       if (left <= 0) return                      // out of time: the rest stay un-fetched, and retriable
       const url = String((f && f.url) || '')
-      if (!url || FONTS_FETCHED.has(url)) continue
+      if (!url) continue
+      const fam = String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'
+      if (FONTS_FETCHED.has(url)) {
+        // already fetched by an earlier test in this worker: RE-ATTACH it, so this test's screen
+        // commits the face too. The file lives in another test's output dir, which survives the whole
+        // run (Playwright clears the output root once, at the start), and the reporter only reads it.
+        const hit = FONTS_FETCHED.get(url)
+        if (hit && existsSync(hit.path)) {
+          info.attachments.push({ name: `font ${hit.hash} ${url} ${fam}`, path: hit.path, contentType: FONT_TYPES[hit.ext] })
+        }
+        continue
+      }
       const m = /\.(woff2|woff|ttf|otf)(?:[?#]|$)/i.exec(url)
       if (!m) continue
       const ext = m[1].toLowerCase()
-      FONTS_FETCHED.add(url)                      // once per worker, hit or miss — a face that will not fetch will not fetch
+      FONTS_FETCHED.set(url, null)                // a face that will not fetch will not fetch — tried once
       try {
         // the request's OWN deadline is whatever is left of the pass, so it is cancelled rather
         // than merely stopped-waiting-on; the race outside it can then never be the thing that ends it
@@ -1257,7 +1309,11 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
         const hash = createHash('sha256').update(buf).digest('hex').slice(0, 16)
         const file = info.outputPath(`font-${hash}.${ext}`)
         writeFileSync(file, buf)
-        info.attachments.push({ name: `font ${hash} ${String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'}`, path: file, contentType: FONT_TYPES[ext] })
+        FONTS_FETCHED.set(url, { hash, ext, path: file })
+        // the SOURCE URL rides in the name (phase 4a): deriveFacesCss rewrites each `url(...)` of a
+        // committed @font-face rule to the file it became, and only the url can say which file that
+        // is — a family is several files. The family stays last, because a family may carry spaces.
+        info.attachments.push({ name: `font ${hash} ${url} ${String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'}`, path: file, contentType: FONT_TYPES[ext] })
       } catch { /* a face that will not fetch is a fallback stack, never a failed run */ }
     }
   })()
