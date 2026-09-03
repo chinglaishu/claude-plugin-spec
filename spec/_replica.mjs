@@ -91,6 +91,12 @@ export const REPLICA_PROPS = [
   'letter-spacing', 'text-align', 'text-transform', 'text-decoration', 'text-overflow',
   'white-space', 'overflow', 'box-shadow', 'opacity', 'visibility',
   'vertical-align', 'box-sizing', 'z-index', 'transform',
+  // …AND THE POINT IT IS SCALED ABOUT (phase 4a, 2026-09-03 — found by the gate on the board's own
+  // harvest, which since the Expected cell became an iframe scales two cells per row about `0 0`).
+  // A transform without its origin is not a transform: the default is the element's centre, so a
+  // camera cell scaled about its top-left landed ~465px right and ~291px down in the replica, and
+  // the gate read that as an extra box beside a missing one. They travel together.
+  'transform-origin',
   'fill', 'stroke', 'stroke-width'
 ]
 

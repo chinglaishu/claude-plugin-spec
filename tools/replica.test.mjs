@@ -510,6 +510,23 @@ test('REPLICA_PROPS is one list, and it carries what the diff needs', () => {
   assert.equal(new Set(REPLICA_PROPS).size, REPLICA_PROPS.length, 'no prop is asked for twice')
 })
 
+// PHASE 4a, found by the gate on the board's own harvest: `transform` rode the list but
+// `transform-origin` did not, so any element scaled about anything other than its centre landed
+// somewhere else in the replica. On the board's own beat row that is every camera cell — the frame
+// is scaled about `0 0`, and without the origin the re-render put it ~465 px right and ~291 px down,
+// which the gate read as an extra-box beside a missing one. A transform without its origin is not a
+// transform, so the two travel together.
+test('a scaled element keeps its transform ORIGIN too — a transform without one lands somewhere else', () => {
+  assert.ok(REPLICA_PROPS.includes('transform-origin'), 'transform-origin is diffed')
+  const cell = el('div', [100, 100, 200, 200], {
+    cs: { transform: 'matrix(0.5, 0, 0, 0.5, 0, 0)', 'transform-origin': '0px 0px' }
+  })
+  const body = el('body', [0, 0, 1440, 900], { children: [cell] })
+  const r = cap(body, { target: cell, ring: { x: 100, y: 100, width: 200, height: 200 } })
+  assert.match(r.html + '\n', /transform-origin:\s*0px 0px/,
+    'the scaled cell carries the point it was scaled about: ' + r.html.slice(0, 400))
+})
+
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════
 // PHASE 2, FIX ROUND 1 (2026-09-03) — THE EXPECTED REPLICA: ONE CLAIM, APPLIED TO ITS BASE.
