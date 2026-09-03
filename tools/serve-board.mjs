@@ -1275,6 +1275,14 @@ const server = createServer(async (req, res) => {
   }
   const body = readFileSync(file)
   const type = TYPES[extname(file)] || 'application/octet-stream'
+  // A COMMITTED .html UNDER spec/** IS AN ACTUAL REPLICA — the app's own DOM (2026-09-03). It is
+  // sanitised at capture (spec/_replica.mjs: no script, no handler, no external URL) and the board
+  // will only ever show it inside an <iframe sandbox srcdoc>; this header is the third wall, so a
+  // replica opened DIRECTLY in a tab is inert too — no script, no fetch, no network font, no
+  // same-origin identity at all. board.html is not under spec/ and is untouched.
+  const csp = rel.startsWith('spec/') && rel.endsWith('.html')
+    ? { 'content-security-policy': "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src 'self' data:" }
+    : {}
   // BYTE-RANGE support. The run recordings are MediaRecorder .webm files, which carry no duration
   // header — a <video> timeline can only become seekable once the browser probes the file's end,
   // and it probes with Range requests. Without 206 partials the player shows an unscrubbable
@@ -1289,14 +1297,16 @@ const server = createServer(async (req, res) => {
     }
     res.writeHead(206, {
       'content-type': type, 'cache-control': 'no-store', 'accept-ranges': 'bytes',
-      'content-range': 'bytes ' + start + '-' + end + '/' + size, 'content-length': end - start + 1
+      'content-range': 'bytes ' + start + '-' + end + '/' + size, 'content-length': end - start + 1,
+      ...csp
     })
     res.end(body.subarray(start, end + 1))
     return
   }
   res.writeHead(200, {
     'content-type': type, 'cache-control': 'no-store',
-    'accept-ranges': 'bytes', 'content-length': body.length
+    'accept-ranges': 'bytes', 'content-length': body.length,
+    ...csp
   })
   res.end(body)
 })
