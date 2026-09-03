@@ -124,7 +124,8 @@ test('a class is the declarations that differ from the tag default, and identica
   const spanCls = cls.filter(c0 => !c0.startsWith('rep'))
   assert.equal(spanCls[0], spanCls[1], 'the two identical siblings share one class')
   assert.notEqual(spanCls[0], spanCls[2], 'the differently-coloured one does not')
-  assert.equal(r.classes, new Set(cls.flatMap(c0 => c0.split(' '))).size, 'the count is the number of classes emitted')
+  const diffed = new Set(cls.flatMap(c0 => c0.split(' ')).filter(c0 => /^r\d+$/.test(c0)))
+  assert.equal(r.classes, diffed.size, 'the count is the number of DIFFED classes ("rep" is ours, not the app\'s)')
 })
 
 test('a prop the page does not answer for is never declared, and no app style reaches the node itself', () => {
