@@ -159,23 +159,27 @@ locally-edited one is kept and the new version dropped beside it as `<file>.new`
 blind overwrite. `tools/update.test.mjs` (`npm run test:tools`) proves that decision table.
 
 **THE LAYOUT RULE — a project's board lives in `specboard/` INSIDE its app repo, ignored wholesale by
-the app's git and versioned by its own** (the human, 2026-09-04, in two steps: first "put all specboard
-related file and image out of the dojostack_main repo … and make it still work", then "stay everything
-in a specboard folder in the dojostack_main, gitignore the entire folder, and apply it on any project
-later on as a rule"). The tools resolve their root to the directory they live in, so nothing in the fold
-cares where that is; the layout adds only how the two directories find each other, all of it pure in
-`tools/_skeleton.mjs` (tests: `tools/sidecar.test.mjs`): `resolveProject(dir)` — the manifest here, else
-the one-line `.specboard` pointer (a board kept anywhere else), else `dir/specboard/` (the rule) — followed
-by `update.mjs`, `scaffold.mjs` and every skill's "Where the board lives" note, so `update.mjs <appRepo>`
-lands on the board and never re-vendors into the app; and the manifest's `app` path (`appRoot` →
-`APP_ROOT` in spec-store, carried across updates like `project`; the capabilities list reads the app
-repo's `.claude/` through it, and a project's own `spec/_app.ts`-style helpers should too). `scaffold.mjs
-[appRepo]` creates the nested board (appends `/specboard/` to the app's .gitignore, `git init`s the
-folder); `--dir <boardDir>` and `--flat` are the escapes. The folder's own git must not be the one
-unversioned thing in the tree: the PRDs and tests in it are the source of truth, and a wholly ignored
-folder with no repo of its own would vanish with one `git clean -fdx`. dojostack is the first:
-`~/workspace/dojostack/dojostack_main/specboard` (board on :4174). This repo and demo/todo stay flat
-(they ARE the board).
+the app's git, LOCAL-ONLY and single-user** (the human, 2026-09-04, in three steps: "put all specboard
+related file and image out of the dojostack_main repo … and make it still work"; then "stay everything in
+a specboard folder in the dojostack_main, gitignore the entire folder, and apply it on any project later
+on as a rule"; then, declining a git repo of its own for the folder: "now, store everything in local
+(specboard folder) with gitignore — so only work in local for single user; next step, store everything in
+cloud for user (so it share across team)"). The accepted trade-off, stated once: the PRDs, tests and
+harvest exist on one disk until the cloud step. The tools resolve their root to the directory they live
+in, so nothing in the fold cares where that is; the layout adds only how the two directories find each
+other, all of it pure in `tools/_skeleton.mjs` (tests: `tools/sidecar.test.mjs`): `resolveProject(dir)` —
+the manifest here, else the one-line `.specboard` pointer (a board kept anywhere else), else
+`dir/specboard/` (the rule) — followed by `update.mjs`, `scaffold.mjs` and every skill's "Where the board
+lives" note, so `update.mjs <appRepo>` lands on the board and never re-vendors into the app; and the
+manifest's `app` path (`appRoot` → `APP_ROOT` in spec-store, carried across updates like `project`; the
+capabilities list reads the app repo's `.claude/` through it, and a project's own `spec/_app.ts`-style
+helpers should too). `scaffold.mjs [appRepo]` creates the nested board and appends `/specboard/` to the
+app's .gitignore — it does NOT `git init` the folder; `--dir <boardDir>` and `--flat` are the escapes.
+**Next step (not built): the board's files stored in the cloud so a team shares one board** — the tiers
+are laid out in docs/sidecar-qa-2026-09-04.html §3 (the harvest blobs and run records to a private
+bucket via the existing `storage`/`shipToBucket` path, the fold index beside them, a read-only hosted
+board). dojostack is the first: `~/workspace/dojostack/dojostack_main/specboard` (board on :4174). This
+repo and demo/todo stay flat (they ARE the board).
 
 Commands:
 

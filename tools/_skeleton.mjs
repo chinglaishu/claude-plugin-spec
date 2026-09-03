@@ -153,14 +153,15 @@ export const POINTER = '.specboard'
 // THE RULE (the human, 2026-09-04, second decision — "stay everything in a specboard folder in the
 // repo, gitignore the entire folder, and apply it to any project later on"): the board lives INSIDE
 // the app repo in a folder named `specboard/`, ignored WHOLESALE by the app's git (one line,
-// `/specboard/`, appended by the scaffold) and versioned by its OWN git repo inside (the scaffold runs
-// `git init` there) — the PRDs and tests are the source of truth and must not be the one unversioned
-// thing in the tree. The folder name is the convention, so no pointer is needed; `.specboard` stays
-// as the override for a board kept anywhere else.
+// `/specboard/`, appended by the scaffold). It is LOCAL-ONLY and single-user for now — the human
+// declined a git repo of its own (2026-09-04); the stated trade-off is that the PRDs, tests and harvest
+// exist on one disk until the NEXT step, storing the board's files in the cloud so a team shares them.
+// The folder name is the convention, so no pointer is needed; `.specboard` stays as the override for
+// a board kept anywhere else.
 export const NESTED = 'specboard'
 
-// The board folder's own .gitignore: its scratch, its secrets — never the harvest, never board.html
-// (those are the proof a fresh clone must show — D2). Pinned by tools/sidecar.test.mjs.
+// The board folder's own .gitignore (kept for the day the folder is versioned or synced): its scratch,
+// its secrets — never the harvest, never board.html (those ARE the proof — D2). Pinned by tools/sidecar.test.mjs.
 export function boardIgnoreLines () {
   return ['node_modules/', 'test-results/', 'spec/.auth/', '.DS_Store', '# specboard update scratch', ...ROOT_IGNORE]
 }

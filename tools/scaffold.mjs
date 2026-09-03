@@ -3,7 +3,7 @@
 // there reads your spec/, writes your board.html, and runs your tests, with no path juggling.
 //
 //   node <plugin>/tools/scaffold.mjs [appRepo]                  → <appRepo>/specboard/  (THE RULE: ignored by the
-//                                                                 app's git, its own git repo inside)
+//                                                                 app's git; local-only, single user)
 //   node <plugin>/tools/scaffold.mjs [appRepo] --dir <boardDir>  → anywhere else; the app repo gets a one-line
 //                                                                 .specboard pointer
 //   node <plugin>/tools/scaffold.mjs [appRepo] --flat            → the old vendored-in layout
@@ -71,7 +71,7 @@ if (!existsSync(gi) || force) {
 }
 // Ignores. FLAT: the app repo's .gitignore gets the update scratch (a backup dir and .new files live at
 // the paths they shadow). NESTED / --dir: the board folder gets its OWN .gitignore (scratch + secrets,
-// never the harvest), its own git repo, and the app repo ignores the whole folder with one line.
+// never the harvest — kept for the day it is versioned or synced) and the app repo ignores the whole folder.
 const appendIgnore = (file, lines, header) => {
   const cur = existsSync(file) ? readFileSync(file, 'utf8') : ''
   const missing = lines.filter(p => !cur.split('\n').map(l => l.trim()).includes(p))
@@ -143,7 +143,7 @@ if (!pkg.scripts.board || pkg.scripts.board === SCRIPTS.board) {
 pkg.devDependencies = { ...(pkg.devDependencies || {}), ...DEV }
 writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
 
-console.log(`Scaffolded specboard into ${DEST}${DEST !== APP ? `  (the board for ${APP}${NESTED_HERE ? ', ignored by its git, versioned by its own' : ''})` : ''}`)
+console.log(`Scaffolded specboard into ${DEST}${DEST !== APP ? `  (the board for ${APP}${NESTED_HERE ? ', ignored by its git — local only' : ''})` : ''}`)
 console.log(`  ${copied.length} file(s) written${skipped.length ? `, ${skipped.length} left alone (already present — pass --force to overwrite)` : ''}`)
 if (pkg.type !== 'module') console.log('  NOTE: your package.json is not "type":"module" — the tools are ESM.')
 console.log(`  board port: ${boardPort} (this project's own — recorded in ~/.specboard-ports.json)`)

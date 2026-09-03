@@ -7,11 +7,12 @@ description: Use to author the E2E test that proves a specboard screen's require
 
 > **Where the board lives.** THE RULE: a project's board — `spec/`, the vendored `tools/`, `board.html`,
 > `playwright.board.ts`, `node_modules` — lives in **`specboard/` inside the app repo**, a folder the app's
-> git ignores wholesale (`/specboard/`) and that is versioned by its **own** git repo inside. So from the
-> app repo, **`cd specboard` before every command below** — nothing specboard-related is ever committed to
-> the app's history. Two exceptions you may meet: a one-line `.specboard` file naming a board kept
-> elsewhere (cd there instead), or an old flat project with `spec/` at the root (stay put). `update.mjs`
-> and `scaffold.mjs` find the board themselves either way.
+> git ignores wholesale (`/specboard/`). It is **local-only and single-user** for now (not a git repo of
+> its own — the human's decision; team sharing is the coming cloud step). So from the app repo, **`cd
+> specboard` before every command below** — nothing specboard-related is ever committed to the app.
+> Two exceptions you may meet: a one-line `.specboard` file naming a board kept elsewhere (cd there
+> instead), or an old flat project with `spec/` at the root (stay put). `update.mjs` and `scaffold.mjs`
+> find the board themselves either way.
 
 specboard is two ends: the **requirements** (the source of truth) and the **tests that prove them**
 against the real app. This skill is the second end. The test lives next to the screen it proves —

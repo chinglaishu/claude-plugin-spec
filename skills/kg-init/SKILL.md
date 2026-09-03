@@ -14,11 +14,12 @@ Everything below serves that one job.
 
 THE RULE (the human, 2026-09-04): the board lives in **`specboard/` inside the app repo** — one folder
 holding `spec/`, the vendored `tools/`, `board.html`, `playwright.board.ts` and `node_modules`. The app's
-git **ignores the whole folder** (the scaffold appends `/specboard/` to its `.gitignore`), and the folder
-carries its **own git repo** (the scaffold runs `git init` there), because the PRDs and tests inside are
-the source of truth and must not be the one unversioned thing in the tree. Nothing specboard-related is
-ever committed to the app's history — no evidence frames, no fonts, no 4 MB board.html. The tools resolve
-their root to the folder they live in, so the board runs from there unchanged.
+git **ignores the whole folder** (the scaffold appends `/specboard/` to its `.gitignore`). The folder is
+**local-only and single-user** for now — deliberately NOT a git repo of its own (the human's decision,
+2026-09-04): the PRDs, tests and harvest live on this machine, and sharing them across a team is the
+coming step, storing the board's files in the cloud. Nothing specboard-related is ever committed to the
+app's history — no evidence frames, no fonts, no 4 MB board.html. The tools resolve their root to the
+folder they live in, so the board runs from there unchanged.
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" .        # → ./specboard/  (re-running finds the existing board; never a second one)
@@ -31,17 +32,16 @@ Two escapes, only when asked for: `--dir <boardDir>` keeps the board somewhere e
 gets a one-line `.specboard` pointer to it); `--flat` is the old vendored-in layout with `spec/` at the
 app's root. Every other skill starts with "cd into the board" and finds it either way.
 
-**Give the board folder a remote.** Its git repo starts local. Ask the human where it should push
-(a `<app>-specboard` repo beside the app's is the usual answer) — the board's history is the team's
-proof, and a folder that exists on one disk is not versioned yet.
+**Do not `git init` the folder and do not offer it a remote.** Local-only is the decision; the cloud
+step will carry it to the team. Say so once if the human asks how the board is shared, and move on.
 
 ## 1. Install dependencies and start the board
 
 The scaffold wrote the board folder's `package.json` (the `board` / `board:build` / `staff` / `proof` /
 `e2e` scripts, the two dev deps), its `.gitignore` (scratch and secrets only) and `spec/.gitignore`
-(transient run state only). **Commit `spec/<screen>/evidence/` — in the board folder's own repo** — the
-harvested proof frames are what a fresh clone's board shows; nothing the scaffold writes ignores them,
-and `board.html` is committed as before.
+(transient run state only). The harvested proof frames under
+`spec/<screen>/evidence/` and `board.html` stay in the folder — nothing the scaffold writes ignores them,
+so the day the folder is synced or versioned, the proof travels with it.
 
 ```bash
 cd specboard

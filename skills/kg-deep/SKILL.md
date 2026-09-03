@@ -7,11 +7,12 @@ description: Use to take ONE screen from a bare row (or no row) to deep, human-o
 
 > **Where the board lives.** THE RULE: a project's board — `spec/`, the vendored `tools/`, `board.html`,
 > `playwright.board.ts`, `node_modules` — lives in **`specboard/` inside the app repo**, a folder the app's
-> git ignores wholesale (`/specboard/`) and that is versioned by its **own** git repo inside. So from the
-> app repo, **`cd specboard` before every command below** — nothing specboard-related is ever committed to
-> the app's history. Two exceptions you may meet: a one-line `.specboard` file naming a board kept
-> elsewhere (cd there instead), or an old flat project with `spec/` at the root (stay put). `update.mjs`
-> and `scaffold.mjs` find the board themselves either way.
+> git ignores wholesale (`/specboard/`). It is **local-only and single-user** for now (not a git repo of
+> its own — the human's decision; team sharing is the coming cloud step). So from the app repo, **`cd
+> specboard` before every command below** — nothing specboard-related is ever committed to the app.
+> Two exceptions you may meet: a one-line `.specboard` file naming a board kept elsewhere (cd there
+> instead), or an old flat project with `spec/` at the root (stay put). `update.mjs` and `scaffold.mjs`
+> find the board themselves either way.
 
 The crawl gives you the **map**: a row per screen, honestly uncovered. This skill is the
 **territory**: it takes one screen to requirements the human owns and tests that would fail if the app
