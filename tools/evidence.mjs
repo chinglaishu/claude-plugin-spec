@@ -89,7 +89,12 @@ export function beatEvidencePaths (screen, id, n) {
     before: `${dir}/${b}.before.png`,
     after: `${dir}/${b}.after.png`,
     layoutBefore: `${dir}/${b}.before.layout.json`,
-    layoutAfter: `${dir}/${b}.after.layout.json`
+    layoutAfter: `${dir}/${b}.after.layout.json`,
+    // …and the ACTUAL REPLICA of the same moment (2026-09-03, the human: the picture beside a proof
+    // is a real HTML replica of the app's own component, not a drawing of it). One name away from
+    // the photograph it was taken beside, on the same deterministic rule: a re-harvest overwrites.
+    replicaBefore: `${dir}/${b}.before.actual.html`,
+    replicaAfter: `${dir}/${b}.after.actual.html`
   }
 }
 
@@ -103,7 +108,16 @@ export function beatEvidencePaths (screen, id, n) {
 export function valueEvidencePaths (screen, id, n, k) {
   const dir = `spec/${screen}/evidence`
   const b = `${bare(id)}.b${Number(n) || 1}.v${Number(k) || 1}`
-  return { dir, frame: `${dir}/${b}.png`, layout: `${dir}/${b}.layout.json` }
+  return { dir, frame: `${dir}/${b}.png`, layout: `${dir}/${b}.layout.json`, replica: `${dir}/${b}.actual.html` }
+}
+
+// THE SCREEN'S WEB FONTS (2026-09-03). A replica is the app's own DOM, so it is only the app's own
+// picture while it is set in the app's own faces — and a sandboxed iframe may reach no external URL.
+// The harness fetches each @font-face file Node-side (spec/_base.ts, page.request) and the fold
+// commits it here, content-named so a face shared by many requirements is one file. Refcounted per
+// SCREEN like the committed video, never per requirement.
+export function fontEvidencePath (screen, hash, ext) {
+  return `spec/${screen}/evidence/_fonts/${hash}.${ext}`
 }
 
 // Task 16 #1 (the human, 2026-08-24): the screen's COMMITTED RECORDING — the primary flow's .webm,
@@ -174,11 +188,19 @@ export function resolvePrimaryVideo (harvest) {
           after: s.after || null,
           layoutBefore: s.layoutBefore || null,
           layoutAfter: s.layoutAfter || null,
+          // …and the ACTUAL REPLICA of each end of the beat (2026-09-03), resolved with the frame it
+          // was captured beside — the Expected view is built from this file, so it must come from
+          // the same capture as the photograph it is shown against.
+          replicaBefore: s.replicaBefore || null,
+          replicaAfter: s.replicaAfter || null,
           window: s.window || null,
           // the beat's asserted values in CHECK order (2026-08-29) — sorted by the check number the
           // attachment carried, never by the order the attachments happened to arrive in
           values: Object.keys(s.values || {}).map(Number).sort((a, b) => a - b).map(k => ({
-            k, frame: (s.values[k] || {}).frame || null, layout: (s.values[k] || {}).layout || null
+            k,
+            frame: (s.values[k] || {}).frame || null,
+            layout: (s.values[k] || {}).layout || null,
+            replica: (s.values[k] || {}).replica || null
           }))
         }
       })
@@ -195,6 +217,10 @@ export function resolvePrimaryVideo (harvest) {
           ? { from: Math.min(...wins.map(w => w.from)), to: Math.max(...wins.map(w => w.to)) }
           : null,
         beats,
+        // the WEB FONTS the run fetched for this requirement's page (2026-09-03) — a plain
+        // pass-through, so the reporter can commit each face once per screen and point the entry at
+        // it. Always an array: a run that fetched none says so rather than leaving the key undefined.
+        fonts: Array.isArray(h.fonts) ? h.fonts : [],
         srcVideo: usePrimary ? primary : null
       }
     }
@@ -222,6 +248,24 @@ const LAYOUT_ATT = /^layout ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
 export function parseLayoutAttachment (name) {
   const m = LAYOUT_ATT.exec(String(name || ''))
   return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
+}
+
+// The ACTUAL REPLICA attachment names snapReplica emits — `replica <id>#<n> before|after|v<k>`,
+// mirroring the frame and its skeleton exactly (2026-09-03). Same strictness for the same reason:
+// a name that is not one of these is not a replica and must never be folded as one.
+const REPLICA_ATT = /^replica ([^#\s]+)(?:#(\d+))? (before|after|v\d+)$/
+export function parseReplicaAttachment (name) {
+  const m = REPLICA_ATT.exec(String(name || ''))
+  return m ? { id: m[1], beat: m[2] ? Number(m[2]) : null, phase: m[3] } : null
+}
+
+// …and the FONT files fetched beside them — `font <hash> <family>`. The hash is the content hash the
+// harness named the file by (hex), the family the name the page's @font-face declared; a family may
+// carry spaces, a hash may not. Anything else is not a font attachment.
+const FONT_ATT = /^font ([0-9a-f]{8,64}) (\S.*)$/
+export function parseFontAttachment (name) {
+  const m = FONT_ATT.exec(String(name || ''))
+  return m ? { hash: m[1], family: m[2].trim() } : null
 }
 
 // THE MOMENT'S NAME AND ITS OFFSET (the human, 2026-09-02: "schematic and proof should share same
@@ -320,11 +364,14 @@ export function foldEvidence (index, entries) {
   // a video-less fold, replaced by a fresh one, and the FILE pruned only when no entry of its
   // screen references it any more (refcounted below, not per-entry like the frames).
   const touched = new Set()
-  const beforeVids = new Map()
-  const vidRefs = scr => {
+  const beforeShared = new Map()
+  const sharedRefs = scr => {
     const s = new Set()
     for (const e of Object.values(index[scr]?.evidence || {})) {
       if (e && e.video && e.video.path) s.add(e.video.path)
+      // the screen's WEB FONTS are refcounted on the same rule (2026-09-03): shared by every
+      // requirement of the screen, so a face is orphaned only once no entry names it any more
+      for (const f of (Array.isArray(e?.fonts) ? e.fonts : [])) if (f && f.path) s.add(f.path)
     }
     return s
   }
@@ -334,7 +381,7 @@ export function foldEvidence (index, entries) {
     const scr = qid.slice(0, i)
     const rid = qid.slice(i + 1)
     const entry = (index[scr] ??= {})
-    if (!beforeVids.has(scr)) beforeVids.set(scr, vidRefs(scr))
+    if (!beforeShared.has(scr)) beforeShared.set(scr, sharedRefs(scr))
     touched.add(scr)
     const old = entry.evidence?.[rid]
     // The CARRY (D1, resurrected 2026-08-24 for an artifact that has a renderer again — the
@@ -347,20 +394,35 @@ export function foldEvidence (index, entries) {
     // layout is the SOURCE the committed schematic was drawn from, so a run whose capture failed
     // (a page torn down mid-assert) must not delete the drawing's source and silently drop the
     // requirement back to an archetype. A beat that brings fresh layouts replaces its own.
+    // …and the REPLICA carry beside it, on exactly the same rule (2026-09-03): the replica is the
+    // source the Expected view is BUILT from, so a run whose capture failed must not delete it and
+    // leave the row with a photograph and no picture beside it. A beat that brings fresh replicas
+    // replaces its own.
     const oldBeat = n => (old && old.beats ? old.beats.find(b => b && b.n === n) : null)
     if (Array.isArray(raw.beats) && old && Array.isArray(old.beats)) {
       const beats = raw.beats.map(b => {
-        if (b.layoutBefore || b.layoutAfter) return b
         const o = oldBeat(b.n)
-        if (!o || !(o.layoutBefore || o.layoutAfter)) return b
-        const carried = { ...b }
-        if (o.layoutBefore) carried.layoutBefore = o.layoutBefore
-        if (o.layoutAfter) carried.layoutAfter = o.layoutAfter
-        if (!carried.focus && o.focus) carried.focus = o.focus   // the zoom rides with its layout
+        if (!o) return b
+        let carried = b
+        if (!(b.layoutBefore || b.layoutAfter) && (o.layoutBefore || o.layoutAfter)) {
+          carried = { ...carried }
+          if (o.layoutBefore) carried.layoutBefore = o.layoutBefore
+          if (o.layoutAfter) carried.layoutAfter = o.layoutAfter
+          if (!carried.focus && o.focus) carried.focus = o.focus   // the zoom rides with its layout
+        }
+        if (!(b.replicaBefore || b.replicaAfter) && (o.replicaBefore || o.replicaAfter)) {
+          carried = carried === b ? { ...carried } : carried
+          if (o.replicaBefore) carried.replicaBefore = o.replicaBefore
+          if (o.replicaAfter) carried.replicaAfter = o.replicaAfter
+        }
         return carried
       })
       if (beats.some((b, j) => b !== raw.beats[j])) raw = { ...raw, beats }
     }
+    // THE SCREEN'S FONTS, carried like the video and refcounted like it below: a fold that fetched
+    // none (an unchanged page, a worker that already had them) keeps the faces the entry names, so
+    // the committed files stay referenced and the replica stays set in the app's own type.
+    if (!Array.isArray(raw.fonts) && old && Array.isArray(old.fonts)) raw = { ...raw, fonts: old.fonts }
     entry.evidence = { ...(entry.evidence || {}), [rid]: raw }
     if (old) {
       // every file an entry names — the requirement-level pair, every beat's four, and a legacy
@@ -369,9 +431,12 @@ export function foldEvidence (index, entries) {
         ...(Array.isArray(x.beats) ? x.beats : []).flatMap(b =>
           b
             ? [b.before, b.after, b.layoutBefore, b.layoutAfter,
-                // …and every asserted-value frame the beat carried, with its skeleton: a beat that
-                // lost a check must not leave its frames behind (2026-08-29)
-                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout] : []))]
+                // …and the beat's two ACTUAL REPLICAS (2026-09-03), on the frames' rule: a dropped
+                // beat leaves neither a picture nor the html it was built from behind
+                b.replicaBefore, b.replicaAfter,
+                // …and every asserted-value frame the beat carried, with its skeleton and its own
+                // replica: a beat that lost a check must not leave its frames behind (2026-08-29)
+                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout, v.replica] : []))]
             : [])]
       const kept = new Set(vals(raw).filter(Boolean))
       for (const p of vals(old)) {
@@ -380,8 +445,8 @@ export function foldEvidence (index, entries) {
     }
   }
   for (const scr of touched) {
-    const after = vidRefs(scr)
-    for (const p of beforeVids.get(scr) || []) if (!after.has(p)) prune.push(p)
+    const after = sharedRefs(scr)
+    for (const p of beforeShared.get(scr) || []) if (!after.has(p)) prune.push(p)
   }
   return prune
 }
