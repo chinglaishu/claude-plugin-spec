@@ -985,16 +985,22 @@ const FONTS_FETCHED = new Set<string>()
 const FONT_TYPES: Record<string, string> = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf' }
 // THE WHOLE PASS IS BOUNDED, NOT ONLY EACH REQUEST (fix round 1, F5). Eight faces at 3.5 s each is
 // 28 s inside a 60 s test timeout — a by-product that could eat half a test's budget and redden a run
-// it has no business failing. FONT_PASS_MS bounds the pass twice over: the loop stops itself at the
-// deadline (so nothing keeps running behind the race), and raceTimeout is the hard ceiling around it.
-// A url the deadline cut is NOT marked fetched, so the next moment simply tries it again — the pass
-// is per moment, and the faces of a screen are the same few every time.
+// it has no business failing. FONT_PASS_MS bounds the pass at three levels, and the innermost is the
+// one that matters (fix round 2): raceTimeout only stops WAITING, it cannot cancel an in-flight
+// request — a fetch begun a moment before the deadline would go on running after harvestFonts
+// returned, and its attachment would land after the step had closed, or be lost. So each request is
+// given the REMAINING pass budget as its own timeout (never more than FONT_REQ_MS), which is a real
+// cancellation; the loop then stops at the deadline, and raceTimeout is the outer ceiling. No request
+// outlives the pass. A url the deadline cut is NOT marked fetched, so the next moment simply tries it
+// again — the pass is per moment, and the faces of a screen are the same few every time.
 const FONT_PASS_MS = 6000
+const FONT_REQ_MS = 3000
 async function harvestFonts (page: Page, info: any, fonts: { family?: string, url?: string }[] | undefined): Promise<void> {
   const until = Date.now() + FONT_PASS_MS
   const pass = (async () => {
     for (const f of (Array.isArray(fonts) ? fonts : []).slice(0, 8)) {
-      if (Date.now() >= until) return            // out of time: the rest stay un-fetched, and retriable
+      const left = until - Date.now()
+      if (left <= 0) return                      // out of time: the rest stay un-fetched, and retriable
       const url = String((f && f.url) || '')
       if (!url || FONTS_FETCHED.has(url)) continue
       const m = /\.(woff2|woff|ttf|otf)(?:[?#]|$)/i.exec(url)
@@ -1002,7 +1008,9 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
       const ext = m[1].toLowerCase()
       FONTS_FETCHED.add(url)                      // once per worker, hit or miss — a face that will not fetch will not fetch
       try {
-        const resp: any = await raceTimeout(page.request.get(url, { timeout: 3000 }) as any, 3500)
+        // the request's OWN deadline is whatever is left of the pass, so it is cancelled rather
+        // than merely stopped-waiting-on; the race outside it can then never be the thing that ends it
+        const resp: any = await raceTimeout(page.request.get(url, { timeout: Math.min(FONT_REQ_MS, left) }) as any, left)
         if (!resp || !resp.ok()) continue
         const buf: Buffer = await resp.body()
         if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) continue
