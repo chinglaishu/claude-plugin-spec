@@ -1,0 +1,92 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Sidecar Q&A</title>
+<style>
+:root{--paper:#f6f2ea;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--koke:#5b6b3c;--bengara:#8a4a3c;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--mute);margin:0 0 20px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.tree{background:#fff;border:1px solid var(--line);border-radius:6px;padding:12px 16px;font:13px/1.55 ui-monospace,Menlo,monospace;white-space:pre}
+.gone{color:var(--bengara);text-decoration:line-through}.new{color:var(--koke);font-weight:600}.dim{color:var(--mute)}
+.cap{font-size:12px;color:var(--mute);margin:6px 0 0}
+ol,ul{margin:8px 0;padding-left:22px}li{margin:4px 0}
+.box{border:1.5px solid var(--ink);border-radius:6px;padding:10px 14px;background:#fff;min-width:150px}
+.box b{display:block;font-size:13px}.box small{color:var(--mute);font-size:12px;display:block}
+.repo{border-color:var(--indigo)}.board{border-color:var(--koke);background:#f1f3e8}.cloud{border-color:var(--bengara);background:#f7ede9;border-style:dashed}
+.flow{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.arrow{color:var(--mute);font-size:13px;text-align:center;min-width:110px}
+.arrow span{display:block;border-top:1.5px solid var(--mute);margin-top:4px}
+.tiers{display:grid;grid-template-columns:150px 1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:13px}
+.tiers>div{padding:9px 12px;border-bottom:1px solid var(--line);background:#fff}.tiers>.h{background:var(--tint);font-weight:600}
+.tiers>.k{font-weight:600}.rec{background:#f1f3e8 !important}
+.note{border-left:3px solid var(--bengara);padding:6px 12px;color:var(--ink);background:#fbf7f2;margin:10px 0;font-size:14px}
+.rc{border-left:3px solid var(--koke);padding:6px 12px;background:#f1f3e8;margin:10px 0;font-size:14px}
+</style></head><body>
+<h1>Sidecar Q&amp;A — how it left the repo, other shapes, the long run</h1>
+<p class="sub">2026-09-04 · answers to the three questions after moving dojostack's board out of <code>dojostack_main</code></p>
+
+<h2>1 · How it was removed</h2>
+<div class="row">
+<div><div class="tree"><span class="dim">dojostack_main/  (before → after)</span>
+<span class="gone">spec/                 400 tracked files, 328 MB on disk</span>
+<span class="gone">tools/*.mjs tools/board/   vendored, never tracked</span>
+<span class="gone">playwright.board.ts</span>
+<span class="gone">board.html  node_modules/  test-results/</span>
+<span class="gone">.specboard-backup-*/       60 update backups</span>
+<span class="gone">package.json  board · e2e · staff scripts, playwright deps</span>
+<span class="gone">.gitignore    the whole specboard block</span>
+<span class="new">.specboard            ONE line:  ../dojostack_specboard</span>
+dojostack_frontend/  dojostack_backend/  .github/  …   <span class="dim">untouched</span></div>
+<p class="cap">The working tree is clean of specboard. Git <b>history</b> still holds every old frame (the pack is 460 MB) — that only shrinks with a history rewrite, which breaks every clone and is your call, not mine.</p></div>
+<div><div class="tree"><span class="dim">dojostack_specboard/  (new, its own git repo, 1 commit, 421 files, 20 MB pack)</span>
+spec/            PRDs · tests · evidence · fonts · viz · _results-index
+  _specboard.json  <span class="new">"app": "../dojostack_main"</span>   the way back
+  _app.ts _seed.ts <span class="new">reach the monorepo through that field</span>
+tools/           the vendored skeleton (0.43.7)
+board.html  playwright.board.ts  package.json (board :4174)
+node_modules/  test-results/  spec/_runs/ (277 MB)   <span class="dim">ignored</span>
+.specboard-backup-*/                                  <span class="dim">ignored</span></div>
+<ol>
+<li><code>mv</code> every specboard path out of the working tree (the list is the plugin's own <code>FILES</code>).</li>
+<li><code>git add -u spec playwright.board.ts</code> → 400 deletions staged; pointer, package.json, .gitignore, copilot notes staged by name. One commit, <b>not pushed</b>.</li>
+<li>Sidecar: skeleton <code>package.json</code>, <code>.gitignore</code>s, manifest <code>app</code>, <code>git init</code>, one commit.</li>
+<li>launchd WorkingDirectory + the ports registry → the sidecar; board rebuilt and restarted.</li>
+<li>Framework 0.44.0-c: <code>.specboard</code> is followed by update, scaffold and every skill.</li>
+</ol></div></div>
+
+<h2>2 · A product with no main repo (frontend repo + backend repo)</h2>
+<p>The sidecar already <em>is</em> this case: the board never needed a main repo, only a <b>running app URL</b> (<code>spec/_config.json baseUrl</code> — tests drive the app over HTTP, not through files). Two small additions make it clean:</p>
+<div class="flow">
+<div class="box repo"><b>myapp-frontend/</b><small>.specboard → ../myapp_specboard</small></div>
+<div class="box repo"><b>myapp-backend/</b><small>.specboard → ../myapp_specboard</small></div>
+<div class="arrow">pointer, one line each<span></span></div>
+<div class="box board"><b>myapp_specboard/</b><small>spec/ · tools · board.html · its own git</small><small>manifest <code>app: { frontend: "../myapp-frontend", backend: "../myapp-backend" }</code></small></div>
+<div class="arrow">baseUrl, over HTTP<span></span></div>
+<div class="box"><b>the running app</b><small>dev server · preview URL · staging</small></div>
+</div>
+<ul>
+<li><b>Pointer in every repo an agent works in.</b> kg-staff / kg-deep run from either repo and land on the same board.</li>
+<li><b><code>app</code> becomes a map when there is more than one repo</b> (a string stays valid). Only project helpers read it — a seed script that shells into the backend, <code>governs:</code> paths qualified by key (<code>backend:src/api/x.py</code>), the capabilities scan of each repo's <code>.claude/</code>. The fold itself never reads app code.</li>
+<li><b>CI:</b> the e2e gate runs in the board repo against a preview URL; the app repos trigger it with <code>repository_dispatch</code> carrying that URL. This is the one piece of choreography the layout costs.</li>
+</ul>
+<div class="rc"><b>Recommendation:</b> make the sidecar the <em>default</em> for every project and the vendored-in layout the exception. One model, one place for the harvest, and the app repo never carries anything but one line. <b>Failure mode I argued against:</b> a fresh clone of an app repo shows no board until the sidecar is cloned too — the pointer names it, and kg-init can clone it, so discoverability survives.</div>
+
+<h2>3 · The long run — what belongs in the cloud</h2>
+<p>Not everything in the sidecar is the same kind of thing. Split it by what it is, and only one tier is heavy:</p>
+<div class="tiers">
+<div class="h">tier</div><div class="h">what</div><div class="h">size · churn</div><div class="h">where it should live</div>
+<div class="k">authored</div><div>prd.md · test.spec.ts · steps.ts · _specboard.json</div><div>KB · edited by people</div><div class="rec">git — the sidecar repo. Never anywhere else.</div>
+<div class="k">the fold</div><div>_results-index.json (proof state, pinned hashes)</div><div>~1 MB · every harvest</div><div class="rec">git, or fetched from the bucket by the hosted board.</div>
+<div class="k">harvest blobs</div><div>evidence frames · replicas · fonts · viz</div><div>10–30 MB / screen · every harvest</div><div class="rec">step 1 Git LFS (zero code) → step 2 a bucket, content-addressed by hash</div>
+<div class="k">run records</div><div>spec/_runs videos + screenshots</div><div>277 MB today · per run</div><div class="rec">bucket — <code>shipToBucket</code> already exists (Setup → storage)</div>
+<div class="k">vendored tools</div><div>tools/*.mjs · board/client.js</div><div>24 MB · every release</div><div class="rec">stop vendoring: run the board from the installed plugin (a CLI, <code>SPECBOARD_ROOT</code>)</div>
+</div>
+<div class="flow" style="margin-top:22px">
+<div class="box board"><b>CI harvest</b><small>runs the suite against the preview URL</small></div>
+<div class="arrow">frames · index<span></span></div>
+<div class="box cloud"><b>blob store</b><small>S3 / R2 / GCS · private · by hash</small></div>
+<div class="arrow">reads by path<span></span></div>
+<div class="box cloud"><b>hosted board</b><small>board.html is already static — Pages/CDN</small><small>read-only for the team; Run stays local</small></div>
+</div>
+<div class="rc"><b>Recommendation, staged:</b> (1) <b>now</b> — Git LFS on <code>*.png *.woff2 *.webm</code> in the sidecar, no code; (2) <b>next</b> — route evidence through the existing <code>storage</code> config to a bucket and let the board read <code>bucketUrl</code> paths; (3) <b>then</b> — publish the sidecar's <code>board.html</code> + index as a static site so the team reads the board without a server. A hosted multi-tenant "specboard cloud" is step 4 and only worth it once step 3 is used by more than one project.</div>
+<div class="note"><b>Failure modes to hold in mind:</b> evidence shows real customer data, so any bucket must be private and the hosted board behind auth; GitHub LFS is 1 GB free then metered, and dojostack already grows ~20 MB per harvest; <code>tools/evidence.mjs</code> relies on deterministic paths that overwrite in place — a content-addressed store changes that contract and the fold's prune must be re-proven; a read-only hosted board loses Run/Scan/Compose, which is fine only if runs move to CI first.</div>
+</body></html>
