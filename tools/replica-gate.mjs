@@ -145,6 +145,11 @@ export function replicaGaps (live, replica, region, opts = {}) {
       if (out.length >= max) break
       if (!painted(r) || r.w < EXTRA_MIN || r.h < EXTRA_MIN) continue
       if (!inRegion(r, region)) continue
+      // …and the SCENE ROOT is not an extra box: it is the box the file is a picture OF, and the
+      // walk that produced the live skeleton starts at doc.body's CHILDREN, so a body-rooted scene's
+      // own root is in no skeleton, ever (caught on the first harvest after this rule landed —
+      // every body-rooted replica reported `container at 0,0 1440x1890`, its own root).
+      if (region && sameBox(r, region)) continue
       if (liveEls.some(e => sameBox(e, r))) continue
       out.push({ kind: 'extra-box', what: String(r.kind || 'box'), x: r.x, y: r.y, w: r.w, h: r.h })
     }

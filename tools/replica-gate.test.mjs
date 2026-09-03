@@ -270,3 +270,12 @@ test('the case the relaxation exists for: a pseudo-element\'s content in front o
   const glued = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 60, h: 20, kind: 'button', text: 'Addendum' }] }
   assert.equal(replicaGaps(live, glued, REGION)[0].kind, 'missing-text', 'and not a word that merely starts the same')
 })
+
+test('the scene root is not an extra box — the live walk never measures the body it stands for', () => {
+  // caught on the first harvest after extra-box landed: every body-rooted replica reported its own
+  // root (`container at 0,0 1440x1890`). spec/_layout-walk.mjs walks doc.body's CHILDREN, so the
+  // body itself is in no skeleton, ever — and the replica's root IS that body.
+  const rep = REP()
+  rep.els.unshift({ x: REGION.x, y: REGION.y, w: REGION.w, h: REGION.h, kind: 'container', bg: '253,252,249' })
+  assert.deepEqual(replicaGaps(LIVE(), rep, REGION), [])
+})
