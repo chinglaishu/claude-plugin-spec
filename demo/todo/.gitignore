@@ -12,6 +12,11 @@ package-lock.json
 /playwright.board.ts
 /board.html
 /spec/_base.ts
+# …and the two modules _base.ts serialises into the page under test — the layout skeleton's walk and
+# the replica's capture (both added to the skeleton on 2026-09-03; this list had not learnt them, so
+# they arrived as untracked files inside a project whose whole policy is not to commit vendored code)
+/spec/_layout-walk.mjs
+/spec/_replica.mjs
 /spec/_design.css
 /spec/_fixture.ts
 /spec/_state-guard.ts
