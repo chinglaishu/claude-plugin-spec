@@ -983,25 +983,37 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase)
 // in silence, because a missing face costs a fallback stack and nothing else.
 const FONTS_FETCHED = new Set<string>()
 const FONT_TYPES: Record<string, string> = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf' }
+// THE WHOLE PASS IS BOUNDED, NOT ONLY EACH REQUEST (fix round 1, F5). Eight faces at 3.5 s each is
+// 28 s inside a 60 s test timeout — a by-product that could eat half a test's budget and redden a run
+// it has no business failing. FONT_PASS_MS bounds the pass twice over: the loop stops itself at the
+// deadline (so nothing keeps running behind the race), and raceTimeout is the hard ceiling around it.
+// A url the deadline cut is NOT marked fetched, so the next moment simply tries it again — the pass
+// is per moment, and the faces of a screen are the same few every time.
+const FONT_PASS_MS = 6000
 async function harvestFonts (page: Page, info: any, fonts: { family?: string, url?: string }[] | undefined): Promise<void> {
-  for (const f of (Array.isArray(fonts) ? fonts : []).slice(0, 8)) {
-    const url = String((f && f.url) || '')
-    if (!url || FONTS_FETCHED.has(url)) continue
-    const m = /\.(woff2|woff|ttf|otf)(?:[?#]|$)/i.exec(url)
-    if (!m) continue
-    const ext = m[1].toLowerCase()
-    FONTS_FETCHED.add(url)                        // once per worker, hit or miss — a face that will not fetch will not fetch
-    try {
-      const resp: any = await raceTimeout(page.request.get(url, { timeout: 3000 }) as any, 3500)
-      if (!resp || !resp.ok()) continue
-      const buf: Buffer = await resp.body()
-      if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) continue
-      const hash = createHash('sha256').update(buf).digest('hex').slice(0, 16)
-      const file = info.outputPath(`font-${hash}.${ext}`)
-      writeFileSync(file, buf)
-      info.attachments.push({ name: `font ${hash} ${String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'}`, path: file, contentType: FONT_TYPES[ext] })
-    } catch { /* a face that will not fetch is a fallback stack, never a failed run */ }
-  }
+  const until = Date.now() + FONT_PASS_MS
+  const pass = (async () => {
+    for (const f of (Array.isArray(fonts) ? fonts : []).slice(0, 8)) {
+      if (Date.now() >= until) return            // out of time: the rest stay un-fetched, and retriable
+      const url = String((f && f.url) || '')
+      if (!url || FONTS_FETCHED.has(url)) continue
+      const m = /\.(woff2|woff|ttf|otf)(?:[?#]|$)/i.exec(url)
+      if (!m) continue
+      const ext = m[1].toLowerCase()
+      FONTS_FETCHED.add(url)                      // once per worker, hit or miss — a face that will not fetch will not fetch
+      try {
+        const resp: any = await raceTimeout(page.request.get(url, { timeout: 3000 }) as any, 3500)
+        if (!resp || !resp.ok()) continue
+        const buf: Buffer = await resp.body()
+        if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) continue
+        const hash = createHash('sha256').update(buf).digest('hex').slice(0, 16)
+        const file = info.outputPath(`font-${hash}.${ext}`)
+        writeFileSync(file, buf)
+        info.attachments.push({ name: `font ${hash} ${String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'}`, path: file, contentType: FONT_TYPES[ext] })
+      } catch { /* a face that will not fetch is a fallback stack, never a failed run */ }
+    }
+  })()
+  await raceTimeout(pass, FONT_PASS_MS)
 }
 
 // The pair a phase leaves behind, keyed by the BEAT it proves (2026-08-28 — the board is becoming
