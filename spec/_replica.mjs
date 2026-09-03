@@ -545,8 +545,12 @@ export function captureReplica (arg) {
       // the gate read 20 missing boxes and 18 moved texts on a file whose every `data-b` was right.
       // Holding its box is the plate's ONE job, so it says so where a flex parent listens.
       'flex-shrink:0',
-      'width:' + Math.round(r.width) + 'px',
-      'height:' + Math.round(r.height) + 'px',
+      // …AT THE WIDTH THE BROWSER MEASURED, not a rounded one (task 3b, 2026-09-04). Every other box
+      // in a replica carries its sub-pixel size; a plate rounded to whole pixels changed where the
+      // text beside it wrapped, and board R21's ringed sentence came back `moved-text` (and, since a
+      // beat's focus is geometric, `missing-focus`) for the sake of half a pixel.
+      'width:' + (Math.round(r.width * 100) / 100) + 'px',
+      'height:' + (Math.round(r.height * 100) / 100) + 'px',
       'margin:' + ((shift && shift.top ? mt - shift.top : mt)) + 'px ' +
         ((cs && parseFloat(gp(cs, 'margin-right'))) || 0) + 'px ' +
         ((cs && parseFloat(gp(cs, 'margin-bottom'))) || 0) + 'px ' +

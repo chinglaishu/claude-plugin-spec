@@ -1824,3 +1824,19 @@ test('a placeholder for an OUT-OF-FLOW element takes no flow space — it never 
   const rule = new RegExp('\\.rep \\.' + m[1] + '\\{([^}]*)\\}').exec(r.html)
   assert.match(rule[1], /position:absolute/, 'and it stays out of the flow: ' + rule[1])
 })
+
+test('a placeholder is exactly as wide as what it stands in for — sub-pixel, like every other box', () => {
+  // board R21's last gap: an inline plate 35.48 px wide was emitted as `35px`, the paragraph beside
+  // it then wrapped one word earlier, and the sentence's own box moved — `moved-text` and, since a
+  // beat's focus is geometric, `missing-focus` on the very element the beat rings. Every other box
+  // in a replica carries the width the browser measured; the plate now does too.
+  const badge = el('span', [100, 300, 35.48, 16.2], { text: 'lead', cs: { display: 'inline', opacity: '0' } })
+  const word = el('span', [136, 300, 200, 16], { text: 'the sentence', cs: { color: 'rgb(1,1,1)' } })
+  const p = el('p', [100, 300, 248.67, 61.36], { children: [badge, word] })
+  const body = el('body', [0, 0, 1440, 900], { children: [p] })
+  const r = captureReplica({ target: p, ring: null, props: REPLICA_PROPS, env: env(body) })
+  const m = /<div class="(r\d+)" data-plate="space"/.exec(r.html)
+  const rule = new RegExp('\\.rep \\.' + m[1] + '\\{([^}]*)\\}').exec(r.html)
+  assert.match(rule[1], /width:35\.48px/, 'the plate keeps its measured width: ' + rule[1])
+  assert.match(rule[1], /height:16\.2px/, 'and its measured height')
+})
