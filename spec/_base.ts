@@ -14,6 +14,11 @@ import { RING, CARD, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
 // …and the callout's WORDS from the module that owns them (2026-08-30), so the burned card and the
 // drawn one say the same sentence for the same scene of the same beat.
 import { calloutText, CALLOUT_TYPE, calloutLines, calloutLabelWidth } from '../tools/callout-text.mjs'
+// the layout skeleton's walk — ONE self-contained function Playwright serialises into the page
+// (2026-09-03: moved out of snapLayout's inline closure so tools/layout-walk.test.mjs can pin what
+// it must always capture — see the module's header)
+// @ts-ignore — a plain .mjs beside the spec; Playwright's loader takes it, tsc never sees this file
+import { snapLayoutWalk } from './_layout-walk.mjs'
 
 export { expect }
 
@@ -88,7 +93,7 @@ export const test = windowed.extend<{ page: Page, _failAggregate: void }>({
     STEP_FAILURES = []
     REQ_CHIPS = []
     PROVING = null; CLAIM = null; NOTE = ''; BEHAVIOR = null
-    BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null; CUR_CHECK = null
+    BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null; LAST_TARGET = null; CUR_CHECK = null
     // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
     // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
     // out like any other line, so the opening narration finishes before the bar starts moving.
@@ -322,6 +327,9 @@ let BEAT_CURSOR: Record<string, number> = {}
 // re-render the callout in place without a fresh target. Cleared when a step starts clean.
 type Box = { x: number, y: number, width: number, height: number }
 let LAST_BOX: Box | null = null
+// …and the Locator the ring is around (2026-09-03): snapLayout hands the element itself to the
+// skeleton walk, so the ringed element is measured FIRST — never left to document order and the cap
+let LAST_TARGET: Locator | null = null
 // Vestigial since the narration stopped rendering a "proving R5" line and the id strip (2026-08-27):
 // the verdict now rides on BEHAVIOR.state. Kept only because checkReq still assigns it and the
 // per-test reset clears it; to be removed with the chip strip in the follow-up pass.
@@ -592,6 +600,7 @@ async function paintFocus (target: Locator, opts: { failed?: boolean } = {}): Pr
   // a target that no longer exists, which photographed a failure as a pass
   if (!box) { if (opts.failed && LAST_BOX) await renderOverlay(LAST_BOX, true); return }
   LAST_BOX = box
+  LAST_TARGET = target
   await renderOverlay(box, !!opts.failed)
 }
 // Hide the overlay so a NEW step starts clean — the ring and callout reappear only once the step
@@ -600,6 +609,7 @@ async function hideFocus (): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   LAST_BOX = null
+  LAST_TARGET = null
   await hideOverlay(page)
 }
 // The DOM half of hiding, shared with renderOverlay's no-ring branch (which must not clear LAST_BOX —
@@ -865,378 +875,13 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
   if (!page) return
   try {
     const info = test.info()
-    const data: any = await raceTimeout(page.evaluate((ring: Box | null) => {
-      const OVERLAY = '__specboard-focus'
-      const CAP = 360            // enough boxes to recognise a screen (a data grid alone is ~200 cells)
-      // Depth cap. WAS 14 — which reached a sidebar link (depth ~11) but stopped 7–11 levels SHORT of
-      // an AG-GRID cell VALUE (measured at depth 21–25 on dojostack: grid → viewport → clipper →
-      // container → row → cell → wrapper → value-span). So the mirror drew every data grid as textless
-      // grey boxes while the photograph beside it showed the real numbers — the drawing was useless to
-      // compare (the human, 2026-09-03). A deep WRAPPER still adds no text (the leaf+text rule below
-      // only lettered childless nodes) and no box below MIN, so raising this only reaches the values
-      // that were being missed; CAP + BUDGET keep the walk bounded.
-      const MAXD = 28
-      const MIN = 12             // px: below this an element is a divider or an icon fleck
-      const BUDGET = 9000        // nodes visited, so a huge app costs a bounded walk
-      const vw = window.innerWidth || 0
-      const vh = window.innerHeight || 0
-      const rb = ring ? { x: ring.x, y: ring.y, w: ring.width, h: ring.height } : null
-      const rArea = rb ? Math.max(1, rb.w * rb.h) : 0
-      const els: any[] = []
-      let visited = 0
-      const clean = (s: any) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, 48)
-      // "rgb(r, g, b)" / "rgba(r, g, b, a)" → "r,g,b", or '' when it is fully transparent or
-      // unreadable. The DRAWING never sees this string as a colour — tools/viz.mjs dyeOf maps it to
-      // the nearest design token at derive time — so what rides the skeleton is measurement, not paint.
-      const rgb = (v: any) => {
-        const m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,/\s]+([\d.]+))?/i.exec(String(v || ''))
-        if (!m) return ''
-        if (m[4] != null && Number(m[4]) <= 0.02) return ''
-        return [1, 2, 3].map(i => Math.round(Number(m[i]))).join(',')
-      }
-      const has = (el: any, n: string) => !!(el.hasAttribute && el.hasAttribute(n))
-      // THE ICON A WORDLESS CONTROL IS MADE OF (mirror-10, 2026-09-02, the human on the demo's R1
-      // scene 3: "there's a weird extra circle on each row's right side in the schematic"). A row's
-      // chevron is a 28×28 <button class="caret"> holding a 24-unit stroked <svg>; the button took
-      // the drawing's button plate and the svg took its image plate, so the thin grey "›" in the
-      // photograph came out a filled lozenge with a square on it. The fix is on both ends: here the
-      // few SHAPES a small inline svg is actually made of are measured — its own path data, in its
-      // own viewBox units — and tools/viz.mjs draws those lines instead of a plate.
-      //
-      // Bounded and untrusted like everything else on this skeleton: only an svg no bigger than
-      // ICON_MAX, at most 12 shapes, at most 1500 serialised characters (900 before each shape
-      // carried its own paint — mirror-11), at most 400 per `d`, and the
-      // drawing re-validates every one of them (normIcon) before a character of it is emitted. An
-      // svg with nothing capturable in it stays a plain image, which is the honest picture of "a
-      // graphic is shown here". No colour travels raw — `fg` is a measurement, mapped to a dye at
-      // derive time exactly like bg/fg/bd above.
-      const ICON_MAX = 64          // page px: above this an inline svg is an illustration, not an icon
-      const ICON_SKIP = ['defs', 'clippath', 'mask', 'symbol', 'style', 'title', 'desc', 'metadata', 'filter', 'pattern']
-      const numAt = (v: any) => {
-        const n = Number(v)
-        return Number.isFinite(n) ? Math.round(n * 100) / 100 : null
-      }
-      const iconOf = (svg: any, r: any, cs: any) => {
-        let vb: any = [0, 0, Math.round(r.width), Math.round(r.height)]
-        const vbA = String(svg.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(numAt)
-        if (vbA.length === 4 && vbA.every((n: any) => n != null) && (vbA[2] as number) > 0 && (vbA[3] as number) > 0) vb = vbA
-        const swA = Number(svg.getAttribute('stroke-width'))
-        const sw = Number.isFinite(swA) && swA > 0 ? Math.round(swA * 100) / 100 : 1.5
-        const shapes: any[] = []
-        // fill/stroke are INHERITED down the svg's own tree, so each shape is asked with what its
-        // ancestors set — a `fill="none" stroke="currentColor"` root is what makes a feather-style
-        // icon a line drawing rather than a solid one. Nothing set anywhere is SVG's own default:
-        // filled, unstroked.
-        const take = (node: any, pf: any, ps: any) => {
-          const kids = node.children || []
-          for (let i = 0; i < kids.length; i++) {
-            if (shapes.length >= 12) return
-            const c = kids[i]
-            const t = String(c.tagName || '').toLowerCase()
-            if (ICON_SKIP.indexOf(t) >= 0) continue
-            const cf = c.getAttribute('fill') || pf
-            const cst = c.getAttribute('stroke') || ps
-            let sh: any = null
-            if (t === 'path') {
-              const d = String(c.getAttribute('d') || '').trim()
-              if (d && d.length <= 400) sh = { t: 'path', d }
-            } else if (t === 'circle') {
-              const cx = numAt(c.getAttribute('cx')); const cy = numAt(c.getAttribute('cy')); const rr = numAt(c.getAttribute('r'))
-              if (cx != null && cy != null && rr != null && rr > 0) sh = { t: 'circle', cx, cy, r: rr }
-            } else if (t === 'line') {
-              const x1 = numAt(c.getAttribute('x1')); const y1 = numAt(c.getAttribute('y1'))
-              const x2 = numAt(c.getAttribute('x2')); const y2 = numAt(c.getAttribute('y2'))
-              if (x1 != null && y1 != null && x2 != null && y2 != null) sh = { t: 'line', x1, y1, x2, y2 }
-            } else if (t === 'rect') {
-              const rx0 = numAt(c.getAttribute('x')); const ry0 = numAt(c.getAttribute('y'))
-              const rw = numAt(c.getAttribute('width')); const rh = numAt(c.getAttribute('height'))
-              const rr = numAt(c.getAttribute('rx'))
-              if (rx0 != null && ry0 != null && rw != null && rw > 0 && rh != null && rh > 0) {
-                sh = rr != null && rr > 0 ? { t: 'rect', x: rx0, y: ry0, w: rw, h: rh, rx: rr } : { t: 'rect', x: rx0, y: ry0, w: rw, h: rh }
-              }
-            } else if (t === 'polyline' || t === 'polygon') {
-              const pts = String(c.getAttribute('points') || '').trim()
-              if (pts && pts.length <= 400) sh = { t, points: pts }
-            }
-            if (sh) {
-              // THE SHAPE'S OWN PAINT (mirror-11, 2026-09-02, the lead on the re-harvested demo's
-              // R3/R6 scenes). Tsumiki's container ring is ONE svg holding a pale track circle and
-              // an indigo progress arc; the icon-level `fg` below is the svg's computed `color`, so
-              // both drew in the button's ink and the ring came out a heavy black circle. What the
-              // page actually paints each shape is only readable off the COMPUTED style — the
-              // colours here arrive through a stylesheet, not an attribute — so each shape is asked
-              // once: at most 12 shapes, so the cost is bounded like everything else on this walk.
-              //
-              //   sc  "r,g,b"  computed stroke, when it is visible
-              //   fc  "r,g,b"  computed fill, when it is visible
-              //   sw  units    computed stroke-width, only when it differs from the icon's own
-              //   op  0..1     computed opacity, only when the shape is faded
-              //
-              // No colour travels as paint: tools/viz.mjs maps every one through dyeOf at derive
-              // time, exactly like bg/fg/bd, and drops a malformed one back to the icon's dye.
-              let ccs: any = null
-              try { ccs = getComputedStyle(c) } catch { /* a shape that will not compute keeps the icon's ink */ }
-              if (ccs) {
-                const scv = rgb(ccs.stroke)
-                const fcv = rgb(ccs.fill)
-                if (scv) { sh.s = 1; sh.sc = scv }
-                if (fcv) { sh.f = 1; sh.fc = fcv }
-                const csw = parseFloat(ccs.strokeWidth)
-                if (sh.s && Number.isFinite(csw) && csw > 0 && Math.abs(csw - sw) > 0.01) sh.sw = Math.round(csw * 100) / 100
-                const cop = parseFloat(ccs.opacity)
-                if (Number.isFinite(cop) && cop < 1) sh.op = Math.round(cop * 100) / 100
-              }
-              // …and the ATTRIBUTE reading only rescues a shape the computed style could not answer
-              // for at all (a gradient or pattern paint, a style that would not compute): it draws
-              // in the icon's dye, as it did before this pass, rather than vanishing.
-              if (!sh.f && !sh.s) {
-                const fv = String(cf == null ? 'black' : cf).trim().toLowerCase()
-                const sv = String(cst == null ? 'none' : cst).trim().toLowerCase()
-                if (fv && fv !== 'none') sh.f = 1
-                if (sv && sv !== 'none') sh.s = 1
-              }
-              if (sh.f || sh.s) {
-                shapes.push(sh)
-                // the serialised budget, raised from 900 with the per-shape paint (mirror-11): four
-                // more small fields on each of at most 12 shapes, and a truncated icon is a drawing
-                // of half a picture
-                if (JSON.stringify(shapes).length > 1500) { shapes.pop(); return }
-              }
-            }
-            if (t === 'g' || t === 'a' || t === 'svg') take(c, cf, cst)
-          }
-        }
-        take(svg, svg.getAttribute('fill'), svg.getAttribute('stroke'))
-        if (!shapes.length) return null
-        // the icon's INK: currentColor, which is this element's own computed colour — unless the svg
-        // names a literal colour in its own fill/stroke, in which case that is what a reader sees.
-        let fg = cs ? rgb(cs.color) : ''
-        const lit = (n: string) => {
-          const a = String(svg.getAttribute(n) || '').trim().toLowerCase()
-          return !!a && a !== 'none' && a !== 'currentcolor' && a !== 'inherit' && a.slice(0, 4) !== 'url('
-        }
-        if (cs) {
-          if (lit('stroke')) fg = rgb(cs.stroke) || fg
-          else if (lit('fill')) fg = rgb(cs.fill) || fg
-        }
-        const icon: any = { vb, sw, shapes }
-        if (fg) icon.fg = fg
-        return icon
-      }
-      const kindOf = (el: any, tag: string, leaf: boolean, text: string, r: any) => {
-        const role = (el.getAttribute && el.getAttribute('role')) || ''
-        const type = String((tag === 'INPUT' && el.type) || '').toLowerCase()
-        if (/^H[1-6]$/.test(tag) || role === 'heading') return 'heading'
-        // A TICK IS A STATE, NOT A FIELD (2026-09-02): a checkbox filed under `input` drew a text box,
-        // so a done row and an open one were the same picture — the thing a to-do screen's beats
-        // prove most often. Its own kind, and `on` below says which way it is set.
-        if (type === 'checkbox' || type === 'radio' || role === 'checkbox' || role === 'radio' || role === 'switch') return 'check'
-        // …and a CONTROL that says which way it is set is one too, however it is built (mirror-9):
-        // aria-checked / aria-pressed, or the data-* flag a hand-rolled toggle carries. Only on a real
-        // control — Tsumiki puts `data-done` on the task ROW as well, and a row is not a tick box.
-        const ctl = tag === 'BUTTON' || tag === 'INPUT' || role === 'button' || role === 'switch'
-        if (ctl && (has(el, 'aria-checked') || has(el, 'aria-pressed') || has(el, 'data-done') || has(el, 'data-checked'))) return 'check'
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return 'input'
-        // …and so is a WORDLESS SQUARE control with nothing inside it, which is what a hand-rolled
-        // tick box looks like from here (Tsumiki's is a 21×21 `<button class="cb">` whose only signal
-        // is its own paint). Drawn as its own plate at its own radius, never as a text box with a
-        // placeholder bar across it — the "missing tickbox" the human named.
-        if ((tag === 'BUTTON' || role === 'button') && !text && el.childElementCount === 0 &&
-          Math.abs(r.width - r.height) <= 3 && r.width <= 32) return 'check'
-        if (tag === 'BUTTON' || tag === 'A' || role === 'button' || role === 'link' || role === 'tab') return 'button'
-        if (tag === 'IMG' || tag === 'SVG' || tag === 'CANVAS' || tag === 'VIDEO' || tag === 'PICTURE') return 'image'
-        if (tag === 'LI' || tag === 'TR' || role === 'row' || role === 'listitem') return 'row'
-        if (leaf && text) return 'text'
-        return 'container'
-      }
-      // `pop` is the EFFECTIVE opacity the ancestors have already applied (mirror-9, 2026-09-02).
-      const walk = (node: any, depth: number, pop: number) => {
-        if (depth > MAXD) return
-        const kids = node.children || []
-        for (let i = 0; i < kids.length; i++) {
-          if (els.length >= CAP || visited >= BUDGET) return
-          const el = kids[i]
-          visited++
-          if (el.id === OVERLAY) continue                 // never measure our own narration overlay
-          const tag = String(el.tagName || '').toUpperCase()
-          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' ||
-            tag === 'LINK' || tag === 'META') continue
-          const r = el.getBoundingClientRect()
-          if (!r || r.width < 1 || r.height < 1) continue                 // display:none, and its subtree
-          if (r.right <= 0 || r.left >= vw || r.bottom <= 0 || r.top >= vh) continue   // off-screen
-          // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT MEASURE (mirror-9, 2026-09-02). Opacity
-          // is inherited by PAINT, not by property: Tsumiki hides a row's edit/delete buttons with
-          // `opacity:0` until hover, so the BUTTON came back at 0 and its 16×16 icon — which has no
-          // opacity of its own — came back opaque and was drawn. Three wash squares where the
-          // photograph shows one chevron. So the walk multiplies the ancestors' opacity down, and an
-          // element the page has faded out (or hidden by `visibility`) is skipped whole: not
-          // captured, not descended into. `display:none` is already gone, on its zero rect.
-          let cs: any = null
-          try { cs = getComputedStyle(el) } catch { /* an element that will not compute is measured as it is */ }
-          let eop = pop
-          if (cs) {
-            const vis = String(cs.visibility || '')
-            if (vis === 'hidden' || vis === 'collapse') continue
-            const ov = parseFloat(cs.opacity)
-            eop = pop * (Number.isFinite(ov) ? ov : 1)
-            if (eop < 0.05) continue
-          }
-          // …but a SMALL LEAF THAT CARRIES WORDS is kept down to 6px (2026-09-02): a sidebar badge
-          // count, a tiny stamp — the mirror was missing every one of them at the 12px floor, and a
-          // reader comparing the drawing to the photograph saw a count on one side only
-          const leafWords = el.childElementCount === 0 && !!clean(el.textContent)
-          const floor = leafWords ? 6 : MIN
-          if (r.width >= floor && r.height >= floor) {
-            const leaf = el.childElementCount === 0
-            let text = leaf ? clean(el.textContent) : ''
-            // a field showing its PLACEHOLDER is empty, and the drawing has to say so in the quiet
-            // ink rather than in the field's own text colour — otherwise "Add a task and press
-            // Enter…" reads as something a person typed (mirror-9)
-            let ph = false
-            if (tag === 'INPUT') {
-              const v = clean(el.value)
-              text = v || clean(el.getAttribute('placeholder') || '')
-              ph = !v && !!text
-            }
-            let focus = false
-            if (rb) {
-              const ox = Math.max(0, Math.min(r.right, rb.x + rb.w) - Math.max(r.left, rb.x))
-              const oy = Math.max(0, Math.min(r.bottom, rb.y + rb.h) - Math.max(r.top, rb.y))
-              const area = Math.max(1, r.width * r.height)
-              // the RINGED element, not every ancestor containing it: most of the element must lie
-              // inside the ring, and it may not be far larger than the ring itself
-              focus = (ox * oy) / area >= 0.6 && area <= rArea * 4
-            }
-            // the asserted value is the whole point of the mirror — take it however it is nested
-            if (focus && !text) text = clean(el.innerText || el.textContent)
-            const rec: any = {
-              x: Math.round(r.left), y: Math.round(r.top),
-              w: Math.round(r.width), h: Math.round(r.height),
-              kind: kindOf(el, tag, leaf, text, r)
-            }
-            if (text) rec.text = text
-            if (ph) rec.ph = 1
-            if (focus) rec.focus = true
-            // THE ELEMENT'S OWN TYPE (2026-08-29, the human: "the input box of add task is in a
-            // different place"). The boxes already matched; what did not was the text INSIDE the
-            // ringed box — the drawing typed the asserted value centred, at a size taken from the
-            // box's height, which is right for a text leaf and wrong for a field. So measure what
-            // the page actually does with that text: its font size, its alignment, and the inset
-            // its text starts from (padding + border).
-            //
-            // …AND ITS OWN PAINT AND STATE (mirror-8, 2026-09-02, the human: the schematic "looks
-            // like a skeleton"). Everything below was being thrown away, and with it every chip, the
-            // primary button, the ticked box and the struck-through done row — the drawing showed
-            // one grey bar for all of them. THE FIELDS, all optional (an older skeleton simply has
-            // none of them and draws exactly as it always did):
-            //
-            //   bg  "r,g,b"  background colour, when it is not transparent
-            //   fg  "r,g,b"  text colour, for an element that carries text
-            //   bd  "r,g,b"  border colour, when some border is actually drawn
-            //   rd  px       border-radius (top-left), capped at 40
-            //   fw  1        font-weight ≥ 600
-            //   td  1        text-decoration-line contains line-through
-            //   it  1        font-style italic
-            //   op  0..1     EFFECTIVE opacity (ancestors multiplied in), only when faded
-            //   on  1        a `check` that is ticked (checked / aria-checked / aria-pressed / data-*)
-            //   dis 1        disabled / aria-disabled
-            //   ff  sans|mono|serif   the family the text is set in (mirror-9)
-            //   tt  'u'      text-transform:uppercase — the casing the page shows
-            //   ph  1        the text came from a field's PLACEHOLDER, so the field is empty
-            //
-            // These are MEASUREMENTS, not paint: tools/viz.mjs dyeOf maps each colour to the nearest
-            // design token at derive time and the SVG emits only var(--token) — no app colour has
-            // ever reached, or may reach, the board.
-            //
-            // The style was already resolved ABOVE, once per VISITED on-screen element — the walk
-            // needs each element's own opacity and visibility to carry the effective value down to
-            // its children (mirror-9), so it can no longer be deferred to the ≤150 kept ones.
-            // (Corrected 2026-09-02, rule 6: this comment used to say "one per kept element".) The
-            // cost is bounded by the same BUDGET the walk already obeys, and every element that
-            // reaches it has just been measured with getBoundingClientRect anyway.
-            try {
-              if (text && cs) {
-                const fs = parseFloat(cs.fontSize)
-                if (fs > 0) rec.fs = Math.round(fs * 10) / 10
-                let ta = cs.textAlign
-                const rtl = cs.direction === 'rtl'
-                if (ta === 'start') ta = rtl ? 'right' : 'left'
-                if (ta === 'end') ta = rtl ? 'left' : 'right'
-                rec.ta = ta === 'center' ? 'c' : (ta === 'right' ? 'r' : 'l')
-                const pl = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.borderLeftWidth) || 0)
-                const pr = (parseFloat(cs.paddingRight) || 0) + (parseFloat(cs.borderRightWidth) || 0)
-                if (pl > 0) rec.pl = Math.round(pl * 10) / 10
-                if (pr > 0) rec.pr = Math.round(pr * 10) / 10
-                const fg = rgb(cs.color)
-                if (fg) rec.fg = fg
-                if (parseInt(cs.fontWeight, 10) >= 600) rec.fw = 1
-                if (/line-through/.test(String(cs.textDecorationLine || cs.textDecoration || ''))) rec.td = 1
-                if (String(cs.fontStyle || '') === 'italic') rec.it = 1
-                // THE FAMILY THE PAGE SETS IT IN (mirror-9). Everything typed was drawn sans except a
-                // field's value, which was always mono — and the photograph shows the app's own sans
-                // in both. `sans` unless the stack names a typewriter face; `serif` is recorded
-                // honestly and the drawing maps it to sans, the only two families the board has.
-                const fam = String(cs.fontFamily || '').toLowerCase()
-                rec.ff = /mono|courier|menlo|consolas|monaco|sf ?mono/.test(fam)
-                  ? 'mono'
-                  : (!/sans/.test(fam) && /serif|georgia|times/.test(fam)) ? 'serif' : 'sans'
-                // …and the casing it shows them in: a tracked uppercase section label is a different
-                // component from a sentence, and drawing it in title case loses that
-                if (String(cs.textTransform || '') === 'uppercase') rec.tt = 'u'
-              }
-              const bg = rgb(cs.backgroundColor)
-              if (bg) rec.bg = bg
-              const bw = Math.max(
-                parseFloat(cs.borderTopWidth) || 0, parseFloat(cs.borderRightWidth) || 0,
-                parseFloat(cs.borderBottomWidth) || 0, parseFloat(cs.borderLeftWidth) || 0)
-              if (bw > 0) {
-                const bd = rgb(cs.borderTopColor) || rgb(cs.borderLeftColor)
-                if (bd) rec.bd = bd
-              }
-              const rd = parseFloat(cs.borderTopLeftRadius) || 0
-              if (rd > 0) rec.rd = Math.round(Math.min(rd, 40) * 10) / 10
-            } catch { /* an element that will not compute simply has no measured type */ }
-            // the EFFECTIVE opacity, ancestors included — anything under 0.05 never got this far.
-            // Outside the try, because a page that will not compute a style still fades its subtree.
-            if (eop < 1) rec.op = Math.round(eop * 100) / 100
-            // …and the two facts the style cannot answer, straight off the element
-            // TICKED? Every honest signal a control can carry (2026-09-02, the lead's review: the demo's
-            // done boxes harvested as green squares with no tick — Tsumiki's tick is a CSS class `on`
-            // and an ::after pseudo-element, which the attribute reads above could not see): the
-            // native `checked`, aria-checked / aria-pressed, a data-* flag, a state CLASS the app
-            // itself names (on / checked / done / completed / selected / active), or a pseudo-element
-            // that actually draws something. Still never guessed from geometry or colour alone.
-            if (rec.kind === 'check') {
-              const cls = ' ' + String(el.className && el.className.baseVal != null ? el.className.baseVal : el.className || '') + ' '
-              const stateClass = /\s(on|checked|done|completed|complete|selected|active|is-checked|is-done)\s/i.test(cls)
-              let pseudo = false
-              try {
-                for (const ps of ['::after', '::before']) {
-                  const c = getComputedStyle(el, ps).content
-                  if (c && c !== 'none' && c !== 'normal' && c !== '""' && c !== "''") { pseudo = true; break }
-                }
-              } catch { /* a control that will not compute has no pseudo tick */ }
-              if (el.checked === true || el.getAttribute('aria-checked') === 'true' ||
-                el.getAttribute('aria-pressed') === 'true' || el.getAttribute('data-checked') === 'true' ||
-                el.getAttribute('data-done') === 'true' || stateClass || pseudo) rec.on = 1
-            }
-            if (el.disabled === true || el.getAttribute('aria-disabled') === 'true') rec.dis = 1
-            // …and the SHAPES a small inline svg is drawn from (mirror-10), so the mirror can draw
-            // the chevron the photograph shows instead of a plate where it stands
-            if (tag === 'SVG' && r.width <= ICON_MAX && r.height <= ICON_MAX) {
-              try {
-                const icon = iconOf(el, r, cs)
-                if (icon) rec.icon = icon
-              } catch { /* an svg that will not read is simply a plain image, as it always was */ }
-            }
-            els.push(rec)
-          }
-          if (tag !== 'SVG') walk(el, depth + 1, eop)   // an inline svg is ONE picture, not a shape tree
-        }
-      }
-      if (document.body) walk(document.body, 0, 1)
-      return { w: vw, h: vh, ring: rb, els }
-    }, LAST_BOX), 2500)
+    // the ringed ELEMENT rides along with its box (2026-09-03): a handle resolved with a short
+    // bound — a target that has just left the page is simply not handed over, and the walk falls
+    // back to the ring's own centre. Disposed after the read; never a gate.
+    let handle: any = null
+    if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
+    const data: any = await raceTimeout(page.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: handle }), 2500)
+    if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!data || !Array.isArray(data.els) || !data.els.length) return
     const file = info.outputPath(`layout-${safeId(id)}-b${beat}-c${seq}-${phase}.json`)  // seq keys the file only — see snapEvidence
     // `at` — this frame's offset in ms from the moment the beat's `proves` step started, so the

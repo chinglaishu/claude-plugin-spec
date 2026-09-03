@@ -1995,6 +1995,12 @@ export function mirrorGaps (layout, frame, opts = {}) {
   // label two rows down and reported that button missing (caught on the demo's real harvest,
   // 2026-09-02): the same words in two places need two nodes, and the placed one has first call.
   const loose = []
+  // A RINGED SCENE MUST CARRY THE ELEMENT IT RINGS (2026-09-03, the human, on dojostack's House View:
+  // "off focus … the component is not shown"). Every rule below asks only about what WAS measured, so
+  // a skeleton whose capture spent its budget elsewhere and never reached the ringed element passed
+  // the guard while the drawing rang empty space beside a photograph of a value. This is the one
+  // question the drawing cannot answer for itself: a ringed scene with no `focus` element is a gap.
+  if (L.ring && withFocus && !L.els.some(e => e.focus)) at('missing-focus', 'the ringed element', L.ring)
   for (const e of els) {
     const box = { x: px(e.x), y: px(e.y), w: px(e.w), h: px(e.h) }
     if (box.w < 4 || box.h < 2.5) continue       // the kit's own smudge floor: a rule, not a gap

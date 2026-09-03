@@ -2145,3 +2145,22 @@ test('mirror-13: a beat that passed is drawn from its own skeletons, untouched',
   const f2 = frameOf(d.svg, 2)
   assert.ok(!has(f2, 'Pay the electricity bill') && has(f2, '4'), 'the after frame is what the app showed — nothing failed, nothing is borrowed')
 })
+
+test('mirrorGaps: a ringed scene whose skeleton never measured the ringed element is a gap of its own (missing-focus)', () => {
+  // 2026-09-03 (the human, on dojostack's House View): both value frames rang EMPTY SPACE in the
+  // drawing — the capture had spent its element budget in document order and never reached the
+  // ringed cell, so no element carried `focus` and the mirror drew the ring around nothing while the
+  // photograph showed "4.00%". The scene still passed every word/plate rule, because those only ask
+  // about what WAS measured. So the guard asks the one question the drawing cannot answer for
+  // itself: does a ringed scene carry the element it rings?
+  const L = GUARD(true)
+  const unfocused = { ...L, els: L.els.map(e => { const c = { ...e }; delete c.focus; return c }) }
+  const frame = frameOf(renderWireframe([{ before: GUARD(false), after: unfocused }], { behavior: GUARDB, id: 'R1', pass: true }).svg, 1)
+  const gaps = mirrorGaps(unfocused, frame, { focus: true })
+  assert.ok(gaps.some(g => g.kind === 'missing-focus'), 'a ringed scene with no focused element is named: ' + gapSummary(gaps))
+  assert.ok(/missing-focus/.test(gapSummary(gaps)), 'and the summary a person reads says so')
+  // …while the same skeleton WITH its ringed element is not a gap (the guard can pass)
+  assert.ok(!mirrorGaps(GUARD(true), guardFrame(1), { focus: true }).some(g => g.kind === 'missing-focus'))
+  // …and a scene with NO ring asks nothing of the kind
+  assert.ok(!mirrorGaps(GUARD(false), guardFrame(0), { focus: false, anchors: [{ x: 271, y: 725.5, w: 738, h: 69.75 }] }).some(g => g.kind === 'missing-focus'))
+})

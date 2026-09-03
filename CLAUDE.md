@@ -94,6 +94,9 @@ spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.m
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
+spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
+                             (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
+                             on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
 spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
@@ -301,7 +304,19 @@ change.
   to `frameBody` that drops a measured element now FAILS the gate instead of shipping a skeleton. If
   a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
   the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
-  words), tighten the rule rather than silencing it. **On a FAILED assertion the drawing shows the
+  words), tighten the rule rather than silencing it. **The capture spends its budget on the ring
+  first, never in document order (2026-09-03, the human, on dojostack's House View: "the schematic is
+  useless — off focus, the versioning component not shown").** The walk had one global 360-slot cap
+  filled in DOM order — sidebar, header, wrapper divs — so on any page bigger than the cap the ringed
+  element was measured only if the DOM happened to reach it in time; on dojostack it never was (0
+  focused elements in every House View frame, 146 of 360 slots on invisible wrappers), and the mirror
+  guard passed because every rule asked only about what WAS measured. Now `spec/_layout-walk.mjs`
+  measures the ringed element (handed over as an element handle, else found under the ring's centre)
+  and its whole subtree FIRST under its own reserve, then walks the rest with each level's children
+  ordered nearest-the-ring-first, and gives no slot to an unpainted wrapper (no bg, no border, no
+  words, no icon) — it is still descended. And `mirrorGaps` has the one rule the drawing could not
+  answer for itself: a ringed scene whose skeleton has no `focus` element is a `missing-focus` gap, so
+  a capture that misses its ring fails `npm run proof mirror` instead of shipping an empty ring. **On a FAILED assertion the drawing shows the
   INTENDED state, not the app's** (the human, 2026-09-02: "schematic and behaviour are truth — otherwise
   the user should disagree this truth and update it"; and, one kit later, "the schematic should be
   correct, only the proof should be wrong"): each value frame's skeleton carries the claim (`expected ·

@@ -77,6 +77,10 @@ export const FILES = [
   'tools/auth-projects.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
+  // the layout skeleton's walk (2026-09-03) — imported by spec/_base.ts and serialised into the page
+  // under test; a project with _base.ts and not this cannot harvest a single evidence skeleton
+  // (guard-caught by update.test.mjs's every-relative-import-is-vendored check)
+  'spec/_layout-walk.mjs',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
   // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
   'spec/_auth.setup.ts',
