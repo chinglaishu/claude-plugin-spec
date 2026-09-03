@@ -139,3 +139,22 @@ test('the composed source carries both bodies and no reference to anything outsi
   assert.ok(SRC.includes('function captureReplica'), 'and so does the capture')
   assert.ok(/^\(\s*a\s*\)\s*=>/.test(SRC.trim()), 'it is one expression Playwright can evaluate and call with its arg')
 })
+
+// board R22 / R20's shape: a card the locator still matches, and a dialog painted over it.
+function coveredPage () {
+  const cardLeaf = el('span', [110, 305, 280, 20], { text: 'Home card, still mounted', cs: { color: 'rgb(28,27,24)' } })
+  const card = el('section', [100, 300, 300, 40], { children: [cardLeaf], cs: PAINT })
+  const panelLeaf = el('span', [110, 305, 280, 20], { text: 'Assigning work', cs: { color: 'rgb(28,27,24)' } })
+  const panel = el('div', [90, 290, 320, 60], { children: [panelLeaf], cs: PAINT })
+  const dialog = el('section', [0, 0, 1440, 900], { children: [panel], cs: PAINT })
+  const body = el('body', [0, 0, 1440, 900], { children: [card, dialog] })
+  return { body, card, cardLeaf, panel, panelLeaf, dialog, point: () => dialog, hits: [panelLeaf, panel, dialog, card] }
+}
+
+test('what the walk drops as occluded, the capture plates — one rule, decided once (board R20)', () => {
+  const p = coveredPage()
+  const out = run(p.body, { target: p.dialog, hits: p.hits, point: p.point, ring: { x: 0, y: 0, width: 1440, height: 900 } })
+  assert.ok(!out.skel.els.some(e => /Home card/.test(e.text || '')), 'the skeleton never measured what is behind the dialog')
+  assert.ok(!/Home card/.test(out.rep.html), 'and the replica does not picture it either: ' + out.rep.html.slice(0, 400))
+  assert.match(out.rep.html, /data-plate="space"/, 'it is plated, so the flow around it cannot move')
+})

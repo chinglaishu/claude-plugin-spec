@@ -1761,3 +1761,29 @@ test('leading/trailing whitespace at the START of an element\'s children is drop
   assert.match(r.html, /<p[^>]*><span[^>]*>you open the board's home<\/span>/,
     'no leading space is invented before the first child: ' + r.html)
 })
+
+// ── WHAT AN OPAQUE OVERLAY COVERS (task 3b, item 2 — 2026-09-04) ───────────────────────────────
+// The skeleton walk drops what a painted overlay hides; the capture had no such rule and serialised
+// the reader sitting behind board R20's lightbox, which the gate read as nine extra boxes. The rule
+// is not restated here: the walk decides, in the same page pass (spec/_moment.mjs), and hands over
+// the elements it dropped. The capture PLATES them rather than dropping them — an occluded box is
+// still in the flow of the page around it, exactly like the faded and hidden ones above it.
+test('an element the walk dropped as occluded is plated, not pictured — its subtree goes with it', () => {
+  const behindLeaf = el('span', [120, 310, 200, 20], { text: 'Reader behind the lightbox', cs: { color: 'rgb(1,1,1)' } })
+  const behind = el('section', [100, 300, 300, 40], { children: [behindLeaf], cs: { backgroundColor: 'rgb(255,255,255)' } })
+  const front = el('div', [100, 300, 300, 40], { text: 'Lightbox', cs: { backgroundColor: 'rgb(28,27,24)' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [behind, front] })
+  const r = captureReplica({ target: front, ring: { x: 100, y: 300, width: 300, height: 40 },
+    props: REPLICA_PROPS, env: env(body), occluded: [behind] })
+  assert.ok(!/Reader behind the lightbox/.test(r.html), 'nothing under the overlay is pictured: ' + r.html)
+  assert.match(r.html, /data-plate="space"/, 'it holds its space so the flow around it cannot move')
+  assert.match(r.html, /Lightbox/, 'and what is actually on top is still there')
+})
+
+test('with no occluded list the capture pictures the page exactly as before', () => {
+  const behindLeaf = el('span', [120, 310, 200, 20], { text: 'Reader behind the lightbox', cs: { color: 'rgb(1,1,1)' } })
+  const behind = el('section', [100, 300, 300, 40], { children: [behindLeaf], cs: { backgroundColor: 'rgb(255,255,255)' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [behind] })
+  const r = captureReplica({ target: behind, ring: null, props: REPLICA_PROPS, env: env(body) })
+  assert.match(r.html, /Reader behind the lightbox/, 'a caller that reports nothing occludes nothing')
+})

@@ -427,3 +427,51 @@ test('an <img>/<video>/<canvas> occludes even with no background-color declared 
     assert.ok(!L.els.some(e => /Real content under the/.test(e.text || '')), tag + ': ' + JSON.stringify(L.els))
   }
 })
+
+// ── THE WALK'S DECISIONS, REPORTED (task 3b, items 2 and 3 — 2026-09-04) ───────────────────────
+// The walk and the replica capture used to answer two questions apart from each other, and disagree:
+// WHAT the ring is on, and WHAT an opaque overlay covers. They run in one page pass now
+// (spec/_moment.mjs), so the walk's own answers travel to the capture as element references —
+// `arg.report` is where it puts them. Nothing here restates a rule; it pins that the decisions the
+// walk already makes are the ones that come out.
+test('the walk reports the ringed element it actually measured', () => {
+  const p = bigPage(40)
+  const report = {}
+  snapLayoutWalk({ ring: { x: 732, y: 648, width: 130, height: 32 }, target: p.cell, env: env(p.body), report })
+  assert.equal(report.ringEl, p.cell, 'the element handed over, because the page is showing it')
+})
+
+// board R22's own shape: a home card the locator still matches, and a dialog panel drawn over the
+// very box the ring was painted on.
+function coveredRingPage () {
+  const cardLeaf = el('div', [100, 300, 300, 40], { text: 'Home card, still mounted', cs: painted })
+  const card = el('section', [100, 300, 300, 40], { children: [cardLeaf], cs: painted })
+  const panelLeaf = el('div', [110, 305, 280, 30], { text: 'Assigning work', cs: painted })
+  const panel = el('div', [90, 290, 320, 60], { children: [panelLeaf], cs: painted })
+  const dialog = el('section', [0, 0, 1440, 900], { children: [panel], cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [card, dialog] })
+  return { body, card, cardLeaf, panel, panelLeaf, dialog, point: () => dialog, hits: [panelLeaf, panel, dialog, card] }
+}
+
+test('the ringed element the picture is OF is the one on screen — a covered target hands over to the ring centre', () => {
+  // board R22: a locator still matched a home card sitting BEHIND an opened dialog, so the walk
+  // dropped the card as occluded and measured the dialog, while the capture rooted its scene on the
+  // card and pictured the page behind the modal. Same ring, two different pictures.
+  const p = coveredRingPage()
+  const report = {}
+  const ring = { x: 100, y: 300, width: 300, height: 40 }
+  const L = snapLayoutWalk({ ring, target: p.card, env: env(p.body, p.hits, p.point), report })
+  assert.ok(report.ringEl && report.ringEl !== p.card, 'the covered target is not what the moment is a picture of')
+  assert.ok(p.dialog.contains(report.ringEl), 'what the page shows under the ring is: ' + String(report.ringEl && report.ringEl.tagName))
+  assert.ok(L.els.some(e => /Assigning work/.test(e.text || '')), 'and the skeleton is the visible page')
+  assert.ok(!L.els.some(e => /Home card/.test(e.text || '')), 'never the one behind it')
+  assert.deepEqual(L.ring, { x: 100, y: 300, w: 300, h: 40 }, 'the ring box stays where the overlay painted it — that is where the photograph rings')
+})
+
+test('every box the walk drops as occluded is reported, so the capture can plate the same ones', () => {
+  const p = occludedPage()
+  const report = {}
+  snapLayoutWalk({ ring: null, target: null, env: env(p.body, null, p.point), report })
+  assert.ok(report.occluded.includes(p.bg), 'the covered section is named: ' + report.occluded.length)
+  assert.ok(!report.occluded.includes(p.modal), 'the thing on top is not')
+})

@@ -122,6 +122,20 @@ export function captureReplica (arg) {
   // …and how a base html string is turned back into nodes: an inert <template> in the page (it
   // parses but never runs, loads or paints), a stub env's own parser in a node test.
   const parseHtmlEnv = env && typeof env.parseHtml === 'function' ? env.parseHtml : null
+  // WHAT AN OPAQUE OVERLAY COVERS (task 3b, item 2 — 2026-09-04). spec/_layout-walk.mjs drops what
+  // something painted sits on top of — the board's own home page under an opened detail view, a
+  // reader behind a lightbox — and this capture had no such rule, so it serialised content the
+  // skeleton beside it had never measured and the gate read those boxes as `extra-box` (board R20,
+  // 9 of them). The rule is NOT restated here: the walk decides, in the same page pass
+  // (spec/_moment.mjs), and hands the elements it dropped straight over. A Set in the page, an array
+  // in a unit test — both answered with `has` below. Absent, nothing is treated as covered.
+  const OCC = (() => {
+    const o = arg && arg.occluded
+    if (!o) return null
+    if (typeof o.has === 'function') return o
+    if (Array.isArray(o)) return { has: n => o.indexOf(n) >= 0 }
+    return null
+  })()
   // the ONE list, handed in (see the header). A caller that forgets it gets structure with no paint
   // rather than a thrown capture — the harness always passes it.
   const PROPS = (arg && Array.isArray(arg.props) && arg.props.length) ? arg.props.map(String) : []
@@ -550,6 +564,9 @@ export function captureReplica (arg) {
     // this runs.
     if (cs) {
       if (gp(cs, 'display') === 'none') return null
+      // …and what an opaque overlay covers is as invisible as `visibility:hidden` and laid out
+      // exactly like it, so it is plated on the same rule (task 3b, item 2 — see OCC above)
+      if (OCC && !isRoot && OCC.has(node)) return placeholder(node, cs, shift)
       const vis = gp(cs, 'visibility')
       if (vis === 'hidden' || vis === 'collapse') return placeholder(node, cs, shift)
       const op = parseFloat(gp(cs, 'opacity'))

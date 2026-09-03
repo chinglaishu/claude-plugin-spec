@@ -16,6 +16,15 @@ export function snapLayoutWalk (arg) {
   const ring = (arg && arg.ring) || null
   const target = (arg && arg.target) || null
   const env = (arg && arg.env) || null
+  // WHERE THE WALK'S OWN ANSWERS GO (task 3b, 2026-09-04). The replica capture used to decide two
+  // things for itself that this walk had already decided — which element the ring is on, and what an
+  // opaque overlay covers — and the two disagreed on any page where the answer was not obvious
+  // (board R22, board R20). They run in ONE page pass now (spec/_moment.mjs), so the decisions can
+  // travel as element references: `report.ringEl` is the element this walk actually measured under
+  // the ring, `report.occluded` every element it dropped because something painted sits on top.
+  // Optional and inert — a caller that passes none is walked exactly as before.
+  const report = (arg && arg.report && typeof arg.report === 'object') ? arg.report : null
+  if (report) { report.ringEl = null; report.occluded = [] }
   const win = env && env.window ? env.window : window
   const doc = env && env.document ? env.document : document
   const getComputedStyle = env && env.getComputedStyle ? env.getComputedStyle : win.getComputedStyle.bind(win)
@@ -385,7 +394,12 @@ export function snapLayoutWalk (arg) {
       if (hit && hit !== el) {
         const related = (el.contains && el.contains(hit)) || (hit.contains && hit.contains(el))
         const inOverlay = hit.id === OVERLAY || (hit.closest && hit.closest('#' + OVERLAY))
-        if (!related && !inOverlay && paints(hit)) return null
+        if (!related && !inOverlay && paints(hit)) {
+          // …and the replica capture is told, so it plates exactly what this walk refused to measure
+          // (task 3b, item 2 — board R20's lightbox: the reader behind it came back as extra boxes)
+          if (report) report.occluded.push(el)
+          return null
+        }
       }
     }
     const out = { el, tag, eop, rec: null }
@@ -606,8 +620,8 @@ export function snapLayoutWalk (arg) {
   // the ringed element: the one the caller handed over, else the deepest element under the ring's
   // centre that satisfies the ring rule (most of it inside the ring, not far larger than it) — the
   // overlay's own boxes never count
-  let focusEl = target || null
-  if (!focusEl && rb && typeof doc.elementsFromPoint === 'function') {
+  const pointFocus = () => {
+    if (!rb || typeof doc.elementsFromPoint !== 'function') return null
     let hits = []
     try { hits = doc.elementsFromPoint(cx, cy) || [] } catch { hits = [] }
     for (let i = 0; i < hits.length; i++) {
@@ -617,32 +631,54 @@ export function snapLayoutWalk (arg) {
       const ox = Math.max(0, Math.min(r.right, rb.x + rb.w) - Math.max(r.left, rb.x))
       const oy = Math.max(0, Math.min(r.bottom, rb.y + rb.h) - Math.max(r.top, rb.y))
       const area = Math.max(1, r.width * r.height)
-      if ((ox * oy) / area >= 0.6 && area <= rArea * 4) { focusEl = h; break }
+      if ((ox * oy) / area >= 0.6 && area <= rArea * 4) return h
     }
+    return null
   }
-  if (focusEl) {
+  // the ringed element's own pass: its ancestors (for the boxes it sits in), then its whole subtree
+  // under a reserve of its own. Returns false when the page is NOT SHOWING it — hidden, faded, or
+  // covered by something opaque — which is the one case the caller has an alternative for.
+  const mountFocus = (fe) => {
     const chain = []
-    for (let a = focusEl.parentElement; a && a !== doc.body && chain.length < MAXD; a = a.parentElement) chain.unshift(a)
+    for (let a = fe.parentElement; a && a !== doc.body && chain.length < MAXD; a = a.parentElement) chain.unshift(a)
     let pop = 1
-    let shown = true
     for (const a of chain) {
       visited++
       const m = measure(a, pop, false)
-      if (!m) { shown = false; break }         // a hidden ancestor hides the ring target too
-      record(m)
+      if (!m) return false                     // a hidden ancestor hides the ring target too
+      if (!recorded.has(a)) record(m)
       pop = m.eop
     }
-    if (shown) {
-      visited++
-      const m = measure(focusEl, pop, true)
-      if (m) {
-        cap = Math.min(CAP, els.length + RING_RESERVE)
-        record(m)
-        if (m.tag !== 'SVG') walk(focusEl, chain.length + 1, m.eop)
-        cap = CAP
-      }
-    }
+    visited++
+    const m = measure(fe, pop, true)
+    if (!m) return false
+    cap = Math.min(CAP, els.length + RING_RESERVE)
+    record(m)
+    if (m.tag !== 'SVG') walk(fe, chain.length + 1, m.eop)
+    cap = CAP
+    return true
   }
+  // the ringed element: the one the caller handed over, else the deepest element under the ring's
+  // centre that satisfies the ring rule (most of it inside the ring, not far larger than it) — the
+  // overlay's own boxes never count.
+  //
+  // …AND WHEN THE ONE HANDED OVER IS NOT ON SCREEN, THE RING'S CENTRE DECIDES ANYWAY (task 3b, item
+  // 3 — board R22, 2026-09-04). A locator can still match an element the page has stopped showing:
+  // this board keeps its home page mounted behind an opened dialog, so `reveal()`'s target was a
+  // card UNDER a modal. This walk correctly dropped that card as occluded and measured the dialog —
+  // but the replica capture rooted its scene on the card and pictured the page behind the modal, and
+  // the gate then read 13 missing rings and a page of missing text on a replica that was internally
+  // perfect. The ringed element the moment is a PICTURE OF has to be one the page is showing; the
+  // ring box stays where the overlay painted it, because that is where the photograph's ring is.
+  let focusEl = target || null
+  let mounted = false
+  if (focusEl) mounted = mountFocus(focusEl)
+  if (!mounted) {
+    const alt = pointFocus()
+    if (alt && alt !== focusEl && mountFocus(alt)) { focusEl = alt; mounted = true }
+    else if (!target) focusEl = null
+  }
+  if (report) report.ringEl = mounted ? focusEl : null
   if (doc.body) walk(doc.body, 0, 1)
   return { w: vw, h: vh, ring: rb, els }
 }
