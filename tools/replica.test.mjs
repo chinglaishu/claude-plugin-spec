@@ -60,7 +60,7 @@ function env (body, opts = {}) {
       styleSheets: opts.sheets || []
     },
     getComputedStyle: (node, pseudo) => (pseudo ? (node.pseudo || {})[pseudo] || style({}) : node.cs || style({})),
-    defaultsFor: (tag) => (DEFAULTS[tag] || {})
+    defaultsFor: (tag) => ((opts.defaults || DEFAULTS)[tag] || {})
   }
 }
 const cap = (body, o = {}) => captureReplica({
@@ -1301,4 +1301,84 @@ test('fix round 4 (N2): a text-less control under the ring never wins a claim', 
   assert.ok(!/data-claim=/.test(rendered), 'and nothing was marked: ' + rendered)
   const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
   assert.equal(json[0].unlocated, true, 'flagged: ' + JSON.stringify(json))
+})
+
+// ── PHASE 3, SECTION F: THE CAPTURE GETS CHEAPER, so a whole viewport fits under the cap ─────────
+// Found on real data (dojostack, 2026-09-03): vendored 0.43.0 harvested 45 replicas and NINE of them
+// hit the 200 KB byte cap — every one a whole-viewport region, landing at 197–198 KB with
+// data-replica-truncated. A truncated replica can never pass a likeness gate, so the capture has to
+// spend its bytes on what a reader can actually see. Two rules, both here.
+const FONT_STACK = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+const TYPE = { 'font-family': FONT_STACK, 'font-size': '13.2px', 'line-height': '20.46px', color: 'rgb(28, 27, 24)', 'letter-spacing': '-0.264px' }
+
+test('an element that inherits its parent\'s type declares nothing about it — only what it changes', () => {
+  const same = el('span', [20, 20, 60, 16], { text: 'same', cs: { ...TYPE } })
+  const other = el('span', [90, 20, 60, 16], { text: 'other', cs: { ...TYPE, color: 'rgb(180, 0, 0)' } })
+  const row = el('div', [0, 0, 400, 40], { children: [same, other], cs: { ...TYPE, display: 'flex' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [row], cs: { ...TYPE } })
+  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 } })
+  const rules = r.html.split('\n').filter(l => l.startsWith('.rep '))
+  const rowRule = rules.find(l => /display:flex/.test(l))
+  assert.ok(/font-family/.test(rowRule), 'the SCENE ROOT still carries its whole inherited set — the file must stand alone')
+  const kids = rules.filter(l => l !== rowRule && !/display:flex/.test(l))
+  assert.equal(kids.length, 2, 'two children, two declaration sets')
+  assert.ok(!kids.some(l => /font-family|font-size|line-height|letter-spacing/.test(l)),
+    'a child that changes none of its inherited type says nothing about it')
+  assert.ok(!/color/.test(kids.find(l => !/color/.test(l)) || 'color'), 'the one that inherits its colour is silent about it')
+  assert.ok(kids.some(l => /color:rgb\(180, 0, 0\)/.test(l)), 'the one that CHANGES it still declares it')
+})
+
+test('the scene root carries its inherited type even when it equals the tag default — the file is read in an empty iframe', () => {
+  const word = el('span', [20, 20, 60, 16], { text: 'hi', cs: { ...TYPE } })
+  const row = el('div', [0, 0, 400, 40], { children: [word], cs: { ...TYPE } })
+  const body = el('body', [0, 0, 1440, 900], { children: [row], cs: { ...TYPE } })
+  // the probe the diff measures a tag default with is appended to the app's OWN body, so it inherits
+  // the app's type: diffing the root against it would drop precisely the app's own font
+  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 200, height: 40 }, defaults: { div: { ...TYPE } } })
+  assert.ok(/font-family:Inter/.test(r.html), 'the app\'s own stack is in the file')
+  assert.equal((r.html.match(/font-family/g) || []).length, 1, 'once — on the root, nowhere else')
+})
+
+test('an element wholly outside the scene root costs nothing — it and its subtree are skipped', () => {
+  const off1 = el('div', [0, 700, 300, 40], { text: 'a virtualised row nobody can see' })
+  const off2 = el('div', [0, 760, 300, 40], { text: 'and another' })
+  const drawer = el('aside', [0, 700, 300, 200], { children: [off1, off2] })
+  const word = el('span', [420, 100, 60, 16], { text: 'Live' })
+  const bar = el('div', [400, 88, 640, 44], { children: [word, drawer] })
+  const btn = el('button', [500, 92, 120, 36], { text: 'x' })
+  bar.children.push(btn); bar.childNodes.push(btn)
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 } })
+  assert.deepEqual(r.region, { x: 400, y: 88, w: 640, h: 44 })
+  assert.ok(r.html.includes('Live'), 'what is inside the scene is captured')
+  assert.ok(!r.html.includes('virtualised'), 'what lies outside it is not')
+  assert.ok(!r.html.includes('and another'), 'nor is its subtree')
+})
+
+test('a ZERO-SIZED box is still descended — 0.42.1\'s rule, kept', () => {
+  const word = el('span', [420, 100, 60, 16], { text: 'Live' })
+  const shrunk = el('div', [420, 100, 0, 0], { children: [word] })      // a min-w-0 flex wrapper
+  const bar = el('div', [400, 88, 640, 44], { children: [shrunk] })
+  const btn = el('button', [500, 92, 120, 36], { text: 'x' })
+  bar.children.push(btn); bar.childNodes.push(btn)
+  const body = el('body', [0, 0, 1440, 900], { children: [bar] })
+  const r = cap(body, { target: btn, ring: { x: 500, y: 92, width: 120, height: 36 } })
+  assert.ok(r.html.includes('Live'), 'a sizeless wrapper is measured as nothing and walked through')
+})
+
+test('a 1200-element viewport of one font and one colour fits in under 60 KB, untruncated', () => {
+  const kids = []
+  for (let i = 0; i < 1200; i++) {
+    // distinct WIDTHS, so no two share a declaration set — the sheet cannot dedupe its way out of
+    // this the way an identical-elements fixture would
+    kids.push(el('i', [10 + (i % 40) * 30, 40 + Math.floor(i / 40) * 20, 24, 16],
+      { cs: { ...TYPE, width: (200 + i) + 'px' } }))
+  }
+  const page = el('main', [0, 0, 1440, 900], { children: kids, cs: { ...TYPE } })
+  const body = el('body', [0, 0, 1440, 900], { children: [page], cs: { ...TYPE } })
+  const r = cap(body, { target: page, ring: { x: 0, y: 0, width: 400, height: 300 } })
+  assert.equal(r.truncated, false, 'the whole viewport fits')
+  assert.ok(r.bytes < 60000, `under 60 KB — got ${r.bytes}`)
+  assert.equal((r.html.match(/font-family/g) || []).length, 1,
+    'the app\'s stack is written ONCE, not once per element — the 197 KB dojostack replicas were this')
 })

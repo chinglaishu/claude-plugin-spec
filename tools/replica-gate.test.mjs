@@ -8,7 +8,7 @@
 // browser.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf } from './replica-gate.mjs'
+import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf, replicaNote } from './replica-gate.mjs'
 
 // ── the fixture the brief names: six elements, one of them outside the region ────────────────────
 // (a header word · a button with the focus · two row words · a painted divider · a leaf outside)
@@ -189,4 +189,20 @@ test('textOf is the body\'s words only — the style block, the comment and ever
   assert.ok(!/color:red/.test(t), 'the sheet is not text')
   assert.ok(!/data-claims/.test(t), 'nor is an attribute — which is what makes the claim gate mean something')
   assert.ok(!/specboard/.test(t), 'nor the file\'s own comment header')
+})
+
+// ── what the FOLD records about a landed replica ─────────────────────────────────────────────────
+test('replicaNote is what a folded moment says about its replica: how many gaps, and whether it was gated at all', () => {
+  const gaps = [{ kind: 'missing-text', what: 'Undo', x: 1, y: 2, w: 3, h: 4 }]
+  const gated = withReplicaAttrs(ROOT, { layout: 'abc', gaps })
+  assert.deepEqual(replicaNote(gated), { gaps: 1, gated: true, list: gaps })
+  assert.deepEqual(replicaNote(ROOT), { gaps: 0, gated: false, list: [] })
+})
+
+test('replicaNote counts a truncated capture as a gap of its own — it can never be a likeness', () => {
+  const t = withReplicaAttrs(ROOT.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit'),
+    { layout: 'abc', gaps: [] })
+  const note = replicaNote(t)
+  assert.equal(note.gaps, 1)
+  assert.equal(note.list[0].kind, 'truncated')
 })
