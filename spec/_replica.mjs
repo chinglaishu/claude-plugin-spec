@@ -446,6 +446,26 @@ export function captureReplica (arg) {
   const T = (text) => ({ text: String(text) })
   const E = (tag, attrs, kids) => ({ tag, attrs, kids })
   const isText = (n) => !!n && typeof n.text === 'string'
+  // AN INTER-ELEMENT WHITESPACE TEXT NODE STILL SEPARATES TWO WORDS (fix round 3, board R18/R10,
+  // 2026-09-03 — the gate's own catch, found by re-rendering a gapped `.actual.html` back through
+  // the same walk it is measured with). "<span>When</span> <span>you open…</span>" in the live DOM
+  // carries a real space between the two spans; the walk below only kept a text node whose trimmed
+  // content was non-empty, so a WHITESPACE-ONLY node — exactly this one — was dropped outright and
+  // the replica serialised as "<span>When</span><span>you open…</span>", glued with no gap at all.
+  // Glued, "When" and "you" run together for line-wrapping purposes, so the sentence wraps one word
+  // earlier than the live page did and its rendered bounding box comes out narrower — a `moved-text`
+  // gap with the right text at the wrong box, on every beat sentence (`.lead` + its text) the board
+  // draws. Only relevant between two elements that actually FLOW INLINE with each other — dropping
+  // it between two `display:block` siblings changes nothing a reader could see (inline whitespace
+  // never renders a gap there), so it stays a no-op, no added bytes, for the common block-nested case.
+  const isInlineFlow = (n) => {
+    if (!n || n.nodeType !== 1 || !getComputedStyle) return false
+    try {
+      const cs = getComputedStyle(n)
+      const d = cs && typeof cs.getPropertyValue === 'function' ? String(cs.getPropertyValue('display') || '') : ''
+      return /^(inline|inline-block|inline-flex|inline-grid|inline-table)$/.test(d)
+    } catch { return false }
+  }
   const ser = (n) => isText(n) ? esc(n.text) : wrap(n.tag, n.attrs, n.kids.map(ser).join(''))
   const cloneNode = (n) => isText(n) ? T(n.text) : E(n.tag, n.attrs.map(a => [a[0], a[1]]), n.kids.map(cloneNode))
   // what an element's OWN markup costs, counted once as the node is made (its inner is counted by
@@ -651,6 +671,10 @@ export function captureReplica (arg) {
       const sTop = Math.round(Number(node.scrollTop) || 0)
       const sLeft = Math.round(Number(node.scrollLeft) || 0)
       let toShift = (sTop || sLeft) ? { top: sTop, left: sLeft } : null
+      // a materialised ::before is always inline content, so a whitespace node right after it can
+      // still separate it from the first real child (see `isInlineFlow` above)
+      let prevWasInline = !!before
+      let pendingSpace = false
       for (let i = 0; i < src.length; i++) {
         if (capped()) { truncated = true; break }
         const k = src[i]
@@ -661,12 +685,22 @@ export function captureReplica (arg) {
             const kept = t.replace(/\s+/g, ' ').slice(0, TEXT_MAX)
             bytes += esc(kept).length
             out.push(T(kept))
+            prevWasInline = true
+            pendingSpace = false
+          } else if (t.length && out.length) {
+            // resolved once the NEXT node is seen — a text node is always inline, an element only if
+            // it flows inline too (see `isInlineFlow`)
+            pendingSpace = prevWasInline
           }
           continue
         }
         if (k.nodeType !== 1) continue
+        const inlineNow = isInlineFlow(k)
+        if (pendingSpace && inlineNow) { bytes += 1; out.push(T(' ')) }
+        pendingSpace = false
         const child = serialise(k, false, cs, toShift)
         if (child) { out.push(child); if (child.tag) toShift = null }
+        prevWasInline = inlineNow
       }
       const after = pseudo(node, 'after', cs)
       if (after) out.push(after)

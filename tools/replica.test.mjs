@@ -1656,3 +1656,44 @@ test('the properties that place a grid\'s own tracks travel too — align-conten
     assert.ok(r.html.includes(decl), 'the sheet must carry ' + decl + ': ' + r.html.slice(0, 400))
   }
 })
+
+// FIX ROUND 3 (2026-09-03, board R18/R10) — found by re-rendering a gapped `.actual.html` back
+// through the same walk the in-page gate uses: the beat sentence "<span class="lead">When</span>
+// <span class="sbv">you open the board's home</span>" carries a real space between the two spans in
+// the live DOM. `serialise` kept a child text node only when its TRIMMED content was non-empty, so
+// this whitespace-only node was dropped outright — the replica read
+// "<span>When</span><span>you open the board's home</span>", glued with no gap. Glued, "When" and
+// "you" run together for line-wrapping, the sentence wraps one word earlier than the live page did,
+// and its rendered bounding box comes out narrower: a `moved-text` gap with the right words at the
+// wrong box, on every beat sentence the board draws (the keyword + its `.lead` styling is the same
+// shape everywhere).
+test('a whitespace-only text node between two INLINE elements still separates their words', () => {
+  const lead = el('span', [106, 618, 44, 20], { text: 'When', cs: { display: 'inline' } })
+  const sentence = el('span', [150, 618, 165, 20], { text: "you open the board's home", cs: { display: 'inline' } })
+  const p = el('p', [106, 618, 248, 43], { children: [lead, sentence], cs: {} })
+  p.childNodes = [lead, txt(' '), sentence]
+  const body = el('body', [0, 0, 1440, 900], { children: [p] })
+  const r = cap(body, { target: p, ring: { x: 106, y: 618, width: 248, height: 43 } })
+  assert.match(r.html, /<span[^>]*>When<\/span> <span[^>]*>you open the board's home<\/span>/,
+    'the space must survive between the two spans: ' + r.html)
+})
+
+test('the same whitespace node is a no-op between two BLOCK siblings — no bytes added, nothing a reader could see', () => {
+  const a = el('div', [0, 0, 100, 20], { text: 'A', cs: { display: 'block' } })
+  const b = el('div', [0, 20, 100, 20], { text: 'B', cs: { display: 'block' } })
+  const wrap = el('div', [0, 0, 100, 40], { children: [a, b], cs: {} })
+  wrap.childNodes = [a, txt('\n  '), b]
+  const body = el('body', [0, 0, 1440, 900], { children: [wrap] })
+  const r = cap(body, { target: wrap, ring: { x: 0, y: 0, width: 100, height: 40 } })
+  assert.ok(!/<\/div>\s+<div/.test(r.html), 'no space (or any whitespace) travels between two block boxes: ' + r.html)
+})
+
+test('leading/trailing whitespace at the START of an element\'s children is dropped, not just mid-run', () => {
+  const sentence = el('span', [150, 618, 165, 20], { text: "you open the board's home", cs: { display: 'inline' } })
+  const p = el('p', [106, 618, 248, 43], { children: [sentence], cs: {} })
+  p.childNodes = [txt(' '), sentence]      // a leading whitespace text node, no prior sibling to glue to
+  const body = el('body', [0, 0, 1440, 900], { children: [p] })
+  const r = cap(body, { target: p, ring: { x: 106, y: 618, width: 248, height: 43 } })
+  assert.match(r.html, /<p[^>]*><span[^>]*>you open the board's home<\/span>/,
+    'no leading space is invented before the first child: ' + r.html)
+})
