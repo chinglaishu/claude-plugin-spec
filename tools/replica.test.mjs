@@ -1787,3 +1787,40 @@ test('with no occluded list the capture pictures the page exactly as before', ()
   const r = captureReplica({ target: behind, ring: null, props: REPLICA_PROPS, env: env(body) })
   assert.match(r.html, /Reader behind the lightbox/, 'a caller that reports nothing occludes nothing')
 })
+
+// ── A PLACEHOLDER MUST HOLD ITS SPACE IN A FLEX PARENT TOO (task 3b, 2026-09-04) ────────────────
+// Board R5's whole list rendered 140 px too high: the detail's list is a COLUMN FLEX container, and
+// a plate carrying only `display/width/height/margin` is a flex item with the default
+// `flex-shrink:1` — so every plate collapsed to height 0 and the baked scroll offset (a negative
+// margin on the first child) was then applied against space nobody was holding. Measured in the
+// re-rendered file: `height:41px` plates rendering `1320x0`. The plate's ONE job is to hold the
+// space of what the picture does not draw, so it says so in the one place a flex parent listens.
+test('a placeholder refuses to be shrunk — it holds its box in a flex column too', () => {
+  const hidden = el('div', [100, 300, 200, 40], { text: 'Faded out', cs: { opacity: '0' } })
+  const shown = el('div', [100, 340, 200, 40], { text: 'Visible', cs: { backgroundColor: 'rgb(255,255,255)' } })
+  const col = el('div', [100, 300, 200, 80], { children: [hidden, shown], cs: { display: 'flex', 'flex-direction': 'column' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [col] })
+  const r = captureReplica({ target: col, ring: null, props: REPLICA_PROPS, env: env(body) })
+  const cls = /data-plate="space"/.exec(r.html) ? r.html : ''
+  assert.ok(cls, 'the faded row is plated: ' + r.html)
+  const m = /<div class="(r\d+)" data-plate="space"/.exec(r.html)
+  const rule = new RegExp('\\.rep \\.' + m[1] + '\\{([^}]*)\\}').exec(r.html)
+  assert.match(rule[1], /flex-shrink:0/, 'so a flex parent cannot shrink it to nothing: ' + rule[1])
+  assert.match(rule[1], /height:40px/, 'and it is exactly as tall as what it stands in for')
+})
+
+test('a placeholder for an OUT-OF-FLOW element takes no flow space — it never pushes its siblings', () => {
+  // the other half of "holds its space": an absolutely positioned element holds NONE, so a plate
+  // that stands in for one must not either. With `flex-shrink:0` on every plate (above) an
+  // out-of-flow plate started pushing its siblings along the row — board R11/R12/R20/R22's chat
+  // card came back 155 px right of where the harvest measured it.
+  const float = el('div', [400, 300, 155, 40], { text: 'Floating badge', cs: { position: 'absolute', opacity: '0', left: '400px', top: '300px' } })
+  const card = el('div', [100, 300, 200, 40], { text: 'Card', cs: { backgroundColor: 'rgb(255,255,255)' } })
+  const row = el('div', [100, 300, 460, 40], { children: [float, card], cs: { display: 'flex' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [row] })
+  const r = captureReplica({ target: row, ring: null, props: REPLICA_PROPS, env: env(body) })
+  const m = /<div class="(r\d+)" data-plate="space"/.exec(r.html)
+  assert.ok(m, 'the faded badge is plated: ' + r.html)
+  const rule = new RegExp('\\.rep \\.' + m[1] + '\\{([^}]*)\\}').exec(r.html)
+  assert.match(rule[1], /position:absolute/, 'and it stays out of the flow: ' + rule[1])
+})

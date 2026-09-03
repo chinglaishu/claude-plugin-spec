@@ -524,11 +524,27 @@ export function captureReplica (arg) {
     nodes++
     let dsp = (cs && gp(cs, 'display')) || 'block'
     if (dsp === 'inline' || dsp === 'contents' || !dsp) dsp = 'inline-block'
+    // …AND AN OUT-OF-FLOW ELEMENT HOLDS NO SPACE AT ALL (task 3b, 2026-09-04). The other half of the
+    // rule above: an absolutely (or fixed) positioned element takes part in no flow, so a plate
+    // standing in for one must not either — with `flex-shrink:0` on every plate such a plate began
+    // pushing its siblings along their row, and board R11/R12/R20/R22's chat card came back 155 px
+    // right of where the harvest measured it. Positioned at its own offsets, so it still sits where
+    // the app drew it.
+    const pos = (cs && gp(cs, 'position')) || ''
+    const out = pos === 'absolute' || pos === 'fixed'
     const mt = (cs && parseFloat(gp(cs, 'margin-top'))) || 0
     const ml = (cs && parseFloat(gp(cs, 'margin-left'))) || 0
     const decls = [
       'display:' + dsp,
       'box-sizing:border-box',
+      // …AND IT REFUSES TO BE SHRUNK (task 3b, 2026-09-04). A plate is a child like any other, so in
+      // a FLEX parent it is a flex item — and a bare `height` on an item whose `flex-shrink` is the
+      // default 1 is only a hint: board R5's detail list is a column flex box, every plate in it
+      // rendered `1320x0`, and the scroll offset baked onto the first child (a negative margin) was
+      // then applied against space nobody was holding — the whole list came out 140 px too high and
+      // the gate read 20 missing boxes and 18 moved texts on a file whose every `data-b` was right.
+      // Holding its box is the plate's ONE job, so it says so where a flex parent listens.
+      'flex-shrink:0',
       'width:' + Math.round(r.width) + 'px',
       'height:' + Math.round(r.height) + 'px',
       'margin:' + ((shift && shift.top ? mt - shift.top : mt)) + 'px ' +
@@ -536,6 +552,13 @@ export function captureReplica (arg) {
         ((cs && parseFloat(gp(cs, 'margin-bottom'))) || 0) + 'px ' +
         ((shift && shift.left ? ml - shift.left : ml)) + 'px'
     ]
+    if (out) {
+      decls.push('position:absolute')
+      for (const side of ['top', 'right', 'bottom', 'left']) {
+        const v = cs && gp(cs, side)
+        if (v && v !== 'auto') decls.push(side + ':' + v)
+      }
+    }
     const attrs = [['class', classFor(decls) || null], ['data-plate', 'space']]
     bytes += costOf('div', attrs, [])
     return E('div', attrs, [])
