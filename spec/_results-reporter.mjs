@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { foldByScreen, recordRunEntry } from '../tools/spec-store.mjs'
 import { coverageFromTest, qualify } from '../tools/coverage.mjs'
 import { clipWindows, ffmpegDownscaleArgs, evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, focusFromLayouts, valueMeta, evidenceVideoPath, ffmpegVideoArgs, resolvePrimaryVideo } from '../tools/evidence.mjs'
+// what a landed replica says about itself (phase 3, 2026-09-03): how many gaps the in-page gate
+// found, and whether it was gated at all. One reader, shared with `npm run proof mirror`.
+import { replicaNote } from '../tools/replica-gate.mjs'
 
 // The commit each run ran against, so a case that went red can be tied to the change that did it.
 // Read once per run; empty outside a git repo, which this tool must keep working in.
@@ -215,6 +218,10 @@ function commitVideo (srcAbs, screen, cache) {
 
 function harvestEvidence (harvest, ranAt) {
   const out = {}
+  // EVERY GAPPED MOMENT OF THIS RUN, said out loud at the fold (phase 3). A replica that stopped
+  // looking like the app is exactly the defect the drawing's mirror guard exists for, and the fold is
+  // where a person is watching. Bounded like every other line the reporter prints.
+  const gapLines = []
   const runId = process.env.BOARD_RECORD ? basename(process.env.BOARD_RECORD) : String(ranAt)
   // Resolve each requirement to its frames + window + (the primary recording's) video. The PRIMARY
   // per screen is the recording COVERING THE MOST requirements — not the last flow to run (the old
@@ -268,6 +275,10 @@ function harvestEvidence (harvest, ranAt) {
         if (!b[key]) continue
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
+      // …and WHAT THE GATE FOUND, read back off the file that just landed (phase 3): the beat's
+      // resting moment is what the row shows, so that is the one the fold records and reports.
+      noteReplica(row, row.replicaAfter, gapLines, scr, rid, b.n, 'after')
+      noteReplica(null, row.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after expected')
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
       // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
       // `proves` step started, read back out of the skeleton that recorded it (spec/_base.ts
@@ -285,6 +296,8 @@ function harvestEvidence (harvest, ranAt) {
           if (!v[key]) continue
           try { copyFileSync(v[key], join(process.cwd(), vp[key])); got[key] = vp[key] } catch { /* dropped */ }
         }
+        noteReplica(got, got.replica, gapLines, scr, rid, b.n, 'v' + v.k)
+        noteReplica(null, got.replicaExpected, gapLines, scr, rid, b.n, 'v' + v.k + ' expected')
         if (got.layout) {
           try {
             // …and the NAME of the moment beside its offset (the human, 2026-09-02): the assertion's
@@ -363,7 +376,26 @@ function harvestEvidence (harvest, ranAt) {
     }
     out[qid] = entry
   }
+  // the gapped moments of this run, at most 12 of them and then the count — one line each, naming
+  // the file, the kind and where on the page it stood
+  for (const line of gapLines.slice(0, 12)) console.log(line)
+  if (gapLines.length > 12) console.log(`…and ${gapLines.length - 12} more replica gap(s)`)
   return out
+}
+
+// ONE LANDED REPLICA'S VERDICT. `row` (when given) keeps it on the folded moment as
+// `replica: { gaps, gated }` — small, derived, and enough for a reader of the index to see whether
+// the row's picture was ever checked; the Expected's own reading is reported but not stored twice,
+// because the moment already has one. Never throws: a replica that will not read is simply not noted.
+function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
+  if (!rel) return
+  try {
+    const note = replicaNote(readFileSync(join(process.cwd(), rel), 'utf8'))
+    if (row) row.replica = { gaps: note.gaps, gated: note.gated }
+    for (const g of note.list) {
+      gapLines.push(`replica gap · ${screen} ${id} b${beat} ${phase} · ${g.kind} ${g.what} at ${g.x},${g.y} ${g.w}×${g.h}`)
+    }
+  } catch { /* an unreadable replica is not a verdict */ }
 }
 
 // DERIVE THE SCHEMATICS AT EVERY FOLD (2026-09-02). The drawing beside a requirement is drawn from

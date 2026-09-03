@@ -26,6 +26,12 @@ import { snapLayoutWalk } from './_layout-walk.mjs'
 // list and travels IN through the arg, because a module reference is undefined inside the page.
 // @ts-ignore — a plain .mjs beside the spec; Playwright's loader takes it, tsc never sees this file
 import { captureReplica, REPLICA_PROPS } from './_replica.mjs'
+// THE REPLICA'S GATE (phase 3, 2026-09-03). What "the replica looks like the app" MEANS lives in one
+// pure module, read here at capture time and by `npm run proof mirror` alike; `layoutHash` is the
+// same pin the drawing is stamped with, so a replica and a drawing of one moment agree about which
+// harvest they came from.
+import { replicaGaps, claimGaps, textOf, withReplicaAttrs } from '../tools/replica-gate.mjs'
+import { layoutHash } from '../tools/viz.mjs'
 
 export { expect }
 
@@ -101,6 +107,7 @@ export const test = windowed.extend<{ page: Page, _failAggregate: void }>({
     REQ_CHIPS = []
     PROVING = null; CLAIM = null; NOTE = ''; BEHAVIOR = null
     BEAT_IDX = 0; BEAT_CURSOR = {}; LAST_BOX = null; LAST_TARGET = null; CUR_CHECK = null
+    LAST_LAYOUT = null; LAST_PIN = ''
     // The intro line has no beat — it plays from the start of the video (≈ this fixture running,
     // which is when the recording context opens). Reserving it here makes the FIRST beat wait it
     // out like any other line, so the opening narration finishes before the bar starts moving.
@@ -337,6 +344,12 @@ let LAST_BOX: Box | null = null
 // …and the Locator the ring is around (2026-09-03): snapLayout hands the element itself to the
 // skeleton walk, so the ringed element is measured FIRST — never left to document order and the cap
 let LAST_TARGET: Locator | null = null
+// THE SKELETON THIS MOMENT WAS MEASURED WITH, and the pin of the very object that landed on disk
+// (phase 3, 2026-09-03). The replica captured a moment later is gated against THIS reading — never a
+// second walk of the live page, which would measure a page that has moved on — and stamped with this
+// pin, so `npm run proof mirror` can tell a replica whose harvest has been re-taken since.
+let LAST_LAYOUT: any = null
+let LAST_PIN = ''
 let LAST_FAILED = false
 // Vestigial since the narration stopped rendering a "proving R5" line and the id strip (2026-08-27):
 // the verdict now rides on BEHAVIOR.state. Kept only because checkReq still assigns it and the
@@ -906,6 +919,10 @@ type Claim = { label: string, expected: string, got: string, ok: boolean, missin
   // reference point when a later rebuild has to find where this claim's fix now belongs
 async function snapLayout (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
+  // a moment whose walk does not land leaves NO reading behind: the replica taken next is then
+  // written ungated, and the gate says so, rather than being checked against another moment's page
+  LAST_LAYOUT = null
+  LAST_PIN = ''
   if (!page) return
   try {
     const info = test.info()
@@ -954,8 +971,14 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
       // the demo's Undo over the task title it was meant to sit beside
       if (expected || got) extra.claim = { expected, got, ok: claim.ok, ...(claim.missing ? { missing: true } : {}) }
     }
-    writeFileSync(file, JSON.stringify(Object.keys(extra).length ? { ...data, ...extra } : data))
+    const rec = Object.keys(extra).length ? { ...data, ...extra } : data
+    writeFileSync(file, JSON.stringify(rec))
     info.attachments.push({ name: `layout ${id}#${beat} ${phase}`, path: file, contentType: 'application/json' })
+    // …and this is what the replica is gated against a moment later (phase 3): the object that just
+    // landed, and its pin. `at` is normalised out of layoutHash, so the pin written on the replica
+    // equals the one the CLI derives from the committed skeleton.
+    LAST_LAYOUT = rec
+    try { LAST_PIN = layoutHash(rec as any, null) } catch { LAST_PIN = '' }
   } catch { /* the drawing is a by-product too — a page that would not measure simply has none */ }
 }
 
@@ -1007,6 +1030,66 @@ function chooseBase (c: CurCheck | null, claim: Claim | null): string | null {
   return null
 }
 
+// ── THE GATE, IN THE APP'S OWN PAGE (phase 3, 2026-09-03) ───────────────────────────────────────
+// A replica is a CLAIM — "this is what the app rendered" — and the drawn kit taught us twice that a
+// claim nobody measures quietly stops being true (CLAUDE.md, "the mirror is guarded"). So the moment
+// after it is captured, and before it is written, the replica is RENDERED BACK in a hidden iframe at
+// the region's own coordinates and walked with the SAME spec/_layout-walk.mjs walk that measured the
+// live page. Every box and word the live skeleton recorded inside the scene root must come back
+// (tools/replica-gate.mjs replicaGaps); what does not is a replica gap, written onto the file's own
+// root and refused by `npm run proof mirror`.
+//
+// The frame is pinned to the viewport's origin, so its coordinates ARE the page's — no offset to
+// undo. It carries the page's own @font-face rules (rep.fontFaces) because a frame set in a fallback
+// stack lays every word out at a different width, and every text box would then drift. Its srcdoc has
+// no script (the capture's sanitiser) and the sandbox forbids one anyway; `allow-same-origin` is what
+// makes the document walkable, and was verified to be enough — a sandboxed srcdoc frame with scripts
+// disabled still evaluates in Playwright's isolated world.
+//
+// It touches nothing but the iframe it mounts and removes — in a `finally`, so an abandoned gate
+// never leaves one behind — and every failure returns null, which writes the file UNGATED. An
+// ungated replica is honest; the gate refuses it as "not gated" rather than passing it unseen.
+const REPLICA_FRAME = '__specboard-replica'
+const REPLICA_HOST = '__specboard-replica-host'
+async function gateReplica (page: Page, rep: any): Promise<any | null> {
+  const reg = rep && rep.region ? rep.region : null
+  if (!reg || typeof rep.html !== 'string' || !rep.html) return null
+  const faces = Array.isArray(rep.fontFaces) ? rep.fontFaces.join('\n').slice(0, 64000) : ''
+  const doc = '<!doctype html><html><head><style>html,body{margin:0;overflow:hidden}</style><style>' +
+    faces + '</style></head><body><div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y +
+    'px;width:' + reg.w + 'px">' + rep.html + '</div></body></html>'
+  try {
+    const up = await raceTimeout(page.evaluate((arg: any) => {
+      const prev = document.getElementById(arg.host)
+      if (prev) prev.remove()
+      const f = document.createElement('iframe')
+      f.id = arg.host
+      f.name = arg.frame
+      f.setAttribute('sandbox', 'allow-same-origin')
+      f.setAttribute('style', 'position:fixed;left:0;top:0;width:' + (window.innerWidth || 0) +
+        'px;height:' + (window.innerHeight || 0) + 'px;border:0;opacity:0;pointer-events:none;z-index:-1')
+      f.srcdoc = arg.doc
+      return new Promise<boolean>(resolve => {
+        let done = false
+        const finish = (ok: boolean) => { if (!done) { done = true; resolve(ok) } }
+        f.addEventListener('load', () => finish(true))
+        setTimeout(() => finish(false), 1500)
+        document.body.appendChild(f)
+      })
+    }, { host: REPLICA_HOST, frame: REPLICA_FRAME, doc }), 2000)
+    if (!up) return null
+    const fr = page.frame({ name: REPLICA_FRAME })
+    if (!fr) return null
+    // the ring is found under its own centre inside the frame, exactly as on the live page
+    return await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: null }), 1500)
+  } catch { return null } finally {
+    await raceTimeout(page.evaluate((host: string) => {
+      const el = document.getElementById(host)
+      if (el) el.remove()
+    }, REPLICA_HOST), 1000).catch(() => null)
+  }
+}
+
 async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
@@ -1049,7 +1132,19 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // no <head> — the board drops the whole body into an iframe's srcdoc.
     const head = (side: string) => `<!-- specboard replica-1 · ${scr}:${id} b${beat} ${phase} · ${side} · sanitised, no script -->\n`
     const file = info.outputPath(`replica-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
-    writeFileSync(file, head('Actual') + rep.html + '\n')
+    // ── THE GATE (phase 3) ──────────────────────────────────────────────────────────────────────
+    // The ACTUAL is gated by MEASUREMENT: walked back in the frame above and compared, box for box
+    // and word for word, with the skeleton snapLayout just took. The EXPECTED is gated TEXTUALLY —
+    // its root carries THIS moment's region while its body may be an earlier moment's base tree, so
+    // two frames in one file cannot be measured against one live skeleton (the deferred question of
+    // task-2-rereview4.md); what it must answer for is that every FAILED claim's own value is
+    // actually in it, which is what the Expected is for. Both are written unpinned when there is
+    // nothing to check them against — honest, and refused by the CLI as "not gated".
+    const walked: any = LAST_PIN ? await raceTimeout(gateReplica(page, rep), 2500) : null
+    const aPin = walked && Array.isArray(walked.els) && walked.els.length ? LAST_PIN : ''
+    const aGaps = aPin ? replicaGaps(LAST_LAYOUT, walked, rep.region) : []
+    const gate = (body: string, pin: string, gaps: any[]) => pin ? withReplicaAttrs(body, { layout: pin, gaps }) : body
+    writeFileSync(file, head('Actual') + gate(rep.html, aPin, aGaps) + '\n')
     info.attachments.push({ name: `replica ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
     // ── THE EXPECTED HALF ────────────────────────────────────────────────────────────────────────
     // Never at a BEFORE moment: the beat has claimed nothing there, so an Expected would be the
@@ -1065,7 +1160,8 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
       const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
       if (typeof keep === 'string' && keep) {
         const xf = info.outputPath(`replica-expected-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)
-        writeFileSync(xf, head('Expected') + keep + '\n')
+        const xGaps = claimGaps(textOf(keep), c ? c.claims : [])
+        writeFileSync(xf, head('Expected') + gate(keep, LAST_PIN, xGaps) + '\n')
         info.attachments.push({ name: `replica-expected ${id}#${beat} ${phase}`, path: xf, contentType: 'text/html' })
       }
     }
