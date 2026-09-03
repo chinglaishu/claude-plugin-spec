@@ -111,6 +111,10 @@ spec/_replica.mjs            the REPLICA PAIR's capture (2026-09-03), one self-c
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
+spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the walk and the replica capture into the
+                             single expression the page evaluates, so the skeleton and the replica can never be two pages
+                             — and carries the walk's own answers across (the ringed element it MEASURED, the boxes it
+                             dropped as occluded) so the two halves cannot disagree about what they are looking at
 spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
@@ -320,6 +324,14 @@ change.
   `serve-board.mjs` needs a fresh server process — but `npm run board` runs under `node --watch`, so it
   restarts itself on exactly those files; only a plain `node tools/serve-board.mjs` (e.g. the
   Playwright webServer) needs a manual restart. Editing `build-board.mjs` never does.
+- **A STRING handed to `page.evaluate` is EVALUATED, never CALLED** (2026-09-04, task 3b). Playwright
+  1.62 ignores the arg for a string expression and returns the expression's own value — a function,
+  which serialises to `undefined`. The composed moment shipped that way for one round: every harvest
+  filed a photograph with NO skeleton beside it, and the fold's layout carry hid it so well that
+  `npm run proof mirror` still read init 18/18 ok. `tools/prove-input.test.mjs` — a real Playwright
+  run — is what caught it, on an attachment that was missing. Build the function in Node
+  (`spec/_moment.mjs` `momentFunction`, `new Function`) and hand a FUNCTION over; and when a capture
+  changes, check an attachment actually landed rather than trusting a green census.
 - **The static server is an allowlist, not a traversal guard** — only `board.html` and `spec/**` are
   reachable. This plugin runs inside other people's repos; it once served `.git/config`. Keep it so.
 - **Same-document hash navigation does not reload.** Going from `/` to `#/board` fires `hashchange`,
