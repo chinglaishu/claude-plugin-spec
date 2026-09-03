@@ -75,8 +75,16 @@ export const REPLICA_PROPS = [
   'display', 'position', 'top', 'left', 'right', 'bottom',
   'flex', 'flex-direction', 'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis',
   'align-items', 'align-self', 'justify-content', 'gap', 'column-gap', 'row-gap',
+  // …AND WHAT PLACES THE TRACKS THEMSELVES (fix round 1, found by the gate on the board's own
+  // harvest). The board's beat row is `display:grid; align-items:start; grid-template-rows:45.7px`
+  // inside a 327 px cell, CENTRED by `align-content` — which was not on this list, so the row went
+  // to the top of the box in the replica and every word in the cell rendered 119 px high. 1489 gaps
+  // from one missing declaration. `order` places a flex item; `min-height`/`max-height` are the
+  // constraint half of the `min-width`/`max-width` already here, and a clamped box is taller
+  // without them.
+  'align-content', 'justify-items', 'justify-self', 'order',
   'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row', 'grid-auto-flow',
-  'width', 'height', 'min-width', 'max-width', 'padding', 'margin',
+  'width', 'height', 'min-width', 'max-width', 'min-height', 'max-height', 'padding', 'margin',
   'border-top', 'border-right', 'border-bottom', 'border-left',
   'border-radius', 'outline', 'background-color', 'color',
   'font-family', 'font-size', 'font-weight', 'font-style', 'line-height',

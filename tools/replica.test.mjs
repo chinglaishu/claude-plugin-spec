@@ -1606,3 +1606,20 @@ test('the 2 px tolerance keeps the row that begins just below the fold — the s
   assert.ok(r.html.includes('>R1<'), 'a hair below the fold is still in the picture, words and all')
   assert.ok(r.html.includes('✓'))
 })
+
+test('the properties that place a grid\'s own tracks travel too — align-content and its family', () => {
+  // the board's own beat row: `display:grid; align-items:start; grid-template-rows:45.7px` inside a
+  // 327 px cell, with `align-content:center` centring that one row. Without align-content the row
+  // went to the top of the box and every word in the cell rendered 119 px high — 1489 gaps across
+  // the board's harvest, from one missing declaration.
+  const word = el('span', [106, 318, 235, 36], { text: 'a board of screens', cs: {} })
+  const cell = el('div', [44, 176, 332, 327], {
+    children: [word],
+    cs: { display: 'grid', 'align-content': 'center', 'align-items': 'start', 'grid-template-rows': '45.7188px', 'justify-items': 'stretch', 'max-height': '327px', 'min-height': '100px', order: '2' }
+  })
+  const body = el('body', [0, 0, 1440, 900], { children: [cell] })
+  const r = cap(body, { target: cell, ring: { x: 44, y: 176, width: 332, height: 327 } })
+  for (const decl of ['align-content:center', 'justify-items:stretch', 'max-height:327px', 'min-height:100px', 'order:2']) {
+    assert.ok(r.html.includes(decl), 'the sheet must carry ' + decl + ': ' + r.html.slice(0, 400))
+  }
+})
