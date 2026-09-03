@@ -392,8 +392,8 @@
         "before": "spec/board/evidence/R1.before.png",
         "after": "spec/board/evidence/R1.after.png",
         "window": {
-          "from": 341,
-          "to": 438
+          "from": 2214,
+          "to": 2308
         },
         "beats": [
           {
@@ -402,15 +402,17 @@
             "after": "spec/board/evidence/R1.b1.after.png",
             "layoutBefore": "spec/board/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R1.b1.after.layout.json",
+            "replicaBefore": "spec/board/evidence/R1.b1.before.actual.html",
+            "replicaAfter": "spec/board/evidence/R1.b1.after.actual.html",
             "window": {
-              "from": 341,
-              "to": 438
+              "from": 2214,
+              "to": 2308
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z",
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z",
         "video": {
           "path": "spec/board/evidence/7abfde94a4c3.webm",
           "from": 853,
@@ -679,8 +681,8 @@
         "before": "spec/board/evidence/R9.before.png",
         "after": "spec/board/evidence/R9.after.png",
         "window": {
-          "from": 312,
-          "to": 402
+          "from": 2701,
+          "to": 2783
         },
         "beats": [
           {
@@ -689,15 +691,17 @@
             "after": "spec/board/evidence/R9.b1.after.png",
             "layoutBefore": "spec/board/evidence/R9.b1.before.layout.json",
             "layoutAfter": "spec/board/evidence/R9.b1.after.layout.json",
+            "replicaBefore": "spec/board/evidence/R9.b1.before.actual.html",
+            "replicaAfter": "spec/board/evidence/R9.b1.after.actual.html",
             "window": {
-              "from": 312,
-              "to": 402
+              "from": 2701,
+              "to": 2783
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z"
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z"
       },
       "R11": {
         "before": "spec/board/evidence/R11.before.png",
@@ -1796,7 +1800,7 @@
       {
         "title": "R1 — the form persists what cannot be guessed, and reads it back",
         "ok": true,
-        "ms": 2584,
+        "ms": 2154,
         "error": null,
         "line": 27,
         "reqs": {
@@ -1806,7 +1810,7 @@
       {
         "title": "R1 — the setup cards are single-column blocks, not the home two-column grid",
         "ok": true,
-        "ms": 273,
+        "ms": 208,
         "error": null,
         "line": 63,
         "reqs": {}
@@ -1814,7 +1818,7 @@
       {
         "title": "R1 — start mode saves backend and frontend, in order",
         "ok": true,
-        "ms": 393,
+        "ms": 405,
         "error": null,
         "line": 75,
         "reqs": {}
@@ -1822,7 +1826,7 @@
       {
         "title": "R3 — a drafted PRD is canon the moment it is written: one CARD, no guess chip, nothing waiting, no gate",
         "ok": true,
-        "ms": 2860,
+        "ms": 2431,
         "error": null,
         "line": 95,
         "reqs": {
@@ -1832,7 +1836,7 @@
       {
         "title": "R4 — nothing found is the greenfield case: no rows, a prompt to write the first PRD",
         "ok": true,
-        "ms": 610,
+        "ms": 655,
         "error": null,
         "line": 109,
         "reqs": {
@@ -1842,7 +1846,7 @@
       {
         "title": "R2 — a crawled route is a row with its screenshot and NO PRD: inventory, never fake coverage",
         "ok": true,
-        "ms": 637,
+        "ms": 610,
         "error": null,
         "line": 121,
         "reqs": {
@@ -1852,7 +1856,7 @@
       {
         "title": "R6 — voice-over is a saved, per-project switch, off by default",
         "ok": true,
-        "ms": 2430,
+        "ms": 1609,
         "error": null,
         "line": 147,
         "reqs": {
@@ -1862,7 +1866,7 @@
       {
         "title": "R6 — the switch is disabled until piper is ready, with a copyable install helper",
         "ok": true,
-        "ms": 1074,
+        "ms": 748,
         "error": null,
         "line": 179,
         "reqs": {
@@ -1872,7 +1876,7 @@
       {
         "title": "R5 — rerunning marks new routes new and leaves a settled row alone",
         "ok": true,
-        "ms": 758,
+        "ms": 590,
         "error": null,
         "line": 206,
         "reqs": {
@@ -1882,7 +1886,7 @@
       {
         "title": "A crawled row becomes a card — the rerun marks it, the draft lands as one card, home counts it and search finds it — composed",
         "ok": true,
-        "ms": 3783,
+        "ms": 3113,
         "error": null,
         "line": 221,
         "reqs": {
@@ -1893,7 +1897,7 @@
         }
       }
     ],
-    "ranAt": 1788411273281,
+    "ranAt": 1788424615148,
     "srcHashes": {
       "_modes": "1172a15d2f88",
       "board": "434b25f7d28a",
@@ -1914,8 +1918,8 @@
         "before": "spec/init/evidence/R6.before.png",
         "after": "spec/init/evidence/R6.after.png",
         "window": {
-          "from": 298,
-          "to": 2124
+          "from": 243,
+          "to": 1305
         },
         "beats": [
           {
@@ -1924,22 +1928,24 @@
             "after": "spec/init/evidence/R6.b1.after.png",
             "layoutBefore": "spec/init/evidence/R6.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R6.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R6.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R6.b1.after.actual.html",
             "window": {
-              "from": 298,
-              "to": 2124
+              "from": 243,
+              "to": 1305
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z"
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z"
       },
       "R3": {
         "before": "spec/init/evidence/R3.before.png",
         "after": "spec/init/evidence/R3.after.png",
         "window": {
-          "from": 617,
-          "to": 2559
+          "from": 348,
+          "to": 2111
         },
         "beats": [
           {
@@ -1948,15 +1954,17 @@
             "after": "spec/init/evidence/R3.b1.after.png",
             "layoutBefore": "spec/init/evidence/R3.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R3.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R3.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R3.b1.after.actual.html",
             "window": {
-              "from": 617,
-              "to": 2559
+              "from": 348,
+              "to": 2111
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z",
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z",
         "video": {
           "path": "spec/init/evidence/9cf65f4ca0af.webm",
           "from": 463,
@@ -1967,8 +1975,8 @@
         "before": "spec/init/evidence/R5.before.png",
         "after": "spec/init/evidence/R5.after.png",
         "window": {
-          "from": 320,
-          "to": 340
+          "from": 243,
+          "to": 259
         },
         "beats": [
           {
@@ -1977,15 +1985,17 @@
             "after": "spec/init/evidence/R5.b1.after.png",
             "layoutBefore": "spec/init/evidence/R5.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R5.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R5.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R5.b1.after.actual.html",
             "window": {
-              "from": 320,
-              "to": 340
+              "from": 243,
+              "to": 259
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z",
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z",
         "video": {
           "path": "spec/init/evidence/9cf65f4ca0af.webm",
           "from": 331,
@@ -1996,8 +2006,8 @@
         "before": "spec/init/evidence/R1.before.png",
         "after": "spec/init/evidence/R1.after.png",
         "window": {
-          "from": 701,
-          "to": 2274
+          "from": 1241,
+          "to": 1828
         },
         "beats": [
           {
@@ -2006,22 +2016,24 @@
             "after": "spec/init/evidence/R1.b1.after.png",
             "layoutBefore": "spec/init/evidence/R1.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R1.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R1.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R1.b1.after.actual.html",
             "window": {
-              "from": 701,
-              "to": 2274
+              "from": 1241,
+              "to": 1828
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z"
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z"
       },
       "R4": {
         "before": "spec/init/evidence/R4.before.png",
         "after": "spec/init/evidence/R4.after.png",
         "window": {
-          "from": 266,
-          "to": 312
+          "from": 284,
+          "to": 327
         },
         "beats": [
           {
@@ -2030,22 +2042,24 @@
             "after": "spec/init/evidence/R4.b1.after.png",
             "layoutBefore": "spec/init/evidence/R4.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R4.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R4.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R4.b1.after.actual.html",
             "window": {
-              "from": 266,
-              "to": 312
+              "from": 284,
+              "to": 327
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z"
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z"
       },
       "R2": {
         "before": "spec/init/evidence/R2.before.png",
         "after": "spec/init/evidence/R2.after.png",
         "window": {
-          "from": 249,
-          "to": 307
+          "from": 266,
+          "to": 308
         },
         "beats": [
           {
@@ -2054,15 +2068,17 @@
             "after": "spec/init/evidence/R2.b1.after.png",
             "layoutBefore": "spec/init/evidence/R2.b1.before.layout.json",
             "layoutAfter": "spec/init/evidence/R2.b1.after.layout.json",
+            "replicaBefore": "spec/init/evidence/R2.b1.before.actual.html",
+            "replicaAfter": "spec/init/evidence/R2.b1.after.actual.html",
             "window": {
-              "from": 249,
-              "to": 307
+              "from": 266,
+              "to": 308
             },
             "values": []
           }
         ],
-        "runId": "1788411273281",
-        "at": "2026-09-03T04:54:33.281Z"
+        "runId": "1788424615148",
+        "at": "2026-09-03T08:36:55.148Z"
       }
     }
   },
