@@ -14,7 +14,7 @@
 import { cpSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { FILES, MANIFEST, hashFile, readVersion, buildManifest, mergeManifest } from './_skeleton.mjs'
+import { FILES, MANIFEST, POINTER, hashFile, readVersion, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 // Pure decision + file effects, so it can be proven against throwaway dirs. `base` is the shipped
 // manifest ({version, files}) or null; `files` is the set to walk (the real skeleton by default).
@@ -79,7 +79,11 @@ if (resolve(process.argv[1] || '') === fileURLToPath(import.meta.url)) {
   const fromIdx = args.indexOf('--from-dir')
   const fromDir = fromIdx >= 0 ? resolve(args[fromIdx + 1]) : null
   const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--from-dir')
-  const dest = resolve(positional[0] || process.cwd())
+  // An app repo that keeps its board BESIDE it carries a one-line `.specboard` pointer; `update.mjs .`
+  // run from the app repo lands in the sidecar, never re-vendors the skeleton into the app repo.
+  const asked = resolve(positional[0] || process.cwd())
+  const dest = resolveProject(asked)
+  if (dest !== asked) console.log(`${asked} → ${dest}  (following its ${POINTER} pointer)`)
 
   if (dest === SRC) {
     console.error('Refusing to update specboard itself. Give a scaffolded project directory.'); process.exit(1)

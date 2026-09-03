@@ -18,8 +18,14 @@ import { vizHash, vizStale } from './viz.mjs'
 // the CI gate's PURE resolver — the same one .github/workflows/e2e.yml runs through
 // `node tools/ci-select.mjs`, so the board's CI mark and the gate can never disagree
 import { selectCiTests } from './ci-select.mjs'
+import { appRoot } from './_skeleton.mjs'
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+// Where the APP lives (2026-09-04, the sidecar layout): spec/_specboard.json's `app`, relative to
+// ROOT, or ROOT itself when the board is vendored into the app repo. Nothing in the fold reads app
+// code — proof is derived from spec/ alone — but the project's own helpers and the capabilities list
+// (the app repo's .claude/ skills) need the way back. tools/_skeleton.mjs appRoot is the one rule.
+export const APP_ROOT = appRoot(ROOT, (() => { try { return JSON.parse(readFileSync(join(ROOT, 'spec/_specboard.json'), 'utf8')) } catch { return null } })())
 export const SPEC = join(ROOT, 'spec')
 
 // Drafts are authored at this size and shown scaled, never re-laid-out.

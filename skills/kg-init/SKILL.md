@@ -20,6 +20,17 @@ never overwrites files you already have and it never copies specboard's own scre
 node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" .
 ```
 
+**Or keep the board OUT of the app repo — a sidecar.** Some teams do not want a harvest (evidence
+frames, fonts, drawings, a 4 MB board.html) inside the product's repo. Scaffold into a directory
+BESIDE it and name the app repo with `--app`; the app repo then carries exactly one file, `.specboard`,
+whose single line is the sidecar's relative path, and the sidecar's `spec/_specboard.json` records the
+way back as `app`. Run `npm install` / `npm run board` **in the sidecar**; every other skill follows
+the pointer (see the note at the top of each). The sidecar is its own git repo — commit it too.
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/tools/scaffold.mjs" ../myapp_specboard --app .
+```
+
 **If `$CLAUDE_PLUGIN_ROOT` is empty**, it is the directory two levels above this `SKILL.md` — the one
 containing `.claude-plugin/plugin.json` and `tools/`. Substitute that path.
 

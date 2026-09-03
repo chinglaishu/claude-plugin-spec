@@ -5,7 +5,7 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 import { createHash } from 'node:crypto'
-import { join } from 'node:path'
+import { join, resolve, isAbsolute } from 'node:path'
 
 // The tools, the shared test harness, the ONE design system, the Playwright config. NOT
 // spec/<screen>/ — those are the target's own screens, never shipped.
@@ -79,6 +79,11 @@ export const FILES = [
   // pure: maps _config.json's signIn + named authProfiles into Playwright projects (imported by
   // playwright.board.ts). Unit-tested in tools/auth-projects.test.mjs.
   'tools/auth-projects.mjs',
+  // this list itself (2026-09-04): spec-store.mjs imports appRoot from here (the ONE rule for where
+  // the app lives in the sidecar layout), so the vendored store cannot load without it (guard-caught
+  // by update.test.mjs's every-relative-import-is-vendored check). scaffold/update still run from the
+  // plugin's own copy; the vendored one is inert beyond that import.
+  'tools/_skeleton.mjs',
   'playwright.board.ts',
   'spec/_design.css', 'spec/_base.ts', 'spec/_fixture.ts',
   // the layout skeleton's walk (2026-09-03) — imported by spec/_base.ts and serialised into the page
@@ -132,6 +137,39 @@ export const DEV = { '@playwright/test': '^1.62.0', '@types/node': '^22.0.0' }
 // it is a record of what the project is running, not transient run state.
 export const MANIFEST = 'spec/_specboard.json'
 
+// THE SIDECAR LAYOUT (the human, 2026-09-04: "put all specboard related file and image out of the
+// dojostack_main repo … and make it still work"). A project's board — spec/, the vendored tools/,
+// board.html, playwright.board.ts, node_modules — may live in a directory BESIDE the app repo, so the
+// app repo carries none of the harvest. The tools already resolve their root to the directory they
+// live in (spec-store ROOT), so the board runs unchanged from there; what the layout needs is the two
+// directions to find each other, and both are one relative path:
+//   app repo  → board:  `.specboard`, ONE line, the path of the board directory (committed — a clone
+//                       must find its board too). Every skill and `update.mjs`/`scaffold.mjs` follow it.
+//   board     → app:    `app` in spec/_specboard.json (carried across updates like `project`), read
+//                       as APP_ROOT by spec-store — the project's own seed/auth helpers and the board's
+//                       capabilities list (the app repo's .claude/ skills) resolve against it.
+export const POINTER = '.specboard'
+
+// The project directory a path MEANS. A scaffolded project (it has the manifest) is itself; an app
+// repo carrying a pointer means the sidecar the pointer names; anything else is itself (a fresh
+// scaffold target). Pure; unit-tested in tools/sidecar.test.mjs.
+export function resolveProject (dir) {
+  const d = resolve(dir)
+  if (existsSync(join(d, MANIFEST))) return d
+  const p = join(d, POINTER)
+  if (!existsSync(p)) return d
+  const target = readFileSync(p, 'utf8').split('\n').map(l => l.trim()).find(Boolean) || ''
+  if (!target) return d
+  return isAbsolute(target) ? target : resolve(d, target)
+}
+
+// Where the APP lives, seen from the board root: the manifest's `app` (relative to the board root)
+// or, in the vendored-in layout, the board root itself. Pure; unit-tested in tools/sidecar.test.mjs.
+export function appRoot (root, manifest) {
+  const app = manifest && typeof manifest.app === 'string' && manifest.app.trim()
+  return app ? resolve(root, app) : resolve(root)
+}
+
 // The manifest also carries the project's COMMITTED IDENTITY — `project: { name, tagline }`, the
 // board crumb's authored source (Task 8 fix round 1, A-2: spec/_config.json is gitignored above, so
 // an identity kept there vanishes on a clone). A fresh manifest (scaffold --force, update) is the
@@ -140,6 +178,8 @@ export const MANIFEST = 'spec/_specboard.json'
 export function mergeManifest (fresh, prev) {
   const out = { ...fresh }
   if (prev && prev.project && typeof prev.project === 'object') out.project = { ...prev.project }
+  // …and the sidecar's way back to its app repo (2026-09-04) — a path, never invented, never dropped
+  if (prev && typeof prev.app === 'string' && prev.app.trim()) out.app = prev.app
   return out
 }
 

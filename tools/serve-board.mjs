@@ -12,7 +12,7 @@ import { join, normalize, extname, resolve, dirname, basename, relative } from '
 import { homedir } from 'node:os'
 import {
   composeBlockedBy,
-  ROOT, SPEC, allScreens,
+  ROOT, APP_ROOT, SPEC, allScreens,
   CONFLICTS, readConflicts, readDecisions, writeDecisions, sideFile,
   CRAWL, readConfig, writeConfig, readCrawl, parseReport, writeJson,
   RUNS, readRuns, recordRunEntry, reEscape, runVerdict, readResults, slotAfterClose,
@@ -982,14 +982,16 @@ function readCapabilities () {
     } catch (e) { /* no skills dir — leave specboard caps empty */ }
   }
 
-  // the project's own additions — skills nested under .claude/skills, agents flat in .claude/agents
-  for (const file of findSkillMd(join(projectRoot, '.claude/skills'))) {
+  // the project's own additions — skills nested under .claude/skills, agents flat in .claude/agents.
+  // These live in the APP repo: the same directory as the board when it is vendored in, the directory
+  // the manifest's `app` names when the board is a sidecar beside it (2026-09-04).
+  for (const file of findSkillMd(join(APP_ROOT, '.claude/skills'))) {
     add(file, { kind: 'skill', source: 'project', fallback: basename(dirname(file)) })
   }
   try {
-    for (const d of readdirSync(join(projectRoot, '.claude/agents'), { withFileTypes: true })) {
+    for (const d of readdirSync(join(APP_ROOT, '.claude/agents'), { withFileTypes: true })) {
       if (d.isFile() && d.name.endsWith('.md')) {
-        add(join(projectRoot, '.claude/agents', d.name),
+        add(join(APP_ROOT, '.claude/agents', d.name),
           { kind: 'agent', source: 'project', fallback: d.name.replace(/\.md$/, '') })
       }
     }
@@ -997,7 +999,7 @@ function readCapabilities () {
 
   return {
     specboard: { available: !!pluginRoot, version, root: pluginRoot },
-    project: { root: projectRoot },
+    project: { root: APP_ROOT, board: projectRoot },
     capabilities: caps
   }
 }

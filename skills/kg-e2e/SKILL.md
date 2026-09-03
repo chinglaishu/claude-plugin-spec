@@ -5,6 +5,13 @@ description: Use to author the E2E test that proves a specboard screen's require
 
 # Authoring the test that proves a screen
 
+> **Where the board lives.** A project keeps its board either **in** the app repo (the default: `spec/`,
+> the vendored `tools/`, `board.html` beside the code) or **beside** it as a *sidecar* — then the app
+> repo carries exactly one file, `.specboard`, whose single line is the path of the board directory
+> (e.g. `../myapp_specboard`). If the repo you are in has `.specboard`, **`cd` into the directory it
+> names before every command below** — `spec/`, `tools/`, `npm run …` all live there, and nothing
+> specboard-related belongs in the app repo. `update.mjs`/`scaffold.mjs` follow the pointer themselves.
+
 specboard is two ends: the **requirements** (the source of truth) and the **tests that prove them**
 against the real app. This skill is the second end. The test lives next to the screen it proves —
 `spec/<screen>/test.spec.ts` — and its whole job is to make a requirement's state *earned*: a

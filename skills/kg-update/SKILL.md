@@ -5,6 +5,13 @@ description: Use when a project already has specboard scaffolded (a spec/ board 
 
 # Updating a scaffolded project to a new specboard release
 
+> **Where the board lives.** A project keeps its board either **in** the app repo (the default: `spec/`,
+> the vendored `tools/`, `board.html` beside the code) or **beside** it as a *sidecar* — then the app
+> repo carries exactly one file, `.specboard`, whose single line is the path of the board directory
+> (e.g. `../myapp_specboard`). If the repo you are in has `.specboard`, **`cd` into the directory it
+> names before every command below** — `spec/`, `tools/`, `npm run …` all live there, and nothing
+> specboard-related belongs in the app repo. `update.mjs`/`scaffold.mjs` follow the pointer themselves.
+
 specboard vendors its board code (`tools/`, the `spec/_*` harness, `playwright.board.ts`) **into** a
 project. Updating the plugin updates only the skills — never a project's vendored copy — so a project
 silently runs whatever board code it was scaffolded with until this brings it forward. It updates the

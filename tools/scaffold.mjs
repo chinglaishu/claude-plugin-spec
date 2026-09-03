@@ -2,7 +2,9 @@
 // to run the board on YOUR code is to vendor the skeleton into your repo — then `npm run board`
 // there reads your spec/, writes your board.html, and runs your tests, with no path juggling.
 //
-//   node <plugin>/tools/scaffold.mjs [targetДir]   (defaults to the current directory)
+//   node <plugin>/tools/scaffold.mjs [targetDir]                 (defaults to the current directory)
+//   node <plugin>/tools/scaffold.mjs <boardDir> --app <appRepo>  (a SIDECAR beside the app repo — the app
+//                                                                 repo gets only a one-line .specboard pointer)
 //
 // It copies the tools and the shared test harness, the ONE design system, and the run scripts, and
 // it never overwrites a file you already have (so re-running to pull an update is safe with --force,
@@ -10,16 +12,23 @@
 // your screens are yours to crawl or write.
 
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, resolve, dirname } from 'node:path'
+import { join, resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { homedir } from 'node:os'
 import { createServer } from 'node:net'
-import { FILES, SCRIPTS, DEV, MANIFEST, SPEC_IGNORE, ROOT_IGNORE, buildManifest, mergeManifest } from './_skeleton.mjs'
+import { FILES, SCRIPTS, DEV, MANIFEST, POINTER, SPEC_IGNORE, ROOT_IGNORE, buildManifest, mergeManifest, resolveProject } from './_skeleton.mjs'
 
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
 const force = args.includes('--force')
-const DEST = resolve(args.find(a => !a.startsWith('--')) || process.cwd())
+// `--app <dir>` scaffolds a SIDECAR: the board goes into the target directory, the app repo at <dir>
+// gets only the one-line `.specboard` pointer to it, and the manifest records the way back (`app`).
+// Without --app the target IS the app repo (the vendored-in layout), exactly as before — unless it
+// already carries a pointer, in which case the scaffold follows it rather than vendoring a second board.
+const appIdx = args.indexOf('--app')
+const APP = appIdx >= 0 ? resolve(args[appIdx + 1]) : null
+const positional = args.filter((a, i) => !a.startsWith('--') && args[i - 1] !== '--app')
+const DEST = APP ? resolve(positional[0] || process.cwd()) : resolveProject(positional[0] || process.cwd())
 
 if (DEST === SRC) {
   console.error('Refusing to scaffold specboard onto itself. Give a target project directory.')
@@ -66,8 +75,16 @@ if (!existsSync(join(DEST, MANIFEST)) || force) {
   // --force keeps the project's committed identity (`project: { name, tagline }`) — A-2
   let prev = null
   try { prev = JSON.parse(readFileSync(join(DEST, MANIFEST), 'utf8')) } catch { prev = null }
-  writeFileSync(join(DEST, MANIFEST), JSON.stringify(mergeManifest(buildManifest(SRC), prev), null, 2) + '\n')
+  const fresh = mergeManifest(buildManifest(SRC), prev)
+  if (APP) fresh.app = relative(DEST, APP) || '.'
+  writeFileSync(join(DEST, MANIFEST), JSON.stringify(fresh, null, 2) + '\n')
   copied.push(MANIFEST)
+}
+// The sidecar's pointer in the app repo — one relative line, committed there, so every skill and
+// update run from the app repo finds this board. Never overwrites a pointer that already exists.
+if (APP && APP !== DEST) {
+  const ptr = join(APP, POINTER)
+  if (!existsSync(ptr) || force) { writeFileSync(ptr, relative(APP, DEST) + '\n'); copied.push(relative(DEST, ptr)) }
 }
 
 // THIS PROJECT'S OWN BOARD PORT. Every scaffolded project used to default to 4173, so two projects
