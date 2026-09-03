@@ -355,10 +355,13 @@ test('fontEvidencePath puts a screen\'s web fonts in one place, named by content
 })
 
 test('parseReplicaAttachment reads the names snapReplica attaches, and nothing else', () => {
-  assert.deepEqual(parseReplicaAttachment('replica R4#1 before'), { id: 'R4', beat: 1, phase: 'before' })
-  assert.deepEqual(parseReplicaAttachment('replica asset-plan:R5#2 after'), { id: 'asset-plan:R5', beat: 2, phase: 'after' })
-  assert.deepEqual(parseReplicaAttachment('replica R1#1 v3'), { id: 'R1', beat: 1, phase: 'v3' })
-  assert.deepEqual(parseReplicaAttachment('replica R4 before'), { id: 'R4', beat: null, phase: 'before' })
+  // `side` joined the shape in phase 2 (2026-09-03): a moment now files TWO replicas, the app's own
+  // picture and the one the requirement asks for. These four assertions were correctly broken by
+  // that change (rule 4) — the plain name is the ACTUAL, and always was.
+  assert.deepEqual(parseReplicaAttachment('replica R4#1 before'), { id: 'R4', beat: 1, phase: 'before', side: 'actual' })
+  assert.deepEqual(parseReplicaAttachment('replica asset-plan:R5#2 after'), { id: 'asset-plan:R5', beat: 2, phase: 'after', side: 'actual' })
+  assert.deepEqual(parseReplicaAttachment('replica R1#1 v3'), { id: 'R1', beat: 1, phase: 'v3', side: 'actual' })
+  assert.deepEqual(parseReplicaAttachment('replica R4 before'), { id: 'R4', beat: null, phase: 'before', side: 'actual' })
   assert.equal(parseReplicaAttachment('layout R4#1 before'), null, 'a skeleton is not a replica')
   assert.equal(parseReplicaAttachment('evidence R4#1 before'), null, 'nor is a frame')
   assert.equal(parseReplicaAttachment('replica R4#1 during'), null)
@@ -436,4 +439,54 @@ test('fonts: a face no entry of the screen names any more is pruned, one still n
   assert.deepEqual(prune, [], 'R5 still wears the old face')
   prune = foldEvidence(index, { 'board:R5': entry({ before: 'spec/board/evidence/R5.before.png', after: 'spec/board/evidence/R5.after.png', runId: 'r2', fonts: [font('cccc3333dddd4444')] }) })
   assert.deepEqual(prune, ['spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2'])
+})
+
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// PHASE 2 (2026-09-03): beside every moment's ACTUAL replica, the EXPECTED one — the same markup
+// with the beat's claims applied. It is the left half of the row (what the requirement says the app
+// should have rendered), so it is landed, recorded, carried and pruned exactly like its Actual: a
+// row that lost one and kept the other would be a comparison of two different moments.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+test('parseReplicaAttachment tells the Expected half from the Actual one', () => {
+  assert.deepEqual(parseReplicaAttachment('replica-expected R9#1 after'), { id: 'R9', beat: 1, phase: 'after', side: 'expected' })
+  assert.deepEqual(parseReplicaAttachment('replica-expected todo:R9#1 v3'), { id: 'todo:R9', beat: 1, phase: 'v3', side: 'expected' })
+  assert.equal(parseReplicaAttachment('replica-expected'), null)
+  assert.equal(parseReplicaAttachment('replica-expectedR9#1 after'), null, 'the name is two words, not a prefix')
+  assert.equal(parseReplicaAttachment('replica-intended R9#1 after'), null, 'and only the one word')
+})
+test('the Expected replica has a path of its own beside the Actual, at every moment that has one', () => {
+  const p = beatEvidencePaths('todo', 'R9', 1)
+  assert.equal(p.replicaExpectedAfter, 'spec/todo/evidence/R9.b1.after.expected.html')
+  assert.equal(p.replicaAfter, 'spec/todo/evidence/R9.b1.after.actual.html', 'one name away from it, as ever')
+  // …and no `replicaExpectedBefore`: a beat's BEFORE moment has claimed nothing yet, so an Expected
+  // there would be the Actual with a different name — a second file saying nothing (see spec/_base.ts)
+  assert.equal('replicaExpectedBefore' in p, false)
+  assert.equal(valueEvidencePaths('todo', 'todo:R9', 1, 3).replicaExpected, 'spec/todo/evidence/R9.b1.v3.expected.html')
+})
+
+const both = (n, over = {}) => rep(n, {
+  replicaExpectedAfter: `spec/board/evidence/R4.b${n}.after.expected.html`,
+  ...over
+})
+test('the Expected replica is CARRIED on the Actual\'s rule, and pruned with the beat that dropped it', () => {
+  const index = { board: { evidence: { R4: entry({ beats: [both(1)] }) } } }
+  let prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaBefore: null, replicaAfter: null, replicaExpectedAfter: null })] }) })
+  assert.deepEqual(prune, [], 'a capture that failed must not delete the picture the row is built from')
+  assert.equal(index.board.evidence.R4.beats[0].replicaExpectedAfter, 'spec/board/evidence/R4.b1.after.expected.html')
+  prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r3', beats: [] }) })
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.after.expected.html'), prune.join(' '))
+})
+test('an asserted value\'s Expected replica is pruned with its frame, like its Actual', () => {
+  const withBoth = k => beat(1, {
+    values: Array.from({ length: k }, (_, i) => ({
+      frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
+      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`,
+      replicaExpected: `spec/board/evidence/R4.b1.v${i + 1}.expected.html`
+    }))
+  })
+  const index = { board: { evidence: { R4: entry({ beats: [withBoth(2)] }) } } }
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withBoth(1)] }) })
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.v2.expected.html'), prune.join(' '))
+  assert.ok(!prune.includes('spec/board/evidence/R4.b1.v1.expected.html'), 'the one still named stays')
 })

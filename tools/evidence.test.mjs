@@ -329,3 +329,38 @@ test('per-beat: a requirement whose run fetched no font resolves to an empty set
   const harvest = { 'todo:R1': { caps: { _novideo: { srcVideo: null, order: [1], beats: { 1: { before: 'b1.png', after: 'a1.png' } } } }, latestKey: '_novideo' } }
   assert.deepEqual(resolvePrimaryVideo(harvest)['todo:R1'].fonts, [])
 })
+
+
+// ── 2026-09-03, phase 2: the EXPECTED replica resolves beside the Actual it is compared against —
+// same capture, same moment, or the row would put two different moments side by side.
+test('per-beat: the Expected replica of the after moment and of each asserted value resolves too', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const harvest = {
+    'todo:R9': {
+      caps: {
+        _novideo: {
+          srcVideo: null,
+          order: [1],
+          beats: {
+            1: {
+              before: 'b1.png', after: 'a1.png',
+              replicaBefore: 'b1.html', replicaAfter: 'a1.html', replicaExpectedAfter: 'a1.exp.html',
+              values: { 1: { frame: 'v1.png', layout: 'v1.json', replica: 'v1.html', replicaExpected: 'v1.exp.html' } }
+            }
+          }
+        }
+      },
+      latestKey: '_novideo'
+    }
+  }
+  const r = resolvePrimaryVideo(harvest)['todo:R9']
+  assert.equal(r.beats[0].replicaExpectedAfter, 'a1.exp.html')
+  assert.deepEqual(r.beats[0].values, [{ k: 1, frame: 'v1.png', layout: 'v1.json', replica: 'v1.html', replicaExpected: 'v1.exp.html' }])
+})
+test('per-beat: a moment that harvested no Expected replica says so with a null, never an absent key', async () => {
+  const { resolvePrimaryVideo } = await import('./evidence.mjs')
+  const harvest = { 'todo:R1': { caps: { _novideo: { srcVideo: null, order: [1], beats: { 1: { before: 'b.png', after: 'a.png', values: { 1: { frame: 'v1.png' } } } } } }, latestKey: '_novideo' } }
+  const r = resolvePrimaryVideo(harvest)['todo:R1']
+  assert.equal(r.beats[0].replicaExpectedAfter, null)
+  assert.equal(r.beats[0].values[0].replicaExpected, null)
+})
