@@ -334,3 +334,14 @@ test('the CLI\'s node text gate also lets a live text AT the 48-char cap end mid
     assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+test('the CLI\'s node text gate never demands text back from a style/script/etc-tagged element', () => {
+  const root = repFixture({
+    repin: true,
+    layout: l => { l.els.push({ x: 120, y: 250, w: 300, h: 20, kind: 'image', tag: 'style', text: '.wf0{animation:x 1s}' }); return l }
+    // the actual body carries NOTHING matching that text — if the gate demanded it back, this would fail
+  })
+  try {
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})

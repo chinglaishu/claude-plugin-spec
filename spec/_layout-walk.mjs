@@ -218,8 +218,10 @@ export function snapLayoutWalk (arg) {
   // WHICH elements to spend its budget on. Returns null for an element the page does not show (and
   // whose subtree must not be entered), else { el, tag, eop, rec } — `rec` null when the element is
   // below the size floor. `forced` marks the element the caller KNOWS is ringed.
+  // TITLE/DESC/METADATA join SCRIPT/STYLE (fix round 2, item 2): SVG's own accessibility/metadata
+  // children, never painted, never something a reader sees — the same reason STYLE was already here.
   const skipTag = (tag) => tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT' || tag === 'TEMPLATE' ||
-    tag === 'LINK' || tag === 'META'
+    tag === 'LINK' || tag === 'META' || tag === 'TITLE' || tag === 'DESC' || tag === 'METADATA'
   const measure = (el, pop, forced, r0) => {
     if (el.id === OVERLAY) return null                 // never measure our own narration overlay
     const tag = String(el.tagName || '').toUpperCase()
@@ -275,12 +277,23 @@ export function snapLayoutWalk (arg) {
         // inside the ring, and it may not be far larger than the ring itself
         focus = (ox * oy) / area >= 0.6 && area <= rArea * 4
       }
-      // the asserted value is the whole point of the mirror — take it however it is nested
-      if (focus && !text) text = clean(el.innerText || el.textContent)
+      // the asserted value is the whole point of the mirror — take it however it is nested.
+      // NEVER FOR AN SVG (fix round 2, item 2, board R18): SVGElement has no `innerText`, so this
+      // fell back to `textContent`, which — unlike an HTML element's — walks every descendant TEXT
+      // NODE regardless of the element it sits in, <style> included. A big inline svg (the board's
+      // own drawn schematic) with a scoped <style> of animation rules and no other text became the
+      // ring target of a beat with nothing else to show, and its "text" came back as raw CSS
+      // (".vzabc .wf0{animation:...}") — which a replica rightly never serialises (spec/_replica.mjs
+      // DROPs style/script), so the gate demanded a word back that no honest replica could ever
+      // carry. The walk never descends into an svg's own children anyway (`if (m.tag !== 'SVG')
+      // walk(...)`, below), so there is no OTHER path that could supply a truer value here — an
+      // icon's own drawable content is read by `iconOf`, not by text.
+      if (focus && !text && tag !== 'SVG') text = clean(el.innerText || el.textContent)
       const rec = {
         x: Math.round(r.left), y: Math.round(r.top),
         w: Math.round(r.width), h: Math.round(r.height),
-        kind: kindOf(el, tag, leaf, text, r)
+        kind: kindOf(el, tag, leaf, text, r),
+        tag: tag.toLowerCase()
       }
       if (text) rec.text = text
       if (ph) rec.ph = 1

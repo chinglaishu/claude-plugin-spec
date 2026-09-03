@@ -310,3 +310,15 @@ test('a needle AT the cap still needs its START bounded — the relaxation is en
   assert.equal(replicaGaps(live, glued, REGION)[0].kind, 'missing-text',
     'glued to a wordy character on the LEFT is still not its own run — only the right end is relaxed')
 })
+
+// ── FIX ROUND 2, item 2: A LIVE ELEMENT TAGGED style/script/title/desc/metadata NEVER GATES ITS TEXT
+// board R18: a focused svg's embedded <style> leaked its raw CSS as the element's own "text" (fixed
+// at the source in spec/_layout-walk.mjs — an svg's textContent fallback is gone). This is the belt
+// half of the belt-and-suspenders: even a skeleton carrying such a record (an older harvest, or a
+// `tag` this module cannot fully trust) is never asked to produce a word no replica could honestly
+// draw, because these tags are sanitised OUT of every replica (spec/_replica.mjs's DROP list).
+test('a live element tagged style/script/etc never demands its text back — even if one somehow carries text', () => {
+  const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 300, h: 20, kind: 'image', tag: 'style', text: '.wf0{animation:x 1s}' }] }
+  const rep = { w: 1440, h: 900, els: [] }
+  assert.deepEqual(replicaGaps(live, rep, REGION), [], 'no missing-text for a tag that paints nothing')
+})

@@ -75,6 +75,14 @@ export function containsRun (hay, needle) {
   return false
 }
 
+// A LIVE ELEMENT WHOSE OWN TAG NEVER PAINTS A READER-VISIBLE WORD (fix round 2, item 2). Every
+// record now carries its measured `tag` (spec/_layout-walk.mjs), lowercased — an older skeleton
+// with no such field simply has `e.tag === undefined`, which matches nothing here and changes
+// nothing about how it was gated before. `style`/`script` are already refused a slot by the walk's
+// own skipTag, so this exists for whatever still slips a `text` through despite that (an svg's own
+// metadata children; belt and suspenders alongside the walk's own SVG-textContent fix), and for a
+// skeleton from a release older than fix round 2 that has not been re-harvested yet.
+export const NO_TEXT_TAGS = ['style', 'script', 'title', 'desc', 'metadata']
 const clean = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim()
 const near = (a, b) => Math.abs(Number(a) - Number(b)) <= GATE_TOL
 const sameBox = (a, b) => near(a.x, b.x) && near(a.y, b.y) && near(a.w, b.w) && near(a.h, b.h)
@@ -132,7 +140,11 @@ export function replicaGaps (live, replica, region, opts = {}) {
     if (e.focus) {
       if (!repEls.some(r => r.focus && sameBox(r, e))) { add({ kind: 'missing-focus', what: 'ring', ...at }); continue }
     }
-    const t = clean(e.text)
+    // a tag that never paints a reader-visible word (fix round 2, item 2) carries no text demand,
+    // whatever ended up in `e.text` — a skeleton from before the walk's own SVG-textContent fix
+    // (or one this module cannot fully trust) still gates cleanly rather than chasing a value no
+    // honest replica could ever show
+    const t = NO_TEXT_TAGS.indexOf(e.tag) >= 0 ? '' : clean(e.text)
     if (t) {
       // 2. THE WORDS. Equal text at the same box is the plain case; CONTAINING it at the same box is
       //    the honest one — a replica materialises a ::before/::after's quoted content as a real

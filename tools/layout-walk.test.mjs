@@ -164,3 +164,33 @@ test('the ring in the skeleton is the element\'s CURRENT box when the element is
   assert.deepEqual(L.ring, { x: 732, y: 648, w: 130, h: 32 }, 'the skeleton rings where the element IS')
   assert.ok(L.els.some(e => e.focus && e.x === 732))
 })
+
+// ── FIX ROUND 2, item 2: A FOCUSED SVG'S text() FALLBACK MUST NOT LEAK ITS <style>'S RAW CSS ──────
+// board R18's census gap: a big (488×305) inline <svg> — the board's own drawn schematic, embedded
+// with a scoped <style> of animation rules — was the ring target of a beat with no OTHER text, so
+// the "the asserted value is the whole point of the mirror" fallback ran `el.innerText ||
+// el.textContent`. SVGElement has no innerText, and textContent walks EVERY descendant text node
+// regardless of element type — including the raw CSS sitting inside <style>, which a replica rightly
+// never serialises (spec/_replica.mjs's DROP list). Every record now also carries its own `tag`
+// (lowercase), so the gate can name what it is refusing to demand text from.
+test('every recorded element carries its own tag, lowercased', () => {
+  const label = el('span', [100, 100, 60, 16], { text: 'Total' })
+  const body = el('body', [0, 0, 1440, 900], { children: [label] })
+  const L = walk(body, null)
+  const rec = L.els.find(e => e.text === 'Total')
+  assert.equal(rec.tag, 'span')
+})
+
+test('a focused SVG\'s embedded <style> text never becomes the element\'s "text" — the walk never descends into an svg\'s children, so nothing else could supply one either', () => {
+  const styleNode = el('style', [0, 0, 0, 0], { text: '.vzabc .wf0{animation:vabc123f0 3s linear infinite}' })
+  // real SVGElement.textContent concatenates every descendant text node, <style> included — the stub's
+  // default textContent (kids.map(k => k.textContent).join('')) reproduces exactly that behaviour
+  const schematic = el('svg', [387, 187, 488, 305], { children: [styleNode] })
+  const body = el('body', [0, 0, 1440, 900], { children: [schematic] })
+  const ring = { x: 387, y: 187, width: 488, height: 305 }
+  const L = walk(body, ring, schematic)
+  const rec = L.els.find(e => e.focus)
+  assert.ok(rec, 'the focused svg is still recorded: ' + JSON.stringify(L.els))
+  assert.equal(rec.tag, 'svg')
+  assert.ok(!rec.text || !/animation/.test(rec.text), 'the style block\'s CSS never rides as this element\'s text: ' + JSON.stringify(rec))
+})

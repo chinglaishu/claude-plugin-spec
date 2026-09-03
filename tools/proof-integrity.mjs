@@ -22,7 +22,7 @@ import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from 
 // …and the replica's own guard, for the same reason: what "the replica looks like the app" MEANS is
 // decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
 // this CLI alike. A gate that restates the capture's rules drifts from them.
-import { replicaAttrs, claimGaps, textOf, containsRun, GATE_TOL, GATE_MIN } from './replica-gate.mjs'
+import { replicaAttrs, claimGaps, textOf, containsRun, GATE_TOL, GATE_MIN, NO_TEXT_TAGS } from './replica-gate.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -249,6 +249,10 @@ export function checkReplicas (spec = 'spec') {
           const reg = a.region
           for (const e of (Array.isArray(lay.els) ? lay.els : [])) {
             if (row.gaps.length >= 12) break
+            // a tag that never paints a reader-visible word (fix round 2, item 2 — the same list
+            // tools/replica-gate.mjs's in-page half reads, so the two can never disagree) carries no
+            // text demand here either
+            if (NO_TEXT_TAGS.indexOf(e.tag) >= 0) continue
             const t = String(e.text == null ? '' : e.text).replace(/\s+/g, ' ').trim()
             if (!t) continue
             if (e.w < GATE_MIN || e.h < GATE_MIN) continue      // the walk's own floor, from the module that owns it
