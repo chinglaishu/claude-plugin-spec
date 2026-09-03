@@ -762,10 +762,17 @@ export async function pointAt (target: Locator, opts: { failed?: boolean } = {})
 // input/textarea/select reads its value, everything else reads its rendered text. A detached or
 // unevaluable element falls back to textContent rather than throwing — proveVisible's own assert is
 // what must fail, with the value it read in the message.
+// …AND A TICK BOX READS ITS TICK (2026-09-04, phase 6). A checkbox's `value` is the string "on"
+// whether or not it is checked, so `proveVisible(box, 'on', …)` would pass with the box empty — an
+// assertion that cannot fail, which is the one thing rule 2 refuses. What such a control SHOWS is
+// its state, so it reads `checked` / `unchecked`. Found completing init R6's claim ("Setup reads it
+// back ticked"), the first requirement whose fact lives on a tick box.
 async function shownText (target: Locator): Promise<string> {
   const el = target.first()
   const v = await el.evaluate((n: any) => {
     const tag = String(n.tagName || '').toUpperCase()
+    const type = String(n.type || '').toLowerCase()
+    if (tag === 'INPUT' && (type === 'checkbox' || type === 'radio')) return n.checked ? 'checked' : 'unchecked'
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return String(n.value == null ? '' : n.value)
     return String(n.textContent == null ? '' : n.textContent)
   }).catch(() => null)

@@ -40,10 +40,10 @@ import { tmpdir } from 'node:os'
 // `proveVisible` is one of them, and the strongest: it READS the value off the element (an input's
 // value, everything else's rendered text), photographs it with the claim burned in, and asserts the
 // two are equal. A beat whose only assertion is a proveVisible is the opposite of existence-only.
-const VALUE_ASSERTION = /toHaveText|toContainText|toHaveValue|toHaveAttribute|toHaveCount\(\s*[1-9]|toBe\(|toEqual\(|toMatch|toBeCloseTo|toBeGreaterThan|toBeLessThan|proveVisible\s*\(/
+const VALUE_ASSERTION = /toHaveText|toContainText|toContain\(|toHaveValue|toHaveAttribute|toHaveURL|toHaveCount\(\s*[1-9]|toBe\(|toEqual\(|toMatch|toBeCloseTo|toBeGreaterThan|toBeLessThan|proveVisible\s*\(/
 
 export function hasValueAssertion (body) {
-  return VALUE_ASSERTION.test(String(body || ''))
+  return VALUE_ASSERTION.test(stripComments(body))     // prose is not an assertion — see stripComments
 }
 
 // Find every `checkReq('<id>', async () => { … })` (authored specs only — this brace-balances from
@@ -395,9 +395,18 @@ export function expandBody (body, bodies, depth = 2, seen = new Set()) {
   }
   return text
 }
+// …AND PROSE IS NOT A CLAIM. Found on board R19: a comment saying why that harvest records no ring
+// — "its specs read the page with reveal(), not proveVisible()" — counted as the beat's one claim,
+// leaving it one short of the gap it actually had. A lint a sentence can satisfy is not a lint.
+// Deliberately blunt: a `//` line comment only where it OPENS the line (so a `//` inside a url or a
+// regex on a code line is untouched), and `/* … */` wherever it appears.
+export function stripComments (src) {
+  return String(src || '').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, '')
+}
 const countOf = (text, re) => (String(text).match(re) || []).length
 export function claimsIn (body) {
-  return { claims: countOf(body, /proveVisible\s*\(/g), soft: countOf(body, /soft\s*:\s*true/g) }
+  const code = stripComments(body)
+  return { claims: countOf(code, /proveVisible\s*\(/g), soft: countOf(code, /soft\s*:\s*true/g) }
 }
 
 // WHICH BEAT A checkReq BLOCK PROVES — the BEAT_CURSOR rule, read statically. spec/_base.ts counts

@@ -513,4 +513,37 @@ test('lintSource follows a checkReq into the beat function it calls', () => {
 test('…and proveVisible IS a value assertion — it reads the value off the screen and asserts it', () => {
   assert.equal(hasValueAssertion("await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })"), true)
   assert.equal(hasValueAssertion("await expect(page.locator('.n')).toBeVisible()"), false)
+  // …and so are these two, missing from the list until phase 6 read the rows: a plain `toContain`
+  // on a string the test pulled off the page (board R10's voiced-cut src), and `toHaveURL` (board
+  // R1's card-still opening its screen). Both fail when the value changes; both read EXISTENCE-ONLY.
+  assert.equal(hasValueAssertion("expect(src).toContain('a.voiced.mp4')"), true)
+  assert.equal(hasValueAssertion("await expect(page).toHaveURL(new RegExp('#/' + name))"), true)
+})
+
+test('a claim named in a COMMENT is not a claim', () => {
+  // found on board R19: a comment explaining why the board's own harvest records no ring
+  // ("its specs read the page with reveal(), not proveVisible()") counted as that beat's one claim,
+  // and the beat read one claim short of a gap. A lint that can be satisfied by prose is not a lint.
+  const prd = `---
+screen: todo
+---
+
+## R1 — one fact
+
+- **Given** the seeded board
+- **When** you tick one sub-task
+- **Then** the count reads 4
+`
+  const spec = `
+test('todo', async ({ page }) => {
+  await checkReq('R1', async () => {
+    // this beat reads the page with reveal(), not proveVisible()
+    /* nor proveVisible( ) in a block comment */
+    await expect(page.locator('.n')).toHaveText('4')
+  })
+})
+`
+  const row = lintIntent(prd, spec)[0]
+  assert.equal(row.claims, 0)
+  assert.equal(row.ok, false)
 })

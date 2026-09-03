@@ -125,6 +125,11 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     await row.locator('.lst-head').click()
     const body = row.locator('.lst-body')
     await expect(body.locator('.fread .fttl')).not.toBeEmpty()
+    // the fact R3 names, CLAIMED (the authored-intent lint, phase 6): the row that carried only a
+    // title has unfolded INTO THE FOCUS BODY — the same requirement, now reading in place. The
+    // expected id comes from the ROW that was clicked, so this is never the screen echoed back.
+    await proveVisible(body.locator('.fread .frmeta .fid'), rid!,
+      'The row, unfolded into the Focus body in place', { soft: true })
     // Since 1413ac1 (the human, 2026-08-22) EVERY requirement leads with its beats, R1 included:
     // the STORYLINE — one row per beat — heads the open row. Since the human's 2026-08-28 redesign
     // the authored prose ALWAYS follows it in full: the 'Full requirement' chevron is gone, because a
@@ -303,6 +308,12 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     const sheet = page.locator('#stepsheet')
     await expect(sheet).toHaveClass(/on/)
     await expect(sheet).toContainText('Check the result is what we expect')   // raw check, marked
+    // the fact R10 names, CLAIMED where a person can actually SEE it (the authored-intent lint,
+    // phase 6): the run's numbered steps, in order, the first of them the very sentence the test's
+    // definition plans. The story rows themselves live in the hidden baked pane — a claim there
+    // would ring nothing — so the claim is made on the window that shows them.
+    await proveVisible(sheet.locator('.rawsteps li').first(), STORY[0],
+      'The first numbered step, as the test defines it', { soft: true })
     const full = await sheet.locator('.box').evaluate(el => {
       const r = el.getBoundingClientRect()
       return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
@@ -331,7 +342,12 @@ test('Story-step evidence renders from the test definition', async ({ page }) =>
   await flowStep('Open the board detail — the reader is there', async () => {
     await page.goto('/#/board')
     await checkReq('R10', async () => {
-      await expect(page.locator('.dt[data-screen="board"]:not([hidden]) .focusov')).toBeVisible()
+      const ov0 = page.locator('.dt[data-screen="board"]:not([hidden]) .focusov')
+      await expect(ov0).toBeVisible()
+      // …and a VALUE, not only a presence (rule 2, and `npm run proof lint`'s existence rows): the
+      // reader is open ON the screen's first requirement. A reader that rendered empty would still
+      // have satisfied the visibility check above.
+      await expect(ov0.locator('.fread .frmeta .fid')).toHaveText('R1')
     })
   })
   await flowStep('Announce a golden value on the narration bar', async () => {
@@ -473,6 +489,7 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
         return {
           screen: scr,
           card: (card && card.textContent || '').trim(),
+          total: rows.length,
           proven: rows.filter(r => r.getAttribute('data-state') === 'proven').length,
           // a proven requirement no test anywhere tags — local bare tags and board-wide qualified
           // data-q tags both count (widened 2026-08-21, see above)
@@ -500,6 +517,17 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // next fold — the dogfood lag — but never every screen's at once)
     expect(await page.locator('.dt .reqpane .req[data-state="proven"]').count(), 'some proven rows exist to check').toBeGreaterThan(0)
     await expect(page.locator('.dt .reqpane .req[data-state="proven"] .covers .nocov')).toHaveCount(0)
+    // …AND THE CARD'S COUNT IS CLAIMED ON THE CARD (the authored-intent lint, phase 6). The Then
+    // names two things: a proven requirement reads Passed, and the home card's "N / M proven" is
+    // the same derivation rendered twice. The expected value here is computed from the DETAIL's own
+    // rows above — never read off the card — so a card that drifted from its detail fails this
+    // claim, photographed, on the card itself. Home first: the card is the thing being ringed.
+    const bd = surfaces.find(s => s.screen === 'board')!
+    await page.goto('/')
+    await page.waitForSelector('#home .card')
+    await proveVisible(page.locator('#home .card[data-screen="board"] .pcount'),
+      bd.proven + ' / ' + bd.total + ' proven',
+      'The card\'s count — the Passed rows of its own detail', { soft: true })
   })
 })
 
@@ -531,6 +559,25 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
     await expect(page.locator('#promptbody')).toContainText(flow)         // …and named where it is acted on
     await page.locator('#promptsheet [data-promptclose]').click()
+    // FACT 1, CLAIMED (the authored-intent lint, phase 6): the reader open here is the requirement
+    // the TEST's tag names — the expected id was read off the test's tag chip, the value off the
+    // requirement it resolved to, so the many-to-many wire is what this reads.
+    await proveVisible(body.locator('.fread .frmeta .fid'), rid!,
+      'The requirement the test\'s tag resolves to', { soft: true })
+    // FACT 2 — CROSS-SCREEN, wherever that test's file lives. This screen's file carries a QUALIFIED
+    // tag (dispatch:R7): follow it to the screen it names and open that requirement there. The
+    // expected id comes from the qualified tag in THIS file; the value is read on the OTHER screen's
+    // reader, which is the whole of "wherever that test's file lives".
+    const q = await dt.locator('.testpane .test .tags .tag[data-q*=":"]').first().getAttribute('data-q')
+    const [qScreen, qRid] = (q || '').split(':')
+    expect(qScreen && qRid, 'this screen\'s file tags another screen\'s requirement').toBeTruthy()
+    await page.goto('/#/' + qScreen)
+    const qdt = page.locator('.dt[data-screen="' + qScreen + '"]:not([hidden])')
+    await expect(qdt.locator('.focusov')).toBeVisible()
+    await qdt.locator('.viewseg .vseg[data-view="grid"]').click()
+    await qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-head').click()
+    await proveVisible(qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-body .fread .frmeta .fid'),
+      qRid, 'The same tag, resolved on the screen it names', { soft: true })
   })
 })
 
@@ -637,6 +684,12 @@ test('The detail shows no wireframe or design affordance', async ({ page }) => {
       els => els.map(e => ({ sandbox: e.getAttribute('sandbox'), src: e.getAttribute('src') || '' })))
     expect(frames.every(f => f.sandbox === '' && !f.src),
       'every frame in the detail is an inert srcdoc replica: ' + JSON.stringify(frames)).toBe(true)
+    // …and the POSITIVE half of the same sentence, CLAIMED (the authored-intent lint, phase 6):
+    // "requirements and proof only" — the reader's own row header names the cells the detail deals,
+    // and there is no third thing among them. An absence cannot be photographed; what CAN be shown
+    // is what stands in its place.
+    await proveVisible(detail.locator('.focusov .fread .fstory .sbwrap .sbhead .sbhc').first(), 'behavior',
+      'What the detail deals: the requirement\'s words, then its two pictures', { soft: true })
   })
 })
 
@@ -657,6 +710,10 @@ test('No acceptance gate — nothing on the detail waits to be accepted', async 
     await expect(detail.locator('.dtscroll > .focusov')).toHaveCount(1)
     await expect(detail.locator('.cols .pane')).toHaveCount(2)
     await expect(detail.locator('.cols')).toBeHidden()
+    // the fact, CLAIMED (the authored-intent lint, phase 6): what sits under the header is the
+    // READER, open on the screen's first requirement — nothing between them waiting to be accepted
+    await proveVisible(detail.locator('.dtscroll > .focusov .fread .frmeta .fid'), 'R1',
+      'Straight from the header into the reader — the first requirement', { soft: true })
   })
 })
 
@@ -1284,6 +1341,12 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     const want = String(moment.claims[moment.claims.length - 1].expected).replace(/\s+/g, ' ').trim()
     await hudCheck('the ringed element carries what the requirement asked for', want, rang || '(nothing ringed)')
     expect(rang, 'the Expected\'s ringed element carries the claim\'s expected value').toContain(want)
+    // …and the same fact CLAIMED on the surface a reader actually reads (the authored-intent lint,
+    // phase 6): the chip over the Expected cell says the value the requirement asked for. The
+    // expected string comes from the FOLD's own record of the claim, never off the page.
+    await proveVisible(crow.locator('.sbframe .pchip .pcv'), want,
+      'The Expected picture, carrying the requirement\'s own value',
+      { match: (shown: string) => plain(shown).includes(plain(want)), soft: true })
     // …and the claim is MARKED on it, so a reader sees which words the requirement put there
     expect(/data-claim="(?:ok|fixed|restored|new)"/.test(cdoc),
       'the claimed element is marked in the picture, not silently corrected').toBe(true)
@@ -1324,6 +1387,11 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     await expect(r2story.locator('.sbframe iframe.repframe')).toHaveCount(0)   // no picture where none was captured
     await expect(r2story.locator('.sbframe svg')).toHaveCount(0)               // and none invented from the sentence either
     await expect(r2story.locator('.sbframe .noschem').first()).toBeVisible()
+    // the fact, CLAIMED: where nothing was harvested the cell SAYS so — it never invents a picture
+    // of a screen (the authored-intent lint, phase 6)
+    await proveVisible(r2story.locator('.sbframe .noschem').first(), 'no Expected yet',
+      'The honest blank where nothing was captured',
+      { match: (shown: string) => shown.startsWith('no Expected yet'), soft: true })
     await expect(r2story.locator('.sbrow .sbtext .sbwhen').first()).toBeVisible()   // the keyword-led sentences still show
     await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
     const gapSaid = (await r2story.locator('.sbframe .noschem').first().textContent() || '').trim()
@@ -1391,6 +1459,10 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     await ov.locator('.fread .frmeta .fmenu .fmenubtn').click()
     await ov.locator('.fread .frmeta .fmenupop [data-prompt="schemwrong"]').click()
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
+    // the escape itself, CLAIMED (the authored-intent lint, phase 6): with no per-cell caption, the
+    // way to act on a wrong picture is this ⋯ prompt, and the window says which one it opened
+    await proveVisible(page.locator('#prompttitle'), 'The Expected picture doesn’t match my app',
+      'The R15-pattern escape for a picture that is wrong', { soft: true })
     await expect(page.locator('#promptbody'), 'the provenance rides into the prompt')
       .toContainText('the app’s own markup')
     await expect(page.locator('#promptbody'), 'and it says the picture is captured, never authored')
@@ -1465,6 +1537,10 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       await expect(banner).toContainText('layout moved')
       await hudCheck('the banner names the layout, not the words', 'layout moved',
         ((await banner.locator('b').textContent()) || '').replace('stale — ', ''))
+      // the fact, CLAIMED (the authored-intent lint, phase 6): the app moved past this picture and
+      // the storyline SAYS so, naming the layout — this is the banner, read as a reader reads it
+      await proveVisible(banner.locator('b'), 'stale — layout moved',
+        'The banner, naming what moved', { soft: true })
       await expect(banner).toContainText('the app’s layout moved since this picture was captured')
     } finally {
       writeFileSync(layFile, original)
@@ -1616,6 +1692,11 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     const words = plain(await row.locator('.sbtext').innerText())
     expect(words, 'the row shows the prd\'s own When').toContain(plain(beh!.beats[0].when))
     expect(words, '…and its own Then').toContain(plain(beh!.beats[0].then))
+    // FACT 1, CLAIMED (the authored-intent lint, phase 6): the row's text cell shows the sentence
+    // both pictures are of — the prd's own When for THIS beat, read out of spec/board/prd.md
+    await proveVisible(row.locator('.sbtext .sbwhen'), plain(beh!.beats[0].when),
+      'The sentence both pictures are of', 
+      { match: (shown: string) => plain(shown).includes(plain(beh!.beats[0].when)), soft: true })
     // the EXPECTED cell carries the same beat — it is showing one of THIS beat's own harvested
     // moments, read back off the fold's record for beat 1 (never beat 2's picture beside beat 1's
     // words, which is exactly the drift R19 forbids)
@@ -1672,6 +1753,11 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     // label column, and the mark column carries a hollow ring rather than a step number
     await expect(given.locator('.sbtext .sbgiven')).toHaveCount(1)
     await expect(given.locator('.sbtext .sbgiven')).toContainText('Given')
+    // FACT 2, CLAIMED: the Given row carries the GIVEN alone — the context both sides stand in,
+    // whole-page and uncaptioned (its no-camera, no-caption half is asserted just below)
+    await proveVisible(given.locator('.sbtext .sbgiven'), plain(prdBeats(spec.rid)!.given),
+      'The context row — the Given alone, on both sides',
+      { match: (shown: string) => plain(shown).includes(plain(prdBeats(spec.rid)!.given)), soft: true })
     await expect(given.locator('.sbtext .sbno.hollow')).toHaveCount(1)
     await expect(given.locator('.sbtext .sbno:not(.hollow)')).toHaveCount(0)
     await expect(given.locator('.pcbox.zoomed')).toHaveCount(0)      // whole page, both cells
@@ -1773,6 +1859,10 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(row.locator('.sbtext .mstrip'), 'the strip is over the pictures, not in the words').toHaveCount(0)
     await expect(ov.locator('.fread .tourstep')).toHaveCount(0)
     await expect(row.locator('.mseg')).toHaveCount(frameN)
+    // the fact, CLAIMED (the authored-intent lint, phase 6): the beat's position is READ on that one
+    // strip — one segment per moment the proof has, counted off the frames rather than off the strip
+    await proveVisible(tour.locator('.mpos'), '1 / ' + frameN,
+      'The beat\'s position, read on the one strip over both pictures', { soft: true })
     await expect(row.locator('.mseg').last(), 'the last moment is the beat\'s result').toHaveClass(/\bthen\b/)
     await expect(row.locator('.mseg.then .msegl'), '…and says so in words, not by hue alone').toContainText('then ·')
     // ONE LINE PER MOMENT, ALWAYS (the human, 2026-09-02: "always max. show one line, and user can hover
@@ -1893,6 +1983,12 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(aChip, '…and one on the Actual').toHaveCount(1)
     await expect(eChip.locator('.pcl')).toHaveText('expected')
     await expect(aChip.locator('.pcl')).toHaveText('actual')
+    // three of this Then's four facts, CLAIMED (the authored-intent lint, phase 6): ONE chip per
+    // picture, each saying only what its own side holds, the mark beside the hue. The fourth — a
+    // moment that claimed nothing carries no chip at all — is an ABSENCE: proveVisible reads a value
+    // off something that is there, so it stays a hard assertion (below, on the Given row).
+    await proveVisible(eChip.locator('.pcl'), 'expected', 'The Expected cell\'s one chip', { soft: true })
+    await proveVisible(aChip.locator('.pcl'), 'actual', 'The Actual cell\'s one chip', { soft: true })
     const eSaid = plain(await eChip.locator('.pcv').innerText())
     const aSaid = plain(await aChip.locator('.pcv').innerText())
     expect(eSaid, 'the Expected chip says what the requirement asks for').toContain(plain(c0.expected))
@@ -1902,6 +1998,8 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
       'the Actual chip shows what happened, never the requirement\'s own value').toBe(false)
     // the MARK beside the hue — a greyscale reader loses nothing
     await expect(aChip.locator('.pcm'), 'the Actual chip carries its mark').toHaveText('✕')
+    await proveVisible(aChip.locator('.pcm'), '✕',
+      'The mark beside the hue — the state, in a greyscale reader too', { soft: true })
     await expect(aChip, 'and the chip itself reads as the failure it is').toHaveClass(/\bbad\b/)
     // ONE LINE, ELLIPSISED, with the whole text in a STYLED tooltip — never the native title
     const val = aChip.locator('.pcv')
@@ -1999,6 +2097,12 @@ test('A failed moment names its difference', async ({ page }) => {
       const said = plain(await marks.first().innerText())
       expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
       expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
+      // the fact, CLAIMED (the authored-intent lint, phase 6): ONE marker, naming BOTH values — the
+      // expected comes from the fold's own record and the got from the fixture that failed it
+      await proveVisible(marks.first(), plain(wrote!.expected) + ' · ' + plain(wrote!.got),
+        'The one marker, naming both values',
+        { match: (shown: string) => plain(shown).includes(plain(wrote!.expected)) && plain(shown).includes(plain(wrote!.got)),
+          soft: true })
       // it spans the SEAM — one label about a relation, not one per cell
       const seam = await row.evaluate(el => {
         const p = el.querySelector('.pics') as HTMLElement
@@ -2072,6 +2176,10 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(ov.locator('.fread .srbeads')).toHaveCount(0)
     await expect(ov.locator('.fread .srbead')).toHaveCount(0)
     await expect(ov.locator('.fread .srnext')).toHaveCount(0)
+    // …and the POSITIVE half beside the four absences (rule 2, and the standing "assert a positive
+    // outcome" rule): what stands where the rejected rail would have is the reader's own mode pair,
+    // and it reads step. Four toHaveCount(0)s alone would pass on a reader that rendered nothing.
+    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
     await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
   })
 
@@ -2131,6 +2239,10 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // STEP IS THE DEFAULT: the reader opens held on scene 1, so prev is already disabled — a known
     // deterministic start with no click into step needed.
     await expect(mode.locator('button.on'), 'step is the default').toHaveText('step')
+    // the fact, CLAIMED (the authored-intent lint, phase 6): the reader OPENS in step, each beat
+    // held on its first scene — the mode pair on the requirement's own title row says which
+    await proveVisible(mode.locator('button.on'), 'step',
+      'The reader, opened in step — every beat held on its first scene', { soft: true })
     await expect(pos).toHaveText('1 / ' + N)
     await expect(prev, 'prev dims/disables at the start').toBeDisabled()
     const before = await posN()
@@ -2154,6 +2266,9 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect.poll(posN, { timeout: 6000 }).toBe(N)
     await expect(pos).toHaveText(N + ' / ' + N)
     await expect(nextb).toHaveText('↺')                                       // the restart glyph at the end
+    // the fact, CLAIMED: at the last moment the next chevron has BECOME a restart — the walk says
+    // where it is (the authored-intent lint, phase 6)
+    await proveVisible(nextb, '↺', 'The next chevron, become a restart at the last moment', { soft: true })
     await expect(nextb).toHaveClass(/\brestart\b/)
     await nextb.click()                                                       // ↺ WRAPS to scene 1
     await expect.poll(posN, { timeout: 6000 }).toBe(1)
@@ -2277,6 +2392,10 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const tools = ov.locator('.fread .frmeta .frtools')
     await tools.locator('.medbar.pmode button', { hasText: 'auto' }).click()
     await tools.locator('select.pspd').selectOption('4')
+    // the fact, CLAIMED (the authored-intent lint, phase 6): in AUTO the speed control is live and
+    // it is the READER's one speed — proveVisible reads a select's own value
+    await proveVisible(tools.locator('select.pspd'), '4',
+      'The reader\'s one speed, live in auto', { soft: true })
     const at2 = await backPos.textContent()
     await expect.poll(() => backPos.textContent(), { timeout: 12000 }).not.toBe(at2)
     await tools.locator('select.pspd').selectOption('1')
@@ -2353,6 +2472,10 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     expect(lead.every(c => c === 'sbtext'), 'the words lead EVERY row: ' + lead.join(' · ')).toBe(true)
     // the header names them in that order, and each label really starts over its own cell
     await expect(story().locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'expected', 'actual'])
+    // the fact, CLAIMED (the authored-intent lint, phase 6): the header row over the cells it names,
+    // and the first of them is the behaviour's words — the order every row deals
+    await proveVisible(story().locator('.sbwrap .sbhead .sbhc').first(), 'behavior',
+      'The cell the row deals first — the behaviour\'s words', { soft: true })
     await hudCheck('the header sits over the cells it names', '0px drift', (await headDrift()) + 'px drift')
     expect(await headDrift(), 'every header label starts over the cell it names').toBeLessThan(2)
   })
@@ -2381,6 +2504,9 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     const lead = await leadCells()
     expect(lead.every(c => c === 'sbtext'), 'the next requirement reads behaviour first too').toBe(true)
     await expect(story().locator('.sbwrap .sbhead .sbhc')).toHaveText(['behavior', 'expected', 'actual'])
+    // the fact, CLAIMED: the requirement you paged to reads in that SAME order — the words first
+    await proveVisible(story().locator('.sbwrap .sbhead .sbhc').first(), 'behavior',
+      'The next requirement, dealing the same first cell', { soft: true })
     expect(await headDrift(), 'and its header came with it').toBeLessThan(2)
   })
 })
@@ -2902,6 +3028,10 @@ test('Home leads with a dismissible feature strip of six cards', async ({ page }
     await expect(strip.locator('.feat[data-feat="views"]')).toContainText('Focus · List · Flow')
     await expect(strip.locator('.feat[data-feat="compose"]')).toContainText(/compose a flow/i)
     await expect(strip.locator('.feat[data-feat="gaps"]')).toContainText(/honest gaps/i)
+    // the fact, CLAIMED on the card that is about to be clicked (the authored-intent lint, phase 6):
+    // a feature card names the LIVE example of itself it opens on this board
+    await proveVisible(strip.locator('.feat[data-feat="views"] .fs2'), 'open the List',
+      'A feature card, naming the live example it opens', { soft: true })
     // the strip sits ABOVE the areas
     const above = await page.evaluate(() => {
       const s = document.getElementById('featwrap'); const h = document.getElementById('home')
@@ -2998,6 +3128,10 @@ test('The guide opens as manager and staff — without, then with', async ({ pag
     const wall = w1.locator('.scene.s-wall')
     await expect(wall.locator('.sc-gl')).toHaveCount(16)
     await expect(wall.locator('.chip.ok')).toContainText('40 tests passing')
+    // the fact, CLAIMED on the drawn scene itself (the authored-intent lint, phase 6): act 1's
+    // second moment IS a scene — greeked code under one readable green badge — not a paragraph
+    await proveVisible(wall.locator('.chip.ok'), '40 tests passing',
+      'Reviewing it, without the tool — one green badge over a wall of code', { soft: true })
     // 3 · two weeks later — the calendar flips twice, the feature cracks, the REQUIREMENT is
     //     rewritten instead of the code, and the counter lands on the third time
     const rot = w1.locator('.scene.s-rot')
@@ -3084,6 +3218,9 @@ test('Acts 1 and 2 play once, hold, and stand still under reduced motion', async
     expect(await settle(un)).toBeGreaterThan(0)
     expect(await op(w2.locator('.scene.s-drift .wproven'))).toBeLessThan(0.1)
     expect(await op(un)).toBe(1)
+    // the fact, CLAIMED: two clicks stepped the act forward to its third scene and it HOLDS there —
+    // the end state of the scene it stepped to is the thing on screen (the intent lint, phase 6)
+    await proveVisible(un, 'unproven', 'The scene it stepped to, held — nothing advances on its own', { soft: true })
     // and it HOLDS: nothing loops, nothing advances the step for you
     await page.waitForTimeout(1200)
     await expect(w2.locator('.wstep.on')).toHaveAttribute('data-step', '3')
@@ -3198,6 +3335,12 @@ test('The guide ends with the derived next action, and there is no rail', async 
       await expect(cta.locator('.wcta-settled')).toHaveText(
         'Every derivable fact already holds — this project\'s requirements are proven.'
       )
+      // …and the same sentence CLAIMED, ringed on the guide's last panel (the authored-intent lint,
+      // phase 6): the CTA is derived from the tree on this build, and when everything derivable
+      // already holds it says so in these exact words
+      await proveVisible(cta.locator('.wcta-settled'),
+        'Every derivable fact already holds — this project\'s requirements are proven.',
+        'The one next action, derived from the tree on this build', { soft: true })
     })
   } finally {
     // a seeded file is this test's own litter: remove it and rebuild, so no later test in the run
@@ -3247,6 +3390,10 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       await hudCheck('the CI mark derives from the chooser', want.join(' '), (await marked()).join(' '))
       // the mark says what it is, in the chip pattern the kind counts already use
       await expect(page.locator(`#home .card[data-screen="${want[0]}"] .kchip.ci`)).toContainText('CI')
+      // the fact, CLAIMED on the card the committed chooser names (the authored-intent lint, phase
+      // 6): the mark is on it, and it says what it is
+      await proveVisible(page.locator(`#home .card[data-screen="${want[0]}"] .kchip.ci`), 'CI gate',
+        'The gate mark, on a card spec/_ci.json chose', { soft: true })
     })
 
     await checkReq('R22', async () => {
@@ -3261,6 +3408,10 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       await reveal(page.locator(`#home .card[data-screen="${only}"]`))
       expect(await marked(), 'only the seeded screen gates now').toEqual([only])
       await expect(page.locator('#home .card[data-screen="board"] .kchip.ci')).toHaveCount(0)
+      // the fact, CLAIMED: the mark MOVED — it is on the screen the new chooser names, and the card
+      // it left carries none (asserted above; an absence cannot be photographed, the arrival can)
+      await proveVisible(page.locator(`#home .card[data-screen="${only}"] .kchip.ci`), 'CI gate',
+        'The mark, moved to the screen the new chooser names', { soft: true })
       await hudCheck('a different chooser moves the mark', only, (await marked()).join(' '))
 
       // (c) NO CHOOSER AT ALL is the resolver's own rule — every screen runs — so every card wears it
@@ -3306,6 +3457,10 @@ test('The ⋯ menus hand you a ready Claude prompt — the board authors nothing
     const reqId = ((await ov.locator('.fread .frmeta .fid').textContent()) || '').trim()
     await rmenu.locator('.fmenupop [data-prompt="reword"]').click()
     await expect(sheet).toHaveClass(/\bon\b/)
+    // the fact, CLAIMED (the authored-intent lint, phase 6): what the ⋯ opens is a READY PROMPT —
+    // the window says which one, and the board wrote nothing to open it
+    await proveVisible(page.locator('#prompttitle'), 'Reword this requirement',
+      'The prompt the ⋯ hands you, ready to paste', { soft: true })
     // pre-loaded: the exact file, the target requirement, and the discipline — verbatim phrases
     await expect(body).toContainText('spec/board/prd.md')
     await expect(body).toContainText(reqId)
@@ -3735,6 +3890,11 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await expect(heads.first()).toBeVisible()
     const shown = await heads.allTextContents()
     expect(shown.map(s => s.trim()), 'card families read in prd order').toEqual(prd.fams.slice(0, shown.length).map(f => f.heading))
+    // the fact, CLAIMED on the card (the authored-intent lint, phase 6): the first family names
+    // itself exactly as the prd writes it — the expected value is read from spec/board/prd.md, so
+    // this is the FILE against the screen, never the screen against itself
+    await proveVisible(heads.first(), prd.fams[0].heading,
+      'The family every requirement under it sits in', { soft: true })
     // walk the rows: under each header, exactly its ids in order — no family cut in half
     const seq = await card.locator('.rl > li').evaluateAll(els => els.map(e =>
       e.classList.contains('fam') ? 'fam' : e.classList.contains('more') ? 'more' : (e.querySelector('.id')?.textContent || '')))

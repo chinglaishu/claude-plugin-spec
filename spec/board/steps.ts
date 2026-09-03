@@ -1,4 +1,4 @@
-import { expect } from '../_base'
+import { expect, proveVisible } from '../_base'
 import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 
@@ -97,6 +97,11 @@ export async function searchRequirementText (page: Page, state: FlowState): Prom
   await expect(page.locator('#home .card:not(.gone)')).toHaveCount(1)
   // a group with nothing matching hides itself rather than sitting empty
   await expect(page.locator('.grp:not(.gone)')).toHaveCount(1)
+  // the fact R9 names, CLAIMED before the search is cleared (the authored-intent lint, phase 6):
+  // the ONE card still standing is the screen whose requirement text carries the word — matched on
+  // requirement TEXT, not on a name, and every group with nothing matching has hidden itself
+  await proveVisible(page.locator('#home .card:not(.gone) .nm'), 'Board',
+    'The only card the search leaves standing', { soft: true })
   await page.locator('#qx').click()
   await expect(page.locator('#home .card:not(.gone)')).toHaveCount(state.cards)
   state.searched = 'canon'
@@ -190,6 +195,11 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   expect(await ov.locator('.fscroll').evaluate(el => el.scrollTop), 'the story region scrolled').toBeGreaterThan(0)
   expect(await headAt(), 'the card header stays pinned while the story scrolls').toBe(headTop)
   expect(await page.evaluate(() => window.scrollY), 'and the page itself never scrolls').toBe(0)
+  // …and the pinned header is CLAIMED where it stands, with the story scrolled away beneath it: the
+  // requirement you are reading is still named at the top of the card (phase 6's intent lint — the
+  // fact R2 states has a value in the picture, not only in a geometry assertion)
+  await proveVisible(ov.locator('.fread > .frmeta .fid'), 'R1',
+    'The card header, still pinned with the story scrolled', { soft: true })
   await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …because the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()
@@ -228,9 +238,16 @@ export async function toggleViews (page: Page, state: FlowState): Promise<void> 
   await expect(ov.locator('.fread .frmeta .fchip')).toHaveClass(new RegExp('(^|\\s)' + rowStatus + '(\\s|$)'))
   await expect(ov.locator('.fread .fttl')).not.toBeEmpty()
   // the List: one collapsed row per requirement — exactly as many as the detail carries
+  const ttl = ((await ov.locator('.fread .fttl').textContent()) || '').trim()
   await dt.locator('.viewseg .vseg[data-view="grid"]').click()
   await expect(dt.locator('.gridview')).toBeVisible()
   await expect(dt.locator('.gridview .lst-card')).toHaveCount(state.reqs)
+  // the fact R13 names, CLAIMED across the two surfaces: the requirement Focus was reading is the
+  // same requirement the List renders — its title, carried over, not re-derived and not re-stored.
+  // The expected value comes from the OTHER view, so this can never be the screen echoed back at
+  // itself (the authored-intent lint, phase 6).
+  await proveVisible(dt.locator('.gridview .lst-card[data-r="' + fid + '"] .lst-head .lttl'), ttl,
+    'The same requirement, rendered in the List', { soft: true })
   await dt.locator('.viewseg .vseg[data-view="focus"]').click()   // leave the default view on
   state.views = 3
 }
