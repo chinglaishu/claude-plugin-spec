@@ -89,16 +89,19 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, each moment's `.actual.html` REPLICA, and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
+spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, each moment's `.actual.html` and `.expected.html` REPLICA pair, and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
 spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
-spec/_replica.mjs            the ACTUAL REPLICA's capture (2026-09-03), one self-contained function Playwright serialises into
+spec/_replica.mjs            the REPLICA PAIR's capture (2026-09-03), one self-contained function Playwright serialises into
                              the page: the ringed element's SCENE ROOT as the app's own DOM, computed styles diffed against
                              per-tag defaults into shared classes, sanitised (no script/handler/external URL, live controls
                              become spans carrying the value the assertion read) and capped — REPLICA_PROPS is the one prop
-                             list and travels in through the arg; unit-tested in tools/replica.test.mjs on a stub DOM
+                             list and travels in through the arg. It returns BOTH halves of the row: `html` the ACTUAL (what
+                             the app rendered) and `expected` the same tree cloned with the beat's `claims` applied — a wrong
+                             value taking the requirement's word, a removed element restored from `lastRight`, a never-there
+                             one drawn as a marked placeholder; unit-tested in tools/replica.test.mjs on a stub DOM
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
@@ -351,7 +354,15 @@ change.
   new leaf beside the ring the beat last stood on. Claims accumulate down the beat. The derived skeleton
   is registered as the frame's input, so the mirror guard checks the drawing against the picture it was
   asked to draw. The photograph keeps the measured state and its red verdict — a missing element rings
-  red where it last stood, "got (missing) ✕". **A Then with several facts uses SOFT claims**
+  red where it last stood, "got (missing) ✕". **Since 2026-09-03 that same intended state is also
+  carried in the app's OWN MARKUP, by the EXPECTED replica** (`.expected.html`, spec/_replica.mjs
+  applyClaims) — the human's decision that day replaced the drawn schematic with a real HTML replica of
+  the component, so the intent is now restated on the real markup by the same three rules: the leaf
+  inside the ring that read the wrong value takes the expected word (with every worded wrapper up to
+  the ring), a removed element is restored from the beat's last all-ok replica, one the app never had
+  is a marked placeholder beside the ring. Claims accumulate down the beat here too, and a failed
+  beat's after moment writes the beat's LAST Expected rather than deriving one from the scene the app
+  got wrong. **A Then with several facts uses SOFT claims**
   (`proveVisible(…, { soft: true })`): the beat reaches and photographs every fact and the `proves` step
   fails once at its end with the whole list — never a green, never a beat cut off at its first red.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
