@@ -29,19 +29,29 @@ function el (tag, rect, opts = {}) {
     getAttribute: n => (opts.attrs && n in opts.attrs) ? opts.attrs[n] : null,
     hasAttribute: n => !!(opts.attrs && n in opts.attrs)
   }
+  // real DOM semantics, needed by the occlusion check (fix round 2, item 3): `contains` walks the
+  // ancestor chain from a candidate node up to (and including) itself; `closest` walks THIS node's
+  // own ancestor chain looking for an id selector — the only form the walk's own OVERLAY lookup uses.
+  node.contains = (other) => { let n = other; while (n) { if (n === node) return true; n = n.parentElement }; return false }
+  node.closest = (sel) => {
+    const id = sel.charAt(0) === '#' ? sel.slice(1) : null
+    let n = node
+    while (n) { if (id != null && n.id === id) return n; n = n.parentElement }
+    return null
+  }
   for (const k of kids) k.parentElement = node
   return node
 }
 const painted = { backgroundColor: 'rgb(255, 255, 255)', borderTopWidth: '1px', borderTopColor: 'rgb(226, 232, 240)' }
-function env (body, hits = null) {
+function env (body, hits = null, point = null) {
   return {
     window: { innerWidth: 1440, innerHeight: 900 },
-    document: { body, elementsFromPoint: hits ? () => hits : undefined },
+    document: { body, elementsFromPoint: hits ? () => hits : undefined, elementFromPoint: point || undefined },
     getComputedStyle: node => node.cs || {}
   }
 }
-const walk = (body, ring, target = null, hits = null) =>
-  snapLayoutWalk({ ring, target, env: env(body, hits) })
+const walk = (body, ring, target = null, hits = null, point = null) =>
+  snapLayoutWalk({ ring, target, env: env(body, hits, point) })
 
 // A page shaped like the failing one: a deep sidebar + header of MANY nested wrapper boxes first in
 // document order, then a data grid whose ringed cell sits deep and late. `n` wrappers stand before it.
@@ -193,4 +203,53 @@ test('a focused SVG\'s embedded <style> text never becomes the element\'s "text"
   assert.ok(rec, 'the focused svg is still recorded: ' + JSON.stringify(L.els))
   assert.equal(rec.tag, 'svg')
   assert.ok(!rec.text || !/animation/.test(rec.text), 'the style block\'s CSS never rides as this element\'s text: ' + JSON.stringify(rec))
+})
+
+// ── FIX ROUND 2, item 3: CONTENT BEHIND A FULL-VIEWPORT OVERLAY IS NOT SHOWN EITHER ───────────────
+// board R18's census: `missing-box container 1318×480` plus rows of missing/moved text underneath —
+// all of it the "Board" screen's own requirement list, which tools/board/client.js's `show`/
+// `closeAll` never hides when a detail view opens (only body SCROLL is locked; a scratch Playwright
+// page against the served board, this fix's own investigation, found the list still mounted as a
+// `.wrap` sibling of the detail's `SECTION.dt`, `display:block`/`visibility:visible`, simply painted
+// UNDER the detail's `position:fixed` panel). Stacking, not a property, is what says it is not shown.
+function occludedPage () {
+  const bgLeaf = el('div', [100, 300, 300, 40], { text: 'Home page content, still mounted', cs: painted })
+  const bg = el('section', [100, 300, 300, 40], { children: [bgLeaf], cs: painted })
+  const modalLeaf = el('div', [10, 10, 50, 20], { text: 'Modal content', cs: painted })
+  const modal = el('section', [0, 0, 1440, 900], { children: [modalLeaf], cs: painted })
+  const body = el('body', [0, 0, 1440, 900], { children: [bg, modal] })
+  const point = () => modal            // the stub's hit test: the modal covers the whole viewport
+  return { body, bg, bgLeaf, modal, modalLeaf, point }
+}
+
+test('an element behind a full-viewport overlay is occluded — its whole subtree is skipped like display:none', () => {
+  const p = occludedPage()
+  const L = walk(p.body, null, null, null, p.point)
+  assert.ok(!L.els.some(e => /Home page content/.test(e.text || '')), 'the occluded leaf never appears: ' + JSON.stringify(L.els))
+  assert.ok(!L.els.some(e => e.x === 100 && e.y === 300 && e.w === 300 && e.h === 40), 'nor its occluded container box')
+  assert.ok(L.els.some(e => /Modal content/.test(e.text || '')), 'the element actually on top is unaffected')
+})
+
+test('without an elementFromPoint (an older/stub environment) nothing is treated as occluded', () => {
+  const p = occludedPage()
+  const L = walk(p.body, null)                       // no point fn — occlusion check never runs
+  assert.ok(L.els.some(e => /Home page content/.test(e.text || '')), 'never blocks on a capability the environment does not have')
+})
+
+test('a pointer-events:none element is exempt from the occlusion check — click-through is not covered', () => {
+  const iconEl = el('div', [10, 10, 50, 20], { text: 'Icon label', cs: Object.assign({}, painted, { pointerEvents: 'none' }) })
+  const modalLeaf = el('div', [500, 500, 50, 20], { text: 'Unrelated', cs: painted })
+  const point = () => modalLeaf
+  const body = el('body', [0, 0, 1440, 900], { children: [iconEl] })
+  const L = walk(body, null, null, null, point)
+  assert.ok(L.els.some(e => e.text === 'Icon label'), 'a click-through element is not mistaken for a covered one')
+})
+
+test('a hit inside the walk\'s own narration overlay never counts as occlusion', () => {
+  const overlayLeaf = el('div', [10, 10, 50, 20], { id: '__specboard-focus', text: 'ring chrome' })
+  const appEl = el('div', [100, 300, 300, 40], { text: 'Real content', cs: painted })
+  const point = () => overlayLeaf
+  const body = el('body', [0, 0, 1440, 900], { children: [appEl] })
+  const L = walk(body, null, null, null, point)
+  assert.ok(L.els.some(e => e.text === 'Real content'), 'the overlay is the walk\'s own instrument, not something the app drew on top')
 })

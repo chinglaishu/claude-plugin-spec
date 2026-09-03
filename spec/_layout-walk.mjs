@@ -252,6 +252,36 @@ export function snapLayoutWalk (arg) {
       eop = pop * (Number.isFinite(ov) ? ov : 1)
       if (eop < 0.05) return null
     }
+    // AN ELEMENT BEHIND AN OPAQUE OVERLAY IS NOT SHOWN EITHER (fix round 2, item 3 — board R18's
+    // `missing-box container 1318×480` census gap). The board's own detail view is a full-viewport
+    // `position:fixed` panel; opening it only locks the PAGE's scroll (tools/board/client.js `show`)
+    // — the home page's requirement list underneath stays mounted, `display:block`, `visibility:
+    // visible`, opacity 1, every check above reads "showing". Real DOM inspection (a scratch
+    // Playwright page against the served board, this fix's own investigation) found it exactly there:
+    // a `.wrap` sibling of the detail's own `SECTION.dt`, painted UNDER it. display/visibility/opacity
+    // are PROPERTIES; what is actually on screen is a STACKING question, so a sized box is hit-tested
+    // at its own centre — if the frontmost paint there is neither the element itself nor something
+    // inside or containing it, an UNRELATED box sits on top of the whole thing and it is exactly as
+    // invisible as `display:none`: skipped whole, subtree included, never a placeholder (nothing in
+    // ITS OWN page's flow depends on the held space — whatever occludes it is a different stacking
+    // context entirely, and the walk is not scoped to any one "scene"). Bounded and honest like every
+    // other check here: no `elementFromPoint` (a stub environment, or a page that will not give one)
+    // never blocks anything, a `pointer-events:none` element (a decorative icon under a click-through
+    // parent) is not tested at all — being ignored by the cursor is not being covered by something
+    // else — and a hit that lands inside the walk's OWN narration overlay is never occlusion: that
+    // chrome is the walk's own instrument, not something the app drew on top of itself.
+    if (sized && typeof doc.elementFromPoint === 'function' &&
+      String((cs && cs.pointerEvents) || '') !== 'none') {
+      const cx = Math.min(Math.max(r.left + r.width / 2, 0), Math.max(vw - 1, 0))
+      const cy = Math.min(Math.max(r.top + r.height / 2, 0), Math.max(vh - 1, 0))
+      let hit = null
+      try { hit = doc.elementFromPoint(cx, cy) } catch { hit = null }
+      if (hit && hit !== el) {
+        const related = (el.contains && el.contains(hit)) || (hit.contains && hit.contains(el))
+        const inOverlay = hit.id === OVERLAY || (hit.closest && hit.closest('#' + OVERLAY))
+        if (!related && !inOverlay) return null
+      }
+    }
     const out = { el, tag, eop, rec: null }
     if (!sized) return out                          // no box to draw — but its children may have one
     const leafWords = el.childElementCount === 0 && !!clean(el.textContent)
