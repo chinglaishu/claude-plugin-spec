@@ -1,5 +1,5 @@
 {
-  "version": "0.43.1",
+  "version": "0.43.2",
   "files": {
     "tools/spec-store.mjs": "619269f480280fe27ba8a0ee1c22221f4257cb4db56ac05e6b148e25a06de908",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
@@ -17,7 +17,7 @@
     "tools/compose.mjs": "0bc7cda2ef3ece3df0c522265eb9d38b95663384d41b00e664d300c49ae6a76f",
     "tools/board/client.js": "70a38fb6edf596f990bc00fd7f2f051ae46f14f6eff5a2893026398e502e8512",
     "tools/board/stepper.js": "31987212f92826ab90f0bf84d8d4879d10c2ca1a87e26df413575dd322fedcbf",
-    "tools/serve-board.mjs": "5e55b94be47fc4e602bb6795a5839f44a9629f7483788a75aa22bf4193bb6e8f",
+    "tools/serve-board.mjs": "01c0ff611e07926609ccb4cfab779c2a3b2552a70bf10c5b71dc747f06397877",
     "tools/watch-dir.mjs": "d990826c25a9a26ecd4d5862a4c5d8cb3055088892b66abd77322f71244d916a",
     "tools/narrate.mjs": "a93bfc3d3ab04d1ea518811a5dc1a3be48c42102982166f4af781379e53e11df",
     "tools/narrate-run.mjs": "b4db895396fecf9062f6f33169fb8050e26a00321a81c989e3d1902ba4097fb0",
@@ -28,7 +28,7 @@
     "tools/auth-projects.mjs": "57676e72b55108a2ceb7cceda67eddfa61e06625351c5faf94e30cc42f0ee5b7",
     "playwright.board.ts": "a2dfd87f75885c6460bc4cb9e822f844eb6c562a75a781d10f99c7b11c7614fb",
     "spec/_design.css": "d52efe5af281a632b4c3c4e58bb11cbcd3a484c1e7464e4e89ccd5391baabc88",
-    "spec/_base.ts": "29cacd14fec0998a7cdd784abb44fa7be39b0f69dad59f4edbf7c5324dd4572b",
+    "spec/_base.ts": "88e19b3fba2ef87b534c7ba367ac3afd796d8653fadd9c479e4b123ce67c8cbc",
     "spec/_fixture.ts": "2d54075670d83613ca1c1e53e384b17a7552c221ff22c5804077d4c96100f04f",
     "spec/_state-guard.ts": "311221e9437e327c9add94df81d344ee9ad783fe861fa683d5d7e560a64f8f03",
     "spec/_state-guard-teardown.ts": "6381c1f72089205dd8d88fbd15e1a4e770f198e83fba5c5c0078c45ce3e8b631",
@@ -37,7 +37,7 @@
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",
     "spec/_layout-walk.mjs": "9d6c52051b836bf769dec507365c9d0a4732a28fbed7ebd2ea23a1609ff2f931",
-    "spec/_replica.mjs": "e4f7bf8f7cb2b95af5a566b3d1ed2b6c1ab0dec095381dc9d3d9611ed25df957"
+    "spec/_replica.mjs": "76eaf7a0da81ea8f8a0e499ee92c378e7aa3824bbb01d9ee111374936f1ed396"
   },
   "project": {
     "name": "Tsumiki",
