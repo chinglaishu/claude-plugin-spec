@@ -810,6 +810,11 @@ export function captureReplica (arg) {
   }
   const swapDirect = (n, got, want) => { for (const k of n.kids) if (isText(k) && k.text.indexOf(got) >= 0) k.text = k.text.replace(got, want) }
   const ROW_TAGS = ['li', 'tr', 'option']
+  // Tags a scene ROOT may keep (see the note at `rootTag` below): each renders on its own in an
+  // empty document and carries UA defaults the style diff took away against it. Anything else — a
+  // table part, `body`, `html`, a bare `option` — is emitted as a div, exactly as it always was.
+  const ROOT_TAGS = ['button', 'a', 'label', 'form', 'fieldset', 'p', 'pre', 'blockquote',
+    'ul', 'ol', 'dl', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
   const ROW_ROLES = ['row', 'listitem', 'option', 'gridcell']
   // the nearest ancestor that reads as ONE ROW — else the element itself (fix round 1, I2: the
   // stub's own `<li>` fixture used to be the only shape this could ever pass on).
@@ -1216,7 +1221,16 @@ export function captureReplica (arg) {
     return css
   }
   const walkRules = RULES.length
-  const actualRoot = E('div', [...rootAttrs, ['data-replica-side', 'actual'], ['style', 'position:relative']], built.kids)
+  // THE ROOT KEEPS ITS OWN TAG WHERE THAT TAG RENDERS STANDALONE (phase 6, 2026-09-04). The root's
+  // class is diffed against a probe OF ITS OWN TAG, so a `<button>` scene root emitted as a `<div>`
+  // loses every UA default the diff removed as "the default" — its border, its box-sizing, its
+  // centred text — and the re-rendered replica lays its children out somewhere else. The gate caught
+  // exactly that on demo/todo the first time a claim rang a value inside a nav button (a missing box
+  // for the root, its label moved, its icon gone). A tag that cannot stand alone in an empty document
+  // — `body`/`html`, a table part, a bare `option` — still becomes a div: a lone `<tr>` is not a row,
+  // and the pre-existing diff-against-its-own-tag stays exactly as it was for those.
+  const rootTag = has(ROOT_TAGS, built.tag) ? built.tag : 'div'
+  const actualRoot = E(rootTag, [...rootAttrs, ['data-replica-side', 'actual'], ['style', 'position:relative']], built.kids)
   const html = '<style>' + sheet(walkRules) + '</style>\n' + ser(actualRoot)
 
   // ── THE EXPECTED HALF: ONE claim, applied to its BASE, never a replay ────────────────────────
@@ -1296,7 +1310,7 @@ export function captureReplica (arg) {
     // base === null: nothing has failed — the Expected starts from THIS moment's own Actual
     expectedKids = built.kids.map(cloneNode)
   }
-  const claimRoot = E('div',
+  const claimRoot = E(rootTag,          // …and the Expected stands in the same element as the Actual
     [...rootAttrs, ['data-replica-side', 'expected'], ['data-claims', '[]'], ['style', 'position:relative']],
     expectedKids)
   link(claimRoot)

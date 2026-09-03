@@ -1840,3 +1840,33 @@ test('a placeholder is exactly as wide as what it stands in for — sub-pixel, l
   assert.match(rule[1], /width:35\.48px/, 'the plate keeps its measured width: ' + rule[1])
   assert.match(rule[1], /height:16\.2px/, 'and its measured height')
 })
+
+// ── THE SCENE ROOT KEEPS ITS OWN TAG (phase 6, 2026-09-04) ──────────────────────────────────────
+// Found by the replica gate on demo/todo, the first time a claim rang a value whose scene root is a
+// CONTROL: proveVisible on a sidebar badge picks the nav <button> around it as the scene, and the
+// root was emitted as a <div>. The root's class is diffed against a probe OF ITS OWN TAG, so every
+// UA default a button carries (its border, its box-sizing, its centred text) was diffed away as
+// "the default" and then never restored by the div that replaced it — the re-rendered replica laid
+// its children out somewhere else and the in-page gate recorded three gaps on it (a missing box for
+// the root, the label moved, the icon gone). A root whose tag renders standalone keeps that tag.
+test('a scene root that is a CONTROL is emitted as itself, not as a div', () => {
+  const badge = el('span', [195, 134, 8, 18], { text: '6' })
+  const label = el('span', [54, 132, 131, 21], { text: 'All tasks' })
+  const btn = el('button', [16, 124, 197, 37], { children: [label, badge], cs: { display: 'flex' } })
+  const nav = el('nav', [8, 100, 210, 400], { children: [btn] })
+  const body = el('body', [0, 0, 1440, 900], { children: [nav] })
+  const r = cap(body, { target: badge, ring: { x: 195, y: 134, width: 8, height: 18 } })
+  assert.deepEqual(r.region, { x: 16, y: 124, w: 197, h: 37 }, 'the button is the scene')
+  assert.match(r.html, /<button class="rep[ "]/, 'the root is the button the styles were diffed against')
+  assert.ok(r.html.includes('All tasks'), 'and its children come with it')
+})
+
+test('…while a root whose tag cannot stand alone stays a div', () => {
+  const cell = el('span', [30, 40, 60, 20], { text: '4' })
+  const tr = el('tr', [10, 30, 400, 40], { children: [cell] })
+  const table = el('table', [10, 10, 400, 300], { children: [tr] })
+  const body = el('body', [0, 0, 1440, 900], { children: [table] })
+  const r = cap(body, { target: cell, ring: { x: 30, y: 40, width: 60, height: 20 } })
+  assert.deepEqual(r.region, { x: 10, y: 30, w: 400, h: 40 })
+  assert.match(r.html, /<div class="rep[ "]/, 'a bare <tr> in an empty document is not a row — the div stands in')
+})

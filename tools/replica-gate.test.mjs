@@ -355,3 +355,29 @@ test('replicaGaps defaults to exactly GATE_MAX_GAPS, so the byte reserve and the
   assert.equal(replicaGaps(live, { w: 1440, h: 900, els: [] }, REGION).length, GATE_MAX_GAPS)
   assert.ok(GATE_BYTE_RESERVE > 0)
 })
+
+// ── THE ROOT IS NOT ALWAYS A DIV (phase 6, 2026-09-04) ───────────────────────────────────────────
+// A scene root whose tag renders standalone keeps that tag (spec/_replica.mjs ROOT_TAGS — a nav
+// button around the badge a claim rang, on demo/todo). This regex used to demand `<div class="rep`,
+// so such a file read as "not gated: no data-replica-layout" with no region at all — and with no
+// region the CLI's word gate then demanded every text on the page back out of one component. The
+// root's TAG is not what any of these rules are about.
+const BTN_ROOT = '<style>.rep .r0{display:flex}</style>\n<button class="rep r0" data-replica-kit="replica-1" ' +
+  'data-replica-region="16 124 197 37" data-ring-box="195 134 8 18" data-replica-side="actual" ' +
+  'data-replica-layout="abc123" data-replica-gaps="[]" style="position:relative">' +
+  '<span class="r4">All tasks</span><span class="r5" data-ring="1">6</span></button>'
+
+test('replicaAttrs reads a root of any tag — a button scene root is still a replica root', () => {
+  const a = replicaAttrs(BTN_ROOT)
+  assert.equal(a.kit, 'replica-1')
+  assert.deepEqual(a.region, { x: 16, y: 124, w: 197, h: 37 })
+  assert.equal(a.layout, 'abc123', 'it was gated, and the pin is read')
+  assert.deepEqual(a.gaps, [])
+})
+
+test('…and withReplicaAttrs re-stamps that root without turning it into a div', () => {
+  const out = withReplicaAttrs(BTN_ROOT, { layout: 'def456', gaps: [] })
+  assert.match(out, /<button class="rep r0"/, 'the root element is untouched')
+  assert.equal(replicaAttrs(out).layout, 'def456')
+  assert.equal((out.match(/data-replica-layout=/g) || []).length, 1, 'replaced, never doubled')
+})

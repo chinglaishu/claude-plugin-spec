@@ -227,14 +227,16 @@ export function claimGaps (expectedText, claims) {
 
 // ── the replica file's own root attributes ───────────────────────────────────────────────────────
 // A replica file is one <style> and one root element (spec/_replica.mjs), so its attributes are read
-// with a regex over the FIRST `<div class="rep"` tag rather than by parsing html we already know the
-// shape of. Every value the capture writes is escaped with escAttr (& < > "), so the decode below is
+// with a regex over the FIRST `class="rep…"` tag rather than by parsing html we already know the
+// shape of. ANY TAG (phase 6, 2026-09-04): a scene root whose tag renders standalone keeps it
+// (_replica.mjs ROOT_TAGS — the nav button a claim's badge sits in), and this used to demand a
+// `<div>`, so such a file read as never gated, with no region for the word gate to scope to. Every value the capture writes is escaped with escAttr (& < > "), so the decode below is
 // the exact inverse; `&#39;` is decoded too because a claim's text may arrive from elsewhere.
 const decode = (s) => String(s == null ? '' : s)
   .replace(/&quot;/g, '"').replace(/&#0?39;/g, "'")
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
   .replace(/&amp;/g, '&')                    // last: an escaped entity must not decode twice
-const ROOT_TAG = /<div class="rep(?:[^"]*)"[^>]*>/
+const ROOT_TAG = /<[a-z][a-z0-9]* class="rep(?:[^"]*)"[^>]*>/
 const attrOf = (tag, name) => {
   const m = new RegExp(' ' + name + '="([^"]*)"').exec(tag)
   return m ? decode(m[1]) : ''
