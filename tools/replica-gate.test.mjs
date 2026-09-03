@@ -279,3 +279,34 @@ test('the scene root is not an extra box — the live walk never measures the bo
   rep.els.unshift({ x: REGION.x, y: REGION.y, w: REGION.w, h: REGION.h, kind: 'container', bg: '253,252,249' })
   assert.deepEqual(replicaGaps(LIVE(), rep, REGION), [])
 })
+
+// ── FIX ROUND 2, item 1: A LIVE TEXT AT THE SKELETON'S OWN 48-CHAR CAP MAY END MID-WORD ──────────
+// spec/_layout-walk.mjs's `clean()` hard-slices every measured text to 48 characters. Below the cap
+// that is simply the whole word run and both ends stay bounded — but AT the cap the walk may have
+// cut the string mid-word ("...grouped into are" was "areas" before the slice), and the run rule's
+// right-boundary check then rejects the replica's own, uncut "areas" because 'e' and 'a' are both
+// wordy. The census (init R2, 9 gaps) was entirely this: nine PRD sentences that happen to run past
+// 48 characters. Below the cap nothing changes — a short, deliberately-typed value must still be
+// bounded on BOTH ends (the '5'/'15' case stays caught).
+test('a live text exactly at the skeleton\'s 48-char cap may end mid-word — the cut, not a false gap', () => {
+  const cut = 'Search across requirement text, grouped into are'
+  assert.equal(cut.length, 48, 'the fixture is the real cap-cut PRD sentence, not a guess')
+  const live = { w: 1440, h: 900, els: [{ x: 139, y: 129, w: 252, h: 17, kind: 'text', text: cut }] }
+  const rep = { w: 1440, h: 900, els: [{ x: 139, y: 129, w: 252, h: 17, kind: 'text', text: 'Search across requirement text, grouped into areas' }] }
+  assert.deepEqual(replicaGaps(live, rep, REGION), [], 'the replica\'s own uncut word completes the cut one')
+})
+
+test('…but BELOW the cap both ends still have to be bounded — a short value stays caught', () => {
+  const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 40, h: 20, kind: 'text', text: '5' }] }
+  const rep = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 40, h: 20, kind: 'text', text: '15' }] }
+  assert.equal(replicaGaps(live, rep, REGION)[0].kind, 'missing-text', 'a 1-char needle is nowhere near the cap')
+})
+
+test('a needle AT the cap still needs its START bounded — the relaxation is end-only', () => {
+  const cap48 = 'x'.repeat(47) + 'e'                 // 48 chars, cut mid-word by construction
+  assert.equal(cap48.length, 48)
+  const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 40, h: 20, kind: 'text', text: cap48 }] }
+  const glued = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 40, h: 20, kind: 'text', text: 'y' + cap48 + 'xtra' }] }
+  assert.equal(replicaGaps(live, glued, REGION)[0].kind, 'missing-text',
+    'glued to a wordy character on the LEFT is still not its own run — only the right end is relaxed')
+})

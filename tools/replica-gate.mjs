@@ -48,17 +48,28 @@ const MIN = GATE_MIN
 // never fail. So the run must be bounded by the ends of the string or by a character that is not a
 // letter, a digit or an underscore.
 const WORDY = /[\p{L}\p{N}_]/u
+
+// spec/_layout-walk.mjs's own `clean()` hard-slices every measured text to this many characters
+// (fix round 2, item 1). A needle that comes back at EXACTLY this length may have been cut mid-word
+// — "Search across requirement text, grouped into are" is "…areas" with its last two letters sliced
+// off — and the run rule's right-boundary check then rejects the replica's own, uncut word, because
+// both the cut edge ('e') and what follows it in the replica ('a') are wordy. Below the cap a needle
+// is never a truncation, so both ends stay bounded exactly as before; only a needle AT the cap gets
+// its right edge relaxed, and only its right edge — the LEFT edge still has to be a real boundary, or
+// a live "...into are" glued onto some unrelated "...somewhere48ischarslong" would pass by accident.
+export const TEXT_CAP = 48
 export function containsRun (hay, needle) {
   const h = String(hay == null ? '' : hay)
   const n = String(needle == null ? '' : needle)
   if (!n) return true
   if (h === n) return true
+  const capped = n.length === TEXT_CAP
   // a needle that starts or ends on a non-word character is already bounded on that side
   for (let i = h.indexOf(n); i >= 0; i = h.indexOf(n, i + 1)) {
     const before = i > 0 ? h[i - 1] : ''
     const after = i + n.length < h.length ? h[i + n.length] : ''
     const okL = !before || !WORDY.test(before) || !WORDY.test(n[0])
-    const okR = !after || !WORDY.test(after) || !WORDY.test(n[n.length - 1])
+    const okR = capped || !after || !WORDY.test(after) || !WORDY.test(n[n.length - 1])
     if (okL && okR) return true
   }
   return false

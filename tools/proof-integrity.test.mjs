@@ -315,3 +315,22 @@ test('…and a live "5" IS answered by "To do 5" — its own run inside a longer
     assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+// ── FIX ROUND 2, item 1: the CLI's node-text gate shares containsRun's 48-char-cap relaxation too ──
+// (spec/_layout-walk.mjs's clean() hard-slices every measured text to 48 chars, so a skeleton text
+// that comes back at exactly that length may have been cut mid-word.) The brief's own example: init
+// R2's nine gaps were all real PRD sentences the walk had cut at 48, rejected here because the CLI's
+// haystack is the whole file's text with no box to pin it — the same rule must hold there too.
+test('the CLI\'s node text gate also lets a live text AT the 48-char cap end mid-word', () => {
+  const cut = 'Search across requirement text, grouped into are'
+  const root = repFixture({
+    repin: true,
+    layout: l => { l.els.push({ x: 120, y: 250, w: 300, h: 20, kind: 'text', text: cut }); return l },
+    actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
+      '<div class="r1">Pay the electricity bill</div><div class="r1">Search across requirement text, grouped into areas</div>')
+  })
+  try {
+    assert.equal(cut.length, 48)
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
