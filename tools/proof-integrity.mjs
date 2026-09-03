@@ -22,7 +22,7 @@ import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from 
 // …and the replica's own guard, for the same reason: what "the replica looks like the app" MEANS is
 // decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
 // this CLI alike. A gate that restates the capture's rules drifts from them.
-import { replicaAttrs, claimGaps, textOf } from './replica-gate.mjs'
+import { replicaAttrs, claimGaps, textOf, containsRun, GATE_TOL, GATE_MIN } from './replica-gate.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -251,10 +251,13 @@ export function checkReplicas (spec = 'spec') {
             if (row.gaps.length >= 12) break
             const t = String(e.text == null ? '' : e.text).replace(/\s+/g, ' ').trim()
             if (!t) continue
-            if (e.w < 12 || e.h < 12) continue                  // the walk's own floor
-            if (reg && !(e.x >= reg.x - 1.5 && e.y >= reg.y - 1.5 &&
-              e.x + e.w <= reg.x + reg.w + 1.5 && e.y + e.h <= reg.y + reg.h + 1.5)) continue
-            if (text.indexOf(t) < 0) row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
+            if (e.w < GATE_MIN || e.h < GATE_MIN) continue      // the walk's own floor, from the module that owns it
+            if (reg && !(e.x >= reg.x - GATE_TOL && e.y >= reg.y - GATE_TOL &&
+              e.x + e.w <= reg.x + reg.w + GATE_TOL && e.y + e.h <= reg.y + reg.h + GATE_TOL)) continue
+            // …as its own word run, never as a bare substring (fix round 1, I1): here the haystack is
+            // the WHOLE file's text with no box to pin it, so plain containment would let a live `5`
+            // be answered by any `15` anywhere in the page
+            if (!containsRun(text, t)) row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
           }
         }
       }

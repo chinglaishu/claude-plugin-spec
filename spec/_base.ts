@@ -1054,7 +1054,12 @@ const REPLICA_HOST = '__specboard-replica-host'
 async function gateReplica (page: Page, rep: any): Promise<any | null> {
   const reg = rep && rep.region ? rep.region : null
   if (!reg || typeof rep.html !== 'string' || !rep.html) return null
-  const faces = Array.isArray(rep.fontFaces) ? rep.fontFaces.join('\n').slice(0, 64000) : ''
+  // the page's own @font-face rules. Nothing in them can execute (the frame is sandboxed with no
+  // allow-scripts), but a serialised font-family carrying `</style>` would close the element early
+  // and the frame would set its type in nothing — a page of false gaps (fix round 1, M3).
+  const faces = Array.isArray(rep.fontFaces)
+    ? rep.fontFaces.join('\n').slice(0, 64000).replace(/<\/style/gi, '<\\/style')
+    : ''
   const doc = '<!doctype html><html><head><style>html,body{margin:0;overflow:hidden}</style><style>' +
     faces + '</style></head><body><div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y +
     'px;width:' + reg.w + 'px">' + rep.html + '</div></body></html>'
@@ -1073,15 +1078,24 @@ async function gateReplica (page: Page, rep: any): Promise<any | null> {
         let done = false
         const finish = (ok: boolean) => { if (!done) { done = true; resolve(ok) } }
         f.addEventListener('load', () => finish(true))
-        setTimeout(() => finish(false), 1500)
+        setTimeout(() => finish(false), 1200)
         document.body.appendChild(f)
       })
-    }, { host: REPLICA_HOST, frame: REPLICA_FRAME, doc }), 2000)
+    }, { host: REPLICA_HOST, frame: REPLICA_FRAME, doc }), 1600)
     if (!up) return null
     const fr = page.frame({ name: REPLICA_FRAME })
     if (!fr) return null
-    // the ring is found under its own centre inside the frame, exactly as on the live page
-    return await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: null }), 1500)
+    // THE SAME FORCED TARGET AS THE LIVE SIDE (fix round 1, I2). The live skeleton is walked with the
+    // ringed element HANDED OVER, which gets `focus` with no area test; walking the frame with
+    // `target: null` left the replica to rediscover it geometrically (most of it inside the ring, and
+    // no more than 4x the ring's area) — so a beat whose ringed element is larger than that is
+    // focused on the live side and CANNOT be on the replica side, and `missing-focus` fires with no
+    // capture fix able to clear it. The capture already marks the element `data-ring="1"`; resolving
+    // it inside the frame makes both walks answer the focus question the same way.
+    const ringed: any = await raceTimeout(fr.$('[data-ring]') as any, 400).catch(() => null)
+    const skel = await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring: LAST_BOX, target: ringed }), 1200)
+    if (ringed) { try { await ringed.dispose() } catch { /* already gone */ } }
+    return skel
   } catch { return null } finally {
     await raceTimeout(page.evaluate((host: string) => {
       const el = document.getElementById(host)
@@ -1126,6 +1140,13 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
       }), 2500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
     if (!rep || typeof rep.html !== 'string' || !rep.html) return
+    // NO PICTURE WHERE NOTHING WAS MEASURED (fix round 1, C3). `snapLayout` writes no skeleton when
+    // its walk finds nothing — an API-only beat runs against a blank page (spec/dispatch R4/R5/R6) —
+    // but `captureReplica` still returns a root <div> for an empty body, so a file landed that could
+    // never be gated AND whose sibling .layout.json would never exist: a row `npm run proof mirror`
+    // is permanently red about, through no fault of any harvest. A gate people learn to skip is
+    // worth less than no gate. An empty replica of a blank page is not evidence of anything.
+    if (!LAST_LAYOUT) return
     const i = id.indexOf(':')
     const scr = i > -1 ? id.slice(0, i) : basename(dirname(String(info.file || '')))
     // THE FILE BODY: a comment saying what this is, the sheet, the root. No doctype, no <html>,
@@ -1140,7 +1161,10 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // task-2-rereview4.md); what it must answer for is that every FAILED claim's own value is
     // actually in it, which is what the Expected is for. Both are written unpinned when there is
     // nothing to check them against — honest, and refused by the CLI as "not gated".
-    const walked: any = LAST_PIN ? await raceTimeout(gateReplica(page, rep), 2500) : null
+    // …and the whole gate inside ONE deadline the inner ones add up to (fix round 1, M4: 1600 to
+    // mount + 1200 to walk + 400 to resolve the ring must fit inside it, or the outer race fires
+    // while the mount is still pending and the `finally` tidies up after the harness has moved on).
+    const walked: any = LAST_PIN ? await raceTimeout(gateReplica(page, rep), 3400) : null
     const aPin = walked && Array.isArray(walked.els) && walked.els.length ? LAST_PIN : ''
     const aGaps = aPin ? replicaGaps(LAST_LAYOUT, walked, rep.region) : []
     const gate = (body: string, pin: string, gaps: any[]) => pin ? withReplicaAttrs(body, { layout: pin, gaps }) : body

@@ -154,10 +154,10 @@ const RLAY = {
     { x: 900, y: 600, w: 200, h: 20, kind: 'text', text: 'Outside the scene root' }
   ]
 }
-const REP_ROOT = (side, body, extra = '') =>
+const REP_ROOT = (side, body, extra = '', pin = layoutHash(RLAY, null)) =>
   '<!-- specboard replica-1 · todo:R1 b1 after · ' + side + ' -->\n<style>.rep .r1{color:red}</style>\n' +
   '<div class="rep r0" data-replica-kit="replica-1" data-replica-region="100 100 600 300"' +
-  ' data-replica-side="' + side + '"' + extra + ' data-replica-layout="' + layoutHash(RLAY, null) + '"' +
+  ' data-replica-side="' + side + '"' + extra + ' data-replica-layout="' + pin + '"' +
   ' data-replica-gaps="[]" style="position:relative">' + body + '</div>\n'
 const ACTUAL_BODY = '<h1 class="r1">All tasks</h1><button class="r1">Archive</button>' +
   '<div class="r1">Pay the electricity bill</div>'
@@ -169,10 +169,13 @@ const repFixture = (mutate = {}) => {
   mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
   const lay = mutate.layout ? mutate.layout(structuredClone(RLAY)) : RLAY
   writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'), JSON.stringify(lay))
-  const actual = REP_ROOT('actual', ACTUAL_BODY)
+  // `repin` re-pins the replica to the layout the fixture just wrote — for a test about the WORDS,
+  // where a mutated skeleton would otherwise also fail on the pin and prove nothing about the words
+  const pin = layoutHash(mutate.repin ? lay : RLAY, null)
+  const actual = REP_ROOT('actual', ACTUAL_BODY, '', pin)
   writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'),
     mutate.actual ? mutate.actual(actual) : actual)
-  const expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"')
+  const expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"', pin)
   writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.expected.html'),
     mutate.expected ? mutate.expected(expected) : expected)
   return root
@@ -204,7 +207,7 @@ test('the node text gate reads the skeleton INSIDE the region only', () => {
   // "Outside the scene root" is measured on the live page but lies outside the replica's own region,
   // so the replica never carried it and must not be failed for it (the fixture above passes) — but a
   // word that moves INTO the region has to be there
-  const root = repFixture({ layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
+  const root = repFixture({ repin: true, layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
   try {
     const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
     assert.equal(rows[0].ok, false)
@@ -285,4 +288,30 @@ test('a spec with no replicas yields no rows', () => {
   const root = join(tmpdir(), 'replica-gate-empty-' + Math.random().toString(36).slice(2))
   mkdirSync(join(root, 'todo', 'evidence'), { recursive: true })
   try { assert.deepEqual(checkReplicas(root), []) } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('the CLI\'s node text gate reads a word RUN too — a live "5" is not answered by "15" (fix round 1, I1)', () => {
+  const root = repFixture({
+    repin: true,
+    layout: l => { l.els.push({ x: 120, y: 250, w: 40, h: 20, kind: 'text', text: '5' }); return l },
+    actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
+      '<div class="r1">Pay the electricity bill</div><div class="r1">15</div>')
+  })
+  try {
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    assert.equal(rows[0].ok, false)
+    assert.equal(rows[0].gaps[0].what, '5')
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('…and a live "5" IS answered by "To do 5" — its own run inside a longer text', () => {
+  const root = repFixture({
+    repin: true,
+    layout: l => { l.els.push({ x: 120, y: 250, w: 40, h: 20, kind: 'text', text: '5' }); return l },
+    actual: h => h.replace('<div class="r1">Pay the electricity bill</div>',
+      '<div class="r1">Pay the electricity bill</div><div class="r1">To do 5</div>')
+  })
+  try {
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+  } finally { rmSync(root, { recursive: true, force: true }) }
 })

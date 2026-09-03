@@ -1573,3 +1573,36 @@ test('the capture\'s own probe frame never enters the replica, and the page is l
   assert.deepEqual(body.childNodes.map(n => n.tagName), ['H1'], 'the probe frame was removed after the walk')
   assert.ok(/font-size:20px/.test(r.html), 'the frame\'s defaults are what the diff was taken against')
 })
+
+// ── FIX ROUND 1, C3(b)/I3: WHAT IS PICTURED IS THE VIEWPORT, NOT THE WHOLE DOCUMENT ─────────────
+// The plan's scene root is "no bigger than the viewport" and the photograph beside the replica shows
+// the viewport only, so a body-rooted scene 3000 px tall was carrying two thirds of a document
+// nobody can see — and the board's own R20/R21 moments still hit the 200 KB cap because of it. The
+// region is clipped to the viewport again, this time with the 2 px tolerance that keeps the span
+// beginning 0.45 px below the fold which the first attempt at this dropped (and everything skipped
+// leaves a placeholder now, so the flow of what IS in view cannot move).
+test('a 3000-px document keeps the rows in view, and holds the space of the rest', () => {
+  const rows = []
+  for (let i = 0; i < 400; i++) {
+    rows.push(el('div', [20, i * 30, 1000, 28], { text: 'row number ' + i, cs: { color: 'rgb(2, 8, 23)' } }))
+  }
+  const body = el('body', [0, 0, 1440, 3000], { children: rows })
+  const r = cap(body, {})
+  assert.ok(r.html.includes('row number 0'), 'the top of the page is the picture')
+  assert.ok(r.html.includes('row number 29'), 'and so is the last row above the fold (y=870)')
+  assert.ok(!r.html.includes('row number 60'), 'a row 1800 px down is not')
+  assert.ok(!r.html.includes('row number 399'))
+  assert.ok(r.html.includes('data-plate="space"'), 'what is out of view still holds its space')
+  assert.ok(r.bytes < 30000, 'and the file is a picture of a screen, not of a document: ' + r.bytes)
+  assert.equal(r.truncated, false)
+})
+
+test('the 2 px tolerance keeps the row that begins just below the fold — the span the first attempt dropped', () => {
+  const id = el('span', [83, 900, 24, 11], { text: 'R1' })           // starts 0.45 px below in the real case
+  const tick = el('span', [116, 897, 14, 17], { text: '✓' })
+  const row = el('div', [83, 893, 988, 25], { children: [id, tick] })
+  const body = el('body', [0, 0, 1440, 1890], { children: [row] })
+  const r = cap(body, {})
+  assert.ok(r.html.includes('>R1<'), 'a hair below the fold is still in the picture, words and all')
+  assert.ok(r.html.includes('✓'))
+})

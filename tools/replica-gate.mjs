@@ -33,7 +33,36 @@ export const GATE_TOL = 1.5
 // the walk's own size floor (spec/_layout-walk.mjs MIN): below this an element is a divider or an
 // icon fleck, and demanding it back would gate on noise. Read from the walk, restated here because
 // this module must stay importable by both the harness and the CLI without dragging the walk in.
-const MIN = 12
+// EXPORTED (fix round 1, M1) so tools/proof-integrity.mjs asks this module rather than restating
+// 1.5 and 12 as literals of its own — that restating is exactly the drift this file's header warns
+// about, and a guard that drifts from the rule it guards is worse than no guard.
+export const GATE_MIN = 12
+const MIN = GATE_MIN
+
+// THE LIVE TEXT MUST OCCUR AS ITS OWN WORD RUN (fix round 1, I1). The words rule accepts a replica
+// element whose text CONTAINS the live element's, because a ::before materialised as a span makes
+// the element reading `Add` on the live page read `+ Add` at the very same box. Plain containment,
+// though, is weakest exactly where requirements live: a live `5` was satisfied by a replica `15` at
+// the same box — a wrong asserted value passing the likeness gate — and on the CLI side, where the
+// haystack is the whole file's text with no box at all, a live `5`, `ok` or `R1` could essentially
+// never fail. So the run must be bounded by the ends of the string or by a character that is not a
+// letter, a digit or an underscore.
+const WORDY = /[\p{L}\p{N}_]/u
+export function containsRun (hay, needle) {
+  const h = String(hay == null ? '' : hay)
+  const n = String(needle == null ? '' : needle)
+  if (!n) return true
+  if (h === n) return true
+  // a needle that starts or ends on a non-word character is already bounded on that side
+  for (let i = h.indexOf(n); i >= 0; i = h.indexOf(n, i + 1)) {
+    const before = i > 0 ? h[i - 1] : ''
+    const after = i + n.length < h.length ? h[i + n.length] : ''
+    const okL = !before || !WORDY.test(before) || !WORDY.test(n[0])
+    const okR = !after || !WORDY.test(after) || !WORDY.test(n[n.length - 1])
+    if (okL && okR) return true
+  }
+  return false
+}
 
 const clean = (s) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim()
 const near = (a, b) => Math.abs(Number(a) - Number(b)) <= GATE_TOL
@@ -98,9 +127,9 @@ export function replicaGaps (live, replica, region, opts = {}) {
       //    the honest one — a replica materialises a ::before/::after's quoted content as a real
       //    span, so the element that carries "Add" on the live page reads "+ Add" in the replica at
       //    the very same box. Same position, same words, more of them: not a gap.
-      const here = repText.some(x => sameBox(x.e, e) && (x.t === t || x.t.indexOf(t) >= 0))
+      const here = repText.some(x => sameBox(x.e, e) && containsRun(x.t, t))
       if (here) continue
-      const anywhere = repText.some(x => x.t === t || x.t.indexOf(t) >= 0)
+      const anywhere = repText.some(x => containsRun(x.t, t))
       add({ kind: anywhere ? 'moved-text' : 'missing-text', what: t, ...at })
       continue
     }

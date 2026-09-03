@@ -240,19 +240,34 @@ export function captureReplica (arg) {
   if (!root) root = doc.body || null
   if (!root) return null
   const rootRect = rectOf(root)
-  // WHAT IS BEING PICTURED (phase 3, section F): the scene root's OWN box, and nothing narrower.
+  // WHAT IS BEING PICTURED (phase 3, section F; corrected in fix round 1, I3/C3): the scene root's
+  // box CLIPPED TO THE VIEWPORT, and then given 2 px of slack on each side.
   //
-  // It was briefly the scene root clipped to the VIEWPORT — a body-rooted scene is often taller than
-  // the screen, and the half below the fold is in no photograph and in no layout skeleton. The gate
-  // caught that on its first real harvest and it was wrong: a row's `<span class="id">R1</span>`
-  // begins at y=900.45 on a 900 px viewport, so the clip dropped it — and its two visible siblings,
-  // which start at 897, then slid 33 px left in the replica because their flex row had lost its
-  // first item. AN ELEMENT THE PAGE DOES NOT DRAW STILL HOLDS ITS SPACE, and everything laid out
-  // after it depends on that. So the skip is only what the brief asked for: outside the SCENE ROOT,
-  // which is the box the file is a picture of.
-  const VIS = rootRect
-    ? { x: rootRect.left, y: rootRect.top, w: rootRect.width, h: rootRect.height }
-    : null
+  // The plan's scene root is "no bigger than the viewport" and the photograph beside the replica
+  // shows the viewport only, so a body-rooted scene 3000 px tall was carrying two thirds of a
+  // document nobody can see. The first attempt at this clip was reverted because it dropped a row's
+  // `<span class="id">R1</span>` — it begins at y=900.45 on a 900 px viewport — and its two visible
+  // siblings then slid 33 px left, their flex row having lost its first item. Two things make the
+  // clip safe now: the 2 px tolerance keeps exactly that hairline case, and everything skipped
+  // leaves a PLACEHOLDER that holds its space, so the flow of what IS in view cannot move.
+  //
+  // (The comment this replaces claimed the skip covered "everything below the fold of a body-rooted
+  // scene". It did not — `VIS` was the root's own rect, so on this repo, where every init region is
+  // `0 0 1440 1890`, nothing below the fold was outside it and nothing was skipped. Rule 6: the
+  // comment was describing an intention, not the code. The 30 KB the init files did lose came from
+  // the parent-diffed inherited properties and the invisible-edge rule, not from this.)
+  const VIS_PAD = 2
+  const VIS = (() => {
+    if (!rootRect) return null
+    const box = { x: rootRect.left, y: rootRect.top, w: rootRect.width, h: rootRect.height }
+    let out = box
+    if (vw > 0 && vh > 0) {
+      const x0 = Math.max(box.x, 0); const y0 = Math.max(box.y, 0)
+      const x1 = Math.min(box.x + box.w, vw); const y1 = Math.min(box.y + box.h, vh)
+      if (x1 > x0 && y1 > y0) out = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }
+    }
+    return { x: out.x - VIS_PAD, y: out.y - VIS_PAD, w: out.w + VIS_PAD * 2, h: out.h + VIS_PAD * 2 }
+  })()
 
   // ── the style diff ────────────────────────────────────────────────────────────────────────────
   // Each element's computed values against a PROBE of the same tag+namespace — so what rides out is

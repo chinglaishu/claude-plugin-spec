@@ -242,3 +242,31 @@ test('a replica box that DOES stand on a live element is no gap — the ordinary
   rep.els.push({ x: 110, y: 280, w: 560, h: 14, kind: 'container', bg: '255,255,255' })  // the divider's own box
   assert.deepEqual(replicaGaps(LIVE(), rep, REGION), [])
 })
+
+// ── FIX ROUND 1, I1: THE WORDS RULE IS A WORD RUN, NOT A SUBSTRING ──────────────────────────────
+// The containment relaxation exists for a real case — a ::before materialised as a span makes the
+// element that reads `Add` on the live page read `+ Add` in the replica at the very same box. But
+// plain containment is weakest exactly where requirements live: a live element reading `5` was
+// satisfied by a replica reading `15` at the same box, i.e. a WRONG asserted value passing the
+// likeness gate. The live text must occur as its own run — bounded by the ends of the string or by
+// something that is not a letter, a digit or an underscore.
+test('a short value is matched as its own word, never inside a longer one', () => {
+  const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 40, h: 20, kind: 'text', text: '5' }] }
+  const at = { x: 120, y: 200, w: 40, h: 20, kind: 'text' }
+  const wrong = { w: 1440, h: 900, els: [{ ...at, text: '15' }] }
+  const also = { w: 1440, h: 900, els: [{ ...at, text: '50' }] }
+  const right = { w: 1440, h: 900, els: [{ ...at, text: '5' }] }
+  const run = { w: 1440, h: 900, els: [{ ...at, text: 'To do 5' }] }
+  assert.equal(replicaGaps(live, wrong, REGION)[0].kind, 'missing-text', '15 does not contain the value 5')
+  assert.equal(replicaGaps(live, also, REGION)[0].kind, 'missing-text', 'nor does 50')
+  assert.deepEqual(replicaGaps(live, right, REGION), [])
+  assert.deepEqual(replicaGaps(live, run, REGION), [], 'but its own run inside a longer text does')
+})
+
+test('the case the relaxation exists for: a pseudo-element\'s content in front of the words', () => {
+  const live = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 60, h: 20, kind: 'button', text: 'Add' }] }
+  const rep = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 60, h: 20, kind: 'button', text: '+ Add' }] }
+  assert.deepEqual(replicaGaps(live, rep, REGION), [])
+  const glued = { w: 1440, h: 900, els: [{ x: 120, y: 200, w: 60, h: 20, kind: 'button', text: 'Addendum' }] }
+  assert.equal(replicaGaps(live, glued, REGION)[0].kind, 'missing-text', 'and not a word that merely starts the same')
+})
