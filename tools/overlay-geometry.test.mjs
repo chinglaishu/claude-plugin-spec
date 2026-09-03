@@ -10,7 +10,10 @@
 // photograph actually shows, and the drawing is what has to agree with it.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { RING, CARD, ringBox, ringRect, ringOuter, calloutSpot, calloutRect } from './overlay-geometry.mjs'
+import { RING, CARD, WASH, ringBox, ringRect, ringOuter, calloutSpot, calloutRect } from './overlay-geometry.mjs'
+import { readFileSync } from 'node:fs'
+import { paperCssOf } from './build-board.mjs'
+import { designCss } from './spec-store.mjs'
 import { calloutBoxHeight } from './callout-text.mjs'
 
 const BOX = { x: 312, y: 126, width: 452, height: 46 }
@@ -133,4 +136,27 @@ test('calloutSpot is pure — the same inputs always answer the same', () => {
   const a = calloutSpot({ box: BOX, ...PAGE, cw: CARD.width, ch: 142 })
   const b = calloutSpot({ box: { ...BOX }, ...PAGE, cw: CARD.width, ch: 142 })
   assert.deepEqual(a, b)
+})
+
+// ── THE TWO WASHES (2026-09-04, the review's I3) ─────────────────────────────────────────────────
+// The veil and the paper halo are `rgba()` of design-system inks, which spec/_design.css has no
+// token for — so they live in THIS module beside every other number the overlay is written with, and
+// both sides read them from here. They were a second, hardcoded copy in tools/build-board.mjs's
+// paperCssOf, sitting beside the very import that exists to stop exactly that; the review caught it
+// before a change to the burn-in's wash could desync the two pictures of a row with nothing failing.
+test('the two washes are stated once, and both sides read THIS module', () => {
+  assert.match(WASH.veil, /^rgba\(/)
+  assert.match(WASH.halo, /^rgba\(/)
+  // the BURN-IN: spec/_base.ts hands them into the page inside ringCss and writes no literal itself
+  const base = readFileSync(new URL('../spec/_base.ts', import.meta.url), 'utf8')
+  assert.ok(base.includes('veil: WASH.veil, haloInk: WASH.halo'), 'the burn-in reads them from here')
+  assert.ok(!base.includes(WASH.veil), 'and states neither of them itself: ' + WASH.veil)
+  assert.ok(!base.includes(WASH.halo), 'and states neither of them itself: ' + WASH.halo)
+  // the BOARD's replica page: paperCssOf hands the client the same two values
+  const p = paperCssOf(designCss())
+  assert.equal(p.veil, WASH.veil, 'the replica page dims with the burn-in\'s own wash')
+  assert.equal(p.halo, WASH.halo, '…and rings with the burn-in\'s own halo')
+  const bb = readFileSync(new URL('./build-board.mjs', import.meta.url), 'utf8')
+  assert.ok(!bb.includes("'rgba(28,27,24,.12)'"), 'the builder states no copy of the veil')
+  assert.ok(!bb.includes("'rgba(253,252,249,.92)'"), 'nor of the halo')
 })

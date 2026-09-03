@@ -17,7 +17,7 @@ import { deriveLibrary } from './compose.mjs'
 // pure: a test's unit/flow kind off its qualified tag set (the record side of the kind union)
 import { deriveKind } from './flow.mjs'
 // pure: one layout skeleton's ringed box — the AIM a scene's camera takes (the human, 2026-08-31)
-import { focusFromLayout, focusFromLayouts } from './evidence.mjs'
+import { focusFromLayout, focusFromLayouts, absoluteFacesCss } from './evidence.mjs'
 // the geometry pin a mirror is drawn with, and the ONE reader of the harvest a drawing is made of
 // (tools/proof-integrity.mjs harvestOf — the same reading its mirror gate makes, so the board's
 // banner and the gate can never disagree about whether a drawing is behind its harvest)
@@ -25,7 +25,7 @@ import { layoutHash } from './viz.mjs'
 // the overlay's own ring + callout numbers (phase 4a): the Expected cell paints the ring inside the
 // iframe's own document, so the numbers travel to the client on the JSON island — ONE source with
 // spec/_base.ts renderOverlay, which is what the photograph beside it actually shows
-import { RING, CARD } from './overlay-geometry.mjs'
+import { RING, CARD, WASH } from './overlay-geometry.mjs'
 import { harvestOf } from './proof-integrity.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
@@ -53,10 +53,15 @@ export const paperCssOf = css => ({
   paper: parseToken(css, 'paper'),          // 生成り — the page the replica stands on
   plate: parseToken(css, 'wash'),           // the app's shell, drawn as blank plates around the region
   hair: parseToken(css, 'hair'),
+  // a readable muted ink for the one line a page with no picture says (the review's C3). Every grey
+  // in _design.css is measured to pass AA on paper — a hairline colour would not have.
+  ink3: parseToken(css, 'ink-3'),
   ring: parseToken(css, 'ai'),              // the overlay's own ring colour (spec/_base.ts renderOverlay)
   ringFail: parseToken(css, 'bengara'),     // …and its red variant, where the moment's claim failed
-  veil: 'rgba(28,27,24,.12)',               // the burn-in's literal wash — a colour with no token of its own
-  halo: 'rgba(253,252,249,.92)',            // …and its paper halo, likewise straight off renderOverlay
+  // the two the overlay states as `rgba()` rather than as a token — read from the module that owns
+  // the burn-in's numbers, never restated here (the review's I3)
+  veil: WASH.veil,
+  halo: WASH.halo,
   tintOk: parseToken(css, 'koke'),          // a claim the app got right
   tintFixed: parseToken(css, 'bengara')     // a claim the Expected had to correct, restore or add
 })
@@ -437,6 +442,14 @@ const runAll = name =>
 // `data-ev-window="from:to"` (data, not a path — no file check): it is what lets the gif-mode
 // frame-stepper (Task 13) hold each frame for its TRUE relative duration. A legacy entry's clip
 // fields are simply not baked — the webp retired with the stepper.
+// THE SCREENS' FACE SHEETS, GATHERED WHILE THE ROWS ARE BAKED (the review's C2). The Expected cell
+// writes the sheet into an `about:srcdoc` document, which resolves a relative url against the
+// PARENT's base — so the text the board hands the client is the one with every url pointed at the
+// dir the sheet lives in (absoluteFacesCss, pure and unit-tested). Baked onto the JSON island rather
+// than fetched: it is a few KB per screen, it removes a network round-trip before the first paint
+// (and with it a flash of the fallback stack), and it puts the rewrite on the Node side where a test
+// can reach it. Keyed by the very string `data-ev-faces` carries, so the client's lookup is exact.
+const FACES = new Map()
 const evAttrs = (s, r) => {
   const e = s.run && s.run.evidence && s.run.evidence[r.id]
   if (!e) return ''
@@ -587,7 +600,15 @@ const evAttrs = (s, r) => {
   // is really on disk rides — a replica with no sheet renders in a fallback stack, honestly.
   if (out && e.fontFaces) {
     const fabs = join(ROOT, String(e.fontFaces))
-    if (existsSync(fabs)) out += ` data-ev-faces="${esc(String(e.fontFaces) + '?h=' + shotHash(fabs))}"`
+    if (existsSync(fabs)) {
+      const key = String(e.fontFaces) + '?h=' + shotHash(fabs)
+      out += ` data-ev-faces="${esc(key)}"`
+      if (!FACES.has(key)) {
+        try {
+          FACES.set(key, absoluteFacesCss(readFileSync(fabs, 'utf8'), String(e.fontFaces).replace(/\/faces\.css$/, '')))
+        } catch { /* an unreadable sheet is a fallback stack, honestly — never a failed build */ }
+      }
+    }
   }
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
@@ -1700,6 +1721,7 @@ export const islandJson = data => JSON.stringify(data)
   .replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')
 
 export function build () {
+  FACES.clear()                    // gathered per build, keyed by the harvest's own content hash
   const screens = allScreens()
   const areas = sortedAreas(screens)
   // The getting-started journey, derived once for this build (board R12) — read from the tree, so a
@@ -1850,6 +1872,8 @@ export function build () {
     // drawn from a second copy of these numbers is how the two pictures of one row drift apart.
     geom: { RING, CARD },
     paperCss: paperCssOf(designCss()),
+    // …and each screen's @font-face sheet, urls already absolute (the review's C2)
+    faces: Object.fromEntries(FACES),
     compose: {
       nodes: composeNodes,
       givens: lib.givens,

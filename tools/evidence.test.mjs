@@ -450,3 +450,46 @@ test('deriveFacesCss on an empty harvest is the empty string, never a stylesheet
   assert.equal(deriveFacesCss([], []), '')
   assert.equal(deriveFacesCss(null, null), '')
 })
+
+// ── 2026-09-04, the review's C2: the sheet the BOARD serves is absolute ──────────────────────────
+// faces.css lives beside the faces it declares, so its own urls are relative to `_fonts/` — correct
+// on disk, and correct for anything that loads the FILE. The board does not: it writes the text into
+// an `<iframe sandbox srcdoc>`, and an `about:srcdoc` document resolves a relative url against the
+// PARENT's base — so `aaaa…woff2` would fetch `/aaaa…woff2`, 404 on every face, and the replica
+// would render in a fallback stack: a picture of a different app, silently. This is the rewrite that
+// stops it, done Node-side so it can be pinned here rather than inside the browser IIFE.
+test('absoluteFacesCss points every relative url at the dir the sheet lives in', async () => {
+  const { absoluteFacesCss } = await import('./evidence.mjs')
+  assert.equal(
+    absoluteFacesCss('@font-face { font-family: "I"; src: url("aaaa1111bbbb2222.woff2") format("woff2"); }',
+      'spec/board/evidence/_fonts'),
+    '@font-face { font-family: "I"; src: url("/spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2") format("woff2"); }')
+})
+test('absoluteFacesCss rewrites EVERY url of a multi-format rule, quoted or bare', async () => {
+  const { absoluteFacesCss } = await import('./evidence.mjs')
+  const out = absoluteFacesCss("@font-face{src:url(a.woff2) format('woff2'),url('b.woff') format('woff')}", 'spec/s/evidence/_fonts')
+  assert.ok(out.includes('url("/spec/s/evidence/_fonts/a.woff2")'), out)
+  assert.ok(out.includes('url("/spec/s/evidence/_fonts/b.woff")'), out)
+  assert.ok(!/url\(\s*["\']?[a-z0-9]+\.woff/i.test(out.replace(/url\("\/[^"]*"\)/g, '')), 'no relative url survives: ' + out)
+})
+test('absoluteFacesCss leaves a url that is already absolute, a data: face and an http one alone', async () => {
+  const { absoluteFacesCss } = await import('./evidence.mjs')
+  const css = '@font-face{src:url(/already/x.woff2)}\n@font-face{src:url(data:font/woff2;base64,AA)}\n@font-face{src:url(https://cdn.test/y.woff2)}'
+  assert.equal(absoluteFacesCss(css, 'spec/s/evidence/_fonts'), css)
+})
+test('absoluteFacesCss with no dir, or no css, changes nothing rather than inventing a root', async () => {
+  const { absoluteFacesCss } = await import('./evidence.mjs')
+  assert.equal(absoluteFacesCss('@font-face{src:url(a.woff2)}', ''), '@font-face{src:url(a.woff2)}')
+  assert.equal(absoluteFacesCss('', 'spec/s/evidence/_fonts'), '')
+  assert.equal(absoluteFacesCss(null, null), '')
+})
+test('a sheet round-trips: deriveFacesCss writes it relative, absoluteFacesCss serves it absolute', async () => {
+  const { deriveFacesCss, absoluteFacesCss, facesCssPath } = await import('./evidence.mjs')
+  const rel = deriveFacesCss(
+    [{ cssText: '@font-face { font-family: "Inter"; src: url("https://x.test/i.woff2"); }', urls: ['https://x.test/i.woff2'] }],
+    [{ hash: 'aaaa1111bbbb2222', ext: 'woff2', url: 'https://x.test/i.woff2' }])
+  assert.equal(rel, '@font-face { font-family: "Inter"; src: url("aaaa1111bbbb2222.woff2"); }')
+  const dir = facesCssPath('board').replace(/\/faces\.css$/, '')
+  assert.equal(absoluteFacesCss(rel, dir),
+    '@font-face { font-family: "Inter"; src: url("/spec/board/evidence/_fonts/aaaa1111bbbb2222.woff2"); }')
+})

@@ -410,11 +410,16 @@ function harvestEvidence (harvest, ranAt) {
 // VALUE moment `replica` is already the FILE PATH (tools/evidence.mjs valueEvidencePaths), so writing
 // the verdict there replaced the path with an object — and `foldEvidence`'s keep-set then failed to
 // find that path among the entry's references and PRUNED the very file the run had just written.
-function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
+export function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
   if (!rel) return
   try {
     const note = replicaNote(readFileSync(join(process.cwd(), rel), 'utf8'))
-    if (row) row.gate = { gaps: note.gaps, gated: note.gated }
+    // THE WHOLE VERDICT, not just the counts (2026-09-04, the review's C1). The board's stale banner
+    // names two reasons that are properties of this FILE — the pin it was gated against, so a later
+    // build can see the harvest move past it, and a capture that ran out of bytes. Recording only
+    // {gaps, gated} left both of them dead wire in tools/build-board.mjs, with a board test that
+    // forced the attribute by hand and went green over it.
+    if (row) row.gate = { gaps: note.gaps, gated: note.gated, pin: note.pin, trunc: note.trunc }
     for (const g of note.list) {
       gapLines.push(`replica gap · ${screen} ${id} b${beat} ${phase} · ${g.kind} ${g.what} at ${g.x},${g.y} ${g.w}×${g.h}`)
     }

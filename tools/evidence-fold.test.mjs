@@ -467,6 +467,26 @@ test('replicas: a re-harvested value moment whose new entry names no replica get
   assert.equal('replica' in index.board.evidence.R4.beats[0].values[0], false, 'not carried onto the fresh entry either')
 })
 
+// ── THE MOMENT'S GATE VERDICT (2026-09-04, the review's C1) ─────────────────────────────────────
+// The board's stale banner names four ways the Expected picture stops being true, and two of them —
+// `layout moved` and `truncated` — are properties of the FILE the fold just landed: the pin the
+// in-page gate checked it against, and whether the capture ran out of bytes. tools/build-board.mjs
+// reads `b.gate.pin` to hash it against the skeleton on disk NOW. The fold recorded only
+// {gaps, gated}, so both banner reasons were dead wire — a renderer reacting to a field nothing
+// writes. The verdict travels whole now, and it is carried like the rest of the beat.
+test('gate: a folded moment carries the PIN it was gated against and its truncation, not just the counts', () => {
+  const verdict = { gaps: 0, gated: true, pin: 'a1b2c3d4e5f60718', trunc: false }
+  const index = {}
+  foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1, before: 'spec/board/evidence/R4.b1.before.png', after: 'spec/board/evidence/R4.b1.after.png', gate: verdict }] }) })
+  assert.deepEqual(index.board.evidence.R4.beats[0].gate, verdict,
+    'the whole verdict rides the beat — the board cannot say "layout moved" without the pin')
+})
+test('gate: a truncated capture says so in its own word, beside the gap it also counts', () => {
+  const index = {}
+  foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1, before: 'spec/board/evidence/R4.b1.before.png', after: 'spec/board/evidence/R4.b1.after.png', gate: { gaps: 1, gated: true, pin: 'ffff0000ffff0000', trunc: true } }] }) })
+  assert.equal(index.board.evidence.R4.beats[0].gate.trunc, true)
+})
+
 // FONTS are refcounted per SCREEN like the committed video: many requirements of one screen share
 // the same face, so a file is pruned only when no entry of that screen names it any more.
 const font = (hash, family = 'Inter Tight', ext = 'woff2') => ({ hash, family, ext, path: `spec/board/evidence/_fonts/${hash}.${ext}` })

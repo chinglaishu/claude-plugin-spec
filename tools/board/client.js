@@ -1115,11 +1115,20 @@ const B = window.__BOARD__ || {}
     // the ring's own 9999px shadow IS the dim, spreading out from it — one element, exactly the
     // geometry the reference row ships. With no ring there is nothing to spot-light, so the page
     // takes the even wash the photograph beside it has.
-    const over = rb
-      ? '<div class="sbring" style="left:' + rb.x + 'px;top:' + rb.y + 'px;width:' + rb.w + 'px;height:' + rb.h + 'px"></div>'
-      : '<div class="sbdim"></div>'
+    const over = parts.note
+      ? ''                                             // nothing to ring, and nothing to dim either
+      : (rb
+          ? '<div class="sbring" style="left:' + rb.x + 'px;top:' + rb.y + 'px;width:' + rb.w + 'px;height:' + rb.h + 'px"></div>'
+          : '<div class="sbdim"></div>')
+    // …and where there is NO picture for this moment, the page says so rather than standing empty
+    // (the review's C3): the same paper, one quiet line in the system's own ink, no ring on nothing.
+    const note = parts.note
+      ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;' +
+        'font:italic 13px ui-sans-serif,system-ui,sans-serif;color:' + PAPER.ink3 + ';text-align:center;' +
+        'padding:0 24px;box-sizing:border-box">◌ ' + String(parts.note).replace(/[<>&"]/g, '') + '</div>'
+      : ''
     return '<!doctype html><html><head><meta charset="utf-8"><style>' + css + '</style></head><body>' +
-      plates + body + over + '</body></html>'
+      plates + body + over + note + '</body></html>'
   }
 
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
@@ -1773,18 +1782,39 @@ const B = window.__BOARD__ || {}
       fit()
       if (window.ResizeObserver) new ResizeObserver(fit).observe(page)
       aimCamera(box, focus, CAM)
-      // the shared pieces of every moment's page: the screen's faces, and the beat's own shell plates
-      const want = { faces: repFetch(facesPath), lay: repJson(layPath) }
+      // the shared pieces of every moment's page: the screen's faces, and the beat's own shell plates.
+      // The FACES are baked (the review's C2): an `about:srcdoc` document resolves a relative url
+      // against the PARENT's base, so the sheet the board hands over is the one whose every url the
+      // builder has already pointed at the dir it lives in — and it is here before the first paint,
+      // so a replica never flashes its fallback stack on the way to its own type.
+      const want = { faces: Promise.resolve((BD.faces || {})[facesPath] || ''), lay: repJson(layPath) }
       let cur = -1
       let seq = 0
+      // AN HONEST BLANK, NEVER THE NEIGHBOUR'S PICTURE (the review's C3, 2026-09-04). A moment whose
+      // harvest landed no replica — a byte budget, a timeout, a beat with no skeleton to gate
+      // against — used to leave the LAST moment's srcdoc standing while the strip and the photograph
+      // walked on, so the row showed two different moments of the beat and said it was showing one:
+      // exactly the drift R19/R20 forbid. The cell now says what it does not have, for THIS moment,
+      // and `data-repsrc` (the reader's own readout, and the seam the board's tests poll) says so too.
+      const blank = function (why) {
+        fr.dataset.repsrc = ''
+        fr.dataset.repside = ''
+        ifr.srcdoc = repSrcdoc({ body: '', faces: '', plates: [], region: null, ring: null, ok: true,
+          vw: vp.vw, vh: vp.vh, note: why })
+      }
       const paint = function (j) {
         const sh = shots[j]
-        if (!sh || !sh.rep) return
+        if (!sh || !sh.rep) { fr.dataset.repmoment = String(j); blank('no Expected for this moment'); return }
         const mine = ++seq
         Promise.all([repFetch(sh.rep), want.faces, want.lay]).then(function (got) {
           if (mine !== seq || !fr.isConnected) return    // a later step won the race, or the reader closed
           const body = repBody(got[0])
-          if (!body) { fr.dataset.repgone = '1'; return }
+          if (!body) {
+            fr.dataset.repmoment = String(j)
+            fr.dataset.repgone = '1'
+            blank('no Expected for this moment — the committed picture would not read')
+            return
+          }
           const region = repRect(got[0], 'data-replica-region')
           ifr.srcdoc = repSrcdoc({
             body: body,

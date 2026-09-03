@@ -140,6 +140,26 @@ export function fontEvidencePath (screen, hash, ext) {
 export function facesCssPath (screen) {
   return `spec/${screen}/evidence/_fonts/faces.css`
 }
+// …AND THE SAME SHEET, SERVED (the review's C2, 2026-09-04). What is written to disk is relative to
+// the `_fonts/` dir it sits in — right for the file, and right for anything that loads the file. The
+// BOARD does neither: it writes the text into an `<iframe sandbox srcdoc>`, and an `about:srcdoc`
+// document resolves a relative url against the PARENT's base — so every face would fetch from the
+// board's own root, 404, and the replica would quietly render in a fallback stack, which is a
+// picture of a different app. This points each url at the dir the sheet lives in. A url that is
+// already rooted, a `data:` face and an http(s) one are left exactly as they are: absolutising an
+// absolute url is how a rewrite starts inventing files.
+const REL_URL = /url\(\s*(["']?)([^"')]+)\1\s*\)/gi
+export function absoluteFacesCss (css, dir) {
+  const text = String(css || '')
+  const root = String(dir || '').replace(/^\/+|\/+$/g, '')
+  if (!text || !root) return text
+  return text.replace(REL_URL, (whole, q, url) => {
+    const u = String(url).trim()
+    if (!u || /^(?:https?:|data:|blob:|\/)/i.test(u)) return whole
+    return 'url("/' + root + '/' + u + '")'
+  })
+}
+
 // PURE: the rules the harness could read (`{cssText, urls}` — the urls already absolute, resolved in
 // the page against its own baseURI) against the faces it actually FETCHED (`entry.fonts`, each with
 // the content hash the file is named by). A rule rides only when EVERY url it names was fetched —

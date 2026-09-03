@@ -11,16 +11,14 @@
 // pass (phase 3, not this tool). Orphan drawings (a viz file whose requirement is gone) are
 // reported too, not deleted — removing one is a staff decision made with eyes open.
 //
-// THE MIRROR COMES FIRST (the human, 2026-08-28). Where the harvest captured the real screen's
-// layout skeleton around the requirement's assertion —
-// spec/<screen>/evidence/<id>.before.layout.json and .after.layout.json (spec/_base.ts snapLayout,
-// folded by spec/_results-reporter.mjs) — the drawing is a WIREFRAME OF THE REAL UI
-// (renderWireframe), not an archetype: the same boxes in the same places, the asserted element
-// ringed and carrying the value the assertion read. The archetype kit is the fallback for
-// everything no run has measured yet. Same output path, same stamps, so build-board consumes it
-// unchanged; the up-to-date check below is a BODY comparison, so it already keys on the layout
-// files' content — a re-harvest that moves the geometry moves the drawing (the file also carries
-// its layout pin as data-viz-layout, so the reason is readable on disk).
+// THE MIRROR IS GONE (phase 4a, the human's Expected View decision of 2026-09-03; corrected here in
+// place, rule 6). This header used to read "THE MIRROR COMES FIRST … where the harvest captured the
+// real screen's layout skeleton the drawing is a WIREFRAME OF THE REAL UI (renderWireframe), not an
+// archetype". It is not: a requirement the run harvested shows the app's OWN markup — the replica
+// committed beside its frames — and this pass draws nothing for it at all. Only a requirement with
+// no harvest keeps a SKETCH from the archetype kit, and a committed wireframe is deleted whenever
+// one is found. The choice is `pictureFor` (tools/viz.mjs, pure and unit-tested), so this shell and
+// tools/build-board.mjs cannot answer it differently again.
 //
 // This shell is the ONLY writer; viz.mjs stays pure. The board never runs this — a drawing is
 // derived authored content, committed like code (the schematics spec's storage decision).
@@ -28,124 +26,70 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { allScreens, SPEC } from './spec-store.mjs'
-import { deriveSchematic, renderWireframe, gapSummary } from './viz.mjs'
+import { deriveSchematic, pictureFor } from './viz.mjs'
 
 const pick = process.argv.slice(2)
 const screens = allScreens().filter(s => !pick.length || pick.includes(s.name))
 const today = new Date().toISOString().slice(0, 10)
 const stampAt = svg => svg.replace('<svg ', `<svg data-viz-at="${today}" `)
 
-// The harvested layout skeleton for one BEAT's phase, or null. Malformed JSON is a missing
-// capture, never a crash: viz.mjs then falls back to the archetype kit.
-// `phase` is 'before' / 'after', or null when `n` already names the whole slot ('1.v2' — beat 1's
-// second asserted value), which keeps the one path rule in one place.
-const layoutOf = (screen, id, n, phase) => {
-  const p = join(SPEC, screen, 'evidence', `${id}.b${n}${phase ? '.' + phase : ''}.layout.json`)
-  if (!existsSync(p)) return null
-  try { return JSON.parse(readFileSync(p, 'utf8')) } catch { return null }
-}
-// The whole harvest for a requirement, IN BEAT ORDER — one {before, after} per beat that ran. The
-// drawing takes one frame per scene from this (the given frame is beat 1's before, each beat's
-// frame is that beat's after), which is exactly what the board's per-beat rows show. Reading stops
-// at the first beat with nothing: a gap in the middle is a harvest that never happened.
-// …and each beat's ASSERTED-VALUE skeletons in the order it proved them (2026-08-29): the drawing
-// enacts the beat scene by scene, so it needs the geometry of each value the run rang and read, not
-// only the state it ended in. Numbering is 1-based and contiguous — the first gap ends the beat's
-// list, because a value the harvest never took is a scene that never happened.
-const VMAX = 12
-const valueLayouts = (screen, id, n) => {
-  const out = []
-  for (let k = 1; k <= VMAX; k++) {
-    const l = layoutOf(screen, id, `${n}.v${k}`, null)
-    if (!l) break
-    out.push(l)
-  }
-  return out
-}
-const beatLayouts = (screen, id, max) => {
-  const out = []
-  for (let n = 1; n <= max; n++) {
-    const before = layoutOf(screen, id, n, 'before')
-    const after = layoutOf(screen, id, n, 'after')
-    const values = valueLayouts(screen, id, n)
-    if (!before && !after && !values.length) break
-    out.push({ before, after, values })
-  }
-  return out
-}
-
-// says WHICH source drew it, so a pass reads at a glance as mirror-or-archetype
-const how = d => (d.kind === 'wireframe' ? ' · mirrors the real UI' : '')
 
 // THE DRAWN MIRROR IS RETIRED (phase 4a, 2026-09-03 — the human's Expected View decision: "the
-// picture beside a proof is a real HTML replica of the app's own component"). A requirement whose
-// harvest landed even one replica has the app's own markup to show, so nothing draws a wireframe of
-// it any more: the board renders the replica, and a committed drawing beside it would be a second,
-// worse answer to "what does this component look like" — the exact drift this product exists to
-// stop. The SKETCH kit (the archetypes, drawn from the sentence) stays for the case it was always
-// right for: a requirement with no harvest at all, where there is no UI to replicate yet.
-const REPLICA_FILE = id => new RegExp('^' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
-  '\\.b\\d+\\.(?:before|after|v\\d+)\\.(?:actual|expected)\\.html$')
-const replicaIndex = screen => {
+// picture beside a proof is a real HTML replica of the app's own component"). A requirement the run
+// HARVESTED has the app's own markup to show, so nothing draws a wireframe of it any more: the board
+// renders the replica, or says honestly that it has none. A drawing beside a photograph of the same
+// component would be a second, worse answer to "what does this look like" — the exact drift this
+// product exists to stop. The SKETCH kit (the archetypes, drawn from the sentence) stays for the case
+// it was always right for: a requirement with NO harvest at all, where there is no UI to replicate.
+//
+// The CHOICE itself is `pictureFor` in tools/viz.mjs — pure and unit-tested (the review's I2). It
+// used to be stated here as "has a replica on disk", which disagreed with tools/build-board.mjs's
+// "never bake a wireframe": a requirement harvested with skeletons whose replica capture failed then
+// had a drawing derived, committed and gated that nothing could ever display.
+const harvestIndex = screen => {
   const dir = join(SPEC, screen, 'evidence')
   if (!existsSync(dir)) return []
   try { return readdirSync(dir) } catch { return [] }
 }
-const hasReplica = (files, id) => files.some(f => REPLICA_FILE(id).test(f))
+const esc = id => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const harvested = (files, id) => {
+  // one regex per requirement, not one per filename: a skeleton or a replica of ANY moment means the
+  // run photographed this requirement's UI, which is what decides the picture
+  const re = new RegExp('^' + esc(id) + '\\.b\\d+\\.(?:before|after|v\\d+)\\.(?:layout\\.json|(?:actual|expected)\\.html)$')
+  return files.some(f => re.test(f))
+}
 
 let wrote = 0
 let retired = 0
 for (const s of screens) {
   const dir = join(SPEC, s.name, 'viz')
   const seen = new Set()
-  const evFiles = replicaIndex(s.name)
+  const evFiles = harvestIndex(s.name)
   for (const r of s.reqs) {
     seen.add(`${r.id}.svg`)
-    // THE REPLICA HAS TAKEN OVER (phase 4a): nothing is drawn for a requirement that has one, and a
-    // wireframe left over from before is deleted here at the fold — deterministic, printed, and
-    // never a silent removal. An ARCHETYPE sketch is left alone: it claims nothing about the app.
-    if (hasReplica(evFiles, r.id)) {
-      const svgPath = join(dir, `${r.id}.svg`)
-      if (existsSync(svgPath)) {
-        let body = ''
-        try { body = readFileSync(svgPath, 'utf8') } catch { body = '' }
-        if (/data-viz-kind="wireframe"/.test(body)) {
-          try { rmSync(svgPath, { force: true }); retired++ } catch { /* already gone */ }
-          console.log(`  ✗ ${s.name}/${r.id} — drawn mirror retired; the replica is the Expected picture`)
-        }
-      }
-      continue
-    }
-    // the MIRROR first: a measured layout beats a guessed archetype every time (2026-08-28). A
-    // requirement with layouts needs no behavior block at all — the drawing comes from the screen.
-    const nbeats = (r.behavior && r.behavior.beats && r.behavior.beats.length) || 12
-    const lays = beatLayouts(s.name, r.id, nbeats)
-    // The drawn TOUR CALLOUT says exactly what the recording's burn-in said, so the schematic cell
-    // and the proof cell of a beat row read as one language: the R-id chip, the requirement title,
-    // the beat's When → Then, and the ✓. `pass` is the board's OWN derived status read at derive
-    // time (spec-store computes it from the folded coverage — nothing is stored in the drawing);
-    // the requirement's live chip stays the authority, and the next viz pass redraws this.
-    const mirror = lays.length
-      ? renderWireframe(lays, {
-        behavior: r.behavior, id: r.id, title: r.title || '', pass: r.status === 'passed'
-      })
-      : null
-    if (!mirror && !r.behavior) continue
-    const d = mirror || deriveSchematic(r.behavior)
     const p = join(dir, `${r.id}.svg`)
+    const choice = pictureFor({
+      harvested: harvested(evFiles, r.id),
+      replicated: false,
+      hasBehavior: !!r.behavior
+    })
+    // A COMMITTED WIREFRAME IS RETIRED, always: nothing bakes one any more (tools/build-board.mjs
+    // renderSchematic refuses every one), so a file left on disk is a picture nobody can see that the
+    // proof gate can still redden. Deleted here at the fold — deterministic, printed, never silent.
+    if (choice.retire && existsSync(p)) {
+      let body = ''
+      try { body = readFileSync(p, 'utf8') } catch { body = '' }
+      if (/data-viz-kind="wireframe"/.test(body)) {
+        try { rmSync(p, { force: true }); retired++ } catch { /* already gone */ }
+        console.log(`  ✗ ${s.name}/${r.id} — drawn mirror retired; the replica is the Expected picture`)
+      }
+    }
+    if (choice.draw !== 'archetype') continue
+    const d = deriveSchematic(r.behavior)
     if (!d) {
-      console.log(`  · ${s.name}/${r.id} — no archetype fits and no layout harvested; text-only (honest)` +
+      console.log(`  · ${s.name}/${r.id} — no archetype fits and no UI harvested; text-only (honest)` +
         (existsSync(p) ? ' — NOTE: a committed drawing exists and now reads stale' : ''))
       continue
-    }
-    // WHAT THE DRAWING MEASURED BUT DID NOT DRAW (the human, 2026-09-02: "make sure the gap between
-    // schematic and proof will not exist again"). Derived per frame from the drawing's OWN input, and
-    // said out loud here — the drawing is still written, because a gapped mirror beats no mirror and
-    // the board's storyline says so too; `npm run proof mirror` is the gate that refuses it.
-    const gaps = (d.gaps || []).flatMap(g => g.gaps)
-    if (gaps.length) {
-      console.log(`  ! ${s.name}/${r.id} — mirror gaps: ${gaps.length} (${gapSummary(gaps)})` +
-        ` — first at ${gaps[0].x},${gaps[0].y}: ${gaps[0].what}`)
     }
     if (existsSync(p)) {
       // up to date = the file's BODY is what the kit draws for this text today (minus the date
@@ -153,13 +97,13 @@ for (const s of screens) {
       // "stays" variant) never land, because the text had not moved
       const cur = readFileSync(p, 'utf8').replace(/ data-viz-at="[^"]*"/, '').trim()
       if (cur === d.svg.trim()) {
-        console.log(`  = ${s.name}/${r.id} — up to date (${d.archetype}${how(d)})`)
+        console.log(`  = ${s.name}/${r.id} — up to date (${d.archetype} · a sketch, not the app)`)
         continue
       }
     }
     mkdirSync(dir, { recursive: true })
     writeFileSync(p, stampAt(d.svg) + '\n')
-    console.log(`  ✎ ${s.name}/${r.id} — drawn (${d.archetype}${how(d)})`)
+    console.log(`  ✎ ${s.name}/${r.id} — drawn (${d.archetype} · a sketch, not the app)`)
     wrote++
   }
   if (existsSync(dir)) {

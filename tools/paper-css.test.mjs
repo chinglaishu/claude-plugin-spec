@@ -31,7 +31,7 @@ test('paperCssOf is the replica page\'s whole palette, and every colour of it co
   const css = designCss()
   const p = paperCssOf(css)
   assert.deepEqual(Object.keys(p).sort(),
-    ['hair', 'halo', 'paper', 'plate', 'ring', 'ringFail', 'tintFixed', 'tintOk', 'veil'])
+    ['hair', 'halo', 'ink3', 'paper', 'plate', 'ring', 'ringFail', 'tintFixed', 'tintOk', 'veil'])
   for (const [k, v] of Object.entries(p)) {
     assert.ok(v, k + ' resolved to nothing — the token was renamed or removed')
     assert.ok(/^#[0-9a-f]{3,8}$/i.test(v) || /^rgba?\(/.test(v), k + ' is not a colour: ' + v)
@@ -46,4 +46,6 @@ test('paperCssOf is the replica page\'s whole palette, and every colour of it co
   // status colour needs the human's sign-off — CLAUDE.md)
   assert.equal(p.tintOk, parseToken(css, 'koke'))
   assert.equal(p.tintFixed, parseToken(css, 'bengara'))
+  // …and the ink a no-picture page says its one line in — a measured grey, never the hairline colour
+  assert.equal(p.ink3, parseToken(css, 'ink-3'))
 })

@@ -28,6 +28,16 @@
 // is what produced the ~12px ring the audit measured, so viz.mjs draws no band for it.
 export const RING = { inset: 4, stroke: 2, radius: 6, halo: 3, glow: 16 }
 
+// …AND THE TWO WASHES THAT HAVE NO TOKEN OF THEIR OWN (2026-09-04, the review's I3). The veil is the
+// light dim renderOverlay lays over the app; the halo is the paper the ring's first shadow spreads
+// into. Both are `rgba()` of design-system inks — 墨 sumi at 12%, 生成り paper at 92% — which
+// spec/_design.css cannot express as a token, so they live HERE for the same reason every other
+// number of the overlay does: the burn-in writes them, the board's replica page repaints them, and
+// two copies of a colour is how the two pictures of one row stop being the same picture. Whoever
+// changes the wash changes it once. (They were a second copy in tools/build-board.mjs's paperCssOf
+// until the review found them, hardcoded beside the very import that exists to prevent that.)
+export const WASH = { veil: 'rgba(28,27,24,.12)', halo: 'rgba(253,252,249,.92)' }
+
 // THE CALLOUT, exactly as renderOverlay writes it: a 360px card, 12px radius, 14/18 padding, held
 // `margin` off the viewport edge, `gap` off the target, with a 12px square rotated 45° for a notch.
 // `sideNudge` is the 6px the beside-placements lift the card by; `notchInset` keeps the notch off

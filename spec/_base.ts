@@ -11,7 +11,7 @@ import { parseBehavior } from '../tools/behavior.mjs'
 // and drifted: an audit of the demo's R1 beat cells found the drawn ring ~12 page px out from the
 // element box where this one is ~5. This file is the REFERENCE — the module states its rules, it
 // never invents new ones, and nothing about what the burn-in paints changes.
-import { RING, CARD, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
+import { RING, CARD, WASH, ringBox, calloutSpot } from '../tools/overlay-geometry.mjs'
 // …and the callout's WORDS from the module that owns them (2026-08-30), so the burned card and the
 // drawn one say the same sentence for the same scene of the same beat.
 import { calloutText, CALLOUT_TYPE, calloutLines, calloutLabelWidth } from '../tools/callout-text.mjs'
@@ -461,7 +461,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       const veil = document.createElement('div')
       veil.className = 'sb-veil'
       // a LIGHT wash — the surrounding state that PRODUCES the proven value stays readable, it just recedes
-      veil.style.cssText = 'position:fixed;inset:0;background:rgba(28,27,24,.12);transition:opacity .18s ease'
+      veil.style.cssText = 'position:fixed;inset:0;background:' + ringCss.veil + ';transition:opacity .18s ease'
       const ring = document.createElement('div')
       ring.className = 'sb-ring'
       ring.style.cssText = 'position:fixed;border-radius:' + ringCss.radius + 'px;transition:all .16s ease;display:none'
@@ -488,7 +488,7 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
       ring.style.width = ring0.w + 'px'
       ring.style.height = ring0.h + 'px'
       ring.style.border = ringCss.stroke + 'px solid ' + (FAIL ? BENG : AI)
-      ring.style.boxShadow = '0 0 0 ' + ringCss.halo + 'px rgba(253,252,249,.92),0 0 ' + ringCss.glow + 'px ' +
+      ring.style.boxShadow = '0 0 0 ' + ringCss.halo + 'px ' + ringCss.haloInk + ',0 0 ' + ringCss.glow + 'px ' +
         (FAIL ? 'rgba(141,74,56,.35)' : 'rgba(47,74,99,.30)')
     } else ring.style.display = 'none'
     // THE CALLOUT — the current small step, and nothing else (the human, 2026-08-30). A tiny id chip,
@@ -557,7 +557,10 @@ async function renderOverlay (box: Box | null, failed: boolean): Promise<void> {
     ring0: ringBox(box),
     ringCss: {
       stroke: RING.stroke, halo: RING.halo, glow: RING.glow, radius: RING.radius,
-      notch: CARD.notch, cardRadius: CARD.radius, padX: CARD.padX, padY: CARD.padY
+      notch: CARD.notch, cardRadius: CARD.radius, padX: CARD.padX, padY: CARD.padY,
+      // …and the two washes, from the same module (the review's I3): the board's replica page paints
+      // the identical ring and dim, so a change here must move both pictures of a row at once
+      veil: WASH.veil, haloInk: WASH.halo
     },
     cardW: CARD.width,
     // the ONE line's type, from the module the drawing converts it out of too

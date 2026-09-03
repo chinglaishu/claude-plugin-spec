@@ -699,7 +699,7 @@ remove like any other.*
 
 - **Given** a screen documented by its requirements and the tests that prove them
 - **When** you open its detail
-- **Then** no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only; nothing is LOADED from anywhere (a beat row's Expected picture is the harvest's own committed replica, inert in a `srcdoc` sandbox, never an artifact this tool owns) *(narrowed 2026-09-03, rule 6, by the human's Expected View decision — see R18)*
+- **Then** no design chip, no design link and no embedded wireframe exist anywhere in it — requirements and proof only
 
 Sketching or designing a screen before it exists is a real job, but a different one, and already well
 served elsewhere. specboard tracks requirements and their proof — **nothing else**. It does not render,
@@ -708,6 +708,22 @@ no external-artifact affordance anywhere. A screen is documented by its requirem
 prove them, and a screen with no artifact is not "unstarted" — it is simply defined by what it must do
 and whether that is proven.
 
+<!-- RESTORED 2026-09-04 (rule 5, on the coordinator's ruling). Staff narrowed this Then on
+     2026-09-03 to "…; nothing is LOADED from anywhere", reasoning that the human's Expected View
+     decision entails it: a beat row's Expected picture is now an `<iframe sandbox srcdoc>` holding
+     the harvest's own committed replica, so an absolute "no embedded iframe" reading is no longer
+     true of the board. That may well be the right wording — but it is a change to requirement
+     MEANING, and meaning waits on the human. The human's own words are back, verbatim.
+
+     THE QUESTION FOR THE HUMAN, in one line: R7 says the detail embeds no wireframe and no design.
+     A beat row now embeds the app's OWN captured markup in a script-less, network-less, opaque-origin
+     `srcdoc` frame — the harvest's picture, not an artifact this tool owns. Does R7's "no embedded
+     wireframe" still hold as written (staff reads it as yes: a replica is neither a wireframe nor a
+     design), or should the Then say so out loud?
+
+     The test asserts the RESTORED meaning — no design chip, no design link, and no embedded
+     wireframe anywhere in the detail — and keeps the frame's inertness as an EXTRA assertion beside
+     it, which constrains the implementation without changing what R7 says. -->
 *Narrowed 2026-07-30: R7 previously carried an optional external `design:` link shown as a chip in the
 detail. Removed at the human's direction — a link specboard never renders, gates, or stales is still
 one more thing to carry, and the tool is meant to be minimal. The `design:` frontmatter field and the

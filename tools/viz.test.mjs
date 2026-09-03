@@ -4,7 +4,7 @@
 // honesty rule: a requirement the kit cannot draw stays text-only, never a wrong picture.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion, mirrorGaps, gapSummary } from './viz.mjs'
+import { vizHash, vizStale, matchArchetype, deriveSchematic, renderWireframe, layoutHash, framedRegion, mirrorGaps, gapSummary, pictureFor } from './viz.mjs'
 // the ONE overlay geometry — the drawing has to agree with the burn-in, so the pins ask the module
 // both of them read rather than restating numbers here
 import { RING, CARD as GEO, ringRect, ringOuter, calloutSpot } from './overlay-geometry.mjs'
@@ -2260,4 +2260,34 @@ test('a wrong value on a present element: the leaf INSIDE the ringed box that re
   assert.ok(L1.ring && L1.ring.x >= PICKER_BOX.x && L1.ring.x + L1.ring.w <= PICKER_BOX.x + PICKER_BOX.w + 1, 'the ring stays within the picker: ' + JSON.stringify(L1.ring))
   const f1 = frameOf(d.svg, 1)
   assert.ok(has(f1, 'Published') && !has(f1, 'Live'))
+})
+
+// ── WHICH PICTURE A REQUIREMENT GETS (2026-09-04, the review's I2) ──────────────────────────────
+// The human's Expected View decision retired the drawn ui-mirror, and tools/build-board.mjs now
+// refuses to bake ANY wireframe, whatever produced it. The derive pass still had a mirror branch
+// gated on "has a replica on disk", so a requirement harvested WITH skeletons but whose replica
+// capture failed still had a wireframe derived, committed, and gated by `npm run proof mirror` — a
+// file that is written at every fold, can redden the gate, and can never be displayed. The choice is
+// stated once, here, where it can be pinned.
+test('pictureFor: a requirement the run HARVESTED gets no drawing at all — its picture is the replica', () => {
+  assert.deepEqual(pictureFor({ harvested: true, replicated: true, hasBehavior: true }), { draw: null, retire: true })
+  // …and that is true even where the replica capture failed: a wireframe nothing bakes is a file
+  // nobody can see, and a gap in it reddens the gate for a picture that does not exist
+  assert.deepEqual(pictureFor({ harvested: true, replicated: false, hasBehavior: true }), { draw: null, retire: true })
+})
+test('pictureFor: a requirement with NO harvest keeps its sketch — the no-UI case the kit was always right for', () => {
+  assert.deepEqual(pictureFor({ harvested: false, replicated: false, hasBehavior: true }), { draw: 'archetype', retire: true })
+})
+test('pictureFor: no harvest and no behavior shape is honestly no picture, never a guess', () => {
+  assert.deepEqual(pictureFor({ harvested: false, replicated: false, hasBehavior: false }), { draw: null, retire: true })
+})
+test('pictureFor: a committed WIREFRAME is retired in every case — nothing bakes one any more', () => {
+  for (const h of [true, false]) {
+    for (const r of [true, false]) {
+      for (const b of [true, false]) {
+        assert.equal(pictureFor({ harvested: h, replicated: r, hasBehavior: b }).retire, true,
+          JSON.stringify({ h, r, b }))
+      }
+    }
+  }
 })

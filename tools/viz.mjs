@@ -1050,6 +1050,24 @@ const pinShape = p => ({
   after: (p && p.after) || null,
   values: (p && Array.isArray(p.values) ? p.values : []).filter(Boolean)
 })
+// WHICH PICTURE A REQUIREMENT GETS (phase 4a fix round 1, 2026-09-04 — the review's I2). Stated
+// once, here, because two places were answering it differently: tools/viz-derive.mjs skipped the
+// drawn mirror only where a REPLICA was already on disk, while tools/build-board.mjs refuses to bake
+// ANY wireframe at all. A requirement harvested with skeletons whose replica capture failed fell
+// through the gap — a wireframe derived at every fold, committed, gated by `npm run proof mirror`,
+// and impossible to display: a gap in it reddened the gate for a picture nobody could see.
+//
+// The human's decision is the rule: a requirement the run HARVESTED has the app's own markup to show
+// (or, where the capture failed, an honest "no Expected yet" — never a drawing of the same
+// component). Only a requirement with NO harvest at all keeps a SKETCH, which is the case the
+// archetype kit was always right for. And a committed wireframe is retired in every case, because
+// nothing bakes one any more.
+export function pictureFor ({ harvested, replicated, hasBehavior }) {
+  void replicated                                  // no longer part of the choice — see above
+  if (harvested) return { draw: null, retire: true }
+  return { draw: hasBehavior ? 'archetype' : null, retire: true }
+}
+
 export const layoutHash = (a, b) =>
   reqHash(JSON.stringify((Array.isArray(a) ? a : [{ before: a || null, after: b || null }]).map(pinShape),
     (k, v) => (k === 'at' ? undefined : v)))
