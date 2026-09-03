@@ -285,29 +285,30 @@ const B = window.__BOARD__ || {}
       body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n' + cover + '\n\n' + reqBlock
     } else if (action === 'schemwrong') {
       // THE ESCAPE FROM A WRONG PICTURE (the human, 2026-08-31: "let user know if the schematic is
-      // not what they want"). The caption on the schematic cell says what the drawing IS; this is
-      // what a reader does about it. The board never redraws on its own — a drawing is a MIRROR of
-      // what a run measured, so the fix is always upstream: ring the values the beat actually
-      // proves, then harvest. The prompt carries the provenance the reader was just shown, so the
-      // work starts from the same fact rather than from a fresh guess.
-      head = 'In this specboard project, the schematic for ' + ctx.screen + ':' + ctx.reqId +
+      // not what they want"). Renamed with the picture itself (2026-09-03): the Expected cell is the
+      // app's own component now, captured, never drawn — so the fix is upstream in what the run
+      // MEASURES, and more so than before: nothing the board renders can be edited into agreement.
+      // The prompt carries the provenance the reader was just shown, so the work starts from the
+      // same fact rather than from a fresh guess.
+      head = 'In this specboard project, the Expected picture for ' + ctx.screen + ':' + ctx.reqId +
         ' does not match the real app.'
       body = 'Files: ' + spec + ' and spec/' + ctx.screen + '/steps.ts\n' +
         'Target: requirement ' + req + '\n' +
-        'The drawing today: ' + (ctx.prov || 'unknown') + '\n\n' +
-        'The schematic is DERIVED, never authored — tools/viz.mjs draws it from the layout skeleton ' +
-        'each proveVisible ringed during the last run, one scene per value the beat proved. So do ' +
-        'not edit the svg: it is regenerated. Fix what the run MEASURES.\n' +
+        'The picture today: ' + (ctx.prov || 'unknown') + '\n\n' +
+        'The Expected picture is CAPTURED, never authored — spec/_replica.mjs serialises the app\'s ' +
+        'own markup for the region each proveVisible ringed, and applies the beat\'s claims to it. ' +
+        'So do not edit the committed html: it is overwritten at the next fold. Fix what the run ' +
+        'MEASURES.\n' +
         '- give each beat a proveVisible on the element whose value it asserts (the When\'s own box, ' +
-        'then the Then\'s result), so the harvest rings and photographs them;\n' +
-        '- keep the beats in spec/' + ctx.screen + '/steps.ts one When → one Then, so a scene is one ' +
+        'then the Then\'s result), so the harvest rings, photographs and replicates them;\n' +
+        '- keep the beats in spec/' + ctx.screen + '/steps.ts one When → one Then, so a moment is one ' +
         'change;\n' +
-        '- re-run the covering test with BOARD_RECORD so the frames and skeletons are re-harvested, ' +
-        'then `node tools/viz-derive.mjs ' + ctx.screen + '` to redraw from them.\n' +
-        'If the drawing is an ARCHETYPE, nothing was harvested with a ring yet — that is the whole ' +
-        'gap. If it is stale, the requirement was reworded after it was drawn: re-run, then redraw. ' +
-        'Never hand-draw a picture to match: a guessed picture beside a real photograph is the most ' +
-        'convincing lie this board can tell.'
+        '- re-run the covering test so the frames, skeletons and replicas are re-harvested, then ' +
+        '`npm run proof mirror` to see what the gate says the picture is missing.\n' +
+        'If the cell says there is no Expected yet, nothing was harvested with a ring — that is the ' +
+        'whole gap. If it is a SKETCH, this requirement has no UI harvested at all. Never hand-write ' +
+        'a picture to match: an invented picture beside a real photograph is the most convincing lie ' +
+        'this board can tell.'
     } else if (action === 'removetest') {
       head = 'In this specboard project, remove the test "' + (ctx.testTitle || '') + '".'
       body = 'File: ' + spec + '\nTarget: the test "' + (ctx.testTitle || '') + '"\n\n' +
@@ -329,7 +330,7 @@ const B = window.__BOARD__ || {}
     const pick = document.getElementById('promptpick')
     const TITLES = { reword: 'Reword this requirement', addreq: 'Add a requirement',
       removereq: 'Remove this requirement', addtest: 'Add a test', edittest: 'Edit this test',
-      removetest: 'Remove this test', schemwrong: 'The schematic doesn’t match my app' }
+      removetest: 'Remove this test', schemwrong: 'The Expected picture doesn’t match my app' }
     document.getElementById('prompttitle').textContent = TITLES[action] || 'Prompt'
     pick.innerHTML = ''
     if (action === 'addtest' || action === 'edittest') {
@@ -482,7 +483,10 @@ const B = window.__BOARD__ || {}
           if (!raw) return []
           try { const v = JSON.parse(raw); return Array.isArray(v) ? v : [] } catch (e) { return [] }
         })(),
-        at: node.getAttribute('data-ev-at') || ''
+        at: node.getAttribute('data-ev-at') || '',
+        // the screen's one committed @font-face sheet (phase 4a) — the Expected cell writes it into
+        // the replica's srcdoc so the app's own words are laid out in the app's own type
+        faces: node.getAttribute('data-ev-faces') || ''
       },
       title: ttlEl ? ttlEl.textContent : '',
       family: node.getAttribute('data-fam') || '',   // the prd's `###` family this sits under (board R17); '' = none
@@ -553,7 +557,7 @@ const B = window.__BOARD__ || {}
     // …and the escape from a drawing that is not what the reader wanted (the human, 2026-08-31):
     // the same provenance the schematic cell captions travels into the prompt, so the work starts
     // from the fact the reader was shown rather than from a guess.
-    const schemCtx = function () { const c = reqCtx(); c.prov = schemProv(r.schem).text; return c }
+    const schemCtx = function () { const c = reqCtx(); c.prov = schemProv(r.schem, hasReplicas(r)).text; return c }
     // THE READER-WIDE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02: "put all these on the same
     // row of the test title row, left side of the menu button"). The schematic frames and every beat
     // cell's stepper are views of the SAME beat, so one play mode and one speed pace them both — and
@@ -636,7 +640,7 @@ const B = window.__BOARD__ || {}
       pop.appendChild(promptItem('reword', 'Reword this requirement', reqCtx))
       pop.appendChild(promptItem('addreq', 'Add a requirement', reqCtx))
       pop.appendChild(promptItem('removereq', 'Remove this requirement', reqCtx))
-      pop.appendChild(promptItem('schemwrong', 'The schematic doesn’t match my app', schemCtx))
+      pop.appendChild(promptItem('schemwrong', 'The Expected picture doesn’t match my app', schemCtx))
       rmeta.appendChild(menu)
     }
     read.appendChild(rmeta)
@@ -988,6 +992,136 @@ const B = window.__BOARD__ || {}
     return apply
   }
 
+  // ── THE EXPECTED PICTURE: THE APP'S OWN COMPONENT, ON PAPER ──────────────────────────────────
+  // (the human, 2026-09-03 — the Expected View decision: "the picture beside a proof is a real HTML
+  // replica of the app's own component", not a drawing of it.) The harvest commits, beside every
+  // frame, the app's own sanitised markup for the region the assertion rang — `.actual.html` as the
+  // app rendered it, `.expected.html` with the requirement's claims applied — and this renders the
+  // EXPECTED one in an `<iframe sandbox srcdoc>` with no `allow-*` token at all: no script, no
+  // network, no same-origin identity, so the app's own CSS lays its own words out and nothing in the
+  // file can do anything else. The file body is NEVER inlined into board.html; it is fetched (the
+  // static server allowlists spec/**), which keeps a 4 MB board.html from becoming a 12 MB one.
+  //
+  // The page inside the frame is the app's page: paper, the app's shell PLATES around the region (so
+  // the component reads in place rather than floating), the replica at the app's own coordinates,
+  // and the SAME ring and dim the photograph beside it wears — painted from the very numbers
+  // spec/_base.ts renderOverlay burned in (window.__BOARD__.geom) in the very colours
+  // spec/_design.css declares (window.__BOARD__.paperCss). Two copies of those numbers is how the
+  // two pictures of one row drift apart, so there is one source and both sides read it.
+  const BD = window.__BOARD__ || {}
+  const PAPER = BD.paperCss || {}
+  const RINGG = (BD.geom && BD.geom.RING) || { inset: 4, stroke: 2, radius: 6, halo: 3 }
+  // fetched ONCE per path, for the life of the page: the path carries the harvest's content hash, so
+  // a re-harvest is a different key and a re-opened reader never re-downloads what it already has
+  const REP_TEXT = new Map()
+  function repFetch (path) {
+    if (!path) return Promise.resolve('')
+    if (!REP_TEXT.has(path)) {
+      REP_TEXT.set(path, fetch(path).then(function (r) { return r.ok ? r.text() : '' }).catch(function () { return '' }))
+    }
+    return REP_TEXT.get(path)
+  }
+  function repJson (path) {
+    if (!path) return Promise.resolve(null)
+    const key = 'json:' + path
+    if (!REP_TEXT.has(key)) {
+      REP_TEXT.set(key, fetch(path).then(function (r) { return r.ok ? r.json() : null }).catch(function () { return null }))
+    }
+    return REP_TEXT.get(key)
+  }
+  // DEFENCE IN DEPTH, exactly as renderSchematic applies it to a committed svg: the file is
+  // sanitised at capture and the sandbox forbids script anyway, but a committed file that has become
+  // executable content never reaches a srcdoc from here. Its html comment header is dropped too.
+  function repBody (text) {
+    const t = String(text || '')
+    if (!t) return ''
+    if (/<script\b/i.test(t) || /\son\w+\s*=\s*["']/i.test(t) || /javascript:/i.test(t)) return ''
+    return t.replace(/<!--[\s\S]*?-->/g, '').trim()
+  }
+  const repAttr = function (text, name) {
+    const m = new RegExp(name + '="([^"]*)"').exec(String(text || ''))
+    return m ? m[1] : ''
+  }
+  const repRect = function (text, name) {
+    const p = repAttr(text, name).trim().split(/\s+/).map(Number)
+    return (p.length === 4 && p.every(function (n) { return isFinite(n) })) ? { x: p[0], y: p[1], w: p[2], h: p[3] } : null
+  }
+  // THE APP'S SHELL, AS BLANK PLATES (the plan's scene-root rule): the region is the component, and
+  // the rest of the page is paper — but a component floating on blank paper loses where it SITS, so
+  // the big painted boxes the harvest measured OUTSIDE the region are drawn as plates. No text on
+  // them: they are the shell, not a second copy of the page. Read off the beat's own before
+  // skeleton, so they are measured rather than invented; bounded, and any box that would overlap the
+  // region is skipped rather than painted over the replica.
+  const PLATE_FRAC = 0.05
+  const PLATE_MAX = 12
+  function repPlates (lay, reg, vw, vh) {
+    const els = (lay && Array.isArray(lay.els)) ? lay.els : []
+    const area = (vw > 0 && vh > 0) ? vw * vh : 0
+    const out = []
+    for (let i = 0; i < els.length && out.length < PLATE_MAX; i++) {
+      const e = els[i]
+      if (!e || !e.bg || !(e.w > 0 && e.h > 0)) continue
+      if (!(area > 0) || e.w * e.h < area * PLATE_FRAC) continue
+      if (reg && !(e.x + e.w <= reg.x || e.x >= reg.x + reg.w || e.y + e.h <= reg.y || e.y >= reg.y + reg.h)) continue
+      out.push({ x: e.x, y: e.y, w: e.w, h: e.h })
+    }
+    return out
+  }
+  // ONE SRCDOC. `ok:false` reddens the ring exactly as the burn-in does on a failed claim.
+  function repSrcdoc (parts) {
+    const ring = parts.ring
+    const i = RINGG.inset
+    const rb = ring ? { x: ring.x - i, y: ring.y - i, w: ring.w + 2 * i, h: ring.h + 2 * i } : null
+    const ink = parts.ok === false ? PAPER.ringFail : PAPER.ring
+    // the TINT on a claimed element is an OUTLINE, so the app's own layout never moves; the mark
+    // beside it (✓ ✎ ↺ +) is what keeps hue from carrying the state alone. Written with the
+    // attribute repeated three times on purpose: the replica's own sheet declares `outline` on
+    // every element as `.rep .rN` (two classes) and sits LATER in the document, so a single
+    // attribute selector would lose the tie and the tint would never paint.
+    const A = '[data-claim]'
+    const A3 = A + A + A
+    const mark = function (v, glyph, col) {
+      return '[data-claim="' + v + '"]' + A + A + '{outline:2px ' + (v === 'ok' ? 'solid' : 'dashed') + ' ' + col +
+        ';outline-offset:2px}\n[data-claim="' + v + '"]::after{content:"' + glyph + '";color:' + col + '}'
+    }
+    const css = [
+      'html,body{margin:0;padding:0;background:' + PAPER.paper + ';overflow:hidden}',
+      parts.faces || '',
+      A3 + '{position:relative}',
+      A + '::after{position:absolute;top:-8px;right:-8px;font:700 9px ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1;pointer-events:none}',
+      mark('ok', '✓', PAPER.tintOk),
+      mark('fixed', '✎', PAPER.tintFixed),
+      mark('restored', '↺', PAPER.tintFixed),
+      mark('new', '+', PAPER.tintFixed),
+      '.sbplate{position:absolute;background:' + PAPER.plate + ';pointer-events:none}',
+      // A PLATE IS A THING THE CAPTURE COULD NOT SERIALISE, and it must LOOK like one. The replica
+      // marks a big svg, a canvas, an iframe or an image it could not afford as `data-plate` and
+      // leaves it empty (spec/_replica.mjs); rendered with no fill it reads as nothing at all, which
+      // is a picture claiming the app shows blank space there. A washed box with a hairline says
+      // "something stands here that this picture cannot draw" — which is the truth. Same repeated
+      // attribute as the claim tints, and for the same reason: the replica's own sheet declares
+      // background and border on every element and sits later in the document.
+      '[data-plate][data-plate][data-plate]{background:' + PAPER.plate + ';border:1px dashed ' + PAPER.hair + '}',
+      '[data-plate="space"][data-plate][data-plate]{background:transparent;border:0}',
+      '.sbring{position:absolute;border:' + RINGG.stroke + 'px solid ' + ink + ';border-radius:' + RINGG.radius +
+        'px;box-shadow:0 0 0 ' + RINGG.halo + 'px ' + PAPER.halo + ',0 0 0 9999px ' + PAPER.veil + ';pointer-events:none}',
+      '.sbdim{position:absolute;inset:0;background:' + PAPER.veil + ';pointer-events:none}'
+    ].join('\n')
+    const plates = (parts.plates || []).map(function (p) {
+      return '<div class="sbplate" style="left:' + p.x + 'px;top:' + p.y + 'px;width:' + p.w + 'px;height:' + p.h + 'px"></div>'
+    }).join('')
+    const reg = parts.region || { x: 0, y: 0, w: parts.vw, h: parts.vh }
+    const body = '<div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y + 'px;width:' + reg.w + 'px">' + parts.body + '</div>'
+    // the ring's own 9999px shadow IS the dim, spreading out from it — one element, exactly the
+    // geometry the reference row ships. With no ring there is nothing to spot-light, so the page
+    // takes the even wash the photograph beside it has.
+    const over = rb
+      ? '<div class="sbring" style="left:' + rb.x + 'px;top:' + rb.y + 'px;width:' + rb.w + 'px;height:' + rb.h + 'px"></div>'
+      : '<div class="sbdim"></div>'
+    return '<!doctype html><html><head><meta charset="utf-8"><style>' + css + '</style></head><body>' +
+      plates + body + over + '</body></html>'
+  }
+
   // ── THE FRAME-STEPPER, at any scale ──────────────────────────────────────────────────────────
   // Task 13's player, extracted from the old media pane so a per-beat proof CELL can play its own
   // pair: the frames stacked, one on show, over a slim bar of exact dots and the mono n / N count.
@@ -1215,13 +1349,22 @@ const B = window.__BOARD__ || {}
     // zoom stays the beat's; only the centre moves. A scene with no ring of its own (an old
     // harvest, a before frame that rings nothing) simply has none, and the camera stays on the
     // focus — the pre-2026-08-31 framing, honestly.
-    const shot = function (src, cap, anchor, aim) {
+    // …and the moment's OTHER PICTURE beside its photograph (phase 4a, 2026-09-03): the committed
+    // replica the Expected cell renders. It rides on the SHOT, not in a parallel list, because that
+    // is what makes the two cells one thing — moment j of the row is shot j on both sides by
+    // construction, and no length check can drift. `rep` is the Expected where the harvest took one
+    // and the Actual where it did not (a before moment has claimed nothing, so its Actual IS its
+    // Expected); `repSide` says which, and `claim` is what the check asserted there.
+    const shot = function (src, cap, anchor, aim, rep, repSide, claim) {
       return {
         src: src,
         cap: cap,                    // the moment's NAME — the strip's segment label AND the img alt
         anchor: (typeof anchor === 'number') ? anchor : null,
         focus: rf,
-        aim: (aim && aim.w > 0 && aim.h > 0) ? aim : null
+        aim: (aim && aim.w > 0 && aim.h > 0) ? aim : null,
+        rep: rep || '',
+        repSide: rep ? (repSide || 'actual') : '',
+        claim: claim || null
       }
     }
     // THE ASSERTED VALUES BETWEEN THE ENDS (2026-08-29, the human: the When has to be visible in the
@@ -1241,7 +1384,8 @@ const B = window.__BOARD__ || {}
         const at = (b.window && typeof v.at === 'number') ? b.window.from + v.at : null
         const name = (typeof v.label === 'string' && v.label.trim())
           ? v.label.replace(/\s+/g, ' ').trim() : ('what the test checked, ' + (k + 1))
-        return shot(v.frame, name, at, v.focus)
+        return shot(v.frame, name, at, v.focus, v.replicaExpected || v.replica || '',
+          v.replicaExpected ? 'expected' : 'actual', v.claim || null)
       })
     }
     // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
@@ -1255,9 +1399,14 @@ const B = window.__BOARD__ || {}
     const pair = function (b, capA, capB) {
       const out = []
       const vals = values(b)
-      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore))
+      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.replicaBefore || '', 'actual', null))
       for (const v of vals) out.push(v)
-      if (b.after) out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter))
+      // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
+      // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule)
+      if (b.after) {
+        out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
+          b.replicaExpectedAfter || b.replicaAfter || '', b.replicaExpectedAfter ? 'expected' : 'actual', null))
+      }
       return out
     }
     // the LAST moment of a beat is its result, so it is named by the beat's own Then — "after — <Then>"
@@ -1268,7 +1417,9 @@ const B = window.__BOARD__ || {}
         const b1 = at(1)
         if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
         // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
-        const out = nbeats ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore)] : []) : pair(b1, 'before', after1)
+        const out = nbeats
+          ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore, b1.replicaBefore || '', 'actual', null)] : [])
+          : pair(b1, 'before', after1)
         return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
       }
       const b = at(i)
@@ -1304,6 +1455,9 @@ const B = window.__BOARD__ || {}
     const got = beatShots(r, i, nbeats, thenTxt)
     // the row's MOMENTS, in order — what the strip names its segments after (buildStoryline reads it)
     cell._moments = got.shots.map(function (s) { return s.cap })
+    // …and the SHOTS themselves, so the Expected cell beside this one renders the SAME ordered list
+    // of moments (phase 4a). One list, two renderings — never two lists to be kept in step.
+    cell._shots = got.shots
     if (!got.shots.length) {
       const no = document.createElement('div'); no.className = 'pcnone'
       no.textContent = '◌ ' + (got.why || 'no evidence yet')
@@ -1403,14 +1557,25 @@ const B = window.__BOARD__ || {}
   //                the screen
   //   none       — nothing was harvested to draw from, and the cell says so instead of guessing
   //   …and stale rides any of them: the requirement was reworded after the drawing was derived.
-  function schemProv (v) {
+  // …with a FOURTH answer since 2026-09-03, and it is now the usual one: REPLICA — the app's own
+  // markup, captured for the region the beat rang and re-rendered with the requirement's claims
+  // applied. The drawn ui-mirror is retired, so `mirror` survives only for a tree that still has a
+  // committed wireframe in it; `archetype` is the sketch a requirement with no UI harvested keeps.
+  function schemProv (v, hasReps) {
+    if (hasReps) {
+      return {
+        kind: 'replica',
+        mark: '▣',
+        text: 'the app’s own markup, captured around the ring and re-rendered with the requirement’s claim applied'
+      }
+    }
     const attr = (name) => {
       const m = new RegExp(name + '="([^"]*)"').exec((v && v.svg) || '')
       return m ? m[1] : ''
     }
-    if (!v || !v.svg) return { kind: 'none', mark: '◌', text: 'nothing harvested to draw yet' }
+    if (!v || !v.svg) return { kind: 'none', mark: '◌', text: 'nothing harvested to picture yet' }
     const mirror = attr('data-viz-kind') === 'wireframe' && attr('data-viz-archetype') === 'ui-mirror'
-    const base = mirror ? 'drawn from the app’s measured layout' : 'drawn from the sentence, not the app'
+    const base = mirror ? 'drawn from the app’s measured layout' : 'a sketch drawn from the sentence, not the app'
     return {
       kind: mirror ? 'mirror' : 'archetype',
       mark: mirror ? '▤' : '◇',
@@ -1418,6 +1583,15 @@ const B = window.__BOARD__ || {}
       text: base + ((v && v.stale) ? ' — the text moved since it was drawn' : '') +
         ((v && v.layoutStale) ? ' — the app’s layout moved since it was drawn' : '')
     }
+  }
+  // does this requirement's harvest carry the app's own markup? (the same question buildStoryline
+  // asks — stated once, here, so the ⋯ prompt and the reader can never disagree about which KIND of
+  // picture the reader is looking at)
+  function hasReplicas (r) {
+    return ((r && r.ev && r.ev.beats) || []).some(function (b) {
+      return !!(b && (b.replicaBefore || b.replicaAfter || b.replicaExpectedAfter ||
+        (b.values || []).some(function (x) { return x && (x.replica || x.replicaExpected) })))
+    })
   }
   function buildStoryline (r) {
     const wrap = document.createElement('div'); wrap.className = 'fstory'
@@ -1569,6 +1743,105 @@ const B = window.__BOARD__ || {}
       }
       return fr                        // no per-cell provenance caption any more (R18, 2026-09-02)
     }
+    // ONE ROW'S EXPECTED CELL — the replica, under the SAME camera as its Actual (phase 4a). It
+    // takes the row's own ordered list of MOMENTS (the proof cell's shots, so index j is one moment
+    // on both sides by construction) and swaps the iframe's srcdoc as the row's one strip steps.
+    // Every replica of the row is fetched ONCE, up front, never on each step: a person walking a
+    // beat back and forth must not re-download the picture, and a moment whose file has not arrived
+    // yet simply holds the one before it rather than flashing blank.
+    const replicaCell = function (shots, focus, vp, facesPath, layPath) {
+      const fr = document.createElement('div'); fr.className = 'sbframe sbrep'
+      const box = document.createElement('div'); box.className = 'pcbox'
+      // the PAGE: the app's own viewport, at 100% of the cell, so the camera transform that frames
+      // the photograph frames this identically (cameraView's maths assumes exactly this — the media
+      // rendered at cell width, at the frame's own aspect)
+      const page = document.createElement('div'); page.className = 'camsub reppage'
+      page.style.aspectRatio = vp.vw + ' / ' + vp.vh
+      // an iframe cannot size itself to its content, so the page-sized frame is scaled down to the
+      // cell by the one ratio the camera also uses (cell width / viewport width)
+      const scaler = document.createElement('div'); scaler.className = 'repscale'
+      scaler.style.width = vp.vw + 'px'; scaler.style.height = vp.vh + 'px'
+      const ifr = document.createElement('iframe'); ifr.className = 'repframe'
+      ifr.setAttribute('sandbox', '')                 // no allow-* token at all: no script, no network, no origin
+      ifr.setAttribute('title', 'Expected')
+      ifr.setAttribute('aria-label', 'the requirement, in the app’s own component')
+      scaler.appendChild(ifr); page.appendChild(scaler); box.appendChild(page); fr.appendChild(box)
+      const fit = function () {
+        const w = page.clientWidth
+        if (w > 0 && vp.vw > 0) scaler.style.transform = 'scale(' + (w / vp.vw) + ')'
+      }
+      fit()
+      if (window.ResizeObserver) new ResizeObserver(fit).observe(page)
+      aimCamera(box, focus, CAM)
+      // the shared pieces of every moment's page: the screen's faces, and the beat's own shell plates
+      const want = { faces: repFetch(facesPath), lay: repJson(layPath) }
+      let cur = -1
+      let seq = 0
+      const paint = function (j) {
+        const sh = shots[j]
+        if (!sh || !sh.rep) return
+        const mine = ++seq
+        Promise.all([repFetch(sh.rep), want.faces, want.lay]).then(function (got) {
+          if (mine !== seq || !fr.isConnected) return    // a later step won the race, or the reader closed
+          const body = repBody(got[0])
+          if (!body) { fr.dataset.repgone = '1'; return }
+          const region = repRect(got[0], 'data-replica-region')
+          ifr.srcdoc = repSrcdoc({
+            body: body,
+            faces: got[1] || '',
+            plates: repPlates(got[2], region, vp.vw, vp.vh),
+            region: region,
+            ring: repRect(got[0], 'data-ring-box'),
+            ok: !(sh.claim && sh.claim.ok === false),
+            vw: vp.vw, vh: vp.vh
+          })
+          fr.dataset.repside = sh.repSide
+        })
+      }
+      for (const sh of shots) if (sh.rep) repFetch(sh.rep)      // prefetch the row, once
+      fr._step = function (j) { if (j === cur) return; cur = j; paint(j) }
+      fr._aimScene = function (rect, card, animate) { box._aim(rect || null, card || null, animate) }
+      fr._step(0)
+      return fr
+    }
+    // THE VIEWPORT THE BEAT WAS MEASURED IN — the page the replica stands on. Baked per beat by
+    // tools/build-board.mjs off the layout skeleton; a beat with none borrows the requirement's
+    // other beats rather than inventing a viewport, because a replica at the wrong page size is a
+    // picture of a different screen.
+    const viewportOf = function (i) {
+      const per = r.ev.beats || []
+      const at = per.filter(function (b) { return Number(b.n) === (i || 1) })[0]
+      const from = function (b) {
+        if (b && b.vw > 0 && b.vh > 0) return { vw: b.vw, vh: b.vh }
+        const f = b && (b.focus || b.aimAfter || b.aimBefore)
+        return (f && f.vw > 0 && f.vh > 0) ? { vw: f.vw, vh: f.vh } : null
+      }
+      let vp = from(at)
+      for (let k = 0; !vp && k < per.length; k++) vp = from(per[k])
+      return vp
+    }
+    // the beat's own BEFORE skeleton — where the shell plates are measured from (the state the beat
+    // opens in, which is the page the component sits on all through it)
+    const beatLayout = function (i) {
+      const b = (r.ev.beats || []).filter(function (x) { return Number(x.n) === (i || 1) })[0]
+      return (b && (b.layoutBefore || b.layoutAfter)) || ''
+    }
+    // ONE ROW'S EXPECTED CELL, from the Actual cell beside it: the same ordered moments, so the two
+    // are two renderings of one list. A row whose harvest carries no replica — and no viewport to
+    // stand one on — says so out loud instead of showing a picture of something else.
+    const expectedCell = function (pc, i) {
+      const shots = (pc && pc._shots) || []
+      const vp = viewportOf(i)
+      if (vp && shots.some(function (s) { return s.rep })) {
+        return replicaCell(shots, beatFocus(r, i, nbeats), vp, r.ev.faces, beatLayout(i || 1))
+      }
+      // a replica that cannot be STOOD ON A PAGE — an older harvest that landed the markup but no
+      // layout skeleton, so nothing knows the viewport it was measured in — is not a picture. Where
+      // the requirement still carries a SKETCH, that is what is shown (labelled as one); otherwise
+      // the cell says the gap out loud rather than inventing a page size.
+      if (v && v.svg) return wholeCell()
+      return noCell('no Expected yet — re-harvest this screen')
+    }
     // A DRAWING WITH NO PROOF TO DRIVE IT still walks (the human, 2026-08-30: "handle the case it
     // doesn't have proof yet"). When a beat has a splittable drawing (subphases) but no proof loop, a
     // small stepper of its own moves the DRIVEN frame through its park points — auto-advancing on a
@@ -1613,10 +1886,16 @@ const B = window.__BOARD__ || {}
     // 2026-09-02: "avoid useless things"). Staleness is said by the storyline's stale banner (.sbstale
     // above), and the drawing's provenance still travels into the ⋯ "schematic doesn't match my app"
     // prompt via schemProv() — it is just no longer a line of chrome under every drawing. R18.
+    // …and a SKETCH says it is one (phase 4a). With the drawn ui-mirror retired, the only drawing
+    // left is the archetype — a house diagram chosen from the SHAPE of the sentence, true to the
+    // idea and not to the screen — so the cell captions it rather than letting it pass for the app's
+    // own component beside a photograph of the real thing.
     const wholeCell = function () {
-      const cell = document.createElement('div'); cell.className = 'sbframe whole'
+      const cell = document.createElement('div'); cell.className = 'sbframe whole sbsketch'
       const viz = document.createElement('div'); viz.className = 'viz'; viz.innerHTML = v.svg
-      cell.appendChild(viz); return cell
+      const cap = document.createElement('div'); cap.className = 'sbprov'
+      cap.textContent = '◇ sketch · no UI yet'
+      cell.appendChild(viz); cell.appendChild(cap); return cell
     }
     const noCell = function (why) {
       const cell = document.createElement('div'); cell.className = 'sbframe'
@@ -1657,7 +1936,11 @@ const B = window.__BOARD__ || {}
     const headRow = function () {
       const el = document.createElement('div'); el.className = 'sbhead'
       const pair = document.createElement('div'); pair.className = 'sbhpair'
-      ;[['behavior', 'what the requirement says'], ['schematic', 'the drawn intent'], ['proof', 'the harvested frames']]
+      // EXPECTED · ACTUAL (the human, 2026-09-03 — the Expected View decision). The middle cell is no
+      // longer a drawing of an intent: it is the requirement IN THE APP'S OWN COMPONENT, and the
+      // right one is what the app really did. The old names said what the pictures were MADE of;
+      // these say what they MEAN, which is the comparison a reader is actually making.
+      ;[['behavior', 'what the requirement says'], ['expected', 'the requirement, in the app’s own component'], ['actual', 'what the app did']]
         .forEach(function (p, i) {
           const c = document.createElement('span'); c.className = 'sbhc'
           c.textContent = p[0]; c.title = p[1]
@@ -1667,7 +1950,31 @@ const B = window.__BOARD__ || {}
       return el
     }
 
-    const isStale = !!(v && (v.stale || v.layoutStale))
+    // DOES THIS REQUIREMENT HAVE THE APP'S OWN PICTURE? (phase 4a.) One answer for the whole
+    // storyline: where the harvest landed replicas the Expected cell IS the replica, and a row that
+    // has none says so honestly rather than dropping back to a drawing of the same component —
+    // two kinds of picture down one requirement is a comparison of nothing.
+    const hasReps = hasReplicas(r)
+    // THE FOUR WAYS THE EXPECTED PICTURE STOPS BEING TRUE (phase 4a), each its own line: the
+    // requirement was reworded past the run that photographed it (the board's own Changed drift);
+    // the APP moved — the harvest on disk no longer hashes to the pin the replica was gated
+    // against; the in-page gate measured a GAP the picture never answered for (or was never gated
+    // at all); or the capture ran out of BYTES and the picture is part of a component.
+    const repWhy = (function () {
+      if (!hasReps) return null
+      const bs = r.ev.beats || []
+      const anyVal = function (f) { return bs.some(function (b) { return (b.values || []).some(f) }) }
+      return {
+        text: r.status === 'changed',
+        layout: bs.some(function (b) { return b && b.lstale === true }),
+        gap: bs.some(function (b) { return b && b.replica && (b.replica.gaps > 0 || b.replica.gated === false) }) ||
+          anyVal(function (x) { return x && x.replicaGaps > 0 }),
+        trunc: bs.some(function (b) { return b && b.replica && b.replica.trunc === true })
+      }
+    })()
+    const isStale = repWhy
+      ? !!(repWhy.text || repWhy.layout || repWhy.gap || repWhy.trunc)
+      : !!(v && (v.stale || v.layoutStale))
     wrap.className = 'fstory' + (isStale ? ' isstale' : '')
     wrap.style.setProperty('--spd', String(PLAY_SPD))
     if (v && v.hash) wrap.dataset.vizhash = short(v.hash)
@@ -1680,13 +1987,16 @@ const B = window.__BOARD__ || {}
     body.appendChild(headRow())
     if (beh) {
       const noDraw = v && v.svg
-        ? 'the drawing does not split beat by beat — it is whole on the Given row'
-        : 'no schematic drawn yet — the next fold derives one from the harvest (or the behavior text)'
+        ? 'the sketch does not split beat by beat — it is whole on the Given row'
+        : 'no Expected yet — re-harvest this screen (a sketch derives from the behavior text where there is no UI)'
       // the GIVEN row is the context row: whole page on BOTH sides (beatFocus returns none for it)
-      const givenFrame = canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw))
+      const gpc = proofCell(r, 0, nbeats)
+      const givenFrame = hasReps
+        ? expectedCell(gpc, 0)
+        : (canPair ? frameCell(phases[0], null, beatFocus(r, 0, nbeats)) : (v && v.svg ? wholeCell() : noCell(noDraw)))
       body.appendChild(row('bgiven', givenFrame,
         textCell(markCol(0), sentence('sbgiven', beh.given ? beh.given.lab : 'Given', beh.given ? beh.given.txt : '', false)),
-        proofCell(r, 0, nbeats), null))
+        gpc, null))
       beh.beats.forEach(function (bt, i) {
         // the row's WORDS: its numeral in the mark column, then the two sentences (the human,
         // 2026-09-02). No per-row keyboard hint — the reader's footer says it once ("the hint of
@@ -1713,16 +2023,36 @@ const B = window.__BOARD__ || {}
         // that keeps moving while the photograph beside it holds is a second, unasked-for answer to
         // "which moment am I looking at". A row with no proof loop at all keeps the free-running
         // scrub: there is nothing beside it to be out of step WITH, and a dead still would be worse.
-        const behind = !!(canPair && grp && pc._stepper && pc._stepper._count !== grp.length)
-        const freeRun = !!(canPair && !driveDraw && !pc._stepper)
-        const fc = canPair
-          ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
-            beatFocus(r, i + 1, nbeats), driveDraw)
-          : noCell(noDraw)
+        const behind = !hasReps && !!(canPair && grp && pc._stepper && pc._stepper._count !== grp.length)
+        const freeRun = !hasReps && !!(canPair && !driveDraw && !pc._stepper)
+        // THE EXPECTED CELL IS THE REPLICA (phase 4a) wherever the harvest landed one; the sketch
+        // path below is what a requirement with no UI harvested yet still gets.
+        const fc = hasReps
+          ? expectedCell(pc, i + 1)
+          : (canPair
+            ? frameCell(driveDraw ? grp[0] : phases[i + 1], freeRun ? [phases[i], phases[i + 1]] : null,
+              beatFocus(r, i + 1, nbeats), driveDraw)
+            : noCell(noDraw))
         if (behind) drawnBehind = true          // …and the banner says so, rather than the row lying quietly
         let rowStep = null
         let rowDriver = null            // the row's stepper as the strip's small interface
-        if (link) {
+        if (hasReps) {
+          // ONE STEPPER, TWO RENDERINGS. The row's proof loop is the clock; the Expected cell swaps
+          // to the same moment's replica and pans to the same ring, so the two pictures can never
+          // show different moments of the beat. A row with no proof loop (a single-frame beat) has
+          // one moment on both sides and nothing to step.
+          if (pc._stepper && fc._step) {
+            pc._stepper._onFrame = function (j) {
+              fc._step(j)
+              fc._aimScene((pc._aims || [])[j] || null, (pc._cards || [])[j] || null, true)
+            }
+            if (fc._aimScene) fc._aimScene((pc._aims || [])[0] || null, (pc._cards || [])[0] || null, false)
+            rowDriver = proofDriver(pc._stepper)
+          } else if (fc._aimScene) {
+            fc._aimScene((pc._aims || [])[0] || null, null, false)
+          }
+          rowStep = pc._rowStep || null
+        } else if (link) {
           pc._stepper._onFrame = function (j, ms) {
             const from = j > 0 ? grp[j - 1] : grp[grp.length - 1]
             fc._drive(from, grp[j], ms)
@@ -1776,10 +2106,13 @@ const B = window.__BOARD__ || {}
       // there is one, the pointer to the text below, and whatever proof the requirement carries. The
       // evidence is not dropped just because the requirement was written as prose.
       const cellText = 'This requirement is written as prose — the full text reads below.'
+      const ppc = proofCell(r, 0, 0)
       body.appendChild(row('bgiven',
-        (v && v.svg) ? wholeCell() : noCell('no schematic drawn yet — a schematic derives from a behavior shape'),
+        hasReps
+          ? expectedCell(ppc, 0)
+          : ((v && v.svg) ? wholeCell() : noCell('no Expected yet — a sketch derives from a behavior shape')),
         textCell(markCol(0), '<p class="sbgiven"><span class="sbv">' + cellText + '</span></p>'),
-        proofCell(r, 0, 0), null))
+        ppc, null))
     }
     // ONE BANNER, THREE REASONS (the human, 2026-09-02: "make sure the gap between schematic and
     // proof will not exist again"). A drawing stops being true three ways — the requirement is
@@ -1792,11 +2125,22 @@ const B = window.__BOARD__ || {}
     if (isStale || drawnBehind) {
       const sn = document.createElement('div'); sn.className = 'sbstale'
       const head = []; const why = []
-      if (v && v.stale) { head.push('text changed'); why.push('the requirement was reworded after this was drawn') }
-      if (v && v.layoutStale) { head.push('layout moved'); why.push('the app’s layout moved since this was drawn') }
-      if (drawnBehind) { head.push('behind the harvest'); why.push('the drawing splits a beat into different scenes than the harvest recorded, so it is parked instead of stepped') }
+      if (repWhy) {
+        // THE REPLICA'S OWN REASONS (phase 4a). "behind the harvest" is a SKETCH's complaint — it is
+        // about park points a drawing publishes — so it never appears here: a replica has no scenes
+        // of its own to fall behind with, it IS the moment's picture.
+        if (repWhy.text) { head.push('text changed'); why.push('the requirement was reworded after this was harvested') }
+        if (repWhy.layout) { head.push('layout moved'); why.push('the app’s layout moved since this picture was captured') }
+        if (repWhy.gap) { head.push('replica gap'); why.push('the gate found something the harvest measured that this picture does not carry') }
+        if (repWhy.trunc) { head.push('truncated'); why.push('the capture ran out of bytes — this is part of the component, not all of it') }
+      } else {
+        if (v && v.stale) { head.push('text changed'); why.push('the requirement was reworded after this was drawn') }
+        if (v && v.layoutStale) { head.push('layout moved'); why.push('the app’s layout moved since this was drawn') }
+        if (drawnBehind) { head.push('behind the harvest'); why.push('the sketch splits a beat into different scenes than the harvest recorded, so it is parked instead of stepped') }
+      }
       sn.innerHTML = '<b>stale — ' + head.join(' · ') + '</b><span>' + why.join('; ') +
-        ((v && v.at) ? ' (' + eh(v.at) + ')' : '') + ' — redrawn at the next fold</span>'
+        ((v && v.at && !repWhy) ? ' (' + eh(v.at) + ')' : '') +
+        (repWhy ? ' — re-harvest this screen' : ' — redrawn at the next fold') + '</span>'
       body.insertBefore(sn, body.firstChild)
     }
     wrap.appendChild(body)

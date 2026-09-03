@@ -22,6 +22,10 @@ import { focusFromLayout, focusFromLayouts } from './evidence.mjs'
 // (tools/proof-integrity.mjs harvestOf — the same reading its mirror gate makes, so the board's
 // banner and the gate can never disagree about whether a drawing is behind its harvest)
 import { layoutHash } from './viz.mjs'
+// the overlay's own ring + callout numbers (phase 4a): the Expected cell paints the ring inside the
+// iframe's own document, so the numbers travel to the client on the JSON island — ONE source with
+// spec/_base.ts renderOverlay, which is what the photograph beside it actually shows
+import { RING, CARD } from './overlay-geometry.mjs'
 import { harvestOf } from './proof-integrity.mjs'
 
 // Task 14 release pass — the two-column breakpoints ride the design system's --scale. A @media
@@ -34,6 +38,28 @@ export const parseScale = css => {
   return m ? Number(m[1]) : 1
 }
 export const scaledBp = (base, scale) => Math.round(base * scale)
+
+// …AND THE SAME TRICK FOR THE REPLICA'S PAPER PAGE (phase 4a, 2026-09-03). The Expected cell renders
+// the app's own markup inside an `<iframe sandbox srcdoc>`, whose document is its OWN — it inherits
+// no stylesheet from board.html, so the paper it stands on, the ring on it and the tint on a claimed
+// element cannot be CSS vars. They are read out of spec/_design.css HERE, at build, and handed to
+// the client as literal values on the JSON island: one source, and no raw hex in client.js.
+// Pure and exported for tools/paper-css.test.mjs.
+export const parseToken = (css, name) => {
+  const m = new RegExp('--' + name + ':\\s*(#[0-9a-fA-F]{3,8}|[a-zA-Z-]+\\([^)]*\\))').exec(css)
+  return m ? m[1] : ''
+}
+export const paperCssOf = css => ({
+  paper: parseToken(css, 'paper'),          // 生成り — the page the replica stands on
+  plate: parseToken(css, 'wash'),           // the app's shell, drawn as blank plates around the region
+  hair: parseToken(css, 'hair'),
+  ring: parseToken(css, 'ai'),              // the overlay's own ring colour (spec/_base.ts renderOverlay)
+  ringFail: parseToken(css, 'bengara'),     // …and its red variant, where the moment's claim failed
+  veil: 'rgba(28,27,24,.12)',               // the burn-in's literal wash — a colour with no token of its own
+  halo: 'rgba(253,252,249,.92)',            // …and its paper halo, likewise straight off renderOverlay
+  tintOk: parseToken(css, 'koke'),          // a claim the app got right
+  tintFixed: parseToken(css, 'bengara')     // a claim the Expected had to correct, restore or add
+})
 
 // A status chip. Hue names the state; a redundant square mark carries it too, so status survives
 // greyscale and low vision (design system). tone ∈ ok · stale · gone · bad · rev · run; mark is one
@@ -360,6 +386,13 @@ export function renderSchematic (r, layoutStale = false) {
   // actually delivers the contract this comment states.
   if (!svg.startsWith('<svg') || !svg.endsWith('</svg>') || /<script\b/i.test(svg) ||
     /\son\w+\s*=/i.test(svg) || /\bhref\s*=\s*["']?\s*(?:javascript|data):/i.test(svg)) return ''
+  // A WIREFRAME IS NEVER BAKED (phase 4a, 2026-09-03 — the human's Expected View decision). The
+  // drawn ui-mirror is retired: a harvested requirement's Expected cell is its HTML replica, and a
+  // drawing of the same component beside it would be a second, worse answer to what the app looks
+  // like. Nothing derives one any more (tools/viz-derive.mjs deletes a committed one at the fold),
+  // so this is the belt to that braces — a stale file left in a tree by hand never reaches the page.
+  // An ARCHETYPE sketch still bakes: it is the no-UI case, and it claims nothing about the app.
+  if (/data-viz-kind="wireframe"/.test(svg)) return ''
   const stale = v.stale ? ' data-stale="1"' : ''
   const lstale = layoutStale ? ' data-viz-layout-stale="1"' : ''
   const at = v.at ? ` data-vizat="${esc(v.at)}"` : ''
@@ -460,11 +493,39 @@ const evAttrs = (s, r) => {
     const aim = p => { const l = readL(p); return l ? focusFromLayout(l) : null }
     const list = e.beats.map(b => {
       const o = { n: Number(b.n) }
-      for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter']) {
+      // …and the REPLICAS beside the frames (phase 4a, 2026-09-03): the Expected cell fetches these
+      // paths and builds its srcdoc from them, so they ride on exactly the frames' own terms — only
+      // a path whose FILE exists, content-hash-busted because a re-harvest overwrites in place.
+      for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter',
+        'replicaBefore', 'replicaAfter', 'replicaExpectedAfter']) {
         const v = path(b[k]); if (v) o[k] = v
+      }
+      // WHAT THE GATE FOUND, as the reader's own stale reason (phase 3's verdict, phase 4a's banner):
+      // how many gaps the in-page walk measured, whether the replica was gated at all, and whether
+      // the capture ran out of bytes. A picture with a gap is still shown — a gapped replica beats no
+      // replica — and the banner says so out loud rather than letting the row look settled.
+      if (b.gate && typeof b.gate === 'object') {
+        o.replica = { gaps: Number(b.gate.gaps) || 0, gated: b.gate.gated !== false }
+        if (b.gate.trunc) o.replica.trunc = true
       }
       const aB = aim(b.layoutBefore); if (aB) o.aimBefore = aB
       const aA = aim(b.layoutAfter); if (aA) o.aimAfter = aA
+      // THE VIEWPORT THE BEAT WAS MEASURED IN (phase 4a). The Expected cell renders the replica at
+      // the app's OWN coordinates on a page that size, so it needs the viewport even where the beat
+      // rang nothing (a Given row has no focus rect to read it off). Lifted from the skeleton the
+      // fold already reads here, never stored.
+      const lB = readL(b.layoutBefore) || readL(b.layoutAfter)
+      if (lB && Number(lB.w) > 0 && Number(lB.h) > 0) { o.vw = Number(lB.w); o.vh = Number(lB.h) }
+      // …AND HAS THE APP MOVED PAST THE REPLICA? (phase 4a — layoutStaleOf's rule, on the other
+      // picture.) The pin the in-page gate checked the replica against, versus the hash of the
+      // skeleton that is on disk RIGHT NOW: a fold that landed fresh skeletons but whose replica
+      // capture failed carries the OLD replica forward, and the row would then show a picture of an
+      // older screen than the frames beside it. Derived at every build, never stored — the pin is
+      // read off the index (the reporter put it there) so this costs no read of the 8 MB of
+      // committed replicas.
+      const pin = b.gate && typeof b.gate.pin === 'string' ? b.gate.pin : ''
+      const lA = readL(b.layoutAfter)
+      if (pin && lA) o.lstale = pin !== layoutHash(lA, null)
       if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
         o.window = { from: b.window.from, to: b.window.to }
       }
@@ -497,12 +558,36 @@ const evAttrs = (s, r) => {
         if (typeof v.label === 'string' && v.label.trim()) o2.label = v.label.replace(/\s+/g, ' ').trim().slice(0, 140)
         // …and this scene's own ring, so the camera aims where the assertion pointed
         const f = aim(v && v.layout); if (f) o2.focus = f
+        // …and this MOMENT'S TWO REPLICAS (phase 4a): what the app rendered, and what the
+        // requirement says it should have. The Expected cell steps to `replicaExpected`; where a
+        // moment harvested none it falls back to the Actual and says so.
+        for (const k of ['replica', 'replicaExpected']) { const rp = path(v && v[k]); if (rp) o2[k] = rp }
+        if (v && v.gate && typeof v.gate === 'object') o2.replicaGaps = Number(v.gate.gaps) || 0
+        // …and the CLAIM the check made here (expected · got · ok), bounded like every other piece
+        // of app text that becomes an HTML attribute. It is what makes the Expected readable as an
+        // answer: the ring reddens where a claim failed, and 4b's chips say the two values.
+        const cl = v && v.claim
+        if (cl && typeof cl === 'object' && typeof cl.expected === 'string' && typeof cl.got === 'string') {
+          o2.claim = {
+            expected: cl.expected.replace(/\s+/g, ' ').trim().slice(0, 200),
+            got: cl.got.replace(/\s+/g, ' ').trim().slice(0, 200),
+            ok: cl.ok === true,
+            ...(cl.missing === true ? { missing: true } : {})
+          }
+        }
         return o2
       }).filter(Boolean)
       if (vals.length) o.values = vals
       return o
     }).filter(o => Number.isFinite(o.n) && (o.before || o.after))
     if (list.length) out += ` data-ev-beats="${esc(JSON.stringify(list))}"`
+  }
+  // THE SCREEN'S FACES (phase 4a): the one committed stylesheet of @font-face rules the replica is
+  // set in, fetched once per requirement by the reader and written into the srcdoc. Only a file that
+  // is really on disk rides — a replica with no sheet renders in a fallback stack, honestly.
+  if (out && e.fontFaces) {
+    const fabs = join(ROOT, String(e.fontFaces))
+    if (existsSync(fabs)) out += ` data-ev-faces="${esc(String(e.fontFaces) + '?h=' + shotHash(fabs))}"`
   }
   if (out && e.at) out += ` data-ev-at="${esc(String(e.at).slice(0, 10))}"`
   return out
@@ -1675,7 +1760,7 @@ export function build () {
   const featStrip = home0 ? `<div class="featwrap" id="featwrap">
     <div class="feats">
       ${feat('beats', reqHref(beatsEx), '✎<span class="fmq">→</span>ⁿ', '<b>Beats</b> — one Given, When→Then chained', see(beatsEx, 'author the first beats'))}
-      ${feat('proof', reqHref(provenEx), '<span class="fmok">✓</span>', '<b>Proof from real runs</b> — stills · gif · video', see(provenEx, 'run the suite to capture proof'))}
+      ${feat('proof', reqHref(provenEx), '<span class="fmok">✓</span>', '<b>Actual from real runs</b> — the app’s own frames', see(provenEx, 'run the suite to capture proof'))}
       ${feat('drift', reqHref(driftEx), '<span class="fmbad">✗</span><span class="fmch">◈</span>', '<b>Drift is computed</b> — failed · changed, never stored', see(driftEx, 'none right now — nothing has drifted'))}
       ${feat('views', `#/${esc(home0.name)}/grid`, '☰', '<b>Focus · List · Flow</b> — three reads of one truth', 'open the List')}
       ${feat('compose', `#/compose/${esc(home0.name)}`, '<span class="fmadd">＋</span>', '<b>Compose a flow</b> — chain proven beats; no AI when they all are', 'open the composer')}
@@ -1757,6 +1842,14 @@ export function build () {
   const BOARD_DATA = {
     screens: screens.map(s => s.name),
     skillIds: HOW_FLOWS.map(f => f.id),
+    // THE REPLICA PAGE'S GEOMETRY AND PALETTE (phase 4a) — one source for both halves of a beat row.
+    // The Expected cell draws the ring and the dim inside the iframe's own document, which inherits
+    // neither the overlay's CSS nor the board's tokens, so both have to travel as literal values:
+    // the numbers from tools/overlay-geometry.mjs (the very module spec/_base.ts renderOverlay
+    // paints the photographed ring with) and the colours from spec/_design.css (paperCssOf). A ring
+    // drawn from a second copy of these numbers is how the two pictures of one row drift apart.
+    geom: { RING, CARD },
+    paperCss: paperCssOf(designCss()),
     compose: {
       nodes: composeNodes,
       givens: lib.givens,
@@ -2210,6 +2303,19 @@ export function build () {
      inset thumbnail; its border is the cell's own rule, so the two cells read as one row */
   .fstory .sbframe > .pcbox { width:100%; border:0; border-radius:0; background:transparent; }
   .fstory .sbframe.whole { padding:0; }
+  /* THE EXPECTED CELL IS THE APP'S OWN COMPONENT (phase 4a, the human 2026-09-03). The replica is an
+     HTML document of its own, so it rides in an <iframe sandbox srcdoc> with no allow-* token: no
+     script, no network, no same-origin identity. It renders at the app's OWN viewport size — the
+     .repscale box is vw x vh CSS pixels — and is then scaled down to the cell by the one ratio the
+     camera's maths already assumes (cell width / viewport width), so the transform that frames the
+     photograph frames this identically. The .reppage carries the harvest's aspect ratio, which is
+     what gives the cell its height, exactly as an <img> gives the Actual cell its own.
+     pointer-events:none: a click on the cell is the reader's, never the replica's. */
+  .fstory .sbframe.sbrep { padding:0; }
+  .fstory .sbframe .reppage { position:relative; width:100%; background:var(--paper); overflow:hidden; }
+  .fstory .sbframe .repscale { position:absolute; left:0; top:0; transform-origin:0 0; }
+  .fstory .sbframe .repframe { display:block; width:100%; height:100%; border:0;
+    background:var(--paper); pointer-events:none; }
   .fstory .sbframe.whole .viz { width:100%; }
   /* the still is the drawing PARKED at its phase — every animation paused, delay set from --ph;
      durations are calc(<X>s / var(--spd,1)) (tools/viz.mjs) so the parked delay divides by the SAME
