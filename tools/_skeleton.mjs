@@ -81,6 +81,11 @@ export const FILES = [
   // under test; a project with _base.ts and not this cannot harvest a single evidence skeleton
   // (guard-caught by update.test.mjs's every-relative-import-is-vendored check)
   'spec/_layout-walk.mjs',
+  // …and the ACTUAL REPLICA's capture beside it (2026-09-03): the app's own DOM around the ringed
+  // element, sanitised, which spec/_base.ts serialises into the page at every harvested moment. A
+  // project with _base.ts and not this cannot harvest a single replica (guard-caught by
+  // update.test.mjs's every-relative-import-is-vendored check, exactly as the walk is)
+  'spec/_replica.mjs',
   'spec/_state-guard.ts', 'spec/_state-guard-teardown.ts', 'spec/_results-reporter.mjs',
   // the optional auth setup — inert unless the target configures a signIn in spec/_config.json
   'spec/_auth.setup.ts',

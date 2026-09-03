@@ -1,6 +1,7 @@
 import { test as base, expect } from '@playwright/test'
 import type { BrowserContext, Page, Locator } from '@playwright/test'
 import { readFileSync, appendFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseBehavior } from '../tools/behavior.mjs'
@@ -19,6 +20,12 @@ import { calloutText, CALLOUT_TYPE, calloutLines, calloutLabelWidth } from '../t
 // it must always capture — see the module's header)
 // @ts-ignore — a plain .mjs beside the spec; Playwright's loader takes it, tsc never sees this file
 import { snapLayoutWalk } from './_layout-walk.mjs'
+// …and the ACTUAL REPLICA's capture beside it (2026-09-03, the human's decision that day: the
+// picture beside a proof is a REAL HTML replica of the app's own component, not a drawing of it).
+// Self-contained for the same reason and serialised the same way; REPLICA_PROPS is the ONE property
+// list and travels IN through the arg, because a module reference is undefined inside the page.
+// @ts-ignore — a plain .mjs beside the spec; Playwright's loader takes it, tsc never sees this file
+import { captureReplica, REPLICA_PROPS } from './_replica.mjs'
 
 export { expect }
 
@@ -927,6 +934,76 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
   } catch { /* the drawing is a by-product too — a page that would not measure simply has none */ }
 }
 
+// THE ACTUAL REPLICA (2026-09-03 — the human: the picture beside a proof is a real HTML replica of
+// the app's own component, "the schematic looks nothing like it" being the end of the drawn kit's
+// road). Beside the photograph and the layout skeleton, the app's OWN DOM around the ringed element
+// — its computed styles diffed against per-tag defaults, sanitised (no script, no handler, no
+// external URL) and capped at 1500 elements / 200 KB. Attached as `replica <id>#<n> <phase>`,
+// mirroring the frame exactly, and folded by the reporter to
+// spec/<screen>/evidence/<rid>.b<n>.<phase>.actual.html. The board does not render it yet (phase 4);
+// when it does it will be inside an <iframe sandbox srcdoc>, which is the FIRST wall — the
+// sanitising in spec/_replica.mjs is the second.
+//
+// A by-product exactly like the skeleton: bounded by the same 2500 ms deadline, every failure
+// swallowed, and it only reads the page — never a gate, never a thing that can change what the
+// assertion then reads.
+async function snapReplica (id: string, beat: number, seq: number, phase: Phase): Promise<void> {
+  const page = CURRENT_PAGE
+  if (!page) return
+  try {
+    const info = test.info()
+    // the ringed ELEMENT again, on snapLayout's own terms: handed over when it resolves inside a
+    // short bound, else the capture falls back to the element under the ring's centre. On a BEFORE
+    // phase that is the PREVIOUS beat's ring (nothing has been pointed at yet) — the honest scene
+    // for "where this beat starts"; with no ring at all the capture takes the body under its caps.
+    let handle: any = null
+    if (LAST_TARGET) handle = await raceTimeout(LAST_TARGET.first().elementHandle({ timeout: 300 }), 400).catch(() => null)
+    const rep: any = await raceTimeout(
+      page.evaluate(captureReplica as any, { ring: LAST_BOX, target: handle, props: REPLICA_PROPS }), 2500)
+    if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
+    if (!rep || typeof rep.html !== 'string' || !rep.html) return
+    const i = id.indexOf(':')
+    const scr = i > -1 ? id.slice(0, i) : basename(dirname(String(info.file || '')))
+    // THE FILE BODY: a comment saying what this is, the sheet, the root. No doctype, no <html>,
+    // no <head> — the board drops the whole body into an iframe's srcdoc.
+    const body = `<!-- specboard replica-1 · ${scr}:${id} b${beat} ${phase} · Actual · sanitised, no script -->\n${rep.html}\n`
+    const file = info.outputPath(`replica-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
+    writeFileSync(file, body)
+    info.attachments.push({ name: `replica ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
+    await harvestFonts(page, info, rep.fonts)
+  } catch { /* the replica is a by-product too — a page that would not serialise simply has none */ }
+}
+
+// THE FACES THE REPLICA IS SET IN, fetched ONCE per worker. A replica is only the app's own picture
+// while it is set in the app's own type, and a sandboxed iframe may reach no external URL — so each
+// @font-face file the captured region actually uses is fetched HERE, in Node (page.request, which
+// carries the context's cookies and never runs in the page), and committed by the fold under
+// spec/<screen>/evidence/_fonts/<hash>.<ext>. Bounded on every axis: at most 8 per call, 2 MB each,
+// a 3 s deadline, and only the four font extensions a browser will load; every failure is skipped
+// in silence, because a missing face costs a fallback stack and nothing else.
+const FONTS_FETCHED = new Set<string>()
+const FONT_TYPES: Record<string, string> = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf' }
+async function harvestFonts (page: Page, info: any, fonts: { family?: string, url?: string }[] | undefined): Promise<void> {
+  for (const f of (Array.isArray(fonts) ? fonts : []).slice(0, 8)) {
+    const url = String((f && f.url) || '')
+    if (!url || FONTS_FETCHED.has(url)) continue
+    const m = /\.(woff2|woff|ttf|otf)(?:[?#]|$)/i.exec(url)
+    if (!m) continue
+    const ext = m[1].toLowerCase()
+    FONTS_FETCHED.add(url)                        // once per worker, hit or miss — a face that will not fetch will not fetch
+    try {
+      const resp: any = await raceTimeout(page.request.get(url, { timeout: 3000 }) as any, 3500)
+      if (!resp || !resp.ok()) continue
+      const buf: Buffer = await resp.body()
+      if (!buf || !buf.length || buf.length > 2 * 1024 * 1024) continue
+      const hash = createHash('sha256').update(buf).digest('hex').slice(0, 16)
+      const file = info.outputPath(`font-${hash}.${ext}`)
+      writeFileSync(file, buf)
+      info.attachments.push({ name: `font ${hash} ${String((f && f.family) || '').replace(/\s+/g, ' ').trim() || 'unnamed'}`, path: file, contentType: FONT_TYPES[ext] })
+    } catch { /* a face that will not fetch is a fallback stack, never a failed run */ }
+  }
+}
+
 // The pair a phase leaves behind, keyed by the BEAT it proves (2026-08-28 — the board is becoming
 // per-beat rows, so every artefact is per beat too): the frame a person looks at, and the geometry
 // the schematic is drawn from. The layout also carries the RING (the after phase's `ring` is the
@@ -946,6 +1023,10 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   }
   await snapEvidence(id, beat, seq, phase)
   await snapLayout(id, beat, seq, phase, at, label, claim)
+  // …and the app's own DOM of the same moment, AFTER the skeleton (2026-09-03): the photograph is
+  // the evidence, the measurement rides after it, and the replica after that — so a page that dies
+  // mid-harvest loses the cheapest artefact first.
+  await snapReplica(id, beat, seq, phase)
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,
