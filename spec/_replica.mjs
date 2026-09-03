@@ -15,11 +15,25 @@
 // replaces appending a probe element to a real body).
 //
 // Shape in:  { target: Element|null, ring: {x,y,width,height}|null, props?: string[],
-//              caps?: { nodes?, bytes? }, env? }
+//              caps?: { nodes?, bytes? }, claims?: Claim[], lastRight?: string|null, env? }
 // Shape out: null when there is nothing to capture, else
-//   { kit, html, region: {x,y,w,h}, ring: {x,y,w,h}|null, nodes, classes, bytes, truncated, fonts }
+//   { kit, html, expected, region: {x,y,w,h}, ring: {x,y,w,h}|null, nodes, classes, bytes, truncated, fonts }
 // `html` is the whole file body bar its comment header: one <style> of diffed classes, then one root
 // element. No script, no handler, no external URL — the second wall behind the iframe sandbox.
+//
+// ── PHASE 2: `expected` — THE SAME MARKUP WITH THE BEAT'S CLAIMS APPLIED (2026-09-03) ────────────
+// A requirement is the truth and the app is what happened, so the row's two pictures are the same
+// component twice: `html` is the ACTUAL (what the app rendered) and `expected` is what it should
+// have rendered — the wrong value corrected to the requirement's own word, the element the app
+// removed put back from the beat's last right replica, the element it never had drawn in as a
+// marked placeholder. That is tools/viz.mjs `intendedLayout` (kit mirror-13, the human 2026-09-02:
+// "the schematic should be correct, only the proof should be wrong") restated on real markup.
+// `claims` is every claim the beat has made SO FAR, in order, the current moment's last — they
+// accumulate down the beat — and `lastRight` is the html body of its most recent all-ok Actual (its
+// before replica to begin with), which is the only place a restore may take an element from.
+//
+// The claims are applied to a CLONE of the output tree, never to the Actual: the photograph's own
+// half must stay the app's picture, whatever the requirement asked for.
 //
 // COORDINATES: `region` and `ring` are both VIEWPORT px, the same frame spec/_layout-walk.mjs
 // records its ring in. The plan's note said "page px (viewport coords + scroll)"; putting the two in
@@ -65,6 +79,14 @@ export function captureReplica (arg) {
     ? env.getComputedStyle
     : (win && win.getComputedStyle ? win.getComputedStyle.bind(win) : null)
   const defaultsFor = env && typeof env.defaultsFor === 'function' ? env.defaultsFor : null
+  // THE BEAT'S CLAIMS, and the last replica the app got right (phase 2 — see the header). A caller
+  // that passes neither gets an `expected` that is the Actual bar the side it names, which is
+  // exactly right for a beat's BEFORE moment: nothing has been claimed yet.
+  const CLAIMS = (arg && Array.isArray(arg.claims)) ? arg.claims : []
+  const LAST_RIGHT = (arg && typeof arg.lastRight === 'string' && arg.lastRight) ? arg.lastRight : ''
+  // …and how `lastRight` is turned back into nodes: an inert <template> in the page (it parses but
+  // never runs, loads or paints), a stub env's own parser in a node test.
+  const parseHtmlEnv = env && typeof env.parseHtml === 'function' ? env.parseHtml : null
   // the ONE list, handed in (see the header). A caller that forgets it gets structure with no paint
   // rather than a thrown capture — the harness always passes it.
   const PROPS = (arg && Array.isArray(arg.props) && arg.props.length) ? arg.props.map(String) : []
@@ -230,40 +252,69 @@ export function captureReplica (arg) {
     ? open(tag, attrs).slice(0, -1) + '/>'
     : open(tag, attrs) + inner + '</' + tag + '>'
 
+  // ── THE OUTPUT TREE ───────────────────────────────────────────────────────────────────────────
+  // The walk builds a DETACHED TREE OF OUR OWN NODES and serialises it at the end, rather than
+  // concatenating markup as it goes (which is what phase 1 did). Phase 2 needs a tree: the Expected
+  // half is this same tree CLONED and edited — a leaf's words swapped, a row put back beside the
+  // ring — and string surgery on finished markup is how a sanitiser quietly gets re-opened.
+  //
+  // The nodes are PLAIN OBJECTS, not DOM ones. The brief said "cloneNode(true) in the page; the stub
+  // DOM needs a cloneNode"; a plain-object tree needs no document to build at all, clones as a pure
+  // function in the page and in a node test alike, and — the reason that matters — keeps every text
+  // RAW until serialisation, so a claim matches `got` against the words a reader actually sees
+  // rather than against escaped markup.
+  const T = (text) => ({ text: String(text) })
+  const E = (tag, attrs, kids) => ({ tag, attrs, kids })
+  const isText = (n) => !!n && typeof n.text === 'string'
+  const ser = (n) => isText(n) ? esc(n.text) : wrap(n.tag, n.attrs, n.kids.map(ser).join(''))
+  const cloneNode = (n) => isText(n) ? T(n.text) : E(n.tag, n.attrs.map(a => [a[0], a[1]]), n.kids.map(cloneNode))
+  // what an element's OWN markup costs, counted once as the node is made (its inner is counted by
+  // the children that produced it) — byte for byte what the string walk used to add
+  const costOf = (tag, attrs, kids) => has(VOID, tag) && !kids.length
+    ? open(tag, attrs).length + 1
+    : open(tag, attrs).length + tag.length + 3
+
   // the two pseudo-elements a page draws its ticks, bullets and separators with: materialised as a
   // span carrying the quoted string, with its own diffed class, so the picture shows what a reader
   // sees rather than an empty box where the CSS drew a ✓
   const pseudo = (node, which) => {
     const cs = styleOf(node, '::' + which)
-    if (!cs) return ''
+    if (!cs) return null
     const raw = gp(cs, 'content').trim()
     const m = /^"([\s\S]*)"$|^'([\s\S]*)'$/.exec(raw)
     const text = m ? (m[1] != null ? m[1] : m[2]) : ''
-    if (!text) return ''
+    if (!text) return null
     const cls = classOf(cs, 'span', HTML_NS)
-    return spend(wrap('span', [['class', cls || null], ['data-pseudo', which]], esc(text)))
+    const attrs = [['class', cls || null], ['data-pseudo', which]]
+    const kids = [T(text)]
+    bytes += esc(text).length + costOf('span', attrs, kids)
+    return E('span', attrs, kids)
   }
 
+  // the ringed element's node in OUR tree — what a claim searches inside, and what a restored row
+  // is put beside. Set as the walk reaches it.
+  let focusNode = null
+
   const serialise = (node, isRoot) => {
-    if (!node || node.nodeType !== 1) return ''
+    if (!node || node.nodeType !== 1) return null
     // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
     // veil and the callout card — is painted INTO the page under test, so a capture whose scene root
     // reaches <body> would serialise it as part of the component. spec/_layout-walk.mjs has refused
     // to measure it since it existed; this is the same refusal, subtree included.
-    if (node.id === OVERLAY) return ''
+    if (node.id === OVERLAY) return null
     const tag = String(node.tagName || '').toLowerCase()
-    if (!tag || has(DROP, tag)) return ''
+    if (!tag || has(DROP, tag)) return null
     const cs = styleOf(node)
     // WHAT THE PAGE DOES NOT SHOW IS NOT IN THE REPLICA — the same reading the skeleton walk makes,
     // so the two pictures of one moment agree about what was on screen.
     if (cs) {
-      if (gp(cs, 'display') === 'none') return ''
+      if (gp(cs, 'display') === 'none') return null
       const vis = gp(cs, 'visibility')
-      if (vis === 'hidden' || vis === 'collapse') return ''
+      if (vis === 'hidden' || vis === 'collapse') return null
       const op = parseFloat(gp(cs, 'opacity'))
-      if (Number.isFinite(op) && op <= 0.02) return ''
+      if (Number.isFinite(op) && op <= 0.02) return null
     }
-    if (capped()) { truncated = true; return '' }
+    if (capped()) { truncated = true; return null }
     nodes++
     const fam = gp(cs, 'font-family')
     if (fam) for (const f of fam.split(',')) families.add(f.trim().replace(/^["']|["']$/g, '').toLowerCase())
@@ -273,7 +324,7 @@ export function captureReplica (arg) {
     // what tag this element is EMITTED as — the diff is taken against that tag's defaults, so a
     // plate div or a control span is styled as the div or the span it will actually be rendered as
     let emit = tag
-    let inner = null                                   // non-null: the children are already decided
+    let kids = null                                    // non-null: the children are already decided
     const extra = []                                   // our own marks, after the allowlisted attrs
     const box = r ? [['width', Math.round(r.width) + 'px'], ['height', Math.round(r.height) + 'px']] : []
 
@@ -294,19 +345,22 @@ export function captureReplica (arg) {
         const ph = (node.getAttribute && node.getAttribute('placeholder')) || node.placeholder || ''
         if (ph) { v = String(ph); extra.push(['data-ph', '1']) }
       }
-      inner = spend(esc(v.replace(/\s+/g, ' ').trim()))
+      const shown = v.replace(/\s+/g, ' ').trim()
+      bytes += esc(shown).length
+      kids = shown ? [T(shown)] : []
     } else if (tag === 'canvas') {
       // a canvas that can hand over its own pixels is shown as those pixels; one that cannot (tainted,
       // webgl, a stub) is a plate the size of its box — never a blank element pretending to be the art
       let url = ''
       try { url = typeof node.toDataURL === 'function' ? String(node.toDataURL() || '') : '' } catch { url = '' }
-      if (affordable(url)) { emit = 'img'; extra.push(['src', url]); inner = '' } else { emit = 'div'; extra.push(['data-plate', 'canvas'], ...box); inner = '' }
+      if (affordable(url)) { emit = 'img'; extra.push(['src', url]) } else { emit = 'div'; extra.push(['data-plate', 'canvas'], ...box) }
+      kids = []
     } else if (tag === 'iframe' || tag === 'video') {
-      emit = 'div'; extra.push(['data-plate', tag], ...box); inner = ''
+      emit = 'div'; extra.push(['data-plate', tag], ...box); kids = []
     } else if (tag === 'img') {
       const src = String((node.getAttribute && node.getAttribute('src')) || '')
       if (affordable(src)) { extra.push(['src', src]) } else { emit = 'div'; extra.push(['data-plate', 'img'], ...box) }
-      inner = ''
+      kids = []
     }
 
     const cls = classOf(cs, emit, emit === tag ? ns : HTML_NS)
@@ -333,42 +387,253 @@ export function captureReplica (arg) {
     for (const e of extra) attrs.push(e)
     if (node === focusEl) attrs.push(['data-ring', '1'])
 
-    if (inner == null) {
-      let out = pseudo(node, 'before')
+    if (kids == null) {
+      const out = []
+      const before = pseudo(node, 'before')
+      if (before) out.push(before)
       // a shadow root REPLACES the light children in the picture, because that is what the browser
       // paints; slotted content is a known gap of this phase, noted rather than guessed at
-      const kids = node.shadowRoot && node.shadowRoot.childNodes && node.shadowRoot.childNodes.length
+      const src = node.shadowRoot && node.shadowRoot.childNodes && node.shadowRoot.childNodes.length
         ? node.shadowRoot.childNodes
         : (node.childNodes || [])
-      for (let i = 0; i < kids.length; i++) {
+      for (let i = 0; i < src.length; i++) {
         if (capped()) { truncated = true; break }
-        const k = kids[i]
+        const k = src[i]
         if (!k) continue
         if (k.nodeType === 3) {
           const t = String(k.textContent == null ? '' : k.textContent)
-          if (t.trim()) out += spend(esc(t.replace(/\s+/g, ' ').slice(0, TEXT_MAX)))
+          if (t.trim()) {
+            const kept = t.replace(/\s+/g, ' ').slice(0, TEXT_MAX)
+            bytes += esc(kept).length
+            out.push(T(kept))
+          }
           continue
         }
         if (k.nodeType !== 1) continue
-        out += serialise(k, false)
+        const child = serialise(k, false)
+        if (child) out.push(child)
       }
-      out += pseudo(node, 'after')
-      inner = out
+      const after = pseudo(node, 'after')
+      if (after) out.push(after)
+      kids = out
     }
-    if (isRoot) return { tag: emit, attrs, inner, cls }
-    const out = wrap(emit, attrs, inner)
-    bytes += out.length - inner.length          // this element's own markup; its inner is already spent
+    bytes += costOf(emit, attrs, kids)
+    const made = E(emit, attrs, kids)
+    if (node === focusEl) focusNode = made
+    if (isRoot) made.cls = cls
+    return made
+  }
+
+  // ── THE CLAIM MACHINERY (phase 2) ─────────────────────────────────────────────────────────────
+  // Everything below reads and edits OUR tree only. `clean` is the skeleton walk's rule (collapse
+  // whitespace, trim), so what a claim matches against is the words a reader sees.
+  const clean = (t) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim()
+  const textOf = (n) => isText(n) ? n.text : n.kids.map(textOf).join('')
+  const elemsIn = (n) => { const out = []; const walk = (x) => { if (isText(x)) return; out.push(x); for (const k of x.kids) walk(k) }; walk(n); return out }
+  const isLeaf = (n) => !n.kids.some(k => !isText(k))
+  const setAttr = (n, k, v) => { for (const a of n.attrs) if (a[0] === k) { a[1] = v; return } n.attrs.push([k, v]) }
+  const parents = new Map()
+  const link = (n) => { if (isText(n)) return; for (const k of n.kids) { parents.set(k, n); link(k) } }
+  const findRing = (n) => {
+    for (const e of elemsIn(n)) for (const a of e.attrs) if (a[0] === 'data-ring' && a[1] === '1') return e
+    return null
+  }
+  // the intended value takes the app's, in place: the whole text when the claim read the whole text,
+  // else the substring, else — the words ran across several nodes — the leaf simply says the
+  // intended value. Never a silent no-op.
+  const swapLeaf = (n, got, want) => {
+    if (got && clean(textOf(n)) !== got) {
+      for (const k of n.kids) if (isText(k) && k.text.indexOf(got) >= 0) { k.text = k.text.replace(got, want); return }
+    }
+    n.kids = [T(want)]
+  }
+  const swapDirect = (n, got, want) => { for (const k of n.kids) if (isText(k) && k.text.indexOf(got) >= 0) k.text = k.text.replace(got, want) }
+  const insertBeside = (rootNode, ringNode, made) => {
+    const parent = ringNode === rootNode ? null : parents.get(ringNode)
+    if (parent) {
+      const at = parent.kids.indexOf(ringNode)
+      parent.kids.splice(at < 0 ? parent.kids.length : at + 1, 0, made)
+      parents.set(made, parent)
+    } else {
+      rootNode.kids.push(made)
+      parents.set(made, rootNode)
+    }
+    link(made)
+  }
+
+  // ── the beat's LAST RIGHT replica, as nodes ────────────────────────────────────────────────────
+  // Parsed once, lazily, and only when a restore actually asks for it. In the page an inert
+  // <template> does the parsing (it never runs, loads or paints what it holds); a node test hands in
+  // `env.parseHtml`. What comes back is re-sanitised on the way in — it is our own output, but a
+  // second wall costs nothing and a restored node must NEVER carry a second `data-ring` or a stale
+  // `data-claim` from the moment it was captured in.
+  const IMPORT_ATTRS = ATTRS.concat(['class', 'data-control', 'data-plate', 'data-ph', 'data-pseudo'])
+  const fromDom = (n) => {
+    if (!n) return null
+    if (n.nodeType === 3) { const t = String(n.textContent == null ? '' : n.textContent); return t ? T(t) : null }
+    if (n.nodeType !== 1) return null
+    const tag = String(n.tagName || '').toLowerCase()
+    if (!tag || has(DROP, tag)) return null
+    const attrs = []
+    let names = []
+    try { names = n.getAttributeNames ? (n.getAttributeNames() || []) : [] } catch { names = [] }
+    for (const k of names) {
+      if (!has(IMPORT_ATTRS, k) && k !== 'src' && k !== 'href') continue
+      const v = n.getAttribute(k)
+      if (v == null) continue
+      const t = String(v)
+      if (/^\s*javascript:/i.test(t) || /https?:\/\//i.test(t) || /^\s*\/\//.test(t)) continue
+      if (k === 'src' && t.slice(0, 5) !== 'data:') continue
+      if (k === 'href' && t.charAt(0) !== '#') continue
+      attrs.push([k, t])
+    }
+    const kids = []
+    for (const k of (n.childNodes || [])) { const c = fromDom(k); if (c) kids.push(c) }
+    return E(tag, attrs, kids)
+  }
+  let lastTree                                   // undefined = not parsed yet; null = nothing usable
+  let lastCss = {}
+  const lastRightTree = () => {
+    if (lastTree !== undefined) return lastTree
+    lastTree = null
+    if (!LAST_RIGHT) return lastTree
+    let domRoot = null
+    if (parseHtmlEnv) { try { domRoot = parseHtmlEnv(LAST_RIGHT) } catch { domRoot = null } }
+    else if (doc.createElement) {
+      try {
+        const t = doc.createElement('template')
+        t.innerHTML = LAST_RIGHT
+        domRoot = t.content || t
+      } catch { domRoot = null }
+    }
+    if (!domRoot) return lastTree
+    // …and the SHEET it arrived with. A class name is minted per capture, in walk order, so `r3` in
+    // the before replica and `r3` in this one are two different declarations — a restored row that
+    // kept its name would be painted as whatever this moment happens to call r3. Its declarations
+    // are read out of its own <style> and re-minted here (deduped like any other), so the row comes
+    // back looking the way the app drew it.
+    lastCss = {}
+    const re = /\.rep\s*\.(r\d+)\s*\{([^}]*)\}/g
+    let m
+    while ((m = re.exec(LAST_RIGHT))) if (!lastCss[m[1]]) lastCss[m[1]] = m[2]
+    const kids = []
+    for (const k of (domRoot.childNodes || [])) { const v = fromDom(k); if (v) kids.push(v) }
+    lastTree = kids.length ? E('_root', [], kids) : null
+    return lastTree
+  }
+  const remapClasses = (n) => {
+    if (isText(n)) return
+    for (const a of n.attrs) {
+      if (a[0] !== 'class') continue
+      const out = []
+      for (const tok of String(a[1]).split(/\s+/)) {
+        if (!/^r\d+$/.test(tok)) continue                 // `rep` means nothing on a borrowed node
+        const decl = lastCss[tok]
+        if (!decl) continue
+        let cls = seen.get(decl)
+        if (!cls) { cls = 'r' + seen.size; seen.set(decl, cls); RULES.push({ cls, decl }) }
+        out.push(cls)
+      }
+      a[1] = out.join(' ')
+    }
+    n.attrs = n.attrs.filter(a => !(a[0] === 'class' && !a[1]))
+    for (const k of n.kids) remapClasses(k)
+  }
+  // the element in the last right replica that IS the thing the claim names. Its clean text equals
+  // the expected words; failing that, the SMALLEST element that still contains them — the brief's
+  // "first in document order" is always the outermost one, i.e. the whole scene, which would restore
+  // the entire page beside the ring.
+  const findRestorable = (want) => {
+    const tree = lastRightTree()
+    if (!tree) return null
+    const all = elemsIn(tree).slice(1)
+    const wanted = clean(want)
+    if (!wanted) return null
+    for (const e of all) if (clean(textOf(e)) === wanted) return e
+    let best = null; let bestN = Infinity
+    for (const e of all) {
+      if (clean(textOf(e)).indexOf(wanted) < 0) continue
+      const n = elemsIn(e).length
+      if (n <= bestN) { best = e; bestN = n }
+    }
+    return best
+  }
+
+  function applyClaims (rootNode) {
+    link(rootNode)
+    const out = []
+    for (const c of CLAIMS) {
+      if (!c || typeof c !== 'object') continue
+      const want = String(c.expected == null ? '' : c.expected)
+      const got = String(c.got == null ? '' : c.got)
+      if (!want && !got) continue                         // nothing was claimed, nothing to apply
+      const ringNode = findRing(rootNode) || rootNode
+      const leaves = elemsIn(ringNode).filter(isLeaf)
+      const firstLeaf = (pred) => { for (const l of leaves) if (pred(l)) return l; return null }
+      if (c.ok === true) {
+        // 1. the leaf the check read, marked — the board tints it, nothing is rewritten
+        const l = got ? firstLeaf(x => clean(textOf(x)).indexOf(got) >= 0) : null
+        if (l) setAttr(l, 'data-claim', 'ok')
+      } else if (c.missing === true) {
+        // 3 / 4. the element the app did not show: put back from the last right replica if it is
+        // there, else drawn as a placeholder beside the ring
+        const src = findRestorable(want)
+        let made = null
+        if (src) {
+          const copy = cloneNode(src)
+          // one restored element may not carry the file past its cap — above it, the honest
+          // placeholder says the same thing in a few bytes
+          if (bytes + ser(copy).length <= BYTE_CAP) {
+            remapClasses(copy)
+            setAttr(copy, 'data-claim', 'restored')
+            made = copy
+          }
+        }
+        if (!made) made = E('span', [['data-claim', 'new']], [T(want)])
+        insertBeside(rootNode, ringNode, made)
+      } else {
+        // 2. the wrong value takes the requirement's word
+        const l = got ? firstLeaf(x => clean(textOf(x)).indexOf(got) >= 0) : null
+        if (l) {
+          swapLeaf(l, got, want)
+          if (l !== ringNode) {
+            for (let a = parents.get(l); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === ringNode) break }
+          }
+          setAttr(l, 'data-claim', 'fixed')
+          setAttr(l, 'data-claim-got', got)
+        } else {
+          const tl = firstLeaf(x => clean(textOf(x)) !== '')
+          if (tl) {
+            tl.kids = [T(want)]
+            setAttr(tl, 'data-claim', 'fixed')
+            if (got) setAttr(tl, 'data-claim-got', got)
+          } else {
+            const span = E('span', [['data-claim', 'fixed']], [T(want)])
+            ringNode.kids.push(span)
+            parents.set(span, ringNode)
+          }
+        }
+      }
+      out.push({
+        label: String(c.label == null ? '' : c.label),
+        expected: want,
+        got,
+        ok: c.ok === true,
+        ...(c.missing === true ? { missing: true } : {})
+      })
+    }
     return out
   }
 
   const built = serialise(root, true)
-  if (!built || typeof built === 'string') return null
+  if (!built) return null
 
   // ── the file body ─────────────────────────────────────────────────────────────────────────────
-  // The root says what kit drew it, where the scene stood and where the ring was; its inline style
-  // carries ONLY position:relative (the board positions the frame). data-replica-layout and
-  // data-claims belong to phases 2–3 and are deliberately absent — a pin nobody computed would be a
-  // claim nobody checked.
+  // The root says what kit drew it, where the scene stood, where the ring was, and WHICH SIDE it is
+  // — `actual` (what the app rendered) or `expected` (what the requirement says it should have).
+  // Its inline style carries ONLY position:relative (the board positions the frame).
+  // data-replica-layout belongs to phase 3 and is deliberately absent — a pin nobody computed would
+  // be a claim nobody checked.
   const reg = rootRect
     ? { x: Math.round(rootRect.left), y: Math.round(rootRect.top), w: Math.round(rootRect.width), h: Math.round(rootRect.height) }
     : { x: 0, y: 0, w: vw, h: vh }
@@ -377,14 +642,44 @@ export function captureReplica (arg) {
     ['data-replica-region', reg.x + ' ' + reg.y + ' ' + reg.w + ' ' + reg.h]]
   if (rb) rootAttrs.push(['data-ring-box', Math.round(rb.x) + ' ' + Math.round(rb.y) + ' ' + Math.round(rb.w) + ' ' + Math.round(rb.h)])
   if (truncated) rootAttrs.push(['data-replica-truncated', '1'])
-  rootAttrs.push(['style', 'position:relative'])
-  let css = ''
-  for (const rule of RULES) {
-    css += '.rep .' + rule.cls + '{' + rule.decl + '}\n'
-    // the scene root wears its own class, and a descendant selector cannot reach it
-    if (built.cls === rule.cls) css += '.rep.' + rule.cls + '{' + rule.decl + '}\n'
+  // the scene root is normally an ANCESTOR of the ringed element, but a body-rooted capture can be
+  // the ringed element itself — the mark must survive the root's own attribute set being replaced
+  if (built.attrs.some(a => a[0] === 'data-ring')) rootAttrs.push(['data-ring', '1'])
+  // the sheet, up to a given rule — the Actual is written from the rules the WALK minted, the
+  // Expected from those plus whatever a restored element brought with it (see remapClasses)
+  const sheet = (upTo) => {
+    let css = ''
+    for (let i = 0; i < upTo; i++) {
+      const rule = RULES[i]
+      css += '.rep .' + rule.cls + '{' + rule.decl + '}\n'
+      // the scene root wears its own class, and a descendant selector cannot reach it
+      if (built.cls === rule.cls) css += '.rep.' + rule.cls + '{' + rule.decl + '}\n'
+    }
+    return css
   }
-  const html = '<style>' + css + '</style>\n' + wrap('div', rootAttrs, built.inner)
+  const walkRules = RULES.length
+  const actualRoot = E('div', [...rootAttrs, ['data-replica-side', 'actual'], ['style', 'position:relative']], built.kids)
+  const html = '<style>' + sheet(walkRules) + '</style>\n' + ser(actualRoot)
+
+  // ── THE EXPECTED HALF: the claims applied to a CLONE of the same tree ──────────────────────────
+  // tools/viz.mjs intendedLayout (kit mirror-13) restated on real markup. In claim order, cumulative:
+  //   1. an OK claim MARKS the leaf inside the ring that the check read — no text changes; the board
+  //      tints it, so a reader can see which words the assertion actually stood on.
+  //   2. a WRONG VALUE takes the requirement's word in place of the app's, on the first leaf inside
+  //      the ring that carries it, and on every worded wrapper up to the ring (a row whose own text
+  //      reads "To do 4" around a leaf reading "4" must not be left saying both numbers).
+  //   3. an element the app REMOVED (`missing`) is put back FROM THE BEAT'S LAST RIGHT REPLICA — the
+  //      app's own markup for it, never an invention — beside the ring, marked `restored`.
+  //   4. an element the app NEVER HAD is a marked placeholder beside the ring: drawn because the
+  //      requirement says it is there, and honestly labelled as the one thing nothing measured.
+  // Every fallback is BOUNDED and visible: a claim never silently fails to apply, because a claim
+  // that quietly did nothing is a picture saying the app was right.
+  const claimRoot = E('div',
+    [...rootAttrs, ['data-replica-side', 'expected'], ['data-claims', '[]'], ['style', 'position:relative']],
+    built.kids.map(cloneNode))
+  const applied = applyClaims(claimRoot)
+  for (const a of claimRoot.attrs) if (a[0] === 'data-claims') a[1] = JSON.stringify(applied)
+  const expected = '<style>' + sheet(RULES.length) + '</style>\n' + ser(claimRoot)
 
   // ── the fonts the region needs ────────────────────────────────────────────────────────────────
   // Every @font-face the page's OWN (same-origin, readable) stylesheets declare for a family the
@@ -441,10 +736,11 @@ export function captureReplica (arg) {
   return {
     kit: 'replica-1',
     html,
+    expected,
     region: reg,
     ring: rb ? { x: Math.round(rb.x), y: Math.round(rb.y), w: Math.round(rb.w), h: Math.round(rb.h) } : null,
     nodes,
-    classes: RULES.length,
+    classes: walkRules,
     bytes: html.length,
     truncated,
     fonts

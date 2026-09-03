@@ -292,8 +292,12 @@ test('the root says what kit drew it, where it stood and where the ring was — 
   assert.ok(open[2].includes('data-replica-region="400 88 640 44"'))
   assert.ok(open[2].includes('data-ring-box="500 92 120 36"'))
   assert.ok(/style="position:relative"/.test(open[2]), 'the root\'s inline style is the one thing the board needs')
-  assert.ok(!r.html.includes('data-replica-layout'), 'the layout pin is phase 2, never invented here')
-  assert.ok(!r.html.includes('data-claims'), 'and the claims are phase 3')
+  // corrected 2026-09-03 (rule 6): the phase numbers were the wrong way round — the CLAIMS landed in
+  // phase 2 and the layout pin is phase 3. Both assertions stand unchanged, because neither belongs
+  // on the ACTUAL root: the photograph's half asserted nothing, so it carries no claim json, and no
+  // pin is written until something checks it.
+  assert.ok(!r.html.includes('data-replica-layout'), 'the layout pin is phase 3, never invented here')
+  assert.ok(!r.html.includes('data-claims'), 'and the claims ride the EXPECTED root, never this one')
   assert.ok(/\.rep\.r\d+\{/.test(r.html), 'the root\'s own class is addressable as the root, not only as a descendant')
 })
 
@@ -541,7 +545,7 @@ test('the probe\'s toolbar: the Expected reads Published where the Actual reads 
   })
   assert.ok(r.expected.includes('Version') && r.expected.includes('Published'),
     'the button reads "Version … Published": ' + r.expected)
-  assert.ok(!r.expected.includes('Draft'), 'and no longer the value the app had')
+  assert.ok(!/>Draft</.test(r.expected), 'and no longer READS the value the app had')
   assert.ok(/data-claim="fixed"[^>]*data-claim-got="Draft"[^>]*>Published</.test(r.expected),
     'the leaf says what it was corrected from: ' + r.expected)
   assert.ok(r.html.includes('>Draft<') && !r.html.includes('Published'),
@@ -598,7 +602,8 @@ test('a ring with no words at all gets the expected value as a marked span insid
 const TASKS = ['Buy milk', 'Water the plants', 'Call the dentist', 'Book the flight', 'Pay the bill']
 function tsumikiBefore () {
   const items = TASKS.map((t, i) => el('li', [0, i * 30, 300, 28], {
-    children: [el('span', [8, i * 30 + 4, 200, 20], { text: t, cs: { color: 'rgb(2, 8, 23)', 'font-size': '14px' } })]
+    children: [el('span', [8, i * 30 + 4, 200, 20], { text: t, cs: { color: 'rgb(2, 8, 23)', 'font-size': '14px' } })],
+    cs: { 'border-bottom': '1px solid rgb(226, 232, 240)', padding: '4px 0px' }
   }))
   const ul = el('ul', [0, 0, 300, 150], { children: items })
   const main = el('main', [0, 0, 600, 400], { children: [ul] })
@@ -640,10 +645,14 @@ test('with no right replica to restore from, the same claim is drawn as a marked
 
 test('the restored clone is styled by the sheet it arrives with, not by a class that means something else', () => {
   const r = tsumikiAfter({ lastRight: tsumikiBefore() })
-  const cls = /<li class="(r\d+)"[^>]*data-claim="restored"/.exec(r.expected) ||
-    /<li[^>]*data-claim="restored"[^>]*class="(r\d+)"/.exec(r.expected)
+  const cls = /<li class="(r\d+)"[^>]*data-claim="restored"/.exec(r.expected)
   assert.ok(cls, 'the restored row keeps a class: ' + r.expected)
-  assert.ok(r.expected.includes('.rep .' + cls[1] + '{'), 'and that class is declared in the Expected\'s own sheet')
+  assert.ok(r.expected.includes('.rep .' + cls[1] + '{padding:4px 0px;border-bottom:1px solid rgb(226, 232, 240)}'),
+    'declared in the EXPECTED\'s own sheet, with the declarations it was captured in: ' + r.expected)
+  const inner = /data-claim="restored"[^>]*><span class="(r\d+)"/.exec(r.expected)
+  assert.ok(inner && r.expected.includes('.rep .' + inner[1] + '{color:rgb(2, 8, 23);font-size:14px}'),
+    'and so is everything under it — a borrowed class name means nothing here until it is re-minted')
+  assert.ok(!r.html.includes('border-bottom'), 'none of which reached the ACTUAL sheet')
 })
 
 // ── the claims accumulate, in order, on one tree ────────────────────────────────────────────────
@@ -661,8 +670,10 @@ test('claims accumulate: two claims on two leaves both land, and the Actual is u
       { label: 'the count', expected: '5', got: '4', ok: false }
     ]
   })
-  assert.ok(r.expected.includes('Published') && r.expected.includes('>5<'), r.expected)
-  assert.ok(!r.expected.includes('Draft'))
+  assert.ok(r.expected.includes('>Published<') && r.expected.includes('>5<'), r.expected)
+  assert.ok(!/>Draft</.test(r.expected) && !/>4</.test(r.expected), 'neither leaf still reads the app\'s value')
+  assert.ok(r.expected.includes('data-claim-got="Draft"') && r.expected.includes('data-claim-got="4"'),
+    'each says what it was corrected from')
   assert.equal(r.html.includes('Draft') && r.html.includes('>4<'), true, 'the Actual is the app\'s, always')
   assert.ok(!r.html.includes('Published') && !r.html.includes('>5<'))
 })
