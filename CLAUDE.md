@@ -386,6 +386,23 @@ change.
   got wrong. **A Then with several facts uses SOFT claims**
   (`proveVisible(…, { soft: true })`): the beat reaches and photographs every fact and the `proves` step
   fails once at its end with the whole list — never a green, never a beat cut off at its first red.
+- **The walk's own text fallback and the drawing's ghost/composed morph matching are coupled — do not
+  narrow one without checking the other** (phase 3, fix round 3, 2026-09-03). A focused non-leaf
+  wrapper's `innerText`/`textContent` fallback (`spec/_layout-walk.mjs`, the line after the SVG-style
+  exclusion) aggregates every descendant's text into one string; a fix that stops it aggregating text
+  from a plated svg/canvas/iframe/video (`hasPlatedMedia`) is safe and shipped. A follow-on attempt to
+  ALSO stop it whenever the wrapper has more than one distinct text-bearing leaf (`countTextLeaves`,
+  meant to kill the same "PLAY auto step PLAY SPEED…" / "1 · THE BOARD'S SHAPE R1 R9 R16…" toolbar/
+  pager aggregation the replica gate flags as `missing-text`) was reverted: it silently broke the
+  UNRELATED drawing gate for board R19/R21 (`MIRROR BROKEN — missing-text "When"`, a LEAF that was
+  never touched by the change). Traced to `tools/viz.mjs`'s `composed()` (used by the ghost/morph
+  "before→then" comparison scenes): it treats a container's OWN text as "real" when it equals the
+  concatenation of its nested worded children, and uses that to pick which element anchors a morph
+  frame — exactly the naive aggregate the fallback used to hand it. Removing the aggregate broke the
+  anchor match, which shifted the drawing's own `used`-text bookkeeping and starved an unrelated leaf.
+  The `missing-text` replica gaps this would have fixed (R3, R5, R18–R22, still open) are a real defect
+  — but the fix has to teach `composed()`/the ghost matcher to find its own anchor some other way
+  first, or it trades one gate's red for the other's.
 - **The state guard snapshots per process** (`_state-snapshot.<pid>.json`) and also records the set
   of screen directories, so a test that runs a nested run, seeds a conflict, or crawls a row leaves
   nothing behind. A file that did not exist before the run is removed after it.
