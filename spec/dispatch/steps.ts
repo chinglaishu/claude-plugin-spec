@@ -51,7 +51,7 @@ export async function openBoardDetail (page: Page): Promise<FlowState> {
 export const BEATS = [
   { fn: 'clickRunOnCell', proves: 'R1', name: 'click Run on the board cell — the panel opens naming the screen, running', needs: ['detail'], gives: ['run-started'], ms: 150000 },   // idleSlot's budget
   { fn: 'watchLogStream', proves: 'R2', name: 'the log streams into the panel before any verdict', needs: ['run-started'], gives: ['streaming'] },
-  { fn: 'verdictLandsInPlace', proves: 'R3', name: 'the verdict lands — chip passed or failed, the cell updated, no reload', needs: ['streaming'], gives: ['verdict'], ms: 230000 },   // the nested board run (147 s measured) + the in-place poll
+  { fn: 'verdictLandsInPlace', proves: 'R3', name: 'the verdict lands — chip passed or failed, the cell updated, no reload', needs: ['streaming'], gives: ['verdict'], ms: 330000 },   // the nested board run (204 s measured 2026-09-04) + the in-place poll
   { fn: 'refreshDerivedInPlace', proves: 'R7', name: 'a finished run refreshes the board in place — no reload', needs: ['detail'], gives: ['refreshed'] },
   { fn: 'noRebuildWhileRunning', proves: 'R7', name: 'a live run rebuilds nothing — the refresh comes once, at the end', needs: ['detail'], gives: ['gated'] }
 ]
@@ -99,7 +99,11 @@ export async function watchLogStream (page: Page, state: FlowState): Promise<voi
 // follows the board file's real size under the watched pace (147 s measured 2026-08-22).
 export async function verdictLandsInPlace (page: Page, state: FlowState): Promise<void> {
   const panel = page.locator('#runpanel')
-  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 200000 })
+  // 300 s since 2026-09-04 (phase 6): the nested board run this waits out measured 204 s once every
+  // board beat began ringing, photographing and replicating its own claimed values — the same growth
+  // that raised NEST_TEST_MS twice before. PATIENCE, never an assertion: nothing this beat proves
+  // changes with the number, and a run that never finishes still fails, just later.
+  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 300000 })
   expect(await page.evaluate(() => (window as any).__r3Alive), 'no reload — the window sentinel survives').toBe(1)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
   await expect.poll(() => dt.locator('.tststeps[data-title="' + B_R1 + '"]').evaluate((el: any) => (el._hist && el._hist[0] && el._hist[0].at) || ''),

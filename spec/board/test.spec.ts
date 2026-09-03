@@ -1250,6 +1250,10 @@ const plain = (s: string) => String(s || '').replace(/[`*]/g, '').replace(/\s+/g
 // nothing derives or keeps a wireframe any more. The replica's equivalent guard is `npm run proof
 // mirror`'s checkReplicas, which reads the committed file box-for-box and word-for-word.)
 test('The Expected picture is the app\'s own component — captured, sandboxed, or honestly no picture', async ({ page }) => {
+  // FOUR beats, each with its own fixture, a re-fetch of a MB-sized board and (since phase 6) a
+  // claim of its own to ring, photograph and replicate. It measured 25 s before those claims and
+  // 60+ after — patience, never an assertion: nothing this test proves changes with the number.
+  test.setTimeout(150000)
   await coverReqs('R18')
   await openDetail(page)
   const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -1398,6 +1402,14 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     await hudCheck('no replica, no picture', 'no Expected yet',
       gapSaid.includes('no Expected yet') ? 'no Expected yet' : gapSaid)
     await page.unroute(stripR2)                          // syncDerived's later fetches read the true board
+    // …AND THE DOCUMENT ITSELF IS RE-FETCHED (2026-09-04). Unrouting stops SERVING the stripped
+    // board; it does not take the stripped one off the page, and a hash hop is not a fetch — so
+    // every leg after this one went on reading a board where R2 has no evidence attribute at all.
+    // It only bit once R2's beat began ringing a value and R2 became the first specimen the legs
+    // below pick: `bs.find(n === 1)` came back undefined and the next leg threw inside the page.
+    await page.reload({ waitUntil: 'domcontentloaded' })   // …and not for every picture on it: `load`
+    // waits out each evidence frame and each replica iframe the reader mounts, which is minutes now
+    // that every beat of this board harvests its own value moments.
 
     // …AND NEVER THE NEIGHBOUR'S PICTURE (2026-09-04, the review's C3). A row where SOME moments
     // harvested a replica and one did not must not hold the previous moment's picture up while the
@@ -1413,7 +1425,12 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
         const bs = JSON.parse(el.getAttribute('data-ev-beats') || '[]')
         const b = bs.find((x: any) => Number(x.n) === 1)
         delete b.replicaExpectedAfter; delete b.replicaAfter          // the LAST moment lost its picture
-        for (const v of (b.values || [])) { delete v.replicaExpected; delete v.replica }
+        // …and ONLY it (corrected 2026-09-04, rule 4 — the fixture was the wrong side). This also
+        // stripped every VALUE moment's replica, which was a no-op while no board beat rang a value:
+        // with one, the beat's before frame stops being a moment of its own (a beat's moments are
+        // its values then its result), so removing the values' pictures too left the row with NO
+        // picture at all — and a row with none renders no frame to read. The leg is about a row
+        // where SOME moments have a picture and one does not; that is what it now makes.
         el.setAttribute('data-ev-beats', JSON.stringify(bs))
       })
       await page.goto('/#/board/' + (gapSpec.rid === 'R2' ? 'R3' : 'R2'))
@@ -1426,14 +1443,22 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
         for (let i = 0; i < 8; i++) {
           const at = ((await gstrip.locator('.mpos').textContent()) || '1 / 1').split('/').map(t => Number(t.trim()))
           if (at[0] >= at[1]) break
-          await gstrip.locator('.mnext').click(); await page.waitForTimeout(80)
+          // BOUNDED (2026-09-04): this is a fixture WALK, not an assertion, and the row it walks has
+          // had every picture taken off it by the leg above. A default 30s actionability wait per
+          // click ate the whole test's budget the first time a board beat had moments to walk at all.
+          await gstrip.locator('.mnext').click({ timeout: 4000 })
+          await page.waitForTimeout(80)
         }
       }
       // the cell says what it does not have, FOR THIS MOMENT — and the seam says so too, so nothing
       // downstream can read the neighbour's path and believe it
       await expect.poll(() => grow.locator('.sbframe').evaluate(el => String((el as HTMLElement).dataset.repsrc || '')),
         { timeout: 8000, message: 'the cell names no picture for a moment that has none' }).toBe('')
-      const gdoc = await grow.locator('.sbframe iframe.repframe').evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''))
+      // BOUNDED like the walk above (2026-09-04): `locator.evaluate` has no timeout of its own in
+      // this config, so a cell that renders no frame at all waits out the whole test and reports
+      // "target closed" instead of what it could not find.
+      const gdoc = await grow.locator('.sbframe iframe.repframe')
+        .evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''), undefined, { timeout: 8000 })
       expect(gdoc, 'the page says so in the reader\'s own words').toContain('no Expected for this moment')
       await hudCheck('a moment with no picture says so', 'no Expected for this moment',
         gdoc.includes('no Expected for this moment') ? 'no Expected for this moment' : 'the previous moment\'s picture')
@@ -1878,7 +1903,12 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(tip0).toBeHidden()
     await seg0.hover()
     await expect(tip0, 'hovering a moment shows its full name').toBeVisible()
-    await expect(tip0).toHaveText(await seg0.locator('.msegl').evaluate(el => el.dataset.full || el.textContent))
+    // CONTAINS, not equals (corrected 2026-09-04, rule 4 — the board was right and this was too
+    // strict): since the review's C1 the tooltip carries the moment's NAME and then what it expected
+    // and what the app gave, which is asserted in full on R20's chips leg. This one is about the
+    // name being readable in full where the label is ellipsised, so it asks for the name. Until
+    // phase 6 no board moment carried a claim at all, so the two readings happened to be identical.
+    await expect(tip0).toContainText(await seg0.locator('.msegl').evaluate(el => el.dataset.full || el.textContent))
     await row.locator('.sbtext').hover()                                   // away — the tooltip goes
     await expect(tip0).toBeHidden()
 
@@ -2392,12 +2422,14 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     const tools = ov.locator('.fread .frmeta .frtools')
     await tools.locator('.medbar.pmode button', { hasText: 'auto' }).click()
     await tools.locator('select.pspd').selectOption('4')
-    // the fact, CLAIMED (the authored-intent lint, phase 6): in AUTO the speed control is live and
-    // it is the READER's one speed — proveVisible reads a select's own value
-    await proveVisible(tools.locator('select.pspd'), '4',
-      'The reader\'s one speed, live in auto', { soft: true })
     const at2 = await backPos.textContent()
     await expect.poll(() => backPos.textContent(), { timeout: 12000 }).not.toBe(at2)
+    // the fact, CLAIMED (the authored-intent lint, phase 6): in AUTO the speed control is live and
+    // it is the READER's one speed — proveVisible reads a select's own value. AFTER the poll above,
+    // never before it: a claim rings, scrolls and photographs, which is a second or two of work in
+    // the middle of a leg that is timing what the loop does on its own.
+    await proveVisible(tools.locator('select.pspd'), '4',
+      'The reader\'s one speed, live in auto', { soft: true })
     await tools.locator('select.pspd').selectOption('1')
   })
 

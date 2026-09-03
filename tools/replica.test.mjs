@@ -1870,3 +1870,62 @@ test('…while a root whose tag cannot stand alone stays a div', () => {
   assert.deepEqual(r.region, { x: 10, y: 30, w: 400, h: 40 })
   assert.match(r.html, /<div class="rep[ "]/, 'a bare <tr> in an empty document is not a row — the div stands in')
 })
+
+// ── THE ROOT'S OWN MARGIN IS NOT PART OF THE PICTURE (phase 6, 2026-09-04) ──────────────────────
+// The root is PLACED by the viewer at `data-replica-region` — the rect it was measured at, which is
+// already past its own margin. Carrying `margin-top` on it as well pushed the whole scene down by
+// that margin again inside the gate's frame (and inside the board's cell): init R6's tick box, a
+// 13×13 control inside a label with a 10.56px top margin, came back 10px below where the live walk
+// measured it and the gate reported `missing-focus` on an otherwise perfect replica.
+test('…and its own placement: an absolutely-placed root is not offset a second time', () => {
+  // board R18/R20: the chip over a beat row's picture is `position:absolute; left:…; top:…` inside
+  // its cell. The root is PLACED by the viewer at its region, and the file's own root already
+  // carries `style="position:relative"` — so a `left`/`top` from the app's own rules shifted the
+  // whole scene by that offset again, and the gate read the root as a missing box with every word
+  // inside it moved. Placement is a relationship with a containing block this file does not have.
+  const word = el('span', [527, 633, 76, 15], { text: 'Conflicts' })
+  const chip = el('button', [446, 625, 168, 31], {
+    children: [word], cs: { position: 'absolute', left: '12px', top: '8px', 'background-color': 'rgb(9,9,9)' }
+  })
+  const cell = el('div', [400, 600, 600, 300], { children: [chip] })
+  const body = el('body', [0, 0, 1440, 900], { children: [cell] })
+  const r = cap(body, { target: word, ring: { x: 527, y: 633, width: 76, height: 15 } })
+  assert.deepEqual(r.region, { x: 446, y: 625, w: 168, h: 31 }, 'the chip is the scene')
+  const rootRule = /\.rep\.(r\d+)\{([^}]*)\}/.exec(r.html)
+  assert.ok(rootRule, 'the root wears its own rule')
+  assert.doesNotMatch(rootRule[2], /(^|;)(position|top|left|right|bottom):/, 'no placement of its own')
+  assert.match(rootRule[2], /background-color/, 'everything else about it is still there')
+})
+
+test('…and the TRANSLATION out of its own transform, keeping the scale', () => {
+  // board R18/R20 again, and the biggest of the three: the chip is placed by
+  // `transform: matrix(1,0,0,1,30.8,97.6)`. The live rect a region is taken from is POST-transform,
+  // so re-applying the translation in the file moved the whole scene by it a second time — the root
+  // rendered 31px right and 98px down, and every box and word inside it with it. A SCALE is a
+  // different thing: the region is the scaled rect, so the scale has to stay or the picture would be
+  // the wrong size.
+  const word = el('span', [529, 691, 28, 15], { text: 'R1' })
+  const chip = el('button', [449, 683, 119, 31], {
+    children: [word], cs: { transform: 'matrix(0.5, 0, 0, 0.5, 30.8344, 97.6201)', 'background-color': 'rgb(9,9,9)' }
+  })
+  const cell = el('div', [400, 600, 600, 300], { children: [chip] })
+  const body = el('body', [0, 0, 1440, 900], { children: [cell] })
+  const r = cap(body, { target: word, ring: { x: 529, y: 691, width: 28, height: 15 } })
+  const rootRule = /\.rep\.(r\d+)\{([^}]*)\}/.exec(r.html)
+  assert.ok(rootRule, 'the root wears its own rule')
+  assert.match(rootRule[2], /transform:matrix\(0\.5, 0, 0, 0\.5, 0, 0\)/, 'scaled, but not moved again')
+})
+
+test('the scene root drops its own margin — it is positioned by its region, not by its flow', () => {
+  const box = el('span', [179, 651, 13, 13], { text: 'x' })
+  const label = el('label', [175, 640, 410, 34], {
+    children: [box], cs: { display: 'flex', 'align-items': 'center', margin: '10px 0px 0px' }
+  })
+  const body = el('body', [0, 0, 1440, 900], { children: [label] })
+  const r = cap(body, { target: box, ring: { x: 179, y: 651, width: 13, height: 13 } })
+  assert.deepEqual(r.region, { x: 175, y: 640, w: 410, h: 34 })
+  const rootRule = /\.rep\.(r\d+)\{([^}]*)\}/.exec(r.html)
+  assert.ok(rootRule, 'the root wears its own rule')
+  assert.match(rootRule[2], /(^|;)margin:0/, 'and its margin is forced to zero — the tag\'s own default too')
+  assert.match(rootRule[2], /align-items:center/, 'everything else about it is still there')
+})

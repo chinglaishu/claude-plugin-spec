@@ -103,6 +103,16 @@ const sameBox = (a, b) => near(a.x, b.x) && near(a.y, b.y) && near(a.w, b.w) && 
 
 // inside the scene root, inclusively and with the same tolerance the boxes are compared at — the
 // region is the captured root's own rect, so its edge elements are exactly on the boundary
+// …and the root's own ANCESTORS are not in it (phase 6, 2026-09-04). The region IS the scene root's
+// rect, so its parent — one pixel bigger on each side — passes the rectangle test above by
+// tolerance and is then demanded back out of a file that can never contain it: board R13's
+// `.lst-card` around the `.lst-head` the claim rang, reported as `missing-box container` on an
+// otherwise perfect replica. A box that ENCLOSES the region AND is bigger than it is an ancestor.
+// One exactly the region's size is still checked — it may be the picture itself.
+const encloses = (e, region) => !!region &&
+  e.x <= region.x + GATE_TOL && e.y <= region.y + GATE_TOL &&
+  e.x + e.w >= region.x + region.w - GATE_TOL && e.y + e.h >= region.y + region.h - GATE_TOL &&
+  (e.w > region.w + GATE_TOL || e.h > region.h + GATE_TOL)
 const inRegion = (e, region) => !region || (
   e.x >= region.x - GATE_TOL && e.y >= region.y - GATE_TOL &&
   e.x + e.w <= region.x + region.w + GATE_TOL && e.y + e.h <= region.y + region.h + GATE_TOL)
@@ -146,7 +156,7 @@ export function replicaGaps (live, replica, region, opts = {}) {
   const add = (g) => { if (out.length < max) out.push(g) }
   for (const e of liveEls) {
     if (out.length >= max) break
-    if (!inRegion(e, region)) continue
+    if (!inRegion(e, region) || encloses(e, region)) continue
     if (e.w < MIN || e.h < MIN) continue                 // the walk's own floor: a fleck is not a gap
     const at = { x: e.x, y: e.y, w: e.w, h: e.h }
     // 1. THE RING. It is the whole reason the frame exists: a replica that came back without it is

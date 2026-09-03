@@ -145,6 +145,14 @@ test('R4 — resolving records which side lost, stays on Open, and offers the re
     await expect(settled).toBeVisible()
     await expect(settled).toContainText('spec/board/prd.md')
     await expect(settled.locator('[data-rewrite]')).toContainText('spec/init/prd.md')
+    // …AND THE TOAST HAS GONE BY THE TIME THE CLAIMS ARE PHOTOGRAPHED. It is asserted above, where
+    // it belongs — the card left quietly and this names what was settled — but it is a body-level
+    // `position:fixed` element, so it paints OVER a component's rectangle while sitting outside its
+    // subtree: every picture taken while it is up is honestly missing a word the run measured, and
+    // `npm run proof mirror` says so (found 2026-09-04, phase 6, the first claims this beat made).
+    // It removes itself; the state it leaves behind is what the two claims below read.
+    await expect(page.locator('.toast'), 'the toast is transient — it leaves on its own')
+      .toHaveCount(0, { timeout: 8000 })
     // the two facts this Then names, claimed on the screen: the Settled count that ticked up, and
     // the rewrite the Settled list offers — naming the file that LOST
     await proveVisible(page.locator('#cfseg button[data-cf="settled"]'), 'Settled 1',

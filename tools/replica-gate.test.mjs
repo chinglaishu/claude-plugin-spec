@@ -381,3 +381,28 @@ test('…and withReplicaAttrs re-stamps that root without turning it into a div'
   assert.equal(replicaAttrs(out).layout, 'def456')
   assert.equal((out.match(/data-replica-layout=/g) || []).length, 1, 'replaced, never doubled')
 })
+
+// ── AN ANCESTOR OF THE SCENE ROOT IS NOT A GAP (phase 6, 2026-09-04) ─────────────────────────────
+// The region is the scene root's own rect, and `inRegion` is a RECTANGLE test with a 1.5px
+// tolerance — so the root's own PARENT, one pixel bigger on each side, reads as "inside the region"
+// and is then demanded back out of a file that can never contain it (it is the root's ancestor).
+// board R13: a `.lst-card` container at 60,181 1320×41 around a `.lst-head` root at 61,182 1318×39,
+// reported as `missing-box container` on an otherwise perfect replica. A box that ENCLOSES the
+// region and is bigger than it is an ancestor, not a member of the picture.
+test('replicaGaps skips a box that encloses the region — the root\'s own parent', () => {
+  const region = { x: 61, y: 182, w: 1318, h: 39 }
+  const root = { x: 61, y: 182, w: 1318, h: 39, kind: 'button', bg: '1,1,1' }
+  const parent = { x: 60, y: 181, w: 1320, h: 41, kind: 'container', bg: '2,2,2' }
+  const live = { w: 1440, h: 900, els: [parent, root] }
+  const replica = { w: 1440, h: 900, els: [root] }
+  assert.deepEqual(replicaGaps(live, replica, region), [])
+})
+
+test('…but a box the same size as the region is still checked — it may be the picture itself', () => {
+  const region = { x: 61, y: 182, w: 1318, h: 39 }
+  const filling = { x: 61, y: 182, w: 1318, h: 39, kind: 'row', bg: '3,3,3' }
+  const live = { w: 1440, h: 900, els: [filling] }
+  const gaps = replicaGaps(live, { w: 1440, h: 900, els: [] }, region)
+  assert.equal(gaps.length, 1)
+  assert.equal(gaps[0].kind, 'missing-box')
+})

@@ -487,8 +487,10 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
 // stored — this is ordinary authored-test material from the moment it was written.
 test('Run from the board cell, watch it stream, the verdict lands — then read the detail in its three views — composed', async ({ page }) => {
   await coverReqs('R1', 'R2', 'R3', 'board:R2', 'board:R13')
-  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the default)
-  test.setTimeout(620000)
+  // the budget: the harness default for the fixture + each beat's declared ms (undeclared = the
+  // default) — raised with verdictLandsInPlace's own ms (230 s → 330 s, 2026-09-04) as the nested
+  // board run it waits out grew with the claims every board beat now rings and photographs
+  test.setTimeout(720000)
   // the fixture Given, once — the board's own detail open on Focus, the boot fold settled
   const state = await openBoardDetail(page)
   // beat 1 — proves R1

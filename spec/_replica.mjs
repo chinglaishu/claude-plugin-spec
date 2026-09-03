@@ -396,6 +396,25 @@ export function captureReplica (arg) {
   // never something specboard's own capture unrolls shape by shape — begins. See the svg branch
   // below, in `serialise`.
   const SVG_ICON_MAX = 64
+  // a transform with its translation removed — `matrix(a,b,c,d,e,f)` → `matrix(a,b,c,d,0,0)`, and the
+  // 3d form's 13th/14th/15th components zeroed the same way. Anything that is not a matrix (`none`,
+  // or a keyword form no browser reports) comes back as it was; an identity comes back empty, which
+  // the caller reads as "no declaration at all".
+  const deTranslate = (v) => {
+    const s = String(v || '').trim()
+    const m3 = /^matrix3d\(([^)]*)\)$/i.exec(s)
+    if (m3) {
+      const n = m3[1].split(',').map(x => x.trim())
+      if (n.length === 16) { n[12] = '0'; n[13] = '0'; n[14] = '0'; return 'matrix3d(' + n.join(', ') + ')' }
+      return s
+    }
+    const m = /^matrix\(([^)]*)\)$/i.exec(s)
+    if (!m) return s === 'none' ? '' : s
+    const n = m[1].split(',').map(x => x.trim())
+    if (n.length !== 6) return s
+    if (n[0] === '1' && n[1] === '0' && n[2] === '0' && n[3] === '1') return ''   // a pure translate is nothing else
+    return 'matrix(' + n[0] + ', ' + n[1] + ', ' + n[2] + ', ' + n[3] + ', 0, 0)'
+  }
   const classOf = (cs, tag, ns, parentCs, isRoot, extra) => {
     if (!cs || !PROPS.length) return ''
     const d = defaultsOf(tag, ns)
@@ -416,6 +435,42 @@ export function captureReplica (arg) {
       // measured with a probe INSIDE the app, which already inherits it. Diffing there would drop
       // precisely the app's own font and leave the file dependent on a page it will never be in.
       if (inh && isRoot) { out.push(p + ':' + v); continue }
+      // …AND IT DROPS ITS OWN MARGIN (phase 6, 2026-09-04). The root is PLACED by whoever renders
+      // the file — the gate's frame, the board's cell — at `data-replica-region`, which is the rect
+      // it was measured at and therefore already past its own margin. Carrying the margin as well
+      // applies it a second time and pushes the whole scene down (or across) by it: init R6's 13×13
+      // tick box, in a label with a 10.56px top margin, came back 10px below where the live walk
+      // measured it and the gate read `missing-focus` on an otherwise perfect replica. A margin is a
+      // relationship with a sibling this file does not contain.
+      if (isRoot && (p === 'margin' || p.slice(0, 7) === 'margin-')) {
+        // …and it is FORCED to zero rather than merely dropped (2026-09-04, second half): now that a
+        // root keeps its own tag, the UA's own margin comes with it — a `<ul>` root brought
+        // `margin-block: 1em` and the whole scene rendered 11px low. Dropping the declaration only
+        // removes the APP's margin; the tag's default needs saying no to. (A scrolled parent's own
+        // offset is an `extra` and is appended after this, so it still wins — see `serialise`.)
+        if (p === 'margin') out.push('margin:0')
+        continue
+      }
+      // …AND ITS OWN PLACEMENT, for the same reason (phase 6, 2026-09-04). The board's own chip over
+      // a beat row's picture is `position:absolute; left:…; top:…` inside its cell: the file's root
+      // already carries `style="position:relative"`, so the app's own offsets shifted the WHOLE
+      // scene by them a second time and the gate read the root as a missing box with every word in
+      // it moved — 8 of this board's replica rows, and with them the "a fresh harvest reads as
+      // current" leg of board R13, because a gapped replica marks the storyline stale. Placement is
+      // a relationship with a containing block this file does not contain.
+      if (isRoot && (p === 'position' || p === 'top' || p === 'left' || p === 'right' || p === 'bottom')) continue
+      // …AND THE TRANSLATION OUT OF ITS TRANSFORM, for the third time the same reason, and the one
+      // that cost the most: the board's own chip over a beat row is placed by
+      // `transform: matrix(1,0,0,1,30.8,97.6)`. A region is the element's POST-transform rect, so
+      // re-applying the translation moved the whole scene by it again — the root landed 31px right
+      // and 98px down of its own region and every box and word inside it followed. The SCALE (and
+      // any rotation or skew) stays: the region is the scaled rect, so dropping it would picture the
+      // component at the wrong size.
+      if (isRoot && p === 'transform') {
+        const flat = deTranslate(v)
+        if (flat) out.push(p + ':' + flat)
+        continue
+      }
       const against = inh && parentCs ? gp(parentCs, p) : String(d[p] == null ? '' : d[p])
       if (v === against) continue
       out.push(p + ':' + v)

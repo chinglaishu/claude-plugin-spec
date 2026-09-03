@@ -92,7 +92,11 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
 export async function searchRequirementText (page: Page, state: FlowState): Promise<void> {
   await expect(page.locator('.grp')).toHaveCount(state.areas)   // Core, Running, Setup
   await expect(page.locator('.grp .grph h2').first()).toHaveText('Core')
-  // search matches requirement TEXT, not just the name — 'canon' appears only in the board's own reqs
+  // search matches requirement TEXT, not just the name. (Corrected 2026-09-04, rule 6: this said
+  // 'canon' appears only in the BOARD's own requirements — it does not. The card's searchable text
+  // is the screen's name plus its requirement TITLES, and the only title carrying the word is
+  // conflicts R3, "You pick which side is canon". The one-card assertion below was true either way;
+  // the claim that names the surviving card is what showed the comment had gone stale.)
   await page.locator('#q').fill('canon')
   await expect(page.locator('#home .card:not(.gone)')).toHaveCount(1)
   // a group with nothing matching hides itself rather than sitting empty
@@ -100,7 +104,7 @@ export async function searchRequirementText (page: Page, state: FlowState): Prom
   // the fact R9 names, CLAIMED before the search is cleared (the authored-intent lint, phase 6):
   // the ONE card still standing is the screen whose requirement text carries the word — matched on
   // requirement TEXT, not on a name, and every group with nothing matching has hidden itself
-  await proveVisible(page.locator('#home .card:not(.gone) .nm'), 'Board',
+  await proveVisible(page.locator('#home .card:not(.gone) .nm'), 'Conflicts',
     'The only card the search leaves standing', { soft: true })
   await page.locator('#qx').click()
   await expect(page.locator('#home .card:not(.gone)')).toHaveCount(state.cards)

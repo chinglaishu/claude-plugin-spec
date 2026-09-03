@@ -4791,7 +4791,17 @@ const B = window.__BOARD__ || {}
   // shots a test recorded. They all render at a fraction of real size, and a judgement about
   // whether the build matches the design cannot honestly be made from a thumbnail.
   document.addEventListener('click', e => {
-    const img = e.target.closest('img')
+    let img = e.target.closest('img')
+    // …AND A CLICK ANYWHERE ON A PROOF PICTURE IS A CLICK ON THE PICTURE (2026-09-04). board R20:
+    // "the whole screenshot one click away in the proof lightbox". The frame is under a camera and
+    // now carries a CHIP over it — a real button, so a reader who clicks the middle of the cell can
+    // land on the chip (or on the cell's own padding) and nothing opens, which reads as a dead
+    // picture. Fall back to the frame the cell is SHOWING; a click inside the lightbox itself, or
+    // on any other control, still means what it did.
+    if (!img && !e.target.closest('.lb')) {
+      const cell = e.target.closest('.pcplay')
+      if (cell) img = cell.querySelector('.fsteps img.on') || cell.querySelector('.fsteps img')
+    }
     if (!img || !img.src || img.closest('.lb')) return
     if (img.closest('#home .cshot')) return   // the home card's still opens the screen, not the zoom (Task 8)
     e.stopPropagation()
