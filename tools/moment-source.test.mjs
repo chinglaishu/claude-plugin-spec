@@ -158,3 +158,18 @@ test('what the walk drops as occluded, the capture plates — one rule, decided 
   assert.ok(!/Home card/.test(out.rep.html), 'and the replica does not picture it either: ' + out.rep.html.slice(0, 400))
   assert.match(out.rep.html, /data-plate="space"/, 'it is plated, so the flow around it cannot move')
 })
+
+test('the capture pictures the element the WALK measured under the ring, never one behind a dialog (board R22)', () => {
+  // The rendered proof of this defect: docs/superpowers/mockups/2026-09-04-gate-r22-diff.png — the
+  // photograph shows the walkthrough dialog, the replica beside it shows the home page BEHIND it.
+  // `reveal()`'s locator still matched a home card under the opened dialog, so the capture rooted
+  // its scene there while the walk (which drops what an opaque overlay covers) measured the dialog:
+  // 13 missing rings, 8 missing texts, 5 missing boxes, 4 extra boxes, on two files that were each
+  // internally perfect. One resolve, handed across, is the fix.
+  const p = coveredPage()
+  const out = run(p.body, { target: p.card, hits: p.hits, point: p.point, ring: { x: 100, y: 300, width: 300, height: 40 } })
+  assert.ok(/Assigning work/.test(out.rep.html), 'the replica pictures what the page is showing: ' + out.rep.html.slice(0, 400))
+  assert.ok(!/Home card/.test(out.rep.html), 'and not the card the stale locator still matched')
+  assert.match(out.rep.html, /data-ring="1"/, 'the ring is marked on the element the walk measured')
+  assert.ok(out.skel.els.some(e => /Assigning work/.test(e.text || '')), 'which is the one the skeleton is of')
+})
