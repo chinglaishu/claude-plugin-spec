@@ -40,7 +40,12 @@ not do. Never take control away from the user (no auto-advancing after a verdict
    beat's standing red-first proof plus the composed file passing its first full run. A composed
    flow that fails its first run is a composition defect, never a reason to weaken a beat.
 2. **Assert something that can fail.** If a test would still pass with the requirement deleted, it is
-   not a test — and it cannot make that requirement *proven*.
+   not a test — and it cannot make that requirement *proven*. **And every fact the Then names is a
+   soft claim** (phase 6, 2026-09-04): `proveVisible(target, expected, label, { soft: true })`, so
+   the beat reaches and photographs each of them and fails once at its end with the whole list —
+   `npm run proof lint` refuses a Then fact no claim covers (`lintIntent`, tools/proof-integrity.mjs).
+   A fact the screen genuinely cannot show — an absence, a geometry, a file the CLI reads — stays red
+   and is reported; never a claim invented to close a row, and never a Then reworded to fit the test.
 3. **Never fake a green.** A requirement with no passing assertion reads **unproven**; a flow that
    stops early leaves what it never reached **not-reached** — neither is green, and that honesty is
    the point. Never weaken, skip, or delete a test to go green.
@@ -193,7 +198,7 @@ npm run e2e            # the suite
 npm run board:build    # rebuild board.html only
 npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
 npm run staff          # the kg-staff briefing for a screen
-npm run proof          # proof-integrity check
+npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures)
 node tools/viz-derive.mjs [screen…]   # derive the schematics BY HAND (the reporter derives them at every fold —
                                       # corrected 2026-09-02: it was NOT running anywhere, so every drawing
                                       # was a harvest behind and its ring/callout had quietly gone)

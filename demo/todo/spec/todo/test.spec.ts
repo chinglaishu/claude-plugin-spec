@@ -140,12 +140,17 @@ test('R9 (demo) — a deleted task should be reversible, keeping the count — I
   const left = page.locator('#left')
   const row = (id: string) => page.locator(`.task[data-id="${id}"]`)
   await checkReq('R9', async () => {
-    await proveVisible(left, String(state.leaves), 'To do — five open leaves before the delete')
+    // EVERY claim in a multi-fact beat is SOFT (the authored-intent lint, phase 6) — including the
+    // two the beat makes BEFORE the delete: a beat that stopped on one of them would photograph
+    // none of the three facts the Then is actually about. Nothing about the verdict changes; these
+    // two pass today, and if the fixture ever broke they would now report together with the rest.
+    await proveVisible(left, String(state.leaves), 'To do — five open leaves before the delete', { soft: true })
     // SHOW THE DELETE, NEVER ONLY SAY IT (the human, 2026-09-02: "the failed test case totally not
     // really delete a subtask — please show it out in visual, not just text"). The When acts on a
     // task, so the task is ringed BEFORE the action and the list is ringed AFTER it, where the row
     // used to be — a beat whose only frames are a counter is not watchable.
-    await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill', 'The open task about to be deleted — Pay the electricity bill')
+    await proveVisible(row('k2').locator('.ttl'), 'Pay the electricity bill',
+      'The open task about to be deleted — Pay the electricity bill', { soft: true })
     await page.locator('.task[data-id="k2"] .del').click()          // delete it (Tsumiki hard-deletes)
     // THE THEN, AS WRITTEN — every fact of it, each a SOFT claim so the beat reaches all three and
     // fails at its end (the human, 2026-09-02: "the schematic should be correct, only the proof

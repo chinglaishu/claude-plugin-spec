@@ -142,7 +142,15 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
 // R5 — completing a container of two open leaves dropped the count by two, not three: the
 // container itself is never a unit of work. (This is the assertion the broken-counter demo fails.)
 export async function containerIsNotAUnit (page: Page, state: FlowState): Promise<void> {
-  await proveVisible(page.locator('#left'), String(state.leaves), 'The container is not a task — the count dropped by two, to ' + state.leaves)
+  // BOTH FACTS OF THE THEN, EACH A SOFT CLAIM (the authored-intent lint, phase 6): "To do reads 4",
+  // and "down by two, not three: the container is never a unit of work". The second is only visible
+  // beside the first — the container's own ring is FULL, so it finished, and the count still moved
+  // by the two open leaves alone. Soft, so a wrong count does not stop the beat before it has shown
+  // the container that explains it.
+  await proveVisible(page.locator('#left'), String(state.leaves),
+    'The container is not a task — the count dropped by two, to ' + state.leaves, { soft: true })
+  await proveVisible(rowById(page, state.container).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
+    'The container finished with them — and was never one of the four', { soft: true })
 }
 
 // R4, the other direction — reopening any sub-task reopens the container.
@@ -165,6 +173,12 @@ export async function walkSmartViews (page: Page, state: FlowState): Promise<voi
     const rows = await page.locator('.list .task').count()
     await hudCheck(`${v} — sidebar badge vs rows on screen`, badge, String(rows))
     expect(String(rows), `${v}: the badge must equal the rows the view shows`).toBe(badge)
+    // …and the fact the Then names, CLAIMED on the badge itself (the authored-intent lint, phase 6):
+    // what it reads is the number of task rows this view actually shows. The expected value is
+    // COUNTED off the list, never read off the badge, so a badge that drifted from its own view
+    // fails here — photographed, on the badge.
+    await proveVisible(navBtn(page, v).locator('.ct'), String(rows),
+      `${v} — the badge equals the rows on screen`, { soft: true })
     if (HOLD) await page.waitForTimeout(HOLD)
   }
   await navBtn(page, 'all').click()

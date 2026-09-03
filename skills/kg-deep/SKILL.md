@@ -102,6 +102,15 @@ before acting and the place it changed after — never only the counter (the hum
 watchable-beat rule). Finishing check: with the sound off, can you SEE every number the flow claims,
 and every action it says it took?
 
+**Every fact of a Then is a soft claim** (kg-e2e rule 6). Split the Then the way the requirement
+reads it — "the row stays listed" and "the count reads 4" are two facts, "one card appears — its
+name, its titles and its cover" is one — and give each fact its own
+`proveVisible(target, expected, label, { soft: true })`, so the beat photographs all of them and
+fails once at its end with the whole list. `npm run proof lint` refuses a Then fact no claim covers,
+so run it before you call a screen done. Where a fact is an ABSENCE, or is only true on a surface a
+person cannot see, claim the positive thing that stands in its place and report what stayed red —
+never invent a claim, and never reword the Then to fit the test (the human owns meaning).
+
 **Author each unit beat as an exported step function** in `spec/<screen>/steps.ts` (fn · proves ·
 name · needs/gives) with its `checkReq` kept around the call — kg-e2e's beat-function convention —
 so the board's composer can chain it into a flow with no model involved.

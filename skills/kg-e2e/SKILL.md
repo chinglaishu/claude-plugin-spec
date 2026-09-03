@@ -162,7 +162,29 @@ way. Read it before writing your first one.
    The finishing check, extended: with the sound off, does each scene show something the last one did
    not, is every control the words name actually on screen, and can you SEE every state the words claim?
    If not, the beat is authored, not yet watchable.
-6. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
+6. **Every fact the Then names is a SOFT claim.** Write each of them as
+   `proveVisible(target, expected, label, { soft: true })`: the beat then reaches and photographs
+   **every** fact and fails ONCE at its end with the whole list, instead of stopping at the first red
+   with the rest of the requirement never shown (the human, 2026-09-02, on the demo's failing R9:
+   "the schematic should be correct, only the proof should be wrong"). A Then that names three things
+   proven by one claim is a third of a requirement wearing the requirement's whole green — and since
+   the **Expected** picture is built from the beat's claims, a fact no claim covers is also a fact no
+   picture can ever show. `npm run proof lint` refuses one: it splits each Then into its facts (at
+   ` — `, `; `, `, and `, ` and `, and only where both sides carry a verb — when in doubt a Then is
+   ONE fact) and reads the beat's claims back out of the `checkReq` block and the step functions it
+   calls. Fewer claims than facts, a hard claim in a multi-fact beat, or a beat with no claim at all
+   is an **INTENT-GAP**. Three things it cannot do for you:
+   - **An ABSENCE is not a claim.** "no toolbar", "no control to change it", "no chip at all" — there
+     is nothing on screen to read a value off, and `proveVisible` cannot pass on an element that is
+     not there. Keep the `toHaveCount(0)` AND claim the positive thing that stands in its place (the
+     control that replaced it, the header that names what the row deals). Two absences and nothing
+     else is the assertion rule 2 already refuses.
+   - **Claim on the surface a person reads.** A claim on a hidden node — a baked source row, a folded
+     pane — rings nothing, so the frame is the whole page and the picture proves nothing. If a fact
+     is only true on a hidden surface, say so; do not photograph a page and call it a proof.
+   - **Never edit the Then to fit the test** (CLAUDE.md rule 5 — meaning is the human's), and never
+     invent a claim for a fact the screen cannot show. Leave that one red and report it.
+7. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
    (`fontSize >= 19` because the title token happens to be 19px today) is really asserting the
    design system's *current arithmetic*, and it breaks the day the system rescales while the
    behaviour — "the title wears the card-title token" — never moved (specboard's ×0.8 scale broke
