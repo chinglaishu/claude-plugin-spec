@@ -89,11 +89,16 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/evidence/      the harvest (the before/after frame pair + its window) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
+spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, each moment's `.actual.html` REPLICA, and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
 spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
+spec/_replica.mjs            the ACTUAL REPLICA's capture (2026-09-03), one self-contained function Playwright serialises into
+                             the page: the ringed element's SCENE ROOT as the app's own DOM, computed styles diffed against
+                             per-tag defaults into shared classes, sanitised (no script/handler/external URL, live controls
+                             become spans carrying the value the assertion read) and capped — REPLICA_PROPS is the one prop
+                             list and travels in through the arg; unit-tested in tools/replica.test.mjs on a stub DOM
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
