@@ -1,5 +1,5 @@
 {
-  "version": "0.43.3",
+  "version": "0.43.5",
   "files": {
     "tools/spec-store.mjs": "619269f480280fe27ba8a0ee1c22221f4257cb4db56ac05e6b148e25a06de908",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
@@ -28,7 +28,7 @@
     "tools/auth-projects.mjs": "57676e72b55108a2ceb7cceda67eddfa61e06625351c5faf94e30cc42f0ee5b7",
     "playwright.board.ts": "a2dfd87f75885c6460bc4cb9e822f844eb6c562a75a781d10f99c7b11c7614fb",
     "spec/_design.css": "d52efe5af281a632b4c3c4e58bb11cbcd3a484c1e7464e4e89ccd5391baabc88",
-    "spec/_base.ts": "bf5e1dbb72b24ccc38082c7ba931654cb92e81d4a9fd593f5a062c4e0936d824",
+    "spec/_base.ts": "2b3878ac6f61601d8631ed1d4e0087794acf34dc7a4a7713fb8bbfec069987d7",
     "spec/_fixture.ts": "2d54075670d83613ca1c1e53e384b17a7552c221ff22c5804077d4c96100f04f",
     "spec/_state-guard.ts": "311221e9437e327c9add94df81d344ee9ad783fe861fa683d5d7e560a64f8f03",
     "spec/_state-guard-teardown.ts": "6381c1f72089205dd8d88fbd15e1a4e770f198e83fba5c5c0078c45ce3e8b631",
@@ -37,7 +37,7 @@
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",
     "spec/_layout-walk.mjs": "9d6c52051b836bf769dec507365c9d0a4732a28fbed7ebd2ea23a1609ff2f931",
-    "spec/_replica.mjs": "5ce15828b42e2f4be7315034f1a647d6f92fcfac50d4c68f0e34e61f4f38c37e"
+    "spec/_replica.mjs": "904c47c0a0281b16a56423a9ae5a8a8854557dad0b0edb6f958d5aa63253949b"
   },
   "project": {
     "name": "Tsumiki",
