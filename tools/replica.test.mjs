@@ -551,10 +551,22 @@ test('base=null with no claim at all: the Expected is the current Actual, bar th
     'nothing was claimed, so nothing differs')
 })
 
+
 // ── base given: the Expected IS the base, with ONLY this one claim applied to it ────────────────
-test('a wrong-value claim on a base finds the leaf INSIDE the base\'s OWN ring — not a look-alike elsewhere in the scene', () => {
+// FIX ROUND 3 (2026-09-03) — LOCATE BY GEOMETRY, NEVER BY TEXT. The controller's ruling: a base is
+// a scene that was RIGHT, so it never shows a wrong value's `got` at all — searching a base's text
+// for `got` (rounds 1/2's `scopedLeaf`) was always going to fail there, and the bounded fallback
+// that caught the failure rewrote whatever leaf the stale ring happened to be nearest, which is
+// what corrupted a just-restored title twice over (task-2-report.md, fix rounds 1 and 2). Every
+// capture now records `data-b="x,y,w,h"` on every text leaf (and every data-ring/plate/control
+// node); a wrong-value claim is located in ANY tree — a base or the current Actual — by whichever
+// text leaf's OWN box lies ≥60% inside the claim's OWN ring box (carried on the claim itself,
+// `arg.claims[].ring`), never by searching for `got`. The bounded fallback that used to rewrite
+// "the ring's first leaf" is DELETED FOR GOOD: a claim with no leaf inside its ring box is flagged
+// `unlocated: true` and left unapplied, never guessed at elsewhere.
+test('a wrong-value claim locates its leaf by the claim\'s OWN ring box — not a look-alike elsewhere in the scene', () => {
   // the base: a status track reading "Draft" INSIDE the ring, and an unrelated nav tab that also
-  // reads "Draft" OUTSIDE it — proving the search is ring-scoped, not "first match anywhere"
+  // reads "Draft" OUTSIDE it — proving the search is ring-box-scoped, not "first match anywhere"
   const track = el('span', [566, 100, 34, 20], { text: 'Draft', cs: { color: 'rgb(2, 8, 23)' } })
   const btn = el('button', [500, 92, 130, 36], { children: [track] })
   const navTab = el('span', [410, 90, 40, 16], { text: 'Draft' })   // a look-alike, in the SAME scene but outside the ring
@@ -562,14 +574,14 @@ test('a wrong-value claim on a base finds the leaf INSIDE the base\'s OWN ring �
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const before = capC(body, { target: btn, ring: { x: 500, y: 92, width: 130, height: 36 } }).html
 
+  const ring = { x: 500, y: 92, width: 130, height: 36 }
   const r = capC(body, {
     target: btn,
-    ring: { x: 500, y: 92, width: 130, height: 36 },
-    claim: { label: 'the version track', expected: 'Published', got: 'Draft', ok: false },
+    ring,
+    claim: { label: 'the version track', expected: 'Published', got: 'Draft', ok: false, ring },
     base: before
   })
-  assert.ok(/data-ring="1"[^>]*>Published</.test(r.expected), 'the ring re-points to where the fix landed: ' + r.expected)
-  assert.ok(/data-claim="fixed"[^>]*data-claim-got="Draft"[^>]*>Published</.test(r.expected))
+  assert.ok(/data-claim="fixed"[^>]*data-claim-got="Draft"[^>]*>Published</.test(r.expected), r.expected)
   assert.ok(/<span[^>]*>Draft<\/span>/.test(r.expected), 'the OUTSIDE look-alike is untouched, still reading Draft: ' + r.expected)
   assert.equal((r.expected.match(/>Published</g) || []).length, 1, 'only the ringed one was ever a candidate')
   assert.ok(r.html.includes('>Draft<') && !r.html.includes('Published'), 'the Actual is the app\'s own half, untouched')
@@ -582,9 +594,10 @@ test('the worded wrapper swaps too, on a base: an ancestor whose own text carrie
   const head = el('div', [0, 0, 500, 40], { children: [counter] })
   const body = el('body', [0, 0, 1440, 900], { children: [head] })
   const before = capC(body, { target: counter, ring: { x: 0, y: 0, width: 120, height: 24 } }).html
+  const ring = { x: 0, y: 0, width: 120, height: 24 }
   const r = capC(body, {
-    target: counter, ring: { x: 0, y: 0, width: 120, height: 24 },
-    claim: { label: 'the open count', expected: '5', got: '4', ok: false },
+    target: counter, ring,
+    claim: { label: 'the open count', expected: '5', got: '4', ok: false, ring },
     base: before
   })
   assert.ok(r.expected.includes('To do 5 — '), 'the wrapper\'s own words say the intended value: ' + r.expected)
@@ -592,36 +605,81 @@ test('the worded wrapper swaps too, on a base: an ancestor whose own text carrie
   assert.ok(r.html.includes('To do 4 — '), 'the Actual keeps what the app rendered')
 })
 
-test('the wrong value is not found anywhere in the base: the ring\'s first text leaf takes it (bounded, never a silent no-op)', () => {
+// ── fix round 3, rule 2, case (b): the base already shows the requirement's word ─────────────────
+test('fix round 3: the base already shows the requirement\'s word — marked fixed, nothing rewritten, an earlier restore stays untouched', () => {
+  const cb = el('button', [4, 4, 18, 18], {})
+  const ttl = el('span', [30, 5, 200, 18], { text: 'Pay the electricity bill' })
+  const row = el('li', [0, 0, 300, 28], { children: [cb, ttl] })
+  const nextRow = el('li', [0, 28, 300, 28], { children: [el('span', [30, 33, 200, 18], { text: 'Call the dentist' })] })
+  const ul = el('ul', [0, 0, 300, 56], { children: [row, nextRow] })
+  const counter = el('div', [500, 0, 80, 24], { text: 'To do 5', cs: { color: 'rgb(180, 0, 0)' } })
+  const head = el('div', [0, 0, 700, 40], { children: [counter] })
+  const main = el('div', [0, 0, 700, 400], { children: [head, ul] })
+  const bodyRow = el('body', [0, 0, 1440, 900], { children: [main] })
+  const before = capC(bodyRow, { target: row, ring: { x: 0, y: 0, width: 300, height: 28 } }).html
+
+  const claim0 = { label: 'still listed', expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true,
+    ring: { x: 0, y: 0, width: 300, height: 28 } }
+  const r1 = capC(bodyRow, {
+    target: row, ring: { x: 0, y: 0, width: 300, height: 28 },
+    claim: claim0, claims: [claim0], base: before
+  })
+  assert.ok(/data-claim="restored"/.test(r1.expected), r1.expected)
+
+  const claim1 = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false,
+    ring: { x: 500, y: 0, width: 80, height: 24 } }
+  const r2 = capC(bodyRow, {
+    target: counter, ring: { x: 500, y: 0, width: 80, height: 24 },
+    claim: claim1, claims: [claim0, claim1], base: r1.expected
+  })
+  assert.ok(/data-claim="fixed"[^>]*data-claim-of="1"[^>]*>To do 5</.test(r2.expected), r2.expected)
+  assert.ok(!/data-claim-got/.test(r2.expected), 'nothing was REWRITTEN — the base already said it: ' + r2.expected)
+  assert.ok(/data-claim="restored"[^>]*>[\s\S]*Pay the electricity bill/.test(r2.expected), 'the restored title is untouched: ' + r2.expected)
+  const rendered1 = r2.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.equal((rendered1.match(/To do 5/g) || []).length, 1, 'no duplicate text was inserted: ' + rendered1)
+})
+
+// ── fix round 3, rule 2: a ring box over no leaf at all ───────────────────────────────────────────
+test('fix round 3: a ring box over no leaf is flagged unlocated — the tree is unchanged, never a guess elsewhere', () => {
   const label = el('span', [510, 100, 50, 20], { text: 'Version' })
   const btn = el('button', [500, 92, 130, 36], { children: [label] })
   const bar = el('div', [400, 88, 640, 44], { children: [btn] })
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const before = capC(body, { target: btn, ring: { x: 500, y: 92, width: 130, height: 36 } }).html
+  // the CURRENT claim's own ring is over EMPTY space — nowhere near any leaf at all
+  const ring = { x: 900, y: 400, width: 50, height: 20 }
+  const claim = { label: 'the track word', expected: 'Published', got: 'Draft', ok: false, ring }
   const r = capC(body, {
     target: btn, ring: { x: 500, y: 92, width: 130, height: 36 },
-    claim: { label: 'the track word', expected: 'Published', got: 'Draft', ok: false },
+    claim, claims: [claim],
     base: before
   })
-  assert.ok(/data-claim="fixed"[^>]*>Published</.test(r.expected), r.expected)
-  assert.ok(!r.expected.includes('Version'), 'the bounded fallback took the first text leaf')
+  const rendered = r.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.ok(!rendered.includes('Published'), 'nothing was rewritten anywhere: ' + rendered)
+  assert.ok(rendered.includes('Version'), 'the base is completely unchanged: ' + rendered)
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unlocated, true, 'flagged, honestly: ' + JSON.stringify(json))
 })
 
-test('a ring with no words at all gets the expected value as a marked span inside it, on a base', () => {
+test('fix round 3: a ring over an icon with no text at all is ALSO unlocated — no placeholder appended inside it', () => {
   const path = el('path', [604, 104, 10, 6], { ns: 'http://www.w3.org/2000/svg', attrs: { d: 'M6 9l6 6 6-6' } })
   const svg = el('svg', [602, 102, 14, 14], { ns: 'http://www.w3.org/2000/svg', children: [path] })
   const btn = el('button', [600, 100, 20, 20], { children: [svg] })
   const bar = el('div', [400, 88, 640, 44], { children: [btn] })
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const before = capC(body, { target: btn, ring: { x: 600, y: 100, width: 20, height: 20 } }).html
+  const ring = { x: 600, y: 100, width: 20, height: 20 }
+  const claim = { label: 'the state', expected: 'Published', got: '', ok: false, ring }
   const r = capC(body, {
-    target: btn, ring: { x: 600, y: 100, width: 20, height: 20 },
-    claim: { label: 'the state', expected: 'Published', got: '', ok: false },
+    target: btn, ring,
+    claim, claims: [claim],
     base: before
   })
-  assert.ok(/<button[^>]*>[\s\S]*<span data-claim="fixed">Published<\/span>[\s\S]*<\/button>/.test(r.expected),
-    'appended INSIDE the ringed element: ' + r.expected)
+  const rendered3 = r.expected.replace(/ data-claims="[^"]*"/, '')
+  assert.ok(!rendered3.includes('Published'), 'the deleted bounded fallback used to append it inside the ring — not any more: ' + rendered3)
   assert.ok(r.html.includes('d="M6 9l6 6 6-6"'), 'and the icon is still the component')
+  const json = JSON.parse(/data-claims="([^"]*)"/.exec(r.expected)[1].replace(/&quot;/g, '"'))
+  assert.equal(json[0].unlocated, true)
 })
 
 // ── the Tsumiki shape, REAL: a checkbox + a title span + an archive button whose OWN text differs
@@ -737,24 +795,26 @@ test('two never-there placeholders read in CLAIM order, not nearest-first (fix r
 test('fix round 1 (C1): a claim never rewrites a leaf it was never made on — there is no claims-array loop left to replay one', () => {
   const track = el('span', [10, 10, 60, 20], { text: 'Draft' })
   const btn = el('button', [0, 0, 100, 40], { children: [track] })
-  const due = el('span', [10, 10, 60, 20], { text: 'Overdue' })
+  const due = el('span', [120, 10, 60, 20], { text: 'Overdue' })
   const card = el('div', [110, 0, 100, 40], { children: [due] })
   const wrap = el('div', [0, 0, 400, 60], { children: [btn, card] })
   const body = el('body', [0, 0, 1440, 900], { children: [wrap] })
   const before = capC(body, { target: wrap, ring: { x: 0, y: 0, width: 400, height: 60 } }).html
 
   // v1: the ring is on the button — a wrong-value claim about the version track
+  const ring1 = { x: 0, y: 0, width: 100, height: 40 }
   const r1 = capC(body, {
-    target: btn, ring: { x: 0, y: 0, width: 100, height: 40 },
-    claim: { label: 'the track', expected: 'Published', got: 'Draft', ok: false },
+    target: btn, ring: ring1,
+    claim: { label: 'the track', expected: 'Published', got: 'Draft', ok: false, ring: ring1 },
     base: before
   })
   assert.ok(/data-claim="fixed"[^>]*data-claim-got="Draft"[^>]*>Published</.test(r1.expected))
 
   // v2: the ring has MOVED to the due-date card — an UNRELATED wrong-value claim
+  const ring2 = { x: 110, y: 0, width: 100, height: 40 }
   const r2 = capC(body, {
-    target: card, ring: { x: 110, y: 0, width: 100, height: 40 },
-    claim: { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false },
+    target: card, ring: ring2,
+    claim: { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false, ring: ring2 },
     base: r1.expected
   })
   assert.ok(r2.expected.includes('Due today') && r2.expected.includes('data-claim-got="Overdue"'), r2.expected)
@@ -773,19 +833,23 @@ test('data-claims lists EVERY claim of the beat so far — but nothing here ever
   const bar = el('div', [400, 88, 640, 44], { children: [btn] })
   const body = el('body', [0, 0, 1440, 900], { children: [bar] })
   const before = capC(body, { target: btn, ring: { x: 500, y: 92, width: 130, height: 36 } }).html
+  const ring = { x: 500, y: 92, width: 130, height: 36 }
   const claims = [
-    { label: 'a fact from two moments ago', expected: 'Renamed', got: 'Old name', ok: false },
-    { label: 'this moment', expected: 'Published', got: 'Draft', ok: false }
+    { label: 'a fact from two moments ago', expected: 'Renamed', got: 'Old name', ok: false, ring: { x: 900, y: 400, width: 20, height: 20 } },
+    { label: 'this moment', expected: 'Published', got: 'Draft', ok: false, ring }
   ]
   const r = capC(body, {
-    target: btn, ring: { x: 500, y: 92, width: 130, height: 36 },
+    target: btn, ring,
     claim: claims[1],
     claims,
     base: before
   })
   const json = /data-claims="([^"]*)"/.exec(r.expected)
   assert.ok(json, 'the Expected carries the WHOLE list: ' + r.expected.slice(0, 300))
-  assert.deepEqual(JSON.parse(json[1].replace(/&quot;/g, '"')), claims)
+  // data-claims carries the board's own canonical shape (label/expected/got/ok/missing?/unlocated?)
+  // — `ring` is an internal targeting detail (fix round 3), never meant to leak into it
+  assert.deepEqual(JSON.parse(json[1].replace(/&quot;/g, '"')),
+    claims.map(({ label, expected, got, ok }) => ({ label, expected, got, ok })))
   // the FIRST claim in that list ("Renamed") was never applied — nowhere in the html, because it
   // was never handed in as THIS capture's `claim`
   // "Renamed" legitimately appears once — inside the data-claims JSON, informational only. It must
@@ -839,16 +903,13 @@ test('the borrowed base is styled by the sheet it arrives with, re-minted, not b
 // FIX ROUND 2 (2026-09-03) — THE REBUILD: root cause 2, made a non-issue by construction.
 //
 // task-2-review.md's root cause 2: the counter and the task row are never in one captured scene, so
-// no single base could carry both "still listed" and "To do 5" — round 1's bounded fallback then
-// overwrote the just-restored title with a stray "5". The controller's ruling: the REGION GROWS
-// MONOTONICALLY (`arg.minRegion`, the union of every ring box the beat has rung), so a later
+// no single base could carry both "still listed" and "To do 5". The controller's ruling: the region
+// GROWS MONOTONICALLY (`arg.minRegion`, the union of every ring box the beat has rung), so a later
 // moment's own Actual always has room for everything earlier moments rang too; a claim is only ever
 // patched into a base IN PLACE when that base's OWN region already contains the current ring
 // (`data-replica-region`, read back by `parseBase`); when it does not, `spec/_replica.mjs` REBUILDS
-// from the current (grown) Actual and re-applies every earlier FAILED claim by ANCHOR — the live
-// element under that claim's own ring centre, resolved fresh against the current DOM
-// (`document.elementsFromPoint`) — never by searching text again. A claim with no anchor inside the
-// grown region is flagged `unanchored: true` and left unapplied, never guessed at.
+// from the current (grown) Actual and re-applies every earlier FAILED claim, geometrically (fix
+// round 3), never by searching text again.
 // ════════════════════════════════════════════════════════════════════════════════════════════════
 
 test('fix round 2, rule 1: minRegion forces the scene root to contain it too — the region grows, never shrinks', () => {
@@ -881,9 +942,10 @@ test('fix round 2, rule 2: a base whose region does not contain the current ring
   // own region
   const other = el('span', [500, 500, 30, 20], { text: 'Overdue' })
   const bodyB = el('body', [0, 0, 1440, 900], { children: [other] })
+  const ring = { x: 500, y: 500, width: 30, height: 20 }
   const r = capC(bodyB, {
-    target: other, ring: { x: 500, y: 500, width: 30, height: 20 },
-    claim: { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false },
+    target: other, ring,
+    claim: { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false, ring },
     base: before.html
   })
   // NOT patched in place: the base's own content never rides into an Expected it cannot cover
@@ -892,9 +954,9 @@ test('fix round 2, rule 2: a base whose region does not contain the current ring
   assert.ok(r.expected.includes('Due today') && !/>Overdue</.test(r.expected), r.expected)
 })
 
-// ── the full shape: a restored row AND an inserted placeholder, both re-anchored, then the current
-// claim — the exact R9 sequence (still listed → an Undo → the counter), on a stub DOM ────────────
-test('fix round 2, rule 3: the rebuild re-anchors earlier failed claims in claim order and applies the current claim last', () => {
+// ── the full shape: a restored row AND an inserted placeholder, both re-applied by geometry, then
+// the current claim — the exact R9 sequence (still listed → an Undo → the counter), on a stub DOM ─
+test('fix round 3 on a rebuild: a restored row and an inserted placeholder both come back in claim order, the current claim applied last, all by geometry', () => {
   // the row's own (small) scene: row -> ul -> wrap qualifies as scene root (ul alone is too small)
   const cb = el('button', [4, 4, 18, 18], {})
   const ttl = el('span', [30, 5, 200, 18], { text: 'Pay the electricity bill' })
@@ -907,21 +969,20 @@ test('fix round 2, rule 3: the rebuild re-anchors earlier failed claims in claim
   const before = capC(bodyRow, { target: row, ring: { x: 0, y: 0, width: 300, height: 28 } })
   assert.deepEqual(before.region, { x: 0, y: 0, w: 300, h: 120 }, 'the row\'s own scene is small: ' + JSON.stringify(before.region))
 
-  const claim0 = { label: 'still listed', expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true,
-    ring: { x: 0, y: 0, width: 300, height: 28 } }
+  const rowRing = { x: 0, y: 0, width: 300, height: 28 }
+  const claim0 = { label: 'still listed', expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true, ring: rowRing }
   // v1: missing claim, ring unchanged (the deleted row's own locator no longer resolves) — still
   // inside the base's own region → applied IN PLACE, restored (fix round 1's own mechanism)
   const r1 = capC(bodyRow, {
-    target: row, ring: { x: 0, y: 0, width: 300, height: 28 },
+    target: row, ring: rowRing,
     claim: claim0, claims: [claim0], base: before.html
   })
   assert.ok(/<li[^>]*data-claim="restored"[^>]*data-claim-of="0"[^>]*>[\s\S]*Pay the electricity bill/.test(r1.expected), r1.expected)
 
-  const claim1 = { label: 'an Undo appears', expected: 'Undo', got: '(missing)', ok: false, missing: true,
-    ring: { x: 0, y: 0, width: 300, height: 28 } }
+  const claim1 = { label: 'an Undo appears', expected: 'Undo', got: '(missing)', ok: false, missing: true, ring: rowRing }
   // v2: a SECOND missing claim, same ring — still in place, inserted after the restored row
   const r2 = capC(bodyRow, {
-    target: row, ring: { x: 0, y: 0, width: 300, height: 28 },
+    target: row, ring: rowRing,
     claim: claim1, claims: [claim0, claim1], base: r1.expected
   })
   assert.ok(/data-claim="restored"[\s\S]*<span data-claim="new" data-claim-of="1">Undo<\/span>/.test(r2.expected), r2.expected)
@@ -937,59 +998,145 @@ test('fix round 2, rule 3: the rebuild re-anchors earlier failed claims in claim
   const page = el('div', [0, 0, 700, 400], { children: [ulC, header] })
   const bodyC = el('body', [0, 0, 1440, 900], { children: [page] })
 
-  const claim2 = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false,
-    ring: { x: 500, y: 0, width: 80, height: 24 } }
+  const counterRing = { x: 500, y: 0, width: 80, height: 24 }
+  const claim2 = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false, ring: counterRing }
   const r3 = capC(bodyC, {
-    target: counter, ring: { x: 500, y: 0, width: 80, height: 24 },
+    target: counter, ring: counterRing,
     claim: claim2, claims: [claim0, claim1, claim2], base: r2.expected,
-    minRegion: { x: 0, y: 0, w: 300, h: 28 },
-    hits: [shifted]
+    minRegion: { x: 0, y: 0, w: 300, h: 28 }
   })
   // the current claim applied: the counter now reads the requirement's word
   assert.ok(r3.expected.includes('To do 5') && !/>To do 4</.test(r3.expected), r3.expected)
-  // BOTH earlier failed claims re-anchored, in CLAIM ORDER, before the anchor (the row that shifted
-  // up to occupy the deleted row's old slot) — the restored title, THEN Undo, THEN "Call the dentist"
+  // BOTH earlier failed claims re-applied, in CLAIM ORDER, before the spot's current occupant (the
+  // row that shifted up to occupy the deleted row's old slot) — the restored title, THEN Undo, THEN
+  // "Call the dentist"
   const iTitle = r3.expected.indexOf('Pay the electricity bill')
   const iUndo = r3.expected.indexOf('>Undo<')
   const iDentist = r3.expected.indexOf('Call the dentist')
   assert.ok(iTitle >= 0 && iUndo >= 0 && iDentist >= 0, r3.expected)
   assert.ok(iTitle < iUndo && iUndo < iDentist,
-    'restored row, then Undo, then the anchor (the row that moved up) — claim order: ' + r3.expected)
+    'restored row, then Undo, then the row that moved up — claim order: ' + r3.expected)
   assert.ok(/data-claim="restored"[^>]*data-claim-of="0"/.test(r3.expected), 'the restore keeps its own claim index')
-  assert.ok(/data-claim="new" data-claim-of="1"/.test(r3.expected), 'so does the placeholder')
+  assert.ok(/data-claim="new"[^>]*data-claim-of="1"/.test(r3.expected), 'so does the placeholder')
   // and the Actual is untouched by any of it — the app's own (still wrong) picture
   assert.ok(r3.html.includes('To do 4') && !r3.html.includes('Pay the electricity bill') && !r3.html.includes('Undo'), r3.html)
 })
 
-test('fix round 2, rule 3: an unanchored claim is flagged, not applied', () => {
+test('fix round 3 on a rebuild: an earlier claim with no leaf inside its OWN ring box anywhere is flagged unlocated', () => {
   const btn = el('button', [10, 10, 40, 20], { text: 'Draft' })
   const smallScene = el('div', [0, 0, 60, 40], { children: [btn] })
   const bodyA = el('body', [0, 0, 1440, 900], { children: [smallScene] })
-  const claim0 = { label: 'the track', expected: 'Published', got: 'Draft', ok: false,
-    ring: { x: 10, y: 10, width: 40, height: 20 } }
-  const before = capC(bodyA, { target: btn, ring: { x: 10, y: 10, width: 40, height: 20 } })
+  const ring0 = { x: 10, y: 10, width: 40, height: 20 }
+  const claim0 = { label: 'the track', expected: 'Published', got: 'Draft', ok: false, ring: ring0 }
+  const before = capC(bodyA, { target: btn, ring: ring0 })
   const r1 = capC(bodyA, {
-    target: btn, ring: { x: 10, y: 10, width: 40, height: 20 },
+    target: btn, ring: ring0,
     claim: claim0, claims: [claim0], base: before.html
   })
   assert.ok(r1.expected.includes('Published') && r1.expected.includes('data-claim-of="0"'), r1.expected)
 
-  // v2: a totally different scene — nothing at claim0's old ring centre resolves to anything this
-  // capture walked at all (elementsFromPoint returns empty — no hits configured)
+  // v2: a totally different scene — claim0's OWN ring box (10,10,40,20) now covers empty space,
+  // nothing this capture walked lies there at all
   const other = el('span', [500, 500, 30, 20], { text: 'Overdue' })
   const bodyB = el('body', [0, 0, 1440, 900], { children: [other] })
-  const claim1 = { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false,
-    ring: { x: 500, y: 500, width: 30, height: 20 } }
+  const ring1 = { x: 500, y: 500, width: 30, height: 20 }
+  const claim1 = { label: 'the due state', expected: 'Due today', got: 'Overdue', ok: false, ring: ring1 }
   const r2 = capC(bodyB, {
-    target: other, ring: { x: 500, y: 500, width: 30, height: 20 },
+    target: other, ring: ring1,
     claim: claim1, claims: [claim0, claim1], base: r1.expected,
-    minRegion: { x: 10, y: 10, w: 40, h: 20 }
-    // no `hits` — claim0's anchor resolves to nothing
+    minRegion: ring0
   })
   assert.ok(r2.expected.includes('Due today'), 'the current claim still applies: ' + r2.expected)
   const rendered2 = r2.expected.replace(/ data-claims="[^"]*"/, '')
-  assert.ok(!rendered2.includes('Published'), 'the unanchored claim was never applied — no guess, no fallback: ' + rendered2)
+  assert.ok(!rendered2.includes('Published'), 'the unlocated claim was never applied — no guess, no fallback: ' + rendered2)
   const json = JSON.parse(/data-claims="([^"]*)"/.exec(r2.expected)[1].replace(/&quot;/g, '"'))
-  assert.equal(json[0].unanchored, true, 'flagged, honestly: ' + JSON.stringify(json))
-  assert.ok(!json[1].unanchored, 'the current claim itself is never "unanchored" — it just applies')
+  assert.equal(json[0].unlocated, true, 'flagged, honestly: ' + JSON.stringify(json))
+  assert.ok(!json[1].unlocated, 'the current claim itself is never "unlocated" — it just applies')
+})
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// FIX ROUND 3 (2026-09-03) — the full R9 shape, exactly the sequence that broke fix round 2: an OK
+// claim on the counter FIRST (the beat's Given), then the row deleted, restored, an Undo inserted,
+// and finally the counter's OWN wrong-value claim. Round 2 failed here because minRegion grew so
+// early (from the counter's own OK ring) that every later base's region trivially contained the
+// counter too, so the wrong-value fix was patched IN PLACE against a frozen pre-click tree that
+// never showed "4" anywhere — falling to the (now deleted) bounded fallback and overwriting the
+// restored title. Locating by the CLAIM'S OWN ring box, not by searching for `got`, makes that
+// impossible: wherever the base's region puts the search, the counter's own ring box finds the
+// counter's own leaf, never the row's.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+test('fix round 3: the R9-shaped sequence — ok counter, delete the row, missing restored, Undo new, counter wrong value — ends with all three present and marked', () => {
+  const cb = el('button', [4, 4, 18, 18], {})
+  const ttl = el('span', [30, 5, 200, 18], { text: 'Pay the electricity bill' })
+  const row = el('li', [0, 0, 300, 28], { children: [cb, ttl] })
+  const nextRow = el('li', [0, 28, 300, 28], { children: [el('span', [30, 33, 200, 18], { text: 'Call the dentist' })] })
+  const ul = el('ul', [0, 0, 300, 56], { children: [row, nextRow] })
+  const wrap = el('div', [0, 0, 300, 120], { children: [ul] })
+  const counter = el('div', [500, 0, 80, 24], { text: 'To do 5', cs: { color: 'rgb(180,0,0)' } })
+  const head = el('div', [500, 0, 200, 40], { children: [counter] })
+  const bodyBoth = el('body', [0, 0, 1440, 900], { children: [wrap, head] })
+
+  // moment 1 (the beat's Given): the OK claim on the counter — FIRST, exactly R9's own order
+  const counterRing = { x: 500, y: 0, width: 80, height: 24 }
+  const claimA = { label: 'five open', expected: '5', got: '5', ok: true, ring: counterRing }
+  const rA = capC(bodyBoth, { target: counter, ring: counterRing, claim: claimA, claims: [claimA] })
+  assert.deepEqual(rA.region, { x: 500, y: 0, w: 200, h: 40 }, 'the counter\'s own small scene: ' + JSON.stringify(rA.region))
+
+  // moment 2: the row itself, still OK (before the delete) — minRegion now carries the counter's box
+  const rowRing = { x: 0, y: 0, width: 300, height: 28 }
+  const claimB = { label: 'the task about to go', expected: 'Pay the electricity bill', got: 'Pay the electricity bill', ok: true, ring: rowRing }
+  const rB = capC(bodyBoth, {
+    target: row, ring: rowRing,
+    claim: claimB, claims: [claimA, claimB],
+    minRegion: counterRing
+  })
+  const before = rB.html
+
+  // moment 3: the row is deleted — a missing claim, FAILS. base = rB's own Actual (lastRight)
+  const shiftedList = el('div', [0, 0, 300, 120], { children: [el('ul', [0, 0, 300, 28], { children: [
+    el('li', [0, 0, 300, 28], { children: [el('span', [30, 5, 200, 18], { text: 'Call the dentist' })] })
+  ] })] })
+  const shiftedBody = el('body', [0, 0, 1440, 900], { children: [shiftedList, head] })
+  const claimC = { label: 'still listed', expected: 'Pay the electricity bill', got: '(missing)', ok: false, missing: true, ring: rowRing }
+  const rC = capC(shiftedBody, {
+    target: row, ring: rowRing,
+    claim: claimC, claims: [claimA, claimB, claimC],
+    minRegion: counterRing,
+    base: before
+  })
+  assert.ok(/data-claim="restored"/.test(rC.expected), rC.expected)
+
+  // moment 4: Undo — missing, not found, inserted
+  const claimD = { label: 'an Undo appears', expected: 'Undo', got: '(missing)', ok: false, missing: true, ring: rowRing }
+  const rD = capC(shiftedBody, {
+    target: row, ring: rowRing,
+    claim: claimD, claims: [claimA, claimB, claimC, claimD],
+    minRegion: counterRing,
+    base: rC.expected
+  })
+  assert.ok(/data-claim="new"[^>]*>Undo</.test(rD.expected), rD.expected)
+
+  // moment 5: the counter, wrong value — the app's OWN live "4" vs the required "5". Its ring is
+  // DISTANT from the row's, exactly R9's shape — and the base (rD.expected) has never shown "4"
+  // anywhere, since it descends from the pre-click snapshot where the counter correctly read "5".
+  const counter2 = el('div', [500, 0, 80, 24], { text: 'To do 4', cs: { color: 'rgb(180,0,0)' } })
+  const head2 = el('div', [500, 0, 200, 40], { children: [counter2] })
+  const bodyE = el('body', [0, 0, 1440, 900], { children: [head2] })
+  const claimE = { label: 'the open count', expected: 'To do 5', got: 'To do 4', ok: false, ring: counterRing }
+  const rE = capC(bodyE, {
+    target: counter2, ring: counterRing,
+    claim: claimE, claims: [claimA, claimB, claimC, claimD, claimE],
+    minRegion: rowRing,
+    base: rD.expected
+  })
+  assert.ok(/data-claim="restored"[^>]*>[\s\S]*Pay the electricity bill/.test(rE.expected), 'the restored row survives: ' + rE.expected)
+  assert.ok(/data-claim="new"[^>]*>Undo</.test(rE.expected), 'so does Undo: ' + rE.expected)
+  // the base this claim locates in (rD.expected) descends from moment 2's snapshot — BEFORE the
+  // click, when the counter genuinely, still, read "5" — so the leaf found at the counter's OWN
+  // ring box ALREADY says the requirement's word: rule 2's case (b), marked fixed, nothing rewritten
+  assert.ok(/data-claim="fixed"[^>]*data-claim-of="4"[^>]*>To do 5</.test(rE.expected),
+    'and the counter is fixed, found at its OWN ring box (case b — already right, nothing rewritten): ' + rE.expected)
+  assert.ok(!/data-claim-got/.test(rE.expected.replace(/ data-claims="[^"]*"/, '')),
+    'nothing anywhere needed rewriting — every fact this base ever carried for this ring box was already correct')
+  assert.ok(rE.html.includes('To do 4') && !rE.html.includes('Pay the electricity bill'), 'the Actual is still the app\'s own wrong picture')
 })

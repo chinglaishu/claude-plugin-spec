@@ -332,12 +332,6 @@ export function captureReplica (arg) {
     return E('span', attrs, kids)
   }
 
-  // LIVE DOM ELEMENT → its node in OUR tree (fix round 2) — every element `serialise` actually
-  // walked, not only the ringed one. A rebuild needs it to turn an anchor found by
-  // `document.elementsFromPoint` (a real element) back into something in the tree it can mark and
-  // insert beside.
-  const outputOf = new Map()
-
   const serialise = (node, isRoot) => {
     if (!node || node.nodeType !== 1) return null
     // OUR OWN CHROME IS NOT THE APP'S DOM (fix round 1, F2). The narration overlay — the ring, the
@@ -460,9 +454,18 @@ export function captureReplica (arg) {
       if (after) out.push(after)
       kids = out
     }
+    // FIX ROUND 3 — every TEXT LEAF, and every data-ring/plate/control node, carries its own box
+    // compactly: `data-b="x,y,w,h"` (viewport px, integers), counted like any other attribute
+    // against the byte cap. This is what makes a claim locatable by GEOMETRY rather than by text —
+    // a base is a scene that was RIGHT, so it never shows a wrong value's `got` text at all; only
+    // its POSITION is trustworthy across a chain of captures (the controller, fix round 3).
+    const isTextLeaf = kids.length > 0 && kids.every(isText)
+    const marked = attrs.some(a => a[0] === 'data-ring' || a[0] === 'data-plate' || a[0] === 'data-control')
+    if ((isTextLeaf || marked) && r) {
+      attrs.push(['data-b', Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height)])
+    }
     bytes += costOf(emit, attrs, kids)
     const made = E(emit, attrs, kids)
-    outputOf.set(node, made)
     if (isRoot) made.cls = cls
     return made
   }
@@ -476,7 +479,6 @@ export function captureReplica (arg) {
   const elemsIn = (n) => { const out = []; const walk = (x) => { if (isText(x)) return; out.push(x); for (const k of x.kids) walk(k) }; walk(n); return out }
   const isLeaf = (n) => !n.kids.some(k => !isText(k))
   const setAttr = (n, k, v) => { for (const a of n.attrs) if (a[0] === k) { a[1] = v; return } n.attrs.push([k, v]) }
-  const delAttr = (n, k) => { n.attrs = n.attrs.filter(a => a[0] !== k) }
   const parents = new Map()
   const link = (n) => { if (isText(n)) return; for (const k of n.kids) { parents.set(k, n); link(k) } }
   const findRing = (n) => {
@@ -505,24 +507,6 @@ export function captureReplica (arg) {
     n.kids = [T(want)]
   }
   const swapDirect = (n, got, want) => { for (const k of n.kids) if (isText(k) && k.text.indexOf(got) >= 0) k.text = k.text.replace(got, want) }
-  const isMark = (n, ...kinds) => {
-    if (isText(n)) return false
-    const a = n.attrs.find(x => x[0] === 'data-claim')
-    return !!a && kinds.indexOf(a[1]) >= 0
-  }
-  // insert AFTER the ring, and after anything a PRIOR claim on this same base already inserted there
-  // (fix round 1, I1) — never nearer the ring than something the beat put there before it, which is
-  // what read an Undo ahead of the task it belonged to.
-  const insertBeside = (rootNode, ringNode, made) => {
-    const parent = ringNode === rootNode ? null : parents.get(ringNode)
-    const siblings = parent ? parent.kids : rootNode.kids
-    const at = parent ? siblings.indexOf(ringNode) : -1
-    let ins = at + 1
-    while (ins < siblings.length && isMark(siblings[ins], 'new', 'restored')) ins++
-    siblings.splice(ins, 0, made)
-    parents.set(made, parent || rootNode)
-    link(made)
-  }
   const ROW_TAGS = ['li', 'tr', 'option']
   const ROW_ROLES = ['row', 'listitem', 'option', 'gridcell']
   // the nearest ancestor that reads as ONE ROW — else the element itself (fix round 1, I2: the
@@ -552,6 +536,109 @@ export function captureReplica (arg) {
     return best
   }
 
+  // ── FIX ROUND 3: LOCATE BY GEOMETRY, NEVER BY TEXT ────────────────────────────────────────────
+  // A base is a scene that was RIGHT, so it never shows a wrong value's `got` at all — searching a
+  // base's text for `got` (round 1/2's `scopedLeaf`) was always going to fail there, and the bounded
+  // fallback that caught the failure rewrote whatever leaf the stale ring happened to be nearest,
+  // which is what corrupted a just-restored title twice over (task-2-report.md, fix rounds 1 and 2).
+  // What a base CAN be trusted to have right is POSITION — `data-b`, recorded on every text leaf and
+  // every data-ring/plate/control node at capture time (see `serialise`) — so a wrong-value claim is
+  // now found by where its OWN ring box was, in ANY tree (a base or the current Actual), never by
+  // what the text says.
+  const unlocated = new Set()
+  const attrBox = (n) => {
+    if (!n || isText(n)) return null
+    const a = n.attrs.find(x => x[0] === 'data-b')
+    if (!a) return null
+    const p = String(a[1]).split(',').map(Number)
+    if (p.length !== 4 || p.some(x => !Number.isFinite(x))) return null
+    return { x: p[0], y: p[1], w: p[2], h: p[3] }
+  }
+  const ringBoxOf = (ring) => {
+    if (!ring || ring.x == null || ring.y == null) return null
+    const w = ring.width != null ? ring.width : ring.w
+    const h = ring.height != null ? ring.height : ring.h
+    if (!(w >= 0) || !(h >= 0)) return null
+    return { x: ring.x, y: ring.y, w, h }
+  }
+  // the fraction of the LEAF's OWN area that lies inside the ring box — a leaf counts once ≥60% of
+  // itself is covered, so a ring drawn slightly loose around a small leaf still finds it.
+  const overlapFrac = (leafBox, ringBox) => {
+    const ix0 = Math.max(leafBox.x, ringBox.x); const iy0 = Math.max(leafBox.y, ringBox.y)
+    const ix1 = Math.min(leafBox.x + leafBox.w, ringBox.x + ringBox.w)
+    const iy1 = Math.min(leafBox.y + leafBox.h, ringBox.y + ringBox.h)
+    const iw = Math.max(0, ix1 - ix0); const ih = Math.max(0, iy1 - iy0)
+    const leafArea = Math.max(1, leafBox.w * leafBox.h)
+    return (iw * ih) / leafArea
+  }
+  // candidates: text leaves whose `data-b` lies ≥60% inside `ringBox`. Pick (a) one whose clean
+  // text contains `got`, else (b) one whose clean text ALREADY contains `expected` (nothing to
+  // change — mark it and stop), else (c) the largest-overlap leaf. `null` — no leaf lies inside the
+  // ring box at all — is the caller's cue to flag the claim `unlocated`, never to guess elsewhere.
+  const locateByBox = (rootNode, ringBox, got, want) => {
+    if (!ringBox) return null
+    const candidates = []
+    for (const e of elemsIn(rootNode).filter(isLeaf)) {
+      const b = attrBox(e)
+      if (!b) continue
+      const f = overlapFrac(b, ringBox)
+      if (f >= 0.6) candidates.push({ node: e, frac: f })
+    }
+    if (!candidates.length) return null
+    if (got) {
+      const byGot = firstMatch(candidates, c => clean(textOf(c.node)).indexOf(got) >= 0)
+      if (byGot) return { node: byGot.node, already: false }
+    }
+    if (want) {
+      const byWant = firstMatch(candidates, c => clean(textOf(c.node)).indexOf(want) >= 0)
+      if (byWant) return { node: byWant.node, already: true }
+    }
+    let best = candidates[0]
+    for (const c of candidates.slice(1)) if (c.frac > best.frac) best = c
+    return { node: best.node, already: false }
+  }
+  // is `n` (or an ancestor of it, short of `rootNode`) already marked by SOME claim? A row this
+  // same beat already touched is not "the spot's current occupant" — it is the thing a later
+  // insertion needs to land AFTER, never something to be spliced in front of.
+  const hasClaimedAncestor = (n, rootNode) => {
+    for (let a = n; a && a !== rootNode; a = parents.get(a)) {
+      if (!isText(a) && a.attrs.some(x => x[0] === 'data-claim')) return true
+    }
+    return false
+  }
+  // rule 3's new insertion point: the element whose `data-b` box is NEAREST BELOW the ring box's
+  // top, inside this tree (the spot's current occupant — the row that moved up to fill a deleted
+  // row's place, found here by geometry alone, no live page needed). Candidates are bounded to the
+  // ring's own COLUMN (their box must overlap the ring box's x-range) — without it, a header far to
+  // the side at the same y as a shifted row would out-rank the row it is actually looking for, just
+  // because "nearest" compared only one axis. EXCLUDES anything this same beat has already marked
+  // (the ring's own element still sitting there is not "the spot's current occupant" — it is the
+  // thing a later insertion lands AFTER, never something to splice in front of), and the raw leaf
+  // found is climbed to its own row (`climbToRow`) so a clone lands BESIDE a row, never nested
+  // inside an unrelated one — else the tree's own end.
+  const insertNearestBelow = (rootNode, ringBox, made) => {
+    let target = null
+    if (ringBox) {
+      let bestTop = Infinity
+      for (const e of elemsIn(rootNode)) {
+        if (e === rootNode) continue
+        const b = attrBox(e)
+        if (!b || b.y < ringBox.y - 0.5) continue
+        const xOverlap = Math.max(b.x, ringBox.x) < Math.min(b.x + b.w, ringBox.x + ringBox.w)
+        if (!xOverlap) continue
+        if (hasClaimedAncestor(e, rootNode)) continue
+        if (b.y < bestTop) { bestTop = b.y; target = e }
+      }
+      if (target) target = climbToRow(target, rootNode)
+    }
+    const parent = (!target || target === rootNode) ? null : parents.get(target)
+    const siblings = parent ? parent.kids : rootNode.kids
+    const at = target ? (parent ? siblings.indexOf(target) : siblings.length) : siblings.length
+    siblings.splice(Math.max(0, at), 0, made)
+    parents.set(made, parent || rootNode)
+    link(made)
+  }
+
   // ONE CLAIM, applied to ONE tree, IN PLACE — never a loop over a claims array. That loop is what
   // replayed a stale claim against a scene it was never made on (fix round 1, C1/C2/I3); deleting it
   // is what makes a replay impossible BY CONSTRUCTION, not a rule asking the code not to do it — there
@@ -576,8 +663,9 @@ export function captureReplica (arg) {
       // rules 3/4: the element the app did not show. The base ALREADY HAS it — that is the entire
       // reason a base was chosen — so a restore never clones or inserts, only MARKS the row it finds,
       // climbed to the nearest thing that reads as a row (fix round 1, C2/I2: no splicing). Nothing
-      // found at all means the app never had it: a marked placeholder, beside the ring, after
-      // anything the beat already put there.
+      // found at all means the app never had it: a marked placeholder, inserted at the spot's
+      // current occupant — nearest below the ring box's top (fix round 3, rule 3) — never simply
+      // "beside the ring", which a moved ring could put anywhere.
       const src = findByText(rootNode, want)
       if (src) {
         const row = climbToRow(src, rootNode)
@@ -585,59 +673,41 @@ export function captureReplica (arg) {
         for (const [k, v] of claimOf) setAttr(row, k, v)
         return
       }
-      const ringNode = findRing(rootNode) || rootNode
       const made = E('span', [['data-claim', 'new'], ...claimOf], [T(want)])
-      insertBeside(rootNode, ringNode, made)
+      insertNearestBelow(rootNode, ringBoxOf(c.ring), made)
       return
     }
-    // rule 2: the wrong value takes the requirement's word, on the leaf inside the ring box that
-    // carries it (or, failing that, wherever in the tree it can be found — never a silent no-op), and
-    // on every worded wrapper up to that ring (a row whose own text reads "To do 4" around a leaf
-    // reading "4" must not be left saying both numbers).
-    const found = got ? scopedLeaf(rootNode, x => clean(textOf(x)).indexOf(got) >= 0) : null
-    if (found) {
-      const { leaf, ringNode } = found
-      swapLeaf(leaf, got, want)
-      const bound = ringNode || rootNode
-      if (leaf !== bound) {
-        // …bounded at the tree root too — the whole-tree fallback can find `got` on a leaf whose
-        // stale ring sits in an unrelated branch, and climbing must still stop somewhere sane
-        for (let a = parents.get(leaf); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === bound || a === rootNode) break }
-      }
-      setAttr(leaf, 'data-claim', 'fixed')
-      setAttr(leaf, 'data-claim-got', got)
-      for (const [k, v] of claimOf) setAttr(leaf, k, v)
-      // the base's ring is stale the moment a fix lands somewhere else — RE-POINT it here, so the
-      // NEXT claim's scoped search starts from where this one actually landed, not from where the
-      // beat began (fix round 1, C1: a replay could never do this, because it never knew which claim
-      // was "current").
-      if (ringNode && ringNode !== leaf) delAttr(ringNode, 'data-ring')
-      if (ringNode !== leaf) setAttr(leaf, 'data-ring', '1')
+    // rule 2 (fix round 3): the wrong value is located by GEOMETRY — the claim's OWN ring box —
+    // never by searching the tree for `got`: a base is a scene that was RIGHT, so it never shows the
+    // wrong value's text at all. The bounded fallback that used to rewrite "the ring's first leaf"
+    // when nothing matched is GONE — a claim with no leaf inside its own ring box is flagged
+    // `unlocated`, in `data-claims`, and never applied anywhere else.
+    const loc = locateByBox(rootNode, ringBoxOf(c.ring), got, want)
+    if (!loc) { if (idx != null) unlocated.add(idx); return }
+    if (loc.already) {
+      // case (b): the leaf ALREADY reads the requirement's word — mark it, change nothing
+      setAttr(loc.node, 'data-claim', 'fixed')
+      for (const [k, v] of claimOf) setAttr(loc.node, k, v)
       return
     }
-    const ringNode = findRing(rootNode) || rootNode
-    const leaves = elemsIn(ringNode).filter(isLeaf)
-    const tl = firstMatch(leaves, x => clean(textOf(x)) !== '')
-    if (tl) {
-      tl.kids = [T(want)]
-      setAttr(tl, 'data-claim', 'fixed')
-      if (got) setAttr(tl, 'data-claim-got', got)
-      for (const [k, v] of claimOf) setAttr(tl, k, v)
-    } else {
-      const span = E('span', [['data-claim', 'fixed'], ...claimOf], [T(want)])
-      ringNode.kids.push(span)
-      parents.set(span, ringNode)
-    }
+    swapLeaf(loc.node, got, want)
+    // …and on every worded wrapper up to the tree root (a row whose own text reads "To do 4" around
+    // a leaf reading "4" must not be left saying both numbers).
+    for (let a = parents.get(loc.node); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === rootNode) break }
+    setAttr(loc.node, 'data-claim', 'fixed')
+    setAttr(loc.node, 'data-claim-got', got)
+    for (const [k, v] of claimOf) setAttr(loc.node, k, v)
   }
 
   // ── a BASE, parsed back into nodes and re-minted into THIS capture's own sheet ───────────────────
   // In the page an inert <template> does the parsing (it never runs, loads or paints what it holds);
   // a node test hands in `env.parseHtml`. What comes back is re-sanitised on the way in — it is our
-  // own output, but a second wall costs nothing. `data-ring` and `data-claim*` ARE imported now (fix
+  // own output, but a second wall costs nothing. `data-ring` and `data-claim*` ARE imported (fix
   // round 1) — the whole point of handing in a base is that its ring and its earlier marks are
-  // exactly what the next claim needs to find and build on.
+  // exactly what the next claim needs to find and build on — and so is `data-b` (fix round 3): a
+  // base's own leaf boxes are the ONLY thing about it a wrong-value claim can still trust.
   const IMPORT_ATTRS = ATTRS.concat(['class', 'data-control', 'data-plate', 'data-ph', 'data-pseudo',
-    'data-ring', 'data-claim', 'data-claim-got', 'data-claim-of'])
+    'data-ring', 'data-claim', 'data-claim-got', 'data-claim-of', 'data-b'])
   const fromDom = (n) => {
     if (!n) return null
     if (n.nodeType === 3) { const t = String(n.textContent == null ? '' : n.textContent); return t ? T(t) : null }
@@ -731,15 +801,14 @@ export function captureReplica (arg) {
     for (const k of n.kids) remapClasses(k, cssMap)
   }
 
-  // ── FIX ROUND 2: THE REBUILD — an earlier claim's fix, carried across a region that grew ─────────
+  // ── FIX ROUND 2/3: THE REBUILD — an earlier claim's fix, carried across a region that grew ──────
   // Triggers only when a base was chosen (something has failed) but that base's OWN region does not
   // contain the CURRENT ring — root cause 2 (task-2-review.md): the counter and the row are never in
-  // the SAME captured scene, so patching the row-scoped base in place cannot show the counter at all,
-  // and the old bounded fallback patched whatever leaf the ring HAPPENED to be nearest, which was the
-  // just-restored title. The rebuild starts over from THIS moment's own (grown, rule 1) Actual, and
-  // puts every EARLIER FAILED claim's fix back — not by searching text again (that is what a replay
-  // is), but by ANCHOR: the live element under that claim's OWN ring centre, resolved against the
-  // CURRENT DOM, the only thing that can say where "the spot" is once the page has moved on.
+  // the SAME captured scene, so patching the row-scoped base in place cannot show the counter at all.
+  // The rebuild starts over from THIS moment's own (grown, rule 1) Actual, and puts every EARLIER
+  // FAILED claim's fix back by its OWN ring box (fix round 3's geometry — rule 2/3 below), never by
+  // searching text again (that is what a replay is, and what a base's own frozen content could
+  // never answer for a wrong value it was never wrong about).
   const findByClaimOf = (list, idx) => {
     const want = String(idx)
     for (const k of list) {
@@ -751,19 +820,6 @@ export function captureReplica (arg) {
     }
     return null
   }
-  // insert BEFORE the anchor (fix round 2) — the opposite edge from `insertBeside`'s "after the
-  // ring" (fix round 1, I1): an anchor is the spot's CURRENT occupant (the next row that moved up
-  // into a deleted row's place), and several claims re-inserted in claim order each go immediately
-  // before it, so they read in the order the beat made them, ending right where the anchor begins.
-  const insertBeforeAnchor = (rootNode, anchorNode, made) => {
-    const parent = anchorNode === rootNode ? null : parents.get(anchorNode)
-    const siblings = parent ? parent.kids : rootNode.kids
-    const at = parent ? siblings.indexOf(anchorNode) : siblings.length
-    siblings.splice(Math.max(0, at), 0, made)
-    parents.set(made, parent || rootNode)
-    link(made)
-  }
-
   const built = serialise(root, true)
   if (!built) return null
 
@@ -811,7 +867,6 @@ export function captureReplica (arg) {
   // the Expected starts from THIS moment's own (grown) Actual, every EARLIER FAILED claim is put
   // back by ANCHOR (never by searching text again — that would be a replay), and only then is the
   // CURRENT claim applied, exactly as round 1 would.
-  const unanchored = new Set()
   let expectedKids
   const baseParsed = parseBase(BASE)
   const inPlace = !!baseParsed && (!rb || regionContains(baseParsed.region, rb))
@@ -819,50 +874,23 @@ export function captureReplica (arg) {
     expectedKids = baseParsed.kids
     for (const k of expectedKids) remapClasses(k, baseParsed.cssMap)
   } else if (BASE) {
-    // REBUILD (fix round 2). `cloneMap` links each node of THIS capture's own walk (`built`, keyed
-    // by the live DOM element via `outputOf`) to its counterpart in the fresh clone the Expected is
-    // built from, so an anchor found in the live page can be turned into something in THIS tree.
-    const cloneMap = new Map()
-    const cloneTracked = (n) => {
-      if (isText(n)) { const c = T(n.text); cloneMap.set(n, c); return c }
-      const c = E(n.tag, n.attrs.map(a => [a[0], a[1]]), n.kids.map(cloneTracked))
-      cloneMap.set(n, c)
-      return c
-    }
-    expectedKids = built.kids.map(cloneTracked)
-    const anchorFor = (ringBox) => {
-      if (!ringBox || typeof doc.elementsFromPoint !== 'function') return null
-      const w = ringBox.width != null ? ringBox.width : ringBox.w
-      const h = ringBox.height != null ? ringBox.height : ringBox.h
-      if (!(w >= 0) || !(h >= 0)) return null
-      const cx = ringBox.x + w / 2
-      const cy = ringBox.y + h / 2
-      let hits = []
-      try { hits = doc.elementsFromPoint(cx, cy) || [] } catch { hits = [] }
-      for (const h2 of hits) {
-        if (!h2 || h2.id === OVERLAY || (h2.closest && h2.closest('#' + OVERLAY))) continue
-        const orig = outputOf.get(h2)
-        if (orig && cloneMap.has(orig)) return cloneMap.get(orig)
-      }
-      return null
-    }
-    // needs a `parents` map over the FRESH tree before anything is marked or inserted into it
+    // REBUILD (fix round 2, geometry per fix round 3). The Expected starts from THIS moment's own
+    // (grown) Actual — a plain clone, `built` already carries `data-b` on everything from its own
+    // walk, so no live-DOM anchor lookup is needed any more (fix round 4's rule: `elementsFromPoint`
+    // MAY still exist for other purposes, but is not needed here — every claim now locates by the
+    // SAME `data-b` geometry rule 2 uses, on THIS tree or a base alike). Every earlier FAILED claim
+    // is put back by its OWN ring box (never by searching text again — that would be a replay).
+    expectedKids = built.kids.map(cloneNode)
     const rebuiltRoot = E('_root', [], expectedKids)
     link(rebuiltRoot)
     // strips a STALE `data-ring` off a grafted clone and its descendants — a "restored"/"new"
     // element carries whatever it had at the moment it was marked (its own base's ring, long since
     // moved on), and the rebuilt tree already has exactly one CURRENT ring, marked fresh by THIS
-    // moment's own walk; two would make `findRing` (used by the current claim, applied last) pick
-    // whichever happens to come first in the tree instead of where the beat actually is now.
+    // moment's own walk.
     const stripRing = (n) => {
       if (isText(n)) return
       n.attrs = n.attrs.filter(a => a[0] !== 'data-ring')
       for (const k of n.kids) stripRing(k)
-    }
-    const markAnchor = (node, idx) => {
-      const existing = node.attrs.find(a => a[0] === 'data-claim-anchor')
-      if (existing) existing[1] = existing[1] + ' ' + idx
-      else node.attrs.push(['data-claim-anchor', String(idx)])
     }
     // iterate by the claim's OWN index in the FULL `CLAIMS` list — `data-claim-of` was stamped
     // with that same index, so a local (filtered) index here would look up the wrong element
@@ -870,40 +898,36 @@ export function captureReplica (arg) {
     for (let idx = 0; idx < priorCount; idx++) {
       const c = CLAIMS[idx]
       if (!c || c.ok === true) continue
-      const anchor = anchorFor(c.ring)
-      if (!anchor) { unanchored.add(idx); continue }
-      markAnchor(anchor, idx)
       const want = String(c.expected == null ? '' : c.expected)
       const got = String(c.got == null ? '' : c.got)
+      const ringBox = ringBoxOf(c.ring)
       if (c.missing === true) {
         // the fix ALREADY EXISTS, marked, in the OLD base (round 1 put it there) — clone it out by
-        // its `data-claim-of` index rather than re-deriving it, and put it back BEFORE the anchor
-        // (the spot's current occupant), so several read in claim order, ending at the anchor.
+        // its `data-claim-of` index rather than re-deriving it, and put it back at the spot's
+        // current occupant (fix round 3, rule 3 — nearest below the ring box's top), so several
+        // read in claim order.
         const src = baseParsed && findByClaimOf(baseParsed.kids, idx)
         const made = src ? cloneNode(src) : E('span', [['data-claim', 'new'], ['data-claim-of', String(idx)]], [T(want)])
         stripRing(made)
         if (src && baseParsed) remapClasses(made, baseParsed.cssMap)
-        insertBeforeAnchor(rebuiltRoot, anchor, made)
-      } else if (got || want) {
-        // wrong value: the anchor's OWN leaf carrying `got`, else its first worded leaf, takes the
-        // requirement's word — scoped to the anchor's subtree only, never the whole page.
-        const leaves = elemsIn(anchor).filter(isLeaf)
-        let target = got ? firstMatch(leaves, x => clean(textOf(x)).indexOf(got) >= 0) : null
-        if (!target) target = firstMatch(leaves, x => clean(textOf(x)) !== '')
-        if (target) {
-          swapLeaf(target, got, want)
-          if (target !== anchor) {
-            for (let a = parents.get(target); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === anchor) break }
-          }
-          setAttr(target, 'data-claim', 'fixed')
-          if (got) setAttr(target, 'data-claim-got', got)
-          setAttr(target, 'data-claim-of', String(idx))
-        } else {
-          const span = E('span', [['data-claim', 'fixed'], ['data-claim-of', String(idx)]], [T(want)])
-          anchor.kids.push(span)
-          parents.set(span, anchor)
-        }
+        insertNearestBelow(rebuiltRoot, ringBox, made)
+        continue
       }
+      if (!got && !want) continue
+      // wrong value (fix round 3, rule 2 on the REBUILT tree — the boxes are there now): located by
+      // the claim's OWN ring box, never by searching for `got`.
+      const loc = locateByBox(rebuiltRoot, ringBox, got, want)
+      if (!loc) { unlocated.add(idx); continue }
+      if (loc.already) {
+        setAttr(loc.node, 'data-claim', 'fixed')
+        setAttr(loc.node, 'data-claim-of', String(idx))
+        continue
+      }
+      swapLeaf(loc.node, got, want)
+      for (let a = parents.get(loc.node); a; a = parents.get(a)) { swapDirect(a, got, want); if (a === rebuiltRoot) break }
+      setAttr(loc.node, 'data-claim', 'fixed')
+      setAttr(loc.node, 'data-claim-got', got)
+      setAttr(loc.node, 'data-claim-of', String(idx))
     }
   } else {
     // base === null: nothing has failed — the Expected starts from THIS moment's own Actual
@@ -915,17 +939,17 @@ export function captureReplica (arg) {
   link(claimRoot)
   if (CLAIM) applyOneClaim(claimRoot, CLAIM, CLAIMS.length ? CLAIMS.length - 1 : null)
   // `data-claims` is EVERY claim of the beat so far, in order — informational only, for the board to
-  // read. It is never applied to anything by text search; `unanchored` (fix round 2) is the ONLY
-  // other thing that can happen to a claim here, and it means exactly what it says — no anchor
-  // inside the grown region, so nothing was touched for it, honestly, rather than a bounded fallback
-  // guessing at a leaf that has nothing to do with it.
+  // read. It is never applied to anything by text search; `unlocated` (fix round 3) is the ONLY
+  // other thing that can happen to a wrong-value claim here, and it means exactly what it says — no
+  // leaf lies inside the claim's own ring box, so nothing was touched for it, honestly, rather than
+  // the deleted bounded fallback guessing at a leaf that has nothing to do with it.
   const claimList = CLAIMS.map((c, idx) => ({
     label: String((c && c.label) == null ? '' : c.label),
     expected: String((c && c.expected) == null ? '' : c.expected),
     got: String((c && c.got) == null ? '' : c.got),
     ok: !!(c && c.ok === true),
     ...(c && c.missing === true ? { missing: true } : {}),
-    ...(unanchored.has(idx) ? { unanchored: true } : {})
+    ...(unlocated.has(idx) ? { unlocated: true } : {})
   }))
   for (const a of claimRoot.attrs) if (a[0] === 'data-claims') a[1] = JSON.stringify(claimList)
   const expected = '<style>' + sheet(RULES.length) + '</style>\n' + ser(claimRoot)
