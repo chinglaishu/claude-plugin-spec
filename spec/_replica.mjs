@@ -242,21 +242,67 @@ export function captureReplica (arg) {
   // only what the app's own stylesheets actually say. Identical declaration sets share one class, and
   // the css is one <style> the file carries with it (no external URL is reachable from a sandboxed
   // iframe anyway, and a page that could fetch one would not be sanitised).
+  //
+  // THE PROBE LIVES WHERE THE REPLICA WILL BE READ (phase 3, 2026-09-03 — found by the gate itself,
+  // on this repo's own init page: every replica's topbar came back 90 px tall against the live 61,
+  // and every word under it was 15 px low). The probe used to be appended to the APP'S OWN BODY, so
+  // it inherited the app's global rules — and a value the app sets on EVERY element (`*{box-sizing:
+  // border-box}`, a reset's `margin:0`, Tailwind's `border-width:0`) is then identical on the probe
+  // and on the element, diffed away as "the default", and simply absent from the file. In the empty
+  // iframe the replica is actually rendered in there is no such reset, so every padded or bordered
+  // box grew by its own padding and border and pushed the page down. The diff is only meaningful
+  // against the environment the file will be read in, so the probes live in a hidden about:blank
+  // iframe — a document with the UA's stylesheet and nothing else, exactly like the frame the gate
+  // and the board mount. A page that will not give us one (a CSP that forbids frames) falls back to
+  // the old in-page probe: fewer declarations, but never a thrown capture.
   const defaults = {}
+  let probeFrame = null
+  let probeDoc = null
+  let probeStyle = null
+  let probeTried = false
+  const probeEnv = () => {
+    if (probeTried) return probeDoc
+    probeTried = true
+    try {
+      const f = doc.createElement('iframe')
+      f.setAttribute('aria-hidden', 'true')
+      f.setAttribute('tabindex', '-1')
+      f.setAttribute('style', 'position:fixed;left:-99999px;top:0;width:200px;height:200px;border:0;opacity:0;pointer-events:none;z-index:-1')
+      doc.body.appendChild(f)
+      const d = f.contentDocument
+      const w = f.contentWindow
+      if (d && d.body && w && typeof w.getComputedStyle === 'function') {
+        probeFrame = f
+        probeDoc = d
+        probeStyle = (node) => { try { return w.getComputedStyle(node) } catch { return null } }
+      } else { f.remove() }
+    } catch { probeDoc = null }
+    return probeDoc
+  }
+  const dropProbe = () => {
+    if (probeFrame) { try { probeFrame.remove() } catch { /* already gone */ } }
+    probeFrame = null
+    probeDoc = null
+  }
   const defaultsOf = (tag, ns) => {
     const key = (ns || HTML_NS) + '|' + tag
     if (defaults[key]) return defaults[key]
     let d = {}
     if (defaultsFor) {
       try { d = defaultsFor(tag, ns || HTML_NS) || {} } catch { d = {} }
-    } else if (doc.createElementNS && doc.body && doc.body.appendChild) {
-      try {
-        const probe = doc.createElementNS(ns || HTML_NS, tag)
-        doc.body.appendChild(probe)
-        const cs = styleOf(probe)
-        for (const p of PROPS) d[p] = gp(cs, p)
-        probe.remove()
-      } catch { d = {} }
+    } else {
+      const pd = probeEnv()
+      const host = pd || doc
+      const read = pd ? probeStyle : styleOf
+      if (host.createElementNS && host.body && host.body.appendChild) {
+        try {
+          const probe = host.createElementNS(ns || HTML_NS, tag)
+          host.body.appendChild(probe)
+          const cs = read(probe)
+          for (const p of PROPS) d[p] = gp(cs, p)
+          probe.remove()
+        } catch { d = {} }
+      }
     }
     defaults[key] = d
     return d
@@ -921,6 +967,7 @@ export function captureReplica (arg) {
     return null
   }
   const built = serialise(root, true)
+  dropProbe()                                   // the page is left exactly as it was found
   if (!built) return null
 
   // ── the file body ─────────────────────────────────────────────────────────────────────────────
