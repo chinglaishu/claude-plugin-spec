@@ -23,6 +23,7 @@ function el (tag, rect, opts = {}) {
   const attrs = Object.assign({}, opts.attrs || {})
   const node = {
     nodeType: 1,
+    id: opts.id || '',
     tagName: tag.toUpperCase(),
     namespaceURI: opts.ns || 'http://www.w3.org/1999/xhtml',
     childNodes: kids,
@@ -54,6 +55,7 @@ function env (body, opts = {}) {
     window: { innerWidth: 1440, innerHeight: 900 },
     document: {
       body,
+      baseURI: opts.baseURI || 'https://app.example/board',
       elementsFromPoint: opts.hits ? () => opts.hits : undefined,
       styleSheets: opts.sheets || []
     },
@@ -334,12 +336,99 @@ test('the same-origin @font-face urls for a family the region actually uses ride
     'only the family the region uses, and the cross-origin sheet was skipped rather than thrown on')
 })
 
+// FIX ROUND 1, F1: the CSSOM hands back a font src EXACTLY as it was authored, and an app's own
+// stylesheet almost always writes it RELATIVE ("../fonts/inter.woff2"). The absolute-only test threw
+// away precisely the same-origin case the rule exists to catch — so every self-hosted face was
+// silently dropped and the replica fell back to a system stack. Resolve against the document's base
+// first, then ask whether it is ours.
+test('a RELATIVE @font-face src resolves against the document base; a cross-origin one is skipped', () => {
+  const word = el('span', [10, 10, 60, 16], { text: 'Draft', cs: { 'font-family': 'Inter Tight, sans-serif' } })
+  const root = el('div', [0, 0, 400, 40], { children: [word] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const sheets = [{ cssRules: [
+    { cssText: '@font-face { font-family: Inter Tight; src: url(../fonts/inter.woff2) format("woff2"); }', style: style({ 'font-family': 'Inter Tight', src: 'url(../fonts/inter.woff2) format("woff2")' }) }
+  ] }]
+  const r = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets, baseURI: 'https://app.example/app/board' }) })
+  assert.deepEqual(r.fonts, [{ family: 'Inter Tight', url: 'https://app.example/fonts/inter.woff2' }],
+    'the relative src became the page\'s own absolute url')
+
+  const foreign = [{ cssRules: [
+    { cssText: '@font-face { font-family: Inter Tight; src: url(https://fonts.gstatic.com/s/inter.woff2); }', style: style({ 'font-family': 'Inter Tight', src: 'url(https://fonts.gstatic.com/s/inter.woff2)' }) }
+  ] }]
+  const r2 = captureReplica({ target: word, ring: { x: 10, y: 10, width: 60, height: 16 }, props: REPLICA_PROPS, env: env(body, { sheets: foreign, baseURI: 'https://app.example/app/board' }) })
+  assert.deepEqual(r2.fonts, [], 'a face from another origin is not the page\'s own to carry')
+})
+
+// FIX ROUND 1, F2: the narration overlay is OURS, painted into the page under test — the ring, the
+// veil and the callout card. The layout walk has refused to measure it since it existed; the replica
+// had no such guard, so any capture whose scene root reached <body> would have serialised our own
+// chrome as the app's DOM.
+test('the narration overlay is never in the replica — it is ours, not the app\'s', () => {
+  const card = el('div', [400, 700, 360, 90], { text: 'OVERLAYCARD' })
+  const overlay = el('div', [0, 0, 1440, 900], { id: '__specboard-focus', children: [card] })
+  const real = el('p', [0, 0, 200, 20], { text: 'the app\'s own words' })
+  const body = el('body', [0, 0, 1440, 900], { children: [real, overlay] })
+  const r = cap(body)
+  assert.ok(r.html.includes('the app'), 'the page is captured')
+  assert.ok(!r.html.includes('OVERLAYCARD'), 'and our callout is not, nor anything under it: ' + r.html)
+  assert.ok(!r.html.includes('__specboard-focus'))
+})
+
+// FIX ROUND 1, F3: `border` is a shorthand, and getComputedStyle serialises a shorthand to "" as soon
+// as its edges disagree — which is every table row, every ruled list and every bottom-ruled toolbar.
+// The four longhands each serialise in full.
+test('a bottom-ruled row keeps its rule: the four border edges are diffed, not the shorthand', () => {
+  const row = el('div', [0, 0, 400, 40], {
+    text: 'ruled',
+    // exactly what a bottom-ruled row computes: the shorthand goes empty, the edges do not
+    cs: { border: '', 'border-bottom': '1px solid rgb(226, 232, 240)', 'border-top': '0px none rgb(2, 8, 23)' }
+  })
+  const body = el('body', [0, 0, 1440, 900], { children: [row] })
+  const r = cap(body, { target: row, ring: { x: 0, y: 0, width: 400, height: 40 } })
+  assert.ok(r.html.includes('border-bottom:1px solid rgb(226, 232, 240)'), 'the rule the reader can see: ' + r.html.slice(0, 300))
+})
+
+// FIX ROUND 1, F4: the BYTE cap, and the data: image that could carry a file straight past it. A
+// single inline image can be megabytes; it rides only while the budget can afford it, and never at
+// all above DATA_MAX.
+test('the byte cap stops a text-heavy scene, and the file is still under 200 KB', () => {
+  const long = 'x'.repeat(2000)
+  const kids = []
+  for (let i = 0; i < 400; i++) kids.push(el('p', [0, i * 20, 900, 18], { text: long + ' ' + i, cs: { color: 'rgb(2, 8, 23)' } }))
+  const root = el('div', [0, 0, 900, 8000], { children: kids })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: kids[0], ring: { x: 0, y: 0, width: 900, height: 18 } })
+  assert.equal(r.truncated, true)
+  assert.ok(r.html.includes('data-replica-truncated="1"'))
+  assert.ok(r.bytes <= 200000, 'the promise is about the FILE, not the walk: ' + r.bytes)
+  assert.equal(r.bytes, r.html.length)
+  assert.ok(r.nodes < 1500, 'and it was the BYTE cap that stopped it, not the node cap: ' + r.nodes)
+})
+
+test('an oversized data: image is a plate — one inline picture may not carry the file past its cap', () => {
+  const huge = 'data:image/png;base64,' + 'A'.repeat(40000)
+  const img = el('img', [0, 0, 200, 120], { attrs: { src: huge } })
+  const root = el('div', [0, 0, 400, 200], { children: [img] })
+  const body = el('body', [0, 0, 1440, 900], { children: [root] })
+  const r = cap(body, { target: img, ring: { x: 0, y: 0, width: 200, height: 120 } })
+  assert.ok(r.html.includes('data-plate="img"'), 'shown as the box it occupies')
+  assert.ok(!r.html.includes('AAAA'), 'and not a byte of its payload')
+  assert.ok(r.bytes < 5000, r.bytes)
+})
+
 test('REPLICA_PROPS is one list, and it carries what the diff needs', () => {
   assert.ok(Array.isArray(REPLICA_PROPS) && REPLICA_PROPS.length > 20)
-  for (const p of ['display', 'border', 'background-color', 'color', 'font-size', 'text-align',
+  for (const p of ['display', 'background-color', 'color', 'font-size', 'text-align',
     'letter-spacing', 'text-transform', 'font-style', 'visibility', 'outline', 'z-index', 'transform',
-    'fill', 'stroke', 'stroke-width']) {
+    'fill', 'stroke', 'stroke-width',
+    // FOUR EDGES, never the shorthand (fix round 1, F3): `border` serialises to "" the moment the
+    // edges differ, so a bottom-ruled row lost its rule entirely
+    'border-top', 'border-right', 'border-bottom', 'border-left',
+    // …and the geometry a modern layout is actually built from
+    'grid-template-columns', 'grid-template-rows', 'grid-column', 'grid-row', 'grid-auto-flow',
+    'column-gap', 'row-gap', 'flex-wrap', 'flex-grow', 'flex-shrink', 'flex-basis', 'align-self']) {
     assert.ok(REPLICA_PROPS.includes(p), p + ' is diffed')
   }
+  assert.ok(!REPLICA_PROPS.includes('border'), 'the shorthand is gone — it goes empty when the edges differ')
   assert.equal(new Set(REPLICA_PROPS).size, REPLICA_PROPS.length, 'no prop is asked for twice')
 })
