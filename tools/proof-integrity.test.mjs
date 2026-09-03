@@ -345,3 +345,154 @@ test('the CLI\'s node text gate never demands text back from a style/script/etc-
     assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
+
+// ── THE AUTHORED-INTENT LINT (phase 6, 2026-09-04) ───────────────────────────────────────────────
+// The existence lint above asks "does this proof read a VALUE at all". This one asks the next
+// question: does it read the values the REQUIREMENT NAMES. A Then that names three facts and a beat
+// that claims one is a proof of a third of a requirement wearing the requirement's green — and,
+// since the Expected picture is built from the beat's claims, a Then fact no claim covers is also a
+// fact the picture can never show. So every fact a Then names must be a SOFT claim (proveVisible
+// `soft: true`): the beat reaches and photographs each of them and fails once at its end with the
+// whole list, instead of stopping at the first red with the rest of the requirement unshown.
+import { splitFacts, lintIntent } from './proof-integrity.mjs'
+
+test('splitFacts splits a Then only where BOTH sides carry a verb-ish token', () => {
+  // both sides carry one — two facts
+  assert.deepEqual(splitFacts('the row stays listed — the count reads 4'),
+    ['the row stays listed', 'the count reads 4'])
+  // the right side names a thing, not a fact about it — one fact (when in doubt, one)
+  assert.deepEqual(splitFacts('exactly one card appears — its name, its titles and its cover'),
+    ['exactly one card appears — its name, its titles and its cover'])
+  // `; ` and `, and ` are separators too
+  assert.equal(splitFacts('an Undo appears; the count stays 5').length, 2)
+  assert.equal(splitFacts('the stamp reads edited, and the ring shows 2 / 4').length, 2)
+  // a separator INSIDE an aside — a parenthetical, a backticked token, a quoted phrase — never splits
+  assert.deepEqual(splitFacts('the banner is shown *(removed 2026-09-02; the human: "avoid useless things")*'),
+    ['the banner is shown *(removed 2026-09-02; the human: "avoid useless things")*'])
+  assert.equal(splitFacts('the chip reads `EXPECTED "5"; nothing else` on one line').length, 1)
+  // no separator at all — one fact
+  assert.deepEqual(splitFacts('the ring shows 2 / 4'), ['the ring shows 2 / 4'])
+})
+
+const PRD_TWO = `---
+screen: todo
+---
+
+## R1 — the count moves by the leaves
+
+- **Given** the seeded board
+- **When** you tick one sub-task
+- **Then** the row stays listed — the count reads 4
+
+## R2 — one fact only
+
+- **Given** the seeded board
+- **When** you add a task
+- **Then** the new row shows at the bottom
+`
+
+const specWith = body => `
+test('todo', async ({ page }) => {
+  await checkReq('R1', async () => {
+${body}
+  })
+  await checkReq('R2', async () => {
+    await proveVisible(page.locator('.ttl'), 'Water the plants', 'The new row')
+  })
+})
+`
+
+test('lintIntent flags a two-fact Then whose beat makes one hard claim', () => {
+  const rows = lintIntent(PRD_TWO, specWith("    await proveVisible(page.locator('.n'), '4', 'To do')"))
+  const r1 = rows.find(r => r.id === 'R1')
+  assert.equal(r1.facts, 2)
+  assert.equal(r1.claims, 1)
+  assert.equal(r1.soft, 0)
+  assert.equal(r1.ok, false)
+  assert.match(r1.why, /2 facts/)          // (a) fewer claims than facts…
+  assert.match(r1.why, /soft/)             // …(b) and the one it makes is not soft
+})
+
+test('…and passes the same beat once every fact is a soft claim', () => {
+  const rows = lintIntent(PRD_TWO, specWith(
+    "    await proveVisible(page.locator('.row'), 'Water the plants', 'The row, still listed', { soft: true })\n" +
+    "    await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })"))
+  const r1 = rows.find(r => r.id === 'R1')
+  assert.equal(r1.facts, 2)
+  assert.equal(r1.claims, 2)
+  assert.equal(r1.soft, 2)
+  assert.equal(r1.ok, true)
+  assert.equal(r1.state, 'ok')
+})
+
+test('a one-fact Then is proven by one claim — hard or soft — but never by none', () => {
+  const ok = lintIntent(PRD_TWO, specWith("    await proveVisible(page.locator('.n'), '4', 'To do')"))
+  assert.equal(ok.find(r => r.id === 'R2').ok, true)      // R2's beat has a proveVisible
+  const bad = lintIntent(PRD_TWO, `
+test('todo', async ({ page }) => {
+  await checkReq('R2', async () => {
+    await expect(page.locator('.ttl')).toHaveText('Water the plants')
+  })
+})
+`)
+  const r2 = bad.find(r => r.id === 'R2')
+  assert.equal(r2.claims, 0)
+  assert.equal(r2.ok, false)
+  assert.match(r2.why, /no claim/)
+})
+
+test('a beat no checkReq maps to is no-beat, not a gap — coverage already calls it unproven', () => {
+  const rows = lintIntent(PRD_TWO, "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await proveVisible(a, 'b', 'c', { soft: true }) })\n})")
+  const r2 = rows.find(r => r.id === 'R2')
+  assert.equal(r2.state, 'no-beat')
+  assert.equal(r2.ok, true, 'the intent lint does not fail a requirement no test reaches')
+})
+
+test('the claims a beat FUNCTION makes count — the beat-function convention', () => {
+  // the flow keeps its checkReq AROUND the call (kg-e2e); the claims live in the step's body
+  const spec = "test('todo', async ({ page }) => {\n  await checkReq('R1', async () => { await tickOneSubTask(page, state) })\n})"
+  const steps = `
+export async function tickOneSubTask (page, state) {
+  await proveVisible(rowById(page, 'k1'), 'Water the plants', 'The row, still listed', { soft: true })
+  await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })
+}
+`
+  const rows = lintIntent(PRD_TWO, spec, { helpers: [steps] })
+  const r1 = rows.find(r => r.id === 'R1')
+  assert.equal(r1.claims, 2)
+  assert.equal(r1.soft, 2)
+  assert.equal(r1.ok, true)
+})
+
+test('beats map to checkReq blocks per TEST, with the last beat taking the rest (BEAT_CURSOR)', () => {
+  const prd = `---
+screen: todo
+---
+
+## R1 — two beats
+
+- **Given** the seeded board
+- **When** you tick one
+- **Then** the count reads 4
+- **When** you tick the last one
+- **Then** the container completes itself
+`
+  // BEAT_CURSOR resets per test (spec/_base.ts's page fixture), so the SECOND test's first
+  // checkReq('R1') is beat 1 again — and a third call in one test clamps onto the last beat.
+  const spec = `
+test('one', async ({ page }) => {
+  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do') })
+  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container') })
+  await checkReq('R1', async () => { /* clamped onto beat 2 */ })
+})
+test('two', async ({ page }) => {
+  await checkReq('R1', async () => { /* beat 1 again */ })
+})
+`
+  const rows = lintIntent(prd, spec)
+  assert.equal(rows.length, 2)
+  assert.equal(rows[0].beat, 1)
+  assert.equal(rows[0].claims, 1, "beat 1 is proven by the best of the two tests' first blocks")
+  assert.equal(rows[1].beat, 2)
+  assert.equal(rows[1].claims, 1)
+})

@@ -23,6 +23,11 @@ import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from 
 // decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
 // this CLI alike. A gate that restates the capture's rules drifts from them.
 import { replicaAttrs, claimGaps, textOf, containsRun, GATE_TOL, GATE_MIN, NO_TEXT_TAGS } from './replica-gate.mjs'
+// …and the PRD's own authorities on what a requirement SAYS: parsePrd for its blocks, parseBehavior
+// for its beats. The intent lint below weighs a beat's claims against the Then a HUMAN wrote, so it
+// has to read that Then through the very parsers the board renders it with — never its own reading.
+import { parsePrd } from './spec-store.mjs'
+import { parseBehavior } from './behavior.mjs'
 import { execFileSync } from 'node:child_process'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -275,6 +280,181 @@ export function checkReplicas (spec = 'spec') {
   return rows
 }
 
+// ── THE AUTHORED-INTENT LINT (phase 6, 2026-09-04) ───────────────────────────────────────────────
+// lintSource above asks whether a proof reads a VALUE at all. This asks the next question, the one
+// the human's Expected view made unavoidable: does it read the values the REQUIREMENT NAMES.
+//
+// A Then that names three facts, proven by a beat that claims one, is a third of a requirement
+// wearing the requirement's whole green — and since the Expected picture is built from the beat's
+// CLAIMS, a fact no claim covers is also a fact no picture can ever show. So every fact a Then names
+// must be a SOFT claim (`proveVisible(target, expected, label, { soft: true })`): the beat reaches
+// and photographs each of them and fails ONCE at its end with the whole list, instead of stopping at
+// the first red with the rest of the requirement unshown.
+//
+// Pure, like everything above it: (prdText, specSource) in, rows out, unit-tested directly.
+
+// THE FACT-SPLITTING RULE, deliberately blunt and written down (the brief: "keep it simple and
+// documented; when in doubt a Then is one fact"). A Then is cut at ` — `, `; `, `, and ` or ` and `
+// — but ONLY where both sides carry a verb-ish token, because "one card appears — its name, its
+// titles and its cover" is one fact stated with its parts, while "the row stays listed — the count
+// reads 4" is two. Under-splitting costs a claim that could have been demanded; over-splitting
+// demands a claim for half a sentence, which is worse: it teaches the author to write filler.
+const VERB = /\b(is|are|shows|reads|stays|becomes|lists|carries|says|counts|remains|appears|gone)\b/i
+const SEP = /( — |; |, and | and )/g
+// …and never inside an ASIDE. A parenthetical (`*(removed 2026-09-02, the human: "…")*`), a
+// backticked token or a quoted phrase carries its own punctuation, and a `; ` inside one is not a
+// seam between two facts. Masked to same-length filler so the separator scan reads positions that
+// still index the ORIGINAL text — three passes, which covers one level of nesting.
+const ASIDE = /\([^()]*\)|`[^`]*`|"[^"]*"/g
+const MASK = '\u0001'   // a char no PRD carries, so a mask can never read as a word
+function maskAsides (text) {
+  let m = text
+  for (let pass = 0; pass < 3; pass++) m = m.replace(ASIDE, s => MASK.repeat(s.length))
+  return m
+}
+export function splitFacts (then) {
+  const text = String(then || '').trim()
+  if (!text) return []
+  const masked = maskAsides(text)
+  const segs = []
+  let pos = 0
+  SEP.lastIndex = 0
+  let m
+  while ((m = SEP.exec(masked))) {
+    segs.push(text.slice(pos, m.index), text.slice(m.index, m.index + m[0].length))
+    pos = m.index + m[0].length
+  }
+  segs.push(text.slice(pos))
+  // fold left: a seam is a real split only when what we have SO FAR reads as a fact and what comes
+  // next does too; otherwise the seam is inside one fact and the two sides are re-joined verbatim.
+  const facts = []
+  let cur = segs[0]
+  for (let i = 1; i < segs.length; i += 2) {
+    const sep = segs[i]
+    const right = segs[i + 1] || ''
+    if (VERB.test(cur) && VERB.test(right)) { facts.push(cur.trim()); cur = right }
+    else cur = cur + sep + right
+  }
+  if (cur.trim()) facts.push(cur.trim())
+  return facts.length ? facts : [text]
+}
+
+// THE BEAT'S CLAIMS. The beat-function convention (kg-e2e) keeps the checkReq AROUND a call into
+// spec/<screen>/steps.ts, so the claims a beat makes are usually not in the block's own body — they
+// are in the step function it calls. Counting only what the block literally contains would flag the
+// very convention the skills teach, so the block is EXPANDED: every function it calls that is
+// defined in the spec or in a steps file is appended, two levels deep, each name once.
+const DECL = /(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*[(<]|(?:export\s+)?const\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]*)?=\s*(?:async\s*)?\(/g
+export function functionBodies (src) {
+  const text = String(src || '')
+  const out = new Map()
+  DECL.lastIndex = 0
+  let m
+  while ((m = DECL.exec(text))) {
+    const name = m[1] || m[2]
+    const braceStart = text.indexOf('{', m.index + m[0].length - 1)
+    if (braceStart === -1) continue
+    let depth = 0
+    let end = -1
+    for (let i = braceStart; i < text.length; i++) {
+      if (text[i] === '{') depth++
+      else if (text[i] === '}') { depth--; if (depth === 0) { end = i; break } }
+    }
+    if (end === -1) continue
+    if (!out.has(name)) out.set(name, text.slice(braceStart + 1, end))
+  }
+  return out
+}
+const CALLED = /\b([A-Za-z_$][\w$]*)\s*\(/g
+export function expandBody (body, bodies, depth = 2, seen = new Set()) {
+  let text = String(body || '')
+  if (depth <= 0) return text
+  const names = new Set()
+  CALLED.lastIndex = 0
+  let m
+  while ((m = CALLED.exec(text))) names.add(m[1])
+  for (const name of names) {
+    if (seen.has(name) || !bodies.has(name)) continue
+    seen.add(name)
+    text += '\n' + expandBody(bodies.get(name), bodies, depth - 1, seen)
+  }
+  return text
+}
+const countOf = (text, re) => (String(text).match(re) || []).length
+export function claimsIn (body) {
+  return { claims: countOf(body, /proveVisible\s*\(/g), soft: countOf(body, /soft\s*:\s*true/g) }
+}
+
+// WHICH BEAT A checkReq BLOCK PROVES — the BEAT_CURSOR rule, read statically. spec/_base.ts counts
+// checkReq calls per id and shows the Nth call the Nth beat, CLAMPED to the last; the cursor resets
+// per TEST (the page fixture), so the second test's first checkReq('R1') is beat 1 again. Both halves
+// matter here: without the reset a file's later tests would be lined up against beats they never
+// prove, and without the clamp the extra calls that pile onto a one-beat requirement would vanish.
+const TEST_START = /^test\s*\(/
+export function blockBeats (specSource, id, beats, screen = '') {
+  const src = String(specSource || '')
+  const starts = src.split('\n').map((l, i) => (TEST_START.test(l) ? i + 1 : 0)).filter(Boolean)
+  const testOf = line => starts.filter(s => s <= line).length
+  const cursors = new Map()
+  const out = []
+  for (const b of extractCheckReqBlocks(src)) {
+    if (b.id !== id && !(screen && b.id === `${screen}:${id}`)) continue
+    const t = testOf(b.line)
+    const cursor = cursors.get(t) || 0
+    cursors.set(t, cursor + 1)
+    out.push({ ...b, beat: beats ? Math.min(cursor + 1, beats) : cursor + 1 })
+  }
+  return out
+}
+
+// the three ways a beat's claims fall short of its Then, in ONE place so the row's verdict and the
+// message it prints can never disagree: too few claims for the facts, a multi-fact beat that would
+// stop at its first red, and a beat that photographs no value at all.
+function gapWhy (facts, claims, soft) {
+  const why = []
+  if (facts >= 2 && claims < facts) why.push(`the Then names ${facts} facts, the beat claims ${claims}`)
+  if (facts >= 2 && soft < claims) why.push(`${claims - soft} of its claims ${claims - soft === 1 ? 'is' : 'are'} not soft — a multi-fact beat stops at its first red instead of photographing the rest`)
+  if (facts === 1 && claims === 0) why.push('the Then names a fact and no claim covers it — nothing photographs the value')
+  return why.join('; ')
+}
+
+export function lintIntent (prdText, specSource, opts = {}) {
+  const { fm, reqs } = parsePrd(String(prdText || ''))
+  const screen = opts.screen || fm.screen || ''
+  const bodies = functionBodies(String(specSource || ''))
+  for (const h of opts.helpers || []) {
+    for (const [k, v] of functionBodies(h)) if (!bodies.has(k)) bodies.set(k, v)
+  }
+  const rows = []
+  for (const r of reqs) {
+    const beh = parseBehavior(r.body)
+    if (!beh) {
+      rows.push({ screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: true, state: 'no-beat', why: 'no behaviour block — nothing authored for a claim to cover' })
+      continue
+    }
+    const blocks = blockBeats(specSource, r.id, beh.beats.length, screen)
+      .map(b => ({ ...b, ...claimsIn(expandBody(b.body, bodies)) }))
+    beh.beats.forEach((beat, i) => {
+      const n = i + 1
+      const facts = splitFacts(beat.then)
+      const here = blocks.filter(b => b.beat === n)
+      if (!here.length) {
+        rows.push({ screen, id: r.id, beat: n, facts: facts.length, claims: 0, soft: 0, ok: true, state: 'no-beat', why: 'no checkReq maps to this beat — coverage already reads it unproven' })
+        return
+      }
+      // a beat proven in two places (a unit test and a flow) is covered when EITHER proof claims
+      // every fact; the row reports the one that does, else the fullest of them
+      const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft) }))
+      const best = scored.find(b => !b.gap) || scored.slice().sort((a, b) => b.claims - a.claims)[0]
+      rows.push({
+        screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
+        ok: !best.gap, state: best.gap ? 'gap' : 'ok', why: best.gap || '', line: best.line
+      })
+    })
+  }
+  return rows
+}
+
 // CLI --------------------------------------------------------------------------------------------
 // Thin, not unit-tested (mirrors tools/staff.mjs / tools/update.mjs: the pure derivation above is
 // what proof-integrity.test.mjs exercises).
@@ -304,7 +484,39 @@ function runLint () {
     console.log('a requirement they "prove" would stay green with its substance deleted. Strengthen the')
     console.log('assertion to check an actual value (kg-e2e rule 2).')
   }
-  process.exit(anyBad ? 1 : 0)
+  // …and then the AUTHORED INTENT (phase 6): the existence rows above ask whether each proof reads a
+  // value; these ask whether it reads the values the requirement's own Then names. A beat's step
+  // functions count as the beat (the beat-function convention), so every screen's steps.ts is handed
+  // over as a helper source — board/test.spec.ts calls ../dispatch/steps, and a proof does not stop
+  // being a proof because it was lifted into a beat.
+  const helpers = screenDirs()
+    .map(s => join('spec', s, 'steps.ts'))
+    .filter(p => existsSync(p))
+    .map(p => readFileSync(p, 'utf8'))
+  let anyGap = false
+  console.log('')
+  for (const screen of screenDirs()) {
+    const prd = join('spec', screen, 'prd.md')
+    const spec = join('spec', screen, 'test.spec.ts')
+    if (!existsSync(prd) || !existsSync(spec)) continue
+    for (const row of lintIntent(readFileSync(prd, 'utf8'), readFileSync(spec, 'utf8'), { screen, helpers })) {
+      if (row.state === 'no-beat') {
+        console.log(`${screen} · ${row.id}${row.beat ? ' · beat ' + row.beat : ''} · no-beat · ${row.why}`)
+        continue
+      }
+      if (!row.ok) anyGap = true
+      console.log(`${screen} · ${row.id} · beat ${row.beat} · ${row.facts} facts · ${row.claims} claims (${row.soft} soft) · ${row.ok ? 'ok' : 'INTENT-GAP'}`)
+      if (!row.ok) console.log(`    ${row.why}`)
+    }
+  }
+  if (anyGap) {
+    console.log('\nA Then names a fact no claim covers. Every fact a requirement states is a SOFT claim —')
+    console.log("proveVisible(target, expected, label, { soft: true }) — so the beat reaches and photographs")
+    console.log('every one of them and fails once at its end with the whole list. Add the missing claim on the')
+    console.log('very element the Then names; never edit the Then to fit the test (rule 5 — meaning is the')
+    console.log("human's), and never drop a fact that cannot be read off the screen: leave it red and say so.")
+  }
+  process.exit(anyBad || anyGap ? 1 : 0)
 }
 
 // Recursively collect every `proves <id>` step out of the `--reporter=json` report's suite/spec/test/
