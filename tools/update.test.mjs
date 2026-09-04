@@ -164,6 +164,28 @@ test('the vendoring guard sees the multi-line brace import form', () => {
     'the multi-line import of ./spec-store.mjs must be seen, not only ./journey.mjs')
 })
 
+// EVERY FILE build-board.mjs READS VERBATIM IS VENDORED (final review I7, 2026-09-04).
+// tools/board/client.js, stepper.js and words.js are not *imported* by anything — they are read as
+// text and inlined into board.html — so the every-relative-import-is-vendored guard above is
+// structurally blind to all three: drop `tools/board/words.js` from FILES and every unit test still
+// passes, while a scaffolded project's `npm run board:build` throws ENOENT and emits no board at
+// all. Derived from build-board.mjs's own source rather than restated as a list here, so a FOURTH
+// inlined file is pinned the day it is added and this test cannot drift from the builder.
+const VERBATIM = /readFileSync\(join\(ROOT, *'tools', *'board', *'([A-Za-z0-9_.-]+)'\)/g
+test('every file build-board.mjs inlines verbatim is a vendored skeleton file', () => {
+  const src = readFileSync(new URL('../tools/build-board.mjs', import.meta.url), 'utf8')
+  const inlined = [...src.matchAll(VERBATIM)].map(m => 'tools/board/' + m[1])
+  assert.ok(inlined.length >= 3, 'the verbatim reads must still be findable in build-board.mjs, got ' + inlined.length)
+  assert.deepEqual(inlined.filter(f => !FILES.includes(f)), [], 'inlined verbatim but not vendored')
+})
+
+test('every vendored skeleton file exists on disk', () => {
+  // A FILES entry naming a file that is not there is a scaffold that half-lands and an update that
+  // reports a file it never copied — invisible here until someone runs kg-init in another repo.
+  const missing = FILES.filter(f => !existsSync(new URL('../' + f, import.meta.url)))
+  assert.deepEqual(missing, [], 'listed in the skeleton but absent from the plugin')
+})
+
 test('a project without the seed template GAINS it on update (added)', () => {
   // The exact path a manifest-less older project takes: the new release carries spec/_seed.ts, the
   // project has none, so it is ADDED and recorded — the harness gains the seed hook.
