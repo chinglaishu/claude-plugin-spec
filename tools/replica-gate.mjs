@@ -113,6 +113,15 @@ const encloses = (e, region) => !!region &&
   e.x <= region.x + GATE_TOL && e.y <= region.y + GATE_TOL &&
   e.x + e.w >= region.x + region.w - GATE_TOL && e.y + e.h >= region.y + region.h - GATE_TOL &&
   (e.w > region.w + GATE_TOL || e.h > region.h + GATE_TOL)
+// …AND THE PICTURE IS A SUBTREE, NOT A RECTANGLE (fix round 2, I6, 2026-09-04). A toast, the
+// reader's pager dots, any body-level fixed overlay can sit ON the scene root's box while hanging
+// off the body beside it — and no honest replica of that root can ever contain one. The rectangle
+// test above cannot tell the two apart, so it reported each as a word the replica dropped (board
+// R10.b1.v1, R18.b3.v2, R18.b4.v1: three of the four rows this gate carried). The one-pass moment
+// hands the walk the very root the capture used, so the skeleton says which elements are in it.
+// A skeleton with no mark at all — a harvest from before this — is read exactly as it was: no
+// evidence about the subtree is not evidence of exclusion (rule 3).
+const inRoot = (e, live) => !live || !live.rootMarked || e.inRoot !== 0
 const inRegion = (e, region) => !region || (
   e.x >= region.x - GATE_TOL && e.y >= region.y - GATE_TOL &&
   e.x + e.w <= region.x + region.w + GATE_TOL && e.y + e.h <= region.y + region.h + GATE_TOL)
@@ -156,7 +165,7 @@ export function replicaGaps (live, replica, region, opts = {}) {
   const add = (g) => { if (out.length < max) out.push(g) }
   for (const e of liveEls) {
     if (out.length >= max) break
-    if (!inRegion(e, region) || encloses(e, region)) continue
+    if (!inRegion(e, region) || encloses(e, region) || !inRoot(e, live)) continue
     if (e.w < MIN || e.h < MIN) continue                 // the walk's own floor: a fleck is not a gap
     const at = { x: e.x, y: e.y, w: e.w, h: e.h }
     // 1. THE RING. It is the whole reason the frame exists: a replica that came back without it is

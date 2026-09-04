@@ -406,3 +406,36 @@ test('…but a box the same size as the region is still checked — it may be th
   assert.equal(gaps.length, 1)
   assert.equal(gaps[0].kind, 'missing-box')
 })
+
+// ── AN ELEMENT INSIDE THE RECTANGLE AND OUTSIDE THE PICTURE (phase 6 fix round 2, I6) ────────────
+// The three gap rows this fix round inherited (board R10.b1.v1, R18.b3.v2, R18.b4.v1) are one
+// family: a toast, a set of pager dots, a fixed overlay — an element that OVERLAPS the captured
+// rectangle but is not in the scene root's subtree, so no honest replica of that root can ever
+// contain it. The region is a rectangle; the picture is a SUBTREE. Since the one-pass moment hands
+// the walk the very root the capture used, the skeleton says which of its elements are in it
+// (`inRoot`), and the gate asks that instead of guessing from geometry. A skeleton with no mark at
+// all (a harvest from before this) is read exactly as it was: the rectangle decides.
+test('a live element inside the region but OUTSIDE the scene root is not a gap (I6)', () => {
+  const live = LIVE()
+  live.rootMarked = 1
+  for (const e of live.els) e.inRoot = 1
+  live.els.push({ x: 300, y: 250, w: 120, h: 40, kind: 'text', text: 'Saved · undo', inRoot: 0 })
+  const gaps = replicaGaps(live, REP(), REGION)
+  assert.deepEqual(gaps, [], 'the toast overlapping the card is not the card\'s to show')
+})
+
+test('…and the same element INSIDE the root still gates (I6)', () => {
+  const live = LIVE()
+  live.rootMarked = 1
+  for (const e of live.els) e.inRoot = 1
+  live.els.push({ x: 300, y: 250, w: 120, h: 40, kind: 'text', text: 'Saved · undo', inRoot: 1 })
+  const gaps = replicaGaps(live, REP(), REGION)
+  assert.equal(gaps.length, 1)
+  assert.equal(gaps[0].kind, 'missing-text')
+})
+
+test('…and an UNMARKED skeleton is read exactly as before (I6)', () => {
+  const live = LIVE()
+  live.els.push({ x: 300, y: 250, w: 120, h: 40, kind: 'text', text: 'Saved · undo' })
+  assert.equal(replicaGaps(live, REP(), REGION).length, 1, 'no evidence about the subtree is not evidence of exclusion')
+})

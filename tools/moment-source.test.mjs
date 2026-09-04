@@ -173,3 +173,31 @@ test('the capture pictures the element the WALK measured under the ring, never o
   assert.match(out.rep.html, /data-ring="1"/, 'the ring is marked on the element the walk measured')
   assert.ok(out.skel.els.some(e => /Assigning work/.test(e.text || '')), 'which is the one the skeleton is of')
 })
+
+// ── WHAT IS IN THE PICTURE IS THE SUBTREE, NOT THE RECTANGLE (fix round 2, I6) ───────────────────
+// A toast, a pager dot, a fixed overlay: an element that overlaps the scene root's rect but hangs
+// off the body beside it. The replica is a picture of the ROOT, so it can never contain one — and
+// the gate, which had only the rectangle to go by, reported each as a missing word on a file that
+// was right. The two halves are one pass and the capture knows which element it rooted on, so the
+// skeleton now says which of its elements are inside that root.
+function overlaidPage () {
+  const word = el('span', [520, 300, 120, 20], { text: 'Rent review', cs: { color: 'rgb(28,27,24)' } })
+  const card = el('div', [500, 288, 400, 60], { children: [word], cs: PAINT })
+  const page = el('main', [0, 0, 1440, 900], { children: [card] })
+  // sits ON the card's rectangle, and is nobody's child but the body's
+  const toast = el('div', [560, 300, 200, 30], { text: 'Saved · undo', cs: PAINT })
+  const body = el('body', [0, 0, 1440, 900], { children: [page, toast] })
+  return { body, card, word, toast }
+}
+
+test('the skeleton marks every element in or out of the scene root the capture used (I6)', () => {
+  const p = overlaidPage()
+  const out = run(p.body, { target: p.word, ring: { x: 520, y: 300, width: 120, height: 20 } })
+  assert.equal(out.skel.rootMarked, 1, 'the walk was handed the root the capture rooted on')
+  const rent = out.skel.els.find(e => /Rent review/.test(e.text || ''))
+  const toast = out.skel.els.find(e => /Saved/.test(e.text || ''))
+  assert.ok(rent && toast, 'both were measured: ' + JSON.stringify(out.skel.els.map(e => e.text)))
+  assert.equal(rent.inRoot, 1, 'the ringed word is in the picture')
+  assert.equal(toast.inRoot, 0, 'the toast overlapping it is not')
+  assert.ok(!/Saved/.test(out.rep.html), 'and the replica of the card does not contain it')
+})

@@ -267,6 +267,10 @@ export function captureReplica (arg) {
   }
   if (!root) root = doc.body || null
   if (!root) return null
+  // …and the root travels back to the caller as an ELEMENT (fix round 2, I6). The picture is this
+  // subtree; the region is only its rectangle. Inside the one-pass moment the skeleton is marked
+  // against this very node, so the gate asks "is it in the picture" instead of "is it in the box".
+  if (arg && arg.report && typeof arg.report === 'object') arg.report.rootEl = root
   const rootRect = rectOf(root)
   // WHAT IS BEING PICTURED (phase 3, section F; corrected in fix round 1, I3/C3): the scene root's
   // box CLIPPED TO THE VIEWPORT, and then given 2 px of slack on each side.

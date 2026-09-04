@@ -24,7 +24,7 @@ export function snapLayoutWalk (arg) {
   // the ring, `report.occluded` every element it dropped because something painted sits on top.
   // Optional and inert — a caller that passes none is walked exactly as before.
   const report = (arg && arg.report && typeof arg.report === 'object') ? arg.report : null
-  if (report) { report.ringEl = null; report.occluded = [] }
+  if (report) { report.ringEl = null; report.occluded = []; report.nodes = [] }
   const win = env && env.window ? env.window : window
   const doc = env && env.document ? env.document : document
   const getComputedStyle = env && env.getComputedStyle ? env.getComputedStyle : win.getComputedStyle.bind(win)
@@ -610,7 +610,15 @@ export function snapLayoutWalk (arg) {
   const recorded = new Set()
   const record = (m) => {
     recorded.add(m.el)
-    if (m.rec && keep(m.rec) && els.length < cap) els.push(m.rec)
+    if (m.rec && keep(m.rec) && els.length < cap) {
+      els.push(m.rec)
+      // …and the NODE beside it, at the same index (fix round 2, I6). Never returned to Node — a DOM
+      // node is not serialisable — but inside the one-pass moment it lets the capture say which of
+      // these elements are in the scene root it rooted on. Without it the gate has only a rectangle
+      // to go by, and a toast or a pager dot overlapping the root's box reads as a word the replica
+      // dropped.
+      if (report && report.nodes) report.nodes.push(m.el)
+    }
   }
 
   // ── WHERE THE BUDGET GOES (2026-09-03, the human: "the schematic is useless — off focus, the

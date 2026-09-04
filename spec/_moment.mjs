@@ -65,14 +65,33 @@ export function momentSource (walkSrc, capSrc) {
     'var __cap = ' + capSrc + ';' +
     // what the walk decided, in element references — never returned to Node (a DOM node is not
     // serialisable), only handed across to the capture inside this one pass
-    'var rp = { ringEl: null, occluded: [] };' +
+    'var rp = { ringEl: null, occluded: [], nodes: [] };' +
+    'var rc = { rootEl: null };' +
     'var skel = null, rep = null;' +
     'try { skel = __walk({ ring: a.ring, target: a.target, env: a.env || null, report: rp }) } catch (e) { skel = null }' +
     'try {' +
       'rep = __cap({ ring: a.ring, target: rp.ringEl || a.target || null, props: a.props, claim: a.claim,' +
       ' claims: a.claims, base: a.base, minRegion: a.minRegion, caps: a.caps, env: a.env || null,' +
-      ' occluded: rp.occluded })' +
+      ' occluded: rp.occluded, report: rc })' +
     '} catch (e) { rep = null }' +
+    // WHAT IS IN THE PICTURE (fix round 2, I6). The replica is a picture of the scene ROOT'S
+    // SUBTREE; `region` is only that root's rectangle. An element that overlaps the rectangle from
+    // outside the subtree — a toast, the reader's pager dots, any body-level fixed overlay — can
+    // never be in an honest replica, and the gate reported each one as a missing word (board
+    // R10.b1.v1, R18.b3.v2, R18.b4.v1). Here, and only here, both facts are in hand at once: the
+    // nodes the walk measured and the node the capture rooted on. So the skeleton carries the
+    // answer out with it, and BOTH guards — the in-page one and `npm run proof mirror` — read it
+    // instead of guessing from geometry. An unmarked skeleton (a harvest from before this) is read
+    // exactly as it was.
+    'try {' +
+      'if (skel && skel.els && rc.rootEl && rp.nodes && rp.nodes.length === skel.els.length) {' +
+        'for (var i = 0; i < skel.els.length; i++) {' +
+          'var nd = rp.nodes[i];' +
+          'skel.els[i].inRoot = (nd && (nd === rc.rootEl || rc.rootEl.contains(nd))) ? 1 : 0' +
+        '}' +
+        'skel.rootMarked = 1' +
+      '}' +
+    '} catch (e) { /* an unmarked skeleton still gates, by its rectangle */ }' +
     'return { skel: skel, rep: rep }' +
   '}'
 }
