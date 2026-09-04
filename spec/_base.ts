@@ -1207,7 +1207,14 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // single `data-plate="space"`. Nothing measured, so no picture: the beat's row says "no Expected
     // for this moment" out loud instead. A gate that could not RUN (`walked === null` — a timeout, a
     // frame that would not mount) still writes the file unpinned, which is honest and refused.
-    if (walked && Array.isArray(walked.els) && !walked.els.length) return
+    // …AND IT SUPPRESSES THE FILE, NOT THE MOMENT (final re-review's minor 4, 2026-09-04). This was
+    // an early `return`, so a moment with no picture also skipped the beat's CHAIN (`lastRight` /
+    // `lastExpected`, below) and the face harvest — three things that are properties of the beat,
+    // not of this file. The chain then stood one moment further back than the beat had reached, and
+    // that moment's faces were never fetched: a coupling between "nothing to photograph here" and
+    // "this moment did not happen", which is not what the harness means. Shape pinned in
+    // tools/replica-chain.test.mjs.
+    const noPicture = !!(walked && Array.isArray(walked.els) && !walked.els.length)
     const aPin = walked && Array.isArray(walked.els) && walked.els.length ? LAST_PIN : ''
     const aGaps = aPin ? replicaGaps(LAST_LAYOUT, walked, rep.region) : []
     const gate = (body: string, pin: string, gaps: any[]) => pin ? withReplicaAttrs(body, { layout: pin, gaps }) : body
@@ -1222,7 +1229,7 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // braces — the file written is never in doubt about which string it is.
     const failed = !!c && c.claims.some(x => x.ok !== true)
     const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
-    if (typeof keep === 'string' && keep) {
+    if (!noPicture && typeof keep === 'string' && keep) {
       const xGaps = [...aGaps, ...claimGaps(textOf(keep), c ? c.claims : [])]
       writeFileSync(file, head('Expected') + gate(keep, aPin, xGaps) + '\n')
       info.attachments.push({ name: `replica-expected ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
