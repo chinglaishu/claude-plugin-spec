@@ -1762,11 +1762,16 @@ export function build () {
   // that has none of its own. Derived at every build, never stored — a screen that gains its own
   // harvest loses the borrowed page on the next build, with nothing to clean up.
   CHROME.clear()
-  const lenders = screens.map(s => ({ name: s.name, area: s.area, title: s.title, reqs: s.reqs, chrome: chromeSource(s.name) }))
-  for (const s of screens) {
-    if (hasAnyReplica(s.name)) continue
-    const c = chromeFrom(s, lenders)
-    if (c) CHROME.set(s.name, c)
+  // …and ONLY when somebody needs one (the review's M2). Reading every screen's lendable page is a
+  // readdir, a skeleton parse and a replica read each; on a settled board no screen lacks a replica,
+  // and build() runs on every watch tick.
+  const needsChrome = screens.filter(s => !hasAnyReplica(s.name))
+  if (needsChrome.length) {
+    const lenders = screens.map(s => ({ name: s.name, area: s.area, title: s.title, reqs: s.reqs, chrome: chromeSource(s.name) }))
+    for (const s of needsChrome) {
+      const c = chromeFrom(s, lenders)
+      if (c) CHROME.set(s.name, c)
+    }
   }
   const areas = sortedAreas(screens)
   // The getting-started journey, derived once for this build (board R12) — read from the tree, so a

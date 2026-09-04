@@ -498,10 +498,23 @@ export function focusFromLayouts (layouts) {
 const SHELL_SPAN = 0.9      // a band spans (almost) the whole perpendicular side …
 const SHELL_MAX = 0.5       // … and is never more than half the page: that is a page, not a band
 const SHELL_MIN = 0.25      // what must be LEFT for the hole to be a hole at all
-export function contentRect (layout) {
+const SHELL_EDGE = 0.02     // …and it HUGS the edge it spans from, end to end
+// `docH` is the LENDER'S OWN DOCUMENT HEIGHT — its replica's `data-replica-region` height, not the
+// viewport's (fix round 1, the review's I1). Every Before replica is a scrolling document (the
+// board's own is 1904 px tall in a 900 px viewport), so "a wide box whose bottom reaches vh" is not
+// a footer at all: it is whatever content happens to cross the FOLD. On this repo's one real lender
+// that is the home page's last area card (1318×273 at y=814), and the hole came back 86 px short
+// with the lender's own content showing under a caption saying the row is a sketch. A footer is now
+// a band that reaches the DOCUMENT's bottom — which, on a long page, is far below anything the cell
+// shows, so it correctly takes nothing off the visible hole. Absent, the viewport is the document,
+// which is the old answer and the right one for a page that does not scroll.
+export function contentRect (layout, docH) {
   const vw = Number(layout && layout.w) || 0
   const vh = Number(layout && layout.h) || 0
   if (!(vw > 0) || !(vh > 0)) return null
+  const pageH = Number(docH) > 0 ? Number(docH) : vh
+  const ex = Math.max(1, vw * SHELL_EDGE)
+  const ey = Math.max(1, vh * SHELL_EDGE)
   const els = (layout && Array.isArray(layout.els)) ? layout.els : []
   const whole = { x: 0, y: 0, w: vw, h: vh }
   let l = 0; let t = 0; let r = vw; let b = vh
@@ -509,12 +522,15 @@ export function contentRect (layout) {
     if (!e || !e.bg) continue
     const x = Number(e.x); const y = Number(e.y); const w = Number(e.w); const h = Number(e.h)
     if (!(w > 0) || !(h > 0) || !Number.isFinite(x) || !Number.isFinite(y)) continue
-    const wide = w >= vw * SHELL_SPAN && h <= vh * SHELL_MAX
-    const tall = h >= vh * SHELL_SPAN && w <= vw * SHELL_MAX
-    if (wide && y <= 1) t = Math.max(t, y + h)                  // the header
-    if (wide && y + h >= vh - 1) b = Math.min(b, y)             // the footer
-    if (tall && x <= 1) l = Math.max(l, x + w)                  // the left rail
-    if (tall && x + w >= vw - 1) r = Math.min(r, x)             // the right rail
+    // A BAND HUGS THE AXIS IT SPANS (the review's I1, second half): being wide is not enough — a
+    // centred card 1318 px across a 1440 px page is content, and reading it as a header or a footer
+    // is how a measured placement stops being measured. It must start at one edge and reach the other.
+    const band = w >= vw * SHELL_SPAN && x <= ex && x + w >= vw - ex && h <= vh * SHELL_MAX
+    const rail = h >= vh * SHELL_SPAN && w <= vw * SHELL_MAX
+    if (band && y <= ey) t = Math.max(t, y + h)                 // the header — the top of the page IS an edge
+    if (band && y + h >= pageH - ey) b = Math.min(b, y)         // the footer — the DOCUMENT's bottom, never the fold
+    if (rail && x <= ex) l = Math.max(l, x + w)                 // the left rail
+    if (rail && x + w >= vw - ex) r = Math.min(r, x)            // the right rail
   }
   if (!(r - l >= vw * SHELL_MIN) || !(b - t >= vh * SHELL_MIN)) return whole
   return { x: l, y: t, w: r - l, h: b - t }

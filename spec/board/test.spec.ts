@@ -589,6 +589,12 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await body.locator('.frmeta .fmenupop [data-prompt="edittest"]').click()
     await expect(page.locator('#promptsheet')).toHaveClass(/\bon\b/)
     await expect(page.locator('#promptbody')).toContainText(flow)         // …and named where it is acted on
+    // FACT 1, CLAIMED where the resolution is acted on: the prompt this row composes NAMES the
+    // covering test — the flow title was read off the test's own row, so a broken tag lookup writes
+    // another test's name here and this fails on the value.
+    await proveVisible(page.locator('#promptbody'), flow,
+      'The covering test that tags it, named in the row\'s own prompt',
+      { soft: true, match: (shown: string) => shown.includes(flow) })
     await page.locator('#promptsheet [data-promptclose]').click()
     // FACT 1, CLAIMED (the authored-intent lint, phase 6): the reader open here is the requirement
     // the TEST's tag names — the expected id was read off the test's tag chip, the value off the
@@ -3404,6 +3410,12 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
       return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
     })
     expect(covers).toBeFalsy()                               // a floating card, not a full-viewport overlay
+    // This block proves the LOG WINDOW — this requirement's THIRD beat — and it is the last
+    // checkReq('R10') in the file, so BEAT_CURSOR files its harvest under beat 1, whose facts are
+    // the story steps, their pending plan and the run's marks. Those live on the baked test row,
+    // hidden since the Columns view retired; they are claimed and declared where the reader stands
+    // on them, in this requirement's own evidence block above.
+    intentGap('this block is about the log window (beat 3) and the cursor files it under beat 1, whose facts are the story steps on the hidden baked row — claimed and declared in this requirement\'s evidence block above')
   })
 })
 
@@ -3543,6 +3555,13 @@ test('Acts 1 and 2 play once, hold, and stand still under reduced motion', async
     expect(await op(req.locator('.sc-canon'))).toBe(1)
     await expect(req.locator('.wflag')).toHaveCount(0)
     await expect(req.locator('.wconfirm')).toHaveCount(0)
+    // THE BEAT'S OWN FACT, CLAIMED (2026-09-04, the review's C1: this block was reading "2 claims"
+    // it never made — an unrelated body credited to it by the lint's own parser — so the beat that
+    // says the walkthrough never advances on its own had no claim at all). Under reduced motion the
+    // END STATE is simply what is on screen: the scene holds it with nothing running, which is the
+    // same sentence from the other side.
+    await proveVisible(req.locator('.sc-canon'), 'canon the moment it\'s written',
+      'The scene, held on its end state — nothing advances on its own', { soft: true })
     await page.emulateMedia({ reducedMotion: null })
   })
 })
@@ -3583,6 +3602,12 @@ test('A deep-linked skill URL shows the skill detail on cold load', async ({ pag
     await expect(page.locator('#skilldetail')).toBeVisible()
     await expect(page.locator('#howoverview')).toBeHidden()
     await expect(page.locator('.flow-panel.open[data-skill="kg-deep"]')).toHaveCount(1)
+    // This block proves the guide's ROUTING on a cold deep link, and it is the LAST checkReq('R11')
+    // in the file — so BEAT_CURSOR files its harvest under R11's beat 1, whose facts are about the
+    // two ACTS of the walkthrough. Those acts are not on screen here at all: the deep link opens the
+    // skill detail and hides #howoverview, which this block asserts two lines above. The acts' own
+    // facts are claimed in the block that opens on them (the same requirement, further up this file).
+    intentGap('this beat lands on the walkthrough\'s two acts, and a cold deep link to a skill hides the overview they live in — the acts are claimed where the reader is standing on them, in this requirement\'s own walkthrough blocks above')
   })
 })
 
@@ -3648,6 +3673,17 @@ test('The guide ends with the derived next action, and there is no rail', async 
       await proveVisible(cta.locator('.wcta-settled'),
         'Every derivable fact already holds — this project\'s requirements are proven.',
         'The one next action, derived from the tree on this build', { soft: true })
+      // …ONE action, claimed as the absence of the other: the your-turn pill is not beside it, so
+      // the panel closes on a single derived next step rather than a menu of them.
+      await proveVisible(cta.locator('.wcta-act'), MISSING,
+        'ONE next action — no second, your-turn pill beside it', { soft: true })
+      // …and two of this Then's clauses have nothing on the guide to read. The `/kg-deep <screen>`
+      // EXAMPLE is the other branch of the same derivation — this tree is settled, so the guide
+      // shows the settled sentence instead — and "when everything derivable already holds" is the
+      // CONDITION that chose it, computed by tools/journey.mjs at build time (seeded and asserted
+      // above), never rendered.
+      intentGap('"for example /kg-deep <screen>" is the UNSETTLED branch of the same derivation: this tree holds every derivable fact, so the guide shows the settled sentence — the branch itself is derived by tools/journey.mjs and unit-tested there')
+      intentGap('"when everything derivable already holds" is the CONDITION the build evaluated (journey(), seeded above), not a value the guide puts on the screen — what the screen shows of it is the sentence claimed on the line above')
     })
   } finally {
     // a seeded file is this test's own litter: remove it and rebuild, so no later test in the run
@@ -4049,6 +4085,12 @@ test('＋ New flow opens the composer — a derived library, the joint check, a 
     await expect(pre).toContainText('failing test FIRST')
     await expect(pre).toContainText('never weaken a test to go green')
     expect(await pre.evaluate(el => el.tagName)).toBe('PRE')
+    // THE FACT, CLAIMED (phase 6 fix round 2): what opens is a READY prompt — the exact file it is
+    // about is in it — and it is read-only prose, so the board wrote nothing. The value is the file
+    // path this composer names, which a prompt built for another screen could not carry.
+    await proveVisible(pre, 'spec/board/test.spec.ts',
+      'A ready prompt, naming the exact file — and the board wrote none of it',
+      { soft: true, match: (shown: string) => shown.includes('spec/board/test.spec.ts') })
   })
 })
 

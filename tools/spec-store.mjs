@@ -906,11 +906,24 @@ export function chromeSource (name) {
     if (!files.includes(layName)) continue
     let lay = null
     try { lay = JSON.parse(readFileSync(join(dir, layName), 'utf8')) } catch { continue }
-    const content = contentRect(lay)
+    // …AND THE PAGE'S OWN BOTTOM EDGE (fix round 1, the review's I1): the replica records the height
+    // of the DOCUMENT it was captured from, which on every real Before page is far taller than the
+    // viewport the skeleton measured. Without it contentRect reads the fold as the page's end and
+    // calls whatever crosses it a footer. Read from the file the chrome is rendered from, so the two
+    // can never describe different pages.
+    let doc = null
+    try {
+      const m = /data-replica-region="([^"]*)"/.exec(readFileSync(join(dir, f), 'utf8'))
+      const p = m ? m[1].trim().split(/\s+/).map(Number) : []
+      if (p.length === 4 && p.every(Number.isFinite)) doc = p[3]
+    } catch { /* an unreadable page lends nothing but its viewport — contentRect's own fallback */ }
+    const content = contentRect(lay, doc)
     if (!content) continue
+    // (the layout PATH is deliberately not carried: nothing renders it — the shell is already read
+    // into `content` here, at build time — and a field nobody reads is a field that goes stale. The
+    // review's M1.)
     return {
       replica: `spec/${name}/evidence/${f}`,
-      layout: `spec/${name}/evidence/${layName}`,
       vw: Number(lay.w),
       vh: Number(lay.h),
       content

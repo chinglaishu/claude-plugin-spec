@@ -100,3 +100,43 @@ test('contentRect needs a viewport', () => {
   assert.equal(contentRect(null), null)
   assert.equal(contentRect({ w: 0, h: 0, els: [] }), null)
 })
+
+// ── I1 (fix round 1): the FOLD IS NOT THE PAGE'S BOTTOM EDGE ──────────────────────────────────
+// Every Before replica is a scrolling DOCUMENT — the board's own is `data-replica-region="0 0 1440
+// 1904"` measured in a 1440×900 viewport — so "a wide box whose bottom reaches vh" is not a footer,
+// it is whatever content happens to cross the fold. On the one real lender this repo has, that is
+// the home page's last area card (1318×273 at y=814, reaching 1087), and the hole came back 86 px
+// short with the lender's own card showing under a caption that says the row is a sketch.
+// Two rules changed: the page's bottom is the DOCUMENT's, and a band must HUG the axis it spans.
+const BOARD_ELS = [
+  { x: 0, y: 0, w: 1440, h: 61, bg: '253,252,249' },        // the top bar — a real header
+  { x: 61, y: 89, w: 1318, h: 42, bg: '244,241,234' },      // …and three centred cards, none of them a band
+  { x: 61, y: 294, w: 1318, h: 506, bg: '244,241,234' },
+  { x: 61, y: 814, w: 1318, h: 273, bg: '244,241,234' }     // this one crosses the fold and used to read as a footer
+]
+test('contentRect: the board lender\'s own numbers — a card that crosses the fold is not a footer', () => {
+  assert.deepEqual(contentRect({ w: 1440, h: 900, els: BOARD_ELS }, 1904), { x: 0, y: 61, w: 1440, h: 839 })
+})
+
+test('contentRect: a band must hug the axis it spans, so a centred wide card is content', () => {
+  // same card, on a page that really does end at the fold: still not a band, because it starts 61px
+  // in and stops 61px short — a header or footer runs edge to edge
+  assert.deepEqual(contentRect({ w: 1440, h: 900, els: [{ x: 61, y: 700, w: 1318, h: 200, bg: '1,1,1' }] }, 900),
+    { x: 0, y: 0, w: 1440, h: 900 })
+})
+
+test('contentRect: a real footer on a page that ENDS at the fold is still subtracted', () => {
+  assert.deepEqual(contentRect({ w: 1440, h: 900, els: [{ x: 0, y: 840, w: 1440, h: 60, bg: '1,1,1' }] }, 900),
+    { x: 0, y: 0, w: 1440, h: 840 })
+})
+
+test('contentRect: a footer at the bottom of a LONG document never shrinks the visible hole', () => {
+  // it sits at y=1844 in a 1904px document — a thousand pixels below anything the cell shows
+  assert.deepEqual(contentRect({ w: 1440, h: 900, els: [{ x: 0, y: 1844, w: 1440, h: 60, bg: '1,1,1' }] }, 1904),
+    { x: 0, y: 0, w: 1440, h: 900 })
+})
+
+test('contentRect: with no document height it falls back to the viewport, as before', () => {
+  assert.deepEqual(contentRect({ w: 1440, h: 900, els: [{ x: 0, y: 840, w: 1440, h: 60, bg: '1,1,1' }] }),
+    { x: 0, y: 0, w: 1440, h: 840 })
+})

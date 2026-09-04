@@ -117,6 +117,24 @@ export function makeSketchScreen (name: string) {
 // truth), computed here so no GIVEN pins "4 screens, 3 areas" as a literal (Task 7 review A2-a: the
 // board and init fixtures each carried that pin, and a fifth screen would have broken three tests in
 // three places). A screen is a directory with a prd.md; its area is the frontmatter's `area`.
+// …and the tree's own NAMES and TITLES, off the same disk read (fix round 1, the review's I3). A
+// test that asks "is this one of the project's screens?" must ask the tree, never a literal list:
+// the comment above treeShape exists because three tests once pinned "4 screens, 3 areas" and a
+// fifth screen broke all three. The TITLE rides along because it is what the board renders wherever
+// a screen is named to a person — a caption asserted against the name would be asserting against a
+// string the app does not show.
+export function screenRows (): Array<{ name: string, title: string }> {
+  const SPEC = join(dirname(fileURLToPath(import.meta.url)))
+  const out: Array<{ name: string, title: string }> = []
+  for (const name of readdirSync(SPEC)) {
+    const prd = join(SPEC, name, 'prd.md')
+    if (name.startsWith('_') || !existsSync(prd)) continue
+    const m = readFileSync(prd, 'utf8').match(/^title:\s*(.+)$/m)
+    out.push({ name, title: m ? m[1].trim() : name })
+  }
+  return out
+}
+
 export function treeShape (): { screens: number, areas: number } {
   const SPEC = join(dirname(fileURLToPath(import.meta.url)))
   const areas = new Set<string>()

@@ -2395,11 +2395,17 @@ const B = window.__BOARD__ || {}
     const chromeCell = function (ch, park) {
       const cell = document.createElement('div'); cell.className = 'sbframe whole sbsketch sbchrome'
       cell.dataset.chrome = ch.screen
+      // …and the TITLE the caption actually renders (fix round 1, the review's I2). The cell says
+      // "in <title>'s chrome" while `data-chrome` carries the screen's NAME, so a reader of the seam
+      // that wanted to know what the caption claims had to guess the transform — and the board's own
+      // test claimed `board` against a caption reading `Board`, shipping a green ✓ over two different
+      // strings. Both are on the cell now, and neither is derived from the other by anybody else.
       const box = document.createElement('div'); box.className = 'pcbox'
       const ifr = repStage(box, ch, 'a sketch of this requirement, in ' + ch.screen + '’s own page')
       cell.appendChild(box)
       const cap = document.createElement('div'); cap.className = 'sbprov'
-      cap.textContent = '◇ sketch · no UI yet · in ' + (ch.title || ch.screen) + '’s chrome'
+      cell.dataset.chrometitle = ch.title || ch.screen
+      cap.textContent = '◇ sketch · no UI yet · in ' + cell.dataset.chrometitle + '’s chrome'
       cell.appendChild(cap)
       repFetch(ch.replica).then(function (text) {
         if (!cell.isConnected) return
