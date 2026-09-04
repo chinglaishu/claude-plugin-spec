@@ -121,6 +121,12 @@ export async function searchRequirementText (page: Page, state: FlowState): Prom
   // requirement TEXT, not on a name, and every group with nothing matching has hidden itself
   await proveVisible(page.locator('#home .card:not(.gone) .nm'), 'Conflicts',
     'The only card the search leaves standing', { soft: true })
+  // …and the Then's other fact is an ABSENCE, claimed as one: a group with nothing matching HIDES —
+  // the areas that hold no matching card are gone from the page, not sitting empty. `MISSING` passes
+  // exactly while no such group is showing and fails, with the group's own heading, the moment an
+  // empty one is left standing.
+  await proveVisible(page.locator('.grp:not(.gone) .grph h2').nth(1), MISSING,
+    'Every group with no match has hidden itself', { soft: true })
   await page.locator('#qx').click()
   await expect(page.locator('#home .card:not(.gone)')).toHaveCount(state.cards)
   state.searched = 'canon'

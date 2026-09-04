@@ -732,6 +732,16 @@ test('The detail shows no wireframe or design affordance', async ({ page }) => {
     // is what stands in its place.
     await proveVisible(detail.locator('.focusov .fread .fstory .sbwrap .sbhead .sbhc').first(), 'behavior',
       'What the detail deals: the requirement\'s words, then its two pictures', { soft: true })
+    // …AND THE THREE ABSENCES THE THEN NAMES, CLAIMED AS ABSENCES (I5, 2026-09-04 — this beat used
+    // to close them with the header above, a neighbour's positive fact, which the lint counts and
+    // cannot question). `proveVisible(…, MISSING, …)` passes exactly while each is gone and fails,
+    // with the thing's own words as `got`, the moment specboard starts owning a design again.
+    await proveVisible(detail.locator('[data-design], .chip.design'), MISSING,
+      'No design chip anywhere in the detail', { soft: true })
+    await proveVisible(detail.locator('[data-artifact], a[data-design-link]'), MISSING,
+      'No design link either — specboard owns neither', { soft: true })
+    await proveVisible(detail.locator('[data-viz-kind="wireframe"], [data-wireframe], .wireframe'), MISSING,
+      'And no embedded wireframe: requirements and proof only', { soft: true })
   })
 })
 
@@ -756,6 +766,13 @@ test('No acceptance gate — nothing on the detail waits to be accepted', async 
     // READER, open on the screen's first requirement — nothing between them waiting to be accepted
     await proveVisible(detail.locator('.dtscroll > .focusov .fread .frmeta .fid'), 'R1',
       'Straight from the header into the reader — the first requirement', { soft: true })
+    // …AND THE THREE ABSENCES, CLAIMED (I5, 2026-09-04 — the id above is the positive half and was
+    // standing in for all three). Each passes exactly while the gate is gone and fails, naming what
+    // came back, the moment a rubber-stamp returns to the detail.
+    await proveVisible(detail.locator('.gate'), MISSING, 'No gate bar', { soft: true })
+    await proveVisible(detail.locator('[data-act="accept"]'), MISSING, 'No accept button', { soft: true })
+    await proveVisible(detail.locator('[data-gate]'), MISSING,
+      'Nothing at all waiting to be accepted', { soft: true })
   })
 })
 
@@ -2164,6 +2181,11 @@ test('A failed moment names its difference', async ({ page }) => {
       const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
       await expect(given.locator('.mdiff'), 'the context row claims nothing, so it differs in nothing')
         .toHaveCount(0)
+      // …and that absence is CLAIMED (phase 6 fix round 2): `MISSING` passes exactly while the row
+      // that claimed nothing carries no marker, and fails — with the marker's own words — the moment
+      // one is painted where there is no difference to name.
+      await proveVisible(given.locator('.mdiff'), MISSING,
+        'None at all on a moment that claimed nothing', { soft: true })
       await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
     })
   } finally {
@@ -2738,6 +2760,16 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     // and the first of them is the behaviour's words — the order every row deals
     await proveVisible(story().locator('.sbwrap .sbhead .sbhc').first(), 'behavior',
       'The cell the row deals first — the behaviour\'s words', { soft: true })
+    // …then the drawn schematic, then the harvested proof: the two picture columns name themselves
+    // in the order the row deals them (design C's names — Expected, then Actual)
+    await proveVisible(story().locator('.sbwrap .sbhead .sbhc').nth(1), 'expected',
+      'Then the drawn schematic — the Expected cell', { soft: true })
+    await proveVisible(story().locator('.sbwrap .sbhead .sbhc').nth(2), 'actual',
+      'Then the harvested proof — the Actual cell', { soft: true })
+    // …and the two facts this Then states about the LAYOUT are measurements, made in this very
+    // block: which cell leads every row, and how far each header label sits from the cell it names.
+    intentGap('"every row deals the same three cells in one order" is measured over every row\'s cells above (leadCells) — a list of class names, not a value any element on the row carries')
+    intentGap('"the header row OVER the cells it names" is a position: each label\'s left edge against its column\'s, measured as headDrift in this block; nothing on the screen says it')
     await hudCheck('the header sits over the cells it names', '0px drift', (await headDrift()) + 'px drift')
     expect(await headDrift(), 'every header label starts over the cell it names').toBeLessThan(2)
   })
@@ -3303,6 +3335,10 @@ test('Home leads with a dismissible feature strip of six cards', async ({ page }
     // a feature card names the LIVE example of itself it opens on this board
     await proveVisible(strip.locator('.feat[data-feat="views"] .fs2'), 'open the List',
       'A feature card, naming the live example it opens', { soft: true })
+    // …and the strip is SIX cards of the board's own features: the first of them names itself here,
+    // so a strip that lost a card, or renamed one into prose, fails on the value and not on a count.
+    await proveVisible(strip.locator('.feat[data-feat="beats"] .fl2 b'), 'Beats',
+      'A feature strip of six, each a card of this board\'s own', { soft: true })
     // the strip sits ABOVE the areas
     const above = await page.evaluate(() => {
       const s = document.getElementById('featwrap'); const h = document.getElementById('home')
@@ -3665,6 +3701,15 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       // 6): the mark is on it, and it says what it is
       await proveVisible(page.locator(`#home .card[data-screen="${want[0]}"] .kchip.ci`), 'CI gate',
         'The gate mark, on a card spec/_ci.json chose', { soft: true })
+      // …and the Then's other fact: THE GUIDE NAMES THE CHOOSER BY FILE, so a person can find it
+      // without reading the workflow. Claimed on the guide's own line, then the reader goes back
+      // home — the block after this one starts from the cards.
+      await page.goto('/#howitworks')
+      await page.waitForSelector('#walkthrough')
+      await proveVisible(page.locator('#howview .cinote code').first(), 'spec/_ci.json',
+        'The guide, naming the chooser by file', { soft: true })
+      await page.goto('/')
+      await page.waitForSelector('#home .card')
     })
 
     await checkReq('R22', async () => {
@@ -3683,6 +3728,11 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       // it left carries none (asserted above; an absence cannot be photographed, the arrival can)
       await proveVisible(page.locator(`#home .card[data-screen="${only}"] .kchip.ci`), 'CI gate',
         'The mark, moved to the screen the new chooser names', { soft: true })
+      // …AND THE CARD IT LEFT CARRIES NONE — claimed as the absence it is (I5, 2026-09-04: this beat
+      // used to close it with the arrival above, a neighbour's positive fact). `MISSING` passes
+      // exactly while board's card has no mark and fails, naming it, the moment a stale mark stays.
+      await proveVisible(page.locator('#home .card[data-screen="board"] .kchip.ci'), MISSING,
+        'And the card it left carries none', { soft: true })
       await hudCheck('a different chooser moves the mark', only, (await marked()).join(' '))
 
       // (c) NO CHOOSER AT ALL is the resolver's own rule — every screen runs — so every card wears it
@@ -3691,6 +3741,10 @@ test('The home cards say which screens gate CI, derived from spec/_ci.json', asy
       await page.reload()
       await page.waitForSelector('#home .card')
       expect(await marked(), 'an absent chooser widens the gate back to every screen').toEqual(await all())
+      // …AN ABSENT CHOOSER MEANS EVERY SCREEN: the card the seeded chooser had left out wears the
+      // mark again, with no file on disk to name it — the resolver's own rule, read off the board.
+      await proveVisible(page.locator('#home .card[data-screen="board"] .kchip.ci'), 'CI gate',
+        'An absent chooser means every screen — board is marked again', { soft: true })
 
       // …and the guide names the file, so a person can find the chooser without reading the workflow
       await page.goto('/#howitworks')
