@@ -1,6 +1,9 @@
 import { expect, proveVisible, MISSING, intentGap } from '../_base'
-import { treeShape } from '../_fixture'
+import { treeShape, screenRows } from '../_fixture'
 import type { Page } from '@playwright/test'
+import { readFileSync, existsSync } from 'node:fs'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 // THE BEAT-FUNCTION CONVENTION (Task 5; D4 amended 2026-08-21 #2 by the human; CLAUDE.md rule 1's
 // addendum). Each exported step function is ONE composable beat: it performs its When, asserts its
@@ -30,6 +33,15 @@ export const GIVEN = {
   text: 'the board home, freshly loaded — specboard\'s own four screens in three areas',
   gives: ['home']
 }
+// The first requirement TITLE a screen's prd.md declares — the oracle for the titles the home card
+// lists (a claim's expected must be the app's own text, and the tree is where that text comes from).
+function firstReqTitle (screen: string): string {
+  const p = join(dirname(fileURLToPath(import.meta.url)), '..', screen, 'prd.md')
+  if (!existsSync(p)) return ''
+  const m = /^##\s+(?:[A-Za-z]*\d+)\s+[—-]\s+(.+)$/m.exec(readFileSync(p, 'utf8'))
+  return m ? m[1].trim() : ''
+}
+
 export async function openBoardHome (page: Page): Promise<FlowState> {
   await page.goto('/')
   await page.waitForSelector('.card')
@@ -89,15 +101,25 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   // lists, the cover frame captioned with the run it was cut from — and the absence that makes the
   // home page a list of SCREENS: no requirement has a row of its own (the retired column strip is
   // the shape that did; `MISSING` fails the moment one comes back).
-  await proveVisible(first.locator('.nm'), 'the screen this card is of',
-    'One card per screen, wearing its name',
-    { soft: true, match: (shown: string) => shown.trim().length > 0 })
-  await proveVisible(first.locator('.rl li:not(.more):not(.fam) .rtl').first(),
-    'a requirement of that screen, by title', 'Its requirement titles, listed on the card',
-    { soft: true, match: (shown: string) => shown.trim().length > 0 })
-  await proveVisible(first.locator('.cshot .lrun'), 'latest run · the run this cover was cut from',
-    "The recording's cover frame, captioned with its run",
-    { soft: true, match: (shown: string) => /^latest run · \S+$/.test(shown) })
+  // A CLAIM'S EXPECTED IS THE APP'S OWN TEXT, never a description of it (2026-09-04, the
+  // controller): both values below are read from the TREE — the screen's title out of its prd.md
+  // frontmatter, its first requirement's title out of the same file — so this is the file against
+  // the screen, and a card that renamed either one fails on the value.
+  const scr = (await first.getAttribute('data-screen')) || ''
+  const row0 = screenRows().find(r => r.name === scr)
+  expect(row0, 'the first card names a screen of this tree: ' + scr).toBeTruthy()
+  await proveVisible(first.locator('.nm'), row0!.title,
+    'One card per screen, wearing its name', { soft: true })
+  const req0 = firstReqTitle(scr)
+  expect(req0, scr + ' has a requirement for its card to list').toBeTruthy()
+  await proveVisible(first.locator('.rl li:not(.more):not(.fam) .rtl').first(), req0,
+    'Its requirement titles, listed on the card', { soft: true })
+  // …and the COVER's caption names the run the still was cut from — a run id the BUILDER chooses
+  // (the newest record's commit when the manifest carries one, else the run id, tools/build-board
+  // stillFor). Nothing in the tree gives that same id without re-deriving the builder's own choice,
+  // and reading it off the caption would be checking the caption against itself. Its shape is
+  // asserted on the line above.
+  intentGap('the cover caption names the run the still was cut from — an id the BUILDER derives (the newest record\'s commit, else the run id); no oracle outside that derivation knows it, and a claim reading it off the caption would be checking the caption against itself')
   await proveVisible(page.locator('.cell[data-col], .colhs'), MISSING,
     'No requirement has a row of its own — home lists screens', { soft: true })
   state.cards = await cards.count()

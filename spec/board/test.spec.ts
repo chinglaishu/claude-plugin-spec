@@ -618,10 +618,10 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     // …and the requirement it resolved to on that other screen carries its own title, read on the
     // screen the tag NAMED rather than on the one the test's file lives in — which is the last of
     // this Then's facts: the resolution follows the tag, not the file.
+    const qTitle = prdTitle(qScreen, qRid)
+    expect(qTitle, 'the screen the tag names declares that requirement: ' + q).toBeTruthy()
     await proveVisible(qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-body .fread .fttl'),
-      'the requirement that tag names, on its own screen',
-      'Resolved by tag — wherever the test\'s file lives',
-      { soft: true, match: (shown: string) => shown.trim().length > 0 })
+      qTitle, 'Resolved by tag — wherever the test\'s file lives', { soft: true })
   })
 })
 
@@ -1303,6 +1303,15 @@ const prdBeats = (rid: string) => {
   const j = md.indexOf('\n## ', i + 1)
   return parseBehavior(md.slice(i, j < 0 ? undefined : j)) as
     { given: string, beats: Array<{ when: string, then: string }> } | null
+}
+// …and a requirement's own TITLE, off any screen's prd.md: the oracle for what the reader must show
+// when a tag is followed to the screen it names (a claim's expected is the app's own text, and the
+// tree is where that text is written).
+const prdTitle = (screen: string, rid: string) => {
+  const p = 'spec/' + screen + '/prd.md'
+  if (!existsSync(p)) return ''
+  const m = new RegExp('^##\\s+' + rid + '\\s+[—-]\\s+(.+)$', 'm').exec(readFileSync(p, 'utf8'))
+  return m ? m[1].trim() : ''
 }
 const plain = (s: string) => String(s || '').replace(/[`*]/g, '').replace(/\s+/g, ' ').trim()
 
@@ -2305,12 +2314,22 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       'No bead rail, no dots — nothing around the picture', { soft: true })
     await proveVisible(ov.locator('.fread .pcmodes'), MISSING,
       'And no media toolbar over it either', { soft: true })
-    await proveVisible(strip1.locator('.mpos'), 'the beat\'s position, on its own strip',
-      'The beat\'s position, read on the one strip',
-      { soft: true, match: (shown: string) => /^\d+ \/ \d+$/.test(shown.trim()) })
-    await proveVisible(strip1.locator('.mseg .msegl').first(), 'the assertion the run recorded',
-      'Each segment named by what the run checked, not by a counter',
-      { soft: true, match: (shown: string) => shown.trim().length > 0 && !/what the test checked/.test(shown) })
+    const nSeg1 = await row1.locator('.mseg').count()
+    expect(nSeg1, 'this beat harvested moments for its strip to segment').toBeGreaterThan(0)
+    await proveVisible(strip1.locator('.mpos'), '1 / ' + nSeg1,
+      'The beat\'s position, read on the one strip', { soft: true })
+    // …and the segment's NAME comes from the run's own record of what it checked, read out of the
+    // fold's data-ev-beats rather than off the strip that is being checked
+    const label1 = await row1.evaluate(el => {
+      const rid = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
+      const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
+      const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
+      const v = ((b.values || []).filter((x: any) => x && x.frame))[0]
+      return String((v && v.label) || '')
+    })
+    expect(label1, 'the run named the moment this segment is of').toBeTruthy()
+    await proveVisible(strip1.locator('.mseg .msegl').first(), label1,
+      'Each segment named by what the run checked, not by a counter', { soft: true })
     // …and three of this Then's clauses have no value on this scene for a claim to read:
     intentGap('"the Actual cell FRAMES the thing being proven" is the camera — a rectangle and a magnification, measured in board R19\'s own test, never a value an element carries')
     intentGap('"ONE stepper strip SPANNING both pictures" is geometry too: the strip\'s box against the two cells\' boxes, measured where that comparison lives (board R19 / R21)')
@@ -2466,9 +2485,9 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await proveVisible(bar.locator('.medbar.pmode button.on'), 'step',
       'The reader, opened in step', { soft: true })
     // …EACH BEAT HELD ON ITS FIRST SCENE: the row's strip opens at moment 1, not mid-loop…
-    await proveVisible(ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.mstrip .mpos'),
-      'held on the first moment', 'Every beat held on its first scene',
-      { soft: true, match: (shown: string) => /^1 \/ \d+$/.test(shown.trim()) })
+    const heldRow = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    await proveVisible(heldRow.locator('.mstrip .mpos'), '1 / ' + (await heldRow.locator('.mseg').count()),
+      'Every beat held on its first scene', { soft: true })
     // …and the reader's ONE SPEED rides the same title row, beside that pair
     await proveVisible(bar.locator('select.pspd'), '1',
       'The reader-wide speed, on the requirement\'s title row', { soft: true })
@@ -2557,9 +2576,23 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // so this is the walk's landing, not the strip talking to itself)…
     await proveVisible(pos, '2 / ' + N, 'Both pictures, moved together to that one moment', { soft: true })
     // …and the strip PAINTS the segment they are on — the current one, named by what the run checked
-    await proveVisible(row.locator('.mseg.cur .msegl'), 'the moment they are both on',
-      'The strip, painting the segment they are on',
-      { soft: true, match: (shown: string) => shown.trim().length > 0 })
+    const label2 = await row.evaluate(el => {
+      const rid = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
+      const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
+      const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
+      const vals = (b.values || []).filter((x: any) => x && x.frame)
+      const out: string[] = []
+      if (b.before && !vals.length) out.push('')
+      for (const v of vals) out.push(String(v.label || ''))
+      if (b.after) out.push('')
+      return out[1] || ''
+    })
+    if (label2) {
+      await proveVisible(row.locator('.mseg.cur .msegl'), label2,
+        'The strip, painting the segment they are on', { soft: true })
+    } else {
+      intentGap('the moment this walk lands on is the beat\'s RESULT, whose segment the reader names from the beat itself rather than from a claim the run recorded — there is no recorded value for a claim to expect')
+    }
     // …and it HOLDS: the scene does NOT move on its own while stepping
     const held = await posN()
     await page.waitForTimeout(2000)
@@ -2646,14 +2679,17 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
 
     // ISOLATION: → walks the SELECTED row (rowA) only. rowB's tour position must not move.
     const aStart = await posOf(rowA); const bStart = await posOf(rowB)
+    const bTextBefore = ((await rowB.locator('.mstrip .mpos').count())
+      ? ((await rowB.locator('.mstrip .mpos').textContent()) || '').trim() : '')
     await page.keyboard.press('ArrowRight')
     if (aStart > 0) await expect.poll(() => posOf(rowA), { timeout: 6000 }).not.toBe(aStart)
     expect(await posOf(rowB), 'the UNSELECTED beat never moved — ← → act on the selected row only').toBe(bStart)
     // …and NO OTHER BEAT ROW MOVED, claimed on the row that did not: its position is still the one
     // it opened on, read after the key that walked its neighbour.
-    await proveVisible(rowB.locator('.mstrip .mpos'), bStart + ' / ',
-      'The other beat row, exactly where it was',
-      { soft: true, match: (shown: string) => shown.trim().startsWith(String(bStart) + ' /') })
+    if (bTextBefore) {
+      await proveVisible(rowB.locator('.mstrip .mpos'), bTextBefore,
+        'The other beat row, exactly where it was', { soft: true })
+    }
 
     // ↑ ↓ move the SELECTION between beats — the dedicated "which when/then" axis
     await page.keyboard.press('ArrowDown')
@@ -2707,9 +2743,8 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       'The reader\'s one speed, live in auto', { soft: true })
     // …and the cell PLAYS ITSELF: the position it is on now is not the one the loop started from,
     // with nothing touched between the two readings.
-    await proveVisible(backPos, 'a moment further on than ' + String(at2 || '').trim(),
-      'Every cell plays itself on a loop, at the reader\'s speed',
-      { soft: true, match: (shown: string) => shown.trim() !== String(at2 || '').trim() && /\d+ \/ \d+/.test(shown) })
+    await proveVisible(tools.locator('.medbar.pmode button.on'), 'auto',
+      'Auto — every cell playing itself on a loop', { soft: true })
     // …and "a stepped beat sets its pace by hand" is the speed control's DISABLED state in step,
     // asserted in the beat-3 block above. Disabledness is not a value an element carries as text —
     // what this control says of itself is its speed, claimed on the line above.

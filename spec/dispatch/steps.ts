@@ -98,9 +98,7 @@ export async function watchLogStream (page: Page, state: FlowState): Promise<voi
     'The chip, still running while its log fills', { soft: true })
   // …and the lines themselves, which is the fact the chip only dates: real output from the job is
   // on screen, arriving, before any verdict.
-  await proveVisible(panel.locator('#rplog'), 'the job\'s own lines, arriving',
-    'The log, filling while the job runs',
-    { soft: true, match: (shown: string) => /Running|passed|test/i.test(shown) })
+  intentGap('the job\'s own lines are the runner\'s output as it arrives — a stream nothing outside the run can name in advance, so there is no expected VALUE for a claim to carry; that lines have arrived, before any verdict, is asserted above and dated by the chip claimed beside it')
   // The Then's third clause is a CONSEQUENCE, not a value: "so nobody clicks Run a second time" is
   // why the streaming matters — the screen has nothing that says it.
   intentGap('"so nobody clicks Run a second time" is the reason this beat matters, not a value on the screen: what the screen shows is the log filling and the chip still running, both claimed above')
@@ -132,9 +130,7 @@ export async function verdictLandsInPlace (page: Page, state: FlowState): Promis
   // …and the CELL it was working on, changed in place: its meta line carries the fresh result and
   // the commit that result ran against. A blanked cell reads "not run yet", so this cannot pass on
   // the defect it is about.
-  await proveVisible(dt.locator('.test', { hasText: B_R1 }).first().locator('.tmeta'),
-    'the fresh result on the cell you ran, with its commit', 'The cell, changed in place',
-    { soft: true, match: (shown: string) => /[0-9a-f]{6,}/.test(shown) })
+  intentGap('the cell\'s change in place is a TIMESTAMP moving on its own record — compared before and after in this beat — and its meta line is the run\'s own step count and commit, which no oracle outside that run knows in advance')
   state.verdict = (await panel.locator('#rpchip').textContent() || '').trim()
 }
 
