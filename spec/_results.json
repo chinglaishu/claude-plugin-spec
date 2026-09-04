@@ -105,7 +105,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2256,
+                  "duration": 2318,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -113,15 +113,15 @@
                   "steps": [
                     {
                       "title": "proves R1",
-                      "duration": 47
+                      "duration": 49
                     },
                     {
                       "title": "proves R1",
-                      "duration": 91
+                      "duration": 97
                     },
                     {
                       "title": "proves R1",
-                      "duration": 449,
+                      "duration": 466,
                       "steps": [
                         {
                           "title": "note: The crumb names this project, derived from package.json — got specboard · dogfooding itself · expected specboard · dogfooding itself",
@@ -130,7 +130,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:27.825Z",
+                  "startTime": "2026-09-04T00:08:13.334Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -295,7 +295,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1368,
+                  "duration": 1382,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -303,7 +303,7 @@
                   "steps": [
                     {
                       "title": "proves R2",
-                      "duration": 692,
+                      "duration": 712,
                       "steps": [
                         {
                           "title": "note: The card header, still pinned with the story scrolled — got R1 · expected R1",
@@ -312,7 +312,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:30.208Z",
+                  "startTime": "2026-09-04T00:08:15.780Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -407,7 +407,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1299,
+                  "duration": 1258,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -415,7 +415,7 @@
                   "steps": [
                     {
                       "title": "proves R3",
-                      "duration": 564,
+                      "duration": 569,
                       "steps": [
                         {
                           "title": "note: The row, unfolded into the Focus body in place — got R1 · expected R1",
@@ -424,7 +424,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:31.582Z",
+                  "startTime": "2026-09-04T00:08:17.169Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -519,7 +519,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2261,
+                  "duration": 2250,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -527,7 +527,7 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 1196,
+                      "duration": 1198,
                       "steps": [
                         {
                           "title": "note: first check — got 1 · expected 1",
@@ -544,7 +544,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:32.888Z",
+                  "startTime": "2026-09-04T00:08:18.433Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -639,7 +639,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 730,
+                  "duration": 735,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -647,15 +647,15 @@
                   "steps": [
                     {
                       "title": "Open the board detail — the reader is there",
-                      "duration": 597,
+                      "duration": 584,
                       "steps": [
                         {
                           "title": "note: ▸ proving R10 — A test opens to its full evidence, and can be run — watchably or in the background",
-                          "duration": 0
+                          "duration": 1
                         },
                         {
                           "title": "proves R10",
-                          "duration": 7
+                          "duration": 6
                         }
                       ]
                     },
@@ -674,7 +674,7 @@
                       "duration": 3
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:35.155Z",
+                  "startTime": "2026-09-04T00:08:20.691Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -749,7 +749,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 849,
+                  "duration": 868,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -757,10 +757,10 @@
                   "steps": [
                     {
                       "title": "proves R10",
-                      "duration": 135
+                      "duration": 123
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:35.892Z",
+                  "startTime": "2026-09-04T00:08:21.433Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -835,7 +835,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1293,
+                  "duration": 1173,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -843,16 +843,16 @@
                   "steps": [
                     {
                       "title": "proves R4",
-                      "duration": 582,
+                      "duration": 493,
                       "steps": [
                         {
-                          "title": "note: The card's count — the Passed rows of its own detail — got 0 / 23 proven · expected 0 / 23 proven",
+                          "title": "note: The card's count — the Passed rows of its own detail — got 23 / 23 proven · expected 23 / 23 proven",
                           "duration": 0
                         }
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:36.751Z",
+                  "startTime": "2026-09-04T00:08:22.309Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -947,7 +947,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1849,
+                  "duration": 1782,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -955,7 +955,7 @@
                   "steps": [
                     {
                       "title": "proves R5",
-                      "duration": 1098,
+                      "duration": 1066,
                       "steps": [
                         {
                           "title": "note: The requirement the test's tag resolves to — got R2 · expected R2",
@@ -968,7 +968,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:38.052Z",
+                  "startTime": "2026-09-04T00:08:23.489Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1083,7 +1083,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 731,
+                  "duration": 710,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1091,10 +1091,10 @@
                   "steps": [
                     {
                       "title": "proves R6",
-                      "duration": 12
+                      "duration": 13
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:39.907Z",
+                  "startTime": "2026-09-04T00:08:25.278Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1169,7 +1169,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1127,
+                  "duration": 1105,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1177,7 +1177,7 @@
                   "steps": [
                     {
                       "title": "proves R7",
-                      "duration": 422,
+                      "duration": 423,
                       "steps": [
                         {
                           "title": "note: What the detail deals: the requirement's words, then its two pictures — got behavior · expected behavior",
@@ -1186,7 +1186,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:40.645Z",
+                  "startTime": "2026-09-04T00:08:25.995Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1281,7 +1281,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1169,
+                  "duration": 1161,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1289,7 +1289,7 @@
                   "steps": [
                     {
                       "title": "proves R8",
-                      "duration": 443,
+                      "duration": 460,
                       "steps": [
                         {
                           "title": "note: Straight from the header into the reader — the first requirement — got R1 · expected R1",
@@ -1298,7 +1298,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:41.778Z",
+                  "startTime": "2026-09-04T00:08:27.107Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1393,7 +1393,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3410,
+                  "duration": 3530,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1401,7 +1401,7 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 2725,
+                      "duration": 2825,
                       "steps": [
                         {
                           "title": "note: The same requirement, rendered in the List — got One card per screen, not a row of cells · expected One card per screen, not a row of cells",
@@ -1410,7 +1410,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:42.954Z",
+                  "startTime": "2026-09-04T00:08:28.274Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1505,7 +1505,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 7842,
+                  "duration": 7802,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1513,7 +1513,7 @@
                   "steps": [
                     {
                       "title": "proves R18",
-                      "duration": 1162,
+                      "duration": 1174,
                       "steps": [
                         {
                           "title": "note: the picture wears the ring the run painted — got 43 111 14 14 · expected 43 111 14 14",
@@ -1531,7 +1531,7 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 1803,
+                      "duration": 1744,
                       "steps": [
                         {
                           "title": "note: The honest blank where nothing was captured — got no Expected yet — re-harvest this screen (a sketch derives from the behavior text where there is no UI) · expected no Expected yet",
@@ -1549,7 +1549,7 @@
                     },
                     {
                       "title": "proves R18",
-                      "duration": 792,
+                      "duration": 807,
                       "steps": [
                         {
                           "title": "note: The R15-pattern escape for a picture that is wrong — got The Expected picture doesn’t match my app · expected The Expected picture doesn’t match my app",
@@ -1557,13 +1557,13 @@
                         },
                         {
                           "title": "note: the picture is self-evident — no per-cell caption — got 0 captions · expected 0 captions",
-                          "duration": 1
+                          "duration": 0
                         }
                       ]
                     },
                     {
                       "title": "proves R18",
-                      "duration": 1592,
+                      "duration": 1589,
                       "steps": [
                         {
                           "title": "note: every committed Expected was measured against its own harvest — got 23 gated · expected 23 gated",
@@ -1571,7 +1571,7 @@
                         },
                         {
                           "title": "note: every beat carries the pin its picture was gated against — got 23 pinned · expected 23 pinned",
-                          "duration": 1
+                          "duration": 0
                         },
                         {
                           "title": "note: the banner names the layout, not the words — got layout moved · expected layout moved",
@@ -1584,7 +1584,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:46.370Z",
+                  "startTime": "2026-09-04T00:08:31.810Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -1844,7 +1844,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3803,
+                  "duration": 3785,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -1852,7 +1852,7 @@
                   "steps": [
                     {
                       "title": "proves R19",
-                      "duration": 355,
+                      "duration": 353,
                       "steps": [
                         {
                           "title": "note: one camera, one region — got same region · expected same region",
@@ -1862,7 +1862,7 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 1310,
+                      "duration": 1326,
                       "steps": [
                         {
                           "title": "note: The sentence both pictures are of — got When you scroll the card's story · expected you scroll the card's story",
@@ -1884,7 +1884,7 @@
                     },
                     {
                       "title": "proves R19",
-                      "duration": 358,
+                      "duration": 351,
                       "steps": [
                         {
                           "title": "note: the moment camera is capped at 1.25× — got within the cap · expected within the cap",
@@ -1893,7 +1893,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:54.219Z",
+                  "startTime": "2026-09-04T00:08:39.620Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2078,7 +2078,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 6978,
+                  "duration": 7013,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2086,7 +2086,7 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 3060,
+                      "duration": 3113,
                       "steps": [
                         {
                           "title": "note: The beat's position, read on the one strip over both pictures — got 1 / 2 · expected 1 / 2",
@@ -2100,11 +2100,11 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 246
+                      "duration": 251
                     },
                     {
                       "title": "proves R20",
-                      "duration": 1970,
+                      "duration": 1968,
                       "steps": [
                         {
                           "title": "note: The Expected cell's one chip — got expected · expected expected",
@@ -2116,7 +2116,7 @@
                         },
                         {
                           "title": "note: The mark beside the hue — the state, in a greyscale reader too — got ✕ · expected ✕",
-                          "duration": 1
+                          "duration": 0
                         },
                         {
                           "title": "note: the beat’s result is a checklist — got 1 fact(s) · expected 1 fact(s)",
@@ -2125,7 +2125,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:40:58.029Z",
+                  "startTime": "2026-09-04T00:08:43.413Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2350,7 +2350,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1444,
+                  "duration": 1463,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2358,7 +2358,7 @@
                   "steps": [
                     {
                       "title": "proves R23",
-                      "duration": 739,
+                      "duration": 758,
                       "steps": [
                         {
                           "title": "note: The one marker, naming both values — got expected“R1”·actual“not this” · expected R1 · not this",
@@ -2371,7 +2371,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:05.013Z",
+                  "startTime": "2026-09-04T00:08:50.433Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2466,7 +2466,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 8453,
+                  "duration": 8421,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2474,11 +2474,11 @@
                   "steps": [
                     {
                       "title": "proves R20",
-                      "duration": 350
+                      "duration": 345
                     },
                     {
                       "title": "proves R20",
-                      "duration": 19,
+                      "duration": 20,
                       "steps": [
                         {
                           "title": "note: the rejected bead rail is gone — got 0 .scenerail · expected 0 .scenerail",
@@ -2488,7 +2488,7 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 3597,
+                      "duration": 3563,
                       "steps": [
                         {
                           "title": "note: The reader, opened in step — every beat held on its first scene — got step · expected step",
@@ -2506,7 +2506,7 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 503,
+                      "duration": 521,
                       "steps": [
                         {
                           "title": "note: a proof click opens the lightbox — got lightbox open · expected lightbox open",
@@ -2516,7 +2516,7 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 864,
+                      "duration": 867,
                       "steps": [
                         {
                           "title": "note: The reader's one speed, live in auto — got 4 · expected 4",
@@ -2526,10 +2526,10 @@
                     },
                     {
                       "title": "proves R20",
-                      "duration": 50
+                      "duration": 52
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:06.462Z",
+                  "startTime": "2026-09-04T00:08:51.901Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -2839,7 +2839,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2538,
+                  "duration": 2551,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -2847,11 +2847,11 @@
                   "steps": [
                     {
                       "title": "proves R21",
-                      "duration": 696,
+                      "duration": 699,
                       "steps": [
                         {
                           "title": "note: The cell the row deals first — the behaviour's words — got behavior · expected behavior",
-                          "duration": 1
+                          "duration": 0
                         },
                         {
                           "title": "note: the header sits over the cells it names — got 0px drift · expected 0px drift",
@@ -2861,7 +2861,7 @@
                     },
                     {
                       "title": "proves R21",
-                      "duration": 652,
+                      "duration": 684,
                       "steps": [
                         {
                           "title": "note: The next requirement, dealing the same first cell — got behavior · expected behavior",
@@ -2870,7 +2870,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:14.922Z",
+                  "startTime": "2026-09-04T00:09:00.328Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3020,7 +3020,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1637,
+                  "duration": 1567,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3028,10 +3028,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 917
+                      "duration": 900
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:17.467Z",
+                  "startTime": "2026-09-04T00:09:02.886Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3106,7 +3106,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2145,
+                  "duration": 2070,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3114,10 +3114,10 @@
                   "steps": [
                     {
                       "title": "proves R14",
-                      "duration": 1415
+                      "duration": 1381
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:19.109Z",
+                  "startTime": "2026-09-04T00:09:04.460Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3192,7 +3192,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4292,
+                  "duration": 4152,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3200,14 +3200,14 @@
                   "steps": [
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 638
+                      "duration": 570
                     },
                     {
                       "title": "proves dispatch:R7",
-                      "duration": 2371
+                      "duration": 2369
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:21.261Z",
+                  "startTime": "2026-09-04T00:09:06.536Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3312,7 +3312,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 158,
+                  "duration": 162,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3327,7 +3327,7 @@
                       "duration": 0
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:25.559Z",
+                  "startTime": "2026-09-04T00:09:10.695Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -3361,7 +3361,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1106,
+                  "duration": 1093,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3369,7 +3369,7 @@
                   "steps": [
                     {
                       "title": "proves R9",
-                      "duration": 438,
+                      "duration": 439,
                       "steps": [
                         {
                           "title": "note: The only card the search leaves standing — got Conflicts · expected Conflicts",
@@ -3378,7 +3378,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:25.723Z",
+                  "startTime": "2026-09-04T00:09:10.863Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3473,7 +3473,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1652,
+                  "duration": 1585,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3481,7 +3481,7 @@
                   "steps": [
                     {
                       "title": "proves R16",
-                      "duration": 1038,
+                      "duration": 990,
                       "steps": [
                         {
                           "title": "note: A feature card, naming the live example it opens — got open the List · expected open the List",
@@ -3490,7 +3490,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:26.835Z",
+                  "startTime": "2026-09-04T00:09:11.963Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3585,7 +3585,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 824,
+                  "duration": 788,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3596,7 +3596,7 @@
                       "duration": 98
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:28.494Z",
+                  "startTime": "2026-09-04T00:09:13.554Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3671,7 +3671,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1050,
+                  "duration": 1033,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3679,7 +3679,7 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 488,
+                      "duration": 459,
                       "steps": [
                         {
                           "title": "note: Reviewing it, without the tool — one green badge over a wall of code — got 40 tests passing · expected 40 tests passing",
@@ -3688,7 +3688,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:29.325Z",
+                  "startTime": "2026-09-04T00:09:14.349Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3783,7 +3783,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4713,
+                  "duration": 4731,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3791,7 +3791,7 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 3648,
+                      "duration": 3650,
                       "steps": [
                         {
                           "title": "note: The scene it stepped to, held — nothing advances on its own — got unproven · expected unproven",
@@ -3801,10 +3801,10 @@
                     },
                     {
                       "title": "proves R11",
-                      "duration": 67
+                      "duration": 85
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:30.382Z",
+                  "startTime": "2026-09-04T00:09:15.389Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -3934,7 +3934,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1845,
+                  "duration": 1888,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -3942,10 +3942,10 @@
                   "steps": [
                     {
                       "title": "proves R11",
-                      "duration": 1307
+                      "duration": 1299
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:35.101Z",
+                  "startTime": "2026-09-04T00:09:20.126Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4020,7 +4020,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 566,
+                  "duration": 552,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4031,7 +4031,7 @@
                       "duration": 10
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:36.952Z",
+                  "startTime": "2026-09-04T00:09:22.019Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4106,7 +4106,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1193,
+                  "duration": 1169,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4114,7 +4114,7 @@
                   "steps": [
                     {
                       "title": "proves R12",
-                      "duration": 467,
+                      "duration": 445,
                       "steps": [
                         {
                           "title": "note: The one next action, derived from the tree on this build — got Every derivable fact already holds — this project's requirements are proven. · expected Every derivable fact already holds — this project's requirements are proven.",
@@ -4123,7 +4123,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:37.525Z",
+                  "startTime": "2026-09-04T00:09:22.578Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4218,7 +4218,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 3378,
+                  "duration": 3357,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4226,7 +4226,7 @@
                   "steps": [
                     {
                       "title": "proves R22",
-                      "duration": 697,
+                      "duration": 712,
                       "steps": [
                         {
                           "title": "note: the CI mark derives from the chooser — got board conflicts init · expected board conflicts init",
@@ -4240,11 +4240,11 @@
                     },
                     {
                       "title": "proves R22",
-                      "duration": 1531,
+                      "duration": 1522,
                       "steps": [
                         {
                           "title": "note: The mark, moved to the screen the new chooser names — got CI gate · expected CI gate",
-                          "duration": 0
+                          "duration": 1
                         },
                         {
                           "title": "note: a different chooser moves the mark — got conflicts · expected conflicts",
@@ -4253,7 +4253,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:38.724Z",
+                  "startTime": "2026-09-04T00:09:23.753Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4403,7 +4403,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1872,
+                  "duration": 1862,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4411,7 +4411,7 @@
                   "steps": [
                     {
                       "title": "proves R15",
-                      "duration": 960,
+                      "duration": 989,
                       "steps": [
                         {
                           "title": "note: The prompt the ⋯ hands you, ready to paste — got Reword this requirement · expected Reword this requirement",
@@ -4424,7 +4424,7 @@
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:42.116Z",
+                  "startTime": "2026-09-04T00:09:27.115Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4527,14 +4527,14 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 506
+                      "duration": 537
                     },
                     {
                       "title": "proves R15",
-                      "duration": 51
+                      "duration": 71
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:43.998Z",
+                  "startTime": "2026-09-04T00:09:28.984Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4644,7 +4644,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 1397,
+                  "duration": 1376,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4652,10 +4652,10 @@
                   "steps": [
                     {
                       "title": "proves R13",
-                      "duration": 706
+                      "duration": 685
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:45.732Z",
+                  "startTime": "2026-09-04T00:09:30.718Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4730,7 +4730,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 2650,
+                  "duration": 2604,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4738,7 +4738,7 @@
                   "steps": [
                     {
                       "title": "count the home cards — one per screen, titles and a cover",
-                      "duration": 527,
+                      "duration": 518,
                       "steps": [
                         {
                           "title": "note: ▸ proving R1 — One card per screen, not a row of cells",
@@ -4746,13 +4746,13 @@
                         },
                         {
                           "title": "proves R1",
-                          "duration": 40
+                          "duration": 41
                         }
                       ]
                     },
                     {
                       "title": "open the board detail — reading and proof side by side",
-                      "duration": 1159,
+                      "duration": 1180,
                       "steps": [
                         {
                           "title": "note: ▸ proving R2 — A requirement and the tests that prove it are read side by side, in one card that scrolls inside itself",
@@ -4760,7 +4760,7 @@
                         },
                         {
                           "title": "proves R2",
-                          "duration": 695,
+                          "duration": 713,
                           "steps": [
                             {
                               "title": "note: The card header, still pinned with the story scrolled — got R1 · expected R1",
@@ -4772,7 +4772,7 @@
                     },
                     {
                       "title": "a finished run refreshes the board in place — no reload",
-                      "duration": 780,
+                      "duration": 711,
                       "steps": [
                         {
                           "title": "note: ▸ proving dispatch:R7 — The panel stays open when the job ends, and the board updates behind it",
@@ -4780,12 +4780,12 @@
                         },
                         {
                           "title": "proves dispatch:R7",
-                          "duration": 282
+                          "duration": 220
                         }
                       ]
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:47.136Z",
+                  "startTime": "2026-09-04T00:09:32.101Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -4950,7 +4950,7 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 4294,
+                  "duration": 3629,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
@@ -4958,7 +4958,7 @@
                   "steps": [
                     {
                       "title": "proves R17",
-                      "duration": 622,
+                      "duration": 442,
                       "steps": [
                         {
                           "title": "note: The family every requirement under it sits in — got 1 · The board's shape — one page, every screen · expected 1 · The board's shape — one page, every screen",
@@ -4968,18 +4968,18 @@
                     },
                     {
                       "title": "proves R17",
-                      "duration": 38
+                      "duration": 37
                     },
                     {
                       "title": "proves R17",
-                      "duration": 616
+                      "duration": 601
                     },
                     {
                       "title": "proves R17",
-                      "duration": 709
+                      "duration": 649
                     }
                   ],
-                  "startTime": "2026-09-03T23:41:49.793Z",
+                  "startTime": "2026-09-04T00:09:34.712Z",
                   "annotations": [
                     {
                       "type": "covers",
@@ -5163,8 +5163,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-09-03T23:40:26.350Z",
-    "duration": 87778.223,
+    "startTime": "2026-09-04T00:08:12.180Z",
+    "duration": 86199.714,
     "expected": 36,
     "skipped": 0,
     "unexpected": 0,
