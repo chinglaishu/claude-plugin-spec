@@ -442,13 +442,22 @@ function endOfComment (text, start) {
   const e = text.indexOf('*/', start + 2)
   return e === -1 ? text.length : e + 1
 }
+// A QUOTE WHOSE PARTNER IS NOT ON ITS LINE IS NOT A STRING (fix round 2, 2026-09-04). Telling a
+// regex literal from a division needs a parser this deliberately is not, and
+// `const plain = (s: string) => String(s).replace(/[`*]/g, '')` puts a BACKTICK inside a character
+// class: read as a template literal it ran to the next backtick 200 KB later, so `plain`'s "body"
+// was the rest of spec/board/test.spec.ts and every caller of that two-line helper was credited
+// with 61 claims. A `'`/`"` string cannot contain a raw newline at all, and a template that does is
+// rarer here than a regex — and the cost of the two mistakes is not symmetric: over-capturing
+// invents claims (a false green), under-capturing loses them (a gap an author then closes).
 function endOfString (text, start) {
   const q = text[start]
   for (let i = start + 1; i < text.length; i++) {
     if (text[i] === '\\') { i++; continue }
+    if (text[i] === '\n') return start          // no partner on this line — not a string opener
     if (text[i] === q) return i
   }
-  return text.length
+  return start
 }
 // a concise arrow's body: the expression after `=>`, ending at the `;` or the line end that closes
 // the statement, or at the bracket that closes whatever the arrow was passed to.

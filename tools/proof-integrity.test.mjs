@@ -879,3 +879,19 @@ test('a declaration is refused only for an absence with a NAMED subject (I4)', (
   assert.equal(absenceTarget('never refused or queued'), false, 'dispatch R4 b1')
   assert.equal(absenceTarget('the count reads 4'), false)
 })
+
+test('a BACKTICK inside a regex character class is not a template literal (C1, second face)', () => {
+  // spec/board/test.spec.ts:1246 — `const plain = (s) => String(s).replace(/[`*]/g, '')`. Read as a
+  // template opener it swallowed 200 KB of the file, and every block calling `plain` was credited
+  // with the 61 claims in that span: board R18 b1, R20 b2 and R23 b1 all read "33 claims" from a
+  // two-line helper. A quote with no partner on its own line is not a string here.
+  const src = [
+    "const plain = (s) => String(s || '').replace(/[`*]/g, '').trim()",
+    "async function far (page) {",
+    "  await proveVisible(page.locator('.n'), '4', 'To do', { soft: true })",
+    "}"
+  ].join('\n')
+  const bodies = functionBodies(src)
+  assert.ok(bodies.get('plain').length < 80, 'the arrow body is the expression, not the file')
+  assert.equal(/proveVisible/.test(bodies.get('plain')), false)
+})
