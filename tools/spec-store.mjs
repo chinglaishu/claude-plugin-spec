@@ -916,7 +916,7 @@ export function chromeSource (name) {
   // deterministic: the first Before page by name that still has the skeleton it was measured with —
   // the skeleton is what says where the shell ends and a screen's own words begin
   for (const f of files.filter(n => n.endsWith('.before.expected.html')).sort()) {
-    const layName = f.replace(/\.actual\.html$/, '.layout.json')
+    const layName = f.replace(/\.expected\.html$/, '.layout.json')
     if (!files.includes(layName)) continue
     let lay = null
     try { lay = JSON.parse(readFileSync(join(dir, layName), 'utf8')) } catch { continue }
