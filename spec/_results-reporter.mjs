@@ -300,6 +300,14 @@ function harvestEvidence (harvest, ranAt) {
       // to say nothing at the fold and only surface later in the CLI. The beat's own verdict stays
       // the resting moment's — that is the one the row shows.
       noteReplica(null, row.replicaExpectedBefore, gapLines, scr, rid, b.n, 'before')
+      // …and where the RESTING moment has NO PICTURE at all (a moment whose ringed element the walk
+      // refused to measure lands none — spec/_moment.mjs), the row's verdict comes from the last
+      // moment of the beat that DOES have one rather than from nothing: the stale banner is about
+      // the pictures the row shows, and a row that shows one has a verdict about it. Reported with
+      // no gapLines, because that moment has already said its gaps on the line above.
+      if (!row.gate && row.replicaExpectedBefore) {
+        noteReplica(row, row.replicaExpectedBefore, [], scr, rid, b.n, 'before')
+      }
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
       // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
       // `proves` step started, read back out of the skeleton that recorded it (spec/_base.ts
@@ -444,7 +452,10 @@ export function noteReplica (row, rel, gapLines, screen, id, beat, phase) {
     // build can see the harvest move past it, and a capture that ran out of bytes. Recording only
     // {gaps, gated} left both of them dead wire in tools/build-board.mjs, with a board test that
     // forced the attribute by hand and went green over it.
-    if (row) row.gate = { gaps: note.gaps, gated: note.gated, pin: note.pin, trunc: note.trunc }
+    // …and WHICH MOMENT the verdict is about (2026-09-04): a beat whose resting moment has no picture
+    // takes its verdict from the last one that does, and the board's stale check has to compare that
+    // pin against THAT moment's skeleton or the row reads "the app moved past the picture" for ever.
+    if (row) row.gate = { gaps: note.gaps, gated: note.gated, pin: note.pin, trunc: note.trunc, phase: String(phase || '').split(' ')[0] }
     for (const g of note.list) {
       gapLines.push(`replica gap · ${screen} ${id} b${beat} ${phase} · ${g.kind} ${g.what} at ${g.x},${g.y} ${g.w}×${g.h}`)
     }

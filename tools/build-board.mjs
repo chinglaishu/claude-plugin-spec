@@ -552,8 +552,15 @@ const evAttrs = (s, r) => {
       // older screen than the frames beside it. Derived at every build, never stored — the pin is
       // read off the index (the reporter put it there) so this costs no read of the 8 MB of
       // committed replicas.
+      // …AGAINST THE SKELETON OF THE MOMENT THE VERDICT IS ABOUT (2026-09-04). A beat whose RESTING
+      // moment has no picture — one whose ringed element the walk refused to measure lands none —
+      // takes its verdict from the last moment that does, and comparing that pin to the AFTER
+      // skeleton read every such row as "the app moved past the picture" for ever. The reporter says
+      // which moment the verdict came from; a record from before that is read as the after moment's,
+      // exactly as it was.
       const pin = b.gate && typeof b.gate.pin === 'string' ? b.gate.pin : ''
-      const lA = readL(b.layoutAfter)
+      const gatedPhase = (b.gate && b.gate.phase) === 'before' ? b.layoutBefore : b.layoutAfter
+      const lA = readL(gatedPhase)
       if (pin && lA) o.lstale = pin !== layoutHash(lA, null)
       if (b.window && typeof b.window.from === 'number' && typeof b.window.to === 'number') {
         o.window = { from: b.window.from, to: b.window.to }

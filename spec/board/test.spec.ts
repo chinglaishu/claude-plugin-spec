@@ -900,7 +900,17 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       return out
     })
     expect(want.length, 'the harvest recorded this beat\'s moments').toBeGreaterThan(1)
-    expect(want.every(Boolean), 'and a committed replica for every one of them: ' + JSON.stringify(want)).toBe(true)
+    // …and a committed replica for the moments that HAVE one — "or honestly no picture" is half of
+    // what this requirement says (corrected 2026-09-04, rule 4). A moment whose ringed element the
+    // walk refused to measure lands no replica at all: picturing the page behind an opened dialog
+    // would be a picture of what a reader cannot see, so the cell says it has none instead. What
+    // must never happen is a moment naming a file that is not there, and a row with NO picture at
+    // all — both asserted here, and the stepping below is proven against the ones that exist.
+    const pictured = want.filter(Boolean)
+    expect(pictured.length, 'at least one moment of the beat is pictured: ' + JSON.stringify(want)).toBeGreaterThan(0)
+    for (const p of pictured) {
+      expect(existsSync(p.split('?')[0]), 'a named replica is a file on disk: ' + p).toBe(true)
+    }
     // the row opens on its first moment, showing that moment's own picture
     await expect.poll(repOf, { timeout: 8000 }).toBe(want[0])
     // the per-cell dots are gone (the human, 2026-09-02) and so is the gutter's ‹ n / N › (the same
