@@ -732,5 +732,13 @@ export function snapLayoutWalk (arg) {
   }
   if (report) report.ringEl = mounted ? focusEl : null
   if (doc.body) walk(doc.body, 0, 1)
-  return { w: vw, h: vh, ring: rb, els }
+  // …AND WHETHER THIS WALK SAW EVERYTHING IT COULD (final review C1, 2026-09-04). The gate's
+  // extra-box rule already refuses to read a FULL skeleton's silence as "the app did not have this
+  // box" — a walk that filled its slots did not measure everything it saw. The node BUDGET is the
+  // other way a walk stops early, and it was invisible: board R22's moment measured 45 elements out
+  // of 360 slots because the walk ran out of NODES on a page this size, and the card it never
+  // reached came back as an extra box on a replica showing exactly what the app showed. Said out
+  // loud, so both guards can ask instead of inferring it from the element count.
+  const capped = (els.length >= cap || visited >= BUDGET) ? 1 : 0
+  return { w: vw, h: vh, ring: rb, els, ...(capped ? { capped: 1 } : {}) }
 }

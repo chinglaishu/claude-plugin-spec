@@ -492,3 +492,19 @@ test('a replica box WRAPPING measured content is not an extra box; an empty inve
   const gaps = replicaGaps(live, invented, { x: 0, y: 0, w: 1440, h: 900 })
   assert.equal(gaps.filter(g => g.kind === 'extra-box').length, 1, 'an empty plate the app never had is still caught')
 })
+
+// ── A WALK THAT STOPPED EARLY IS SILENT, NOT NEGATIVE (final review C1, 2026-09-04) ─────────────
+// The extra-box rule already refused to read a FULL skeleton's silence as "the app did not have this
+// box". The node BUDGET is the other way a walk stops early, and it was invisible in the count:
+// board R22's moment measured 45 elements out of 360 slots because the walk ran out of NODES on a
+// page that size, and the card it never reached read as an extra box on a file that was right.
+test('a live walk that stopped early is not evidence that a replica box was absent', () => {
+  const invented = { els: [{ x: 800, y: 700, w: 200, h: 200, kind: 'container', bg: '1,2,3' }] }
+  const region = { x: 0, y: 0, w: 1440, h: 900 }
+  const full = { w: 1440, h: 900, els: [] }
+  assert.equal(replicaGaps(full, invented, region).filter(g => g.kind === 'extra-box').length, 1,
+    'a walk that saw everything still catches an invented box')
+  const stopped = { w: 1440, h: 900, els: [], capped: 1 }
+  assert.deepEqual(replicaGaps(stopped, invented, region).filter(g => g.kind === 'extra-box'), [],
+    'a walk that ran out of budget says nothing about what it never reached')
+})

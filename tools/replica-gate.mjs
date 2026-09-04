@@ -227,7 +227,12 @@ export function replicaGaps (live, replica, region, opts = {}) {
     }
   }
   // …and now the other way round (see EXTRA_MIN above)
-  if (liveEls.length < WALK_CAP) {
+  // …and a walk that STOPPED EARLY is silent about boxes rather than saying they were absent. Two
+  // ways to stop: the element cap (visible in the count) and the node BUDGET (which is not — board
+  // R22's moment measured 45 of 360 slots because the walk ran out of NODES on a page this size, and
+  // the card it never reached read as an extra box on a file that was right). The walk says so
+  // itself now; a skeleton from before that mark still answers by its count, exactly as it did.
+  if (liveEls.length < WALK_CAP && !(live && live.capped)) {
     for (const r of repEls) {
       if (out.length >= max) break
       if (!painted(r) || r.w < EXTRA_MIN || r.h < EXTRA_MIN) continue
