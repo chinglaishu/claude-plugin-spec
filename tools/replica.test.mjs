@@ -946,9 +946,12 @@ test('data-claims lists EVERY claim of the beat so far — but nothing here ever
   const json = /data-claims="([^"]*)"/.exec(r.expected)
   assert.ok(json, 'the Expected carries the WHOLE list: ' + r.expected.slice(0, 300))
   // data-claims carries the board's own canonical shape (label/expected/got/ok/missing?/unlocated?)
-  // — `ring` is an internal targeting detail (fix round 3), never meant to leak into it
+  // — `ring` is an internal targeting detail (fix round 3), never meant to leak into it — plus
+  // `now` on the ONE claim this moment made (final review I2): the Expected's claim gate must tell
+  // it from an earlier moment's, which that moment's own picture already answered for.
   assert.deepEqual(JSON.parse(json[1].replace(/&quot;/g, '"')),
-    claims.map(({ label, expected, got, ok }) => ({ label, expected, got, ok })))
+    claims.map(({ label, expected, got, ok }, i) =>
+      (i === claims.length - 1 ? { label, expected, got, ok, now: true } : { label, expected, got, ok })))
   // the FIRST claim in that list ("Renamed") was never applied — nowhere in the html, because it
   // was never handed in as THIS capture's `claim`
   // "Renamed" legitimately appears once — inside the data-claims JSON, informational only. It must

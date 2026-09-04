@@ -232,7 +232,16 @@ export function claimGaps (expectedText, claims) {
   const out = []
   for (const c of (Array.isArray(claims) ? claims : [])) {
     if (!c) continue
-    if (c.ok === true && clean(c.got) === clean(c.expected)) continue
+    if (c.ok === true) {
+      // the app showed exactly the words asked for — nothing left to check
+      if (clean(c.got) === clean(c.expected)) continue
+      // …and a PASSING claim from an EARLIER moment of the beat was answered by that moment's own
+      // picture: `data-claims` carries every claim so far, and this scene need not even contain the
+      // element that one rang. Only the claim THIS moment made (`now`) is asked of this file. A
+      // claim list from before that mark carries no `now` at all, so an old harvest is read exactly
+      // as it was — every passing claim exempt.
+      if (!c.now) continue
+    }
     const want = clean(c.expected)
     if (!want) continue
     if (text.indexOf(want) >= 0) continue

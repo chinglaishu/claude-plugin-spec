@@ -1425,6 +1425,11 @@ export function captureReplica (arg) {
     ok: !!(c && c.ok === true),
     ...(c && c.missing === true ? { missing: true } : {}),
     ...(unlocated.has(idx) ? { unlocated: true } : {}),
+    // …and WHICH claim this moment actually made (final review I2, 2026-09-04). `data-claims` is
+    // every claim of the beat SO FAR, and an earlier moment's claim was answered by that moment's
+    // own picture — this scene may not even contain the element it rang. The Expected's claim gate
+    // needs to tell the two apart, so the current one says so.
+    ...(curIdx === idx ? { now: true } : {}),
     // fix round 4 (N1): this moment's Expected could not carry the ring at all — said, never hidden
     ...(ringNote && curIdx === idx ? { ring: ringNote } : {})
   }))
