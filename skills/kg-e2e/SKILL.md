@@ -118,7 +118,7 @@ way. Read it before writing your first one.
    **Prove the WHEN, not only the Then** *(2026-08-29 — the human, on the Tsumiki demo's R1)*. A beat's
    proof on the board plays `before → each value you proved → after`, and **`proveVisible` is what takes
    those middle frames**: every value it rings is photographed and measured where it stands, and the
-   requirement's schematic beside it draws the same scenes from the same skeletons. So a beat that asserts
+   requirement's Expected picture beside it is the app's own markup for the same moments. So a beat that asserts
    only its outcome has an **invisible action** — the box you typed into is empty in the before frame and
    cleared again by the after one, and the When the requirement names is nowhere in the row, on either
    side. Assert the action's own visible value first — `await proveVisible(page.locator('#new-task'),
@@ -156,7 +156,7 @@ way. Read it before writing your first one.
      deleted')`) and then the place it changed **after** it (the row that now stands where it was, the
      empty slot, the moved card), and only then the number the requirement counts. A beat whose only
      frames ring a counter says the action happened without ever showing it — the reader has to
-     believe the words, and on a FAILED beat (where the schematic draws the intended value and the
+     believe the words, and on a FAILED beat (where the Expected shows the intended value and the
      photograph the measured one) the missing picture is exactly the thing they came to see.
 
    The finishing check, extended: with the sound off, does each scene show something the last one did
@@ -166,7 +166,7 @@ way. Read it before writing your first one.
    `proveVisible(target, expected, label, { soft: true })`: the beat then reaches and photographs
    **every** fact and fails ONCE at its end with the whole list, instead of stopping at the first red
    with the rest of the requirement never shown (the human, 2026-09-02, on the demo's failing R9:
-   "the schematic should be correct, only the proof should be wrong"). A Then that names three things
+   "the Expected should be correct, only the proof should be wrong"). A Then that names three things
    proven by one claim is a third of a requirement wearing the requirement's whole green — and since
    the **Expected** picture is built from the beat's claims, a fact no claim covers is also a fact no
    picture can ever show. `npm run proof lint` refuses one: it splits each Then into its facts —

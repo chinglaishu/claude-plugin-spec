@@ -369,7 +369,7 @@ test('renders — a beats block leads the requirement, the List reads it, and th
 // intrinsic height, fully visible on load at a 640px-tall viewport and up. This fixture is TALL
 // on purpose (three beats of wrapping text): under the superseded layout (the left column
 // scrolling as one, Task 8 fix round 1) it pushed the drawing below the fold at BOTH heights.
-test('renders — Focus fits the viewport: the schematic on first sight, the beats scrolling inside the card', async ({ page }) => {
+test('renders — Focus fits the viewport: the Expected picture on first sight, the beats scrolling inside the card', async ({ page }) => {
   // Task 14 (×0.8 --scale, 2026-08-24): the scaled chrome fits MORE — the original seven ~100-char
   // rows all single-lined in the wider reading column and the region stopped overflowing at 900px,
   // so "the beats region overflows" went red with the behaviour intact (rule 4: the fixture had
@@ -463,7 +463,7 @@ test('renders — Focus fits the viewport: the schematic on first sight, the bea
 // preference (stills = the same drawing frozen per beat phase, nothing stored in the tree); and a
 // drawing whose text has moved past it renders QUIET GREY with the dated ≠ note — honest, never a
 // wrong picture. A requirement with no drawing keeps the placeholder line.
-test('renders — the drawn schematic fills the Focus slot: loop, stills per beat, grey when the text moves', async ({ page }) => {
+test('renders — the Expected picture fills the Focus slot: loop, stills per beat, grey when the text moves', async ({ page }) => {
   const body =
     '- **Given** a list with two items\n- **When** you press Clear\n- **Then** the list shows zero items\n' +
     '- **When** you press Undo\n- **Then** the two items return\n\n' +

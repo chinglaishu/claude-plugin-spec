@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "specboard",
-      "version": "0.17.1",
+      "version": "0.44.0",
       "source": "./",
       "description": "A visualised spec-driven development board. Every screen is two ends — its requirements, and the E2E tests that prove them against the real app. Drift is derived, never tracked: a requirement is proven only while a passing test tags it with an assertion that would fail without it; contradictions across requirements are surfaced for you to adjudicate.",
       "author": {

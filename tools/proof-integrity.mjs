@@ -925,7 +925,7 @@ function runMirror () {
   // gate saying which guard is actually standing, not an apology for an empty pass.
   if (!rows.length) console.log('no committed wireframe drawings — replicas gated instead')
   if (bad) {
-    console.log('\nA committed schematic no longer matches the harvest it was drawn from. Re-derive it')
+    console.log('\nA committed picture no longer matches the harvest it was measured against. Re-derive it')
     console.log('(node tools/viz-derive.mjs <screen>); if the gaps survive the redraw, the renderer has')
     console.log('stopped drawing something the app measured — fix that, never the guard.')
   }
