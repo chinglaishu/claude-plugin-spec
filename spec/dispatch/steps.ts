@@ -1,4 +1,4 @@
-import { expect, proveVisible } from '../_base'
+import { expect, proveVisible, intentGap, MISSING } from '../_base'
 import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 import type { FlowState } from '../board/steps'
@@ -76,6 +76,12 @@ export async function clickRunOnCell (page: Page, state: FlowState): Promise<voi
   // nothing was typed into it (the authored-intent lint, phase 6)
   await proveVisible(panel.locator('#rptitle'), 'board · test.spec.ts',
     'The panel, naming the screen whose cell you clicked', { soft: true })
+  // …and the Then's other two facts: it SHOWS IT RUNNING, and NOTHING WAS TYPED — there is no field
+  // in the panel to type a screen into, which is what makes the click the whole of the input.
+  await proveVisible(panel.locator('#rpchip'), 'running',
+    'The chip, already showing it running', { soft: true })
+  await proveVisible(panel.locator('input, textarea'), MISSING,
+    'No field to type a screen into — the cell you clicked was the whole input', { soft: true })
   state.runScreen = 'board'
 }
 
@@ -90,6 +96,14 @@ export async function watchLogStream (page: Page, state: FlowState): Promise<voi
   // which is the whole of R2 — a verdict-only panel is a button that goes quiet
   await proveVisible(panel.locator('#rpchip'), 'running',
     'The chip, still running while its log fills', { soft: true })
+  // …and the lines themselves, which is the fact the chip only dates: real output from the job is
+  // on screen, arriving, before any verdict.
+  await proveVisible(panel.locator('#rplog'), 'the job\'s own lines, arriving',
+    'The log, filling while the job runs',
+    { soft: true, match: (shown: string) => /Running|passed|test/i.test(shown) })
+  // The Then's third clause is a CONSEQUENCE, not a value: "so nobody clicks Run a second time" is
+  // why the streaming matters — the screen has nothing that says it.
+  intentGap('"so nobody clicks Run a second time" is the reason this beat matters, not a value on the screen: what the screen shows is the log filling and the chip still running, both claimed above')
   state.streamed = true
 }
 
@@ -115,6 +129,12 @@ export async function verdictLandsInPlace (page: Page, state: FlowState): Promis
   // accepts exactly those two — never a third, and never an empty chip.
   await proveVisible(panel.locator('#rpchip'), 'passed or failed', 'The verdict the panel landed on',
     { match: (shown: string) => /^(passed|failed)$/.test(shown), soft: true })
+  // …and the CELL it was working on, changed in place: its meta line carries the fresh result and
+  // the commit that result ran against. A blanked cell reads "not run yet", so this cannot pass on
+  // the defect it is about.
+  await proveVisible(dt.locator('.test', { hasText: B_R1 }).first().locator('.tmeta'),
+    'the fresh result on the cell you ran, with its commit', 'The cell, changed in place',
+    { soft: true, match: (shown: string) => /[0-9a-f]{6,}/.test(shown) })
   state.verdict = (await panel.locator('#rpchip').textContent() || '').trim()
 }
 

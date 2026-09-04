@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, flowStep, proveVisible, intentGap } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep, proveVisible, intentGap, MISSING } from '../_base'
 import { openBoardDetail, clickRunOnCell, watchLogStream, verdictLandsInPlace } from './steps'
 import { openDetailReader, toggleViews } from '../board/steps'
 
@@ -179,6 +179,7 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
 
   // R5: takeover is a cancel — the partial work is left on disk, so the run's log is still readable.
   await checkReq('R5', async () => {
+    intentGap('no page is open in this spec at all — the taken-over run is read out of /api/runs and the partial work it left is a file on disk (/spec/_runs/<id>/run.log), so there is no screen to read this beat off')
     const log = await request.get('/spec/_runs/' + firstId + '/run.log')
     expect(log.status(), 'the taken-over run left its partial log on disk').toBe(200)
   })
@@ -210,6 +211,7 @@ test('R4 — a run may nest inside the run driving it, and nesting is bounded', 
   // fail loudly rather than cancel a run it might be running inside. (A person's no-parent takeover is
   // proven in the takeover spec above.)
   await checkReq('R4', async () => {
+    intentGap('the slot is the server\'s own contract and this spec opens no page: accepted, refused and nested are http statuses, not states on a screen')
     const wrong = await request.post('/api/run', { data: { screen: 'board', parent: 'not-the-run' } })
     expect(wrong.status()).toBe(409)
 
@@ -295,6 +297,7 @@ test('R8 — a run that matched no test is recorded as an error, never 0 of 0 pa
   await idle(request)
 
   await checkReq('R8', async () => {
+    intentGap('this beat opens no page: the record it reads is /api/runs, and what it proves — a run that matched nothing is an error, never "0 of 0 passing" — is a field on that record')
     const data = await request.get('/api/runs').then((r: any) => r.json())
     const run = data.runs.find((x: any) => x.grep === 'zzz-honest-no-match-marker')
     expect(run, 'the no-match run was recorded').toBeTruthy()
@@ -374,6 +377,15 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
     // each stamped with when it ran and the commit it ran against
     await expect(one.locator('.tstlog .lghist > li').first().locator('.lgh'))
       .toContainText(/20\d\d-\d\d-\d\d \d\d:\d\d · \d+ms · [0-9a-f]{6,}/)
+    // the two facts of this requirement's first beat, claimed where this block stands: THIS case's
+    // record updated (the commit its newest result ran against, on the meta line) and its history
+    // is FOLDED, never replaced (the run count the case keeps under it).
+    await proveVisible(one.locator('.tmeta .tsha'), 'the commit this case last ran against',
+      'The record that updated, naming its commit',
+      { soft: true, match: (shown: string) => /^[0-9a-f]{6,}$/.test(shown.trim()) })
+    await proveVisible(one.locator('.tstlog .logbox summary'), 'the runs this case keeps',
+      'Folded, never replaced — the history under the case',
+      { soft: true, match: (shown: string) => /last \d+ runs/.test(shown) })
   })
 })
 
@@ -403,6 +415,11 @@ test('R8 — EVERY case that has run can expand its steps, not only the one you 
     // with its own record beside it — folded, never replaced (the authored-intent lint, phase 6)
     await proveVisible(cases.filter({ hasText: B_R2 }).first().locator('.tt'), B_R2,
       'A case of its own, still carrying its own record', { soft: true })
+    // …and the record ITSELF on that untouched case — the meta line the blanking used to wipe back
+    // to "not run yet". Stamped with the commit it ran against, so this cannot pass on an empty row.
+    await proveVisible(cases.filter({ hasText: B_R2 }).first().locator('.tmeta'),
+      'its own result, stamped with the commit it ran against', 'Folded, never replaced',
+      { soft: true, match: (shown: string) => /[0-9a-f]{6,}/.test(shown) })
     for (let i = 0; i < n; i++) {
       const title = await cases.nth(i).locator('.tt').textContent()
       // the record reached THIS case: its meta line is filled by the fold, never left blank
@@ -433,6 +450,13 @@ test('R7 — the run panel offers no background run', async ({ page }) => {
   await checkReq('R7', async () => {
     await expect(page.locator('.runbg')).toHaveCount(0)
     await expect(page.locator('#rpbg')).toHaveCount(0)
+    // …and both absences are CLAIMED, not left to the counts: `MISSING` passes exactly while no
+    // background control exists and fails, with the control's own words, the moment one is added
+    // back (phase 6 — an absence is claimed, never covered by a neighbour's positive fact).
+    await proveVisible(page.locator('.runbg'), MISSING,
+      'No background-run control on any cell', { soft: true })
+    await proveVisible(page.locator('#rpbg'), MISSING,
+      'And none inside the panel either', { soft: true })
     // …and the POSITIVE half, so this is not two absences and nothing else (rule 2, and the
     // standing "assert a positive outcome" rule): the one control the panel offers a running job
     // is Cancel — a job runs in the open or is stopped, and there is no third way out.
@@ -461,6 +485,13 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
     // ended — nothing closed it and nothing blanked it out from under you
     await proveVisible(panel.locator('#rptitle'), 'board · test.spec.ts',
       'The panel, still on screen after its run ended', { soft: true })
+    // …AND ITS LOG, which is the half that was being blanked: the run's own output is still there
+    // to read after the verdict, and no background chip appeared anywhere while it stood.
+    await proveVisible(panel.locator('#rplog'), 'the run\'s own output, still readable',
+      'The log, still filled after the run ended',
+      { soft: true, match: (shown: string) => /passing|passed|test/i.test(shown) })
+    await proveVisible(page.locator('.runbg'), MISSING,
+      'No background chip anywhere behind it', { soft: true })
   })
 })
 
@@ -471,6 +502,7 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
   expect(started.status()).toBe(200)
 
   await checkReq('R5', async () => {
+    intentGap('this spec opens no page: the killed process, the freed slot and the partial work left behind are the server\'s own state and a file on disk, none of which a screen shows')
     const cancelled = await request.post('/api/cancel')
     expect(cancelled.status()).toBe(200)
     expect((await cancelled.json()).cancelled).toBe('board')
