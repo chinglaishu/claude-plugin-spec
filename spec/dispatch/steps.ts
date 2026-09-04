@@ -122,11 +122,20 @@ export async function verdictLandsInPlace (page: Page, state: FlowState): Promis
     { timeout: 30000 }).not.toBe(state.cellBefore)
   const after = await dt.locator('.tststeps[data-title="' + B_R1 + '"]').evaluate((el: any) => el._hist[0].at)
   expect(after > state.cellBefore, 'the cell folded a NEWER run in place: ' + after + ' > ' + state.cellBefore).toBe(true)
-  // the verdict itself, claimed in the requirement's own words. Which of the two it is depends on
-  // the run this beat just watched, so the claim carries the Then's phrase and a `match` that
-  // accepts exactly those two — never a third, and never an empty chip.
-  await proveVisible(panel.locator('#rpchip'), 'passed or failed', 'The verdict the panel landed on',
-    { match: (shown: string) => /^(passed|failed)$/.test(shown), soft: true })
+  // THE VERDICT ITSELF, AGAINST THE RUN'S OWN COUNT (final review I2, 2026-09-04). This claimed
+  // `'passed or failed'` with a `match` — a DESCRIPTION of the app's text, never a string the app
+  // renders, so the board printed EXPECTED "passed or failed" over a picture reading "passed". What
+  // the beat actually knows is not which word it will be but that the word must AGREE with the
+  // count the panel appended to its own log a line earlier ("N of M passing"): those are two
+  // different fields of the run report, so a chip echoing itself, a chip left on the previous run's
+  // verdict, or a chip green over a failing count all fail this. And `expected` is now the app's own
+  // word, whichever it turns out to be.
+  const tail = (await panel.locator('#rplog').textContent() || '')
+  const counted = /(\d+) of (\d+) passing/.exec(tail)
+  expect(counted, 'the panel logs the run\'s own count, which is what the chip is checked against: ' +
+    JSON.stringify(tail.slice(-200))).not.toBe(null)
+  const want = counted![1] === counted![2] ? 'passed' : 'failed'
+  await proveVisible(panel.locator('#rpchip'), want, 'The verdict the panel landed on', { soft: true })
   // …and the CELL it was working on, changed in place: its meta line carries the fresh result and
   // the commit that result ran against. A blanked cell reads "not run yet", so this cannot pass on
   // the defect it is about.

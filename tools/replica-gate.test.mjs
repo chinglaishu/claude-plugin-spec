@@ -131,6 +131,23 @@ test('claimGaps names every failed claim whose expected value the Expected repli
   assert.equal(gaps[0].what, 'Pay the electricity bill')
 })
 
+// THE PASSING-CLAIM EXEMPTION IS ONLY TRUE OF AN EXACT MATCH (final review I2, 2026-09-04).
+// "A PASSING claim carries no expectation to check: the app already showed it" holds for
+// `shown === expected` and for nothing else — a `match` claim passes on a PREDICATE, so its
+// `expected` may be words the app never rendered, and exempting it let exactly that reach the board
+// (dispatch R3's EXPECTED "passed or failed" over a picture reading "passed"). proveVisible now
+// demands `shown` CONTAIN `expected`, and this is the gate that says so about the committed file:
+// a passing claim whose got differs from its expected must still show its expected value.
+test('a PASSING claim is exempt only when the app showed exactly it — a match claim is still checked', () => {
+  const exact = [{ label: 'the title', expected: 'All tasks', got: 'All tasks', ok: true }]
+  assert.deepEqual(claimGaps('nothing of the sort', exact), [], 'an exact pass carries no expectation')
+  const matched = [{ label: 'the stamp', expected: 'done', got: 'done 1d ago', ok: true }]
+  assert.deepEqual(claimGaps('the stamp reads done 1d ago', matched), [], 'and its value IS on screen here')
+  const gaps = claimGaps('the stamp reads nothing', matched)
+  assert.equal(gaps.length, 1, 'a passing match claim whose value is absent is a gap')
+  assert.equal(gaps[0].what, 'done')
+})
+
 test('claimGaps reads collapsed text on both sides, and an empty expectation claims nothing', () => {
   assert.deepEqual(claimGaps('a  b\n c', [{ expected: 'a b c', got: '', ok: false }]), [])
   assert.deepEqual(claimGaps('', [{ expected: '', got: 'x', ok: false }]), [])

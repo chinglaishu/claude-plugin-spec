@@ -221,13 +221,18 @@ export function replicaGaps (live, replica, region, opts = {}) {
  * in the Expected's text is a picture that does not say what the requirement says — the exact defect
  * fix rounds 1–3 of phase 2 chased three times (a bounded fallback rewriting the wrong leaf, a
  * restore that never landed). A PASSING claim carries no expectation to check: the app already
- * showed it.
+ * showed it — but only where it showed EXACTLY it (final review I2, 2026-09-04). A `match` claim
+ * passes on a PREDICATE, so its `expected` need not be anything the app rendered, and exempting
+ * every passing claim let precisely that reach the board: dispatch R3 printed EXPECTED
+ * "passed or failed" over a picture reading "passed". spec/_base.ts now demands that a match
+ * claim's `shown` CONTAIN its `expected`; this is the same demand, made of the committed file.
  */
 export function claimGaps (expectedText, claims) {
   const text = clean(expectedText)
   const out = []
   for (const c of (Array.isArray(claims) ? claims : [])) {
-    if (!c || c.ok === true) continue
+    if (!c) continue
+    if (c.ok === true && clean(c.got) === clean(c.expected)) continue
     const want = clean(c.expected)
     if (!want) continue
     if (text.indexOf(want) >= 0) continue

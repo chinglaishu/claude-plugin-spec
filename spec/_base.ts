@@ -803,8 +803,21 @@ export async function proveVisible (
   // Now expected === MISSING passes exactly when the element is gone and fails, with the app's own
   // text as `got`, the moment it is back. There is nothing to ring, so the frame is the page — which
   // is the honest picture of nothing being there (paintFocus already leaves the overlay hidden).
+  // AND A `match` CLAIM'S `expected` MUST BE TEXT THE APP RENDERS (final review I2, 2026-09-04).
+  // With `match` the verdict was a predicate while `expected` stayed whatever string the author
+  // passed — so `proveVisible(chip, 'passed or failed', …, { match: /^(passed|failed)$/ })` recorded
+  // `{ expected: "passed or failed", got: "passed", ok: true }`, and the board printed
+  // EXPECTED "passed or failed" over a picture reading "passed". A description of the app's text is
+  // not the app's text; commit f9c290d removed the instances it found, this closes the hole. The
+  // predicate still decides — an author who needs a parsed comparison (a trimmed stamp, a numeric
+  // tolerance) keeps it — but the words shown to a reader must occur in what the app actually
+  // showed, so `expected` has to be the rendered text and `match` only how it is compared.
+  // Whitespace-collapsed on both sides, the way tools/replica-gate.mjs's own word gate reads a
+  // replica: an element's rendered text wraps and indents, and a Then that names two words either
+  // side of a line break is still naming what the app shows.
+  const flat = (x: string) => String(x || '').replace(/\s+/g, ' ').trim()
   const ok = present
-    ? (opts.match ? !!opts.match(shown) : shown === expected)
+    ? (opts.match ? (!!opts.match(shown) && flat(shown).includes(flat(expected))) : shown === expected)
     : expected === MISSING
   // …AND THE CLAIM MUST SAY WHAT THE ASSERTION SAYS (fix round 4, found while verifying the Expected
   // on real data). `hudCheck` can only compare two strings, so a check carrying its OWN `match`
