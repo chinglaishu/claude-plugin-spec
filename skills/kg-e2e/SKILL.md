@@ -191,14 +191,24 @@ way. Read it before writing your first one.
      open, a geometry, what the CLI gate refuses, a surface that lives only on a hidden pane. The lint
      prints it as `DECLARED` with your reason and does not fail on it: **a visible debt, never a pass**.
      It is REFUSED where the Then names a thing that is not there and the beat photographs something
-     else instead — that one is claimable with `MISSING`, above. On a beat with no page open at all
-     one declaration answers for every fact, none of them having a surface; the moment a beat
-     photographs something, a declaration covers ONE fact and the rest still need their claims.
+     else instead — that one is claimable with `MISSING`, above. On a beat that opens NO PAGE at all
+     one declaration answers for every fact, none of them having a surface — a beat driving the
+     server through `request` with no browser. **The test for that is the block's own source, not
+     "it made no claims"** (final review I3, 2026-09-04): a block that touches `page.`, `locator(`,
+     `getBy…`, `proveVisible(`, `reveal(` or `click(` has a page open, and there a declaration covers
+     ONE fact — the rest still need their claims, or one declaration each. The lint names that
+     shortfall `declared-on-an-open-page`, because the fix is not "one more claim" but claiming
+     these facts at all, or declaring every one of them.
    - **One block per beat, in the beats' order.** `checkReq`'s cursor files the k-th call in a test
      under beat k, so an extra block hands its pictures to a sentence it is not about; a requirement
      whose blocks do not walk its beats is a failing `BEAT-MISMATCH` row. Two tests may each prove
      the same requirement — a unit and a flow — as long as they walk the SAME beats, and every one
-     of them must cover the beat it harvests: the row is scored on the block that covers it least.
+     of them must cover the beat it harvests: **the row is scored on the block whose harvest lands —
+     the LAST one in source order.** `workers:1` runs blocks in declaration order, so the last block
+     to run is the last to write `<id>.b<n>.*`, and its pictures are the ones the board shows on that
+     row; scoring anything else grades one block while displaying another. (Worst-of was considered
+     and rejected: it would demand every flow that re-proves a requirement repeat every claim of the
+     unit that owns it, which the many-to-many coverage model does not ask for.)
    - **Never edit the Then to fit the test** (CLAUDE.md rule 5 — meaning is the human's), and never
      invent a claim for a fact the screen cannot show.
 7. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal

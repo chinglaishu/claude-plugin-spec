@@ -636,10 +636,13 @@ test('A requirement names the tests that cover it', async ({ page }) => {
   await coverReqs('R6')
   await openDetail(page)
   await checkReq('R6', async () => {
-    intentGap('both facts are board-wide derivations read off the hidden baked panes: "an assertion that ' +
-      'would fail without it" is a property of the test, not a value on a screen, and this tree has NO ' +
-      'untagged requirement to photograph — the deterministic instance is spec/_modes\' fabricated screen, ' +
-      'deliberately not cross-tagged to board:R6')
+    // ONE DECLARATION PER FACT (final review I3, 2026-09-04). This beat opens a page, so the
+    // whole-beat waiver — which exists for a beat with no page open at all — does not apply to it:
+    // each fact of the Then says for itself why no claim can ring it, and each prints as its own
+    // visible debt.
+    intentGap('"proven only by an assertion that would fail without it" is a property of the TEST, not a value on any screen — the board derives it from the tag plus the run, and nothing rendered says it')
+    intentGap('"a requirement no test tags stays Untested" has no deterministic instance in this tree to photograph: every board requirement is tagged, and the fabricated untagged screen lives in spec/_modes, deliberately not cross-tagged to board:R6')
+    intentGap('"a test merely existing buys no green" is a NEGATIVE over every row of the board, read off the hidden baked panes below — not a value standing on a screen')
     // Few, comprehensive: the model lets one test cover several requirements (tags carry the link),
     // and a requirement's detail names the tests that prove it — never a bare "7 of 7 passing".
     // (The rows are read off the hidden baked pane — count/text works there.)
@@ -1837,9 +1840,15 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
   // frames — computed back out of its own transform — is the same fraction of the same page, aimed
   // at the focused component. Aim one cell somewhere else and this fails.
   await checkReq('R19', async () => {
-    intentGap('one camera on one region is GEOMETRY — the beat proves it by computing each cell\'s own ' +
-      'framed rectangle back out of its transform; there is no text anywhere in the fact for a claim to ' +
-      'read, and a claim beside it would be filler')
+    // ONE DECLARATION PER FACT (final review I3, 2026-09-04): the beat has a page open, so each
+    // fragment of this Then declares for itself. The fact is ONE geometric statement — the splitter
+    // reads four fragments in it — and every fragment is measured below by computing each cell's own
+    // framed rectangle back out of its transform. None of them is a value any element renders, and a
+    // claim beside them would be filler.
+    intentGap('"the Expected cell" is a CELL, not a value: what this beat proves about it is the rectangle its transform frames, computed below — nothing in it says where it is aimed')
+    intentGap('"the Actual cell are aimed by ONE camera at the same region of the same page" is an equality between two transforms, asserted below to three decimal places — a camera writes nothing on screen for a claim to read')
+    intentGap('"so the replica" — the replica is an iframe of the app\'s own markup, and the fact proved about it here is where it is aimed, which is geometry, not any word inside it')
+    intentGap('"the photograph can never frame different things" is a NEGATIVE over the pair, proved by the two framed rectangles agreeing — no element reads "they agree"')
     const focus = await armFocus(dt, spec.rid)
     expect(focus, 'the requirement carries a harvested beat to frame').toBeTruthy()
     // a hash hop REBUILDS the reader off the forced attribute; a goto to the URL the page is already
@@ -3067,10 +3076,14 @@ test('The proof is scannable as frames — one still per checked value, cut from
   // R1 is covered by exactly ONE test, so it is both the primary flow the default Focus page (R1)
   // embeds AND a row of the hidden baked pane — the two places the stubbed frames must appear.
   await checkReq('R14', async () => {
-    intentGap('the run\'s cut frames live on the test row in the HIDDEN baked pane and in the Steps ' +
-      'window since the proof band was removed (2026-09-02); there is no visible surface on the board ' +
-      'to read "one frame per checked value, its got-vs-expected" off, and a claim on a hidden node ' +
-      'rings nothing')
+    // ONE DECLARATION PER FACT (final review I3, 2026-09-04): this beat opens a page, so the
+    // whole-beat waiver does not apply — each fact says for itself why the board has no surface a
+    // claim could ring. The shared cause: since the proof band was removed (2026-09-02) a run's cut
+    // frames live on the test row in the HIDDEN baked pane and in the Steps window, and a claim on a
+    // hidden node rings nothing.
+    intentGap('"one frame per checked value shows in order" is a COUNT and an ORDER over the hidden baked row\'s strip — no single element renders either, and the strip itself is hidden')
+    intentGap('"cut from the recording at the instant it fired" is a property of how the still was produced, outside this deterministic suite — nothing on the board displays the instant a frame was taken')
+    intentGap('"each carrying its burned-in callout and got-vs-expected — a failing value red" is burned into the PIXELS of a still on that hidden row; there is no text node carrying it for proveVisible to read')
     // A run's record carries proof FRAMES — one still per checked value, cut from the recording at the
     // instant the check fired, each with its got-vs-expected (red on a failure). Stub a record that has
     // frames and drive it through the REAL client pipeline (the extraction that produces them is real
@@ -3491,7 +3504,13 @@ test('A test opens to its evidence and the log opens in a window', async ({ page
     // the story steps, their pending plan and the run's marks. Those live on the baked test row,
     // hidden since the Columns view retired; they are claimed and declared where the reader stands
     // on them, in this requirement's own evidence block above.
-    intentGap('this block is about the log window (beat 3) and the cursor files it under beat 1, whose facts are the story steps on the hidden baked row — claimed and declared in this requirement\'s evidence block above')
+    // ONE DECLARATION PER FACT (final review I3, 2026-09-04): the beat has a page open, so the
+    // whole-beat waiver does not apply — each of beat 1's three facts says for itself why THIS
+    // block cannot ring it. The cause is shared (this block stands on beat 3), and a shared reason
+    // is still not a shared waiver.
+    intentGap('beat 1\'s "its numbered story steps show from its definition" lives on the hidden baked test row; this block stands on the log window (beat 3), where those steps are not on screen at all — they are claimed and declared in this requirement\'s own evidence block above')
+    intentGap('beat 1\'s "before any run" is a state this block is past — a run has already folded by the time the ⋯ menu opens its log, so there is no pre-run row here for a claim to read')
+    intentGap('beat 1\'s "each wearing the run\'s passed / failed / not-reached mark" is a mark on that same hidden baked row, absent from the log window this block opens')
   })
 })
 
@@ -3678,12 +3697,21 @@ test('A deep-linked skill URL shows the skill detail on cold load', async ({ pag
     await expect(page.locator('#skilldetail')).toBeVisible()
     await expect(page.locator('#howoverview')).toBeHidden()
     await expect(page.locator('.flow-panel.open[data-skill="kg-deep"]')).toHaveCount(1)
-    // This block proves the guide's ROUTING on a cold deep link, and it is the LAST checkReq('R11')
-    // in the file — so BEAT_CURSOR files its harvest under R11's beat 1, whose facts are about the
-    // two ACTS of the walkthrough. Those acts are not on screen here at all: the deep link opens the
-    // skill detail and hides #howoverview, which this block asserts two lines above. The acts' own
-    // facts are claimed in the block that opens on them (the same requirement, further up this file).
-    intentGap('this beat lands on the walkthrough\'s two acts, and a cold deep link to a skill hides the overview they live in — the acts are claimed where the reader is standing on them, in this requirement\'s own walkthrough blocks above')
+    // …AND EACH OF THE THREE IS CLAIMED (final review I3, 2026-09-04). This block opens a page, so
+    // its facts have a surface a claim can ring and the whole-beat waiver it used to carry does not
+    // apply — a declaration there was a way of not writing three claims. Each of the three reads a
+    // value the deep-linked page actually renders, so a router that reached the guide without
+    // opening the collapsed <details>, or opened the wrong skill's panel, fails here with the app's
+    // own text as `got`. (BEAT_CURSOR still files this harvest under beat 1 while the block proves
+    // the routing — the open design item "checkReq cannot name its beat"; the walkthrough's two
+    // acts are claimed where the reader stands on them, further up this file.)
+    const panel = page.locator('.flow-panel.open[data-skill="kg-deep"]')
+    await proveVisible(panel.locator('.p-id h3'), 'kg-deep',
+      'The skill the deep link named, open on its own page', { soft: true })
+    await proveVisible(page.locator('#skillback'), '← How does it work',
+      'The way back — only the detail page carries it', { soft: true })
+    await proveVisible(panel.locator('.p-tag'), 'one screen → deep and proven',
+      'The opened panel\'s own tagline, inside the disclosure the router had to open', { soft: true })
   })
 })
 

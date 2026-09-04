@@ -604,10 +604,25 @@ export function declaredIn (body) {
   return declarationsIn(body)[0] || ''
 }
 const countOf = (text, re) => (String(text).match(re) || []).length
+// DOES THIS BLOCK OPEN A PAGE? (final review I3, 2026-09-04.) A zero-claim `intentGap` waives a
+// whole beat, and the reason it may — "a beat with no page open has no surface for any fact" — was
+// TESTED as "the beat made no claims", which an author satisfies by simply not writing one. Board
+// R11 beat 1 opened /#howitworks/kg-deep, asserted three visible/hidden things, claimed nothing,
+// declared once, and the lint printed DECLARED for all three facts; checkReq photographs that page
+// regardless, so "no surface" was not true of it. What decides is whether the block touches a page
+// at all, which its own source says plainly. Deliberately generous — any of these tokens means a
+// page is open, so the waiver is only ever granted to a block that is provably headless (dispatch
+// driving /api/run through `request`).
+const PAGE_TOKENS = /\bpage\s*\.|\blocator\s*\(|\bgetBy[A-Z]|\bproveVisible\s*\(|\breveal\s*\(|\bclick\s*\(/
+export function opensPage (body) {
+  return PAGE_TOKENS.test(stripComments(String(body || '')))
+}
+
 export function claimsIn (body) {
   const code = stripComments(body)
   const decls = declarationsIn(code)
   return {
+    open: opensPage(code),
     claims: countOf(code, /proveVisible\s*\(/g),
     soft: countOf(code, /soft\s*:\s*true/g),
     // an ABSENCE claim: `proveVisible(locator, MISSING, label, { soft: true })`, which passes
@@ -645,15 +660,21 @@ export function blockBeats (specSource, id, beats, screen = '') {
 // message it prints can never disagree: too few claims for the facts, a multi-fact beat that would
 // stop at its first red, and a beat that photographs no value at all. A DECLARATION covers one fact
 // exactly as a claim does (fix round 2) — it is a visible debt in the fact's place, not a pass.
-function gapWhy (facts, claims, soft, decls = 0) {
+function gapWhy (facts, claims, soft, decls = 0, open = true) {
   const why = []
-  // …and a beat that photographs NOTHING has no page open at all (dispatch drives /api/run with no
-  // browser): one declaration answers for every fact it names, because none of them has a surface.
-  // The moment a beat photographs something, a declaration covers ONE fact and the rest still need
-  // their claims — otherwise a single line would wave through the facts the screen does show.
-  const covered = claims + (claims === 0 && decls ? facts : decls)
+  // …and a beat that opens NO PAGE has no surface for any fact (dispatch drives /api/run with no
+  // browser): one declaration answers for every fact it names. The moment a beat opens a page, a
+  // declaration covers ONE fact and the rest still need their claims — otherwise a single line
+  // would wave through the facts the screen does show. Whether a page is open is read off the
+  // block's own source (`opensPage`), NOT inferred from "it made no claims": that inference was
+  // satisfiable by simply not writing a claim, which is the hole final review I3 named.
+  const covered = claims + (claims === 0 && !open && decls ? facts : decls)
   if (facts >= 2 && covered < facts) {
-    why.push(`the Then names ${facts} facts, the beat claims ${claims}` + (decls ? ` and declares ${decls}` : ''))
+    // …and it is NAMED when the shortfall is the waiver being asked for on an open page, because the
+    // author's next move differs: not "one more claim" but either claiming these facts at all or
+    // declaring each of them, one line per fact.
+    const named = (claims === 0 && open && decls) ? 'declared-on-an-open-page — ' : ''
+    why.push(named + `the Then names ${facts} facts, the beat claims ${claims}` + (decls ? ` and declares ${decls}` : ''))
   }
   if (facts >= 2 && soft < claims) why.push(`${claims - soft} of its claims ${claims - soft === 1 ? 'is' : 'are'} not soft — a multi-fact beat stops at its first red instead of photographing the rest`)
   if (facts === 1 && covered === 0) why.push('the Then names a fact and no claim covers it — nothing photographs the value')
@@ -724,9 +745,13 @@ export function lintIntent (prdText, specSource, opts = {}) {
       // read ok from a block in another test while the picture came from an empty one; scoring the
       // WORST reads truer still, but it demands every flow that re-proves a requirement repeat every
       // claim of the unit that owns it — a demand the many-to-many coverage model does not make.)
-      const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft, b.decls.length) }))
-      const worst = scored[scored.length - 1]
-      const decls = worst.decls
+      const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft, b.decls.length, b.open) }))
+      // `harvesting`, not `worst` (final review I4): this IS the last block in source order, and the
+      // name said otherwise for as long as it existed. workers:1 in declaration order means the last
+      // block to run is the last to file <id>.b<n>, so it is the block whose pictures the board
+      // actually shows — which is the whole reason it is the one scored.
+      const harvesting = scored[scored.length - 1]
+      const decls = harvesting.decls
       // A DECLARED GAP: the beat says IN ITSELF why a fact has no screen surface. Printed as its own
       // row with the reason and NOT counted against the exit code — a visible debt, never a pass.
       //
@@ -738,27 +763,27 @@ export function lintIntent (prdText, specSource, opts = {}) {
       // /api/run with no browser), and an absence there has no more surface to ring than a presence
       // does — and it must not already carry a MISSING claim for each absence the Then names.
       const absent = facts.filter(absenceTarget)
-      const unclaimedAbsence = absent.length > worst.missing
-      if (decls.length && absent.length && worst.claims > 0 && unclaimedAbsence) {
+      const unclaimedAbsence = absent.length > harvesting.missing
+      if (decls.length && absent.length && harvesting.claims > 0 && unclaimedAbsence) {
         rows.push({
-          screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
-          ok: false, state: 'gap', declared: decls.join(' · '), line: worst.line,
-          why: (worst.gap ? worst.gap + '; and' : 'its') + ` declaration is refused — "${absent[0].slice(0, 60)}" names an ` +
+          screen, id: r.id, beat: n, facts: facts.length, claims: harvesting.claims, soft: harvesting.soft,
+          ok: false, state: 'gap', declared: decls.join(' · '), line: harvesting.line,
+          why: (harvesting.gap ? harvesting.gap + '; and' : 'its') + ` declaration is refused — "${absent[0].slice(0, 60)}" names an ` +
             'absence, which is claimable: proveVisible(locator, MISSING, label, { soft: true }) passes ' +
             'exactly while the thing is gone'
         })
         return
       }
-      if (!worst.gap && decls.length) {
+      if (!harvesting.gap && decls.length) {
         rows.push({
-          screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
-          ok: true, state: 'declared', why: decls.join(' · '), declared: decls.join(' · '), line: worst.line
+          screen, id: r.id, beat: n, facts: facts.length, claims: harvesting.claims, soft: harvesting.soft,
+          ok: true, state: 'declared', why: decls.join(' · '), declared: decls.join(' · '), line: harvesting.line
         })
         return
       }
       rows.push({
-        screen, id: r.id, beat: n, facts: facts.length, claims: worst.claims, soft: worst.soft,
-        ok: !worst.gap, state: worst.gap ? 'gap' : 'ok', why: worst.gap || '', line: worst.line
+        screen, id: r.id, beat: n, facts: facts.length, claims: harvesting.claims, soft: harvesting.soft,
+        ok: !harvesting.gap, state: harvesting.gap ? 'gap' : 'ok', why: harvesting.gap || '', line: harvesting.line
       })
     })
   }

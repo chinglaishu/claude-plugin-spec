@@ -593,6 +593,62 @@ test('…and a beat that declares NOTHING still fails', () => {
   assert.equal(row.ok, false)
 })
 
+// A ZERO-CLAIM DECLARATION WAIVES A WHOLE BEAT — ONLY WHERE NO PAGE IS OPEN (final review I3,
+// 2026-09-04). The intent is right ("a beat with no page open has no surface for any fact") but the
+// TEST for it was "the beat made no claims", which an author satisfies by simply not writing one.
+// Live at HEAD: board R11 beat 1 opened /#howitworks/kg-deep, asserted three visible/hidden things,
+// made zero claims, wrote one intentGap, and the lint printed DECLARED for all three facts. What
+// decides is whether the block OPENS A PAGE, which its own source says.
+test('a zero-claim declaration cannot waive a beat that opens a page', () => {
+  const prd = `---
+screen: board
+---
+
+## R11 — the guide
+
+- **Given** the board
+- **When** you open the kg-deep guide
+- **Then** the guide is shown; the composer is hidden; the crumb names it
+`
+  const open = `
+test('board', async ({ page }) => {
+  await checkReq('R11', async () => {
+    intentGap('these are geometry, not values')
+    await expect(page.locator('#howview')).toBeVisible()
+    await expect(page.locator('.composeview')).toBeHidden()
+  })
+})
+`
+  const row = lintIntent(prd, open)[0]
+  assert.equal(row.state, 'gap', 'the declaration is refused on an open page')
+  assert.equal(row.ok, false)
+  assert.match(row.why, /declared-on-an-open-page/)
+})
+
+test('…and it still waives a beat that opens none — the API-only shape it was written for', () => {
+  const prd = `---
+screen: dispatch
+---
+
+## R4 — one job at a time
+
+- **Given** a run in flight
+- **When** a second run is asked for
+- **Then** it is refused; the first keeps the slot
+`
+  const closed = `
+test('dispatch', async ({ request }) => {
+  await checkReq('R4', async () => {
+    intentGap('this beat drives the API with no page open — the slot is the server\\'s own contract')
+    expect((await request.post('/api/run')).status()).toBe(409)
+  })
+})
+`
+  const row = lintIntent(prd, closed)[0]
+  assert.equal(row.state, 'declared')
+  assert.equal(row.ok, true)
+})
+
 test('a declaration is REFUSED on a fact that names an absence — that one is claimable', () => {
   // `proveVisible(locator, MISSING, …)` passes exactly when the thing is gone and fails, with the
   // app's own text as `got`, the moment it is back. A Then that says so must claim it.

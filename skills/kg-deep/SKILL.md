@@ -114,7 +114,12 @@ so run it before you call a screen done. A fact that names a thing that is NOT T
 claiming a neighbour's positive fact instead is a green you wrote yourself. A fact with no screen
 surface at all (an API-only beat, a geometry, what the CLI gate refuses, a fragment naming no thing)
 is DECLARED in the beat with `intentGap('<why>')`, which the lint prints as a visible debt rather
-than a pass — one declaration per fact, unless the beat has no page open at all. Never invent a claim, and never reword the Then to fit the test (the human owns meaning).
+than a pass — one declaration per fact, unless the beat opens NO PAGE at all (the lint reads that off
+the block's own source — `page.`, `locator(`, `getBy…`, `proveVisible(`, `reveal(`, `click(` — never
+from "it made no claims", which an author satisfies by writing none: `declared-on-an-open-page`).
+Where a requirement is proven by several blocks, the row is scored on the LAST one in source order —
+the block whose harvest lands on it. Never invent a claim, and never reword the Then to fit the test
+(the human owns meaning).
 
 **Author each unit beat as an exported step function** in `spec/<screen>/steps.ts` (fn · proves ·
 name · needs/gives) with its `checkReq` kept around the call — kg-e2e's beat-function convention —
