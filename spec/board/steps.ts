@@ -1,4 +1,4 @@
-import { expect, proveVisible } from '../_base'
+import { expect, proveVisible, MISSING, intentGap } from '../_base'
 import { treeShape } from '../_fixture'
 import type { Page } from '@playwright/test'
 
@@ -85,6 +85,21 @@ export async function countHomeCards (page: Page, state: FlowState): Promise<voi
   // placeholder where a run has left a still (the board's own screens all have one)
   await expect(first.locator('.cshot img')).toHaveCount(1)
   await expect(first.locator('.cshot .lrun')).toHaveText(/^latest run · \S+$/)
+  // THE THREE FACTS OF THIS THEN, CLAIMED (phase 6): the card's own name, the requirement TITLES it
+  // lists, the cover frame captioned with the run it was cut from — and the absence that makes the
+  // home page a list of SCREENS: no requirement has a row of its own (the retired column strip is
+  // the shape that did; `MISSING` fails the moment one comes back).
+  await proveVisible(first.locator('.nm'), 'the screen this card is of',
+    'One card per screen, wearing its name',
+    { soft: true, match: (shown: string) => shown.trim().length > 0 })
+  await proveVisible(first.locator('.rl li:not(.more):not(.fam) .rtl').first(),
+    'a requirement of that screen, by title', 'Its requirement titles, listed on the card',
+    { soft: true, match: (shown: string) => shown.trim().length > 0 })
+  await proveVisible(first.locator('.cshot .lrun'), 'latest run · the run this cover was cut from',
+    "The recording's cover frame, captioned with its run",
+    { soft: true, match: (shown: string) => /^latest run · \S+$/.test(shown) })
+  await proveVisible(page.locator('.cell[data-col], .colhs'), MISSING,
+    'No requirement has a row of its own — home lists screens', { soft: true })
   state.cards = await cards.count()
 }
 
@@ -204,6 +219,12 @@ export async function openDetailReader (page: Page, state: FlowState): Promise<v
   // fact R2 states has a value in the picture, not only in a geometry assertion)
   await proveVisible(ov.locator('.fread > .frmeta .fid'), 'R1',
     'The card header, still pinned with the story scrolled', { soft: true })
+  // …and the Then's other two facts are MEASUREMENTS, not values: "it scrolls inside the card" is
+  // the story region's own scrollTop, and "the page itself never scrolls" is window.scrollY —
+  // both asserted three lines above, neither of them a thing a picture can show. What the picture
+  // shows of them is the header still standing over a scrolled story, claimed on the line above.
+  intentGap('"it scrolls inside the card" is the story region\'s own scrollTop, a number this beat measures — no element on the screen carries it as a value')
+  intentGap('"the page itself never scrolls" is window.scrollY, measured in the same breath — the page has no element that says its own scroll offset')
   await ov.locator('.fscroll').evaluate(el => { el.scrollTop = 0; el.querySelector('.r2spacer')?.remove() })
   // …because the open detail locks the page's own scroll
   expect(await page.evaluate(() => document.documentElement.classList.contains('noscroll'))).toBeTruthy()

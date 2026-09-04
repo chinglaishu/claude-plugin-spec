@@ -40,22 +40,27 @@ test('Home lists every screen as a card', async ({ page }) => {
   await coverReqs('R1')
   // the beat: one card per screen, titles and a cover — the golden count threads from the fixture
   const state = await openBoardHome(page)
-  await checkReq('R1', async () => { await countHomeCards(page, state) })
-  // the home cover falls back to a still when a run has no video (R10) — keep board's own cover fresh
-  await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
-  // the card's STILL opens the screen in Focus, exactly like the rest of the card (the frozen
-  // mockup, Task 8) — it is not a lightbox zoom, which is what every other thumbnail does
+  // ONE BLOCK, ONE BEAT (phase 6 fix round 2, the controller's I1). R1 has ONE beat and this test
+  // made three checkReq calls for it: the cursor clamps every one of them onto beat 1, so the two
+  // after the first were harvesting R1.b1's pictures while being about their own leg. The three
+  // legs are one beat's moments — the cards, the still that opens its screen, the crumb that names
+  // the project — so they are one block, in the order a reader walks them. Nothing was weakened:
+  // every assertion below is the assertion that was here.
   await checkReq('R1', async () => {
+    await countHomeCards(page, state)
+    // the home cover falls back to a still when a run has no video (R10) — keep board's own cover fresh
+    await page.screenshot({ path: 'spec/board/screen.png', fullPage: false })
+    // the card's STILL opens the screen in Focus, exactly like the rest of the card (the frozen
+    // mockup, Task 8) — it is not a lightbox zoom, which is what every other thumbnail does
     const first = page.locator('#home .card').first()
     const name = await first.getAttribute('data-screen')
     await first.locator('.cshot img').click()
     await expect(page.locator('#lb')).toBeHidden()
     await expect(page.locator(`.dt[data-screen="${name}"]:not([hidden]) .focusov`)).toBeVisible()
     await expect(page).toHaveURL(new RegExp('#/' + name + '$'))
-  })
-  // the header crumb names THIS project — package.json's name, with a tagline from spec/_config.json
-  // when one is authored; "dogfooding itself" is specboard's own default, derived, never hardcoded
-  await checkReq('R1', async () => {
+    // the header crumb names THIS project — package.json's name, with a tagline from spec/_config.json
+    // when one is authored; "dogfooding itself" is specboard's own default, derived, never hardcoded
+    //
     // PROVED WITH A RINGED, PHOTOGRAPHED VALUE (2026-09-04, the review's I1). This beat asserted the
     // crumb with a bare expect, so the run rang nothing, recorded no claim, and the board's whole
     // CLAIM path — the Expected's `data-claims`, the `data-claim` tint on the ringed leaf, the value
@@ -130,6 +135,12 @@ test('A requirement expands; a test leads with its flow name', async ({ page }) 
     // expected id comes from the ROW that was clicked, so this is never the screen echoed back.
     await proveVisible(body.locator('.fread .frmeta .fid'), rid!,
       'The row, unfolded into the Focus body in place', { soft: true })
+    // …and the other fact: what unfolded is the requirement IN FULL — its own title heads the open
+    // body (the row above carried it alone), and the beat rows under it are the formatted
+    // requirement itself, not an excerpt.
+    const rtitle = ((await req.locator('.rt').textContent()) || '').trim()
+    await proveVisible(body.locator('.fread .fttl'), rtitle,
+      'The full requirement, unfolded under its own title', { soft: true })
     // Since 1413ac1 (the human, 2026-08-22) EVERY requirement leads with its beats, R1 included:
     // the STORYLINE — one row per beat — heads the open row. Since the human's 2026-08-28 redesign
     // the authored prose ALWAYS follows it in full: the 'Full requirement' chevron is gone, because a
@@ -314,6 +325,14 @@ test('Steps read from the definition; a run overlays passed/failed/not-reached, 
     // would ring nothing — so the claim is made on the window that shows them.
     await proveVisible(sheet.locator('.rawsteps li').first(), STORY[0],
       'The first numbered step, as the test defines it', { soft: true })
+    // …and the Then's other two facts have no surface a claim can ring. "before any run" is the
+    // PENDING plan and "each wearing the run's passed / failed / not-reached mark" is the overlay on
+    // it — both of them on the baked test row, which has been HIDDEN since the Columns view retired
+    // (board R13, 2026-08-18). Both are asserted above, on that hidden row, by class; a proveVisible
+    // there would photograph the whole page with nothing ringed, which proves less than the
+    // assertion does. (The window this claim reads shows the run's steps, not the plan's marks.)
+    intentGap('"before any run" is the PENDING plan on the baked test row — hidden since the Columns view retired, so a claim there would ring nothing; it is asserted by class on that row above')
+    intentGap('the passed / failed / not-reached MARK is the same hidden row\'s overlay — asserted by class above; the Steps window a person actually opens lists the run\'s steps, not the plan\'s marks')
     const full = await sheet.locator('.box').evaluate(el => {
       const r = el.getBoundingClientRect()
       return r.width >= innerWidth - 1 && r.height >= innerHeight - 1
@@ -522,6 +541,18 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // the same derivation rendered twice. The expected value here is computed from the DETAIL's own
     // rows above — never read off the card — so a card that drifted from its detail fails this
     // claim, photographed, on the card itself. Home first: the card is the thing being ringed.
+    // FACT 1, CLAIMED where a person reads it: a requirement whose tests passed READS "✓ Passed"
+    // in the reader's own chip — the five-word vocabulary, rendered from the derived state. The row
+    // is chosen by its DERIVED state, so this cannot pass on a screen where nothing is proven.
+    const provenRid = await page.locator('.dt[data-screen="board"]:not([hidden]) .reqpane .req[data-state="proven"]')
+      .first().getAttribute('data-r')
+    const dtb = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await dtb.locator('.viewseg .vseg[data-view="grid"]').click()
+    await dtb.locator('.gridview .lst-card[data-r="' + provenRid + '"] .lst-head').click()
+    await proveVisible(dtb.locator('.gridview .lst-card[data-r="' + provenRid + '"] .lst-body .fread .frmeta .fchip'),
+      '✓ Passed', 'A proven requirement reads Passed', { soft: true })
+    await dtb.locator('.viewseg .vseg[data-view="focus"]').click()
+
     const bd = surfaces.find(s => s.screen === 'board')!
     await page.goto('/')
     await page.waitForSelector('#home .card')
@@ -578,6 +609,13 @@ test('A test tags the requirements it covers — and Focus serves that link', as
     await qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-head').click()
     await proveVisible(qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-body .fread .frmeta .fid'),
       qRid, 'The same tag, resolved on the screen it names', { soft: true })
+    // …and the requirement it resolved to on that other screen carries its own title, read on the
+    // screen the tag NAMED rather than on the one the test's file lives in — which is the last of
+    // this Then's facts: the resolution follows the tag, not the file.
+    await proveVisible(qdt.locator('.gridview .lst-card[data-r="' + qRid + '"] .lst-body .fread .fttl'),
+      'the requirement that tag names, on its own screen',
+      'Resolved by tag — wherever the test\'s file lives',
+      { soft: true, match: (shown: string) => shown.trim().length > 0 })
   })
 })
 
@@ -1196,7 +1234,7 @@ import { replicaAttrs } from '../../tools/replica-gate.mjs'
 import { layoutHash } from '../../tools/viz.mjs'
 // phase 7: a screen with a PRD, its derived sketch and NOTHING else — the state every screen starts
 // in, which none of this repo's own four screens is in any more (they are all harvested)
-import { makeSketchScreen } from '../_fixture'
+import { makeSketchScreen, screenRows } from '../_fixture'
 
 // The board's own harvested SPECIMENS (rewritten 2026-09-03 with the human's Expected View decision:
 // the drawn ui-mirror is retired, so a specimen is no longer "a requirement with a committed
@@ -1502,10 +1540,12 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       // saying what is missing.
       await expect(skCell, 'the no-UI row shows its sketch inside a sibling screen\'s page').toBeVisible()
       await reveal(skCell)
-      // the borrowed page is a real screen's, named on the cell, and its Before replica is on disk
+      // THE LENDER IS ONE OF THIS PROJECT'S OWN SCREENS, read off the tree (fix round 1, the review's
+      // I3 — this pinned ['board','conflicts','dispatch','init'] as a literal, which is the very
+      // thing screenRows/treeShape exist to stop: a fifth screen would have broken this leg).
       const lender = await skCell.evaluate(el => String((el as HTMLElement).dataset.chrome || ''))
-      expect(['board', 'conflicts', 'dispatch', 'init'], 'the chrome comes from a screen of this board')
-        .toContain(lender)
+      const rows = screenRows()
+      expect(rows.map(r => r.name), 'the chrome comes from a screen of this board').toContain(lender)
       const sdoc = await skCell.locator('iframe.repframe')
         .evaluate(f => String((f as HTMLIFrameElement).srcdoc || ''), undefined, { timeout: 8000 })
       // BOTH halves in ONE page: the sibling's own committed replica root …
@@ -1519,10 +1559,17 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       expect(/<script/i.test(sdoc), 'the borrowed page carries no script either').toBe(false)
       // the fact, CLAIMED: the cell says it is a sketch, and whose chrome it is wearing — a page that
       // quietly wore another screen's shell as its own would be the guessed picture this requirement
-      // forbids
-      await proveVisible(skCell.locator('.sbprov'), 'sketch · no UI yet · in ' + lender + '’s chrome',
-        'A screen with no UI: its sketch, in a sibling\'s chrome',
-        { match: (shown: string) => /^◇ sketch · no UI yet · in \S.*’s chrome$/.test(shown.trim()), soft: true })
+      // forbids. STRICT, and against THAT lender (fix round 1, the review's I2): this used to expect
+      // the screen's NAME while the cell renders its TITLE, and to match `in \S.*’s chrome`, so it
+      // recorded a green ✓ over two different strings AND passed for any lender at all — which is
+      // exactly the fact the leg exists to catch. The title comes off the cell (what the client
+      // rendered) and is checked against the tree's own title for the screen whose page is in the
+      // frame, so the caption, the seam and the disk must all name one screen.
+      const title = await skCell.evaluate(el => String((el as HTMLElement).dataset.chrometitle || ''))
+      expect(title, 'the caption names the very screen whose page is in the frame')
+        .toBe((rows.find(r => r.name === lender) || { title: '' }).title)
+      await proveVisible(skCell.locator('.sbprov'), '◇ sketch · no UI yet · in ' + title + '’s chrome',
+        'A screen with no UI: its sketch, in a sibling\'s chrome', { soft: true })
     } finally {
       rmSync('spec/' + skScreen, { recursive: true, force: true })
       build()                                    // the board back to the true tree, with no fixture row on it
@@ -1768,6 +1815,53 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
       expect(cy > r.y && cy < r.y + r.h, name + ' is aimed at the focused component (y)').toBe(true)
     }
     await hudCheck('one camera, one region', 'same region', Math.abs(a.x - b.x) < 0.03 && Math.abs(a.w - b.w) < 0.03 ? 'same region' : 'two regions')
+    // …AND THE SAME CAMERA IS EASED (moved here 2026-09-04, phase 6 fix round 2): this leg was a
+    // THIRD checkReq for a two-beat requirement, so the cursor clamped it onto beat 2 and it
+    // harvested the caption beat's pictures while being about the camera. It is beat 1's own
+    // subject — one camera, one region — so it stands inside beat 1, in its own brace scope.
+    {
+  // beat 3 — THE EASED CAMERA (the human, 2026-09-03: the first cut of design C "zoomed in a bit too
+  // much"). A moment's frame is the ring UNION THE CHIP that explains it, with generous room and a
+  // gentle cap: never more than 1.25× the app's own natural size, because a picker blown up to fill
+  // the cell loses the header it sits in — and a chip cropped off the edge is a caption on nothing.
+  // Asserted on BOTH cells, since a cap that held on one side would frame two different regions.
+    const cs = claimSpecimen()
+    expect(cs, 'a board beat whose harvest carries a claim to caption').toBeTruthy()
+    await armFocus(dt, cs!.rid)
+    await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
+    await page.goto('/#/board/' + cs!.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
+    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    await reveal(row)
+    const vw = Number(cs!.beat.vw || (cs!.beat.focus && cs!.beat.focus.vw) || 0)
+    expect(vw, 'the beat records the page it was measured in').toBeGreaterThan(0)
+    const scales: number[] = []
+    for (const [name, sel] of [['the Expected', '.sbframe'], ['the Actual', '.sbproof']] as Array<[string, string]>) {
+      const box = row.locator(sel + ' .pcbox')
+      await expect(box, name + ' cell is framed on the moment').toHaveClass(/\bzoomed\b/)
+      const k = await camScale(box, vw)
+      expect(k, name + ' cell is under a camera').toBeTruthy()
+      expect(k, name + ' camera never magnifies past 1.25× (' + k + ')').toBeLessThanOrEqual(1.26)
+      scales.push(k as number)
+      // …and the chip it framed FOR is wholly in shot: the union rule is what puts it there, so a
+      // chip whose box escapes the camera means the union was not taken
+      const chip = box.locator('.pchip')
+      await expect(chip, name + ' cell carries its one chip').toHaveCount(1)
+      const fits = await box.evaluate((el: Element) => {
+        const c = el.querySelector('.pchip') as HTMLElement
+        if (!c) return null
+        const a = el.getBoundingClientRect(); const b = c.getBoundingClientRect()
+        return { l: b.left - a.left, t: b.top - a.top, r: a.right - b.right, bo: a.bottom - b.bottom }
+      })
+      expect(fits, name + ' chip is measurable').toBeTruthy()
+      for (const side of ['l', 't', 'r', 'bo'] as const) {
+        expect(fits![side], name + ' chip is fully in frame (' + side + '): ' + JSON.stringify(fits)).toBeGreaterThanOrEqual(-1)
+      }
+    }
+    expect(Math.abs(scales[0] - scales[1]), 'one camera: both cells at the SAME magnification').toBeLessThan(0.02)
+    await hudCheck('the moment camera is capped at 1.25×', 'within the cap',
+      Math.max(scales[0], scales[1]) <= 1.26 ? 'within the cap' : 'zoomed to ' + Math.max(scales[0], scales[1]))
+    }
   })
 
   // beat 2 — ONE BEAT, BOTH SIDES. The row's words and the two pictures beside them are of ONE beat,
@@ -1861,51 +1955,19 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
     await expect(given.locator('.sbtext .sbno:not(.hollow)')).toHaveCount(0)
     await expect(given.locator('.pcbox.zoomed')).toHaveCount(0)      // whole page, both cells
     await expect(given.locator('.pczoom')).toHaveCount(0)            // and nothing to aim
+    // FACT 3, CLAIMED as the absence it is: the context row is UNCAPTIONED on both sides — no
+    // per-cell caption anywhere on it. `MISSING` passes exactly while there is none and fails, with
+    // the caption's own words, the moment one appears.
+    await proveVisible(given.locator('.pccap'), MISSING,
+      'The context row, uncaptioned on both sides', { soft: true })
+    // …and the two facts about WHICH MOMENT each cell is showing have no value on the screen: the
+    // Expected cell names its picture in `data-repsrc` and the photograph its frame in `src`, both
+    // matched above against the fold's own record for this beat. A file path is not a thing the row
+    // says to a reader — what the reader sees is the picture itself.
+    intentGap('"the replica captured at that beat\'s own moment" is a file path on the cell (data-repsrc), matched above against the fold\'s record — no element on the row carries it as a value')
+    intentGap('"the photograph taken at it" is the same: the frame\'s own src, checked against the same record; the row shows the picture, never the path')
   })
 
-  // beat 3 — THE EASED CAMERA (the human, 2026-09-03: the first cut of design C "zoomed in a bit too
-  // much"). A moment's frame is the ring UNION THE CHIP that explains it, with generous room and a
-  // gentle cap: never more than 1.25× the app's own natural size, because a picker blown up to fill
-  // the cell loses the header it sits in — and a chip cropped off the edge is a caption on nothing.
-  // Asserted on BOTH cells, since a cap that held on one side would frame two different regions.
-  await checkReq('R19', async () => {
-    const cs = claimSpecimen()
-    expect(cs, 'a board beat whose harvest carries a claim to caption').toBeTruthy()
-    await armFocus(dt, cs!.rid)
-    await page.goto('/#/board/' + (cs!.rid === 'R2' ? 'R3' : 'R2'))
-    await page.goto('/#/board/' + cs!.rid)
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(cs!.rid)
-    const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-    await reveal(row)
-    const vw = Number(cs!.beat.vw || (cs!.beat.focus && cs!.beat.focus.vw) || 0)
-    expect(vw, 'the beat records the page it was measured in').toBeGreaterThan(0)
-    const scales: number[] = []
-    for (const [name, sel] of [['the Expected', '.sbframe'], ['the Actual', '.sbproof']] as Array<[string, string]>) {
-      const box = row.locator(sel + ' .pcbox')
-      await expect(box, name + ' cell is framed on the moment').toHaveClass(/\bzoomed\b/)
-      const k = await camScale(box, vw)
-      expect(k, name + ' cell is under a camera').toBeTruthy()
-      expect(k, name + ' camera never magnifies past 1.25× (' + k + ')').toBeLessThanOrEqual(1.26)
-      scales.push(k as number)
-      // …and the chip it framed FOR is wholly in shot: the union rule is what puts it there, so a
-      // chip whose box escapes the camera means the union was not taken
-      const chip = box.locator('.pchip')
-      await expect(chip, name + ' cell carries its one chip').toHaveCount(1)
-      const fits = await box.evaluate((el: Element) => {
-        const c = el.querySelector('.pchip') as HTMLElement
-        if (!c) return null
-        const a = el.getBoundingClientRect(); const b = c.getBoundingClientRect()
-        return { l: b.left - a.left, t: b.top - a.top, r: a.right - b.right, bo: a.bottom - b.bottom }
-      })
-      expect(fits, name + ' chip is measurable').toBeTruthy()
-      for (const side of ['l', 't', 'r', 'bo'] as const) {
-        expect(fits![side], name + ' chip is fully in frame (' + side + '): ' + JSON.stringify(fits)).toBeGreaterThanOrEqual(-1)
-      }
-    }
-    expect(Math.abs(scales[0] - scales[1]), 'one camera: both cells at the SAME magnification').toBeLessThan(0.02)
-    await hudCheck('the moment camera is capped at 1.25×', 'within the cap',
-      Math.max(scales[0], scales[1]) <= 1.26 ? 'within the cap' : 'zoomed to ' + Math.max(scales[0], scales[1]))
-  })
 })
 
 // Board R20 — THE PROOF PLAYS ITSELF. One mode, no toolbar, already running, zoomed onto the focus
@@ -2187,6 +2249,26 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // away puts the reading surface back, or the next one waits on a page that is not there.
     await page.goto('/#/board/' + spec.rid)
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    // THE FACTS OF THIS THEN, CLAIMED (phase 6 fix round 2). Two of them are absences and are
+    // claimed as absences — `MISSING` passes exactly while the rejected chrome is gone and fails,
+    // with its own words, the moment it returns — and two are read off the row's one strip.
+    const row1 = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+    const strip1 = row1.locator('.mstrip')
+    await reveal(strip1)
+    await proveVisible(ov.locator('.fread .scenerail'), MISSING,
+      'No bead rail, no dots — nothing around the picture', { soft: true })
+    await proveVisible(ov.locator('.fread .pcmodes'), MISSING,
+      'And no media toolbar over it either', { soft: true })
+    await proveVisible(strip1.locator('.mpos'), 'the beat\'s position, on its own strip',
+      'The beat\'s position, read on the one strip',
+      { soft: true, match: (shown: string) => /^\d+ \/ \d+$/.test(shown.trim()) })
+    await proveVisible(strip1.locator('.mseg .msegl').first(), 'the assertion the run recorded',
+      'Each segment named by what the run checked, not by a counter',
+      { soft: true, match: (shown: string) => shown.trim().length > 0 && !/what the test checked/.test(shown) })
+    // …and three of this Then's clauses have no value on this scene for a claim to read:
+    intentGap('"the Actual cell FRAMES the thing being proven" is the camera — a rectangle and a magnification, measured in board R19\'s own test, never a value an element carries')
+    intentGap('"ONE stepper strip SPANNING both pictures" is geometry too: the strip\'s box against the two cells\' boxes, measured where that comparison lives (board R19 / R21)')
+    intentGap('"one segment per moment the beat proved" is a COUNT — the strip\'s segments against the moments the harvest recorded — and it is asserted against that record in the block that walks the strip, beat 4 below')
   })
 
   // THE CHIPS — one per cell, the value only (design C, the human 2026-09-02/03: "every text once").
@@ -2240,6 +2322,15 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // …and the two sides are NOT the same words: this is the leg the fixture exists for
     expect(aSaid.includes(plain(c0.expected)),
       'the Actual chip shows what happened, never the requirement\'s own value').toBe(false)
+    // …and the two VALUES themselves, claimed on the side each belongs to: the requirement's own
+    // words over the replica, the app's over the photograph. Each expected value comes from the
+    // other side of the fixture, so a chip that rendered the same text on both fails here.
+    await proveVisible(eChip.locator('.pcv'), plain(c0.expected),
+      'EXPECTED — the requirement\'s own value, over the replica',
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(c0.expected)) })
+    await proveVisible(aChip.locator('.pcv'), plain(wrong),
+      'ACTUAL — what the app gave, over the photograph',
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(wrong)) })
     // the MARK beside the hue — a greyscale reader loses nothing
     await expect(aChip.locator('.pcm'), 'the Actual chip carries its mark').toHaveText('✕')
     await proveVisible(aChip.locator('.pcm'), '✕',
@@ -2254,6 +2345,9 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(tip).toBeHidden()
     await aChip.hover()
     await expect(tip, 'hovering a chip shows its whole text').toBeVisible()
+    // …ONE LINE, THE WHOLE TEXT IN THE TOOLTIP: what the ellipsis cuts off is readable on hover
+    await proveVisible(tip, plain(wrong), 'The whole value, in the hover tooltip',
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(wrong)) })
     await row.locator('.sbtext').hover()
     await expect(tip).toBeHidden()
     // …AND A KEYBOARD REACHES IT TOO (the review's I1). The value is one ellipsised line, so the
@@ -2292,6 +2386,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       .toHaveCount(claims.length)
     await hudCheck('the beat’s result is a checklist', claims.length + ' fact(s)',
       (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
+    // …and the CHECKLIST itself, claimed: the beat's result lists the FACTS it claimed, so its first
+    // line is the first claim's own value — never a count of them.
+    await proveVisible(row.locator('.sbproof .pchip .pcvr').first(), plain(wrong),
+      'The beat\'s result — a checklist of the claims it made',
+      { soft: true, match: (shown: string) => plain(shown).includes(plain(wrong)) })
     // …AND THE FOURTH FACT, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): the context row claims
     // nothing, so it carries no chip at all. `proveVisible(…, MISSING, …)` passes exactly while the
     // chip is gone and fails, with the chip's own words as `got`, the moment one appears.
@@ -2319,7 +2418,15 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // 2026-09-04): the reader OPENS in step, each beat held on its first scene, and the pair that
     // says so rides the requirement's own title row
     await proveVisible(bar.locator('.medbar.pmode button.on'), 'step',
-      'The reader, opened in step — every beat held on its first scene', { soft: true })
+      'The reader, opened in step', { soft: true })
+    // …EACH BEAT HELD ON ITS FIRST SCENE: the row's strip opens at moment 1, not mid-loop…
+    await proveVisible(ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.mstrip .mpos'),
+      'held on the first moment', 'Every beat held on its first scene',
+      { soft: true, match: (shown: string) => /^1 \/ \d+$/.test(shown.trim()) })
+    // …and the reader's ONE SPEED rides the same title row, beside that pair
+    await proveVisible(bar.locator('select.pspd'), '1',
+      'The reader-wide speed, on the requirement\'s title row', { soft: true })
+    intentGap('"left of its ⋯ menu" is a position — the controls\' box against the menu button\'s, which the row\'s layout decides; no element says where it sits')
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
     await expect(bar.locator('.mstrip')).toHaveCount(0)                       // the stepper is per-ROW, never on the bar
@@ -2399,6 +2506,14 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect.poll(posN, { timeout: 6000 }).toBe(2)
     await expect.poll(phOf, { timeout: 8000 }).toBe(sub[1])
     await expect(pos).toHaveText('2 / ' + N)                                  // the position line follows the walk
+    // BOTH PICTURES MOVED TO THAT ONE MOMENT, claimed where the walk lands: the position both cells
+    // are now on (the Expected cell's own picture was polled against the harvest's moment 2 above,
+    // so this is the walk's landing, not the strip talking to itself)…
+    await proveVisible(pos, '2 / ' + N, 'Both pictures, moved together to that one moment', { soft: true })
+    // …and the strip PAINTS the segment they are on — the current one, named by what the run checked
+    await proveVisible(row.locator('.mseg.cur .msegl'), 'the moment they are both on',
+      'The strip, painting the segment they are on',
+      { soft: true, match: (shown: string) => shown.trim().length > 0 })
     // …and it HOLDS: the scene does NOT move on its own while stepping
     const held = await posN()
     await page.waitForTimeout(2000)
@@ -2488,6 +2603,11 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await page.keyboard.press('ArrowRight')
     if (aStart > 0) await expect.poll(() => posOf(rowA), { timeout: 6000 }).not.toBe(aStart)
     expect(await posOf(rowB), 'the UNSELECTED beat never moved — ← → act on the selected row only').toBe(bStart)
+    // …and NO OTHER BEAT ROW MOVED, claimed on the row that did not: its position is still the one
+    // it opened on, read after the key that walked its neighbour.
+    await proveVisible(rowB.locator('.mstrip .mpos'), bStart + ' / ',
+      'The other beat row, exactly where it was',
+      { soft: true, match: (shown: string) => shown.trim().startsWith(String(bStart) + ' /') })
 
     // ↑ ↓ move the SELECTION between beats — the dedicated "which when/then" axis
     await page.keyboard.press('ArrowDown')
@@ -2539,6 +2659,15 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // the middle of a leg that is timing what the loop does on its own.
     await proveVisible(tools.locator('select.pspd'), '4',
       'The reader\'s one speed, live in auto', { soft: true })
+    // …and the cell PLAYS ITSELF: the position it is on now is not the one the loop started from,
+    // with nothing touched between the two readings.
+    await proveVisible(backPos, 'a moment further on than ' + String(at2 || '').trim(),
+      'Every cell plays itself on a loop, at the reader\'s speed',
+      { soft: true, match: (shown: string) => shown.trim() !== String(at2 || '').trim() && /\d+ \/ \d+/.test(shown) })
+    // …and "a stepped beat sets its pace by hand" is the speed control's DISABLED state in step,
+    // asserted in the beat-3 block above. Disabledness is not a value an element carries as text —
+    // what this control says of itself is its speed, claimed on the line above.
+    intentGap('"a stepped beat sets its pace by hand" is the speed <select> being DISABLED in step — a control state, asserted in the block above; the element\'s own value is its speed, not its liveness')
     await tools.locator('select.pspd').selectOption('1')
   })
 
@@ -4027,7 +4156,13 @@ test('Requirements sub-group within a screen — family headers on the card and 
 
   // the HOME CARD: family header rows between the requirement rows, in prd order, each shown
   // family complete (the "… N more" fold cuts only at a family boundary)
+  // ONE BLOCK, ONE BEAT (phase 6 fix round 2, the controller's I1). R17 has ONE beat and this test
+  // made four checkReq calls for it — the card, the List, the pager and the no-families screen — so
+  // the cursor clamped all four onto beat 1 and three of them harvested pictures of a leg they were
+  // not the beat of. They are four scenes of one sentence, so they are one block; each keeps its own
+  // brace scope, so every `const` below is exactly as it was. No assertion changed.
   await checkReq('R17', async () => {
+    {
     const heads = card.locator('.rl .fam')
     await expect(heads.first()).toBeVisible()
     const shown = await heads.allTextContents()
@@ -4048,26 +4183,29 @@ test('Requirements sub-group within a screen — family headers on the card and 
       const rest = prd.ids.length - rows.filter(x => x !== 'fam').length
       await expect(card.locator('.rl .more')).toHaveText('… ' + rest + ' more')
     }
-  })
+    }
 
   // the LIST view: the same header rows over their rows
-  await checkReq('R17', async () => {
+    {
     await page.goto('/#/board/grid')
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
     await expect(dt.locator('.gridview')).toBeVisible()
     await expect(dt.locator('.gridview .lst-fam')).toHaveText(prd.fams.map(f => f.heading))
+    // …the SAME family, over the List's own rows — the second surface this Then names
+    await proveVisible(dt.locator('.gridview .lst-fam').first(), prd.fams[0].heading,
+      'The same family header, over the List rows', { soft: true })
     const seq = await dt.locator('.gridview > .lst-fam, .gridview > .lst-card').evaluateAll(els => els.map(e =>
       e.classList.contains('lst-fam') ? 'fam' : (e.getAttribute('data-r') || '')))
     const want: string[] = [...prd.loose]
     for (const f of prd.fams) { want.push('fam'); want.push(...f.ids) }
     expect(seq).toEqual(want)
-  })
+    }
 
   // FOCUS: the counter reads `<family> · n of N`, and THE PAGER IS THE MAP (the human, 2026-08-23 —
   // the top block and the number list navigated the same requirements twice): one group per family
   // carrying its `<n> · <name>` label, a thin separator between groups, one marked dot per
   // requirement in prd order, the current one ringed, the title one hover (or keyboard focus) away
-  await checkReq('R17', async () => {
+    {
     const rid = 'R17'
     await page.goto('/#/board/' + rid)
     const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
@@ -4081,6 +4219,9 @@ test('Requirements sub-group within a screen — family headers on the card and 
     const groups = bar.locator('.fdots .ffam')
     await expect(groups).toHaveCount(prd.fams.length + (prd.loose.length ? 1 : 0))
     await expect(bar.locator('.ffam .ffl')).toHaveText(prd.fams.map(f => f.n + ' · ' + f.name))
+    // …and the JUMP-MAP names each family, again from the prd's own words
+    await proveVisible(bar.locator('.ffam .ffl').first(), prd.fams[0].n + ' · ' + prd.fams[0].name,
+      'The jump-map, naming the family it groups', { soft: true })
     await expect(bar.locator('.fdots .fdotfam'), 'one separator between each pair of families').toHaveCount(prd.fams.length - 1 + (prd.loose.length ? 1 : 0))
     // every requirement is a dot, in prd order, under its family — no window, no ellipsis
     const dots = bar.locator('.fdot')
@@ -4090,6 +4231,13 @@ test('Requirements sub-group within a screen — family headers on the card and 
     // 1..N position read as an id and clashed with the R-id it sat beside (pager said "15", header
     // said "R10"). The dot, the header, the prd (## R10) and the tag (checkReq('R10')) now agree.
     expect(await dots.allInnerTexts().then(t => t.map(x => x.replace(/\s+/g, '')))).toEqual(prd.ids)
+    // …IN THE PRD'S ORDER: the first dot is the prd's first requirement, read out of the file
+    await proveVisible(dots.first(), prd.ids[0], 'The first dot — the prd\'s own order', { soft: true })
+    // …and "each dot wearing its own derived state as a HUE" is a colour, measured above against the
+    // design tokens (DOT_BORDER / DOT_FILL). A hue is not a value any element carries as text, so
+    // there is nothing here for a claim to read — the dot's own text is its id, claimed on the line
+    // above. (Every dot also carries its state as data-status, asserted against the baked row.)
+    intentGap('a dot wears its derived state as a HUE — a colour measured against the design tokens above; no element on the screen carries it as a value a claim could read')
     for (let k = 0; k < prd.fams.length; k++) {
       const f = prd.fams[k]
       const g = groups.nth(k + (prd.loose.length ? 1 : 0))
@@ -4151,11 +4299,11 @@ test('Requirements sub-group within a screen — family headers on the card and 
     await page.goto('/#/board/grid')
     await expect(dt.locator('.gridview')).toBeVisible()
     await expect(page.locator('.reqmap')).toHaveCount(0)
-  })
+    }
 
   // a screen with NO families renders exactly as today — no header element anywhere, no map,
   // the counter a bare `n of N`
-  await checkReq('R17', async () => {
+    {
     const name = makeDocumentScreen('plainfolk')
     try {
       const stubCard = page.locator('#home .card[data-screen="' + name + '"]')
@@ -4184,6 +4332,7 @@ test('Requirements sub-group within a screen — family headers on the card and 
     } finally {
       rmSync('spec/' + name, { recursive: true, force: true })
       build()
+    }
     }
   })
 })
