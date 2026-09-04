@@ -69,10 +69,22 @@ export function momentSource (walkSrc, capSrc) {
     'var rc = { rootEl: null };' +
     'var skel = null, rep = null;' +
     'try { skel = __walk({ ring: a.ring, target: a.target, env: a.env || null, report: rp }) } catch (e) { skel = null }' +
+    // …AND NO PICTURE OF SOMETHING THE WALK REFUSED TO MEASURE (final review C1, 2026-09-04). The
+    // capture is handed the element the WALK measured under the ring, falling back to the raw target
+    // — and that fallback re-opened the very disagreement this file exists to close. When the walk
+    // DROPS the handed-over element (a card sitting behind an opened dialog: occluded, so the walk
+    // measures the dialog instead) it reports no `ringEl`, the fallback rooted the scene on the card
+    // anyway, and the replica pictured the page BEHIND the modal while the skeleton described the
+    // modal: board R22.b2, 45 measured elements and not one of them inside the scene root, and an
+    // extra box on a file nothing could ever gate. A picture of what a reader cannot see is worse
+    // than no picture, so a moment whose ringed element the walk refused simply has none — the row
+    // says so out loud, exactly as it does when nothing was measured at all.
+    'var __tgt = a.target ? rp.ringEl : (rp.ringEl || null);' +
     'try {' +
-      'rep = __cap({ ring: a.ring, target: rp.ringEl || a.target || null, props: a.props, claim: a.claim,' +
+      'if (a.target && !rp.ringEl) { rep = null } else {' +
+      'rep = __cap({ ring: a.ring, target: __tgt, props: a.props, claim: a.claim,' +
       ' claims: a.claims, base: a.base, minRegion: a.minRegion, caps: a.caps, env: a.env || null,' +
-      ' occluded: rp.occluded, report: rc })' +
+      ' occluded: rp.occluded, report: rc }) }' +
     '} catch (e) { rep = null }' +
     // WHAT IS IN THE PICTURE (fix round 2, I6). The replica is a picture of the scene ROOT'S
     // SUBTREE; `region` is only that root's rectangle. An element that overlaps the rectangle from

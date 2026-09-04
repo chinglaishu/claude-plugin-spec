@@ -300,7 +300,18 @@ export function checkReplicas (spec = 'spec') {
         if (a.layout && a.layout !== layoutHash(lay, null)) {
           why.push('the layout pin has moved: the harvest is newer than the replica')
         }
-        {
+        // …AND ONLY WHERE THE FILE IS A PICTURE OF *THIS* MOMENT (2026-09-04). Once a claim on the
+        // beat has FAILED, the Expected is deliberately built from the last scene the app got RIGHT
+        // (spec/_replica.mjs `intendedLayout`, the human 2026-09-02: "the schematic should be
+        // correct, only the proof should be wrong") — a different moment of the page, by design. Its
+        // words are then not this skeleton's and were never meant to be: demo/todo's R9 shows the
+        // count the requirement asks for (5) while the live page reads 4, and rule 4 demanded the 4.
+        // That is the reasoning tools/replica-gate.mjs's header has always given for not measuring
+        // an Expected against one live skeleton, and it survives the move to one file per moment:
+        // where a claim failed, rule 5 — the claim's own value must be IN it — is what the file
+        // answers for, and the likeness verdict on the app's own unedited tree is already on its
+        // root. Where nothing failed the Expected IS this moment's tree, and the words are demanded.
+        if (!a.claims.some(c => c && c.ok !== true)) {
           // rule 4 — the words, with no DOM: the skeleton's own text, inside the replica's region
           const text = textOf(html)
           const reg = a.region
@@ -312,7 +323,13 @@ export function checkReplicas (spec = 'spec') {
           const claimRings = a.claims.map(c => (c && c.ring && typeof c.ring === 'object' ? c.ring : null))
             .filter(r => r && Number.isFinite(Number(r.x)))
             .map(r => ({ x: Number(r.x), y: Number(r.y), w: Number(r.w != null ? r.w : r.width) || 0, h: Number(r.h != null ? r.h : r.height) || 0 }))
-          const claimGot = a.claims.map(c => String((c && c.got) || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+          // …only where the claim actually MOVED the text: an exact pass (got === expected) shows the
+          // very words the live element had, so exempting them would waive the word rule for every
+          // element a beat happened to read — deleting a text node the beat claimed would stop
+          // failing this gate, which is the plan's own acceptance case.
+          const claimGot = a.claims
+            .filter(c => c && String(c.got || '').trim() !== String(c.expected || '').trim())
+            .map(c => String(c.got || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
           const claimed = (e, t) => claimGot.some(g => g === t || containsRun(g, t)) ||
             claimRings.some(r => e.x + e.w > r.x - GATE_TOL && e.x < r.x + r.w + GATE_TOL &&
               e.y + e.h > r.y - GATE_TOL && e.y < r.y + r.h + GATE_TOL)

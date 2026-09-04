@@ -201,3 +201,33 @@ test('the skeleton marks every element in or out of the scene root the capture u
   assert.equal(toast.inRoot, 0, 'the toast overlapping it is not')
   assert.ok(!/Saved/.test(out.rep.html), 'and the replica of the card does not contain it')
 })
+
+// ── NO PICTURE OF SOMETHING THE WALK REFUSED TO MEASURE (final review C1, 2026-09-04) ───────────
+// The capture is handed the element the WALK measured under the ring. The old fallback to the RAW
+// target re-opened the disagreement this file exists to close: when the walk drops the handed-over
+// element (a card behind an opened dialog — occluded, so the walk measures the dialog instead) it
+// reports no `ringEl`, and the capture rooted the scene on the card anyway. Board R22.b2 harvested
+// 45 elements with NOT ONE of them inside the scene root, and an extra box on a file nothing could
+// ever gate. A picture of what a reader cannot see is worse than no picture.
+test('a moment whose ringed element the walk REFUSED gets no replica at all', () => {
+  const src = momentSource(
+    'function (a) { if (a.report) { a.report.ringEl = null; a.report.occluded = []; a.report.nodes = [] } ' +
+    'return { w: 1440, h: 900, ring: null, els: [] } }',
+    'function (a) { return { html: "<div>picture</div>", region: { x: 0, y: 0, w: 10, h: 10 }, target: a.target } }')
+  // eslint-disable-next-line no-new-func
+  const fn = new Function('a', 'var document = { getElementById: function () { return null } }; return (' + src + ')(a)')
+  const withTarget = fn({ ring: null, target: { id: 'the card' }, gateHost: 'h' })
+  assert.equal(withTarget.rep, null, 'a target was handed over and the walk did not measure it')
+  assert.ok(withTarget.skel, 'the skeleton still lands — it is what the gate and the drawing read')
+})
+
+test('…and a moment with NO target handed over is captured exactly as before', () => {
+  const src = momentSource(
+    'function (a) { if (a.report) { a.report.ringEl = null; a.report.occluded = []; a.report.nodes = [] } ' +
+    'return { w: 1440, h: 900, ring: null, els: [] } }',
+    'function (a) { return { html: "<div>picture</div>", region: { x: 0, y: 0, w: 10, h: 10 } } }')
+  // eslint-disable-next-line no-new-func
+  const fn = new Function('a', 'var document = { getElementById: function () { return null } }; return (' + src + ')(a)')
+  const noTarget = fn({ ring: { x: 1, y: 1, width: 2, height: 2 }, target: null, gateHost: 'h' })
+  assert.ok(noTarget.rep, 'the capture finds the element under the ring itself, as it always has')
+})

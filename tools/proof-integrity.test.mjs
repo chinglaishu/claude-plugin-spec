@@ -161,7 +161,13 @@ const REP_ROOT = (side, body, extra = '', pin = layoutHash(RLAY, null)) =>
   ' data-replica-gaps="[]" style="position:relative">' + body + '</div>\n'
 const ACTUAL_BODY = '<h1 class="r1">All tasks</h1><button class="r1">Archive</button>' +
   '<div class="r1">Pay the electricity bill</div>'
+// the DEFAULT fixture's claim PASSED: the Expected is then this moment's own tree, and rule 4 (the
+// words) is demanded of it. A file carrying a FAILED claim is deliberately a picture of the last
+// scene the app got right, so its words are not this skeleton's and rule 5 is what it answers for —
+// FAILED_CLAIMS is what the tests about that use.
 const CLAIMS = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
+  '&quot;got&quot;:&quot;Pay the electricity bill&quot;,&quot;ok&quot;:true}]'
+const FAILED_CLAIMS = '[{&quot;label&quot;:&quot;the row&quot;,&quot;expected&quot;:&quot;Pay the electricity bill&quot;,' +
   '&quot;got&quot;:&quot;&quot;,&quot;ok&quot;:false}]'
 
 const repFixture = (mutate = {}) => {
@@ -251,7 +257,8 @@ test('an UNGATED replica is refused — a picture nobody measured is not a prove
 
 test('an Expected that does not carry a failed claim\'s own value is refused', () => {
   // the BODY loses the words (the claim in data-claims still asks for them — that is the point)
-  const root = repFixture({ expected: h => h.replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1">Renew passport</div>') })
+  const root = repFixture({ expected: h => h.replace(CLAIMS, FAILED_CLAIMS)
+    .replace('<div class="r1">Pay the electricity bill</div>', '<div class="r1">Renew passport</div>') })
   try {
     const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
@@ -269,8 +276,11 @@ test('an Expected that does not carry a failed claim\'s own value is refused', (
 test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed is not', () => {
   const ringed = '[{&quot;label&quot;:&quot;the heading&quot;,&quot;expected&quot;:&quot;Every task&quot;,' +
     '&quot;got&quot;:&quot;All tasks&quot;,&quot;ok&quot;:false,&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:110,&quot;w&quot;:200,&quot;h&quot;:24}}]'
+  // a PASSING match claim: the file is still this moment's tree, so rule 4 runs — and the live text
+  // the claim moved is exempt from it
+  const passing = ringed.replace('&quot;ok&quot;:false', '&quot;ok&quot;:true')
   const claimed = repFixture({
-    expected: h => h.replace(CLAIMS, ringed).replace('<h1 class="r1">All tasks</h1>', '<h1 class="r1" data-claim="wrong">Every task</h1>')
+    expected: h => h.replace(CLAIMS, passing).replace('<h1 class="r1">All tasks</h1>', '<h1 class="r1" data-claim="wrong">Every task</h1>')
   })
   try {
     const row = checkReplicas(claimed).filter(r => r.file.endsWith('.expected.html'))[0]
