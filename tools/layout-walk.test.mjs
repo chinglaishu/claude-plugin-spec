@@ -484,11 +484,26 @@ test('every box the walk drops as occluded is reported, so the capture can plate
 // of one page land a fraction apart; that is the whole reason GATE_TOL exists, and spec/_replica.mjs
 // already gives its own viewport clip 2 px of slack for this very case ("the 2 px tolerance keeps
 // exactly that hairline case"). The edge test here now says the same thing.
-test('a box that begins a hair below the fold is still measured — two renderings land a fraction apart', () => {
-  const chip = el('span', [1300, 900.25, 57, 22], { text: 'CI gate', cs: painted })
-  const body = el('body', [0, 0, 1440, 1916], { children: [chip] })
+// CORRECTED 2026-09-04 (rule 4, final review C1): admitting the band only MOVED the knife edge. The
+// same CI chip later drifted to a top of ~901.5 — nothing of it visible at all — was measured live
+// because `vh + EDGE_PAD` let it in, and came back `moved-text` because the replica's flow puts an
+// invisible box wherever it likes. A box with fewer than EDGE_PAD visible pixels is one the two
+// renderings cannot be made to agree about AND one no reader can see, so BOTH sides drop it. That is
+// the only stable answer, and nothing is lost: the gate's own floor is 12 px, so a sliver could
+// never have been a box gap.
+test('a box with fewer than 2 visible pixels at the fold is measured by neither side', () => {
+  const hair = el('span', [1300, 899.5, 57, 22], { text: 'CI gate', cs: painted })
+  const past = el('span', [1300, 901.5, 57, 22], { text: 'CI past', cs: painted })
+  const body = el('body', [0, 0, 1440, 1916], { children: [hair, past] })
   const L = walk(body, null)
-  assert.ok(L.els.some(e => e.text === 'CI gate'), 'the hairline case is kept: ' + JSON.stringify(L.els))
+  assert.ok(!L.els.some(e => /CI gate|CI past/.test(e.text || '')),
+    'the ambiguous band is excluded, not admitted: ' + JSON.stringify(L.els.map(e => e.text)))
+})
+
+test('…and a box comfortably inside the fold still is', () => {
+  const inside = el('span', [1300, 860, 57, 22], { text: 'CI gate', cs: painted })
+  const body = el('body', [0, 0, 1440, 1916], { children: [inside] })
+  assert.ok(walk(body, null).els.some(e => e.text === 'CI gate'))
 })
 
 test('…but a box a real distance off-screen still costs nothing', () => {

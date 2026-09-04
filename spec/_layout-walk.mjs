@@ -382,8 +382,16 @@ export function snapLayoutWalk (arg) {
     // and the gate reported `missing-box` on a file that was right. spec/_replica.mjs's own viewport
     // clip has carried 2 px of slack for exactly this case since phase 3; the edge test here says
     // the same thing now. A box a real distance off-screen still costs nothing.
-    if (sized && (r.right <= -EDGE_PAD || r.left >= vw + EDGE_PAD ||
-      r.bottom <= -EDGE_PAD || r.top >= vh + EDGE_PAD)) return null
+    // …and the slack EXCLUDES the ambiguous band rather than admitting it (2026-09-04, final review
+    // C1). Admitting it only moved the knife edge: this repo's own CI chip drifted to a top of
+    // ~901.5 in a 900 px viewport — nothing of it visible at all — was measured live because
+    // `vh + EDGE_PAD` let it in, and came back `moved-text` because the replica's flow puts an
+    // invisible box wherever it likes. A box with fewer than EDGE_PAD visible pixels is one the two
+    // renderings cannot be made to agree about and one no reader can see; both sides drop it, which
+    // is the only answer that is stable. Nothing is lost: the gate's own floor is 12 px, so a
+    // sliver could never have been a box gap — only a text one, which is exactly this defect.
+    if (sized && (r.right <= EDGE_PAD || r.left >= vw - EDGE_PAD ||
+      r.bottom <= EDGE_PAD || r.top >= vh - EDGE_PAD)) return null
     // WHAT THE PAGE DOES NOT SHOW, THE MIRROR MUST NOT MEASURE (mirror-9, 2026-09-02). Opacity
     // is inherited by PAINT, not by property: Tsumiki hides a row's edit/delete buttons with
     // `opacity:0` until hover, so the BUTTON came back at 0 and its 16×16 icon — which has no

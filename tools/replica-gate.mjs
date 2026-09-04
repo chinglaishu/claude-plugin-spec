@@ -75,6 +75,37 @@ export function containsRun (hay, needle) {
   return false
 }
 
+// …AND A TAG BOUNDARY IS NOT A SPACE (final review C1, 2026-09-04). `textOf` below reads a file's
+// words by replacing every tag with a space, which is right between two blocks and wrong INSIDE a
+// word: the board's own reader wraps an apostrophe in its own span, so the sentence the live walk
+// measured as `you open the board's home` reads `you open the board 's home` in the file, and the
+// run rule refused a picture that carries every word of it. Whitespace is not evidence about
+// anything here — the live text is already collapsed and the file's is manufactured — so the
+// fallback compares with ALL of it removed, and applies the very same word-boundary rule to the
+// stripped strings, so a live `5` still cannot be answered by a `15`. Used only where the haystack
+// is a whole file's text with no box to pin it (tools/proof-integrity.mjs rule 4, and claimGaps);
+// the in-page gate compares element text to element text and never sees a manufactured space.
+const ESC = /[.*+?^${}()|[\]\\]/g
+export function containsRunLoose (hay, needle) {
+  const h = String(hay == null ? '' : hay)
+  const n = clean(needle)
+  if (!n) return true
+  // the needle, with optional whitespace allowed around every NON-WORD character — which is exactly
+  // where a tag boundary can fall inside a word (`board's` → `board 's`) — and a real run of spaces
+  // matching one or more. Stripping ALL whitespace instead would destroy the very boundaries the run
+  // rule is made of: with every space gone, `…recording1Whenyouopen…` has a letter immediately
+  // before the needle and the left-boundary check refuses every occurrence.
+  let pat = ''
+  for (const ch of n) {
+    if (/\s/.test(ch)) { pat += '\\s+'; continue }
+    const e = ch.replace(ESC, '\\$&')
+    pat += WORDY.test(ch) ? e : ('\\s*' + e + '\\s*')
+  }
+  const L = WORDY.test(n[0]) ? '(?<![\\p{L}\\p{N}_])' : ''
+  const R = WORDY.test(n[n.length - 1]) ? '(?![\\p{L}\\p{N}_])' : ''
+  try { return new RegExp(L + pat + R, 'u').test(h) } catch { return false }
+}
+
 // A LIVE ELEMENT WHOSE OWN TAG NEVER PAINTS A READER-VISIBLE WORD (fix round 2, item 2). Every
 // record now carries its measured `tag` (spec/_layout-walk.mjs), lowercased — an older skeleton
 // with no such field simply has `e.tag === undefined`, which matches nothing here and changes
@@ -245,6 +276,8 @@ export function claimGaps (expectedText, claims) {
     const want = clean(c.expected)
     if (!want) continue
     if (text.indexOf(want) >= 0) continue
+    // …and a tag boundary inside a word is not a missing value (see containsRunLoose)
+    if (containsRunLoose(text, want)) continue
     const r = c.ring && typeof c.ring === 'object' ? c.ring : null
     out.push({
       kind: 'missing-claim',

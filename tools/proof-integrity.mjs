@@ -22,7 +22,7 @@ import { renderWireframe, mirrorGaps, gapSummary, frameGroup, layoutHash } from 
 // …and the replica's own guard, for the same reason: what "the replica looks like the app" MEANS is
 // decided in ONE place (tools/replica-gate.mjs), read by the in-page gate at capture time and by
 // this CLI alike. A gate that restates the capture's rules drifts from them.
-import { replicaAttrs, claimGaps, textOf, containsRun, GATE_TOL, GATE_MIN, NO_TEXT_TAGS } from './replica-gate.mjs'
+import { replicaAttrs, claimGaps, textOf, containsRun, containsRunLoose, GATE_TOL, GATE_MIN, NO_TEXT_TAGS } from './replica-gate.mjs'
 // …and the PRD's own authorities on what a requirement SAYS: parsePrd for its blocks, parseBehavior
 // for its beats. The intent lint below weighs a beat's claims against the Then a HUMAN wrote, so it
 // has to read that Then through the very parsers the board renders it with — never its own reading.
@@ -338,7 +338,13 @@ export function checkReplicas (spec = 'spec') {
             // the WHOLE file's text with no box to pin it, so plain containment would let a live `5`
             // be answered by any `15` anywhere in the page
             if (claimed(e, t)) continue
-            if (!containsRun(text, t)) row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
+            // …and a TAG BOUNDARY IS NOT A SPACE (final review C1): `textOf` manufactures one at
+            // every tag, so a word split across two spans reads with a space in it that the live
+            // element never had. containsRunLoose asks the same question with all whitespace gone,
+            // keeping the word-boundary rule (tools/replica-gate.mjs).
+            if (!containsRun(text, t) && !containsRunLoose(text, t)) {
+              row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
+            }
           }
         }
       }

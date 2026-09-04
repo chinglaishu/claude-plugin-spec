@@ -8,7 +8,7 @@
 // browser.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf, replicaNote, GATE_MAX_GAPS, GATE_BYTE_RESERVE } from './replica-gate.mjs'
+import { GATE_TOL, replicaGaps, claimGaps, replicaAttrs, withReplicaAttrs, textOf, replicaNote, GATE_MAX_GAPS, GATE_BYTE_RESERVE, containsRun, containsRunLoose } from './replica-gate.mjs'
 
 // ── the fixture the brief names: six elements, one of them outside the region ────────────────────
 // (a header word · a button with the focus · two row words · a painted divider · a leaf outside)
@@ -459,4 +459,20 @@ test('…and an UNMARKED skeleton is read exactly as before (I6)', () => {
   const live = LIVE()
   live.els.push({ x: 300, y: 250, w: 120, h: 40, kind: 'text', text: 'Saved · undo' })
   assert.equal(replicaGaps(live, REP(), REGION).length, 1, 'no evidence about the subtree is not evidence of exclusion')
+})
+
+// ── A TAG BOUNDARY IS NOT A SPACE (final review C1, 2026-09-04) ─────────────────────────────────
+// `textOf` reads a file's words by replacing every tag with a space — right between two blocks, and
+// wrong INSIDE a word. The board's own reader wraps an apostrophe in its own span, so the sentence
+// the live walk measured as "you open the board's home" reads "you open the board 's home" in the
+// file, and the run rule refused a picture that carries every word of it. Whitespace here is
+// manufactured, so the fallback removes all of it — and keeps the word-boundary rule, so a live `5`
+// still cannot be answered by a `15`.
+test('containsRunLoose ignores manufactured whitespace but keeps the word boundary', () => {
+  assert.equal(containsRunLoose("you open the board 's home", "you open the board's home"), true)
+  assert.equal(containsRunLoose('Add\nto cart', 'Add to cart'), true)
+  assert.equal(containsRunLoose('the count reads 15', 'the count reads 5'), false, 'a 5 is not a 15')
+  assert.equal(containsRunLoose('nothing like it', "you open the board's home"), false)
+  assert.equal(containsRun("you open the board 's home", "you open the board's home"), false,
+    'the strict rule is what needed the fallback')
 })
