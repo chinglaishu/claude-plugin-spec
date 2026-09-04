@@ -40,6 +40,17 @@ jobs:
       # (4173) on a clean checkout — no extra env is needed here.
       - run: npx playwright test --config=playwright.board.ts $(node tools/ci-select.mjs)
 
+      # THE TWO GATES THE HARVEST IS JUDGED BY, after the suite that produces it (final review C2,
+      # 2026-09-04). Both were runnable-and-never-run: the fold prints its gap lines, a person
+      # commits the harvest, and every downstream check stayed green — which is exactly how 16
+      # gapped replicas reached main. `proof mirror` refuses a committed replica the harvest no
+      # longer matches; `proof lint` refuses a beat whose Then facts are neither claimed nor
+      # honestly declared. A gate people learn to skip is worth less than no gate, and a gate
+      # nothing runs is one nobody had to learn to skip.
+      - run: npm run proof mirror
+
+      - run: npm run proof lint
+
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
