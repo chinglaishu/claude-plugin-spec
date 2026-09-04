@@ -1,4 +1,4 @@
-import { expect, proveVisible, reveal, hudCheck, recordHold, waitForContent } from '../_base'
+import { expect, proveVisible, MISSING, reveal, hudCheck, recordHold, waitForContent } from '../_base'
 import type { Page } from '@playwright/test'
 import { APP_BASE, FROZEN_NOW } from '../_app'
 
@@ -65,10 +65,10 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   await reveal(page.locator('.addrow'))
   await page.locator('#nt').pressSequentially('Water the plants')
   // SCENE 1 — the WHEN's own value: the text now sitting in the Add box.
-  await proveVisible(page.locator('#nt'), 'Water the plants', 'The task typed into the Add box')
+  await proveVisible(page.locator('#nt'), 'Water the plants', 'The task typed into the Add box', { soft: true })
   // SCENE 2 — the control the When NAMES, now enabled.
   await expect(page.locator('.go'), 'typing enabled the Add button').toBeEnabled()
-  await proveVisible(page.locator('.go'), 'Add', 'The Add button, now enabled')
+  await proveVisible(page.locator('.go'), 'Add', 'The Add button, now enabled', { soft: true })
   await page.locator('.go').click()
   const row = rowByTitle(page, 'Water the plants')
   await expect(row.locator('.cb'), 'the new row is a leaf with its own checkbox').toHaveCount(1)
@@ -79,7 +79,8 @@ export async function addTask (page: Page, state: FlowState): Promise<void> {
   // SCENE 3 — the OUTCOME: ring the new row so its empty checkbox and its "added just now" stamp are
   // both in frame (proveVisible reads the row's text for the stamp; the empty .cb sits at its left edge).
   await proveVisible(row.locator('.trow'), 'added just now',
-    'The new row — its checkbox empty, stamped added just now', { match: s => /added just now/.test(s) })
+    'The new row — its checkbox empty, stamped added just now',
+    { soft: true, match: s => /added just now/.test(s) })
   state.task = 'Water the plants'
   state.leaves += 1
 }
@@ -91,35 +92,41 @@ export async function renameInPlace (page: Page, state: FlowState): Promise<void
   await edit.fill('Water the office plants')
   await edit.press('Enter')
   const row = rowByTitle(page, 'Water the office plants')
-  await proveVisible(row.locator('.ttl'), 'Water the office plants', 'The renamed task, read back off its row')
+  await proveVisible(row.locator('.ttl'), 'Water the office plants',
+    'The renamed task, read back off its row', { soft: true })
   await proveVisible(row.locator('.meta'), 'edited just now',
-    'The stamp flipped to edited', { match: s => /edited just now/.test(s) })
+    'The stamp flipped to edited', { soft: true, match: s => /edited just now/.test(s) })
   state.task = 'Water the office plants'
 }
 
 // R3 — a container shows a derived ring, no checkbox, and the ring grows when a sub-task is added.
 export async function addSubTaskGrowsRing (page: Page, state: FlowState): Promise<void> {
   const k = state.container
-  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`, 'The container ring — one of three done')
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
+    'The container ring — one of three done', { soft: true })
   await expect(rowById(page, k).locator('.trow > .cb'),
     'a container has no checkbox of its own — only a ring').toHaveCount(0)
+  // …and THAT absence is claimed, not left to the count: MISSING passes exactly while the parent has
+  // no checkbox and fails, with the box's own state, the moment one appears on it.
+  await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
+    'The parent still has no checkbox of its own', { soft: true })
   await page.locator('#sub-' + k).fill('Order name badges')
   await page.locator('#sub-' + k).press('Enter')
   state.ring.total += 1
   state.leaves += 1
   state.sub = 'Order name badges'
   await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
-    'Adding a sub-task grew the ring by itself — one of four')
+    'Adding a sub-task grew the ring by itself — one of four', { soft: true })
 }
 
 // R5 — the count reads the leaves, then one sub-task done drops it by exactly one.
 export async function tickOneSubTask (page: Page, state: FlowState): Promise<void> {
   const left = page.locator('#left')
-  await proveVisible(left, String(state.leaves), 'To do — ' + state.leaves + ' leaves of work left')
+  await proveVisible(left, String(state.leaves), 'To do — ' + state.leaves + ' leaves of work left', { soft: true })
   await subById(page, 'k1b').locator('.scb').click()
   state.leaves -= 1
   state.ring.done += 1
-  await proveVisible(left, String(state.leaves), 'One sub-task done — the count drops by exactly one')
+  await proveVisible(left, String(state.leaves), 'One sub-task done — the count drops by exactly one', { soft: true })
 }
 
 // R4 — finish the container's remaining open sub-tasks; the last tick rolls the parent up —
@@ -133,7 +140,12 @@ export async function finishContainerRollsUp (page: Page, state: FlowState): Pro
   state.ring.done = state.ring.total
   state.leaves -= 2
   expect(open, 'the two ticks were the container\'s LAST open sub-tasks').toBe(0)
-  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.total}/${state.ring.total}`, 'Every sub-task done — the ring is full')
+  await proveVisible(rowById(page, k).locator('.pct'), `${state.ring.total}/${state.ring.total}`,
+    'Every sub-task done — the ring is full', { soft: true })
+  // NOBODY TICKED THE PARENT — claimed as the absence it is: there is no checkbox on the container
+  // to have ticked, so the roll-up can only have come from its own leaves.
+  await proveVisible(rowById(page, k).locator('.trow > .cb'), MISSING,
+    'Nobody ticked the parent — it has no box to tick', { soft: true })
   await hudCheck('The container completed itself', 'true', await rowById(page, k).getAttribute('data-done'))
   expect(await rowById(page, k).getAttribute('data-done'),
     'the container rolled up to done on its own').toBe('true')
@@ -151,6 +163,10 @@ export async function containerIsNotAUnit (page: Page, state: FlowState): Promis
     'The container is not a task — the count dropped by two, to ' + state.leaves, { soft: true })
   await proveVisible(rowById(page, state.container).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
     'The container finished with them — and was never one of the four', { soft: true })
+  // …NOT THREE: the container has no checkbox to have been counted as work in the first place, so
+  // the two open leaves are the whole of the drop.
+  await proveVisible(rowById(page, state.container).locator('.trow > .cb'), MISSING,
+    'Never a unit of work — the container has no box of its own', { soft: true })
 }
 
 // R4, the other direction — reopening any sub-task reopens the container.
@@ -179,6 +195,11 @@ export async function walkSmartViews (page: Page, state: FlowState): Promise<voi
     // fails here — photographed, on the badge.
     await proveVisible(navBtn(page, v).locator('.ct'), String(rows),
       `${v} — the badge equals the rows on screen`, { soft: true })
+    // …and ONLY THAT VIEW'S TASKS SHOW: the view is the one whose button is on, and the list under
+    // it is that view's own — claimed on the button the click turned on.
+    await proveVisible(navBtn(page, v), v === 'all' ? 'All' : v.charAt(0).toUpperCase() + v.slice(1),
+      `${v} — only this view's tasks are on screen`,
+      { soft: true, match: s => s.toLowerCase().startsWith(v) })
     if (HOLD) await page.waitForTimeout(HOLD)
   }
   await navBtn(page, 'all').click()
@@ -188,8 +209,10 @@ export async function walkSmartViews (page: Page, state: FlowState): Promise<voi
 // R7 — against the frozen clock, a past-due task reads overdue and a due-today task reads today.
 export async function readDateChips (page: Page, state: FlowState): Promise<void> {
   await navBtn(page, 'all').click()
-  await proveVisible(rowById(page, 'k3').locator('.chip'), 'overdue', 'Renew passport is past due — overdue')
-  await proveVisible(rowById(page, 'k2').locator('.chip'), 'today', 'Pay the electricity bill is due today')
+  await proveVisible(rowById(page, 'k3').locator('.chip'), 'overdue',
+    'Renew passport is past due — overdue', { soft: true })
+  await proveVisible(rowById(page, 'k2').locator('.chip'), 'today',
+    'Pay the electricity bill is due today', { soft: true })
   state.dates = { overdue: 'k3', today: 'k2' }
 }
 
@@ -198,11 +221,11 @@ export async function reloadKeepsEverything (page: Page, state: FlowState): Prom
   await page.reload({ waitUntil: 'domcontentloaded' })
   await waitForContent(rowById(page, 'k1'))
   await proveVisible(rowByTitle(page, state.task).locator('.ttl'),
-    state.task, 'The rename survived the reload')
+    state.task, 'The rename survived the reload', { soft: true })
   await proveVisible(rowById(page, state.container).locator('.pct'), `${state.ring.done}/${state.ring.total}`,
-    'The container came back at ' + state.ring.done + ' of ' + state.ring.total)
+    'The container came back at ' + state.ring.done + ' of ' + state.ring.total, { soft: true })
   await navBtn(page, 'completed').click()
   await proveVisible(rowById(page, 'k5').locator('.meta'), 'done',
-    'A completed stamp survived the reload', { match: s => /done/.test(s) })
+    'A completed stamp survived the reload', { soft: true, match: s => /done/.test(s) })
   state.reloaded = true
 }

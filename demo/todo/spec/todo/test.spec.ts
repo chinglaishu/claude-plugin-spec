@@ -64,9 +64,14 @@ test('Tsumiki — the full flow (R1–R8)', async ({ page }) => {
     await checkReq('R4', async () => { await reopenSubTaskReopensParent(page, state) })
     // The count climbs back — and this reads correctly even under the broken counter, because the
     // bug only miscounts a DONE container; a reopened one is counted by its open leaves again.
-    await checkReq('R5', async () => {
-      await proveVisible(page.locator('#left'), String(state.leaves), 'And the count climbs back to ' + state.leaves)
-    })
+    //
+    // NOT a third checkReq('R5') (2026-09-04, phase 6's beat rule): R5 has two beats and this test
+    // already walks both of them above, so a third call clamped onto the last beat and harvested
+    // R5.b2's pictures while being about the reopen. It is the same value read once more after the
+    // other direction, so it stays an assertion — the requirement is proven, and photographed, in
+    // the two blocks that are its beats.
+    await proveVisible(page.locator('#left'), String(state.leaves),
+      'And the count climbs back to ' + state.leaves)
   })
 
   await flowStep('Walk the smart views — every badge matches its list', async () => {
