@@ -52,22 +52,50 @@ export function hasValueAssertion (body) {
 // do that today.
 const CALL = /checkReq\(\s*(['"])([^'"]+)\1/g
 
+// …and PROSE IS NOT A BLOCK either (fix round 2, 2026-09-04). A comment naming a call — board's own
+// "// this is the SECOND checkReq('R19') of the test" — was read as a real one, inventing a fourth
+// block for a two-beat requirement and clamping it onto the last beat: a phantom that no edit to
+// the code could fix, because there was no code. The scan runs over a COMMENT-MASKED copy in which
+// every comment character is a space and every newline is kept, so offsets and line numbers are the
+// original's; the bodies are sliced from the original text.
+export function maskComments (src) {
+  const text = String(src || '')
+  const blank = s => s.replace(/[^\n]/g, ' ')
+  let out = ''
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (c === "'" || c === '"' || c === '`') {
+      const e = endOfString(text, i)
+      if (e > i) { out += text.slice(i, e + 1); i = e; continue }
+    }
+    if (c === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) {
+      const e = endOfComment(text, i)
+      out += blank(text.slice(i, e + 1))
+      i = e
+      continue
+    }
+    out += c
+  }
+  return out
+}
+
 export function extractCheckReqBlocks (src) {
   const text = String(src || '')
+  const scan = maskComments(text)
   const blocks = []
   CALL.lastIndex = 0
   let m
-  while ((m = CALL.exec(text))) {
+  while ((m = CALL.exec(scan))) {
     const id = m[2]
-    const arrow = text.indexOf('=>', m.index + m[0].length)
+    const arrow = scan.indexOf('=>', m.index + m[0].length)
     if (arrow === -1) continue
-    const braceStart = text.indexOf('{', arrow)
+    const braceStart = scan.indexOf('{', arrow)
     if (braceStart === -1) continue
     let depth = 0
     let end = -1
-    for (let i = braceStart; i < text.length; i++) {
-      if (text[i] === '{') depth++
-      else if (text[i] === '}') {
+    for (let i = braceStart; i < scan.length; i++) {
+      if (scan[i] === '{') depth++
+      else if (scan[i] === '}') {
         depth--
         if (depth === 0) { end = i; break }
       }
@@ -680,12 +708,17 @@ export function lintIntent (prdText, specSource, opts = {}) {
         rows.push({ screen, id: r.id, beat: n, facts: facts.length, claims: 0, soft: 0, ok: true, state: 'no-beat', why: 'no checkReq maps to this beat — coverage already reads it unproven' })
         return
       }
-      // EVERY block that harvests this beat must cover it — the row is scored on the one that covers
-      // it LEAST, never the best of several (fix round 2, the controller's I2). A beat that reads ok
-      // from one block while the picture on the board comes from another is the false green in
-      // another dress, and each of these blocks writes the same <id>.b<n> evidence files.
+      // THE BLOCK OF BEAT k, NEVER THE BEST OF SEVERAL (fix round 2, the controller's I2). Several
+      // blocks can map to one beat — a unit and a flow proving the same sentence — and every one of
+      // them writes the SAME <id>.b<n> evidence files, so the pictures the board actually shows are
+      // the LAST one's: playwright.board.ts runs workers:1, in declaration order, so the last block
+      // in source order is the last to run and the last to file. That block is therefore the one
+      // scored, and the row names its line. (Scoring the best of them is what let board R20's beat 1
+      // read ok from a block in another test while the picture came from an empty one; scoring the
+      // WORST reads truer still, but it demands every flow that re-proves a requirement repeat every
+      // claim of the unit that owns it — a demand the many-to-many coverage model does not make.)
       const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft, b.decls.length) }))
-      const worst = scored.find(b => b.gap) || scored[0]
+      const worst = scored[scored.length - 1]
       const decls = worst.decls
       // A DECLARED GAP: the beat says IN ITSELF why a fact has no screen surface. Printed as its own
       // row with the reason and NOT counted against the exit code — a visible debt, never a pass.

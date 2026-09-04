@@ -746,10 +746,10 @@ test('…while two tests that each walk the SAME beats are not a mismatch (I1)',
   assert.equal(lintIntent(PRD_TWO_BEATS, spec).some(r => r.state === 'beat-mismatch'), false)
 })
 
-// I2 · EVERY block that harvests a beat must cover it — the row is scored on the WORST of them,
-// never the best. A beat that reads ok from one block while the picture on the board comes from
-// another is the false green in another dress.
-test('a beat is scored on the block that covers it least, never the best (I2)', () => {
+// I2 · THE row is scored on THE block of beat k — the last one to harvest it, whose pictures are
+// the ones the board shows (workers:1, declaration order) — never the best of several. A beat that
+// reads ok from one block while the picture comes from another is the false green in another dress.
+test('a beat is scored on the block whose harvest the board shows, never the best (I2)', () => {
   const spec = [
     "test('unit', async ({ page }) => {",
     "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
@@ -761,7 +761,7 @@ test('a beat is scored on the block that covers it least, never the best (I2)', 
     "})"
   ].join('\n')
   const b1 = lintIntent(PRD_TWO_BEATS, spec).find(r => r.beat === 1 && r.state !== 'beat-mismatch')
-  assert.equal(b1.claims, 0, 'the flow block claims nothing and it harvests this beat too')
+  assert.equal(b1.claims, 0, 'the flow block claims nothing, and its harvest is the one that lands')
   assert.equal(b1.ok, false)
   assert.ok(b1.line, 'the row names the line the verdict came from')
 })
@@ -894,4 +894,22 @@ test('a BACKTICK inside a regex character class is not a template literal (C1, s
   const bodies = functionBodies(src)
   assert.ok(bodies.get('plain').length < 80, 'the arrow body is the expression, not the file')
   assert.equal(/proveVisible/.test(bodies.get('plain')), false)
+})
+
+test('a checkReq named in a COMMENT is not a block (fix round 2)', () => {
+  // spec/board/test.spec.ts:1884 — "// this is the SECOND checkReq('R19') of the test" — read as a
+  // real call it invented a fourth block for a two-beat requirement, which BEAT_CURSOR then clamped
+  // onto the last beat: a phantom block, and a beat-mismatch row nobody could fix by editing code.
+  // Prose is not a claim (stripComments); prose is not a BLOCK either.
+  const src = [
+    "test('reader', async ({ page }) => {",
+    "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
+    "  // this is the SECOND checkReq('R1') of the test, so the callout has advanced",
+    "  /* and a block comment naming checkReq('R1') is not one either */",
+    "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
+    "})"
+  ].join('\n')
+  const blocks = extractCheckReqBlocks(src)
+  assert.equal(blocks.length, 2, 'two real calls: ' + blocks.map(b => b.line).join(', '))
+  assert.deepEqual(blocks.map(b => b.line), [2, 5], 'and their lines are unchanged by the masking')
 })
