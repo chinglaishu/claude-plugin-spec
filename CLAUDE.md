@@ -44,8 +44,11 @@ not do. Never take control away from the user (no auto-advancing after a verdict
    soft claim** (phase 6, 2026-09-04): `proveVisible(target, expected, label, { soft: true })`, so
    the beat reaches and photographs each of them and fails once at its end with the whole list —
    `npm run proof lint` refuses a Then fact no claim covers (`lintIntent`, tools/proof-integrity.mjs).
-   A fact the screen genuinely cannot show — an absence, a geometry, a file the CLI reads — stays red
-   and is reported; never a claim invented to close a row, and never a Then reworded to fit the test.
+   An ABSENCE is claimed like any other fact (`proveVisible(locator, MISSING, …)` passes exactly while
+   the thing is gone); a fact with NO screen surface — an API-only beat, a geometry, what the CLI gate
+   reads — is DECLARED in the beat with `intentGap('<why>')`, which the lint prints as a **visible
+   debt, never a pass**. Never a claim invented to close a row, and never a Then reworded to fit the
+   test.
 3. **Never fake a green.** A requirement with no passing assertion reads **unproven**; a flow that
    stops early leaves what it never reached **not-reached** — neither is green, and that honesty is
    the point. Never weaken, skip, or delete a test to go green.

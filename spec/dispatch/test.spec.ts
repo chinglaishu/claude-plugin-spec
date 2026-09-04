@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep, proveVisible, intentGap } from '../_base'
 import { openBoardDetail, clickRunOnCell, watchLogStream, verdictLandsInPlace } from './steps'
 import { openDetailReader, toggleViews } from '../board/steps'
 
@@ -140,6 +140,10 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
   // nested run, the run driving it is an ANCESTOR, never the holder, so it survives the takeover.
   let secondId = ''
   await checkReq('R4', async () => {
+    intentGap('the one job slot is the SERVER\'s contract: this beat drives /api/run with no page open ' +
+      'at all, so there is no screen to read "the running job is cancelled and the new one takes the ' +
+      'slot" off. Making it a claim means re-authoring this spec to drive the run panel — which the ' +
+      'job-slot trap makes delicate, and which is the human\'s call, not a thing to do in passing.')
     const second = await request.post('/api/run', { data: { screen: 'board' } })
     expect(second.status(), 'a person\'s second job is accepted, not 409').toBe(200)
     await expect.poll(async () => {
@@ -153,6 +157,9 @@ test('R4 — a person\'s second run takes over the running one: accepted, not re
   // Its entry lands in the run log at its own close, a beat after the takeover — poll for it.
   let taken: any = null
   await checkReq('R5', async () => {
+    intentGap('the same beat, the same reason: the run this took over is read out of /api/runs, with no ' +
+      'page open — "the process is killed, gone from the slot, its partial work left in place" is the ' +
+      'server\'s own state and the file it left on disk')
     await expect.poll(async () => {
       const runs = (await request.get('/api/runs').then((r: any) => r.json())).runs
       taken = runs.find((x: any) => x.runId === firstId)
@@ -255,6 +262,9 @@ test('R6/R8 — a run saves its whole log, and records every test case on its ow
 
   // R6: the WHOLE log is kept — retrievable in full after the stream ended, not thrown away.
   await checkReq('R6', async () => {
+    intentGap('the whole log is read back from the file the server saved (/spec/_runs/<id>/run.log) ' +
+      'with no page open; the board\'s own log WINDOW is proven on the board screen, through the ' +
+      'reader\'s wired Logs button (board R10)')
     const logRes = await request.get('/spec/_runs/' + run.runId + '/run.log')
     expect(logRes.status(), 'the run log was saved and is servable').toBe(200)
     const log = await logRes.text()
@@ -474,6 +484,9 @@ test('R5 — cancel stops the job, and cancelling nothing is refused not crashed
   // job. Named, so this holds wherever the spec runs from: a bare cancel here would stop whatever
   // holds the slot, and when the BOARD is running this spec that is this very run killing itself.
   await checkReq('R5', async () => {
+    intentGap('a REFUSAL is an http status and a sentence in a response body — this beat posts ' +
+      '/api/cancel with no page open, so there is no screen showing "it is refused rather than ' +
+      'stopping a different job"')
     const nothing = await request.post('/api/cancel', { data: { runId: 'not-a-run' } })
     expect(nothing.status()).toBe(409)
     expect(await nothing.text()).toMatch(/nothing is running/i)

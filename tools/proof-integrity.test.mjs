@@ -354,7 +354,7 @@ test('the CLI\'s node text gate never demands text back from a style/script/etc-
 // fact the picture can never show. So every fact a Then names must be a SOFT claim (proveVisible
 // `soft: true`): the beat reaches and photographs each of them and fails once at its end with the
 // whole list, instead of stopping at the first red with the rest of the requirement unshown.
-import { splitFacts, lintIntent } from './proof-integrity.mjs'
+import { splitFacts, lintIntent, isAbsenceFact } from './proof-integrity.mjs'
 
 test('splitFacts splits a Then only where BOTH sides carry a verb-ish token', () => {
   // both sides carry one — two facts
@@ -546,4 +546,86 @@ test('todo', async ({ page }) => {
   const row = lintIntent(prd, spec)[0]
   assert.equal(row.claims, 0)
   assert.equal(row.ok, false)
+})
+
+// ── A DECLARED GAP (fix round 1, 2026-09-04 — the controller's ruling) ───────────────────────────
+// Some facts a Then names have no screen surface at all: a beat that drives the server with no page
+// open, a geometric relation between two cells, what the CLI gate refuses, a surface that lives only
+// on the hidden baked pane. The honest answer is neither a claim nobody can make nor silence — it is
+// a line IN THE BEAT saying why there is nothing to read. The lint reads it, prints DECLARED with
+// the reason, and does not fail the exit code for it. A visible debt, never a pass.
+const PRD_ONE = `---
+screen: dispatch
+---
+
+## R4 — the slot
+
+- **Given** a job holding the slot
+- **When** a person starts a second job
+- **Then** the running job is cancelled and the new one takes the slot
+`
+
+test('a beat that DECLARES its gap is reported, and does not fail the lint', () => {
+  const spec = `
+test('dispatch', async ({ request }) => {
+  await checkReq('R4', async () => {
+    intentGap('the slot is the server\\'s own contract — this beat drives the API with no page open')
+    expect((await request.post('/api/run')).status()).toBe(200)
+  })
+})
+`
+  const row = lintIntent(PRD_ONE, spec)[0]
+  assert.equal(row.state, 'declared')
+  assert.equal(row.ok, true, 'a declared gap is a debt, not a failure')
+  assert.match(row.why, /no page open/, 'the reason is carried into the row')
+})
+
+test('…and a beat that declares NOTHING still fails', () => {
+  const spec = "test('dispatch', async ({ request }) => {\n  await checkReq('R4', async () => { expect(1).toBe(1) })\n})"
+  const row = lintIntent(PRD_ONE, spec)[0]
+  assert.equal(row.state, 'gap')
+  assert.equal(row.ok, false)
+})
+
+test('a declaration is REFUSED on a fact that names an absence — that one is claimable', () => {
+  // `proveVisible(locator, MISSING, …)` passes exactly when the thing is gone and fails, with the
+  // app's own text as `got`, the moment it is back. A Then that says so must claim it.
+  const prd = `---
+screen: board
+---
+
+## R21 — one order
+
+- **Given** the reader
+- **When** you page to the next requirement
+- **Then** it reads in that same order; there is no control to change it
+`
+  const spec = `
+test('board', async ({ page }) => {
+  await checkReq('R21', async () => {
+    intentGap('there is nothing to read here')
+    await proveVisible(page.locator('.sbhc'), 'behavior', 'The first cell', { soft: true })
+  })
+})
+`
+  const row = lintIntent(prd, spec)[0]
+  assert.equal(row.facts, 2)
+  assert.equal(row.state, 'gap', 'the declaration is refused')
+  assert.equal(row.ok, false)
+  assert.match(row.why, /absence/i)
+  assert.match(row.why, /MISSING/, 'and it says what to write instead')
+})
+
+test('the absence vocabulary is the fact\'s own subject, not any use of the word', () => {
+  // "there is no control", "carries no chip", "no per-cell caption" — a fact ABOUT something not
+  // being there. But "accepted, never refused or queued" and "gone from the slot" are facts about a
+  // decision and a server's state, on beats with no page at all; reading every `never` as a
+  // claimable absence would refuse exactly the declarations this mechanism exists for.
+  assert.equal(isAbsenceFact('there is no control to change it'), true)
+  assert.equal(isAbsenceFact('a moment that claimed nothing carries no chip at all'), true)
+  assert.equal(isAbsenceFact('no design chip, no design link and no embedded wireframe exist anywhere in it'), true)
+  assert.equal(isAbsenceFact('the run panel is gone from the slot'), true)
+  assert.equal(isAbsenceFact('the running job is cancelled and the new one takes the slot — accepted, never refused or queued'), false)
+  assert.equal(isAbsenceFact('the process is killed'), false)
+  assert.equal(isAbsenceFact('so the replica and the photograph can never frame different things'), false)
 })

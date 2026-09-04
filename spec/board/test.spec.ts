@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, hudCheck, flowStep, reveal, proveVisible } from '../_base'
+import { test, expect, checkReq, coverReqs, hudCheck, flowStep, reveal, proveVisible, MISSING, intentGap } from '../_base'
 // the board's own composable beats (the beat-function convention, Task 5): the assertion bodies the
 // tests below were proven red-first with, lifted into exported step functions so the composer can
 // chain them — each test keeps its checkReq AROUND the call, so the proof's power is unchanged
@@ -585,6 +585,10 @@ test('A requirement names the tests that cover it', async ({ page }) => {
   await coverReqs('R6')
   await openDetail(page)
   await checkReq('R6', async () => {
+    intentGap('both facts are board-wide derivations read off the hidden baked panes: "an assertion that ' +
+      'would fail without it" is a property of the test, not a value on a screen, and this tree has NO ' +
+      'untagged requirement to photograph — the deterministic instance is spec/_modes\' fabricated screen, ' +
+      'deliberately not cross-tagged to board:R6')
     // Few, comprehensive: the model lets one test cover several requirements (tags carry the link),
     // and a requirement's detail names the tests that prove it — never a bare "7 of 7 passing".
     // (The rows are read off the hidden baked pane — count/text works there.)
@@ -1480,6 +1484,10 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
     await reveal(ov.locator('.fread .fstory'))
     await expect(ov.locator('.fread .fstory .sbframe .sbprov'), 'no per-cell provenance caption on a replica').toHaveCount(0)
+    // the fact, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): there is no per-cell caption on the
+    // picture — MISSING passes exactly while there is none, and names the caption if one returns.
+    await proveVisible(ov.locator('.fread .fstory .sbframe .sbprov').first(), MISSING,
+      'No per-cell provenance caption', { soft: true })
     // …and the ⋯ escape carries the picture's provenance into the prompt
     await ov.locator('.fread .frmeta .fmenu .fmenubtn').click()
     await ov.locator('.fread .frmeta .fmenupop [data-prompt="schemwrong"]').click()
@@ -1505,6 +1513,10 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
   //   (b) when the app moves past the picture, the storyline SAYS SO — the one stale banner, naming
   //       the layout rather than the words.
   await checkReq('R18', async () => {
+    intentGap('the second and third facts are the CLI gate\'s, not the board\'s: "the proof gate refuses ' +
+      'that picture until the screen is re-harvested" is npm run proof mirror reading committed files, ' +
+      'and this beat proves it by reading those files — there is no screen showing a refusal. The first ' +
+      'fact, the stale banner, is claimed below.')
     const specs = replicaSpecimens()
     expect(specs.length, 'the fold committed replicas for this screen').toBeGreaterThan(0)
     // (a) every committed Expected of this screen carries the gate's own pin, and it still hashes the
@@ -1662,6 +1674,9 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
   // frames — computed back out of its own transform — is the same fraction of the same page, aimed
   // at the focused component. Aim one cell somewhere else and this fails.
   await checkReq('R19', async () => {
+    intentGap('one camera on one region is GEOMETRY — the beat proves it by computing each cell\'s own ' +
+      'framed rectangle back out of its transform; there is no text anywhere in the fact for a claim to ' +
+      'read, and a claim beside it would be filler')
     const focus = await armFocus(dt, spec.rid)
     expect(focus, 'the requirement carries a harvested beat to frame').toBeTruthy()
     // a hash hop REBUILDS the reader off the forced attribute; a goto to the URL the page is already
@@ -1963,16 +1978,147 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
     await expect(page.locator('#lb')).toBeHidden()
   })
 
-  // the GIVEN row is a STATE, not an action: one frame, so nothing to loop and nothing to step — and
-  // now UNCAPTIONED (the human, 2026-09-02: the "given" label row is gone)
+
+})
+
+// Board R23 — A FAILED MOMENT NAMES ITS DIFFERENCE (phase 5 of the Expected View plan the human
+// accepted 2026-09-03). Two pictures side by side leave a reader to FIND the difference in two
+// places at once; a failed moment says it in words, once, on the seam.
+//
+// (The requirement's second half — a LOUPE magnifying the ringed element on both sides — was removed
+// by the human on 2026-09-04, "the row of loupe · the ringed element is useless", and its beat is
+// deleted with it rather than left asserting something the board no longer builds.)
+//
+// The board's own suite passes, so nothing here is red on its own: the failed moment is DERIVED from
+// the real harvest by rewriting what the run recorded as the OUTCOME (armClaim), which is the same
+// established fixture technique R18's stale-banner leg and R20's honest-blank leg already use. The
+// frames, the layouts and the replicas stay exactly as the run took them, and the fixture is
+// restored at the end of the test — in a finally, so a mid-test failure cannot leave it armed.
+test('A failed moment names its difference', async ({ page }) => {
+  await coverReqs('R23')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const cs = claimSpecimen()
+  expect(cs, 'a board beat whose harvest carries a claim to fail').toBeTruthy()
+  const rid = cs!.rid
+  const other = rid === 'R2' ? 'R3' : 'R2'
+  const rowOf = () => ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
+
+  // THE DIFFERENCE MARKER. One label across the two cells naming both values, one per failed claim;
+  // and NONE on a row that claimed nothing at all.
+  try {
+    await checkReq('R23', async () => {
+      await armFocus(dt, rid)
+      const wrote = await armClaim(dt, rid, 'not this')
+      expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
+      await page.goto('/#/board/' + other)
+      await page.goto('/#/board/' + rid)
+      await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
+      const row = rowOf()
+      await reveal(row)
+      const marks = row.locator('.pics .mdiff')
+      await expect(marks, 'exactly one marker for the one failed claim').toHaveCount(1)
+      const said = plain(await marks.first().innerText())
+      expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
+      expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
+      // the fact, CLAIMED (the authored-intent lint, phase 6): ONE marker, naming BOTH values — the
+      // expected comes from the fold's own record and the got from the fixture that failed it
+      await proveVisible(marks.first(), plain(wrote!.expected) + ' · ' + plain(wrote!.got),
+        'The one marker, naming both values',
+        { match: (shown: string) => plain(shown).includes(plain(wrote!.expected)) && plain(shown).includes(plain(wrote!.got)),
+          soft: true })
+      // it spans the SEAM — one label about a relation, not one per cell
+      const seam = await row.evaluate(el => {
+        const p = el.querySelector('.pics') as HTMLElement
+        const m = p.querySelector('.mdiff') as HTMLElement
+        const a = p.getBoundingClientRect(); const b = m.getBoundingClientRect()
+        return { mid: (b.left + b.right) / 2 - a.left, half: a.width / 2, top: b.top - a.top, h: a.height }
+      })
+      expect(Math.abs(seam.mid - seam.half), 'the marker sits on the seam between the cells').toBeLessThan(8)
+      expect(seam.top >= -1 && seam.top <= seam.h, 'and inside the pictures it is about').toBe(true)
+      // …AND NONE WHERE NOTHING FAILED. The Given row is the context row — it rings nothing and claims
+      // nothing — so it carries no marker at all: a label that appeared on every moment would say
+      // "difference" where there is none, which is the opposite of what it is for.
+      const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
+      await expect(given.locator('.mdiff'), 'the context row claims nothing, so it differs in nothing')
+        .toHaveCount(0)
+      await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
+    })
+  } finally {
+    // the fixture is the READER's, not the tree's — it rewrites one DOM attribute and a reload clears
+    // it — but it is restored anyway so nothing downstream in this file reads a row this test
+    // rewrote, and in a `finally` so a mid-test failure cannot leave it armed (2026-09-04: the
+    // comment above promised a finally the code did not have).
+    await armClaim(dt, rid, null)
+    await page.goto('/#/board/' + other)
+  }
+})
+
+// Board R20, second half — AUTO ↔ STEP, and a PER-BEAT WALK (the human, 2026-08-30: "the go to next
+// small step can NOT be on top as there could be multi when/then, so the go to next small step need to
+// be by each when/then, and show in more appealing way ... please be user friendly and creative").
+// REWRITTEN 2026-09-01, rule 4 with the human's decision as the reason: the labelled bead FILMSTRIP
+// (ec62a1d's .scenerail / .srbeads) was REJECTED at a live mock; the human approved a GUIDED-TOUR
+// control in its place — one quiet line `‹  n / N  ›` in each beat row's behaviour gutter, a product
+// tour's stepper. No bordered box, no dots, no per-scene labels. The prev chevron dims at scene 1; the
+// next chevron is faintly accented and, at the LAST scene, becomes a restart ↺ that wraps to scene 1.
+// So this proves the tour control — its › walks BOTH cells of ITS row, prev is dim at the start, next
+// wraps to Restart at the end, the ← → keys walk the row the reader is on, the top bar has NO advance,
+// and a proof click is a proof again (opens the lightbox in every mode). The old rail is gone: no
+// .scenerail, no .srbeads. The loop stays the DEFAULT (the first R20 test proves it runs untouched).
+test('The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again', async ({ page }) => {
+  await coverReqs('R20')
+  await openDetail(page)
+  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
+  const ov = dt.locator('.focusov')
+  const spec = replicaSpecimens()[0]
+  expect(spec, 'a board requirement harvested with a beat pair').toBeTruthy()
+
+  // THE SIX BLOCKS BELOW ARE IN R20'S SIX BEATS' ORDER (2026-09-04, the controller's fix round).
+  // BEAT_CURSOR shows the Nth checkReq of an id the Nth beat and FILES ITS HARVEST THERE, so a
+  // block out of order hands its pictures to another beat's sentence — the drift board R19 forbids
+  // of a row, on this board's own reader. Nothing was weakened to do it: two pairs of legs that
+  // prove one beat between them were merged into that beat's block, and the two legs that live in
+  // the test above (the chips, the context row) moved here to stand at beats 2 and 6.
+
+  // beat 1 — THE CELL FRAMES THE THING BEING PROVEN AND NOTHING AROUND IT. The rejected bead rail
+  // (rule 4, the R8 assert-the-gone precedent: the labelled filmstrip ec62a1d shipped, .scenerail
+  // with its .srbeads) is nowhere in the reader — and neither is a keyboard hint, which the human
+  // moved off the reading surface on 2026-09-02 ("remove the short cut key hint in this page, only
+  // mention in the setting page"): nothing in the reader's rows, its card or its pager footer names
+  // a key, and the guide lists every key the reader answers to. The KEYS themselves are untouched —
+  // beat 4 below still walks, selects and pages with them.
   await checkReq('R20', async () => {
-    const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
-    await reveal(given.locator('.sbproof'))
-    await expect(given.locator('.sbproof .pcplay')).toHaveCount(0)
-    await expect(given.locator('.sbproof .fsteps-wrap')).toHaveCount(0)
-    await expect(given.locator('.sbproof .pcstrip .pcfig img')).toHaveCount(1)   // the one still
-    await expect(given.locator('.sbproof .pccap')).toHaveCount(0)                // no caption — a plain still
-    await expect(given.locator('.sbproof .pdots')).toHaveCount(0)
+    // aim the beat's own camera first: this block is beat 1's, and beat 1 is about the CELL — a
+    // block whose assertions are all counts would otherwise photograph the whole page
+    await reveal(ov.locator('.fread .fstory .sbwrap .sbrow').nth(1).locator('.sbproof'))
+    await expect(ov.locator('.fread .scenerail')).toHaveCount(0)
+    await expect(ov.locator('.fread .srbeads')).toHaveCount(0)
+    await expect(ov.locator('.fread .srbead')).toHaveCount(0)
+    await expect(ov.locator('.fread .srnext')).toHaveCount(0)
+    // …and the POSITIVE half beside the four absences (rule 2, and the standing "assert a positive
+    // outcome" rule): what stands where the rejected rail would have is the reader's own mode pair,
+    // and it reads step. Four toHaveCount(0)s alone would pass on a reader that rendered nothing.
+    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
+    await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
+
+    await page.goto('/#/board/' + spec.rid)
+    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
+    await expect(dt.locator('.dtfoot .fpk'), 'the footer legend is gone').toHaveCount(0)
+    await expect(dt.locator('.dtfoot')).not.toContainText('PgUp')
+    await expect(ov.locator('.fread .kbd'), 'and nothing inside the reader names a key').toHaveCount(0)
+    // …the guide is where they live now: one Keyboard section, every key the reader answers to
+    await page.goto('/#howitworks')
+    const keys = page.locator('#howview .howkeys')
+    await expect(keys).toBeVisible()
+    await expect(keys.locator('.sect-head .lbl')).toHaveText('keyboard')
+    // each key is a .kbd chip — the system's keyboard component, not prose about keys. The SET is
+    // the claim (the guide names every key the reader answers to); the sentence beside each one is
+    // prose and is not pinned here.
+    await expect(keys.locator('.kbd')).toHaveText(['← →', '↑ ↓', 'PgUp / PgDn', 'Esc', 'r'])
+    await expect(keys).toContainText('walk')
+    await expect(keys).toContainText('change requirement')
   })
 
   // THE CHIPS — one per cell, the value only (design C, the human 2026-09-02/03: "every text once").
@@ -2078,107 +2224,16 @@ test('The proof plays itself — step is the default, no dots/counter/toggle, th
       .toHaveCount(claims.length)
     await hudCheck('the beat’s result is a checklist', claims.length + ' fact(s)',
       (await row.locator('.sbproof .pchip .pcvr').count()) + ' fact(s)')
+    // …AND THE FOURTH FACT, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): the context row claims
+    // nothing, so it carries no chip at all. `proveVisible(…, MISSING, …)` passes exactly while the
+    // chip is gone and fails, with the chip's own words as `got`, the moment one appears.
+    await proveVisible(ov.locator('.fread .fstory .sbwrap .sbrow').first().locator('.pchip'), MISSING,
+      'A moment that claimed nothing carries no chip at all', { soft: true })
     // …and the derived failure goes back where it came from: the fixture is a DOM attribute on the
     // reader, not a change to the tree, but leaving it armed would hand the next test a board whose
     // one claim reads red
     await armClaim(dt, cs!.rid, null)
   })
-
-})
-
-// Board R23 — A FAILED MOMENT NAMES ITS DIFFERENCE (phase 5 of the Expected View plan the human
-// accepted 2026-09-03). Two pictures side by side leave a reader to FIND the difference in two
-// places at once; a failed moment says it in words, once, on the seam.
-//
-// (The requirement's second half — a LOUPE magnifying the ringed element on both sides — was removed
-// by the human on 2026-09-04, "the row of loupe · the ringed element is useless", and its beat is
-// deleted with it rather than left asserting something the board no longer builds.)
-//
-// The board's own suite passes, so nothing here is red on its own: the failed moment is DERIVED from
-// the real harvest by rewriting what the run recorded as the OUTCOME (armClaim), which is the same
-// established fixture technique R18's stale-banner leg and R20's honest-blank leg already use. The
-// frames, the layouts and the replicas stay exactly as the run took them, and the fixture is
-// restored at the end of the test — in a finally, so a mid-test failure cannot leave it armed.
-test('A failed moment names its difference', async ({ page }) => {
-  await coverReqs('R23')
-  await openDetail(page)
-  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  const ov = dt.locator('.focusov')
-  const cs = claimSpecimen()
-  expect(cs, 'a board beat whose harvest carries a claim to fail').toBeTruthy()
-  const rid = cs!.rid
-  const other = rid === 'R2' ? 'R3' : 'R2'
-  const rowOf = () => ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
-
-  // THE DIFFERENCE MARKER. One label across the two cells naming both values, one per failed claim;
-  // and NONE on a row that claimed nothing at all.
-  try {
-    await checkReq('R23', async () => {
-      await armFocus(dt, rid)
-      const wrote = await armClaim(dt, rid, 'not this')
-      expect(wrote, 'the fixture rewrote a real claim as failed').toBeTruthy()
-      await page.goto('/#/board/' + other)
-      await page.goto('/#/board/' + rid)
-      await expect(ov.locator('.fread .frmeta .fid')).toHaveText(rid)
-      const row = rowOf()
-      await reveal(row)
-      const marks = row.locator('.pics .mdiff')
-      await expect(marks, 'exactly one marker for the one failed claim').toHaveCount(1)
-      const said = plain(await marks.first().innerText())
-      expect(said, 'the marker names what was expected').toContain(plain(wrote!.expected))
-      expect(said, '…and what the app actually gave').toContain(plain(wrote!.got))
-      // the fact, CLAIMED (the authored-intent lint, phase 6): ONE marker, naming BOTH values — the
-      // expected comes from the fold's own record and the got from the fixture that failed it
-      await proveVisible(marks.first(), plain(wrote!.expected) + ' · ' + plain(wrote!.got),
-        'The one marker, naming both values',
-        { match: (shown: string) => plain(shown).includes(plain(wrote!.expected)) && plain(shown).includes(plain(wrote!.got)),
-          soft: true })
-      // it spans the SEAM — one label about a relation, not one per cell
-      const seam = await row.evaluate(el => {
-        const p = el.querySelector('.pics') as HTMLElement
-        const m = p.querySelector('.mdiff') as HTMLElement
-        const a = p.getBoundingClientRect(); const b = m.getBoundingClientRect()
-        return { mid: (b.left + b.right) / 2 - a.left, half: a.width / 2, top: b.top - a.top, h: a.height }
-      })
-      expect(Math.abs(seam.mid - seam.half), 'the marker sits on the seam between the cells').toBeLessThan(8)
-      expect(seam.top >= -1 && seam.top <= seam.h, 'and inside the pictures it is about').toBe(true)
-      // …AND NONE WHERE NOTHING FAILED. The Given row is the context row — it rings nothing and claims
-      // nothing — so it carries no marker at all: a label that appeared on every moment would say
-      // "difference" where there is none, which is the opposite of what it is for.
-      const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
-      await expect(given.locator('.mdiff'), 'the context row claims nothing, so it differs in nothing')
-        .toHaveCount(0)
-      await hudCheck('a failed moment names its difference', '1 marker', (await marks.count()) + ' marker')
-    })
-  } finally {
-    // the fixture is the READER's, not the tree's — it rewrites one DOM attribute and a reload clears
-    // it — but it is restored anyway so nothing downstream in this file reads a row this test
-    // rewrote, and in a `finally` so a mid-test failure cannot leave it armed (2026-09-04: the
-    // comment above promised a finally the code did not have).
-    await armClaim(dt, rid, null)
-    await page.goto('/#/board/' + other)
-  }
-})
-
-// Board R20, second half — AUTO ↔ STEP, and a PER-BEAT WALK (the human, 2026-08-30: "the go to next
-// small step can NOT be on top as there could be multi when/then, so the go to next small step need to
-// be by each when/then, and show in more appealing way ... please be user friendly and creative").
-// REWRITTEN 2026-09-01, rule 4 with the human's decision as the reason: the labelled bead FILMSTRIP
-// (ec62a1d's .scenerail / .srbeads) was REJECTED at a live mock; the human approved a GUIDED-TOUR
-// control in its place — one quiet line `‹  n / N  ›` in each beat row's behaviour gutter, a product
-// tour's stepper. No bordered box, no dots, no per-scene labels. The prev chevron dims at scene 1; the
-// next chevron is faintly accented and, at the LAST scene, becomes a restart ↺ that wraps to scene 1.
-// So this proves the tour control — its › walks BOTH cells of ITS row, prev is dim at the start, next
-// wraps to Restart at the end, the ← → keys walk the row the reader is on, the top bar has NO advance,
-// and a proof click is a proof again (opens the lightbox in every mode). The old rail is gone: no
-// .scenerail, no .srbeads. The loop stays the DEFAULT (the first R20 test proves it runs untouched).
-test('The proof is walked by a per-beat guided-tour stepper and the keys — and a proof click zooms again', async ({ page }) => {
-  await coverReqs('R20')
-  await openDetail(page)
-  const dt = page.locator('.dt[data-screen="board"]:not([hidden])')
-  const ov = dt.locator('.focusov')
-  const spec = replicaSpecimens()[0]
-  expect(spec, 'a board requirement harvested with a beat pair').toBeTruthy()
 
   // THE CONTROLS RIDE THE TITLE ROW (the human, 2026-09-02), and have NO advance — only the auto/step
   // toggle and the speed <select>. The walk is on the rows. And STEP is the default now.
@@ -2192,25 +2247,16 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect(ov.locator('.fread > .fbar')).toHaveCount(0)                 // no separate bar beneath the title
     await expect(bar.locator('.medbar.pmode button')).toHaveText(['auto', 'step'])
     await expect(bar.locator('.medbar.pmode button.on')).toHaveText('step')   // STEP is the default now
+    // the fact, CLAIMED (the authored-intent lint, phase 6; moved here with the blocks' reorder,
+    // 2026-09-04): the reader OPENS in step, each beat held on its first scene, and the pair that
+    // says so rides the requirement's own title row
+    await proveVisible(bar.locator('.medbar.pmode button.on'), 'step',
+      'The reader, opened in step — every beat held on its first scene', { soft: true })
     await expect(bar.locator('.medbar.pstep')).toHaveCount(0)                 // the top-bar walker is GONE
     await expect(bar.locator('.medbar')).toHaveCount(1)                       // mode only; speed is a <select>
     await expect(bar.locator('.mstrip')).toHaveCount(0)                       // the stepper is per-ROW, never on the bar
     await expect(ov.locator('.fread .tourstep')).toHaveCount(0)               // and the retired gutter tour is gone
     await expect(bar.locator('select.pspd')).toBeDisabled()                   // speed is auto-only
-  })
-
-  // THE REJECTED RAIL IS GONE (rule 4, the R8 assert-the-gone precedent): the labelled bead filmstrip
-  // that ec62a1d shipped — .scenerail with its .srbeads — is nowhere in the reader.
-  await checkReq('R20', async () => {
-    await expect(ov.locator('.fread .scenerail')).toHaveCount(0)
-    await expect(ov.locator('.fread .srbeads')).toHaveCount(0)
-    await expect(ov.locator('.fread .srbead')).toHaveCount(0)
-    await expect(ov.locator('.fread .srnext')).toHaveCount(0)
-    // …and the POSITIVE half beside the four absences (rule 2, and the standing "assert a positive
-    // outcome" rule): what stands where the rejected rail would have is the reader's own mode pair,
-    // and it reads step. Four toHaveCount(0)s alone would pass on a reader that rendered nothing.
-    await expect(ov.locator('.fread .frmeta .frtools .medbar.pmode button.on')).toHaveText('step')
-    await hudCheck('the rejected bead rail is gone', '0 .scenerail', (await ov.locator('.fread .scenerail').count()) + ' .scenerail')
   })
 
   // THE ROW'S ONE STEPPER steps BOTH pictures of ITS row in lock-step, names each moment, tracks the
@@ -2219,6 +2265,10 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
   // into step first. (Rewritten 2026-09-02, rule 4, with the human's decision as the reason: the
   // gutter's ‹ n / N › read as if it belonged to the sentence and left the pictures looking like two
   // players — "schematic and proof should share same stepper (as their steps must be same???)".)
+  //
+  // THE KEYS, ON TWO AXES (the human, 2026-09-02): ← → walk the SELECTED beat ONLY, ↑ ↓ change which
+  // when/then is selected — the arrows never move every row at once. And a proof click opens the
+  // lightbox.
   await checkReq('R20', async () => {
     const row = ov.locator('.fread .fstory .sbwrap .sbrow').nth(1)
     const tour = row.locator('.mstrip')
@@ -2269,10 +2319,6 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     // STEP IS THE DEFAULT: the reader opens held on scene 1, so prev is already disabled — a known
     // deterministic start with no click into step needed.
     await expect(mode.locator('button.on'), 'step is the default').toHaveText('step')
-    // the fact, CLAIMED (the authored-intent lint, phase 6): the reader OPENS in step, each beat
-    // held on its first scene — the mode pair on the requirement's own title row says which
-    await proveVisible(mode.locator('button.on'), 'step',
-      'The reader, opened in step — every beat held on its first scene', { soft: true })
     await expect(pos).toHaveText('1 / ' + N)
     await expect(prev, 'prev dims/disables at the start').toBeDisabled()
     const before = await posN()
@@ -2305,12 +2351,7 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await expect.poll(phOf, { timeout: 8000 }).toBe(sub[0])
     await expect(nextb).toHaveText('›')                                       // and back to the next chevron
     await hudCheck('the tour restarts at the end', 'scene 1', 'scene ' + (await posN()))
-  })
 
-  // THE KEYS, ON TWO AXES (the human, 2026-09-02): ← → walk the SELECTED beat ONLY, ↑ ↓ change which
-  // when/then is selected — the arrows never move every row at once. And a proof click opens the
-  // lightbox.
-  await checkReq('R20', async () => {
     // a requirement with SEVERAL WALKABLE beats, so the arrows can be shown to move ONE row and leave
     // the others still. Chosen from the harvest rather than hard-coded (2026-09-03): a row is walkable
     // where the run harvested that beat, and board R4's own test proves beat 1 alone — it has three
@@ -2433,29 +2474,21 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
     await tools.locator('select.pspd').selectOption('1')
   })
 
-  // THE SHORTCUTS ARE SAID ONCE, AND NOT IN THE READER (the human, 2026-09-02: "remove the short
-  // cut key hint in this page, only mention in the setting page"). R20's prose used to end "the
-  // keyboard hint is said once in the reader's footer"; the human moved it off the reading surface
-  // altogether, so this leg asserts BOTH halves of that move — nothing in the reader (its rows, its
-  // card, its pager footer) names a key, and the guide lists every key the reader answers to.
-  // The KEYS themselves are untouched — the legs above still walk, select and page with them.
+  // the GIVEN row is a STATE, not an action: one frame, so nothing to loop and nothing to step — and
+  // now UNCAPTIONED (the human, 2026-09-02: the "given" label row is gone)
   await checkReq('R20', async () => {
-    await page.goto('/#/board/' + spec.rid)
-    await expect(ov.locator('.fread .frmeta .fid')).toHaveText(spec.rid)
-    await expect(dt.locator('.dtfoot .fpk'), 'the footer legend is gone').toHaveCount(0)
-    await expect(dt.locator('.dtfoot')).not.toContainText('PgUp')
-    await expect(ov.locator('.fread .kbd'), 'and nothing inside the reader names a key').toHaveCount(0)
-    // …the guide is where they live now: one Keyboard section, every key the reader answers to
-    await page.goto('/#howitworks')
-    const keys = page.locator('#howview .howkeys')
-    await expect(keys).toBeVisible()
-    await expect(keys.locator('.sect-head .lbl')).toHaveText('keyboard')
-    // each key is a .kbd chip — the system's keyboard component, not prose about keys. The SET is
-    // the claim (the guide names every key the reader answers to); the sentence beside each one is
-    // prose and is not pinned here.
-    await expect(keys.locator('.kbd')).toHaveText(['← →', '↑ ↓', 'PgUp / PgDn', 'Esc', 'r'])
-    await expect(keys).toContainText('walk')
-    await expect(keys).toContainText('change requirement')
+    const given = ov.locator('.fread .fstory .sbwrap .sbrow').first()
+    await reveal(given.locator('.sbproof'))
+    await expect(given.locator('.sbproof .pcplay')).toHaveCount(0)
+    await expect(given.locator('.sbproof .fsteps-wrap')).toHaveCount(0)
+    await expect(given.locator('.sbproof .pcstrip .pcfig img')).toHaveCount(1)   // the one still
+    await expect(given.locator('.sbproof .pccap')).toHaveCount(0)                // no caption — a plain still
+    await expect(given.locator('.sbproof .pdots')).toHaveCount(0)
+    // the fact, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): the one frame stays PLAIN — no
+    // caption over it. A claim that reads MISSING passes exactly while there is none and fails, with
+    // the caption's own words, the moment one is added.
+    await proveVisible(given.locator('.sbproof .pccap'), MISSING,
+      'The context row\'s one frame, uncaptioned', { soft: true })
   })
 })
 
@@ -2521,6 +2554,11 @@ test('The reader reads behaviour first — one fixed order, and no control to ch
     await expect(ov.locator('.fread .medbar')).toHaveCount(1)
     await expect(ov.locator('.fread .medbar.pmode')).toHaveCount(1)
     await expect(ov.locator('.fread .medbar.pstep')).toHaveCount(0)
+    // the second fact, CLAIMED AS AN ABSENCE (fix round 1, 2026-09-04): there is no control to
+    // change the order. MISSING passes exactly while the order pair is gone and fails, naming it,
+    // the moment one comes back.
+    await proveVisible(ov.locator('.fread .medbar.pstep'), MISSING,
+      'No control to change the order', { soft: true })
     // the CONTROL, not the word: R21's own prose still describes the toggle it used to have, and the
     // prose is the human's to reword (rule 5). So the ban is on the reader's control group (now on the
     // title row, board R20's 2026-09-02 move).
@@ -2734,6 +2772,10 @@ test('The proof is scannable as frames — one still per checked value, cut from
   // R1 is covered by exactly ONE test, so it is both the primary flow the default Focus page (R1)
   // embeds AND a row of the hidden baked pane — the two places the stubbed frames must appear.
   await checkReq('R14', async () => {
+    intentGap('the run\'s cut frames live on the test row in the HIDDEN baked pane and in the Steps ' +
+      'window since the proof band was removed (2026-09-02); there is no visible surface on the board ' +
+      'to read "one frame per checked value, its got-vs-expected" off, and a claim on a hidden node ' +
+      'rings nothing')
     // A run's record carries proof FRAMES — one still per checked value, cut from the recording at the
     // instant the check fired, each with its got-vs-expected (red on a failure). Stub a record that has
     // frames and drive it through the REAL client pipeline (the extraction that produces them is real

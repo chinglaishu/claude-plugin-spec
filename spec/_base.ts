@@ -796,7 +796,16 @@ export async function proveVisible (
   const present = (await target.first().count().catch(() => 0)) > 0
   const shown = present ? await shownText(target) : MISSING
   await hudCheck(label, expected, shown, { assert: false, missing: !present }) // paint the CLAIM now, but DON'T throw yet — assert LAST, below
-  const ok = present && (opts.match ? !!opts.match(shown) : shown === expected)
+  // AN ABSENCE IS A VALUE A REQUIREMENT CAN NAME (2026-09-04, the controller's fix-round ruling).
+  // `MISSING` existed for the other direction — a thing the app should show and does not — and this
+  // read `present &&`, so `proveVisible(x, MISSING, …)` could never pass: a Then that says "no chip
+  // at all", "there is no control to change it", "no per-cell caption" had no claim it could make.
+  // Now expected === MISSING passes exactly when the element is gone and fails, with the app's own
+  // text as `got`, the moment it is back. There is nothing to ring, so the frame is the page — which
+  // is the honest picture of nothing being there (paintFocus already leaves the overlay hidden).
+  const ok = present
+    ? (opts.match ? !!opts.match(shown) : shown === expected)
+    : expected === MISSING
   // …AND THE CLAIM MUST SAY WHAT THE ASSERTION SAYS (fix round 4, found while verifying the Expected
   // on real data). `hudCheck` can only compare two strings, so a check carrying its OWN `match`
   // predicate — the demo's R8, "a completed stamp survived the reload", expected "done" against a
@@ -832,6 +841,22 @@ export async function proveVisible (
   }
   if (opts.match) expect(ok, `${label}: on-screen "${shown}" vs expected "${expected}"`).toBe(true)
   else expect(shown, `${label} — the value read off the screen`).toBe(expected)
+}
+
+// A DECLARED INTENT GAP (2026-09-04, the controller's fix-round ruling). Some facts a Then names
+// have NO screen surface at all: a beat that drives the server with no page open, a geometric
+// relation between two cells, what `npm run proof mirror` refuses, a surface that lives only on the
+// hidden baked pane. `npm run proof lint` refuses a Then fact no claim covers — and the honest
+// answer for those is not a claim nobody can make, nor silence: it is a line IN THE BEAT saying why
+// there is nothing to read. The lint reads it statically (like `checkReq`), prints the row as
+// DECLARED with the reason, and does not fail the exit code for it — a visible debt, never a pass.
+// It is REFUSED on a fact that names an ABSENCE ("there is no control", "carries no chip"): those
+// are claimable with `proveVisible(locator, MISSING, …)` and must be claimed.
+//
+// A no-op at run time on purpose: it says something about the beat to a reader and to the lint, and
+// nothing at all to the app.
+export function intentGap (why: string): void {
+  void why
 }
 
 // A STORY STEP (board R10): one numbered sentence of what a user does and what should happen —

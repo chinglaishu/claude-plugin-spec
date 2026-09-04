@@ -182,8 +182,17 @@ way. Read it before writing your first one.
    - **Claim on the surface a person reads.** A claim on a hidden node — a baked source row, a folded
      pane — rings nothing, so the frame is the whole page and the picture proves nothing. If a fact
      is only true on a hidden surface, say so; do not photograph a page and call it a proof.
+   - **An ABSENCE is claimed, not declared:** `proveVisible(locator, MISSING, label, { soft: true })`
+     passes exactly while the thing is gone and fails, with the app's own text as `got`, the moment it
+     is back. There is no ring, so the frame is the page — the honest picture of nothing being there.
+     Keep the `toHaveCount(0)` beside it; the claim is what photographs the absence.
+   - **A fact with NO screen surface is DECLARED, never silent:** one line in the beat,
+     `intentGap('<why this fact has no screen surface>')` — a beat that drives the server with no page
+     open, a geometry, what the CLI gate refuses, a surface that lives only on a hidden pane. The lint
+     prints it as `DECLARED` with your reason and does not fail on it: **a visible debt, never a pass**,
+     and it is refused on a fact that names an absence (that one is claimable).
    - **Never edit the Then to fit the test** (CLAUDE.md rule 5 — meaning is the human's), and never
-     invent a claim for a fact the screen cannot show. Leave that one red and report it.
+     invent a claim for a fact the screen cannot show.
 7. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal
    (`fontSize >= 19` because the title token happens to be 19px today) is really asserting the
    design system's *current arithmetic*, and it breaks the day the system rescales while the

@@ -354,6 +354,18 @@ export function splitFacts (then) {
   return facts.length ? facts : [text]
 }
 
+// AN ABSENCE FACT — one a `proveVisible(locator, MISSING, …)` claim can close (fix round 1,
+// 2026-09-04). The controller's vocabulary is gone/absent/no longer/never/not shown/disappears/
+// removed; it is matched HERE as the fact's own SUBJECT rather than as any use of the word, because
+// a bare word list reads "accepted, never refused or queued" (a fact about a decision, on a beat
+// with no page at all) as a claimable absence and refuses the very declaration this exists for.
+// So: a fact that OPENS with no/none/nothing/never, or says of a thing that it is gone, absent, no
+// longer there, not shown, removed, nowhere — or that something carries/shows/has NO x.
+const ABSENCE = /(^\s*(no|none|nothing|never)\b)|\b(there (is|are) no|carries no|shows no|has no|holds no|with no|is gone|are gone|is absent|are absent|no longer|not shown|disappears?|is removed|are removed|nowhere)\b/i
+export function isAbsenceFact (fact) {
+  return ABSENCE.test(String(fact || ''))
+}
+
 // THE BEAT'S CLAIMS. The beat-function convention (kg-e2e) keeps the checkReq AROUND a call into
 // spec/<screen>/steps.ts, so the claims a beat makes are usually not in the block's own body — they
 // are in the step function it calls. Counting only what the block literally contains would flag the
@@ -404,9 +416,20 @@ export function stripComments (src) {
   return String(src || '').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, '')
 }
 const countOf = (text, re) => (String(text).match(re) || []).length
+// the DECLARED reason a beat carries, if any: `intentGap('…')` (spec/_base.ts, a run-time no-op).
+// Read out of the code the same way the claims are, comments stripped first.
+const DECLARED = /intentGap\s*\(\s*(['"`])([\s\S]*?)\1\s*\)/
+export function declaredIn (body) {
+  const m = DECLARED.exec(stripComments(body))
+  return m ? String(m[2]).replace(/\s+/g, ' ').trim() : ''
+}
 export function claimsIn (body) {
   const code = stripComments(body)
-  return { claims: countOf(code, /proveVisible\s*\(/g), soft: countOf(code, /soft\s*:\s*true/g) }
+  return {
+    claims: countOf(code, /proveVisible\s*\(/g),
+    soft: countOf(code, /soft\s*:\s*true/g),
+    declared: declaredIn(code)
+  }
 }
 
 // WHICH BEAT A checkReq BLOCK PROVES — the BEAT_CURSOR rule, read statically. spec/_base.ts counts
@@ -470,6 +493,30 @@ export function lintIntent (prdText, specSource, opts = {}) {
       // every fact; the row reports the one that does, else the fullest of them
       const scored = here.map(b => ({ ...b, gap: gapWhy(facts.length, b.claims, b.soft) }))
       const best = scored.find(b => !b.gap) || scored.slice().sort((a, b) => b.claims - a.claims)[0]
+      // A DECLARED GAP (fix round 1): the beat says IN ITSELF why the fact has no screen surface.
+      // Printed as its own row with the reason and NOT counted against the exit code — a visible
+      // debt, never a pass. Refused where the Then names an ABSENCE: that one is claimable with
+      // `proveVisible(locator, MISSING, …)`, and a declaration there would be a way of not writing
+      // the claim.
+      const declared = scored.map(b => b.declared).find(Boolean) || ''
+      const absent = facts.filter(isAbsenceFact)
+      if (best.gap && declared && absent.length) {
+        rows.push({
+          screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
+          ok: false, state: 'gap', declared, line: best.line,
+          why: best.gap + `; and its declaration is refused — "${absent[0].slice(0, 60)}" names an ` +
+            'absence, which is claimable: proveVisible(locator, MISSING, label, { soft: true }) passes ' +
+            'exactly while the thing is gone'
+        })
+        return
+      }
+      if (best.gap && declared) {
+        rows.push({
+          screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
+          ok: true, state: 'declared', why: declared, declared, line: best.line
+        })
+        return
+      }
       rows.push({
         screen, id: r.id, beat: n, facts: facts.length, claims: best.claims, soft: best.soft,
         ok: !best.gap, state: best.gap ? 'gap' : 'ok', why: best.gap || '', line: best.line
@@ -529,8 +576,9 @@ function runLint () {
         continue
       }
       if (!row.ok) anyGap = true
-      console.log(`${screen} · ${row.id} · beat ${row.beat} · ${row.facts} facts · ${row.claims} claims (${row.soft} soft) · ${row.ok ? 'ok' : 'INTENT-GAP'}`)
-      if (!row.ok) console.log(`    ${row.why}`)
+      const verdict = row.state === 'declared' ? 'DECLARED' : (row.ok ? 'ok' : 'INTENT-GAP')
+      console.log(`${screen} · ${row.id} · beat ${row.beat} · ${row.facts} facts · ${row.claims} claims (${row.soft} soft) · ${verdict}`)
+      if (row.state !== 'ok') console.log(`    ${row.why}`)
     }
   }
   if (anyGap) {
@@ -538,7 +586,11 @@ function runLint () {
     console.log("proveVisible(target, expected, label, { soft: true }) — so the beat reaches and photographs")
     console.log('every one of them and fails once at its end with the whole list. Add the missing claim on the')
     console.log('very element the Then names; never edit the Then to fit the test (rule 5 — meaning is the')
-    console.log("human's), and never drop a fact that cannot be read off the screen: leave it red and say so.")
+    console.log("human's), and never drop a fact that cannot be read off the screen: DECLARE it —")
+    console.log("intentGap('<why this fact has no screen surface>') in the beat — which prints as DECLARED")
+    console.log('and is a visible debt, never a pass. A fact that names an ABSENCE is claimable and may not')
+    console.log('be declared: proveVisible(locator, MISSING, label, { soft: true }) passes exactly while the')
+    console.log('thing is gone and fails, with the app\'s own text, the moment it is back.')
   }
   process.exit(anyBad || anyGap ? 1 : 0)
 }
