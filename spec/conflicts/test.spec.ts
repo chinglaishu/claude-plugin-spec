@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, proveVisible } from '../_base'
+import { test, expect, checkReq, coverReqs, proveVisible, MISSING } from '../_base'
 import { writeFileSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -73,6 +73,13 @@ test('R1 — a conflict card is one fact stated two incompatible ways', async ({
     // (the authored-intent lint, phase 6).
     await proveVisible(card.locator('header .sub'), WIDTH.subject,
       'The one fact the two sides state incompatibly', { soft: true })
+    // …and the two facts the rest of the Then names — "never a gap, a TODO or a missing test".
+    // What makes this a CONFLICT and not one of those three is on the card: a SECOND sourced
+    // position (a gap or a missing test has only one side) and a stated impact (a TODO has none).
+    await proveVisible(card.locator('.side .src').nth(1), WIDTH.b.source,
+      'A second sourced position — what a gap or a missing test would not have', { soft: true })
+    await proveVisible(card.locator('header .imp'), WIDTH.impact,
+      'The impact of the two standing together — what a TODO would not carry', { soft: true })
   })
 })
 
@@ -92,6 +99,12 @@ test('R2 — both positions are shown in full, each naming where it came from', 
     // the fact the Then names, claimed: the first position, IN FULL, under the source it came from
     await proveVisible(card.locator('.side', { hasText: WIDTH.a.source }).locator('.quote'),
       WIDTH.a.quote, 'The first position, in full', { soft: true })
+    // …SIDE BY SIDE: the second position is on the same card, in full, and NAMES its screen and
+    // requirement — the Then's other two facts, each read off the element that carries it.
+    await proveVisible(card.locator('.side', { hasText: WIDTH.b.source }).locator('.quote'),
+      WIDTH.b.quote, 'The second position beside it, in full', { soft: true })
+    await proveVisible(card.locator('.side', { hasText: WIDTH.b.source }).locator('.src'),
+      WIDTH.b.source, 'The screen and requirement it came from', { soft: true })
   })
 })
 
@@ -103,6 +116,12 @@ test('R3 — the tool never picks: resolving is refused until you choose a side'
   await checkReq('R3', async () => {
     await expect(card.locator('[data-resolve]')).toBeDisabled()
     expect(decisions()).toEqual({})
+    // THE TOOL NEVER PICKS FOR YOU — the Then's second fact, claimed where it is true: on arrival
+    // NO side is picked. `MISSING` passes exactly while nothing carries the picked mark and fails,
+    // with the app's own text, the moment the tool chooses one for you (phase 6: an absence is
+    // claimed, never covered by a neighbour's positive fact).
+    await proveVisible(card.locator('.side.picked'), MISSING,
+      'No side picked — the tool chose none for you', { soft: true })
 
     await card.locator('.side', { hasText: WIDTH.b.source }).click()
     await expect(card.locator('[data-resolve]')).toBeEnabled()
@@ -133,6 +152,17 @@ test('R4 — resolving records which side lost, stays on Open, and offers the re
     await expect(page.locator('#cfview .cf', { hasText: ROW.subject })).toBeVisible()
     // …and the card left QUIETLY, with a toast naming what was settled
     await expect(page.locator('.toast')).toContainText(WIDTH.subject)
+    // …and the three facts that are true HERE, on the Open list, claimed before anything moves:
+    // the toast that names what was settled, the card gone from Open, and the tab you are still
+    // standing on. (The toast is a body-level fixed overlay; since the scene root's own subtree
+    // decides what a replica must contain — phase 6 fix round 2 — a picture taken while it is up
+    // is no longer read as a component missing a word.)
+    await proveVisible(page.locator('.toast'), WIDTH.subject, 'The toast, naming what was settled',
+      { soft: true, match: s => s.includes(WIDTH.subject) })
+    await proveVisible(page.locator('#cfview .cf', { hasText: WIDTH.subject }), MISSING,
+      'The settled card, gone from Open', { soft: true })
+    await proveVisible(page.locator('#cfseg button.on'), 'Open 1',
+      'Still standing on Open, the next conflict in reach', { soft: true })
 
     const rec = Object.values(decisions())[0] as any
     expect(rec.canon).toBe('a')
@@ -192,6 +222,20 @@ test('R5 — a decision survives a rescan that reorders and swaps the sides', as
     // the fact, claimed: the settled row is still the SAME subject after a rescan that renamed it
     await proveVisible(view.locator('.srow', { hasText: WIDTH.subject }).locator('.w'),
       WIDTH.subject, 'Still settled, after a rescan gave it a new id', { soft: true })
+    // KEYED BY ITS CONTENT, NOT ITS POSITION: the decision the settled row carries is the one made
+    // before the rescan (the winning file), while the finding itself now sits second in a file that
+    // renamed it…
+    await proveVisible(view.locator('.srow', { hasText: WIDTH.subject }).locator('.gbn'),
+      'spec/board/prd.md won', 'The decision itself, still on the row it was made about',
+      { soft: true, match: s => s.startsWith('spec/board/prd.md won') })
+    // …and it DOES NOT REAPPEAR ON OPEN — an absence, claimed: `MISSING` passes exactly while the
+    // card is not back, and fails with the app's own text the moment a rescan resurrects it.
+    await proveVisible(view.locator('.cf', { hasText: WIDTH.subject }), MISSING,
+      'Not back on Open after the rescan', { soft: true })
+    // NOT ITS POSITION: the rescan wrote this finding second and gave it a new id, so what is left
+    // standing on Open is the OTHER one — the list moved underneath a decision that did not.
+    await proveVisible(view.locator('.cf .sub'), ROW.subject,
+      'The list reordered around it — the one still open is the other finding', { soft: true })
   })
 
   await page.screenshot({ path: 'spec/conflicts/screen.png', fullPage: false })
@@ -204,8 +248,28 @@ test('R5 — undo puts a settled conflict back, and the scanner is never asked t
   await card.locator('.side', { hasText: WIDTH.a.source }).click()
   await card.locator('[data-resolve]').click()
 
-  await page.locator('#cfseg button[data-cf="settled"]').click()   // resolving stays on Open (R4)
+  // BEAT 1 FIRST, in the test that goes on to undo it (phase 6 fix round 2). `checkReq`'s cursor
+  // files the k-th call under beat k, so this test's single block — which is about UNDO — was
+  // landing on beat 1 and overwriting the resolve's harvest with two of that beat's five facts.
+  // The resolve this test performs IS beat 1, so it is proven here as well, and the undo below
+  // becomes beat 2 — which had no proof at all until now.
   const settled = page.locator('#cfview .srow', { hasText: WIDTH.subject })
+  await checkReq('R4', async () => {
+    await expect(page.locator('#cfseg button[data-cf="settled"]')).toContainText('Settled 1')
+    await proveVisible(page.locator('.toast'), WIDTH.subject, 'The toast, naming what was settled',
+      { soft: true, match: t => t.includes(WIDTH.subject) })
+    await proveVisible(page.locator('#cfview .cf', { hasText: WIDTH.subject }), MISSING,
+      'The settled card, gone from Open', { soft: true })
+    await proveVisible(page.locator('#cfseg button.on'), 'Open 0',
+      'Still standing on Open, where you pressed Resolve', { soft: true })
+    await proveVisible(page.locator('#cfseg button[data-cf="settled"]'), 'Settled 1',
+      'The Settled count, ticked up', { soft: true })
+    await page.locator('#cfseg button[data-cf="settled"]').click()
+    await proveVisible(settled.locator('[data-rewrite]'), 'Rewrite spec/init/prd.md',
+      'The rewrite of the losing file, offered', { soft: true })
+  })
+
+  await page.locator('#cfseg button[data-cf="settled"]').click()   // resolving stays on Open (R4)
   await expect(settled).toBeVisible()
   await settled.locator('[data-undo]').click()
 

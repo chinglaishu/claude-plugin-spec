@@ -713,9 +713,11 @@ test('a requirement with more blocks than beats is a beat-mismatch that fails th
   assert.match(mism.why, /3 blocks, 2 beats/)
 })
 
-test('…and two tests walking DIFFERENT numbers of its beats is the same defect (I1)', () => {
-  // board R20's shape: one test proves beat 1 only, another walks all of them — and both write
-  // R20.b1.*, so which pictures the beat-1 row shows is decided by which test ran last.
+test('…while a second test proving FEWER of its beats is NOT a mismatch (I1)', () => {
+  // board R10 is proven by five tests, dispatch R5 by a unit and a flow: a test that walks beat 1
+  // and stops is the many-to-many coverage the board is built on, not a defect. What catches the
+  // real version — a block that harvests a beat without covering it (board R20's seventh) — is the
+  // WORST-block scoring below, on that beat's own row.
   const spec = [
     "test('one', async ({ page }) => {",
     "  await checkReq('R1', async () => { await proveVisible(a, '4', 'To do', { soft: true }) })",
@@ -725,9 +727,9 @@ test('…and two tests walking DIFFERENT numbers of its beats is the same defect
     "  await checkReq('R1', async () => { await proveVisible(a, 'done', 'The container', { soft: true }) })",
     "})"
   ].join('\n')
-  const mism = lintIntent(PRD_TWO_BEATS, spec).find(r => r.state === 'beat-mismatch')
-  assert.ok(mism)
-  assert.match(mism.why, /3 blocks, 2 beats/)
+  const rows = lintIntent(PRD_TWO_BEATS, spec)
+  assert.equal(rows.some(r => r.state === 'beat-mismatch'), false)
+  assert.equal(rows.every(r => r.ok), true, 'and both blocks cover the beat they harvest')
 })
 
 test('…while two tests that each walk the SAME beats are not a mismatch (I1)', () => {

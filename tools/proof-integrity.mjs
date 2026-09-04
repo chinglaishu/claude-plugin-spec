@@ -419,18 +419,28 @@ function skipWs (text, i) {
     return i
   }
 }
-// walk from an opening bracket to its match, stepping over strings and template literals
+// walk from an opening bracket to its match, stepping over strings, template literals AND COMMENTS.
+// The comments are not a nicety: `// … see the unit test's note` opens a string that runs to the
+// next apostrophe in the file, and the balance then ends in the wrong place — which is how
+// `draftedRowBecomesCard` (init R3's whole beat) read as having no body at all, and its beat as
+// having no claims (found while completing init's claims, 2026-09-04).
 function matchBracket (text, start) {
   const OPEN = { '(': ')', '[': ']', '{': '}' }
   const stack = [OPEN[text[start]]]
   for (let i = start + 1; i < text.length; i++) {
     const c = text[i]
     if (c === '\\') { i++; continue }
+    if (c === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) { i = endOfComment(text, i); continue }
     if (c === "'" || c === '"' || c === '`') { i = endOfString(text, i); continue }
     if (OPEN[c]) { stack.push(OPEN[c]); continue }
     if (c === stack[stack.length - 1]) { stack.pop(); if (!stack.length) return i }
   }
   return -1
+}
+function endOfComment (text, start) {
+  if (text[start + 1] === '/') { const nl = text.indexOf('\n', start); return nl === -1 ? text.length : nl }
+  const e = text.indexOf('*/', start + 2)
+  return e === -1 ? text.length : e + 1
 }
 function endOfString (text, start) {
   const q = text[start]
@@ -447,6 +457,7 @@ function expressionEnd (text, start) {
   for (let i = start; i < text.length; i++) {
     const c = text[i]
     if (c === '\\') { i++; continue }
+    if (c === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) { i = endOfComment(text, i); continue }
     if (c === "'" || c === '"' || c === '`') { i = endOfString(text, i); continue }
     if (c === '(' || c === '[' || c === '{') { depth++; continue }
     if (c === ')' || c === ']' || c === '}') { if (depth === 0) return i; depth--; continue }
@@ -626,29 +637,28 @@ export function lintIntent (prdText, specSource, opts = {}) {
     // the last, the cursor resetting per test. So a requirement whose blocks do not WALK its beats
     // hands a beat's pictures to a sentence they are not about: board R20 carried seven blocks for
     // six beats, and its beat-1 row showed the harvest of a block in another test entirely.
-    // Two shapes are a mismatch, and both fail:
-    //   · a test with MORE blocks than the requirement has beats — the extras clamp onto the last
-    //     beat and photograph it while being about something else;
-    //   · two tests that walk DIFFERENT numbers of its beats — the shorter walk's blocks land on
-    //     beats the longer one proves in full, and which pictures survive is decided by which test
-    //     ran last.
-    // Two tests that each walk the SAME beats are NOT a mismatch: that is the many-to-many coverage
-    // the board is built on (a unit and a flow proving the same sentence), and both agree about
-    // what beat k is.
+    // The count-level defect is CLAMPING: a test with more blocks for a requirement than it has
+    // beats. Every block past the last one is filed under the last beat while being about something
+    // else, and no reading of the harness can say otherwise.
+    //
+    // What is NOT a mismatch is a second test proving FEWER of its beats — a flow that walks beat 1
+    // of a three-beat requirement and stops. (This rule did fire on that shape for an afternoon; it
+    // flagged the many-to-many coverage the whole board is built on — board R10 is proven by five
+    // tests, dispatch R5 by a unit and a flow — so it was wrong, and it is the WORST-block scoring
+    // below, not a count, that catches the real version of that defect: a block that harvests a
+    // beat without covering it. Board R20's seventh block is caught there, on beat 1's own row.)
     if (blocks.length) {
       const walks = new Map()
       for (const b of blocks) walks.set(b.test, (walks.get(b.test) || 0) + 1)
       const lens = [...walks.values()]
       const over = lens.some(n => n > beh.beats.length)
-      const uneven = new Set(lens).size > 1
-      if (over || uneven) {
+      if (over) {
         rows.push({
           screen, id: r.id, beat: 0, facts: 0, claims: 0, soft: 0, ok: false, state: 'beat-mismatch',
           line: blocks[0].line,
           why: `beat-mismatch (${blocks.length} blocks, ${beh.beats.length} beats) — ` +
-            (over
-              ? 'a test makes more checkReq calls for this requirement than it has beats, so the extra blocks clamp onto the last beat and harvest it while being about something else'
-              : 'its tests walk different numbers of its beats, so a partial walk files its pictures under beats another test proves in full') +
+            'a test makes more checkReq calls for this requirement than it has beats, so the extra ' +
+            'blocks clamp onto the last beat and harvest it while being about something else' +
             `; blocks at ${blocks.map(b => `line ${b.line}→beat ${b.beat}`).join(', ')}`
         })
       }

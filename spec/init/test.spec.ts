@@ -1,4 +1,4 @@
-import { test, expect, checkReq, coverReqs, flowStep, proveVisible } from '../_base'
+import { test, expect, checkReq, coverReqs, flowStep, proveVisible, intentGap, MISSING } from '../_base'
 import { openSetupAfterCrawl, rerunMarksNewRows, draftedRowBecomesCard } from './steps'
 import { writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -61,6 +61,10 @@ test('R1 — the form persists what cannot be guessed, and reads it back', async
     // saved (the authored-intent lint, phase 6 — proveVisible reads an input's own value)
     await proveVisible(page.locator('#initurl'), 'http://localhost:3000',
       'The URL Setup reads back after a fresh load', { soft: true })
+    // …and the Then's other fact — the config stores EXACTLY those routes — read off the form the
+    // reload filled from disk: three routes, in the order they were typed, nothing added or lost.
+    await proveVisible(page.locator('#initroutes'), '/\n/cart\n/checkout',
+      'The three routes the project config stored, exactly those', { soft: true })
   })
 })
 
@@ -122,6 +126,10 @@ test('R4 — nothing found is the greenfield case: no rows, a prompt to write th
       'The prompt a greenfield project is given', { soft: true })
     // greenfield is the ZERO case of the same flow — the found table is simply empty, not a mode
     await expect(view.locator('#initfound .frow')).toHaveCount(0)
+    // …and NO ROWS SHOW is claimed, not only counted: `MISSING` passes exactly while the found
+    // table has nothing in it, and fails with the row's own words the moment one appears.
+    await proveVisible(view.locator('#initfound .frow'), MISSING,
+      'No rows at all — nothing was found to inventory', { soft: true })
   })
 })
 
@@ -184,6 +192,10 @@ test('R6 — voice-over is a saved, per-project switch, off by default', async (
     // claim would pass with the box empty, which is exactly the assertion rule 2 refuses.
     await proveVisible(page.locator('#initvoiceover'), 'checked',
       'Voice-over, read back ticked from the project config', { soft: true })
+    // …and the Then's other fact — "the project config RECORDS voice-over on" — is spec/_config.json
+    // on disk, asserted above by polling the file. Setup shows the switch it produced, claimed on
+    // the line above; the record itself has no surface on this screen.
+    intentGap('the project config is a file on disk (spec/_config.json), polled above — what the screen shows of it is the switch read back ticked, claimed beside this line')
 
     // and it switches back off — the toggle is a real two-way switch, not a one-shot opt-in
     await page.locator('#initvoiceover').uncheck()

@@ -1,4 +1,4 @@
-import { expect, proveVisible } from '../_base'
+import { expect, proveVisible, intentGap, MISSING } from '../_base'
 import type { Page } from '@playwright/test'
 import type { FlowState } from '../board/steps'
 import { writeFileSync, rmSync } from 'node:fs'
@@ -53,6 +53,10 @@ export async function rerunMarksNewRows (page: Page, state: FlowState): Promise<
   // 'yours', the word the board actually uses for a route that already has a PRD of its own.
   await proveVisible(newRow.locator('.fst'), 'new', 'The new route, marked new', { soft: true })
   await proveVisible(boardRow.locator('.fst'), 'yours', 'The settled route, already on the board', { soft: true })
+  // …and the Then's third fact — "a settled route KEEPS ITS PRD" — is a file on disk. Setup's row
+  // says `yours` BECAUSE that file is still there (claimed above), but nothing on this screen
+  // renders the PRD itself, so there is no value here for a claim of its own to read.
+  intentGap('a settled route keeping its PRD is a file on disk — Setup shows only the state that file gives the row, claimed beside this line')
   state.rows = 2
 }
 
@@ -74,6 +78,11 @@ export async function draftedRowBecomesCard (page: Page, state: FlowState): Prom
     // card still renders normally (its proven-count chip and requirement titles)
     await expect(cardLoc.locator('.chip', { hasText: /guess/i })).toHaveCount(0)
     expect(await cardLoc.getAttribute('data-waiting')).toBeNull()
+    // …and that absence is CLAIMED, not left to the count alone (phase 6): `MISSING` passes exactly
+    // while no guess chip is on the card, and fails — with the chip's own words — the moment a
+    // draft/guess state comes back to a screen the human never asked to confirm.
+    await proveVisible(cardLoc.locator('.chip', { hasText: /guess/i }), MISSING,
+      'No guess chip, nothing waiting — the drafted screen is canon at once', { soft: true })
     await expect(cardLoc.locator('.pcount')).toHaveCount(1)
     await expect(cardLoc.locator('.rl li')).not.toHaveCount(0)
     // the fact, claimed: an ORDINARY card, listing the drafted requirement's own title
