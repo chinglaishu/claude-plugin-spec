@@ -782,7 +782,7 @@ Design chip are gone.*
 
 You are staff and the human owns meaning, so the board proposes work but never authors it. Every
 requirement and every test carries a **⋯ menu** whose actions change no file: a requirement's menu
-offers **reword · add a requirement · remove this requirement · add a test to cover it · the
+offers **reword · add a requirement · remove this requirement · add a test to cover it ·
 The Expected picture doesn't match my app** *(the last added 2026-08-30 with R18's provenance caption)*; a test's
 menu offers **add · edit · remove a test** (unit or flow), with a **picker for the requirements it
 should cover**. Adding a test is reachable from a requirement even when nothing yet tags it — the
@@ -802,6 +802,13 @@ the rule and hands off the work; a person, not the board, commits the meaning.
 the board never writes or edits a requirement or a test — every add/edit/remove hands the human a
 ready Claude prompt carrying the file, the target and the kg-e2e discipline, and copies it. Wording
 awaits the human; the meaning is theirs, the tests assert the behaviour.*
+
+*Corrected 2026-09-04 (rule 6, found by the final re-review): the 2026-09-03 Schematic → Expected
+rename replaced the word after a line break and left the old article standing, so the menu's last
+action read "… add a test to cover it · the / The Expected picture doesn't match my app". The stray
+"the" is removed and nothing else changed — an edit artefact, not wording. tools/prd-prose.test.mjs
+now refuses a duplicated determiner across a line break in any committed PRD, so the next rename
+cannot leave one behind quietly.*
 
 *Amended 2026-08-22 (the human): "never writes a requirement or a test itself" applies to the ⋯
 handoffs — scan, rewrite, and the composer's Claude path. The deterministic compose emit is the
