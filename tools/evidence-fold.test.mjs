@@ -7,7 +7,7 @@
 // pruning, so an old index cleans itself up on its next fold.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, foldEvidence } from './evidence.mjs'
+import { evidencePaths, beatEvidencePaths, valueEvidencePaths, fontEvidencePath, parseEvidenceAttachment, parseLayoutAttachment, parseReplicaAttachment, parseFontAttachment, foldEvidence, legacyActualReplicas } from './evidence.mjs'
 
 test('evidencePaths derives the deterministic per-requirement home under the screen dir — frames only', () => {
   assert.deepEqual(evidencePaths('board', 'R4'), {
@@ -27,8 +27,8 @@ test('beatEvidencePaths keys the harvest by the beat the check proves', () => {
     after: 'spec/board/evidence/R4.b2.after.png',
     layoutBefore: 'spec/board/evidence/R4.b2.before.layout.json',
     layoutAfter: 'spec/board/evidence/R4.b2.after.layout.json',
-    replicaBefore: 'spec/board/evidence/R4.b2.before.actual.html',
-    replicaAfter: 'spec/board/evidence/R4.b2.after.actual.html',
+    replicaExpectedBefore: 'spec/board/evidence/R4.b2.before.expected.html',
+    replicaExpectedAfter: 'spec/board/evidence/R4.b2.after.expected.html',
     // the EXPECTED half of the resting moment joined the shape in phase 2 (2026-09-03) — this
     // assertion was correctly broken by that change (rule 4), not wrong before it
     replicaExpectedAfter: 'spec/board/evidence/R4.b2.after.expected.html'
@@ -51,7 +51,7 @@ test('valueEvidencePaths names each asserted-value frame inside its beat', () =>
     dir: 'spec/todo/evidence',
     frame: 'spec/todo/evidence/R1.b1.v2.png',
     layout: 'spec/todo/evidence/R1.b1.v2.layout.json',
-    replica: 'spec/todo/evidence/R1.b1.v2.actual.html',
+    replicaExpected: 'spec/todo/evidence/R1.b1.v2.expected.html',
     replicaExpected: 'spec/todo/evidence/R1.b1.v2.expected.html'      // phase 2, 2026-09-03
   })
   assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 1).frame, 'spec/todo/evidence/R1.b3.v1.png',
@@ -346,13 +346,13 @@ test('T13: the carry is gone — a proven, hash-matched entry still sheds its le
 // the web fonts the replica needs land once per screen under evidence/_fonts/.
 test('beatEvidencePaths names the beat\'s two replicas beside its frames and skeletons', () => {
   const p = beatEvidencePaths('board', 'R4', 2)
-  assert.equal(p.replicaBefore, 'spec/board/evidence/R4.b2.before.actual.html')
-  assert.equal(p.replicaAfter, 'spec/board/evidence/R4.b2.after.actual.html')
-  assert.equal(beatEvidencePaths('asset-plan', 'asset-plan:R5').replicaBefore,
-    'spec/asset-plan/evidence/R5.b1.before.actual.html', 'a qualified id lands in its own screen, as ever')
+  assert.equal(p.replicaExpectedBefore, 'spec/board/evidence/R4.b2.before.expected.html')
+  assert.equal(p.replicaExpectedAfter, 'spec/board/evidence/R4.b2.after.expected.html')
+  assert.equal(beatEvidencePaths('asset-plan', 'asset-plan:R5').replicaExpectedBefore,
+    'spec/asset-plan/evidence/R5.b1.before.expected.html', 'a qualified id lands in its own screen, as ever')
 })
 test('valueEvidencePaths names the asserted value\'s replica', () => {
-  assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 2).replica, 'spec/todo/evidence/R1.b3.v2.actual.html')
+  assert.equal(valueEvidencePaths('todo', 'todo:R1', 3, 2).replicaExpected, 'spec/todo/evidence/R1.b3.v2.expected.html')
 })
 test('fontEvidencePath puts a screen\'s web fonts in one place, named by content', () => {
   assert.equal(fontEvidencePath('board', 'a1b2c3d4e5f60718', 'woff2'), 'spec/board/evidence/_fonts/a1b2c3d4e5f60718.woff2')
@@ -399,42 +399,42 @@ test('parseFontAttachment also reads the url the face was fetched from — `font
 })
 
 const rep = (n, over = {}) => beat(n, {
-  replicaBefore: `spec/board/evidence/R4.b${n}.before.actual.html`,
-  replicaAfter: `spec/board/evidence/R4.b${n}.after.actual.html`,
+  replicaExpectedBefore: `spec/board/evidence/R4.b${n}.before.expected.html`,
+  replicaExpectedAfter: `spec/board/evidence/R4.b${n}.after.expected.html`,
   ...over
 })
 test('replicas: a fold lands each beat\'s pair, and a replica-less re-fold CARRIES it (the layout\'s rule)', () => {
   // same reason the skeleton is carried: the replica is the source the Expected view is built from,
   // so a run whose capture failed must not delete it and drop the row back to a picture-less proof
   const index = { board: { evidence: { R4: entry({ beats: [rep(1)] }) } } }
-  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaBefore: null, replicaAfter: null })] }) })
+  const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaExpectedBefore: null, replicaExpectedAfter: null })] }) })
   assert.deepEqual(prune, [], 'nothing is pruned by a carry')
   const b = index.board.evidence.R4.beats[0]
-  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html')
-  assert.equal(b.replicaAfter, 'spec/board/evidence/R4.b1.after.actual.html')
+  assert.equal(b.replicaExpectedBefore, 'spec/board/evidence/R4.b1.before.expected.html')
+  assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R4.b1.after.expected.html')
 })
 test('replicas: a beat that brings fresh ones replaces its own, and a dropped beat takes them with it', () => {
   const index = { board: { evidence: { R4: entry({ beats: [rep(1), rep(2)] }) } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [rep(1)] }) })
-  assert.ok(prune.includes('spec/board/evidence/R4.b2.before.actual.html'))
-  assert.ok(prune.includes('spec/board/evidence/R4.b2.after.actual.html'))
+  assert.ok(prune.includes('spec/board/evidence/R4.b2.before.expected.html'))
+  assert.ok(prune.includes('spec/board/evidence/R4.b2.after.expected.html'))
 })
 test('replicas: an asserted value\'s replica is pruned with its frame', () => {
   const withRep = k => beat(1, {
     values: Array.from({ length: k }, (_, i) => ({
       frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
       layout: `spec/board/evidence/R4.b1.v${i + 1}.layout.json`,
-      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`
+      replicaExpected: `spec/board/evidence/R4.b1.v${i + 1}.expected.html`
     }))
   })
   const index = { board: { evidence: { R4: entry({ beats: [withRep(2)] }) } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [withRep(1)] }) })
-  assert.ok(prune.includes('spec/board/evidence/R4.b1.v2.actual.html'), prune.join(' '))
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.v2.expected.html'), prune.join(' '))
 })
 test('replicas: an entry that never had one gains none from a replica-less fold', () => {
   const index = { board: { evidence: { R4: entry({ beats: [beat(1)] }) } } }
   foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1)] }) })
-  assert.equal('replicaBefore' in index.board.evidence.R4.beats[0], false)
+  assert.equal('replicaExpectedBefore' in index.board.evidence.R4.beats[0], false)
 })
 
 // ── FIX ROUND 2 (task 3): the BEAT-level carry (this file's "replicas: a fold lands each beat's
@@ -451,7 +451,7 @@ test('replicas: a re-harvested value moment whose new entry names no replica get
     values: Array.from({ length: k }, (_, i) => ({
       frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
       layout: `spec/board/evidence/R4.b1.v${i + 1}.layout.json`,
-      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`
+      replicaExpected: `spec/board/evidence/R4.b1.v${i + 1}.expected.html`
     }))
   })
   const noRep = k => beat(1, {
@@ -463,7 +463,7 @@ test('replicas: a re-harvested value moment whose new entry names no replica get
   })
   const index = { board: { evidence: { R4: entry({ beats: [withRep(1)] }) } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [noRep(1)] }) })
-  assert.ok(prune.includes('spec/board/evidence/R4.b1.v1.actual.html'), prune.join(' '))
+  assert.ok(prune.includes('spec/board/evidence/R4.b1.v1.expected.html'), prune.join(' '))
   assert.equal('replica' in index.board.evidence.R4.beats[0].values[0], false, 'not carried onto the fresh entry either')
 })
 
@@ -563,14 +563,20 @@ test('parseReplicaAttachment tells the Expected half from the Actual one', () =>
   assert.equal(parseReplicaAttachment('replica-expectedR9#1 after'), null, 'the name is two words, not a prefix')
   assert.equal(parseReplicaAttachment('replica-intended R9#1 after'), null, 'and only the one word')
 })
-test('the Expected replica has a path of its own beside the Actual, at every moment that has one', () => {
+// ONE HTML PER MOMENT (the human, 2026-09-04: "why does the Expected also need a replica — the
+// Actual is the screenshot"). Every moment lands exactly one replica, the Expected, named beside the
+// photograph that IS its Actual half — including the beat's BEFORE moment, where nothing has been
+// claimed yet and the Expected is therefore the app's own unedited markup. A moment with no file is
+// a moment with no picture, and the gate's verdict on that unedited tree rides on this file's root.
+test('every moment lands ONE replica — the Expected, named beside its photograph', () => {
   const p = beatEvidencePaths('todo', 'R9', 1)
+  assert.equal(p.replicaExpectedBefore, 'spec/todo/evidence/R9.b1.before.expected.html')
   assert.equal(p.replicaExpectedAfter, 'spec/todo/evidence/R9.b1.after.expected.html')
-  assert.equal(p.replicaAfter, 'spec/todo/evidence/R9.b1.after.actual.html', 'one name away from it, as ever')
-  // …and no `replicaExpectedBefore`: a beat's BEFORE moment has claimed nothing yet, so an Expected
-  // there would be the Actual with a different name — a second file saying nothing (see spec/_base.ts)
-  assert.equal('replicaExpectedBefore' in p, false)
   assert.equal(valueEvidencePaths('todo', 'todo:R9', 1, 3).replicaExpected, 'spec/todo/evidence/R9.b1.v3.expected.html')
+  // …and NO `.actual.html` anywhere in the shape: the Actual half is the frame named beside it
+  for (const v of [...Object.values(p), ...Object.values(valueEvidencePaths('todo', 'todo:R9', 1, 3))]) {
+    assert.ok(!String(v).endsWith('.actual.html'), 'no Actual replica is named any more: ' + v)
+  }
 })
 
 const both = (n, over = {}) => rep(n, {
@@ -579,7 +585,7 @@ const both = (n, over = {}) => rep(n, {
 })
 test('the Expected replica is CARRIED on the Actual\'s rule, and pruned with the beat that dropped it', () => {
   const index = { board: { evidence: { R4: entry({ beats: [both(1)] }) } } }
-  let prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaBefore: null, replicaAfter: null, replicaExpectedAfter: null })] }) })
+  let prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r2', beats: [beat(1, { replicaExpectedBefore: null, replicaExpectedAfter: null, replicaExpectedAfter: null })] }) })
   assert.deepEqual(prune, [], 'a capture that failed must not delete the picture the row is built from')
   assert.equal(index.board.evidence.R4.beats[0].replicaExpectedAfter, 'spec/board/evidence/R4.b1.after.expected.html')
   prune = foldEvidence(index, { 'board:R4': entry({ runId: 'r3', beats: [] }) })
@@ -589,7 +595,7 @@ test('an asserted value\'s Expected replica is pruned with its frame, like its A
   const withBoth = k => beat(1, {
     values: Array.from({ length: k }, (_, i) => ({
       frame: `spec/board/evidence/R4.b1.v${i + 1}.png`,
-      replica: `spec/board/evidence/R4.b1.v${i + 1}.actual.html`,
+      replicaExpected: `spec/board/evidence/R4.b1.v${i + 1}.expected.html`,
       replicaExpected: `spec/board/evidence/R4.b1.v${i + 1}.expected.html`
     }))
   })
@@ -613,15 +619,13 @@ const valued = (over = {}) => ({
     n: 1,
     before: 'spec/todo/evidence/R1.b1.before.png',
     after: 'spec/todo/evidence/R1.b1.after.png',
-    replicaBefore: 'spec/todo/evidence/R1.b1.before.actual.html',
-    replicaAfter: 'spec/todo/evidence/R1.b1.after.actual.html',
+    replicaExpectedBefore: 'spec/todo/evidence/R1.b1.before.expected.html',
     replicaExpectedAfter: 'spec/todo/evidence/R1.b1.after.expected.html',
     gate: { gaps: 0, gated: true },
     values: [{
       k: 1,
       frame: 'spec/todo/evidence/R1.b1.v1.png',
       layout: 'spec/todo/evidence/R1.b1.v1.layout.json',
-      replica: 'spec/todo/evidence/R1.b1.v1.actual.html',
       replicaExpected: 'spec/todo/evidence/R1.b1.v1.expected.html',
       gate: { gaps: 0, gated: true }
     }]
@@ -633,8 +637,7 @@ test('a value moment keeps its replica PATH and gains its gate verdict beside it
   const index = {}
   foldEvidence(index, { 'todo:R1': valued() })
   const v = index.todo.evidence.R1.beats[0].values[0]
-  assert.equal(v.replica, 'spec/todo/evidence/R1.b1.v1.actual.html', 'the path is a path')
-  assert.equal(v.replicaExpected, 'spec/todo/evidence/R1.b1.v1.expected.html')
+  assert.equal(v.replicaExpected, 'spec/todo/evidence/R1.b1.v1.expected.html', 'the path is a path')
   assert.deepEqual(v.gate, { gaps: 0, gated: true }, 'and the verdict has its own field')
   assert.deepEqual(index.todo.evidence.R1.beats[0].gate, { gaps: 0, gated: true })
 })
@@ -643,8 +646,8 @@ test('a re-fold of the same harvest prunes nothing the new entry still reference
   const index = { todo: { evidence: { R1: valued() } } }
   const prune = foldEvidence(index, { 'todo:R1': valued({ runId: 'r2' }) })
   assert.deepEqual(prune, [], 'the value moment\'s replica files are still named by the new entry')
-  assert.ok(!prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'))
-  assert.equal(index.todo.evidence.R1.beats[0].values[0].replica, 'spec/todo/evidence/R1.b1.v1.actual.html')
+  assert.ok(!prune.includes('spec/todo/evidence/R1.b1.v1.expected.html'))
+  assert.equal(index.todo.evidence.R1.beats[0].values[0].replicaExpected, 'spec/todo/evidence/R1.b1.v1.expected.html')
 })
 
 test('a value moment the new harvest DROPPED still has its files pruned', () => {
@@ -652,17 +655,16 @@ test('a value moment the new harvest DROPPED still has its files pruned', () => 
   const gone = valued({ runId: 'r2' })
   gone.beats[0].values = []
   const prune = foldEvidence(index, { 'todo:R1': gone })
-  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'), 'the retention rule still works')
-  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.expected.html'))
+  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.expected.html'), 'the retention rule still works')
 })
 
 test('why the verdict may not live in `replica`: a non-path there loses the file — C1 in one assertion', () => {
   // the shape the phase-3 reporter wrote before this fix: {gaps, gated} where the path belongs
   const index = { todo: { evidence: { R1: valued() } } }
   const clobbered = valued({ runId: 'r2' })
-  clobbered.beats[0].values[0].replica = { gaps: 0, gated: true }
+  clobbered.beats[0].values[0].replicaExpected = { gaps: 0, gated: true }
   const prune = foldEvidence(index, { 'todo:R1': clobbered })
-  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.actual.html'),
+  assert.ok(prune.includes('spec/todo/evidence/R1.b1.v1.expected.html'),
     'the keep-set is built from those very fields, so the run would delete the file it just wrote')
 })
 
@@ -678,18 +680,15 @@ test('why the verdict may not live in `replica`: a non-path there loses the file
 // are pruned, exactly like any other path the new entry no longer names.
 test('a beat that brings no skeleton does not carry an orphan replica — the files are pruned', () => {
   const old = entry({ beats: [{ n: 1, before: 'spec/dispatch/evidence/R4.b1.before.png',
-    replicaBefore: 'spec/dispatch/evidence/R4.b1.before.actual.html',
-    replicaAfter: 'spec/dispatch/evidence/R4.b1.after.actual.html',
+    replicaExpectedBefore: 'spec/dispatch/evidence/R4.b1.before.expected.html',
     replicaExpectedAfter: 'spec/dispatch/evidence/R4.b1.after.expected.html' }] })
   const index = { dispatch: { evidence: { R4: old } } }
   const prune = foldEvidence(index, { 'dispatch:R4': entry({ beats: [{ n: 1, before: 'spec/dispatch/evidence/R4.b1.before.png' }] }) })
   const b = index.dispatch.evidence.R4.beats[0]
-  assert.equal(b.replicaBefore, undefined, 'nothing measured that moment, so nothing pictures it')
-  assert.equal(b.replicaAfter, undefined)
+  assert.equal(b.replicaExpectedBefore, undefined, 'nothing measured that moment, so nothing pictures it')
   assert.equal(b.replicaExpectedAfter, undefined)
-  assert.deepEqual(prune.sort(), ['spec/dispatch/evidence/R4.b1.after.actual.html',
-    'spec/dispatch/evidence/R4.b1.after.expected.html',
-    'spec/dispatch/evidence/R4.b1.before.actual.html'].sort())
+  assert.deepEqual(prune.sort(), ['spec/dispatch/evidence/R4.b1.after.expected.html',
+    'spec/dispatch/evidence/R4.b1.before.expected.html'].sort())
 })
 
 test('a beat whose SKELETON is carried keeps the replica that was checked against it', () => {
@@ -697,28 +696,83 @@ test('a beat whose SKELETON is carried keeps the replica that was checked agains
   // the Expected view is built from) is untouched: skeleton and replica travel together or not at all
   const old = entry({ beats: [{ n: 1, layoutBefore: 'spec/board/evidence/R4.b1.before.layout.json',
     layoutAfter: 'spec/board/evidence/R4.b1.after.layout.json',
-    replicaBefore: 'spec/board/evidence/R4.b1.before.actual.html',
-    replicaAfter: 'spec/board/evidence/R4.b1.after.actual.html' }] })
+    replicaExpectedBefore: 'spec/board/evidence/R4.b1.before.expected.html',
+    replicaExpectedAfter: 'spec/board/evidence/R4.b1.after.expected.html' }] })
   const index = { board: { evidence: { R4: old } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1, before: 'spec/board/evidence/R4.b1.before.png' }] }) })
   const b = index.board.evidence.R4.beats[0]
   assert.equal(b.layoutBefore, 'spec/board/evidence/R4.b1.before.layout.json', 'the skeleton is carried as before')
-  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html', 'and the picture checked against it rides with it')
-  assert.equal(b.replicaAfter, 'spec/board/evidence/R4.b1.after.actual.html')
+  assert.equal(b.replicaExpectedBefore, 'spec/board/evidence/R4.b1.before.expected.html', 'and the picture checked against it rides with it')
+  assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R4.b1.after.expected.html')
   assert.deepEqual(prune, [], 'nothing is orphaned')
 })
 
 test('a beat that carries only a BEFORE skeleton carries only the before replica', () => {
   const old = entry({ beats: [{ n: 1, layoutBefore: 'spec/board/evidence/R4.b1.before.layout.json',
-    replicaBefore: 'spec/board/evidence/R4.b1.before.actual.html',
-    replicaAfter: 'spec/board/evidence/R4.b1.after.actual.html',
+    replicaExpectedBefore: 'spec/board/evidence/R4.b1.before.expected.html',
     replicaExpectedAfter: 'spec/board/evidence/R4.b1.after.expected.html' }] })
   const index = { board: { evidence: { R4: old } } }
   const prune = foldEvidence(index, { 'board:R4': entry({ beats: [{ n: 1 }] }) })
   const b = index.board.evidence.R4.beats[0]
-  assert.equal(b.replicaBefore, 'spec/board/evidence/R4.b1.before.actual.html')
-  assert.equal(b.replicaAfter, undefined, 'the after moment measured nothing, so its picture is not kept')
-  assert.equal(b.replicaExpectedAfter, undefined)
-  assert.deepEqual(prune.sort(), ['spec/board/evidence/R4.b1.after.actual.html',
-    'spec/board/evidence/R4.b1.after.expected.html'].sort())
+  assert.equal(b.replicaExpectedBefore, 'spec/board/evidence/R4.b1.before.expected.html')
+  assert.equal(b.replicaExpectedAfter, undefined, 'the after moment measured nothing, so its picture is not kept')
+  assert.deepEqual(prune, ['spec/board/evidence/R4.b1.after.expected.html'])
+})
+
+
+// ── THE RETIRED HALF OF EVERY MOMENT (2026-09-04, one html per moment) ───────────────────────────
+// Until this release a moment landed TWO html files. `foldEvidence`'s keep-set can only prune a path
+// some entry USED to name, and no entry names a `.actual.html` any more — so without this sweep one
+// would sit in the tree for ever, be served, and be refused by `npm run proof mirror` as a replica
+// nothing gated. Pure, so the rule is testable; the shell that reads the directory is
+// tools/spec-store.mjs's fold.
+test('legacyActualReplicas names the retired half of a moment, and nothing else', () => {
+  assert.deepEqual(legacyActualReplicas([
+    'R1.b1.before.actual.html', 'R1.b1.before.expected.html', 'R1.b1.after.actual.html',
+    'R1.b1.v2.actual.html', 'R1.b1.v2.expected.html',
+    'R1.b1.before.png', 'R1.b1.before.layout.json', 'screen.png', '_fonts'
+  ]), ['R1.b1.before.actual.html', 'R1.b1.after.actual.html', 'R1.b1.v2.actual.html'])
+})
+test('legacyActualReplicas never names an Expected, and answers nothing for nothing', () => {
+  assert.deepEqual(legacyActualReplicas(['R1.b1.after.expected.html']), [])
+  assert.deepEqual(legacyActualReplicas([]), [])
+  assert.deepEqual(legacyActualReplicas(null), [])
+  assert.deepEqual(legacyActualReplicas(['x.actual.html.bak']), [], 'the name must END there')
+})
+
+// ── THE HOME SCREEN'S FILE OWNS ITS BEATS (final review I5, 2026-09-04) ─────────────────────────
+// Evidence is keyed by REQUIREMENT, so a composed flow that starts on one screen and proves
+// another's requirement writes into the other screen's evidence. spec/init's flow tags board:R1, so
+// `npx playwright test spec/init` alone rewrote spec/board/evidence/R1.b1.* from the init page and
+// PRUNED what the board's own run had put there — and the next board run went red on four tests.
+// Per-screen runs are a documented normal workflow, so the flow fills only what the home file left
+// empty, and never replaces or prunes what the home file put there. Coverage is untouched: the flow
+// still proves the requirement.
+const homeBeat = (n, over = {}) => ({
+  n,
+  before: `spec/board/evidence/R1.b${n}.before.png`,
+  after: `spec/board/evidence/R1.b${n}.after.png`,
+  layoutBefore: `spec/board/evidence/R1.b${n}.before.layout.json`,
+  layoutAfter: `spec/board/evidence/R1.b${n}.after.layout.json`,
+  replicaExpectedBefore: `spec/board/evidence/R1.b${n}.before.expected.html`,
+  replicaExpectedAfter: `spec/board/evidence/R1.b${n}.after.expected.html`,
+  ...over
+})
+test('a cross-screen flow does not replace — or prune — a beat the HOME screen already harvested', () => {
+  const index = { board: { evidence: { R1: entry({ runId: 'board-run', beats: [homeBeat(1)] }) } } }
+  // the init flow reruns alone: it proves board:R1 and files a beat of its own
+  const fromInit = entry({ runId: 'init-run', beats: [{ ...homeBeat(1), foreign: true }] })
+  const prune = foldEvidence(index, { 'board:R1': fromInit })
+  const b = index.board.evidence.R1.beats[0]
+  assert.equal(b.before, 'spec/board/evidence/R1.b1.before.png', 'the home run\'s own frames stand')
+  assert.equal(b.replicaExpectedAfter, 'spec/board/evidence/R1.b1.after.expected.html')
+  assert.deepEqual(prune, [], 'and nothing of the home run\'s is named for deletion')
+})
+test('…but a beat the home file left EMPTY is filled by the flow that did reach it', () => {
+  const index = { board: { evidence: { R1: entry({ runId: 'board-run', beats: [homeBeat(1)] }) } } }
+  const fromInit = entry({ runId: 'init-run', beats: [homeBeat(1), { ...homeBeat(2), foreign: true }] })
+  foldEvidence(index, { 'board:R1': fromInit })
+  const two = index.board.evidence.R1.beats.find(b => b.n === 2)
+  assert.ok(two, 'beat 2 exists now')
+  assert.equal(two.before, 'spec/board/evidence/R1.b2.before.png', 'the flow filled the empty beat')
 })

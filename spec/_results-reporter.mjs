@@ -231,6 +231,10 @@ function harvestEvidence (harvest, ranAt) {
   // recording actually shown. commitVideo (cached per screen) then writes that one .webm.
   const resolved = resolvePrimaryVideo(harvest)
   const cache = new Map()
+  // …and what is ALREADY COMMITTED (final review I5): read once, so a cross-screen flow can tell
+  // whether the requirement's own screen has already harvested a beat it is about to land on.
+  let committed = {}
+  try { committed = JSON.parse(readFileSync(join(process.cwd(), 'spec', '_results-index.json'), 'utf8')) } catch { committed = {} }
   for (const [qid, r] of Object.entries(resolved)) {
     const scr = qid.slice(0, qid.indexOf(':'))
     const rid = qid.slice(qid.indexOf(':') + 1)
@@ -254,9 +258,25 @@ function harvestEvidence (harvest, ranAt) {
     // PER BEAT (2026-08-28): each beat of the requirement keeps its own pair, its own layout
     // skeletons — the SOURCE tools/viz.mjs renderWireframe draws that beat's frame from — and its
     // own window, so a per-beat row can show, pace and seek its own proof. Best-effort throughout.
+    // WHAT THE HOME SCREEN'S OWN FILE ALREADY PUT THERE (final review I5). Read ONCE per fold, from
+    // the committed index: a beat a foreign flow is about to land on, that the requirement's own
+    // screen has already harvested, keeps what it has — the paths are deterministic, so landing the
+    // foreign files would overwrite the bytes before any fold could decide otherwise.
+    const held = (n) => {
+      const e = ((committed[scr] || {}).evidence || {})[rid]
+      const b = e && Array.isArray(e.beats) ? e.beats.find(x => x && Number(x.n) === Number(n)) : null
+      return !!(b && (b.before || b.after || b.layoutBefore || b.layoutAfter ||
+        b.replicaExpectedBefore || b.replicaExpectedAfter || (Array.isArray(b.values) && b.values.length)))
+    }
     for (const b of (r.beats || [])) {
       const bp = beatEvidencePaths(scr, rid, b.n)
-      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaBefore: null, replicaAfter: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
+      if (b.foreign && held(b.n)) {
+        // the home screen's harvest stands; this flow proved the requirement (coverage still folds)
+        // and simply does not repaint its pictures
+        entry.beats.push({ n: b.n, foreign: true })
+        continue
+      }
+      const row = { n: b.n, before: null, after: null, layoutBefore: null, layoutAfter: null, replicaExpectedBefore: null, replicaExpectedAfter: null, window: b.window || null, values: [] }
       for (const phase of ['before', 'after']) {
         if (b[phase] && landFrame(b[phase], bp[phase])) row[phase] = bp[phase]
       }
@@ -265,24 +285,21 @@ function harvestEvidence (harvest, ranAt) {
         // a plain copy: JSON has nothing to re-encode
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
-      // …and the ACTUAL REPLICA of each end of the beat (2026-09-03): the app's own sanitised DOM,
-      // copied as it was captured — an html file has nothing to re-encode either, and re-encoding
-      // the picture the Expected view is built from is exactly how a mirror drifts.
-      // …and the EXPECTED replica of the beat's resting moment beside it (phase 2, 2026-09-03): the
-      // same markup with the beat's claims applied — the requirement's own half of the comparison.
-      // Landed with the Actual, from the same capture, or the row would show two moments.
-      for (const key of ['replicaBefore', 'replicaAfter', 'replicaExpectedAfter']) {
+      // …and the ONE REPLICA of each end of the beat (2026-09-04): the app's own sanitised DOM with
+      // this beat's claims applied, copied as it was captured — an html file has nothing to
+      // re-encode, and re-encoding the picture the Expected view is built from is exactly how a
+      // mirror drifts. The gate's verdict on the UNEDITED tree rides on its root.
+      for (const key of ['replicaExpectedBefore', 'replicaExpectedAfter']) {
         if (!b[key]) continue
         try { copyFileSync(b[key], join(process.cwd(), bp[key])); row[key] = bp[key] } catch { /* dropped */ }
       }
       // …and WHAT THE GATE FOUND, read back off the file that just landed (phase 3): the beat's
       // resting moment is what the row shows, so that is the one the fold records and reports.
-      noteReplica(row, row.replicaAfter, gapLines, scr, rid, b.n, 'after')
-      noteReplica(null, row.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after expected')
+      noteReplica(row, row.replicaExpectedAfter, gapLines, scr, rid, b.n, 'after')
       // …and the beat's OPENING moment is reported too (fix round 1, M2): a gapped before-frame used
       // to say nothing at the fold and only surface later in the CLI. The beat's own verdict stays
       // the resting moment's — that is the one the row shows.
-      noteReplica(null, row.replicaBefore, gapLines, scr, rid, b.n, 'before')
+      noteReplica(null, row.replicaExpectedBefore, gapLines, scr, rid, b.n, 'before')
       // THE ASSERTED-VALUE FRAMES (2026-08-29): one per value the beat rang and read, landed the same
       // way and in the same order, each carrying `at` — its offset in ms from the moment the beat's
       // `proves` step started, read back out of the skeleton that recorded it (spec/_base.ts
@@ -291,17 +308,16 @@ function harvestEvidence (harvest, ranAt) {
       // untimed, and the loop falls back to equal holds.
       for (const v of (b.values || [])) {
         const vp = valueEvidencePaths(scr, rid, b.n, v.k)
-        const got = { k: v.k, frame: null, layout: null, replica: null, replicaExpected: null, at: null }
+        const got = { k: v.k, frame: null, layout: null, replicaExpected: null, at: null }
         if (v.frame && landFrame(v.frame, vp.frame)) got.frame = vp.frame
         if (v.layout) {
           try { copyFileSync(v.layout, join(process.cwd(), vp.layout)); got.layout = vp.layout } catch { /* dropped */ }
         }
-        for (const key of ['replica', 'replicaExpected']) {
+        for (const key of ['replicaExpected']) {
           if (!v[key]) continue
           try { copyFileSync(v[key], join(process.cwd(), vp[key])); got[key] = vp[key] } catch { /* dropped */ }
         }
-        noteReplica(got, got.replica, gapLines, scr, rid, b.n, 'v' + v.k)
-        noteReplica(null, got.replicaExpected, gapLines, scr, rid, b.n, 'v' + v.k + ' expected')
+        noteReplica(got, got.replicaExpected, gapLines, scr, rid, b.n, 'v' + v.k)
         if (got.layout) {
           try {
             // …and the NAME of the moment beside its offset (the human, 2026-09-02): the assertion's
@@ -628,6 +644,14 @@ export default class ResultsIndexReporter {
         // proven by TWO tests could take its measurement from one page and its picture from another.
         // Board R20's lightbox beat did exactly that. The first test to fill a beat owns it.
         if (!claimSlot(slot, test.title)) continue
+        // …AND WHOSE FILE FILED IT (final review I5, 2026-09-04). A composed flow that starts on one
+        // screen may prove another's requirement (spec/init's flow tags board:R1), and evidence is
+        // keyed by REQUIREMENT — so `npx playwright test spec/init` alone rewrote
+        // spec/board/evidence/R1.b1.* from the init flow's page and pruned what the board's own run
+        // had put there. The requirement's HOME screen owns its beats; a cross-screen flow fills
+        // only what the home file left empty. Marked here, where both names are in hand, and acted
+        // on at the fold (tools/evidence.mjs) and in the landing loop above.
+        if (slot.foreign === undefined) slot.foreign = (screen !== qid.slice(0, qid.indexOf(':')))
         // an ASSERTED-VALUE phase (2026-08-29) — `v<k>`, the k-th value proveVisible rang and read
         // inside this beat. Kept in its own numbered map so the beat's proof can play
         // before → each value → after; first-wins per k for the same reason the pair is.
@@ -635,7 +659,11 @@ export default class ResultsIndexReporter {
         if (vk) {
           const k = Number(vk[1])
           const vslot = ((slot.values ||= {})[k] ||= {})
-          const field = tag ? 'frame' : (lay ? 'layout' : (rep.side === 'expected' ? 'replicaExpected' : 'replica'))
+          // ONE HTML PER MOMENT (2026-09-04): only `replica-expected` is attached now. An `actual`
+          // name can still arrive from a run of an older harness — it is not folded, and the file
+          // it points at is swept by the fold's own legacy prune.
+          const field = tag ? 'frame' : (lay ? 'layout' : (rep.side === 'expected' ? 'replicaExpected' : null))
+          if (!field) continue
           if (!vslot[field]) vslot[field] = a.path
           h.latestKey = key
           if (testFonts.length && !fontedQids.has(qid)) { h.fonts = testFonts; fontedQids.add(qid) }
@@ -650,11 +678,13 @@ export default class ResultsIndexReporter {
         if (tag) { if (!slot[tag.phase]) slot[tag.phase] = a.path }
         else if (lay) { const f = lay.phase === 'before' ? 'layoutBefore' : 'layoutAfter'; if (!slot[f]) slot[f] = a.path }
         else {
-          // the EXPECTED half lands only on the beat's resting moment (phase 2): a before has claimed
-          // nothing, so the harness attaches none and a name that says otherwise is not folded.
+          // ONE HTML PER MOMENT (2026-09-04): both ends of a beat land their Expected — at the
+          // before moment nothing has been claimed yet, so it IS the app's unedited markup, and a
+          // moment with no file is a moment with no picture. An `actual` name from an older harness
+          // is not folded.
           const f = rep.side === 'expected'
-            ? (rep.phase === 'before' ? null : 'replicaExpectedAfter')
-            : (rep.phase === 'before' ? 'replicaBefore' : 'replicaAfter')
+            ? (rep.phase === 'before' ? 'replicaExpectedBefore' : 'replicaExpectedAfter')
+            : null
           if (f && !slot[f]) slot[f] = a.path
         }
         // this BEAT's own span in the recording: the k-th `proves <id>` step of the test is the

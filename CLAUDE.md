@@ -97,12 +97,14 @@ spec/<screen>/test.spec.ts   Playwright spec — tags requirements via checkReq 
 spec/<screen>/steps.ts       the screen's COMPOSABLE BEATS (the beat-function convention, kg-e2e): GIVEN + BEATS
                              metadata beside exported step functions — perform the When, assert the exact Then
                              from a threaded state, update it; the caller's checkReq wraps the call
-spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, each moment's `.actual.html` and `.expected.html` REPLICA pair, and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs)
-spec/<screen>/viz/*.svg      the drawn schematics, derived by tools/viz-derive.mjs (stale-by-text-hash, never guessed)
+spec/<screen>/evidence/      the harvest (the before/after frame pair + its window, ONE `.expected.html` REPLICA per moment — the Actual half is the photograph beside it (the human, 2026-09-04) — and the screen's `_fonts/`) — COMMITTED here and in scaffolded projects (D2 2026-08-22); deterministic paths overwrite in place, superseded files pruned at the fold (tools/evidence.mjs), which also sweeps the retired `.actual.html` half
+spec/<screen>/viz/*.svg      SKETCHES ONLY — the house-style drawing of a requirement that has NOT been harvested yet.
+                             Derived by tools/viz-derive.mjs, which since phase 4a also DELETES the committed drawing of
+                             any requirement that now has a replica: the picture beside a proof is the app's own markup
 spec/<screen>/state.json     pre-redesign relic (old accept pin, approvedPrdText) — unused since the gate was removed (board R8, 2026-07-30); still on disk, not yet deleted
 spec/_design.css             ONE design system, inlined into board.html
 spec/_base.ts                checkReq(id, fn) / coverReqs(...) — how a test tags the requirements it proves
-spec/_replica.mjs            the REPLICA PAIR's capture (2026-09-03), one self-contained function Playwright serialises into
+spec/_replica.mjs            the REPLICA's capture (2026-09-03), one self-contained function Playwright serialises into
                              the page: the ringed element's SCENE ROOT as the app's own DOM, computed styles diffed against
                              per-tag defaults into shared classes, sanitised (no script/handler/external URL, live controls
                              become spans carrying the value the assertion read) and capped — REPLICA_PROPS is the one prop
@@ -119,10 +121,11 @@ spec/_replica.mjs            the REPLICA PAIR's capture (2026-09-03), one self-c
 spec/_layout-walk.mjs        the layout skeleton's WALK, one self-contained function Playwright serialises into the page
                              (snapLayout hands it the ring + the ringed element); unit-tested in tools/layout-walk.test.mjs
                              on a stub DOM — the ringed element first, the rest nearest the ring, no slot for an unpainted wrapper
-spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the walk and the replica capture into the
-                             single expression the page evaluates, so the skeleton and the replica can never be two pages
-                             — and carries the walk's own answers across (the ringed element it MEASURED, the boxes it
-                             dropped as occluded) so the two halves cannot disagree about what they are looking at
+spec/_moment.mjs             ONE MOMENT, ONE INSTANT (2026-09-04): composes the walk, the replica capture AND the gate's
+                             own walk-back (`gateInPage`) into the single expression the page evaluates, so the three
+                             readings a likeness gate compares can never be three different instants of the app — and
+                             carries the walk's own answers across (the ringed element it MEASURED, the boxes it dropped
+                             as occluded) so the halves cannot disagree about what they are looking at
 spec/_results-index.json     per-screen results + per-requirement coverage, folded across runs — proof derives from this
 spec/_conflict-decisions.json  the human's adjudicated conflicts, keyed by content
 
@@ -147,6 +150,8 @@ tools/flow.mjs               pure: a recorded test's steps → its kind (unit/fl
 tools/evidence.mjs           pure: the proves-step window, ffmpeg args (frame · downscale), evidence paths, the fold
 tools/board/stepper.js       pure: the gif-mode frame-stepper's timing math (holds off the window + frame anchors) —
                              inlined verbatim like client.js, unit-tested via globalThis.SBStepper
+tools/board/words.js         pure: the PROVED PHRASE rule (which words of a beat's sentence the moment on show is
+                             proving) — a third file inlined verbatim into board.html, unit-tested via globalThis.SBWords
 tools/board/client.js        the board's browser behaviour (routing, run panel, focus reader, …) as a REAL
                              .js file — read verbatim into board.html, fed a JSON island (window.__BOARD__).
                              Edit/lint it like normal JS; no template-literal escaping traps.
@@ -201,10 +206,14 @@ npm run e2e            # the suite
 npm run board:build    # rebuild board.html only
 npm run test:tools     # the pure-function unit tests (coverage, prd-render, update, …)
 npm run staff          # the kg-staff briefing for a screen
-npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures)
-node tools/viz-derive.mjs [screen…]   # derive the schematics BY HAND (the reporter derives them at every fold —
-                                      # corrected 2026-09-02: it was NOT running anywhere, so every drawing
-                                      # was a harvest behind and its ring/callout had quietly gone)
+npm run proof          # proof-integrity check (`lint` = existence + authored intent, `mirror` = the pictures,
+                       # `perturb` = the assertions still fail when the thing they prove is broken)
+node tools/viz-derive.mjs [screen…]   # derive the SKETCHES by hand (the reporter runs it at every fold). It writes a
+                                      # drawing only for a requirement with NO replica, and DELETES the committed
+                                      # drawing of one that has gained a harvest — the picture beside a proof has been
+                                      # the app's own markup since 2026-09-03, so a drawing there would be a second,
+                                      # drifting answer. It reports NO mirror gaps any more: the replica's own gate does
+                                      # that (tools/replica-gate.mjs), in the page, at capture time.
 ```
 
 `BOARD_URL=http://host:port` drives an already-running site and starts/stops nothing. `BOARD_PORT`
@@ -348,7 +357,7 @@ change.
   1.62 ignores the arg for a string expression and returns the expression's own value — a function,
   which serialises to `undefined`. The composed moment shipped that way for one round: every harvest
   filed a photograph with NO skeleton beside it, and the fold's layout carry hid it so well that
-  `npm run proof mirror` still read init 18/18 ok. `tools/prove-input.test.mjs` — a real Playwright
+  `npm run proof mirror` still read that screen's whole census green. `tools/prove-input.test.mjs` — a real Playwright
   run — is what caught it, on an attachment that was missing. Build the function in Node
   (`spec/_moment.mjs` `momentFunction`, `new Function`) and hand a FUNCTION over; and when a capture
   changes, check an attachment actually landed rather than trusting a green census.
@@ -360,34 +369,42 @@ change.
   drives the panel even under `navigator.webdriver`; the reloads that would abort a Playwright
   navigation are the only thing suppressed.
 - **A per-screen run writes a report covering only that screen.** It is *folded* into
-  `_results-index.json`, never replaced — replacing blanks every other screen's proof. The fold
+  `_results-index.json`, never replaced — replacing blanks every other screen's proof.
+  **…and a cross-screen flow may not repaint a beat the requirement's HOME screen harvested** (final
+  review I5, 2026-09-04). Evidence is keyed by REQUIREMENT and its paths are deterministic, so
+  `spec/init`'s composed flow — which tags `board:R1` — rewrote `spec/board/evidence/R1.b1.*` from
+  the init page when run ALONE, pruned what the board's own run had put there, and turned the next
+  board run red on four tests. Per-screen runs are a documented normal workflow, so the rule is
+  precedence: the home screen's own file owns its beats, a flow fills only the beats it left empty,
+  and nothing a flow brings replaces or prunes them (the reporter marks the beat `foreign` and does
+  not even copy the bytes; `foldEvidence` keeps the old entry). Coverage is untouched — the flow
+  still PROVES the requirement. Keying evidence by TEST rather than by requirement would remove the
+  collision outright and is the honest next step; this is the rule until then. The fold
   is a Playwright reporter (`spec/_results-reporter.mjs`), because Playwright writes its report only
   *after* globalTeardown.
-- **The mirror is guarded, so the gap between the drawing and the proof cannot open again** (the
-  human, 2026-09-02). Twice the kit quietly stopped drawing something the harvest had measured — the
-  tick box, then a ringed row's own leaves — and only a person's eye on a beat row caught it. Three
-  derived guards now stand between a renderer change and a shipped skeleton: `mirrorGaps`
-  (tools/viz.mjs, pure) checks EVERY frame against the same reading of the skeleton it was drawn
-  from (`mirrorRead` — one authority; a guard that re-states the drawing's rules drifts from them),
-  and `renderWireframe` returns those reports; `tools/viz-derive.mjs` prints them and still writes
-  the drawing; `npm run proof mirror` (tools/proof-integrity.mjs `checkMirrors`) refuses a committed
-  drawing that has a gap or whose `data-viz-layout` pin no longer hashes the harvest on disk; and the
-  storyline's ONE stale banner reads both reasons a drawing goes stale — the text moved, or the app
-  did (`layoutStaleOf` in build-board bakes `data-viz-layout-stale`). So a change to `snapLayout` or
-  to `frameBody` that drops a measured element now FAILS the gate instead of shipping a skeleton. If
-  a gap appears, fix the renderer or the capture — never the guard; and if the guard flags something
-  the kit legitimately does not draw (a shape below the 4×2.5 floor, a wrapper whose leaves type its
-  words), tighten the rule rather than silencing it. **THE REPLICA IS GATED THE SAME WAY** (phase 3,
-  2026-09-03): right after the capture, in the app's own page, the ACTUAL replica is rendered back in
-  a hidden `<iframe srcdoc>` at the region's own coordinates and walked with the SAME
-  `snapLayoutWalk` that measured the live page, and every box and word the live skeleton recorded
-  inside the scene root must come back (`replicaGaps`, tools/replica-gate.mjs, 1.5 px on each edge);
-  the pin and the gap list ride on the root as `data-replica-layout` / `data-replica-gaps`, the fold
-  prints every gapped moment, and `npm run proof mirror` refuses a replica that is gapped, ungated,
-  truncated, or whose pin no longer hashes the skeleton beside it — plus an Expected that does not
-  carry a failed claim's own value (the Expected is gated TEXTUALLY, never geometrically: its root
-  carries this moment's region while its body may be an earlier moment's base tree). The same rule
-  applies as to the drawing: **when a real harvest shows a gap, fix the CAPTURE — never the
+- **The picture is guarded, so the gap between it and the proof cannot open again** (the human,
+  2026-09-02; the drawn mirror it was written for was retired at phase 4a, 2026-09-03). Twice the
+  drawn kit quietly stopped drawing something the harvest had measured, and only a person's eye on a
+  beat row caught it. The drawing is gone — `tools/viz.mjs` `mirrorGaps` and `renderWireframe` still
+  exist for the SKETCH, `tools/viz-derive.mjs` no longer calls either and instead DELETES the
+  committed drawing of any requirement that has gained a replica, and
+  `tools/proof-integrity.mjs checkMirrors` returns nothing ("no committed wireframe drawings —
+  replicas gated instead"). What stands in its place is `checkReplicas`, and the rule is the same:
+  in the SAME page pass as the capture (`spec/_moment.mjs` `gateInPage`, final review C1, 2026-09-04
+  — it used to be a THIRD `page.evaluate` fired from Node after the screenshot, so the gate compared
+  two readings of a page that had been given three chances to settle), the app's own UNEDITED tree is
+  rendered back in a hidden `<iframe srcdoc>` at the region's own coordinates and walked with the
+  SAME `snapLayoutWalk` that measured the live page, and every box and word the live skeleton
+  recorded inside the scene root must come back (`replicaGaps`, tools/replica-gate.mjs, 1.5 px on
+  each edge). **ONE HTML PER MOMENT** (the human, 2026-09-04: "why does the Expected also need a
+  replica — the Actual is the screenshot"): the file that lands is the EXPECTED, and the gate's
+  verdict on that unedited tree is stamped on ITS root as `data-replica-layout` /
+  `data-replica-gaps`. The fold prints every gapped moment and sweeps the retired `.actual.html`
+  half; `npm run proof mirror` refuses a replica that is gapped, ungated, truncated, whose pin no
+  longer hashes the skeleton beside it, whose WORDS are not the skeleton's, or that does not carry a
+  failed claim's own value — the word rule exempting what a claim moved (a live element inside a
+  claim's ring, or one whose text is that claim's `got`), because applying the claim is exactly what
+  takes that text out of the picture. **When a real harvest shows a gap, fix the CAPTURE — never the
   tolerance and never the guard.** **The capture spends its budget on the ring
   first, never in document order (2026-09-03, the human, on dojostack's House View: "the schematic is
   useless — off focus, the versioning component not shown").** The walk had one global 360-slot cap

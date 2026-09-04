@@ -24,7 +24,7 @@ const S = (name, area, nreqs, lends = true) => ({
   area,
   title: name[0].toUpperCase() + name.slice(1),
   reqs: Array.from({ length: nreqs }, (_, i) => ({ id: 'R' + (i + 1) })),
-  chrome: lends ? { replica: `spec/${name}/evidence/R1.b1.before.actual.html`, vw: 1440, vh: 900, content: { x: 0, y: 60, w: 1440, h: 840 } } : null
+  chrome: lends ? { replica: `spec/${name}/evidence/R1.b1.before.expected.html`, vw: 1440, vh: 900, content: { x: 0, y: 60, w: 1440, h: 840 } } : null
 })
 
 test('chromeFrom prefers a screen in the same area', () => {
@@ -32,7 +32,7 @@ test('chromeFrom prefers a screen in the same area', () => {
   const got = chromeFrom(me, [S('board', 'Core', 3), S('dispatch', 'Running', 90), me])
   assert.equal(got.screen, 'board')
   assert.equal(got.title, 'Board')
-  assert.equal(got.replica, 'spec/board/evidence/R1.b1.before.actual.html')
+  assert.equal(got.replica, 'spec/board/evidence/R1.b1.before.expected.html')
 })
 
 test('chromeFrom takes the screen with the most requirements inside that area', () => {

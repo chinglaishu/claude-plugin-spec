@@ -894,9 +894,9 @@ test('The detail offers a Focus / List / Flow toggle — Focus leads with the be
       const b = bs.filter((x: any) => Number(x.n) === 1)[0] || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
       const out = []
-      if (b.before && !vals.length) out.push(b.replicaBefore || '')
-      for (const v of vals) out.push(v.replicaExpected || v.replica || '')
-      if (b.after) out.push(b.replicaExpectedAfter || b.replicaAfter || '')
+      if (b.before && !vals.length) out.push(b.replicaExpectedBefore || '')
+      for (const v of vals) out.push(v.replicaExpected || '')
+      if (b.after) out.push(b.replicaExpectedAfter || '')
       return out
     })
     expect(want.length, 'the harvest recorded this beat\'s moments').toBeGreaterThan(1)
@@ -1282,7 +1282,7 @@ const replicaSpecimens = () => {
     const beat = ((ev[rid] || {}).beats || [])[0]
     if (!beat || !beat.before || !beat.after || !beat.layoutAfter) continue
     const exp = beat.replicaExpectedAfter || ''
-    const rep = beat.replicaAfter || ''
+    const rep = beat.replicaExpectedBefore || ''
     if (!exp || !rep || !existsSync(exp) || !existsSync(rep) || !existsSync(beat.layoutAfter)) continue
     // …and WHAT IT CLAIMS, and WHERE (2026-09-04): a claim is filed on the moment that made it — the
     // VALUE moment proveVisible rang — so the picture that can be shown to be an ANSWER rather than
@@ -1525,7 +1525,7 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       await gapNode.evaluate(el => {
         const bs = JSON.parse(el.getAttribute('data-ev-beats') || '[]')
         const b = bs.find((x: any) => Number(x.n) === 1)
-        delete b.replicaExpectedAfter; delete b.replicaAfter          // the LAST moment lost its picture
+        delete b.replicaExpectedAfter                                 // the LAST moment lost its picture
         // …and ONLY it (corrected 2026-09-04, rule 4 — the fixture was the wrong side). This also
         // stripped every VALUE moment's replica, which was a no-op while no board beat rang a value:
         // with one, the beat's before frame stops being a moment of its own (a beat's moments are
@@ -1964,8 +1964,8 @@ test('A beat row is a comparison — one camera on one region, one beat in both 
       const rid = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
       const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
       const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
-      return [b.replicaBefore, b.replicaAfter, b.replicaExpectedAfter,
-        ...(b.values || []).flatMap((v: any) => [v && v.replica, v && v.replicaExpected])].filter(Boolean)
+      return [b.replicaExpectedBefore, b.replicaExpectedAfter,
+        ...(b.values || []).flatMap((v: any) => [v && v.replicaExpected])].filter(Boolean)
     })
     await hudCheck('the Expected cell shows THIS beat\'s own moment', 'a moment of beat 1',
       mine.indexOf(showing) >= 0 ? 'a moment of beat 1' : 'another beat\'s picture: ' + showing)
@@ -2541,9 +2541,9 @@ test('The proof is walked by a per-beat guided-tour stepper and the keys — and
       const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
       const vals = (b.values || []).filter((v: any) => v && v.frame)
       const out: string[] = []
-      if (b.before && !vals.length) out.push(b.replicaBefore || '')
-      for (const v of vals) out.push(v.replicaExpected || v.replica || '')
-      if (b.after) out.push(b.replicaExpectedAfter || b.replicaAfter || '')
+      if (b.before && !vals.length) out.push(b.replicaExpectedBefore || '')
+      for (const v of vals) out.push(v.replicaExpected || '')
+      if (b.after) out.push(b.replicaExpectedAfter || '')
       return out
     })
     expect(sub.length, 'the harvest recorded this beat\'s moments, each with its own replica').toBeGreaterThan(1)

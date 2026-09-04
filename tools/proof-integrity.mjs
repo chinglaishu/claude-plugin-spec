@@ -241,25 +241,34 @@ export function checkMirrors (spec = 'spec') {
   return rows
 }
 
-// ── THE REPLICA GATE (phase 3, 2026-09-03) ───────────────────────────────────────────────────────
-// The same guard, on the other picture. Since the human's 2026-09-03 decision the row's two pictures
-// are HTML replicas of the app's own component — `<id>.b<n>.<phase>.actual.html` (what the app
-// rendered) and `.expected.html` (what the requirement says it should have). Both are claims, and a
-// claim nobody measures stops being true silently; this refuses one that:
+// ── THE REPLICA GATE (phase 3, 2026-09-03; one html per moment, 2026-09-04) ──────────────────────
+// The same guard, on the other picture. Since the human's 2026-09-03 decision the row's Expected
+// half is an HTML replica of the app's own component with the requirement's claims applied —
+// `<id>.b<n>.<phase>.expected.html`. It is a claim, and a claim nobody measures stops being true
+// silently; this refuses one that:
 //
-//   1. was NEVER GATED — no `data-replica-layout`. The in-page gate (spec/_base.ts snapReplica)
-//      renders the replica back in a hidden iframe and walks it with the very walk that measured the
-//      live page; a file with no pin is one that walk never checked. Honest, and refused.
+//   1. was NEVER GATED — no `data-replica-layout`. The in-page gate (spec/_moment.mjs `gateInPage`,
+//      in the same pass as the capture) renders the UNEDITED tree back in a hidden iframe and walks
+//      it with the very walk that measured the live page, then stamps its verdict on this file's
+//      root; a file with no pin is one that walk never checked. Honest, and refused.
 //   2. the HARVEST HAS MOVED PAST — the pin no longer hashes the skeleton beside it on disk.
 //   3. the IN-PAGE WALK already found a gap in (or that ran out of bytes: `data-replica-truncated`).
-//   4. (ACTUAL only) whose WORDS are not the skeleton's: every text-bearing element the live walk
-//      measured inside the replica's own region must appear in the replica's text. This is the rule
-//      that needs no DOM, so deleting a text node from a committed replica fails the gate here.
-//   5. (EXPECTED only) that does not carry a FAILED CLAIM's own expected value.
+//   4. whose WORDS are not the skeleton's: every text-bearing element the live walk measured inside
+//      the replica's own region must appear in the file's text. This is the rule that needs no DOM,
+//      so deleting a text node from a committed replica fails the gate here.
+//   5. that does not carry a FAILED CLAIM's own expected value.
 //
-// The EXPECTED is deliberately NOT geometry-gated — see tools/replica-gate.mjs's header: its root
-// carries this moment's region while its body may be an earlier moment's base tree, and two frames
-// in one file cannot be measured against one live skeleton.
+// Rules 4 and 5 pull against each other on ONE file, and the seam between them is the claim: rule 5
+// demands the value the requirement asked for, and applying it is exactly what makes the live text
+// rule 4 would demand no longer be there. So rule 4 EXEMPTS what a claim moved — a live element
+// standing inside a claim's own ring, or one whose text is that claim's `got` (the string the
+// Expected replaced with its `expected`). Those are the nodes the capture marks `data-claim`; the
+// exemption is made on the live side because that is the side with boxes on it.
+//
+// Since 2026-09-04 there is no `.actual.html` at all: a moment's Actual half is the photograph named
+// beside it (the human: "why does the Expected also need a replica — the Actual is the screenshot").
+// The pattern still MATCHES one, so a stale file left by an older harness is refused as ungated
+// rather than passing unseen; the fold sweeps them (tools/evidence.mjs legacyActualReplicas).
 const REPLICA_FILE = /^(.+)\.b(\d+)\.(before|after|v\d+)\.(actual|expected)\.html$/
 export function checkReplicas (spec = 'spec') {
   const rows = []
@@ -291,10 +300,22 @@ export function checkReplicas (spec = 'spec') {
         if (a.layout && a.layout !== layoutHash(lay, null)) {
           why.push('the layout pin has moved: the harvest is newer than the replica')
         }
-        if (row.side === 'actual') {
+        {
           // rule 4 — the words, with no DOM: the skeleton's own text, inside the replica's region
           const text = textOf(html)
           const reg = a.region
+          // …and WHAT A CLAIM MOVED IS NOT A MISSING WORD (2026-09-04, one html per moment). This
+          // file has the requirement's claims applied to it, so the live text a claim replaced is,
+          // correctly, not in it — demanding it back would refuse every Expected that does its job.
+          // Two exemptions, both read off the claims the file itself carries: a live element that
+          // stands inside a claim's own ring box, and a live text that IS a claim's `got`.
+          const claimRings = a.claims.map(c => (c && c.ring && typeof c.ring === 'object' ? c.ring : null))
+            .filter(r => r && Number.isFinite(Number(r.x)))
+            .map(r => ({ x: Number(r.x), y: Number(r.y), w: Number(r.w != null ? r.w : r.width) || 0, h: Number(r.h != null ? r.h : r.height) || 0 }))
+          const claimGot = a.claims.map(c => String((c && c.got) || '').replace(/\s+/g, ' ').trim()).filter(Boolean)
+          const claimed = (e, t) => claimGot.some(g => g === t || containsRun(g, t)) ||
+            claimRings.some(r => e.x + e.w > r.x - GATE_TOL && e.x < r.x + r.w + GATE_TOL &&
+              e.y + e.h > r.y - GATE_TOL && e.y < r.y + r.h + GATE_TOL)
           for (const e of (Array.isArray(lay.els) ? lay.els : [])) {
             if (row.gaps.length >= 12) break
             // a tag that never paints a reader-visible word (fix round 2, item 2 — the same list
@@ -316,12 +337,13 @@ export function checkReplicas (spec = 'spec') {
             // …as its own word run, never as a bare substring (fix round 1, I1): here the haystack is
             // the WHOLE file's text with no box to pin it, so plain containment would let a live `5`
             // be answered by any `15` anywhere in the page
+            if (claimed(e, t)) continue
             if (!containsRun(text, t)) row.gaps.push({ kind: 'missing-text', what: t, x: e.x, y: e.y, w: e.w, h: e.h })
           }
         }
       }
       // rule 5 — the Expected's own gate: what the requirement asked for must be in it
-      if (row.side === 'expected') for (const g of claimGaps(textOf(html), a.claims)) row.gaps.push(g)
+      for (const g of claimGaps(textOf(html), a.claims)) row.gaps.push(g)
       if (row.gaps.length) why.unshift(`the replica is missing what the harvest measured — ${gapSummary(row.gaps)}`)
       row.ok = !row.gaps.length && !why.length
       row.why = why.join('; ')

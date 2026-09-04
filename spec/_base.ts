@@ -1083,11 +1083,13 @@ async function snapLayout (id: string, beat: number, seq: number, phase: Phase, 
 // the app's own component, "the schematic looks nothing like it" being the end of the drawn kit's
 // road). Beside the photograph and the layout skeleton, the app's OWN DOM around the ringed element
 // — its computed styles diffed against per-tag defaults, sanitised (no script, no handler, no
-// external URL) and capped at 1500 elements / 200 KB. Attached as `replica <id>#<n> <phase>`,
-// mirroring the frame exactly, and folded by the reporter to
-// spec/<screen>/evidence/<rid>.b<n>.<phase>.actual.html. The board does not render it yet (phase 4);
-// when it does it will be inside an <iframe sandbox srcdoc>, which is the FIRST wall — the
-// sanitising in spec/_replica.mjs is the second.
+// external URL) and capped at 1500 elements / 200 KB. Attached as `replica-expected <id>#<n>
+// <phase>`, mirroring the frame exactly, and folded by the reporter to
+// spec/<screen>/evidence/<rid>.b<n>.<phase>.expected.html — ONE html per moment since 2026-09-04
+// (the human: "why does the Expected also need a replica — the Actual is the screenshot"), whose
+// root carries the gate's verdict on the app's own unedited tree. The board renders it inside an
+// <iframe sandbox srcdoc>, which is the FIRST wall — the sanitising in spec/_replica.mjs is the
+// second.
 //
 // A by-product exactly like the skeleton: bounded by the same 2500 ms deadline, every failure
 // swallowed, and it only reads the page — never a gate, never a thing that can change what the
@@ -1127,94 +1129,33 @@ function chooseBase (c: CurCheck | null, claim: Claim | null): string | null {
   return null
 }
 
-// ── THE GATE, IN THE APP'S OWN PAGE (phase 3, 2026-09-03) ───────────────────────────────────────
+// ── THE GATE (phase 3, 2026-09-03; folded into the one pass, final review C1, 2026-09-04) ───────
 // A replica is a CLAIM — "this is what the app rendered" — and the drawn kit taught us twice that a
-// claim nobody measures quietly stops being true (CLAUDE.md, "the mirror is guarded"). So the moment
-// after it is captured, and before it is written, the replica is RENDERED BACK in a hidden iframe at
-// the region's own coordinates and walked with the SAME spec/_layout-walk.mjs walk that measured the
-// live page. Every box and word the live skeleton recorded inside the scene root must come back
-// (tools/replica-gate.mjs replicaGaps); what does not is a replica gap, written onto the file's own
-// root and refused by `npm run proof mirror`.
+// claim nobody measures quietly stops being true (CLAUDE.md, "the mirror is guarded"). So the replica
+// is rendered BACK in a hidden iframe and walked with the SAME spec/_layout-walk.mjs walk that
+// measured the live page, and every box and word the live skeleton recorded inside the scene root
+// must come back (tools/replica-gate.mjs replicaGaps).
 //
-// The frame is pinned to the viewport's origin, so its coordinates ARE the page's — no offset to
-// undo. It carries the page's own @font-face rules (rep.fontFaces) because a frame set in a fallback
-// stack lays every word out at a different width, and every text box would then drift. Its srcdoc has
-// no script (the capture's sanitiser) and the sandbox forbids one anyway; `allow-same-origin` is what
-// makes the document walkable, and was verified to be enough — a sandboxed srcdoc frame with scripts
-// disabled still evaluates in Playwright's isolated world.
+// That walk used to happen HERE, in a third `page.evaluate` fired from Node after the screenshot and
+// after the moment pass had returned. It happens inside the moment pass now (spec/_moment.mjs
+// `gateInPage`), on the html that pass has just built and against the skeleton it measured in the
+// same instant — the two things the gate compares can no longer come from two different moments of
+// the app. What is left in this file is what the gate MEANS, not how it is taken: the comparison
+// (pure, tools/replica-gate.mjs) and where its verdict is written.
 //
-// It touches nothing but the iframe it mounts and removes — in a `finally`, so an abandoned gate
-// never leaves one behind — and every failure returns null, which writes the file UNGATED. An
-// ungated replica is honest; the gate refuses it as "not gated" rather than passing it unseen.
-const REPLICA_FRAME = '__specboard-replica'
-const REPLICA_HOST = '__specboard-replica-host'
+// ONE HTML PER MOMENT (the human, 2026-09-04: "why does the Expected also need a replica — the
+// Actual is the screenshot"). The Actual half of a moment IS the photograph beside it, so no
+// `.actual.html` is written any longer. The gate still runs on the UNEDITED tree — `rep.html`, in
+// memory, before any claim is applied, which is the only tree a photograph's twin could be — and its
+// verdict is stamped on the root of the file that does land, the Expected. The unedited tree stays
+// in memory for the rest of the beat as `lastRight`, the base a later restore reaches back to.
+const REPLICA_HOST = '__specboard-replica'
 // spec/_replica.mjs's own default `caps.bytes` — restated here (never imported: captureReplica is
 // serialised by source into the page and must stay self-contained) so the reserve subtracted below
 // is legible as "the plan's 200 KB minus what the gate adds", not a bare number.
 const REPLICA_CAPTURE_BYTE_CAP = 200000
-async function gateReplica (page: Page, rep: any): Promise<any | null> {
-  const reg = rep && rep.region ? rep.region : null
-  if (!reg || typeof rep.html !== 'string' || !rep.html) return null
-  // the page's own @font-face rules. Nothing in them can execute (the frame is sandboxed with no
-  // allow-scripts), but a serialised font-family carrying `</style>` would close the element early
-  // and the frame would set its type in nothing — a page of false gaps (fix round 1, M3).
-  const faces = Array.isArray(rep.fontFaces)
-    ? rep.fontFaces.map((f: any) => String((f && f.cssText) || '')).join('\n').slice(0, 64000).replace(/<\/style/gi, '<\\/style')
-    : ''
-  const doc = '<!doctype html><html><head><style>html,body{margin:0;overflow:hidden}</style><style>' +
-    faces + '</style></head><body><div style="position:absolute;left:' + reg.x + 'px;top:' + reg.y +
-    'px;width:' + reg.w + 'px">' + rep.html + '</div></body></html>'
-  try {
-    const up = await raceTimeout(page.evaluate((arg: any) => {
-      const prev = document.getElementById(arg.host)
-      if (prev) prev.remove()
-      const f = document.createElement('iframe')
-      f.id = arg.host
-      f.name = arg.frame
-      f.setAttribute('sandbox', 'allow-same-origin')
-      f.setAttribute('style', 'position:fixed;left:0;top:0;width:' + (window.innerWidth || 0) +
-        'px;height:' + (window.innerHeight || 0) + 'px;border:0;opacity:0;pointer-events:none;z-index:-1')
-      f.srcdoc = arg.doc
-      return new Promise<boolean>(resolve => {
-        let done = false
-        const finish = (ok: boolean) => { if (!done) { done = true; resolve(ok) } }
-        f.addEventListener('load', () => finish(true))
-        setTimeout(() => finish(false), 1200)
-        document.body.appendChild(f)
-      })
-    }, { host: REPLICA_HOST, frame: REPLICA_FRAME, doc }), 1600)
-    if (!up) return null
-    const fr = page.frame({ name: REPLICA_FRAME })
-    if (!fr) return null
-    // THE SAME FORCED TARGET AS THE LIVE SIDE (fix round 1, I2). The live skeleton is walked with the
-    // ringed element HANDED OVER, which gets `focus` with no area test; walking the frame with
-    // `target: null` left the replica to rediscover it geometrically (most of it inside the ring, and
-    // no more than 4x the ring's area) — so a beat whose ringed element is larger than that is
-    // focused on the live side and CANNOT be on the replica side, and `missing-focus` fires with no
-    // capture fix able to clear it. The capture already marks the element `data-ring="1"`; resolving
-    // it inside the frame makes both walks answer the focus question the same way.
-    const ringed: any = await raceTimeout(fr.$('[data-ring]') as any, 400).catch(() => null)
-    // …AND THE RING IS THE ONE THE LIVE SKELETON WAS MEASURED WITH (task 3b, 2026-09-04). `focus` is
-    // geometric, so a walk given a different ring flags a different set of elements: handing the
-    // replica's own `[data-ring]` element over let the walk re-derive the ring from it, and every
-    // geometric focus flag in the pair then disagreed (board R22, `missing-focus 15` on a replica
-    // that is otherwise gap-free — measured by re-rendering the committed file and re-walking it
-    // both ways). `ringFixed` keeps the skeleton's own ring; the target still forces the focus flag
-    // on the ringed element itself, which is fix round 1's I2.
-    const lr = LAST_LAYOUT && LAST_LAYOUT.ring ? LAST_LAYOUT.ring : null
-    const ring = lr ? { x: lr.x, y: lr.y, width: lr.w, height: lr.h } : LAST_BOX
-    const skel = await raceTimeout(fr.evaluate(snapLayoutWalk as any, { ring, target: ringed, ringFixed: true }), 1200)
-    if (ringed) { try { await ringed.dispose() } catch { /* already gone */ } }
-    return skel
-  } catch { return null } finally {
-    await raceTimeout(page.evaluate((host: string) => {
-      const el = document.getElementById(host)
-      if (el) el.remove()
-    }, REPLICA_HOST), 1000).catch(() => null)
-  }
-}
 
-async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null, rep: any = null): Promise<void> {
+async function snapReplica (id: string, beat: number, seq: number, phase: Phase, claim: Claim | null = null, rep: any = null, repSkel: any = null): Promise<void> {
   const page = CURRENT_PAGE
   if (!page) return
   // the BEAT being harvested — set for the whole of it, its before and after frames included
@@ -1240,42 +1181,41 @@ async function snapReplica (id: string, beat: number, seq: number, phase: Phase,
     // THE FILE BODY: a comment saying what this is, the sheet, the root. No doctype, no <html>,
     // no <head> — the board drops the whole body into an iframe's srcdoc.
     const head = (side: string) => `<!-- specboard replica-1 · ${scr}:${id} b${beat} ${phase} · ${side} · sanitised, no script -->\n`
-    const file = info.outputPath(`replica-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
-    // ── THE GATE (phase 3) ──────────────────────────────────────────────────────────────────────
-    // The ACTUAL is gated by MEASUREMENT: walked back in the frame above and compared, box for box
-    // and word for word, with the skeleton snapLayout just took. The EXPECTED is gated TEXTUALLY —
-    // its root carries THIS moment's region while its body may be an earlier moment's base tree, so
-    // two frames in one file cannot be measured against one live skeleton (the deferred question of
-    // task-2-rereview4.md); what it must answer for is that every FAILED claim's own value is
-    // actually in it, which is what the Expected is for. Both are written unpinned when there is
-    // nothing to check them against — honest, and refused by the CLI as "not gated".
-    // …and the whole gate inside ONE deadline the inner ones add up to (fix round 1, M4: 1600 to
-    // mount + 1200 to walk + 400 to resolve the ring must fit inside it, or the outer race fires
-    // while the mount is still pending and the `finally` tidies up after the harness has moved on).
-    const walked: any = LAST_PIN ? await raceTimeout(gateReplica(page, rep), 3400) : null
+    const file = info.outputPath(`replica-expected-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)   // seq keys the file only — see snapEvidence
+    // ── THE VERDICT (phase 3; one html per moment, final review C1, 2026-09-04) ─────────────────
+    // The gate itself ran inside the moment pass (spec/_moment.mjs `gateInPage`) and handed back the
+    // skeleton of the replica re-rendered in a hidden frame. What is decided HERE is what that walk
+    // MEANS, with the pure comparison the CLI also uses (tools/replica-gate.mjs): every box and word
+    // the live skeleton recorded inside the scene root must have come back.
+    //
+    // It is measured on the UNEDITED tree — `rep.html`, the app's own markup with no claim applied,
+    // which is the only tree a photograph's twin could be — and written on the root of the file that
+    // actually lands, the Expected. There is no `.actual.html` any more: the Actual half of a moment
+    // is the photograph named beside it, and a second file saying the same thing was one more thing
+    // to keep in step, serve, prune and disagree with.
+    //
+    // A replica the walk never came back for is written UNPINNED — honest, and refused by the CLI as
+    // "not gated" rather than passing unseen. And a beat's own Expected is gated TEXTUALLY on top of
+    // that (rule 5): every FAILED claim's value must actually be in it, which is what it is for.
+    const walked: any = LAST_PIN ? repSkel : null
     const aPin = walked && Array.isArray(walked.els) && walked.els.length ? LAST_PIN : ''
     const aGaps = aPin ? replicaGaps(LAST_LAYOUT, walked, rep.region) : []
     const gate = (body: string, pin: string, gaps: any[]) => pin ? withReplicaAttrs(body, { layout: pin, gaps }) : body
-    writeFileSync(file, head('Actual') + gate(rep.html, aPin, aGaps) + '\n')
-    info.attachments.push({ name: `replica ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
-    // ── THE EXPECTED HALF ────────────────────────────────────────────────────────────────────────
-    // Never at a BEFORE moment: the beat has claimed nothing there, so an Expected would be the
-    // Actual under a second name. At every other moment it is this capture's own expected — except
-    // the AFTER frame of a beat that FAILED, which shows the last intended state the beat reached
-    // (the human, 2026-09-02: "the schematic should be correct, only the proof should be wrong") —
-    // KEPT BYTE-FOR-BYTE as `lastExpected` rather than re-derived, even though a `base`-driven
-    // re-capture with no claim of its own would land on the same tree: the after phase never passes
-    // a claim, so `chooseBase` already resolved `base = lastExpected` for it above, and this is the
-    // belt to that braces — the file written is never in doubt about which string it is.
+    // ── THE ONE FILE ─────────────────────────────────────────────────────────────────────────────
+    // At a BEFORE moment the beat has claimed nothing yet, so the Expected IS the unedited tree —
+    // written all the same, because a moment with no file is a moment with no picture. At the AFTER
+    // moment of a beat that FAILED it is the last intended state the beat reached (the human,
+    // 2026-09-02: "the schematic should be correct, only the proof should be wrong") — KEPT
+    // BYTE-FOR-BYTE as `lastExpected` rather than re-derived, even though a `base`-driven re-capture
+    // with no claim of its own would land on the same tree: the after phase never passes a claim, so
+    // `chooseBase` already resolved `base = lastExpected` for it, and this is the belt to that
+    // braces — the file written is never in doubt about which string it is.
     const failed = !!c && c.claims.some(x => x.ok !== true)
-    if (phase !== 'before') {
-      const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
-      if (typeof keep === 'string' && keep) {
-        const xf = info.outputPath(`replica-expected-${safeId(id)}-b${beat}-c${seq}-${phase}.html`)
-        const xGaps = claimGaps(textOf(keep), c ? c.claims : [])
-        writeFileSync(xf, head('Expected') + gate(keep, LAST_PIN, xGaps) + '\n')
-        info.attachments.push({ name: `replica-expected ${id}#${beat} ${phase}`, path: xf, contentType: 'text/html' })
-      }
+    const keep = phase === 'after' && failed && c && c.lastExpected ? c.lastExpected : rep.expected
+    if (typeof keep === 'string' && keep) {
+      const xGaps = [...aGaps, ...claimGaps(textOf(keep), c ? c.claims : [])]
+      writeFileSync(file, head('Expected') + gate(keep, aPin, xGaps) + '\n')
+      info.attachments.push({ name: `replica-expected ${id}#${beat} ${phase}`, path: file, contentType: 'text/html' })
     }
     // …and what the NEXT moment of this beat will be built from. `lastRight` only moves while every
     // claim so far held: the moment the app goes wrong, a restore must reach back past it, or it
@@ -1394,9 +1334,9 @@ async function harvestFonts (page: Page, info: any, fonts: { family?: string, ur
 // boxes it dropped as occluded) go straight across to the capture inside the page, which is what
 // makes the two halves agree rather than merely be simultaneous.
 const MOMENT_FN = momentFunction(String(snapLayoutWalk), String(captureReplica))
-async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: any }> {
+async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: any, repSkel: any }> {
   const page = CURRENT_PAGE
-  if (!page) return { skel: null, rep: null }
+  if (!page) return { skel: null, rep: null, repSkel: null }
   const c = CUR_CHECK
   try {
     // the ringed ELEMENT (2026-09-03): a handle resolved with a short bound — a target that has just
@@ -1426,13 +1366,16 @@ async function captureMoment (claim: Claim | null): Promise<{ skel: any, rep: an
       // are not part of that budget at all, and 41 gaps' worth of JSON pushed the FINAL FILE to
       // 204,887 bytes. Reserving GATE_BYTE_RESERVE off the top makes the promise the plan actually
       // made — "≤ 200 KB, the file" — true regardless of how gapped a moment turns out.
-      caps: { bytes: REPLICA_CAPTURE_BYTE_CAP - GATE_BYTE_RESERVE }
-    // …one deadline for the pair, the two 2500 ms bounds they had apart. Bounded exactly like every
-    // other by-product: a page that will not answer costs the bound and never fails the assertion.
-    }), 4000)
+      caps: { bytes: REPLICA_CAPTURE_BYTE_CAP - GATE_BYTE_RESERVE },
+      // …and the id of the hidden frame the gate mounts and removes inside this same pass
+      gateHost: REPLICA_HOST
+    // …one deadline for the WHOLE moment — the walk, the capture and now the gate that used to have
+    // 3400 ms of its own on top of this (final review C1). Bounded exactly like every other
+    // by-product: a page that will not answer costs the bound and never fails the assertion.
+    }), 7500)
     if (handle) { try { await handle.dispose() } catch { /* already gone */ } }
-    return { skel: out ? out.skel : null, rep: out ? out.rep : null }
-  } catch { return { skel: null, rep: null } }
+    return { skel: out ? out.skel : null, rep: out ? out.rep : null, repSkel: out ? out.repSkel : null }
+  } catch { return { skel: null, rep: null, repSkel: null } }
 }
 
 async function snapPhase (id: string, beat: number, seq: number, phase: Phase, at: number | null = null, label: string | null = null, claim: Claim | null = null): Promise<void> {
@@ -1453,7 +1396,7 @@ async function snapPhase (id: string, beat: number, seq: number, phase: Phase, a
   // the skeleton first, then the replica the gate checks against it.
   const m = await captureMoment(claim)
   await snapLayout(id, beat, seq, phase, at, label, claim, m.skel, !shot)
-  await snapReplica(id, beat, seq, phase, claim, m.rep)
+  await snapReplica(id, beat, seq, phase, claim, m.rep, m.repSkel)
 }
 
 // ONE ASSERTED VALUE, PHOTOGRAPHED (2026-08-29, the human: the When has to be visible in the proof,

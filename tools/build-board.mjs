@@ -521,7 +521,7 @@ const evAttrs = (s, r) => {
       // paths and builds its srcdoc from them, so they ride on exactly the frames' own terms — only
       // a path whose FILE exists, content-hash-busted because a re-harvest overwrites in place.
       for (const k of ['before', 'after', 'layoutBefore', 'layoutAfter',
-        'replicaBefore', 'replicaAfter', 'replicaExpectedAfter']) {
+        'replicaExpectedBefore', 'replicaExpectedAfter']) {
         const v = path(b[k]); if (v) o[k] = v
       }
       // WHAT THE GATE FOUND, as the reader's own stale reason (phase 3's verdict, phase 4a's banner):
@@ -538,7 +538,12 @@ const evAttrs = (s, r) => {
       // the app's OWN coordinates on a page that size, so it needs the viewport even where the beat
       // rang nothing (a Given row has no focus rect to read it off). Lifted from the skeleton the
       // fold already reads here, never stored.
-      const lB = readL(b.layoutBefore) || readL(b.layoutAfter)
+      // …and a beat whose ENDS measured nothing while a VALUE moment did still has a page (final
+      // review R4, 2026-09-04): a null viewport nulls the whole row's overlay layer — no difference
+      // marker on a FAILING moment and no chip on either picture — so every skeleton the beat has is
+      // asked, in the order the row would show them, before the answer is "none".
+      const lB = readL(b.layoutBefore) || readL(b.layoutAfter) ||
+        (Array.isArray(b.values) ? b.values.map(v => readL(v && v.layout)).find(Boolean) : null)
       if (lB && Number(lB.w) > 0 && Number(lB.h) > 0) { o.vw = Number(lB.w); o.vh = Number(lB.h) }
       // …AND HAS THE APP MOVED PAST THE REPLICA? (phase 4a — layoutStaleOf's rule, on the other
       // picture.) The pin the in-page gate checked the replica against, versus the hash of the
@@ -585,7 +590,7 @@ const evAttrs = (s, r) => {
         // …and this MOMENT'S TWO REPLICAS (phase 4a): what the app rendered, and what the
         // requirement says it should have. The Expected cell steps to `replicaExpected`; where a
         // moment harvested none it falls back to the Actual and says so.
-        for (const k of ['replica', 'replicaExpected']) { const rp = path(v && v[k]); if (rp) o2[k] = rp }
+        for (const k of ['replicaExpected']) { const rp = path(v && v[k]); if (rp) o2[k] = rp }
         if (v && v.gate && typeof v.gate === 'object') o2.replicaGaps = Number(v.gate.gaps) || 0
         // …and the CLAIM the check made here (expected · got · ok), bounded like every other piece
         // of app text that becomes an HTML attribute. It is what makes the Expected readable as an
@@ -2380,6 +2385,9 @@ export function build () {
      that had been computed; both still pass). */
   .pics .mdiffs { position:absolute; left:50%; transform:translateX(-50%); z-index:4;
     display:flex; flex-direction:column; align-items:center; gap:var(--s1); pointer-events:none; }
+  /* an author display: beats the UA's [hidden] rule, so the flag the marker layer sets was inert
+     and "no marker on a passing moment" rested only on the layer being emptied (final review R4) */
+  .pics .mdiffs[hidden] { display:none; }
   .pics .mdiff { display:flex; align-items:baseline; gap:6px; max-width:44ch; white-space:nowrap;
     padding:3px var(--s3); background:var(--bengara-tint); border:1px solid var(--bengara-line);
     border-radius:999px; box-shadow:var(--sh-md); }

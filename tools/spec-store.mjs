@@ -9,7 +9,7 @@ import { createHash } from 'node:crypto'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { aggregateCoverage, deriveReqState, deriveReqStatus, qualify } from './coverage.mjs'
-import { foldEvidence, contentRect } from './evidence.mjs'
+import { foldEvidence, contentRect, legacyActualReplicas } from './evidence.mjs'
 import { parseBehavior } from './behavior.mjs'
 // pure: the beat-function metadata (GIVEN + BEATS) of a screen's steps.ts, read statically (Task 5)
 import { parseBeats } from './compose.mjs'
@@ -310,6 +310,20 @@ export function foldByScreen (fresh, { partial = false, evidence = null } = {}) 
   if (evidence && Object.keys(evidence).length) {
     for (const p of foldEvidence(index, evidence)) {
       try { rmSync(join(ROOT, p), { force: true }) } catch { /* already gone */ }
+    }
+    // …AND THE RETIRED HALF OF EVERY MOMENT (2026-09-04, one html per moment). A `.actual.html` is
+    // named by no entry any more, so the keep-set above can never reach one: it would stay in the
+    // tree for ever, be served, and be refused by `npm run proof mirror` as a replica nothing gated.
+    // Swept per screen this fold touched — the same best-effort deletion, and the rule itself is
+    // pure and unit-tested (tools/evidence.mjs legacyActualReplicas).
+    for (const scr of new Set(Object.keys(evidence).map(q => (q.includes(':') ? q.slice(0, q.indexOf(':')) : '')).filter(Boolean))) {
+      const dir = join(SPEC, scr, 'evidence')
+      if (!existsSync(dir)) continue
+      let names = []
+      try { names = readdirSync(dir) } catch { names = [] }
+      for (const n of legacyActualReplicas(names)) {
+        try { rmSync(join(dir, n), { force: true }) } catch { /* already gone */ }
+      }
     }
   }
   // drop screens whose directory is gone — a deleted screen should not haunt the column
@@ -901,7 +915,7 @@ export function chromeSource (name) {
   try { files = readdirSync(dir) } catch { return null }
   // deterministic: the first Before page by name that still has the skeleton it was measured with —
   // the skeleton is what says where the shell ends and a screen's own words begin
-  for (const f of files.filter(n => n.endsWith('.before.actual.html')).sort()) {
+  for (const f of files.filter(n => n.endsWith('.before.expected.html')).sort()) {
     const layName = f.replace(/\.actual\.html$/, '.layout.json')
     if (!files.includes(layName)) continue
     let lay = null
@@ -935,7 +949,7 @@ export function chromeSource (name) {
 // chrome — it has its own picture, and two kinds of picture down one requirement is a comparison of
 // nothing (the same rule the storyline's `hasReplicas` states on the client).
 export function hasAnyReplica (name) {
-  try { return readdirSync(join(SPEC, name, 'evidence')).some(f => f.endsWith('.actual.html')) } catch { return false }
+  try { return readdirSync(join(SPEC, name, 'evidence')).some(f => f.endsWith('.expected.html')) } catch { return false }
 }
 // PURE. Same area first — a screen's siblings look like it — then the screen with the most
 // requirements (the most-worked-on screen is the most representative page of the product), then by

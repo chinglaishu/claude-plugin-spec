@@ -172,31 +172,46 @@ const repFixture = (mutate = {}) => {
   // `repin` re-pins the replica to the layout the fixture just wrote — for a test about the WORDS,
   // where a mutated skeleton would otherwise also fail on the pin and prove nothing about the words
   const pin = layoutHash(mutate.repin ? lay : RLAY, null)
-  const actual = REP_ROOT('actual', ACTUAL_BODY, '', pin)
-  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'),
-    mutate.actual ? mutate.actual(actual) : actual)
-  const expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"', pin)
-  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.expected.html'),
-    mutate.expected ? mutate.expected(expected) : expected)
+  // ONE HTML PER MOMENT (2026-09-04): the only replica a moment lands is the Expected, and the gate
+  // asks BOTH questions of it — the words the live skeleton measured (rule 4) and the values the
+  // failed claims asked for (rule 5). `mutate.actual` is kept as a name for a mutation of the app's
+  // own markup, applied to the same one file; `mutate.expected` runs after it.
+  let expected = REP_ROOT('expected', ACTUAL_BODY, ' data-claims="' + CLAIMS + '"', pin)
+  if (mutate.actual) expected = mutate.actual(expected)
+  if (mutate.expected) expected = mutate.expected(expected)
+  writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.expected.html'), expected)
   return root
 }
 
-test('the replica gate passes a gated pair whose pin, words and claims all still hold', () => {
+test('the replica gate passes a gated moment whose pin, words and claims all still hold', () => {
   const root = repFixture()
   try {
-    const rows = checkReplicas(root).sort((a, b) => a.file.localeCompare(b.file))
-    assert.equal(rows.length, 2)
-    assert.deepEqual(rows.map(r => r.ok), [true, true], rows.map(r => r.why).join(' | '))
+    const rows = checkReplicas(root)
+    assert.equal(rows.length, 1, 'one html per moment')
+    assert.equal(rows[0].ok, true, rows[0].why)
     assert.equal(rows[0].screen, 'todo')
     assert.equal(rows[0].id, 'R1')
-    assert.match(rows[0].file, /R1\.b1\.after\.actual\.html$/)
+    assert.match(rows[0].file, /R1\.b1\.after\.expected\.html$/)
+  } finally { rmSync(root, { recursive: true, force: true }) }
+})
+
+test('a leftover .actual.html from the old two-file shape is refused, never passed unseen', () => {
+  // The fold sweeps them (tools/evidence.mjs legacyActualReplicas), but a tree someone updated
+  // without re-harvesting still has them: ungated by anything this release runs, so refused.
+  const root = repFixture()
+  try {
+    writeFileSync(join(root, 'todo', 'evidence', 'R1.b1.after.actual.html'), '<div class="rep r0">stale</div>')
+    const row = checkReplicas(root).find(r => r.file.endsWith('.actual.html'))
+    assert.ok(row, 'the stale file is still seen')
+    assert.equal(row.ok, false)
+    assert.match(row.why, /not gated/)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
 test('deleting a text node from a replica fixture fails the gate — the plan\'s own acceptance', () => {
   const root = repFixture({ actual: h => h.replace('<div class="r1">Pay the electricity bill</div>', '') })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-text')
     assert.match(rows[0].gaps[0].what, /electricity/)
@@ -209,7 +224,7 @@ test('the node text gate reads the skeleton INSIDE the region only', () => {
   // word that moves INTO the region has to be there
   const root = repFixture({ repin: true, layout: l => { l.els[3] = { ...l.els[3], x: 120, y: 260 }; return l } })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-text')
     assert.match(rows[0].gaps[0].what, /Outside the scene root/)
@@ -220,7 +235,7 @@ test('the replica gate refuses one the harvest has moved past — the layout pin
   const root = repFixture({ layout: l => { l.els[1] = { ...l.els[1], w: 140 }; return l } })
   try {
     const rows = checkReplicas(root)
-    assert.deepEqual(rows.map(r => r.ok), [false, false])
+    assert.deepEqual(rows.map(r => r.ok), [false])
     assert.match(rows[0].why, /pin has moved/)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
@@ -228,7 +243,7 @@ test('the replica gate refuses one the harvest has moved past — the layout pin
 test('an UNGATED replica is refused — a picture nobody measured is not a proven likeness', () => {
   const root = repFixture({ actual: h => h.replace(/ data-replica-layout="[^"]*"/, '') })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.match(rows[0].why, /not gated/)
   } finally { rmSync(root, { recursive: true, force: true }) }
@@ -240,26 +255,40 @@ test('an Expected that does not carry a failed claim\'s own value is refused', (
   try {
     const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
-    assert.equal(rows[0].gaps[0].kind, 'missing-claim')
-    assert.match(rows[0].gaps[0].what, /electricity/)
+    const claim = rows[0].gaps.find(g => g.kind === 'missing-claim')
+    assert.ok(claim, 'rule 5 names it: ' + JSON.stringify(rows[0].gaps))
+    assert.match(claim.what, /electricity/)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
-test('the Expected is NOT geometry-gated — its content may be an older moment\'s layout', () => {
-  // the rereview's deferred question: an Expected's root carries THIS moment's region while its body
-  // can be a base's tree. Deleting a word the live skeleton measured is a gap on the ACTUAL only.
-  const root = repFixture({ expected: h => h.replace('<h1 class="r1">All tasks</h1>', '') })
+// WHAT A CLAIM MOVED IS NOT A MISSING WORD (2026-09-04, one html per moment). Rules 4 and 5 now run
+// on ONE file and pull against each other: rule 5 demands the value the requirement asked for, and
+// applying it is exactly what removes the live text rule 4 would otherwise demand. So a live element
+// standing inside a claim's own ring, or one whose text IS that claim's `got`, is exempt — and a
+// word NO claim touched is still demanded, which is what keeps rule 4 worth having on this file.
+test('a word a CLAIM moved is exempt from the word gate; a word nothing claimed is not', () => {
+  const ringed = '[{&quot;label&quot;:&quot;the heading&quot;,&quot;expected&quot;:&quot;Every task&quot;,' +
+    '&quot;got&quot;:&quot;All tasks&quot;,&quot;ok&quot;:false,&quot;ring&quot;:{&quot;x&quot;:110,&quot;y&quot;:110,&quot;w&quot;:200,&quot;h&quot;:24}}]'
+  const claimed = repFixture({
+    expected: h => h.replace(CLAIMS, ringed).replace('<h1 class="r1">All tasks</h1>', '<h1 class="r1" data-claim="wrong">Every task</h1>')
+  })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
-    assert.equal(rows[0].ok, true, rows[0].why)
-  } finally { rmSync(root, { recursive: true, force: true }) }
+    const row = checkReplicas(claimed).filter(r => r.file.endsWith('.expected.html'))[0]
+    assert.equal(row.ok, true, 'the claim put its own value there: ' + row.why)
+  } finally { rmSync(claimed, { recursive: true, force: true }) }
+  const dropped = repFixture({ expected: h => h.replace('<h1 class="r1">All tasks</h1>', '') })
+  try {
+    const row = checkReplicas(dropped).filter(r => r.file.endsWith('.expected.html'))[0]
+    assert.equal(row.ok, false, 'a word no claim touched is still demanded')
+    assert.ok(row.gaps.some(g => g.kind === 'missing-text' && /All tasks/.test(g.what)), JSON.stringify(row.gaps))
+  } finally { rmSync(dropped, { recursive: true, force: true }) }
 })
 
 test('a gap the IN-PAGE walk already found rides on the file and is reported here', () => {
   const gaps = '[{&quot;kind&quot;:&quot;missing-box&quot;,&quot;what&quot;:&quot;row&quot;,&quot;x&quot;:1,&quot;y&quot;:2,&quot;w&quot;:3,&quot;h&quot;:4}]'
   const root = repFixture({ actual: h => h.replace('data-replica-gaps="[]"', 'data-replica-gaps="' + gaps + '"') })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'missing-box')
   } finally { rmSync(root, { recursive: true, force: true }) }
@@ -268,7 +297,7 @@ test('a gap the IN-PAGE walk already found rides on the file and is reported her
 test('a TRUNCATED replica is a gap — a picture that ran out of bytes cannot be a likeness', () => {
   const root = repFixture({ actual: h => h.replace('data-replica-kit', 'data-replica-truncated="1" data-replica-kit') })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].kind, 'truncated')
   } finally { rmSync(root, { recursive: true, force: true }) }
@@ -279,7 +308,7 @@ test('a replica whose skeleton is gone is refused, not quietly passed', () => {
   try {
     rmSync(join(root, 'todo', 'evidence', 'R1.b1.after.layout.json'))
     const rows = checkReplicas(root)
-    assert.deepEqual(rows.map(r => r.ok), [false, false])
+    assert.deepEqual(rows.map(r => r.ok), [false])
     assert.match(rows[0].why, /no layout skeleton/)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
@@ -298,7 +327,7 @@ test('the CLI\'s node text gate reads a word RUN too — a live "5" is not answe
       '<div class="r1">Pay the electricity bill</div><div class="r1">15</div>')
   })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.equal(rows[0].ok, false)
     assert.equal(rows[0].gaps[0].what, '5')
   } finally { rmSync(root, { recursive: true, force: true }) }
@@ -312,7 +341,7 @@ test('…and a live "5" IS answered by "To do 5" — its own run inside a longer
       '<div class="r1">Pay the electricity bill</div><div class="r1">To do 5</div>')
   })
   try {
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
@@ -331,7 +360,7 @@ test('the CLI\'s node text gate also lets a live text AT the 48-char cap end mid
   })
   try {
     assert.equal(cut.length, 48)
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
@@ -342,7 +371,7 @@ test('the CLI\'s node text gate never demands text back from a style/script/etc-
     // the actual body carries NOTHING matching that text — if the gate demanded it back, this would fail
   })
   try {
-    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))[0].ok, true)
+    assert.equal(checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }
 })
 
@@ -986,7 +1015,7 @@ test('the CLI word gate skips an element the skeleton marks OUTSIDE the scene ro
     }
   })
   try {
-    const rows = checkReplicas(root).filter(r => r.file.endsWith('.actual.html'))
+    const rows = checkReplicas(root).filter(r => r.file.endsWith('.expected.html'))
     assert.deepEqual(rows[0].gaps, [], 'an element outside the picture is not the picture\'s to show')
     assert.equal(rows[0].ok, true)
   } finally { rmSync(root, { recursive: true, force: true }) }

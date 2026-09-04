@@ -1301,8 +1301,8 @@ const B = window.__BOARD__ || {}
   // ── THE EXPECTED PICTURE: THE APP'S OWN COMPONENT, ON PAPER ──────────────────────────────────
   // (the human, 2026-09-03 — the Expected View decision: "the picture beside a proof is a real HTML
   // replica of the app's own component", not a drawing of it.) The harvest commits, beside every
-  // frame, the app's own sanitised markup for the region the assertion rang — `.actual.html` as the
-  // app rendered it, `.expected.html` with the requirement's claims applied — and this renders the
+  // frame, the app's own sanitised markup for the region the assertion rang — `.expected.html`, one
+  // per moment, with the requirement's claims applied — and this renders the
   // EXPECTED one in an `<iframe sandbox srcdoc>` with no `allow-*` token at all: no script, no
   // network, no same-origin identity, so the app's own CSS lays its own words out and nothing in the
   // file can do anything else. The file body is NEVER inlined into board.html; it is fetched (the
@@ -1799,8 +1799,11 @@ const B = window.__BOARD__ || {}
         const claim = v.claim
           ? { expected: v.claim.expected, got: v.claim.got, ok: v.claim.ok, missing: v.claim.missing, label: v.claim.label || name }
           : null
-        return shot(v.frame, name, at, v.focus, v.replicaExpected || v.replica || '',
-          v.replicaExpected ? 'expected' : 'actual', claim)
+        // ONE HTML PER MOMENT (2026-09-04): the Expected is the only replica a moment has, and the
+        // Actual half of it is the photograph this same `shot` carries. A moment with none renders
+        // the honest per-moment placeholder — never the app's own markup under a chip saying
+        // "expected" (final review R2).
+        return shot(v.frame, name, at, v.focus, v.replicaExpected || '', 'expected', claim)
       })
     }
     // THE ROW OPENS ON THE WHEN (the human, 2026-08-31: "first screen in when/then should already
@@ -1814,7 +1817,7 @@ const B = window.__BOARD__ || {}
     const pair = function (b, capA, capB) {
       const out = []
       const vals = values(b)
-      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.replicaBefore || '', 'actual', null))
+      if (b.before && !vals.length) out.push(shot(b.before, capA, b.window ? b.window.from : null, b.aimBefore, b.replicaExpectedBefore || '', 'expected', null))
       for (const v of vals) out.push(v)
       // the beat's RESULT takes its Expected — the intended state, which on a failed beat is the last
       // one the app got right plus every claim (spec/_replica.mjs intendedLayout's own rule)
@@ -1822,7 +1825,7 @@ const B = window.__BOARD__ || {}
         // the result's chips are the beat's CHECKLIST — every claim it made, in the order it made
         // them. A beat that claimed nothing has no checklist and shows no chip at all.
         out.push(shot(b.after, capB, b.window ? b.window.to : null, b.aimAfter,
-          b.replicaExpectedAfter || b.replicaAfter || '', b.replicaExpectedAfter ? 'expected' : 'actual',
+          b.replicaExpectedAfter || '', 'expected',
           null, vals.map(function (v) { return v.claim }).filter(Boolean)))
       }
       // THE RESULT STANDS WHERE THE BEAT LAST STOOD (phase 4b). A beat's RESULT moment records no
@@ -1846,7 +1849,7 @@ const B = window.__BOARD__ || {}
         if (!b1) return { shots: [], why: 'no frame harvested for the opening state yet' }
         // a prose-only requirement has no beat rows at all — its ONE row carries the whole pair
         const out = nbeats
-          ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore, b1.replicaBefore || '', 'actual', null)] : [])
+          ? (b1.before ? [shot(b1.before, 'given', b1.window ? b1.window.from : null, b1.aimBefore, b1.replicaExpectedBefore || '', 'expected', null)] : [])
           : pair(b1, 'before', after1)
         return out.length ? { shots: out } : { shots: [], why: 'no frame harvested for the opening state yet' }
       }
@@ -1977,8 +1980,22 @@ const B = window.__BOARD__ || {}
       box.appendChild(im); fig.appendChild(box)
       strip.appendChild(fig)
       cam.appendChild(strip)
-      aimCamera(box, s.focus, CAM)
-      box._aim(s.aim || null, (cards && cards.length === 1 ? cards[0] : null) || null, false)
+      // ONE CAMERA, WHATEVER THE MOMENT COUNT (final review R5, 2026-09-04). `useFrame` was only
+      // consulted in the multi-shot branch above, so a beat row with exactly ONE moment framed its
+      // photograph with `aimCamera` (cameraView: max 3.2×, pad 1.2) while the Expected cell beside
+      // it took `frameFor` (max 1.25×, pad .45) — two different regions in one row, which is the one
+      // thing board R19 forbids — and got no chips and no `_aimMoment` at all. A beat row now takes
+      // the moment camera on both sides however many moments it has; `aimCamera` stays for the
+      // whole-page Given/context rows, which is what `useFrame` being false now means.
+      if (useFrame) {
+        aimFrame(box, vp)
+        cell._chips = chipLayer(box, 'actual')
+        cell._camBox = box
+        cell._aimMoment = function (ring, chip, animate) { box._aim(ring, chip, animate) }
+      } else {
+        aimCamera(box, s.focus, CAM)
+        box._aim(s.aim || null, (cards && cards.length === 1 ? cards[0] : null) || null, false)
+      }
     }
     cell.appendChild(cam)
     // NO per-cell chrome (the human, 2026-09-02: "remove full frame button and also the dots in
@@ -2046,8 +2063,8 @@ const B = window.__BOARD__ || {}
   // picture the reader is looking at)
   function hasReplicas (r) {
     return ((r && r.ev && r.ev.beats) || []).some(function (b) {
-      return !!(b && (b.replicaBefore || b.replicaAfter || b.replicaExpectedAfter ||
-        (b.values || []).some(function (x) { return x && (x.replica || x.replicaExpected) })))
+      return !!(b && (b.replicaExpectedBefore || b.replicaExpectedAfter ||
+        (b.values || []).some(function (x) { return x && x.replicaExpected })))
     })
   }
   function buildStoryline (r) {
@@ -2249,6 +2266,10 @@ const B = window.__BOARD__ || {}
       // ONE CAMERA, ONE RULE, BOTH CELLS (phase 4b): the Expected cell takes the moment camera
       // wherever its Actual does — same maths, same page coordinates, same chip box — and the older
       // beat camera on the context row, which frames the whole page on both sides.
+      // ONE CAMERA ON A BEAT ROW, WHATEVER ITS MOMENT COUNT (final review R5, 2026-09-04): see
+      // proofCell's single-shot branch, which used to take `aimCamera` (3.2×, pad 1.2) here while
+      // this cell took `frameFor` (1.25×, pad .45) — two different regions in one row, and chips on
+      // one side only. The whole-page Given/context rows still take the older beat camera.
       if (momentCam && focus) { aimFrame(box, vp); fr._chips = chipLayer(box, 'expected') } else aimCamera(box, focus, CAM)
       fr._camBox = box
       // the shared pieces of every moment's page: the screen's faces, and the beat's own shell plates.
@@ -2277,9 +2298,16 @@ const B = window.__BOARD__ || {}
           vw: vp.vw, vh: vp.vh, note: why }))
       }
       const paint = function (j) {
+        // THE GENERATION TOKEN IS TAKEN FIRST, ON EVERY PATH (final review R1, 2026-09-04). It was
+        // bumped only where a fetch was about to start, so stepping to a moment with NO replica
+        // invalidated nothing in flight: moment 0's fetch resolved after moment 1's honest blank had
+        // painted, wrote moment 0's picture over it, and rewrote `data-repmoment` back to 0 — the
+        // strip, the photograph and the chips on one moment, the Expected cell on another, and the
+        // seam the board's own tests poll agreeing with the wrong one. Exactly the C3 regression the
+        // comment above says it closed.
+        const mine = ++seq
         const sh = shots[j]
         if (!sh || !sh.rep) { fr.dataset.repmoment = String(j); blank('no Expected for this moment'); return }
-        const mine = ++seq
         Promise.all([repFetch(sh.rep), want.faces, want.lay]).then(function (got) {
           if (mine !== seq || !fr.isConnected) return    // a later step won the race, or the reader closed
           const body = repBody(got[0])
@@ -2347,12 +2375,20 @@ const B = window.__BOARD__ || {}
       if (vp && shots.some(function (s) { return s.rep })) {
         return replicaCell(shots, beatFocus(r, i, nbeats), vp, r.ev.faces, beatLayout(i || 1), momentCam)
       }
+      // …AND A HARVESTED REQUIREMENT'S EMPTY BEAT IS NOT A SKETCH (final review R3, 2026-09-04). This
+      // fell through to `wholeCell()`, captioned "◇ sketch · no UI yet" — false on a requirement
+      // whose other beats DID harvest UI — and that cell has no `_step`, no `_chips` and no
+      // `_aimScene`, so it sat frozen while the photograph beside it panned and stepped. Where the
+      // requirement has replicas anywhere, this beat gets the honest per-moment placeholder that
+      // still walks and aims with the row; the sketch caption is kept for a requirement that has NO
+      // replica at all, where it is true.
+      if (vp && hasReps) return replicaCell(shots, beatFocus(r, i, nbeats), vp, r.ev.faces, beatLayout(i || 1), momentCam)
       // a replica that cannot be STOOD ON A PAGE — an older harvest that landed the markup but no
       // layout skeleton, so nothing knows the viewport it was measured in — is not a picture. Where
       // the requirement still carries a SKETCH, that is what is shown (labelled as one); otherwise
       // the cell says the gap out loud rather than inventing a page size.
-      if (v && v.svg) return wholeCell()
-      return noCell('no Expected yet — re-harvest this screen')
+      if (v && v.svg && !hasReps) return wholeCell()
+      return noCell(hasReps ? 'no Expected for this beat — re-harvest this screen' : 'no Expected yet — re-harvest this screen')
     }
     // A DRAWING WITH NO PROOF TO DRIVE IT still walks (the human, 2026-08-30: "handle the case it
     // doesn't have proof yet"). When a beat has a splittable drawing (subphases) but no proof loop, a
@@ -2436,6 +2472,14 @@ const B = window.__BOARD__ || {}
       repFetch(ch.replica).then(function (text) {
         if (!cell.isConnected) return
         const body = repBody(text)
+        // …AND THE CAPTION ONLY CLAIMS CHROME THAT ARRIVED (final review R7, 2026-09-04). It was
+        // written unconditionally, so a lender page that failed to fetch, or one `repBody` refused,
+        // rendered as bare paper plus the sketch still captioned "in Board's chrome" — a claim about
+        // the picture that the picture does not support.
+        if (!body) {
+          cap.textContent = '◇ sketch · no UI yet'
+          delete cell.dataset.chrometitle
+        }
         ifr.srcdoc = repSrcdoc({
           body: body,
           faces: '',

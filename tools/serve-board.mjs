@@ -1279,8 +1279,9 @@ const server = createServer(async (req, res) => {
   }
   const body = readFileSync(file)
   const type = TYPES[extname(file)] || 'application/octet-stream'
-  // A COMMITTED .html UNDER spec/** IS A REPLICA — the app's own DOM as it was (`.actual.html`) or
-  // as the requirement says it should have been (`.expected.html`, phase 2, 2026-09-03). Either way it is
+  // A COMMITTED .html UNDER spec/** IS A REPLICA — the app's own DOM as the requirement says it
+  // should have been (`.expected.html`; one file per moment since 2026-09-04, the Actual half being
+  // the photograph named beside it, and a stale `.actual.html` from before that still servable). It is
   // sanitised at capture (spec/_replica.mjs: no script, no handler, no external URL) and the board
   // will only ever show it inside an <iframe sandbox srcdoc>; this header is the third wall, so a
   // replica opened DIRECTLY in a tab is inert too — no script, no fetch, no network font, no

@@ -90,15 +90,16 @@ export function beatEvidencePaths (screen, id, n) {
     after: `${dir}/${b}.after.png`,
     layoutBefore: `${dir}/${b}.before.layout.json`,
     layoutAfter: `${dir}/${b}.after.layout.json`,
-    // …and the ACTUAL REPLICA of the same moment (2026-09-03, the human: the picture beside a proof
-    // is a real HTML replica of the app's own component, not a drawing of it). One name away from
-    // the photograph it was taken beside, on the same deterministic rule: a re-harvest overwrites.
-    replicaBefore: `${dir}/${b}.before.actual.html`,
-    replicaAfter: `${dir}/${b}.after.actual.html`,
-    // …and the EXPECTED replica of the beat's resting moment (phase 2, 2026-09-03): the same markup
-    // with the beat's claims applied — what the requirement says the app should have rendered. Only
-    // the AFTER moment has one: a beat's before has claimed nothing yet, so an Expected there would
-    // be the Actual under a second name, and two files saying one thing is how they drift apart.
+    // …and the REPLICA of the same moment — ONE FILE PER MOMENT (the human, 2026-09-04: "why does
+    // the Expected also need a replica — the Actual is the screenshot"). The Actual half of a moment
+    // IS the photograph beside it; a second HTML saying the same thing was a file to keep in step,
+    // to serve, to prune and to disagree with. What lands is the EXPECTED — the app's own markup
+    // with this beat's claims applied — and the gate's verdict rides on ITS root
+    // (`data-replica-layout` / `data-replica-gaps`), measured in memory on the UNEDITED tree before
+    // any claim was applied, in the same page pass as the skeleton. The before moment has claimed
+    // nothing yet, so its Expected is that unedited tree exactly; it is still written, because a
+    // moment with no file is a moment with no picture.
+    replicaExpectedBefore: `${dir}/${b}.before.expected.html`,
     replicaExpectedAfter: `${dir}/${b}.after.expected.html`
   }
 }
@@ -113,13 +114,12 @@ export function beatEvidencePaths (screen, id, n) {
 export function valueEvidencePaths (screen, id, n, k) {
   const dir = `spec/${screen}/evidence`
   const b = `${bare(id)}.b${Number(n) || 1}.v${Number(k) || 1}`
-  // …and both replicas of that moment (phase 2, 2026-09-03): what the app rendered, and what the
-  // requirement says it should have — the row's two pictures of one instant.
+  // …and the replica of that moment — ONE FILE (2026-09-04): the Expected, the app's own markup with
+  // this moment's claim applied. The Actual half is the photograph named beside it.
   return {
     dir,
     frame: `${dir}/${b}.png`,
     layout: `${dir}/${b}.layout.json`,
-    replica: `${dir}/${b}.actual.html`,
     replicaExpected: `${dir}/${b}.expected.html`
   }
 }
@@ -261,13 +261,9 @@ export function resolvePrimaryVideo (harvest) {
           after: s.after || null,
           layoutBefore: s.layoutBefore || null,
           layoutAfter: s.layoutAfter || null,
-          // …and the ACTUAL REPLICA of each end of the beat (2026-09-03), resolved with the frame it
-          // was captured beside — the Expected view is built from this file, so it must come from
-          // the same capture as the photograph it is shown against.
-          replicaBefore: s.replicaBefore || null,
-          replicaAfter: s.replicaAfter || null,
-          // …and the EXPECTED half of that resting moment (phase 2): resolved from the SAME capture
-          // as the Actual it is shown against, for the same reason the skeleton is
+          // …and the ONE REPLICA of each end of the beat (2026-09-04), resolved from the SAME capture
+          // as the photograph it is shown against — for the same reason the skeleton is.
+          replicaExpectedBefore: s.replicaExpectedBefore || null,
           replicaExpectedAfter: s.replicaExpectedAfter || null,
           window: s.window || null,
           // the beat's asserted values in CHECK order (2026-08-29) — sorted by the check number the
@@ -276,7 +272,6 @@ export function resolvePrimaryVideo (harvest) {
             k,
             frame: (s.values[k] || {}).frame || null,
             layout: (s.values[k] || {}).layout || null,
-            replica: (s.values[k] || {}).replica || null,
             replicaExpected: (s.values[k] || {}).replicaExpected || null
           }))
         }
@@ -546,6 +541,17 @@ export function contentRect (layout, docH) {
 // variants — the prune below reads the OLD entry's fields, so those files are named for deletion
 // on the requirement's next fold; nothing carries them forward (D1's carryClip retired with the
 // clip it existed to keep — a carried file nothing renders would live forever).
+// THE FILES THE OLD SHAPE LEFT BEHIND (2026-09-04, one html per moment). Until this release every
+// moment landed TWO html files — `<id>.b<n>.<phase>.actual.html` beside `.expected.html` — and the
+// Actual half is now the photograph, so nothing names those paths any more. `foldEvidence`'s
+// keep-set can only prune a path some entry USED to name; a file no index entry ever mentions again
+// would sit in the tree for ever, be served, and be gated by `npm run proof mirror` as an ungated
+// replica. Pure so it can be tested: hand it the names in a screen's evidence directory, get back
+// the ones that are the retired half. (`.expected.html` is never in the answer, whatever else is.)
+export function legacyActualReplicas (files) {
+  return (Array.isArray(files) ? files : []).filter(n => /\.actual\.html$/.test(String(n || '')))
+}
+
 export function foldEvidence (index, entries) {
   const prune = []
   // Task 16 #1: the committed video is SHARED per screen (one primary recording, many
@@ -595,6 +601,16 @@ export function foldEvidence (index, entries) {
       const beats = raw.beats.map(b => {
         const o = oldBeat(b.n)
         if (!o) return b
+        // THE HOME SCREEN'S FILE OWNS ITS BEATS (final review I5, 2026-09-04). Evidence is keyed by
+        // REQUIREMENT, so a composed flow that starts on one screen and proves another's requirement
+        // (spec/init's flow tags board:R1) writes into the other screen's evidence — and running
+        // that flow ALONE rewrote spec/board/evidence/R1.b1.* from the init page and pruned what the
+        // board's own run had put there, turning the next board run red. A cross-screen flow fills
+        // only beats the home file left empty: where the home screen already harvested this beat,
+        // its files stand and nothing here names them for pruning. (The reporter marks the beat and
+        // does not even copy the bytes; this is the index half of the same rule, and the half a unit
+        // test can hold.) Coverage is untouched — the flow still PROVES the requirement.
+        if (b.foreign) return o
         let carried = b
         if (!(b.layoutBefore || b.layoutAfter) && (o.layoutBefore || o.layoutAfter)) {
           carried = { ...carried }
@@ -618,11 +634,10 @@ export function foldEvidence (index, entries) {
         // Expected view is built from.)
         const hasB = !!(carried.layoutBefore || b.layoutBefore)
         const hasA = !!(carried.layoutAfter || b.layoutAfter)
-        if (!(b.replicaBefore || b.replicaAfter || b.replicaExpectedAfter) &&
-            ((o.replicaBefore && hasB) || ((o.replicaAfter || o.replicaExpectedAfter) && hasA))) {
+        if (!(b.replicaExpectedBefore || b.replicaExpectedAfter) &&
+            ((o.replicaExpectedBefore && hasB) || (o.replicaExpectedAfter && hasA))) {
           carried = carried === b ? { ...carried } : carried
-          if (o.replicaBefore && hasB) carried.replicaBefore = o.replicaBefore
-          if (o.replicaAfter && hasA) carried.replicaAfter = o.replicaAfter
+          if (o.replicaExpectedBefore && hasB) carried.replicaExpectedBefore = o.replicaExpectedBefore
           if (o.replicaExpectedAfter && hasA) carried.replicaExpectedAfter = o.replicaExpectedAfter
         }
         return carried
@@ -644,12 +659,12 @@ export function foldEvidence (index, entries) {
         ...(Array.isArray(x.beats) ? x.beats : []).flatMap(b =>
           b
             ? [b.before, b.after, b.layoutBefore, b.layoutAfter,
-                // …and the beat's two ACTUAL REPLICAS (2026-09-03), on the frames' rule: a dropped
-                // beat leaves neither a picture nor the html it was built from behind
-                b.replicaBefore, b.replicaAfter, b.replicaExpectedAfter,
+                // …and the beat's TWO REPLICAS (2026-09-04, one per moment), on the frames' rule: a
+                // dropped beat leaves neither a picture nor the html beside it behind
+                b.replicaExpectedBefore, b.replicaExpectedAfter,
                 // …and every asserted-value frame the beat carried, with its skeleton and its own
                 // replica: a beat that lost a check must not leave its frames behind (2026-08-29)
-                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout, v.replica, v.replicaExpected] : []))]
+                ...(Array.isArray(b.values) ? b.values : []).flatMap(v => (v ? [v.frame, v.layout, v.replicaExpected] : []))]
             : [])]
       const kept = new Set(vals(raw).filter(Boolean))
       for (const p of vals(old)) {
