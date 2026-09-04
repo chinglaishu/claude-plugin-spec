@@ -541,15 +541,22 @@ test('Requirement state is computed and assertion-backed', async ({ page }) => {
     // the same derivation rendered twice. The expected value here is computed from the DETAIL's own
     // rows above — never read off the card — so a card that drifted from its detail fails this
     // claim, photographed, on the card itself. Home first: the card is the thing being ringed.
-    // FACT 1, CLAIMED where a person reads it: a requirement whose tests passed READS "✓ Passed"
-    // in the reader's own chip — the five-word vocabulary, rendered from the derived state. The row
-    // is chosen by its DERIVED state, so this cannot pass on a screen where nothing is proven.
-    const provenRid = await page.locator('.dt[data-screen="board"]:not([hidden]) .reqpane .req[data-state="proven"]')
-      .first().getAttribute('data-r')
+    // FACT 1, CLAIMED where a person reads it: a requirement whose tests passed READS "✓ Passed" in
+    // the reader's own chip — the five-word vocabulary, rendered from the state the row carries.
+    //
+    // The STATUS IS FORCED, the established deterministic technique in this file (R10's and R14's
+    // legs do the same): mid-suite the board's own rows are stale-by-source — this very file was
+    // just edited — so which of them is proven is exactly the dogfood lag, and reading the chip off
+    // "whichever row happens to be green" made this leg pass in one run and time out in the next
+    // (measured 2026-09-04). What the claim is about is the RENDERING of a state, not which row has
+    // it; the derivation itself is what the whole block above asserts, board-wide and honestly.
     const dtb = page.locator('.dt[data-screen="board"]:not([hidden])')
+    await dtb.locator('.reqpane .req[data-r="R1"]').evaluate(el => {
+      el.setAttribute('data-status', 'passed'); el.setAttribute('data-state', 'proven')
+    })
     await dtb.locator('.viewseg .vseg[data-view="grid"]').click()
-    await dtb.locator('.gridview .lst-card[data-r="' + provenRid + '"] .lst-head').click()
-    await proveVisible(dtb.locator('.gridview .lst-card[data-r="' + provenRid + '"] .lst-body .fread .frmeta .fchip'),
+    await dtb.locator('.gridview .lst-card[data-r="R1"] .lst-head').click()
+    await proveVisible(dtb.locator('.gridview .lst-card[data-r="R1"] .lst-body .fread .frmeta .fchip'),
       '✓ Passed', 'A proven requirement reads Passed', { soft: true })
     await dtb.locator('.viewseg .vseg[data-view="focus"]').click()
 
@@ -3120,7 +3127,23 @@ test('The proof is scannable as frames — one still per checked value, cut from
     // something it never did (rule 3), so the two must not mix — the stub's captions are the witness.
     const beatCell = ov.locator('.fread .fstory .sbrow .sbproof').filter({ has: page.locator('.pcplay') }).first()
     await expect(beatCell).toHaveCount(1)
-    await expect(beatCell.locator('.fsteps img')).toHaveCount(2)   // before → after, the harvested pair
+    // …and it plays exactly the MOMENTS THE HARVEST RECORDED for that beat, counted off the fold's
+    // own record rather than assumed. (Corrected 2026-09-04, rule 4 — the TEST was the wrong side:
+    // this pinned "2 — before → after, the harvested pair", which was true only while no board beat
+    // claimed a value. R1's beat now rings four, so its loop is each asserted value then the after,
+    // and the before leaves the loop exactly as R20 says it does. The property R14 states — one
+    // still per checked value — is what the number now comes from, so this fails if the loop and
+    // the harvest ever disagree, and it can no longer pass by counting to two.)
+    const beatRow = ov.locator('.fread .fstory .sbrow').filter({ has: page.locator('.pcplay') }).first()
+    const nMoments = await beatRow.evaluate(el => {
+      const rid = el.closest('.fread')!.querySelector('.frmeta .fid')!.textContent!.trim()
+      const src = document.querySelector('.dt[data-screen="board"] .reqpane .req[data-r="' + rid + '"]')
+      const b = JSON.parse(src!.getAttribute('data-ev-beats') || '[]').find((x: any) => Number(x.n) === 1) || {}
+      const vals = (b.values || []).filter((v: any) => v && v.frame)
+      return (vals.length ? vals.length : (b.before ? 1 : 0)) + (b.after ? 1 : 0)
+    })
+    expect(nMoments, 'the harvest recorded this beat\'s moments').toBeGreaterThan(1)
+    await expect(beatCell.locator('.fsteps img')).toHaveCount(nMoments)
     await expect(beatCell.locator('.fsteps img.on')).toHaveCount(1)
     await expect(beatCell).not.toContainText('third value')        // never the run strip's captions
     // a still is a thumbnail; a click opens the whole frame in the shared lightbox

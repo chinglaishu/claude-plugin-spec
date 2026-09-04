@@ -385,7 +385,8 @@ test('R8 — a case keeps a LOG HISTORY, folded across runs', async ({ page, req
     // fails on the value. (The commit on the meta line is the run's OWN — no oracle outside the run
     // knows it, so what it says is asserted above rather than claimed.)
     const kept = await one.locator('.tstlog .lghist > li').count()
-    await proveVisible(one.locator('.tstlog .logbox summary'), 'last ' + kept + ' runs',
+    await proveVisible(one.locator('.tstlog .logbox summary'),
+      'full log · last ' + kept + ' run' + (kept === 1 ? '' : 's'),
       'Folded, never replaced — the history under the case', { soft: true })
     intentGap('"that case\'s record updates" is the commit and time of the run that just happened — values only that run knows; they are asserted above against the shapes they must have')
   })
@@ -472,7 +473,12 @@ test('R7 — the panel and its log stay on screen after the run ends', async ({ 
   const panel = page.locator('#runpanel')
   await expect(panel).toBeVisible()
   await expect(panel.locator('#rplog')).toContainText(/Running|passed|test/i, { timeout: 60000 })
-  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 200000 })
+  // 300 s since 2026-09-04 (phase 6 fix round 2), for the reason the other verdict wait was raised:
+  // the WATCHED board run this waits out grew again as every board beat began ringing, photographing
+  // and replicating its claimed values — it measured past 200 s here and the wait, not the board,
+  // was what failed. PATIENCE, never an assertion: nothing this test proves changes with the
+  // number, and a run that never finishes still fails, just later.
+  await expect(panel.locator('#rpchip')).toContainText(/passed|failed/, { timeout: 300000 })
   // Finishing does not close the panel or blank the log out from under you — it is there to read for
   // reference. (The self-reload that closed it is held off under automation, so this guards the
   // observable contract: the log survives the run ending; it does not prove the human reload path.)
