@@ -169,28 +169,36 @@ way. Read it before writing your first one.
    "the schematic should be correct, only the proof should be wrong"). A Then that names three things
    proven by one claim is a third of a requirement wearing the requirement's whole green — and since
    the **Expected** picture is built from the beat's claims, a fact no claim covers is also a fact no
-   picture can ever show. `npm run proof lint` refuses one: it splits each Then into its facts (at
-   ` — `, `; `, `, and `, ` and `, and only where both sides carry a verb — when in doubt a Then is
-   ONE fact) and reads the beat's claims back out of the `checkReq` block and the step functions it
-   calls. Fewer claims than facts, a hard claim in a multi-fact beat, or a beat with no claim at all
-   is an **INTENT-GAP**. Three things it cannot do for you:
-   - **An ABSENCE is not a claim.** "no toolbar", "no control to change it", "no chip at all" — there
-     is nothing on screen to read a value off, and `proveVisible` cannot pass on an element that is
-     not there. Keep the `toHaveCount(0)` AND claim the positive thing that stands in its place (the
-     control that replaced it, the header that names what the row deals). Two absences and nothing
-     else is the assertion rule 2 already refuses.
+   picture can ever show. `npm run proof lint` refuses one: it splits each Then into its facts —
+   at ` — `, `; `, `, and `, ` and ` and a bare `, `, wherever the seam's two sides each carry three
+   words or more (there is no verb test: over-splitting is safe, because a fragment is then either
+   claimed or declared, while under-splitting hides a fact behind a green row) — and reads the beat's
+   claims back out of the `checkReq` block and the step functions it calls. Fewer claims than facts, a hard claim in a multi-fact beat, or a beat with no claim at all is
+   an **INTENT-GAP**. Five things it cannot do for you:
    - **Claim on the surface a person reads.** A claim on a hidden node — a baked source row, a folded
      pane — rings nothing, so the frame is the whole page and the picture proves nothing. If a fact
      is only true on a hidden surface, say so; do not photograph a page and call it a proof.
    - **An ABSENCE is claimed, not declared:** `proveVisible(locator, MISSING, label, { soft: true })`
      passes exactly while the thing is gone and fails, with the app's own text as `got`, the moment it
-     is back. There is no ring, so the frame is the page — the honest picture of nothing being there.
-     Keep the `toHaveCount(0)` beside it; the claim is what photographs the absence.
+     is back. "no toolbar", "no control to change it", "no chip at all" — each of them names a thing,
+     and the claim is what photographs it not being there. Keep the `toHaveCount(0)` beside it. (What
+     you may NOT do is claim a neighbour's positive fact instead and call the absence covered: the
+     lint counts claims, it cannot ask what they are about, so that is a green you wrote yourself.)
+     A fragment that names no thing — "not a truncated snippet", "never a gap" — has nothing whose
+     absence could be photographed: that one is declared, below.
    - **A fact with NO screen surface is DECLARED, never silent:** one line in the beat,
      `intentGap('<why this fact has no screen surface>')` — a beat that drives the server with no page
      open, a geometry, what the CLI gate refuses, a surface that lives only on a hidden pane. The lint
-     prints it as `DECLARED` with your reason and does not fail on it: **a visible debt, never a pass**,
-     and it is refused on a fact that names an absence (that one is claimable).
+     prints it as `DECLARED` with your reason and does not fail on it: **a visible debt, never a pass**.
+     It is REFUSED where the Then names a thing that is not there and the beat photographs something
+     else instead — that one is claimable with `MISSING`, above. On a beat with no page open at all
+     one declaration answers for every fact, none of them having a surface; the moment a beat
+     photographs something, a declaration covers ONE fact and the rest still need their claims.
+   - **One block per beat, in the beats' order.** `checkReq`'s cursor files the k-th call in a test
+     under beat k, so an extra block hands its pictures to a sentence it is not about; a requirement
+     whose blocks do not walk its beats is a failing `BEAT-MISMATCH` row. Two tests may each prove
+     the same requirement — a unit and a flow — as long as they walk the SAME beats, and every one
+     of them must cover the beat it harvests: the row is scored on the block that covers it least.
    - **Never edit the Then to fit the test** (CLAUDE.md rule 5 — meaning is the human's), and never
      invent a claim for a fact the screen cannot show.
 7. **Assert a design token, never its resolved pixels.** A style assertion that pins a literal

@@ -102,16 +102,19 @@ before acting and the place it changed after — never only the counter (the hum
 watchable-beat rule). Finishing check: with the sound off, can you SEE every number the flow claims,
 and every action it says it took?
 
-**Every fact of a Then is a soft claim** (kg-e2e rule 6). Split the Then the way the requirement
-reads it — "the row stays listed" and "the count reads 4" are two facts, "one card appears — its
-name, its titles and its cover" is one — and give each fact its own
+**Every fact of a Then is a soft claim** (kg-e2e rule 6). The lint cuts the Then at every seam
+(` — `, `; `, `, and `, ` and `, `, `) whose two sides each carry three words or more — "the row
+stays listed" and "the count reads 4" are two facts, and so are the halves of any comma that reads
+that way; only a short apposition ("a name, route, or requirement") stays inside one fact. Give each
+fact its own
 `proveVisible(target, expected, label, { soft: true })`, so the beat photographs all of them and
 fails once at its end with the whole list. `npm run proof lint` refuses a Then fact no claim covers,
-so run it before you call a screen done. A fact that names an ABSENCE is claimed like any other —
-`proveVisible(locator, MISSING, label, { soft: true })` passes exactly while the thing is gone — and
-a fact with no screen surface at all (an API-only beat, a geometry, what the CLI gate refuses) is
-DECLARED in the beat with `intentGap('<why>')`, which the lint prints as a visible debt rather than a
-pass. Never invent a claim, and never reword the Then to fit the test (the human owns meaning).
+so run it before you call a screen done. A fact that names a thing that is NOT THERE is claimed like any other —
+`proveVisible(locator, MISSING, label, { soft: true })` passes exactly while the thing is gone, and
+claiming a neighbour's positive fact instead is a green you wrote yourself. A fact with no screen
+surface at all (an API-only beat, a geometry, what the CLI gate refuses, a fragment naming no thing)
+is DECLARED in the beat with `intentGap('<why>')`, which the lint prints as a visible debt rather
+than a pass — one declaration per fact, unless the beat has no page open at all. Never invent a claim, and never reword the Then to fit the test (the human owns meaning).
 
 **Author each unit beat as an exported step function** in `spec/<screen>/steps.ts` (fn · proves ·
 name · needs/gives) with its `checkReq` kept around the call — kg-e2e's beat-function convention —
