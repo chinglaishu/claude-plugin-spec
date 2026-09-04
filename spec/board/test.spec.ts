@@ -1433,6 +1433,13 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       .map(u => (/url\(\s*["']?([^"')]+)["']?\s*\)/i.exec(u) || ['', ''])[1])
     expect(urls.filter(u => !/^(?:https?:|data:|blob:|\/)/i.test(u)),
       'no relative url reaches the srcdoc — it would resolve against the board, not the harvest').toEqual([])
+    // …and the Then's other two clauses are facts about the FILE, not values on the board. Both are
+    // asserted above, out of the committed file itself: its root says which kit captured it and at
+    // which region it stands, and its ring box is the one the run painted. A sandboxed frame is not
+    // readable from the page it sits in, so there is nothing here for a claim to ring — what the
+    // reader sees is the picture, and the value inside it is claimed on the line above.
+    intentGap('"the app\'s OWN markup, captured, sanitised and committed beside the frame" is a property of the committed file — asserted here by reading its root attributes and its srcdoc out of the file on disk; a sandboxed frame carries no value the board\'s own page can read')
+    intentGap('"re-rendered on paper at the app\'s own coordinates" is the region rectangle, compared above against the layout skeleton the fold committed beside it — a rectangle, never a value an element states')
   })
 
   // beat 2 — NO REPLICA, NO PICTURE (moved here from the R13 test on 2026-08-28: the honest
@@ -1466,6 +1473,11 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
     await proveVisible(r2story.locator('.sbframe .noschem').first(), 'no Expected yet',
       'The honest blank where nothing was captured',
       { match: (shown: string) => shown.startsWith('no Expected yet'), soft: true })
+    // …AND NEVER A GUESSED PICTURE OF A SCREEN, claimed as the absence it is: where nothing was
+    // captured there is no replica frame at all. `MISSING` passes exactly while none is mounted and
+    // fails, with whatever it holds, the moment the reader invents one.
+    await proveVisible(r2story.locator('.sbframe iframe.repframe'), MISSING,
+      'Never a guessed picture — no frame where nothing was captured', { soft: true })
     await expect(r2story.locator('.sbrow .sbtext .sbwhen').first()).toBeVisible()   // the keyword-led sentences still show
     await expect(r2story.locator('.sbrow').first().locator('.sbtext')).toContainText('Given')
     const gapSaid = (await r2story.locator('.sbframe .noschem').first().textContent() || '').trim()
@@ -1708,6 +1720,12 @@ test('The Expected picture is the app\'s own component — captured, sandboxed, 
       await proveVisible(banner.locator('b'), 'stale — layout moved',
         'The banner, naming what moved', { soft: true })
       await expect(banner).toContainText('the app’s layout moved since this picture was captured')
+      // …AND IT IS NEVER SHOWN AS CURRENT: the storyline that carries a stale banner carries no
+      // fresh-picture marker at all. The banner IS the row's own statement that what it shows has
+      // stopped matching the run, claimed above; this claims the other half — nothing on the row
+      // still says the picture is current.
+      await proveVisible(ov.locator('.fread .fstory:not(.isstale)'), MISSING,
+        'A picture that stopped matching is never shown as current', { soft: true })
     } finally {
       writeFileSync(layFile, original)
       build()
