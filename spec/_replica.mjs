@@ -97,7 +97,9 @@ export const REPLICA_PROPS = [
   // camera cell scaled about its top-left landed ~465px right and ~291px down in the replica, and
   // the gate read that as an extra box beside a missing one. They travel together.
   'transform-origin',
-  'fill', 'stroke', 'stroke-width'
+  // …and the dash pair as COMPUTED values too, for an app that sets its arc from a stylesheet or an
+  // inline style rather than the attribute (the attribute allowlist below covers the other way)
+  'fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-dashoffset'
 ]
 
 export function captureReplica (arg) {
@@ -171,7 +173,12 @@ export function captureReplica (arg) {
   // the attribute allowlist: the svg geometry an icon is drawn from, the accessible name, our own
   // marks, and the two urls that can be safe (a data: src, an in-page #href). Everything else —
   // every on* handler, every id, every framework hook — is simply not copied.
+  // …AND THE DASH THAT MAKES A CIRCLE AN ARC (2026-09-05, the human on the Tsumiki demo's R3: the
+  // Expected drew a full progress ring beside a photograph of a third of one). A progress ring is a
+  // circle whose `stroke-dasharray`/`stroke-dashoffset` leave the undone part unpainted; without
+  // them the picture says "all done" for every value the beat proves.
   const ATTRS = ['viewBox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin',
+    'stroke-dasharray', 'stroke-dashoffset',
     'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2', 'width', 'height', 'points',
     'transform', 'opacity', 'fill-rule', 'clip-rule', 'alt', 'role', 'aria-label']
   const VOID = ['br', 'hr', 'img', 'area', 'base', 'col', 'source', 'track', 'wbr', 'input', 'link', 'meta']

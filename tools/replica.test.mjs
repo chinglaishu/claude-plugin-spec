@@ -2041,3 +2041,22 @@ test('the scene root drops its own margin — it is positioned by its region, no
   assert.match(rootRule[2], /(^|;)margin:0/, 'and its margin is forced to zero — the tag\'s own default too')
   assert.match(rootRule[2], /align-items:center/, 'everything else about it is still there')
 })
+
+// ── the progress ring's ARC (2026-09-05, the human on the Tsumiki demo's R3: "the schematic looks
+// broken and does not match the actual component"). The app draws "1 of 3 done" as a circle whose
+// `stroke-dasharray` / `stroke-dashoffset` ATTRIBUTES leave two thirds of it unpainted; neither
+// travelled, so the Expected drew a FULL ring beside a photograph of a third of one.
+test('a circle\'s stroke-dasharray and stroke-dashoffset travel with it — the arc is the value', () => {
+  const track = el('circle', [291, 220, 18, 18], { ns: 'http://www.w3.org/2000/svg', attrs: { cx: '13', cy: '13', r: '9', fill: 'none', stroke: 'rgb(223, 226, 233)', 'stroke-width': '3' } })
+  const arc = el('circle', [291, 220, 18, 18], { ns: 'http://www.w3.org/2000/svg', attrs: { cx: '13', cy: '13', r: '9', fill: 'none', stroke: 'rgb(79, 70, 229)', 'stroke-width': '3', 'stroke-linecap': 'round', 'stroke-dasharray': '56.5', 'stroke-dashoffset': '37.7' } })
+  const svg = el('svg', [287, 216, 26, 26], { ns: 'http://www.w3.org/2000/svg', children: [track, arc], attrs: { viewBox: '0 0 26 26', width: '26', height: '26' } })
+  const pct = el('span', [287, 216, 26, 26], { text: '1/3', cs: { 'font-size': '9px', color: 'rgb(79, 70, 229)' } })
+  const btn = el('button', [287, 216, 26, 26], { children: [svg, pct], cs: { position: 'relative' } })
+  const title = el('div', [326, 209, 511, 23], { text: 'Plan the team offsite' })
+  const row = el('div', [271, 195, 738, 70], { children: [btn, title], cs: { display: 'flex' } })
+  const body = el('body', [0, 0, 1440, 900], { children: [row] })
+  const r = cap(body, { target: btn, ring: { x: 287, y: 216, width: 26, height: 26 } })
+  assert.ok(r.html.includes('stroke-dasharray="56.5"'), 'the dash pattern is the arc\'s length: ' + r.html)
+  assert.ok(r.html.includes('stroke-dashoffset="37.7"'), 'and the offset is how much of it is undone')
+  assert.ok(r.html.includes('>1/3<'), 'the fraction in the middle still travels too')
+})

@@ -1,0 +1,241 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>specboard storage — local path, cloud path</title>
+<style>
+:root{--paper:#f6f2ea;--card:#fdfcf9;--ink:#2b2a27;--mute:#6f6a60;--line:#d9d2c3;--indigo:#3f4f7a;--indigo-tint:#e6eaee;--koke:#5b6b3c;--koke-tint:#eaece1;--bengara:#8a4a3c;--bengara-tint:#f2e8e4;--yamabuki:#8a6412;--yamabuki-tint:#f6eeda;--tint:#ecebe3}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.5 -apple-system,Helvetica,Arial,sans-serif;padding:32px 40px;max-width:1180px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:40px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:14px;margin:18px 0 6px}
+.sub{color:var(--mute);margin:0 0 20px}
+p{margin:8px 0;max-width:820px}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;font-size:13.5px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+tr:last-child td{border-bottom:0}
+.k{font:12.5px ui-monospace,Menlo,monospace;background:var(--tint);padding:1px 5px;border-radius:4px}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0}
+.bar .lab{width:230px;font-size:13px}
+.bar .seg{height:18px;border-radius:3px}
+.bar .n{font-size:12px;color:var(--mute)}
+.g{background:var(--koke)}.r{background:var(--bengara)}.b{background:var(--indigo)}.y{background:var(--yamabuki)}.m{background:#a8a59c}
+.chip{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid;font-weight:600}
+.chip.git{color:var(--koke);border-color:#bcc4a8;background:var(--koke-tint)}
+.chip.cache{color:var(--yamabuki);border-color:#dfc98c;background:var(--yamabuki-tint)}
+.chip.never{color:var(--bengara);border-color:#d8c0b6;background:var(--bengara-tint)}
+.chip.cloud{color:var(--indigo);border-color:#b9c4ce;background:var(--indigo-tint)}
+.chip.plugin{color:var(--mute);border-color:var(--line);background:var(--tint)}
+svg{max-width:100%;height:auto;display:block;background:var(--card);border:1px solid var(--line);border-radius:6px}
+svg text{font:12.5px -apple-system,Helvetica,Arial,sans-serif;fill:var(--ink)}
+svg .t{font-size:11px;fill:var(--mute)}
+svg .h{font-weight:600}
+svg .box{fill:#fff;stroke:var(--ink);stroke-width:1.4}
+svg .soft{fill:var(--tint);stroke:var(--line)}
+svg .cl{fill:var(--indigo-tint);stroke:var(--indigo)}
+svg .ok{fill:var(--koke-tint);stroke:var(--koke)}
+svg .arr{stroke:var(--ink);stroke-width:1.3;fill:none;marker-end:url(#a)}
+svg .arrc{stroke:var(--indigo);stroke-width:1.3;fill:none;marker-end:url(#ac)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:12px 0}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13.5px}
+.opt.rec{border:1.5px solid var(--indigo)}
+.opt b.t{display:block;font-size:14px;margin-bottom:4px}
+.opt .fm{color:var(--bengara);font-size:12.5px}
+.opt ul{margin:6px 0 0;padding-left:18px}
+.opt li{margin:2px 0}
+.dec{background:var(--card);border-left:3px solid var(--indigo);padding:10px 14px;margin:10px 0;font-size:14px}
+.dec b{color:var(--indigo)}
+.note{font-size:12.5px;color:var(--mute)}
+</style>
+
+<h1>specboard storage — one pipeline, one switch</h1>
+<p class="sub">2026-09-05 · answers "should we store in local or cloud, how does each work, does it matter if it is in the codebase" · measured on this repo, demo/todo and dojostack</p>
+
+<h2>1 · The finding that reframes the question</h2>
+<p>The repo is heavy because of <b>git history</b>, not the files on disk. A harvest rewrites the same deterministic paths, and every rewritten PNG is a new blob kept forever. One harvest commit touched 482 files. Nothing about local-versus-cloud fixes that; only <i>never committing derived files</i> does.</p>
+<div class="bar"><span class="lab">tracked working tree</span><span class="seg m" style="width:91px"></span><span class="n">91 MB</span></div>
+<div class="bar"><span class="lab">.git history, of which:</span><span class="seg r" style="width:850px"></span><span class="n">850 MB</span></div>
+<div class="bar"><span class="lab">&nbsp;&nbsp;spec/*/evidence blobs</span><span class="seg r" style="width:890px"></span><span class="n">890 MB across history</span></div>
+<div class="bar"><span class="lab">&nbsp;&nbsp;board.html (generated!)</span><span class="seg r" style="width:177px"></span><span class="n">177 MB across history</span></div>
+<div class="bar"><span class="lab">spec/_runs (already gitignored)</span><span class="seg y" style="width:540px"></span><span class="n">540 MB on disk, 0 in git</span></div>
+
+<h2>2 · Five kinds of file, one rule each — the same in both paths</h2>
+<table>
+<tr><th>kind</th><th>files</th><th>size · churn</th><th>where it lives</th><th>why</th></tr>
+<tr><td><b>authored</b></td><td><span class="k">prd.md</span> <span class="k">test.spec.ts</span> <span class="k">steps.ts</span> <span class="k">_specboard.json</span> narration packs</td><td>KB · when a person edits</td><td><span class="chip git">app repo, committed</span></td><td>It IS code: the test runs in CI, a PRD change is reviewed in the same PR as the code it governs, and a laptop loss must not lose the requirements. This is the one tier where "in the codebase" is not optional.</td></tr>
+<tr><td><b>the fold</b></td><td><span class="k">_results-index.json</span></td><td>~200 KB · every harvest</td><td><span class="chip cache">local cache</span> <span class="chip cloud">cloud: keyed by commit sha</span></td><td>Proof state is derived and stale-checked by content hash anyway. Committing it churns every harvest for no gain; the cloud keeps one per app commit instead, which is the "proof for this commit" a PR wants.</td></tr>
+<tr><td><b>harvest</b></td><td>evidence PNG · Expected replica HTML · <span class="k">_fonts/</span> · <span class="k">viz/*.svg</span></td><td>10–50 MB / screen · every harvest</td><td><span class="chip cache">local cache</span> <span class="chip cloud">cloud: blob store by hash</span> <span class="chip never">never git</span></td><td>Regenerated by any run. A cache, wherever it sits. Content-addressed storage dedupes the fonts and the frames that did not change.</td></tr>
+<tr><td><b>run records</b></td><td><span class="k">spec/_runs/</span> videos, per-run shots</td><td>75 MB / run</td><td><span class="chip cache">local, pruned</span> <span class="chip never">never shared by default</span></td><td>Only the beat frames are proof; the video is a convenience. Keep the last N locally; optional ship of one run on request (shipToBucket already does this).</td></tr>
+<tr><td><b>vendored tools</b></td><td><span class="k">tools/*.mjs</span> <span class="k">board/client.js</span></td><td>24 MB · every release</td><td><span class="chip plugin">from the installed plugin</span></td><td>A product used by anyone should not copy 24 MB of its own code into every project. The project keeps only its config and pins a plugin version; <span class="k">kg-update</span> becomes "bump the pin".</td></tr>
+</table>
+<p class="note">Today's sidecar rule (2026-09-04) gitignores the whole <span class="k">specboard/</span> folder. That keeps the app repo small, but it also leaves the <b>authored</b> tier unversioned on one disk. For a product, that trade-off is the wrong one: the fix is a <span class="k">.gitignore</span> <i>inside</i> the folder that keeps the authored files and drops the rest. Decision D1 below.</p>
+
+<h2>3 · Both paths are one pipeline; the switch is where the fold lands</h2>
+<svg viewBox="0 0 1100 420" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#2b2a27"/></marker>
+<marker id="ac" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#3f4f7a"/></marker>
+</defs>
+<!-- app repo -->
+<rect x="20" y="30" width="230" height="150" rx="6" class="box ok"/>
+<text x="34" y="52" class="h">app repo (git)</text>
+<text x="34" y="74">specboard/spec/&lt;screen&gt;/</text>
+<text x="48" y="92" class="t">prd.md · test.spec.ts · steps.ts</text>
+<text x="34" y="114">specboard/_specboard.json</text>
+<text x="48" y="132" class="t">plugin version pin · app path</text>
+<text x="34" y="160" class="t">gitignored: evidence/ _runs/ _results-index.json board.html</text>
+
+<!-- harvest -->
+<rect x="310" y="60" width="180" height="90" rx="6" class="box"/>
+<text x="324" y="82" class="h">harvest</text>
+<text x="324" y="102">Playwright run</text>
+<text x="324" y="120" class="t">on a laptop, or in CI</text>
+<text x="324" y="138" class="t">plugin tools, not vendored</text>
+<path d="M250,105 L310,105" class="arr"/>
+
+<!-- fold -->
+<rect x="550" y="60" width="180" height="90" rx="6" class="box"/>
+<text x="564" y="82" class="h">fold</text>
+<text x="564" y="102">index + evidence</text>
+<text x="564" y="120" class="t">pinned to app commit sha</text>
+<text x="564" y="138" class="t">pruned, deterministic paths</text>
+<path d="M490,105 L550,105" class="arr"/>
+
+<!-- switch -->
+<rect x="790" y="82" width="120" height="46" rx="23" class="box soft"/>
+<text x="808" y="100" class="h">storage.where</text>
+<text x="822" y="118" class="t">local · cloud</text>
+<path d="M730,105 L790,105" class="arr"/>
+
+<!-- local branch -->
+<rect x="310" y="230" width="360" height="70" rx="6" class="box"/>
+<text x="324" y="252" class="h">LOCAL PATH  (what exists today)</text>
+<text x="324" y="272">specboard/ on disk · board on :port · one person reads</text>
+<text x="324" y="290" class="t">nothing leaves the machine · derived files are a cache</text>
+<path d="M850,128 C850,200 700,200 670,265" class="arr"/>
+
+<!-- cloud branch -->
+<rect x="700" y="200" width="380" height="200" rx="6" class="box cl"/>
+<text x="714" y="222" class="h">CLOUD PATH  (publish = one more step)</text>
+<text x="714" y="246">1 · blobs → private store, by content hash</text>
+<text x="728" y="262" class="t">frames · replicas · fonts; unchanged bytes upload once</text>
+<text x="714" y="286">2 · index → store, keyed by app commit sha</text>
+<text x="728" y="302" class="t">per-screen merge on upload: fold, never replace</text>
+<text x="714" y="326">3 · hosted board reads the store, read-only</text>
+<text x="728" y="342" class="t">behind the team's auth; Run/Scan stay local or in CI</text>
+<text x="714" y="372" class="t">a teammate opens a URL; no server, no checkout</text>
+<path d="M880,128 L880,200" class="arrc"/>
+</svg>
+<p>The two paths share the folder layout, the harvest, the fold and the gates. The cloud path adds exactly one verb, <b>publish</b>, and one reader. That is why they should be one config value, not two products: a project starts local and flips to cloud without moving a file.</p>
+
+<h2>4 · How the cloud path could be built — three options</h2>
+<div class="cols">
+<div class="opt">
+<b class="t">A · git-only: LFS for blobs, index committed</b>
+<div class="fm">Failure mode: GitHub LFS is 1 GB free then metered; dojostack grows ~20 MB per harvest, so a team burns the quota in weeks. The index still churns every commit. Readers need a checkout and a local server. Two harvesters on one branch conflict on binary paths.</div>
+<ul><li>zero code, works today</li><li>proof is versioned with the code</li><li>does not give a teammate a URL</li></ul>
+</div>
+<div class="opt rec">
+<b class="t">B · private blob store + static hosted board (recommended)</b>
+<div class="fm">Failure mode: screenshots show real customer data, so the store must be private and the board behind auth from day one. Content-addressed blobs break the "deterministic path overwrites in place" contract that tools/evidence.mjs prunes by, so the fold's prune must be re-proven in the store. Two teammates harvesting the same screen need a merge rule: the index is folded per screen, last run wins per screen, never a whole-index replace.</div>
+<ul><li>storage config already has <span class="k">where: bucket</span> and <span class="k">shipToBucket</span></li><li>board.html is already static: publish it + the index, reads blobs by URL</li><li>one bucket per project (S3 / R2 / GCS), the user's own; no specboard account</li><li>CI can be the harvester: proof follows every merge</li></ul>
+</div>
+<div class="opt">
+<b class="t">C · specboard cloud service (multi-tenant)</b>
+<div class="fm">Failure mode: accounts, billing, tenancy and an API before a second team has used B. The product becomes a service to run, not a plugin to install, and the customer's screenshots now sit on your infrastructure.</div>
+<ul><li>the best onboarding: paste a token, done</li><li>only worth it once B is used by more than one project</li><li>B's store layout is what this would serve, so B is not thrown away</li></ul>
+</div>
+</div>
+
+<h3>B in detail — the contract, so local and cloud cannot drift</h3>
+<table>
+<tr><th>piece</th><th>local</th><th>cloud (B)</th></tr>
+<tr><td>blob address</td><td><span class="k">spec/&lt;screen&gt;/evidence/R5.b2.after.png</span></td><td>index entry carries <span class="k">sha256</span>; store path <span class="k">blobs/&lt;sha256&gt;</span>; the deterministic name becomes a key in the index, not a path in the store</td></tr>
+<tr><td>prune</td><td>superseded files deleted at the fold</td><td>a blob is unreferenced when no retained index references it; retention = last N indexes per project (N configurable, default 10)</td></tr>
+<tr><td>the index</td><td>one file, overwritten</td><td><span class="k">index/&lt;commit-sha&gt;/&lt;screen&gt;.json</span> + <span class="k">index/latest.json</span> = per-screen pointers; publish merges per screen, so a per-screen run never blanks another screen (the existing fold rule, moved to the store)</td></tr>
+<tr><td>staleness</td><td>mtime + srcHashes</td><td>srcHashes only (no mtime in a store) — the hash gate already exists and is the honest one</td></tr>
+<tr><td>the board</td><td><span class="k">node tools/serve-board.mjs</span></td><td>the same board.html, built with <span class="k">assetBase = store URL</span>; Run/Scan/Compose buttons hidden (they need a machine)</td></tr>
+<tr><td>auth</td><td>none, loopback</td><td>signed URLs from the store, board behind the team's SSO (Pages/CDN access rules) — never a public bucket</td></tr>
+<tr><td>who publishes</td><td>—</td><td>whoever folds: a laptop after a run, or CI after merge; both call the same <span class="k">publish</span></td></tr>
+</table>
+
+<h2>5 · "Does it make a difference to store in the codebase or the cloud?"</h2>
+<p><b>Yes, and the answer differs by tier.</b> Authored files must be in the codebase: they change with the code, they are reviewed with the code, and a test that is not in the repo cannot run in the repo's CI. Derived files must <i>not</i> be in the codebase: every harvest makes them a new permanent blob. Whether the derived files sit on a disk or in a store is the only local-versus-cloud question, and it is answered by who needs to read them.</p>
+<p>The fold index is the one that looks like it could go either way. It should not be committed: it is measured, not authored, and the board already refuses to trust it when the sources moved. In the cloud it gets the thing committing it was trying to buy, "proof at commit X", without the churn.</p>
+
+<h2>6 · Anything else — what the two paths force you to decide</h2>
+<table>
+<tr><th>#</th><th>issue</th><th>recommendation</th></tr>
+<tr><td>1</td><td>The plugin repo itself dogfoods and commits its harvest and board.html: that is the 850 MB.</td><td>Stop committing derived files here too. CI harvests on every push and publishes to a store via path B; this repo becomes the first cloud-path user. The history can be rewritten once (filter-repo) or left; new bloat stops either way.</td></tr>
+<tr><td>2</td><td>Proof provenance: a harvest is meaningful only against the app commit it ran on.</td><td>The fold already pins srcHashes; add the app commit sha to the record. In the cloud the index is keyed by it, so a PR can show "proven at this sha".</td></tr>
+<tr><td>3</td><td>Two people harvest the same screen.</td><td>Per-screen fold on publish, newest run wins per screen; no whole-index write ever. Same rule the reporter already enforces locally.</td></tr>
+<tr><td>4</td><td>Privacy: the frames show real data.</td><td>Private store + signed URLs + board behind auth, non-negotiable in B. Say it in the setup screen.</td></tr>
+<tr><td>5</td><td>Vendoring 24 MB of tools per project.</td><td>Run from the installed plugin, pin its version in _specboard.json. kg-update becomes a version bump. A project can still vendor by choice (an escape, not the default).</td></tr>
+<tr><td>6</td><td>Videos.</td><td>Never published by default; keep last N runs locally. A person can ship one run to the store on request (exists).</td></tr>
+<tr><td>7</td><td>The Expected replica's fonts.</td><td>Content-addressed blobs dedupe them across screens and harvests for free.</td></tr>
+</table>
+
+<h2>7 · Decisions for you</h2>
+<div class="dec"><b>D1 · Authored files in the app repo.</b> Reverse the "gitignore the whole specboard/ folder" rule: commit prd.md, test.spec.ts, steps.ts and _specboard.json; ignore evidence/, _runs/, _results-index.json, board.html, viz/, _fonts/. You ruled the opposite on 2026-09-04; this is the case for changing it, because a product cannot keep its users' requirements on one disk. <i>Recommend: yes.</i></div>
+<div class="dec"><b>D2 · The cloud path is B</b> (the user's own private store + a static hosted board), with C only after a second team uses it. <i>Recommend: B.</i></div>
+<div class="dec"><b>D3 · Tools run from the plugin, version-pinned per project</b>, instead of vendored into each project. <i>Recommend: yes, as a separate step after D1 and D2 — it changes kg-init and kg-update, not the storage.</i></div>
+<p class="note">Order if all three are yes: D1 (a .gitignore and the scaffold, one day) → the plugin repo stops committing its harvest and CI publishes (path B's first user, this repo) → the publish verb and the store contract for any project → the hosted read-only board → D3.</p>
+
+<h2>8 · Local path only — the storage budget (asked 2026-09-05)</h2>
+<p>Everything derived is a cache. The question is only how small each cache can be and where it sits. Measured on this repo today.</p>
+<table>
+<tr><th>where</th><th>what</th><th>today</th><th>floor</th><th>how</th></tr>
+<tr><td rowspan="2"><b>in the repo</b></td><td>authored: prd · test · steps · manifest</td><td>KB</td><td>KB</td><td>the only thing committed. Zero is possible (today's whole-folder ignore) but loses the requirements with the disk — D1.</td></tr>
+<tr><td>derived: evidence · board.html · index · viz</td><td>91 MB tracked, 890 MB of history</td><td>0</td><td>gitignore all of it; a pre-commit guard in the plugin refuses a staged file under <span class="k">evidence/</span></td></tr>
+<tr><td rowspan="5"><b>on disk, gitignored</b></td><td>evidence (latest harvest only)</td><td>67 MB</td><td>~40 MB</td><td>lossless WebP instead of PNG saves ~35 % on these frames (measured); already pruned in place at the fold</td></tr>
+<tr><td>run records <span class="k">spec/_runs</span></td><td>540 MB (15 × 76 MB, cap 20 → 1.5 GB)</td><td>~30 MB</td><td>after the fold, drop the frames the fold copied out (the run dir holds the same 300 PNGs evidence holds) and keep the video only; cap 5 runs by default, configurable</td></tr>
+<tr><td>board.html + index + _runs.json</td><td>13 MB</td><td>13 MB</td><td>regenerated by every build; fine as is</td></tr>
+<tr><td>vendored tools + node_modules, per project</td><td>24 MB + 21 MB × every project</td><td>0 per project</td><td>run from the installed plugin (D3): one copy per machine</td></tr>
+<tr><td>Playwright test-results</td><td>42 MB</td><td>~0</td><td>Playwright clears it per run; trace is already off</td></tr>
+<tr><td rowspan="2"><b>per machine</b></td><td>Playwright browsers</td><td>1.9 GB (three Chromium versions + three headless shells, never cleaned)</td><td>~540 MB</td><td>one pinned Chromium; <span class="k">npx playwright uninstall --all</span> then install the one version; kg-init installs chromium only, never all browsers</td></tr>
+<tr><td>plugin's own node_modules</td><td>107 MB</td><td>107 MB</td><td>once per machine</td></tr>
+</table>
+
+<h3>Why .git is 850 MB, and how to stop it</h3>
+<table>
+<tr><th>cause</th><th>size</th><th>mechanism</th></tr>
+<tr><td>evidence frames committed and rewritten</td><td>~890 MB of blobs, 11,537 objects</td><td>87 harvest commits; deterministic paths overwrite in place, so one frame (<span class="k">R1.b1.after.png</span>) has 54 versions in history, each a full PNG — git cannot delta binaries usefully</td></tr>
+<tr><td>board.html committed</td><td>177 MB</td><td>206 commits of an 8 MB generated file</td></tr>
+<tr><td>deleted but remembered</td><td>~130 MB</td><td>demo/todo evidence 84 MB · viz sketches 25 MB · the v1 knowledge-graph 24 MB — deleting a file never shrinks history</td></tr>
+<tr><td>loose, unpacked objects</td><td>298 MB</td><td>6,659 objects git has not packed yet; <span class="k">git gc</span> compacts them (safe, no history change). The real history is the 552 MB pack.</td></tr>
+</table>
+<p><b>Prevention, in order of effect:</b> (1) never commit a derived file — the .gitignore in section 2; (2) the plugin ships a guard: <span class="k">npm run proof</span> (or a pre-commit hook kg-init installs) refuses a commit that stages <span class="k">evidence/</span>, <span class="k">board.html</span> or the index; (3) the dogfood board and demo show their pictures from a CI artifact or a hosted static page, never from a commit; (4) once, rewrite this repo's history with <span class="k">git filter-repo</span> to drop those paths — the pack falls to tens of MB. That step rewrites every commit sha and needs a force push and a fresh clone for the other session, so it is your call and a coordinated one.</p>
+
+<h3>Related projects worth reading</h3>
+<table>
+<tr><th>project</th><th>what it stores where</th><th>what to borrow</th></tr>
+<tr><td><b>DVC</b> (dvc.org)</td><td>tiny pointer files in git; the bytes in a content-addressed local cache (<span class="k">.dvc/cache</span>), optionally synced to a remote</td><td>the exact local-only shape: pointers versioned, blobs cached by hash, <span class="k">dvc gc</span> keeps only what current pointers reference. Its later remote is our cloud path with no redesign.</td></tr>
+<tr><td><b>Turborepo / Nx remote cache</b></td><td>build outputs keyed by an input hash in a local cache dir; a remote cache is opt-in</td><td>"derived = cache, never committed"; the input hash is our <span class="k">srcHashes</span></td></tr>
+<tr><td><b>reg-suit</b> (visual regression)</td><td>screenshots and diffs in S3/GCS keyed by git commit sha (<span class="k">reg-keygen-git-hash-plugin</span>); the report is a static HTML page reading the bucket</td><td>index keyed by commit sha; a static report over a bucket — the closest existing product to path B</td></tr>
+<tr><td><b>Playwright snapshots</b> (<span class="k">toHaveScreenshot</span>)</td><td>reference PNGs committed beside the test; results in gitignored <span class="k">test-results/</span></td><td>the cautionary tale: committed PNGs are why Playwright repos bloat and why teams move to Docker-generated or hosted snapshots</td></tr>
+<tr><td><b>Argos CI / Chromatic / Percy / Lost Pixel</b></td><td>screenshots uploaded from CI to the vendor; git holds only the test</td><td>the hosted model (path C's UX): nothing derived in the repo at all</td></tr>
+<tr><td><b>Chromium's binary deps</b></td><td><span class="k">.sha1</span> pointer files in the tree, bytes fetched from a bucket by hash</td><td>the same pointer-in-git pattern at very large scale</td></tr>
+<tr><td><b>Playwright / Allure HTML reports</b></td><td>a static report folder, uploaded as a CI artifact with a retention period, never committed</td><td>board.html's natural home once it is not committed</td></tr>
+</table>
+<p class="note">Common thread: every one of them keeps the human-authored source in git and treats pictures as a hash-keyed cache with a retention rule. None commits a regenerated picture.</p>
+
+<h2>9 · Making .git small — three steps, in order</h2>
+<p>Two more facts surfaced while measuring: <span class="k">spec/_runs.json</span> (the 5 MB run log) is committed with 120 versions, 327 MB of history on its own; and the plugin marketplace installs this repo by <b>cloning it</b>, so every plugin user downloads a 700 MB <span class="k">.git</span> today (<span class="k">~/.claude/plugins/marketplaces/specboard</span> = 770 MB).</p>
+<table>
+<tr><th>step</th><th>what</th><th>.git after</th><th>risk</th></tr>
+<tr><td><b>0 · now, safe</b></td><td><span class="k">git gc</span> packs the 298 MB of loose objects</td><td>~550 MB</td><td>none; history unchanged</td></tr>
+<tr><td><b>1 · now, stops the growth</b></td><td>gitignore + <span class="k">git rm --cached</span> every derived file: <span class="k">spec/*/evidence/</span> · <span class="k">spec/*/viz/</span> · <span class="k">spec/*/screen.png</span> · <span class="k">board.html</span> · <span class="k">spec/_runs.json</span> · <span class="k">spec/_results.json</span> · <span class="k">spec/_results-index.json</span>; same in demo/todo. CI already harvests and gates itself, so the dogfood board needs no committed pictures.</td><td>~550 MB, growing by KB per commit instead of tens of MB per harvest</td><td>the GitHub view of board.html goes away; anyone wanting the picture runs the board or reads the CI artifact</td></tr>
+<tr><td><b>2 · once, your call</b></td><td>rewrite history with <span class="k">git filter-repo --invert-paths</span> over the same list plus <span class="k">knowledge-graph/</span> and <span class="k">spec/_runs/</span>, on a fresh clone; force-push; re-clone everywhere</td><td>~30–60 MB (528 MB of raw text blobs left, which packs 5–10×)</td><td>every commit sha changes: the other session's checkout and the marketplace clone must be re-cloned, sha references in CLAUDE.md and docs go dangling, GitHub keeps the old objects for a while. Needs a quiet moment when no other agent has uncommitted work.</td></tr>
+</table>
+<p class="note">Step 2 is what makes the plugin installable at normal speed; steps 0 and 1 only stop the bleeding. <span class="k">git-filter-repo</span> is not installed yet (<span class="k">brew install git-filter-repo</span>).</p>
+
+<h2>10 · Self-hosted platforms as a reference — Langfuse and its neighbours (asked 2026-09-05)</h2>
+<p>None of them keeps records in the user's code repo. Each splits its data into <b>metadata</b> (small, queried, in a database) and <b>blobs</b> (large, written once, in an artifact or object store), and the local install differs from the cloud only in which backend each store points at.</p>
+<table>
+<tr><th>platform</th><th>self-hosted locally, where the records go</th><th>format</th><th>what to borrow</th></tr>
+<tr><td><b>Langfuse</b> (v3)</td><td>Docker Compose on the user's machine: <b>Postgres</b> for projects, users, prompts, datasets; <b>ClickHouse</b> for traces, observations, scores (the high-volume half); <b>Redis</b> as the ingestion queue; an <b>S3-compatible blob store</b> (MinIO in the default compose) for raw event batches, media attachments and exports. Everything lives in Docker volumes; the app repo holds only the SDK call.</td><td>relational rows + columnar rows + objects by key</td><td>the four-way split is what a multi-user product needs; it is far more than a single user's board needs. Langfuse v2 was Postgres-only and was replaced because trace volume outgrew one database — the lesson is "blobs out of the database from day one".</td></tr>
+<tr><td><b>MLflow</b></td><td>local default: metadata as files under <span class="k">./mlruns</span> (or SQLite), artifacts in a directory; server mode: <span class="k">--backend-store-uri</span> (Postgres) + <span class="k">--default-artifact-root</span> (S3/GCS)</td><td>files or SQLite + a directory of artifacts</td><td><b>the closest to specboard</b>: two knobs, metadata store and artifact store, each with a local-directory default and a remote option. Our index is the metadata store, <span class="k">evidence/</span> is the artifact store.</td></tr>
+<tr><td><b>Arize Phoenix</b></td><td><span class="k">phoenix serve</span> writes one <b>SQLite</b> file in a working directory; Postgres is optional for teams</td><td>SQLite</td><td>a single-file database is the honest step between "JSON on disk" and "a server", if the index ever needs querying across runs</td></tr>
+<tr><td><b>Sentry</b> self-hosted · <b>PostHog</b></td><td>Postgres + ClickHouse + Kafka + a filestore (local disk or S3) for attachments and source maps</td><td>as above</td><td>the same blob/metadata split at scale; "filestore backend = local disk by default, S3 when told" is the pattern for our cloud switch</td></tr>
+<tr><td><b>Grafana</b> · <b>Gitea</b></td><td>SQLite by default, Postgres/MySQL when configured; uploads on local disk</td><td>SQLite + files</td><td>single-binary tools default to one file and a directory; they do not ask a solo user to run a database</td></tr>
+</table>
+<p><b>What this means for specboard's local path:</b> keep the index as a file and the evidence as a directory. A database earns its place only when there are several writers or cross-project queries, and SQLite would be the first step then, not Postgres. The cloud path is MLflow's second knob: the artifact store becomes a bucket and the index a per-commit object, with the same fold in front of both. Langfuse's stack is what path C (a hosted multi-tenant service) would look like, and it is why C comes last.</p>
+</body>

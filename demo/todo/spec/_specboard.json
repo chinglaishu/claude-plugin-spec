@@ -1,5 +1,5 @@
 {
-  "version": "0.44.1",
+  "version": "0.44.2",
   "files": {
     "tools/spec-store.mjs": "b457b25867f41de780d56772b85bac5f6928308788e766c64dd8d325ba1b8624",
     "tools/coverage.mjs": "2f97051ed7035c0d75255a957d9c8ffd56192f920b3e6ad4fc7888dcbb902397",
@@ -37,7 +37,7 @@
     "spec/_seed.ts": "0d769678a64a44f986909d158d17e12f6d216fe6a7eb83666a93c32fd5b7db8e",
     "spec/_escapes.md": "8f6b115b794be1c19a3e830d98b9f3dd81acc4fe1b2341a9a2fbb73c2d60a0ed",
     "spec/_layout-walk.mjs": "577896db75ebbc170b4cc7a3a7cba0460a9d62357c73cfee1787020328529b00",
-    "spec/_replica.mjs": "8fa508a2fa707df5a2cfe9210da3c2ba11f35cb27a0892f05553678ef1929a34",
+    "spec/_replica.mjs": "7a0a086375fd4719427b23758b7a340978ac7dad6321e91e74c7e5b455189ffa",
     "tools/board/words.js": "81badf895a3d1c632dfa145a457b0e1c654ddd3b82a2d32163324f6e4ac1d0f0",
     "tools/replica-gate.mjs": "2c7b3e7a3e3f7571c97057fce912222fca7e2005ffaac85cbda3e6d2d44abd62",
     "tools/_skeleton.mjs": "2dded3be35cf46638849870069e2014890169d9b3b13df008c84687ab44b1247",
